@@ -529,7 +529,7 @@ export function CombatArena() {
 
             return (
               <div key={item.id} className={cn("flex items-start gap-2", textColor)}>
-                <span className="shrink-0 text-muted-foreground/50">[{item.timestamp}]</span>
+                <span suppressHydrationWarning className="shrink-0 text-muted-foreground/50">[{item.timestamp}]</span>
                 <span className="shrink-0 rounded bg-secondary/40 px-1 text-[10px] text-muted-foreground">
                   Lượt {item.turn}
                 </span>

@@ -80,8 +80,14 @@
 
 ## 6. Vấn Đề Đã Biết & Trạng Thái Kiểm Thử (Known Issues & Verification)
 - **Kiểm thử biên dịch**: Đã chạy `compile_applet` thành công 100% (`Build succeeded - the applet is compiled`).
+- **Sửa lỗi tương tác click (Đã giải quyết triệt để)**:
+  - *Nguyên nhân cốt lõi*: Next.js 16 ở chế độ dev mặc định chặn tài nguyên dev (`403 Forbidden`) đối với các domain cross-origin từ preview runner Cloud Run của AI Studio (`ais-dev-*.run.app` / `ais-pre-*.run.app`). Điều này khiến trình duyệt tải được HTML tĩnh từ SSR nhưng bị chặn toàn bộ các file JavaScript chunks (`/_next/static/chunks/*.js`), dẫn đến việc React không thể hydrate và toàn bộ event listeners (`onClick`) trên nút bấm không được gán vào DOM.
+  - *Giải pháp triển khai*:
+    1. Cấu hình `allowedDevOrigins: ['**.run.app', 'ais-dev-*.run.app', 'ais-pre-*.run.app', 'localhost:3000']` trong `next.config.mjs`.
+    2. Chuẩn hóa `components/ui/button.tsx` sang Client Component chuẩn React 19 với native `<button>` để loại bỏ phụ thuộc phức tạp của Base UI.
+    3. Chuẩn hóa timestamp nhật ký chiến trận thành dạng thời gian tương đối (`00:01`, `00:04`) để triệt tiêu hoàn toàn lỗi chênh lệch múi giờ gây Hydration Mismatch.
+  - *Kết quả kiểm chứng*: Các JavaScript bundle đã trả về `200 OK` (thay vì `403 Forbidden`). Nút "Kết thúc ngày" cũng như các nút kỹ năng, đổi mục tiêu, tái đấu đã nhận click và thay đổi state trực tiếp trên preview.
 - **Môi trường Git**: Không có Git repository khởi tạo cục bộ trong container AI Studio (`fatal: not a git repository`). Mọi thay đổi tập tin được lưu trực tiếp vào workspace và được quản lý đồng bộ qua giao diện AI Studio. Cần đồng bộ thủ công trên giao diện nếu kết nối với repo GitHub bên ngoài.
-- **Tính tương tác**: Đấu trường chiến đấu hoạt động trực tiếp trên web preview: người chơi có thể chọn 3 mục tiêu (Drone, Mech, Boss), dùng kỹ năng, theo dõi AI kẻ địch phản đòn, nhận thông báo bạo kích/phá giáp/lá chắn, và chơi lại khi Thắng hoặc Thua.
 
 ---
 

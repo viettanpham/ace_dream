@@ -506,7 +506,7 @@ export function createInitialCombatState(encounterId: EnemyEncounterType = "scou
   const currentTurnActorId = turnQueue[0]
   const initialStatus = playerFirst ? "player-turn" : "enemy-turn"
 
-  const now = new Date().toLocaleTimeString("vi-VN", { hour12: false })
+  const now = "00:01"
   const logs: CombatLogItem[] = [
     {
       id: "log-init-1",
@@ -614,7 +614,7 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
 
   const player = cloneUnit(state.player)
   const enemy = cloneUnit(state.enemy)
-  const now = new Date().toLocaleTimeString("vi-VN", { hour12: false })
+  const now = `00:${String(Math.min(99, state.turnNumber * 4)).padStart(2, "0")}`
   const newLogs: CombatLogItem[] = [...state.logs]
 
   // Trừ tiêu hao SP và đặt thời gian hồi chiêu
@@ -756,7 +756,7 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
 
   const enemy = cloneUnit(state.enemy)
   const player = cloneUnit(state.player)
-  const now = new Date().toLocaleTimeString("vi-VN", { hour12: false })
+  const now = `00:${String(Math.min(99, state.turnNumber * 4 + 2)).padStart(2, "0")}`
   const newLogs: CombatLogItem[] = [...state.logs]
 
   // Chọn chiêu thức thông minh tùy thuộc loại kẻ địch

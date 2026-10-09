@@ -56,43 +56,45 @@
 ## 4. Trạng Thái Tính Năng Thực Tế (Feature Status Matrix)
 | Tính năng | Trạng thái | Ghi chú |
 |---|---|---|
-| Tài liệu kiến trúc `PROJECT_PLAN.md` & `README.md` | Hoàn thành (Done) | Tạo tại gốc dự án bằng tiếng Việt |
-| Kiểm tra đồng bộ GitHub | Hoàn thành (Verified) | Đã xác thực giới hạn môi trường Git cục bộ |
-| Thiết kế Model & Type hệ thống (`types.ts`) | Đang chờ duyệt Phase 1 | Sẽ triển khai sau khi người dùng phê duyệt |
-| Logic tính toán chiến đấu (`engine.ts`) | Đang chờ duyệt Phase 1 | Logic thuần, độc lập với UI |
-| Dữ liệu Gear Vanguard & 3 quái vật (`data.ts`) | Đang chờ duyệt Phase 1 | Cân bằng chỉ số bước đầu |
-| Giao diện Sci-Fi HUD & Combat Log | Đang chờ duyệt Phase 1 | Giao diện tiếng Việt 100% |
-| Hệ thống trang bị, cấp độ, nhiệm vụ | Dự kiến (Phase 2+) | Chưa thực hiện |
+| Tài liệu kiến trúc `PROJECT_PLAN.md` & `README.md` | Hoàn thành (Done) | Đã tạo và lưu tại thư mục gốc bằng tiếng Việt |
+| Kiểm tra đồng bộ GitHub | Đã xác nhận (Verified) | Báo cáo chi tiết giới hạn môi trường Git container |
+| Thiết kế Model & Type hệ thống (`types.ts`) | Hoàn thành (Done) | Đã bổ sung CombatUnit, Skill, StatusEffect, CombatState, CombatLogItem |
+| Logic tính toán chiến đấu (`engine.ts`) | Hoàn thành (Done) | Đã xây dựng engine: lượt theo Speed, sát thương Công/Thủ, giảm giáp, lá chắn từ trường, AI kẻ địch |
+| Dữ liệu Vanguard & 3 kẻ địch (`data.ts`) | Hoàn thành (Done) | Vanguard Gear + 3 kỹ năng (Pulse Strike, Armor Break, Emergency Guard) + Scout Drone, Raider Mech, Siege Walker Boss |
+| Giao diện Đấu trường Sci-Fi Combat Arena (`combat-arena.tsx`) | Hoàn thành (Done) | Đấu trường chiến thuật theo lượt chơi được 100%, thanh HP/SP, timeline tốc độ, radar feed, 100% tiếng Việt |
+| Hệ thống trang bị, cấp độ, tiến trình | Dự kiến (Phase 2) | Kế hoạch triển khai ở giai đoạn tiếp theo |
 
 ---
 
 ## 5. Danh Mục File Quan Trọng & Phân Công Nhiệm Vụ (Important Files)
 - `PROJECT_PLAN.md`: Kế hoạch tổng thể và nhật ký tiến độ dự án (tài liệu này).
 - `README.md`: Giới thiệu dự án, hướng dẫn vận hành và kiểm thử.
-- `app/page.tsx` hoặc `src/App.tsx`: Điểm vào ứng dụng hiển thị buồng lái chiến đấu STARFRONT.
-- `lib/game/types.ts`: Cấu trúc dữ liệu về Gear, Chỉ số, Kỹ năng, Kẻ địch, Lượt đi.
-- `lib/game/data.ts`: Thông số Gear Vanguard, 3 kỹ năng khởi đầu và 3 chủng loại quái.
-- `lib/game/engine.ts`: Bộ máy quy tắc chiến thuật theo lượt (Combat Loop).
-- `components/game/hud-bar.tsx`: Thanh trạng thái buồng lái (HP/SP, thanh lượt).
-- `components/game/battle-modal.tsx` / `components/game/war-room.tsx`: Khu vực chiến trường và thao tác kỹ năng.
-- `components/game/console.tsx`: Màn hình hiển thị nhật ký radar & chiến thuật.
+- `lib/game/types.ts`: Cấu trúc dữ liệu về Gear, Chỉ số, Kỹ năng, Kẻ địch, Status Effect, Lượt đi.
+- `lib/game/data.ts`: Thông số Vanguard Gear, 3 kỹ năng khởi đầu và 3 chủng loại quái vật.
+- `lib/game/engine.ts`: Bộ máy quy tắc chiến thuật theo lượt (Speed Initiative, sát thương, AI kẻ địch).
+- `components/game/combat-arena.tsx`: Giao diện đấu trường chiến thuật Phase 1 tương tác trực tiếp.
+- `components/game/console.tsx`: Màn hình điều khiển tích hợp tab Đấu trường (P1) làm trung tâm trải nghiệm.
+- `app/layout.tsx`: Giao diện nền tảng sci-fi với font Orbitron, Rajdhani và metadata STARFRONT.
 
 ---
 
 ## 6. Vấn Đề Đã Biết & Trạng Thái Kiểm Thử (Known Issues & Verification)
-- **Môi trường Git**: Không có Git repository khởi tạo cục bộ trong container AI Studio Build (`fatal: not a git repository`), do đó việc push lệnh git trực tiếp từ terminal bị giới hạn; các thay đổi tập tin được lưu trực tiếp vào workspace và được quản lý qua giao diện AI Studio.
-- **Kiểm thử biên dịch**: Sẽ tiến hành chạy quy trình build và lint ngay khi hoàn tất mã nguồn Phase 1.
+- **Kiểm thử biên dịch**: Đã chạy `compile_applet` thành công 100% (`Build succeeded - the applet is compiled`).
+- **Môi trường Git**: Không có Git repository khởi tạo cục bộ trong container AI Studio (`fatal: not a git repository`). Mọi thay đổi tập tin được lưu trực tiếp vào workspace và được quản lý đồng bộ qua giao diện AI Studio. Cần đồng bộ thủ công trên giao diện nếu kết nối với repo GitHub bên ngoài.
+- **Tính tương tác**: Đấu trường chiến đấu hoạt động trực tiếp trên web preview: người chơi có thể chọn 3 mục tiêu (Drone, Mech, Boss), dùng kỹ năng, theo dõi AI kẻ địch phản đòn, nhận thông báo bạo kích/phá giáp/lá chắn, và chơi lại khi Thắng hoặc Thua.
 
 ---
 
-## 7. Tác Vụ Khả Thi Tiếp Theo (Next Single Actionable Task)
-- **Chờ người dùng xác nhận và phê duyệt kế hoạch**.
-- Ngay sau khi được phê duyệt: Bắt đầu triển khai **Giai đoạn 1 (Phase 1)** gồm cấu trúc types, engine chiến thuật, dữ liệu Vanguard + 3 quái vật, cùng giao diện buồng lái chiến đấu tiếng Việt hoàn chỉnh.
+## 7. Tác Vụ Khả Thi Tiếp Theo (Next Recommended Task)
+- **Chuẩn bị sang Giai đoạn 2 (Phase 2)**:
+  - Hệ thống Cấp độ (Level) và Điểm kinh nghiệm (EXP) sau mỗi trận thắng.
+  - Phần thưởng Điểm tín dụng (Credits) và Kho trang bị nâng cấp (Vũ khí, Động cơ, Khiên chắn).
+  - Tích hợp lưu trữ dữ liệu chiến đấu vào LocalStorage để giữ lại tiến trình chơi.
 
 ---
 
 ## 8. Hướng Dẫn Bàn Giao (Handoff Instructions for AI Assistants)
 - Luôn đọc `PROJECT_PLAN.md` trước khi thực hiện bất kỳ chỉnh sửa nào.
-- Tuân thủ nguyên tắc: Giao tiếp với người dùng và văn bản in-game bằng tiếng Việt; code, tên biến và comment kỹ thuật bằng tiếng Anh.
-- Thực hiện từng giai đoạn nhỏ, kiểm tra build trước khi bàn giao.
-- Cập nhật tài liệu này sau khi hoàn thành mỗi giai đoạn.
+- Phase 1 đã hoàn thành đầy đủ: Đấu trường chiến thuật theo lượt với Vanguard Gear, 3 kỹ năng, 3 kẻ địch, AI tự động, và giao diện Sci-Fi tiếng Việt.
+- Giữ nguyên cấu trúc code sạch, không thêm thư viện thừa, duy trì sự tương thích của runtime AI Studio.
+

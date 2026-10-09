@@ -469,3 +469,427 @@ export function simulateBattle(
     troopReward: victory ? sector.troopReward : undefined,
   }
 }
+
+/* ==========================================================================
+   PHASE 1 — TURN-BASED COMBAT ENGINE (SPEED INITIATIVE, SKILLS, AI, STATUS)
+   ========================================================================== */
+
+import {
+  ENEMIES_DATA,
+  VANGUARD_INITIAL_UNIT,
+} from "./data"
+import type {
+  CombatLogItem,
+  CombatSkill,
+  CombatState,
+  CombatUnit,
+  EnemyEncounterType,
+  StatusEffect,
+} from "./types"
+
+export function cloneUnit(unit: CombatUnit): CombatUnit {
+  return {
+    ...unit,
+    statusEffects: unit.statusEffects.map((s) => ({ ...s })),
+    skills: unit.skills.map((s) => ({ ...s })),
+    skillCooldowns: { ...unit.skillCooldowns },
+  }
+}
+
+export function createInitialCombatState(encounterId: EnemyEncounterType = "scout-drone"): CombatState {
+  const player = cloneUnit(VANGUARD_INITIAL_UNIT)
+  const enemy = cloneUnit(ENEMIES_DATA[encounterId])
+
+  // Thứ tự lượt dựa trên tốc độ (Speed Initiative)
+  const playerFirst = player.speed >= enemy.speed
+  const turnQueue = playerFirst ? [player.id, enemy.id] : [enemy.id, player.id]
+  const currentTurnActorId = turnQueue[0]
+  const initialStatus = playerFirst ? "player-turn" : "enemy-turn"
+
+  const now = new Date().toLocaleTimeString("vi-VN", { hour12: false })
+  const logs: CombatLogItem[] = [
+    {
+      id: "log-init-1",
+      turn: 1,
+      type: "system",
+      text: `[HỆ THỐNG] Radar cảnh giới kích hoạt! Phát hiện mục tiêu: ${enemy.name} (${enemy.title}).`,
+      actorName: "HỆ THỐNG",
+      timestamp: now,
+    },
+    {
+      id: "log-init-2",
+      turn: 1,
+      type: "system",
+      text: playerFirst
+        ? `[TỐC ĐỘ] Tốc độ Vanguard (${player.speed}) cao hơn mục tiêu (${enemy.speed}) -> Giành quyền hành động trước!`
+        : `[TỐC ĐỘ] Mục tiêu ${enemy.name} có tốc độ vượt trội (${enemy.speed} > ${player.speed}) -> Địch tấn công trước!`,
+      actorName: "HỆ THỐNG",
+      timestamp: now,
+    },
+  ]
+
+  return {
+    encounterId,
+    turnNumber: 1,
+    currentTurnActorId,
+    turnQueue,
+    player,
+    enemy,
+    status: initialStatus,
+    logs,
+  }
+}
+
+/** Tính toán sát thương dựa trên Công, Thủ, Giảm giáp, Giảm sát thương và Bạo kích */
+export function calculateCombatDamage(
+  attacker: CombatUnit,
+  defender: CombatUnit,
+  skill: CombatSkill,
+): { damage: number; isCrit: boolean; reducedByGuard: boolean } {
+  // Kiểm tra hiệu ứng giảm giáp trên mục tiêu
+  const armorBreakEffect = defender.statusEffects.find((e) => e.type === "armor-break")
+  const defenseMultiplier = armorBreakEffect ? Math.max(0.2, 1 - armorBreakEffect.value) : 1
+  const effectiveDefense = Math.max(0, defender.defense * defenseMultiplier)
+
+  // Sát thương cơ bản
+  const skillMult = skill.damageMultiplier || 1.0
+  const baseAttackPower = attacker.attack * skillMult
+
+  // Công thức giảm trừ phòng thủ sci-fi
+  let rawDamage = Math.max(15, Math.round(baseAttackPower - effectiveDefense * 0.65))
+
+  // Biến thiên ngẫu nhiên nhẹ (±6%)
+  const variance = 0.94 + Math.random() * 0.12
+  rawDamage = Math.round(rawDamage * variance)
+
+  // Tỉ lệ chí mạng (15% cho Vanguard, 10% cho địch)
+  const critChance = attacker.isPlayer ? 0.15 : 0.1
+  const isCrit = Math.random() < critChance
+  if (isCrit) {
+    rawDamage = Math.round(rawDamage * 1.5)
+  }
+
+  // Kiểm tra hiệu ứng phòng thủ (Emergency Guard / Fortify) trên mục tiêu
+  const guardEffect = defender.statusEffects.find((e) => e.type === "emergency-guard")
+  let reducedByGuard = false
+  if (guardEffect) {
+    rawDamage = Math.max(10, Math.round(rawDamage * (1 - guardEffect.value)))
+    reducedByGuard = true
+  }
+
+  return { damage: rawDamage, isCrit, reducedByGuard }
+}
+
+/** Cập nhật giảm thời gian hiệu lực buff/debuff và hồi chiêu kỹ năng */
+export function tickUnitTurn(unit: CombatUnit): void {
+  // Giảm thời gian hồi chiêu
+  for (const k of Object.keys(unit.skillCooldowns)) {
+    if (unit.skillCooldowns[k] > 0) {
+      unit.skillCooldowns[k] -= 1
+    }
+  }
+
+  // Giảm thời hạn trạng thái hiệu ứng
+  unit.statusEffects = unit.statusEffects
+    .map((effect) => ({
+      ...effect,
+      duration: effect.duration - 1,
+    }))
+    .filter((effect) => effect.duration > 0)
+
+  // Hồi phục nhẹ 5 SP tự nhiên mỗi lượt
+  unit.sp = Math.min(unit.maxSp, unit.sp + 5)
+}
+
+/** Thực hiện kỹ năng của Người chơi (Vanguard) */
+export function executePlayerAction(state: CombatState, skillId: string): CombatState {
+  if (state.status !== "player-turn") return state
+
+  const skill = state.player.skills.find((s) => s.id === skillId)
+  if (!skill) return state
+
+  // Kiểm tra SP và hồi chiêu
+  if (state.player.sp < skill.spCost) return state
+  if ((state.player.skillCooldowns[skill.id] || 0) > 0) return state
+
+  const player = cloneUnit(state.player)
+  const enemy = cloneUnit(state.enemy)
+  const now = new Date().toLocaleTimeString("vi-VN", { hour12: false })
+  const newLogs: CombatLogItem[] = [...state.logs]
+
+  // Trừ tiêu hao SP và đặt thời gian hồi chiêu
+  player.sp = Math.max(0, player.sp - skill.spCost)
+  if (skill.cooldown > 0) {
+    player.skillCooldowns[skill.id] = skill.cooldown
+  }
+
+  let lastActionData: CombatState["lastAction"]
+
+  if (skill.targetType === "self") {
+    // Kỹ năng bản thân: Lá Chắn Khẩn Cấp (Emergency Guard)
+    const guardEffect: StatusEffect = {
+      id: `guard-${Date.now()}`,
+      type: "emergency-guard",
+      name: "Lá Chắn Khẩn Cấp",
+      desc: "Giảm 50% toàn bộ sát thương nhận vào trong 2 lượt",
+      duration: skill.effectDuration || 2,
+      value: skill.damageReduction || 0.5,
+    }
+
+    // Thay thế hoặc làm mới hiệu ứng
+    player.statusEffects = player.statusEffects.filter((e) => e.type !== "emergency-guard")
+    player.statusEffects.push(guardEffect)
+
+    newLogs.push({
+      id: `log-${Date.now()}-guard`,
+      turn: state.turnNumber,
+      type: "status",
+      text: `[PHÒNG HỘ] Vanguard kích hoạt ${skill.name}! Tạo trường từ trường chắn giảm 50% sát thương gánh chịu trong ${guardEffect.duration} lượt.`,
+      actorName: player.name,
+      timestamp: now,
+    })
+
+    lastActionData = {
+      actorId: player.id,
+      skillName: skill.name,
+      effectApplied: "Lá Chắn Khẩn Cấp (-50% Sát thương)",
+    }
+  } else {
+    // Đòn tấn công hoặc kỹ năng đơn mục tiêu
+    if (skill.id === "basic-attack") {
+      // Hồi phục 15 SP khi dùng đòn cơ bản
+      player.sp = Math.min(player.maxSp, player.sp + 15)
+    }
+
+    const { damage, isCrit, reducedByGuard } = calculateCombatDamage(player, enemy, skill)
+    enemy.hp = Math.max(0, enemy.hp - damage)
+
+    let logText = `[TẤN CÔNG] Vanguard xuất kích ${skill.name} -> Đánh trúng ${enemy.name}, gây ${damage} sát thương!`
+    if (isCrit) {
+      logText = `[BẠO KÍCH 🔥] Vanguard bắn trúng điểm yếu bằng ${skill.name}! Gây ${damage} sát thương chí mạng!`
+    }
+    if (reducedByGuard) {
+      logText += ` (Giảm thiểu bởi giáp chắn của địch)`
+    }
+
+    newLogs.push({
+      id: `log-${Date.now()}-atk`,
+      turn: state.turnNumber,
+      type: isCrit ? "crit" : "player-action",
+      text: logText,
+      actorName: player.name,
+      targetName: enemy.name,
+      value: damage,
+      timestamp: now,
+    })
+
+    // Xử lý hiệu ứng Phá Giáp Cơ Khí (Armor Break)
+    if (skill.defenseReduction && skill.effectDuration) {
+      const armorBreak: StatusEffect = {
+        id: `ab-${Date.now()}`,
+        type: "armor-break",
+        name: "Vỡ Vỏ Giáp",
+        desc: `Giảm ${Math.round((skill.defenseReduction || 0.35) * 100)}% phòng ngự`,
+        duration: skill.effectDuration,
+        value: skill.defenseReduction,
+      }
+      enemy.statusEffects = enemy.statusEffects.filter((e) => e.type !== "armor-break")
+      enemy.statusEffects.push(armorBreak)
+
+      newLogs.push({
+        id: `log-${Date.now()}-ab`,
+        turn: state.turnNumber,
+        type: "status",
+        text: `[HIỆU ỨNG ⚡] Vỏ giáp của ${enemy.name} bị nứt toác! Phòng ngự suy giảm 35% trong ${armorBreak.duration} lượt.`,
+        actorName: player.name,
+        targetName: enemy.name,
+        timestamp: now,
+      })
+    }
+
+    lastActionData = {
+      actorId: player.id,
+      skillName: skill.name,
+      damage,
+      isCrit,
+    }
+  }
+
+  // Kiểm tra điều kiện Thắng
+  if (enemy.hp <= 0) {
+    newLogs.push({
+      id: `log-${Date.now()}-vic`,
+      turn: state.turnNumber,
+      type: "victory",
+      text: `[CHIẾN THẮNG 🏆] Mục tiêu ${enemy.name} đã bị phá hủy hoàn toàn! Chiến cơ Vanguard toàn thắng trở về căn cứ!`,
+      actorName: "HỆ THỐNG",
+      timestamp: now,
+    })
+
+    return {
+      ...state,
+      player,
+      enemy,
+      status: "victory",
+      logs: newLogs,
+      lastAction: lastActionData,
+    }
+  }
+
+  // Kết thúc lượt người chơi -> Chuyển sang lượt kẻ địch
+  tickUnitTurn(player)
+
+  return {
+    ...state,
+    player,
+    enemy,
+    status: "enemy-turn",
+    currentTurnActorId: enemy.id,
+    logs: newLogs,
+    lastAction: lastActionData,
+  }
+}
+
+/** Trí tuệ nhân tạo (AI) quyết định hành động của Kẻ địch */
+export function executeEnemyAIAction(state: CombatState): CombatState {
+  if (state.status !== "enemy-turn" || state.enemy.hp <= 0) return state
+
+  const enemy = cloneUnit(state.enemy)
+  const player = cloneUnit(state.player)
+  const now = new Date().toLocaleTimeString("vi-VN", { hour12: false })
+  const newLogs: CombatLogItem[] = [...state.logs]
+
+  // Chọn chiêu thức thông minh tùy thuộc loại kẻ địch
+  let selectedSkill: CombatSkill = enemy.skills[0]
+
+  if (enemy.gearType === "scout-drone") {
+    // Scout Drone: Dùng EMP nếu đủ SP và hết cooldown
+    const empSkill = enemy.skills.find((s) => s.id === "drone-emp")
+    if (empSkill && enemy.sp >= empSkill.spCost && (enemy.skillCooldowns[empSkill.id] || 0) <= 0) {
+      selectedSkill = empSkill
+    }
+  } else if (enemy.gearType === "raider-mech") {
+    // Raider Mech: Ưu tiên Tên lửa định hướng
+    const missile = enemy.skills.find((s) => s.id === "mech-missile")
+    if (missile && enemy.sp >= missile.spCost && (enemy.skillCooldowns[missile.id] || 0) <= 0) {
+      selectedSkill = missile
+    }
+  } else if (enemy.gearType === "siege-walker") {
+    // Siege Walker: Nếu máu dưới 50% thì kích hoạt khiên titan, còn lại xả mưa pháo
+    const fortify = enemy.skills.find((s) => s.id === "siege-fortify")
+    const barrage = enemy.skills.find((s) => s.id === "siege-barrage")
+
+    const hasShield = enemy.statusEffects.some((e) => e.type === "emergency-guard")
+    if (
+      enemy.hp < enemy.maxHp * 0.5 &&
+      !hasShield &&
+      fortify &&
+      enemy.sp >= fortify.spCost &&
+      (enemy.skillCooldowns[fortify.id] || 0) <= 0
+    ) {
+      selectedSkill = fortify
+    } else if (barrage && enemy.sp >= barrage.spCost && (enemy.skillCooldowns[barrage.id] || 0) <= 0) {
+      selectedSkill = barrage
+    }
+  }
+
+  // Tiêu hao SP & Cooldown
+  enemy.sp = Math.max(0, enemy.sp - selectedSkill.spCost)
+  if (selectedSkill.cooldown > 0) {
+    enemy.skillCooldowns[selectedSkill.id] = selectedSkill.cooldown
+  }
+
+  let lastActionData: CombatState["lastAction"]
+
+  if (selectedSkill.targetType === "self") {
+    const shieldEffect: StatusEffect = {
+      id: `enemy-shield-${Date.now()}`,
+      type: "emergency-guard",
+      name: "Tấm Chắn Titan",
+      desc: "Giảm 40% sát thương nhận vào trong 2 lượt",
+      duration: selectedSkill.effectDuration || 2,
+      value: selectedSkill.damageReduction || 0.4,
+    }
+    enemy.statusEffects = enemy.statusEffects.filter((e) => e.type !== "emergency-guard")
+    enemy.statusEffects.push(shieldEffect)
+
+    newLogs.push({
+      id: `log-${Date.now()}-eshield`,
+      turn: state.turnNumber,
+      type: "status",
+      text: `[PHÒNG THỦ KẺ ĐỊCH] ${enemy.name} kích hoạt ${selectedSkill.name}! Giảm 40% sát thương gánh chịu trong 2 lượt.`,
+      actorName: enemy.name,
+      timestamp: now,
+    })
+
+    lastActionData = {
+      actorId: enemy.id,
+      skillName: selectedSkill.name,
+      effectApplied: "Tấm Chắn Titan",
+    }
+  } else {
+    const { damage, isCrit, reducedByGuard } = calculateCombatDamage(enemy, player, selectedSkill)
+    player.hp = Math.max(0, player.hp - damage)
+
+    let logText = `[ĐỊCH TẤN CÔNG 💥] ${enemy.name} dùng ${selectedSkill.name} bắn trúng Vanguard! Gây ${damage} sát thương.`
+    if (isCrit) {
+      logText = `[BẠO KÍCH KẺ ĐỊCH ⚠️] ${enemy.name} kích hoạt hỏa lực cực đại với ${selectedSkill.name}! Gây ${damage} sát thương bùng nổ!`
+    }
+    if (reducedByGuard) {
+      logText += ` (Lá Chắn Khẩn Cấp của Vanguard đã triệt tiêu 50% sát thương)`
+    }
+
+    newLogs.push({
+      id: `log-${Date.now()}-eatk`,
+      turn: state.turnNumber,
+      type: isCrit ? "crit" : "enemy-action",
+      text: logText,
+      actorName: enemy.name,
+      targetName: player.name,
+      value: damage,
+      timestamp: now,
+    })
+
+    lastActionData = {
+      actorId: enemy.id,
+      skillName: selectedSkill.name,
+      damage,
+      isCrit,
+    }
+  }
+
+  // Kiểm tra điều kiện Thất bại
+  if (player.hp <= 0) {
+    newLogs.push({
+      id: `log-${Date.now()}-def`,
+      turn: state.turnNumber,
+      type: "defeat",
+      text: `[THẤT BẠI 💀] Vỏ giáp của Vanguard bị phá hủy hoàn toàn! Phi công buộc phải kích hoạt buồng phóng thoát hiểm.`,
+      actorName: "HỆ THỐNG",
+      timestamp: now,
+    })
+
+    return {
+      ...state,
+      player,
+      enemy,
+      status: "defeat",
+      logs: newLogs,
+      lastAction: lastActionData,
+    }
+  }
+
+  // Kết thúc lượt địch -> Chuyển sang lượt người chơi, tăng số vòng đấu
+  tickUnitTurn(enemy)
+
+  return {
+    ...state,
+    player,
+    enemy,
+    turnNumber: state.turnNumber + 1,
+    status: "player-turn",
+    currentTurnActorId: player.id,
+    logs: newLogs,
+    lastAction: lastActionData,
+  }
+}

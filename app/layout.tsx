@@ -16,9 +16,9 @@ const rajdhani = Rajdhani({
 })
 
 export const metadata: Metadata = {
-  title: 'STELLAR COMMAND // ACE Fleet Ops',
+  title: 'STARFRONT // 2D Sci-Fi Gear RPG',
   description:
-    'Sở chỉ huy hạm đội phi thuyền — quản lý A/B/I/M-Gear, vũ khí, trang bị, căn cứ và điều binh đánh chiếm khu vực.',
+    'Game nhập vai chiến thuật cơ giáp theo lượt 2D nguyên bản lấy cảm hứng từ bầu không khí ACE Online.',
   generator: 'v0.app',
 }
 

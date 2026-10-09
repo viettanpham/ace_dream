@@ -469,3 +469,234 @@ export const SECTORS: Sector[] = [
 ]
 
 export const STARTING_GEAR_NAMES = ["Vanguard", "Aegis", "Falcon", "Oracle"]
+
+/* ==========================================================================
+   PHASE 1 — COMBAT DATA (VANGUARD GEAR, 3 SKILLS, 3 ENEMIES)
+   ========================================================================== */
+
+export const VANGUARD_SKILLS: CombatSkill[] = [
+  {
+    id: "basic-attack",
+    name: "Pháo Năng Lượng Thường",
+    nameEn: "Photon Blaster",
+    desc: "Bắn loạt pháo photon cơ bản gây 100% sát thương và nạp lại 15 SP lõi năng lượng.",
+    spCost: 0,
+    cooldown: 0,
+    targetType: "single-enemy",
+    damageMultiplier: 1.0,
+  },
+  {
+    id: "pulse-strike",
+    name: "Xung Kích Quang",
+    nameEn: "Pulse Strike",
+    desc: "Tập trung năng lượng phóng chùm xung kích cực mạnh gây 150% sát thương trực tiếp.",
+    spCost: 25,
+    cooldown: 0,
+    targetType: "single-enemy",
+    damageMultiplier: 1.5,
+  },
+  {
+    id: "armor-break",
+    name: "Phá Giáp Cơ Khí",
+    nameEn: "Armor Break",
+    desc: "Bắn đạn xuyên giáp gây 115% sát thương và phá hủy kết cấu giáp mục tiêu, giảm 35% phòng thủ trong 2 lượt.",
+    spCost: 35,
+    cooldown: 3,
+    targetType: "single-enemy",
+    damageMultiplier: 1.15,
+    defenseReduction: 0.35,
+    effectDuration: 2,
+  },
+  {
+    id: "emergency-guard",
+    name: "Lá Chắn Khẩn Cấp",
+    nameEn: "Emergency Guard",
+    desc: "Kích hoạt trường lực từ trường khẩn cấp, giảm 50% mọi sát thương nhận vào trong 2 lượt tiếp theo.",
+    spCost: 30,
+    cooldown: 4,
+    targetType: "self",
+    damageReduction: 0.5,
+    effectDuration: 2,
+  },
+]
+
+export const VANGUARD_INITIAL_UNIT: CombatUnit = {
+  id: "player-vanguard",
+  name: "Vanguard Gear",
+  title: "Chiến Cơ Tiên Phong Vũ Trụ",
+  gearType: "vanguard",
+  isPlayer: true,
+  hp: 1250,
+  maxHp: 1250,
+  sp: 100,
+  maxSp: 100,
+  attack: 145,
+  defense: 75,
+  speed: 85,
+  statusEffects: [],
+  skills: VANGUARD_SKILLS,
+  skillCooldowns: {},
+  avatar: "/images/alviss-portrait.png",
+}
+
+export const ENEMIES_DATA: Record<EnemyEncounterType, CombatUnit> = {
+  "scout-drone": {
+    id: "enemy-scout-drone",
+    name: "Drone Trinh Sát",
+    title: "Thiết Bị Bay Tốc Độ Cao",
+    gearType: "scout-drone",
+    isPlayer: false,
+    hp: 680,
+    maxHp: 680,
+    sp: 60,
+    maxSp: 60,
+    attack: 105,
+    defense: 35,
+    speed: 110, // Hành động trước Vanguard nhờ tốc độ cao
+    statusEffects: [],
+    skills: [
+      {
+        id: "drone-blaster",
+        name: "Tia Laser Quét",
+        nameEn: "Scan Laser",
+        desc: "Bắn chùm laser thăm dò tốc độ cao.",
+        spCost: 0,
+        cooldown: 0,
+        targetType: "single-enemy",
+        damageMultiplier: 1.0,
+      },
+      {
+        id: "drone-emp",
+        name: "Sóng Nhiễu Điện Từ",
+        nameEn: "EMP Pulse",
+        desc: "Phóng sóng EMP làm nhiễu cảm biến, gây 125% sát thương.",
+        spCost: 20,
+        cooldown: 2,
+        targetType: "single-enemy",
+        damageMultiplier: 1.25,
+      },
+    ],
+    skillCooldowns: {},
+  },
+  "raider-mech": {
+    id: "enemy-raider-mech",
+    name: "Cơ Giáp Đột Kích",
+    title: "Chiến Binh Tiền Tuyến Không Gian",
+    gearType: "raider-mech",
+    isPlayer: false,
+    hp: 1150,
+    maxHp: 1150,
+    sp: 90,
+    maxSp: 90,
+    attack: 135,
+    defense: 65,
+    speed: 78,
+    statusEffects: [],
+    skills: [
+      {
+        id: "mech-autocannon",
+        name: "Pháo Tự Động Siêu Tốc",
+        nameEn: "Autocannon Burst",
+        desc: "Loạt đạn bắn liên thanh tầm trung.",
+        spCost: 0,
+        cooldown: 0,
+        targetType: "single-enemy",
+        damageMultiplier: 1.0,
+      },
+      {
+        id: "mech-missile",
+        name: "Loạt Tên Lửa Định Hướng",
+        nameEn: "Homing Missiles",
+        desc: "Bắn 4 quả tên lửa gây 140% sát thương bùng nổ.",
+        spCost: 30,
+        cooldown: 2,
+        targetType: "single-enemy",
+        damageMultiplier: 1.4,
+      },
+    ],
+    skillCooldowns: {},
+  },
+  "siege-walker": {
+    id: "enemy-siege-walker",
+    name: "Pháo Đài Công Thành",
+    title: "Cơ Giáp Trùm Hạng Nặng (Boss)",
+    gearType: "siege-walker",
+    isPlayer: false,
+    hp: 2500,
+    maxHp: 2500,
+    sp: 120,
+    maxSp: 120,
+    attack: 175,
+    defense: 105,
+    speed: 52, // Tốc độ chậm nhưng phòng thủ và sát thương cực cao
+    statusEffects: [],
+    skills: [
+      {
+        id: "siege-cannon",
+        name: "Đại Pháo Hạng Nặng",
+        nameEn: "Heavy Siege Shell",
+        desc: "Bắn đạn pháo hạt nhân công phá cực mạnh.",
+        spCost: 0,
+        cooldown: 0,
+        targetType: "single-enemy",
+        damageMultiplier: 1.1,
+      },
+      {
+        id: "siege-barrage",
+        name: "Mưa Pháo Hủy Diệt",
+        nameEn: "Devastator Barrage",
+        desc: "Xả hỏa lực hủy diệt toàn lực gây 165% sát thương.",
+        spCost: 40,
+        cooldown: 3,
+        targetType: "single-enemy",
+        damageMultiplier: 1.65,
+      },
+      {
+        id: "siege-fortify",
+        name: "Tăng Cường Vỏ Giáp",
+        nameEn: "Titan Plating",
+        desc: "Kích hoạt tấm chắn gia cố, giảm 40% sát thương nhận vào trong 2 lượt.",
+        spCost: 35,
+        cooldown: 4,
+        targetType: "self",
+        damageReduction: 0.4,
+        effectDuration: 2,
+      },
+    ],
+    skillCooldowns: {},
+  },
+}
+
+export const ENCOUNTER_INFO: {
+  id: EnemyEncounterType
+  name: string
+  subtitle: string
+  difficulty: "Dễ" | "Trung bình" | "Thử thách (Boss)"
+  desc: string
+  color: string
+}[] = [
+  {
+    id: "scout-drone",
+    name: "Drone Trinh Sát",
+    subtitle: "Mục tiêu 01 — Trinh sát cơ động",
+    difficulty: "Dễ",
+    desc: "Tốc độ nhanh (Speed 110), ra đòn trước Vanguard. Máu mỏng, thích hợp để thử nghiệm các chuỗi kỹ năng.",
+    color: "#38bdf8",
+  },
+  {
+    id: "raider-mech",
+    name: "Cơ Giáp Đột Kích",
+    subtitle: "Mục tiêu 02 — Cơ giáp chiến đấu quy ước",
+    difficulty: "Trung bình",
+    desc: "Chỉ số cân bằng toàn diện, trang bị tên lửa định hướng. Yêu cầu tính toán SP và thời điểm phòng thủ hợp lý.",
+    color: "#f59e0b",
+  },
+  {
+    id: "siege-walker",
+    name: "Pháo Đài Công Thành",
+    subtitle: "Mục tiêu 03 — Trùm cơ giáp thiết giáp",
+    difficulty: "Thử thách (Boss)",
+    desc: "Máu dày (2,500 HP), giáp kiên cố (105 Giáp) và hỏa lực khủng khiếp. Cần dùng Phá Giáp Cơ Khí để hạ gục.",
+    color: "#ef4444",
+  },
+]

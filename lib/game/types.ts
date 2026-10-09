@@ -226,3 +226,97 @@ export type GameState = {
   lastBattle: BattleResult | null
   eventLog: { day: number; text: string }[]
 }
+
+/* ==========================================================================
+   PHASE 1 — TURN-BASED COMBAT PROTOTYPE TYPES
+   ========================================================================== */
+
+export type CombatSkillId = "pulse-strike" | "armor-break" | "emergency-guard" | "basic-attack"
+
+export type CombatStatusType = "armor-break" | "emergency-guard" | "recharge" | "stun"
+
+export type StatusEffect = {
+  id: string
+  type: CombatStatusType
+  name: string
+  desc: string
+  duration: number // turns remaining
+  value: number // magnitude (e.g. 0.35 defense reduction or 0.50 damage mitigation)
+}
+
+export type CombatSkill = {
+  id: string
+  name: string
+  nameEn: string
+  desc: string
+  spCost: number
+  cooldown: number // turn cooldown
+  targetType: "single-enemy" | "self"
+  damageMultiplier?: number
+  defenseReduction?: number
+  damageReduction?: number
+  effectDuration?: number
+  icon?: string
+}
+
+export type CombatUnit = {
+  id: string
+  name: string
+  title: string
+  gearType: "vanguard" | "scout-drone" | "raider-mech" | "siege-walker"
+  isPlayer: boolean
+  hp: number
+  maxHp: number
+  sp: number
+  maxSp: number
+  attack: number
+  defense: number
+  speed: number
+  statusEffects: StatusEffect[]
+  skills: CombatSkill[]
+  skillCooldowns: Record<string, number>
+  avatar?: string
+}
+
+export type CombatLogType =
+  | "player-action"
+  | "enemy-action"
+  | "damage"
+  | "status"
+  | "crit"
+  | "victory"
+  | "defeat"
+  | "system"
+
+export type CombatLogItem = {
+  id: string
+  turn: number
+  text: string
+  type: CombatLogType
+  actorName: string
+  targetName?: string
+  value?: number
+  timestamp: string
+}
+
+export type BattleStatus = "ready" | "player-turn" | "enemy-turn" | "animating" | "victory" | "defeat"
+
+export type EnemyEncounterType = "scout-drone" | "raider-mech" | "siege-walker"
+
+export type CombatState = {
+  encounterId: EnemyEncounterType
+  turnNumber: number
+  currentTurnActorId: string
+  turnQueue: string[]
+  player: CombatUnit
+  enemy: CombatUnit
+  status: BattleStatus
+  logs: CombatLogItem[]
+  lastAction?: {
+    actorId: string
+    skillName: string
+    damage?: number
+    isCrit?: boolean
+    effectApplied?: string
+  }
+}

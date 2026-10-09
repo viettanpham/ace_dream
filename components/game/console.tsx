@@ -18,7 +18,7 @@ import { PilotPanel } from "./pilot-panel"
 type Tab = "combat" | "dashboard" | "pilot" | "fleet" | "equipment" | "base" | "map" | "war"
 
 const NAV: { id: Tab; label: string; icon: typeof Radar; badge?: string }[] = [
-  { id: "combat", label: "STARFRONT (P1-2)", icon: Swords, badge: "Tiến trình" },
+  { id: "combat", label: "STARFRONT (P1-3)", icon: Swords, badge: "Chiến dịch" },
   { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
   { id: "pilot", label: "Nhân vật", icon: UserRound },
   { id: "fleet", label: "Hạm đội", icon: Rocket },
@@ -77,7 +77,7 @@ function ConsoleBody() {
         })}
         <div className="mt-auto hidden px-3 py-2 md:block">
           <p className="text-[9px] leading-relaxed text-muted-foreground/70">
-            STARFRONT Phase 1: Thử nghiệm đấu trường theo lượt Vanguard Gear.
+            STARFRONT Phase 3: Bản đồ chiến dịch 3 Sector, 3 lớp Cơ Giáp (Vanguard, Falcon, Aegis), Chợ quân sự và Hiệu ứng âm thanh Sci-Fi.
           </p>
         </div>
       </nav>

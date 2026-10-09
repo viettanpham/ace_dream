@@ -1,7 +1,17 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { ENCOUNTER_INFO } from "@/lib/game/data"
+import { ENCOUNTER_INFO, STARFRONT_GEAR_DEFS } from "@/lib/game/data"
+import {
+  isAudioMuted,
+  playClickSound,
+  playImpactSound,
+  playLaserSound,
+  playLevelUpSound,
+  playShieldSound,
+  playVictorySound,
+  setAudioMuted,
+} from "@/lib/game/audio"
 import {
   createInitialCombatState,
   executeEnemyAIAction,
@@ -9,8 +19,9 @@ import {
 } from "@/lib/game/engine"
 import {
   applyDefeatRecord,
+  applyMissionClearReward,
   applyVictoryReward,
-  buildVanguardCombatUnit,
+  buildPlayerCombatUnit,
   getExpRequiredForLevel,
   INITIAL_STARFRONT_PROGRESSION,
 } from "@/lib/game/progression"
@@ -21,8 +32,10 @@ import {
 } from "@/lib/game/storage"
 import type {
   BattleRewardResult,
+  CampaignMission,
   CombatState,
   EnemyEncounterType,
+  StarfrontGearId,
   StarfrontItem,
   StarfrontItemSlot,
   StarfrontProgression,
@@ -30,35 +43,44 @@ import type {
 import { cn } from "@/lib/utils"
 import {
   AlertTriangle,
+  ArrowLeft,
   Boxes,
   CheckCircle2,
   Coins,
   Flame,
   Gauge,
+  Globe2,
   Play,
   RotateCcw,
   Shield,
   ShieldAlert,
+  ShoppingBag,
   Sparkles,
   Sword,
   Target,
   Trophy,
+  Volume2,
+  VolumeX,
   Wrench,
   Zap,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
+import { CampaignMap } from "./campaign-map"
 import { StarfrontHangar } from "./starfront-hangar"
+import { StarfrontShop } from "./starfront-shop"
 
 export function CombatArena() {
-  // 1. Quản lý tiến trình STARFRONT (Level, EXP, Credits, Trang bị)
+  // 1. Quản lý tiến trình STARFRONT (Level, EXP, Credits, Trang bị, Gears, Chiến dịch)
   const [progression, setProgression] = useState<StarfrontProgression>(INITIAL_STARFRONT_PROGRESSION)
   const [hasLoadedProgression, setHasLoadedProgression] = useState(false)
-  const [activeSubView, setActiveSubView] = useState<"combat" | "hangar">("combat")
+  const [activeSubView, setActiveSubView] = useState<"combat" | "campaign" | "hangar" | "shop">("combat")
+  const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(null)
+  const [audioMuted, setAudioMutedState] = useState(false)
 
   // 2. Trạng thái chiến đấu
   const [selectedEncounter, setSelectedEncounter] = useState<EnemyEncounterType>("scout-drone")
   const [combatState, setCombatState] = useState<CombatState>(() =>
-    createInitialCombatState("scout-drone", buildVanguardCombatUnit(INITIAL_STARFRONT_PROGRESSION)),
+    createInitialCombatState("scout-drone", buildPlayerCombatUnit(INITIAL_STARFRONT_PROGRESSION)),
   )
   const [isProcessingAI, setIsProcessingAI] = useState(false)
   const [floatingNotification, setFloatingNotification] = useState<{
@@ -74,6 +96,8 @@ export function CombatArena() {
   const [lastVictoryReward, setLastVictoryReward] = useState<{
     reward: BattleRewardResult
     dropItem?: StarfrontItem
+    missionTitle?: string
+    isFirstClear?: boolean
   } | null>(null)
 
   const logContainerRef = useRef<HTMLDivElement>(null)
@@ -83,9 +107,10 @@ export function CombatArena() {
     const saved = loadStarfrontProgression()
     setProgression(saved)
     setHasLoadedProgression(true)
+    setAudioMutedState(isAudioMuted())
     // Cập nhật trận đấu ban đầu với chỉ số thực tế
-    const customVanguard = buildVanguardCombatUnit(saved)
-    setCombatState(createInitialCombatState("scout-drone", customVanguard))
+    const customPlayer = buildPlayerCombatUnit(saved)
+    setCombatState(createInitialCombatState("scout-drone", customPlayer))
   }, [])
 
   // Tự động lưu tiến trình mỗi khi có thay đổi quan trọng (EXP, Level, Credits, Trang bị)
@@ -106,6 +131,9 @@ export function CombatArena() {
       if (prev.status !== "enemy-turn" || prev.enemy.hp <= 0) return prev
       const next = executeEnemyAIAction(prev)
       if (next.lastAction) {
+        if (next.lastAction.damage) {
+          playImpactSound(next.lastAction.isCrit)
+        }
         setFloatingNotification({
           text: next.lastAction.damage
             ? `-${next.lastAction.damage} HP`
@@ -124,19 +152,46 @@ export function CombatArena() {
   const handleStartEncounter = (
     encounterId: EnemyEncounterType,
     currentProg: StarfrontProgression = progression,
+    missionContext?: CampaignMission | null,
   ) => {
     if (aiTimeoutRef.current) {
       clearTimeout(aiTimeoutRef.current)
       aiTimeoutRef.current = null
     }
     setSelectedEncounter(encounterId)
+    if (missionContext !== undefined) {
+      setActiveCampaignMission(missionContext)
+    }
     setIsProcessingAI(false)
     rewardClaimedRef.current = false
     defeatRecordedRef.current = false
     setLastVictoryReward(null)
 
-    const vanguardUnit = buildVanguardCombatUnit(currentProg)
-    setCombatState(createInitialCombatState(encounterId, vanguardUnit))
+    const playerUnit = buildPlayerCombatUnit(currentProg)
+    setCombatState(createInitialCombatState(encounterId, playerUnit))
+  }
+
+  // Đổi lớp Gear (Vanguard, Falcon, Aegis)
+  const handleSelectGear = (gearId: StarfrontGearId) => {
+    playClickSound()
+    setProgression((prev) => {
+      const updated: StarfrontProgression = {
+        ...prev,
+        activeGearId: gearId,
+      }
+      handleStartEncounter(selectedEncounter, updated, activeCampaignMission)
+      return updated
+    })
+  }
+
+  // Bật / Tắt âm thanh Sci-Fi Web Audio
+  const handleToggleAudio = () => {
+    const nextMute = !audioMuted
+    setAudioMutedState(nextMute)
+    setAudioMuted(nextMute)
+    if (!nextMute) {
+      playClickSound()
+    }
   }
 
   // Tự động cuộn xuống cuối nhật ký
@@ -166,18 +221,39 @@ export function CombatArena() {
     }
   }, [combatState.status, combatState.turnNumber])
 
-  // Xử lý trao thưởng duy nhất 1 lần khi CHIẾN THẮNG (Không bị lặp lại khi render)
+  // Xử lý trao thưởng duy nhất 1 lần khi CHIẾN THẮNG (Tích hợp thưởng Ải Chiến Dịch & Đấu Trường)
   useEffect(() => {
     if (combatState.status === "victory" && !rewardClaimedRef.current) {
       rewardClaimedRef.current = true
+      playVictorySound()
 
       setProgression((prev) => {
-        const { updated, reward, dropItem } = applyVictoryReward(prev, selectedEncounter)
-        setLastVictoryReward({ reward, dropItem })
-        return updated
+        if (activeCampaignMission) {
+          const { updated, reward, dropItem, isFirstClear } = applyMissionClearReward(
+            prev,
+            activeCampaignMission,
+          )
+          if (reward.leveledUp) {
+            setTimeout(playLevelUpSound, 600)
+          }
+          setLastVictoryReward({
+            reward,
+            dropItem,
+            missionTitle: activeCampaignMission.title,
+            isFirstClear,
+          })
+          return updated
+        } else {
+          const { updated, reward, dropItem } = applyVictoryReward(prev, selectedEncounter)
+          if (reward.leveledUp) {
+            setTimeout(playLevelUpSound, 600)
+          }
+          setLastVictoryReward({ reward, dropItem })
+          return updated
+        }
       })
     }
-  }, [combatState.status, selectedEncounter])
+  }, [combatState.status, selectedEncounter, activeCampaignMission])
 
   // Xử lý ghi nhận trận thua duy nhất 1 lần khi THẤT BẠI
   useEffect(() => {
@@ -191,8 +267,18 @@ export function CombatArena() {
   const handleUseSkill = (skillId: string) => {
     if (combatState.status !== "player-turn" || isProcessingAI) return
 
+    const skill = combatState.player.skills.find((s) => s.id === skillId)
+    if (skill?.targetType === "self") {
+      playShieldSound()
+    } else {
+      playLaserSound()
+    }
+
     const next = executePlayerAction(combatState, skillId)
     if (next.lastAction) {
+      if (next.lastAction.damage) {
+        setTimeout(() => playImpactSound(next.lastAction?.isCrit), 80)
+      }
       setFloatingNotification({
         text: next.lastAction.damage
           ? `-${next.lastAction.damage} HP`
@@ -207,6 +293,7 @@ export function CombatArena() {
 
   // Thao tác Trang bị vật phẩm trong Hangar
   const handleEquipItem = (itemId: string, slot: StarfrontItemSlot) => {
+    playClickSound()
     setProgression((prev) => {
       const updated: StarfrontProgression = {
         ...prev,
@@ -221,6 +308,7 @@ export function CombatArena() {
 
   // Thao tác Tháo trang bị trong Hangar
   const handleUnequipSlot = (slot: StarfrontItemSlot) => {
+    playClickSound()
     setProgression((prev) => {
       const updated: StarfrontProgression = {
         ...prev,
@@ -235,9 +323,10 @@ export function CombatArena() {
 
   // Reset toàn bộ tiến trình
   const handleResetSave = () => {
+    playClickSound()
     const fresh = resetStarfrontProgression()
     setProgression(fresh)
-    handleStartEncounter("scout-drone", fresh)
+    handleStartEncounter("scout-drone", fresh, null)
   }
 
   const { player, enemy, status, logs, turnNumber } = combatState
@@ -248,6 +337,7 @@ export function CombatArena() {
 
   const expRequired = getExpRequiredForLevel(progression.level)
   const expPct = Math.min(100, Math.round((progression.exp / expRequired) * 100))
+  const activeGearDef = STARFRONT_GEAR_DEFS[progression.activeGearId || "vanguard"] || STARFRONT_GEAR_DEFS.vanguard
 
   return (
     <div className="flex flex-col gap-4">
@@ -258,12 +348,12 @@ export function CombatArena() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2.5">
               <span className="flex size-8 items-center justify-center rounded-xs bg-cyan-500/20 font-mono text-sm font-black text-cyan-300 border border-cyan-500/60 shadow-[0_0_10px_rgba(34,211,238,0.3)]">
-                V
+                {activeGearDef.name.charAt(0)}
               </span>
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-display text-sm font-bold text-white tracking-wider">
-                    VANGUARD GEAR
+                    {activeGearDef.name.toUpperCase()}
                   </span>
                   <span className="rounded bg-cyan-500/20 px-1.5 py-0.2 font-mono text-xs font-bold text-cyan-300 border border-cyan-500/40">
                     CẤP {progression.level}
@@ -291,52 +381,149 @@ export function CombatArena() {
             </div>
           </div>
 
-          {/* Nút chuyển đổi giữa Đấu trường và Xưởng trang bị */}
-          <div className="flex items-center gap-1.5">
+          {/* Nút chuyển đổi giữa Đấu trường, Bản đồ chiến dịch, Hangar và Chợ */}
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
-              onClick={() => setActiveSubView("combat")}
+              onClick={() => {
+                playClickSound()
+                setActiveSubView("combat")
+              }}
               className={cn(
-                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all",
+                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
                 activeSubView === "combat"
                   ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
                   : "border-border/60 text-muted-foreground hover:text-foreground",
               )}
             >
               <Sword className="size-3.5" />
-              <span>Đấu Trường Tác Chiến</span>
+              <span>Đấu Trường</span>
             </button>
 
             <button
-              onClick={() => setActiveSubView("hangar")}
+              onClick={() => {
+                playClickSound()
+                setActiveSubView("campaign")
+              }}
               className={cn(
-                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all",
+                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
+                activeSubView === "campaign"
+                  ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
+                  : "border-border/60 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Globe2 className="size-3.5 text-cyan-400" />
+              <span>Bản Đồ Chiến Dịch ({progression.completedMissions.length}/9)</span>
+            </button>
+
+            <button
+              onClick={() => {
+                playClickSound()
+                setActiveSubView("hangar")
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
                 activeSubView === "hangar"
                   ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
                   : "border-border/60 text-muted-foreground hover:text-foreground",
               )}
             >
               <Boxes className="size-3.5" />
-              <span>Kho Đồ & Trang Bị ({progression.inventory.length})</span>
+              <span>Kho Đồ & Hangar ({progression.inventory.length})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                playClickSound()
+                setActiveSubView("shop")
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
+                activeSubView === "shop"
+                  ? "border-amber-400 bg-amber-950/80 text-amber-200 font-bold shadow-[0_0_10px_rgba(251,191,36,0.25)]"
+                  : "border-border/60 text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <ShoppingBag className="size-3.5 text-amber-400" />
+              <span>Chợ Quân Sự</span>
+            </button>
+
+            {/* Nút bật tắt âm thanh Web Audio */}
+            <button
+              onClick={handleToggleAudio}
+              title={audioMuted ? "Bật âm thanh Sci-Fi" : "Tắt âm thanh"}
+              className="flex size-7 items-center justify-center rounded-xs border border-border/60 bg-black/40 text-muted-foreground hover:text-foreground hover:border-cyan-400 cursor-pointer transition-colors ml-1"
+            >
+              {audioMuted ? <VolumeX className="size-3.5 text-red-400" /> : <Volume2 className="size-3.5 text-cyan-400" />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* HIỂN THỊ PHÂN HỆ THEO TAB: HANGAR HOẶC COMBAT ARENA */}
-      {activeSubView === "hangar" ? (
+      {/* HIỂN THỊ PHÂN HỆ THEO TAB: CHIẾN DỊCH, CHỢ, HANGAR HOẶC COMBAT ARENA */}
+      {activeSubView === "campaign" && (
+        <CampaignMap
+          progression={progression}
+          onDeployMission={(mission) => {
+            setActiveCampaignMission(mission)
+            setActiveSubView("combat")
+            handleStartEncounter(mission.encounterId, progression, mission)
+          }}
+        />
+      )}
+
+      {activeSubView === "shop" && (
+        <StarfrontShop
+          progression={progression}
+          onUpdateProgression={(updated) => setProgression(updated)}
+        />
+      )}
+
+      {activeSubView === "hangar" && (
         <StarfrontHangar
           progression={progression}
           onEquipItem={handleEquipItem}
           onUnequipSlot={handleUnequipSlot}
           onResetSave={handleResetSave}
+          onSelectGear={handleSelectGear}
           onNavigateToCombat={() => {
             setActiveSubView("combat")
-            // Cập nhật lại Vanguard trong đấu trường với các món đồ vừa lắp
-            handleStartEncounter(selectedEncounter, progression)
+            handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
           }}
         />
-      ) : (
+      )}
+
+      {activeSubView === "combat" && (
         <>
+          {/* Banner thông báo khi đang thực hiện nhiệm vụ chiến dịch */}
+          {activeCampaignMission && (
+            <div className="rounded-sm border border-cyan-400/60 bg-gradient-to-r from-cyan-950/60 via-black/70 to-cyan-950/60 p-3 shadow-lg flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <Globe2 className="size-4 text-cyan-400 animate-pulse" />
+                <div>
+                  <span className="font-display text-xs font-bold text-white block">
+                    ĐANG THỰC HIỆN NHIỆM VỤ: {activeCampaignMission.title}
+                  </span>
+                  <span className="text-[11px] font-mono text-muted-foreground">
+                    Khu vực: {activeCampaignMission.sectorName} · Đề xuất Cấp {activeCampaignMission.recommendedLevel}+
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={() => {
+                  playClickSound()
+                  setActiveCampaignMission(null)
+                  setActiveSubView("campaign")
+                }}
+                className="gap-1 text-xs border-cyan-500/50 text-cyan-300 hover:bg-cyan-950/50"
+              >
+                <ArrowLeft className="size-3" /> Về Bản Đồ Chiến Dịch
+              </Button>
+            </div>
+          )}
+
           {/* 2. Thanh Chọn Mục Tiêu Đối Đầu */}
           <div className="rounded-sm border border-cyan-500/30 bg-black/40 p-3 shadow-lg backdrop-blur-md">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -816,13 +1003,23 @@ export function CombatArena() {
 
               <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
                 {status === "victory"
-                  ? `Vanguard đã tiêu diệt thành công ${enemy.name} sau ${turnNumber} vòng chiến đấu ác liệt.`
-                  : `Vỏ giáp Vanguard bị đục thủng bởi hỏa lực của ${enemy.name}. Không nhận được phần thưởng chiến đấu.`}
+                  ? `${player.name} đã tiêu diệt thành công ${enemy.name} sau ${turnNumber} vòng chiến đấu ác liệt.`
+                  : `Vỏ giáp ${player.name} bị đục thủng bởi hỏa lực của ${enemy.name}. Không nhận được phần thưởng chiến đấu.`}
               </p>
 
-              {/* Bảng tổng kết phần thưởng chiến thắng Phase 2 */}
+              {/* Bảng tổng kết phần thưởng chiến thắng Phase 2 & Phase 3 */}
               {status === "victory" && lastVictoryReward && (
                 <div className="my-4 mx-auto max-w-lg rounded-sm border border-emerald-500/40 bg-emerald-950/20 p-3.5 text-left font-mono">
+                  {lastVictoryReward.missionTitle && (
+                    <div className="mb-3 rounded bg-cyan-500/20 border border-cyan-400/60 p-2 text-xs text-cyan-200 flex items-center gap-2">
+                      <Globe2 className="size-4 text-cyan-300 shrink-0" />
+                      <span>
+                        <strong>{lastVictoryReward.isFirstClear ? "🏆 QUA MÀN CHIẾN DỊCH LẦN ĐẦU:" : "✓ HOÀN THÀNH LẠI:"}</strong>{" "}
+                        {lastVictoryReward.missionTitle}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 text-xs font-bold uppercase text-emerald-300 border-b border-emerald-500/30 pb-2">
                     <CheckCircle2 className="size-4 text-emerald-400" />
                     <span>PHẦN THƯỞNG CHIẾN TÍCH (ĐÃ LƯU TỰ ĐỘNG)</span>
@@ -847,7 +1044,7 @@ export function CombatArena() {
                     <div className="mt-3 rounded bg-amber-500/20 border border-amber-400/60 p-2 text-xs text-amber-200 flex items-center gap-2 animate-pulse">
                       <Sparkles className="size-4 text-amber-300 shrink-0" />
                       <span>
-                        <strong>🎉 CHÚC MỪNG THĂNG CẤP!</strong> Vanguard đã đạt <strong>Cấp {lastVictoryReward.reward.newLevel}</strong>. Toàn bộ chỉ số (HP, SP, ATK, DEF, SPD) được tăng vĩnh viễn!
+                        <strong>🎉 CHÚC MỪNG THĂNG CẤP!</strong> {player.name} đã đạt <strong>Cấp {lastVictoryReward.reward.newLevel}</strong>. Toàn bộ chỉ số (HP, SP, ATK, DEF, SPD) được tăng vĩnh viễn!
                       </span>
                     </div>
                   )}
@@ -867,16 +1064,34 @@ export function CombatArena() {
               {/* Nút hành động sau trận */}
               <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                 <Button
-                  onClick={() => handleStartEncounter(selectedEncounter)}
+                  onClick={() => {
+                    playClickSound()
+                    handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+                  }}
                   className="gap-2 font-display uppercase tracking-wider"
                 >
                   <RotateCcw className="size-4" /> Tái đấu mục tiêu này
                 </Button>
 
-                {status === "victory" && selectedEncounter !== "siege-walker" && (
+                {activeCampaignMission && (
                   <Button
                     variant="outline"
                     onClick={() => {
+                      playClickSound()
+                      setActiveCampaignMission(null)
+                      setActiveSubView("campaign")
+                    }}
+                    className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50"
+                  >
+                    <Globe2 className="size-4" /> Tiếp tục Chiến Dịch ➔
+                  </Button>
+                )}
+
+                {status === "victory" && !activeCampaignMission && selectedEncounter !== "siege-walker" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      playClickSound()
                       const nextTarget: EnemyEncounterType =
                         selectedEncounter === "scout-drone" ? "raider-mech" : "siege-walker"
                       handleStartEncounter(nextTarget)
@@ -889,10 +1104,24 @@ export function CombatArena() {
 
                 <Button
                   variant="secondary"
-                  onClick={() => setActiveSubView("hangar")}
+                  onClick={() => {
+                    playClickSound()
+                    setActiveSubView("hangar")
+                  }}
                   className="gap-2 font-display uppercase tracking-wider border border-border"
                 >
-                  <Wrench className="size-4 text-cyan-400" /> Mở Kho Đồ & Trang Bị
+                  <Wrench className="size-4 text-cyan-400" /> Mở Kho Đồ & Hangar
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    playClickSound()
+                    setActiveSubView("shop")
+                  }}
+                  className="gap-2 font-display uppercase tracking-wider border border-amber-500/40 text-amber-300 hover:bg-amber-950/50"
+                >
+                  <ShoppingBag className="size-4 text-amber-400" /> Chợ Quân Sự
                 </Button>
               </div>
             </div>

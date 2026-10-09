@@ -263,7 +263,7 @@ export type CombatUnit = {
   id: string
   name: string
   title: string
-  gearType: "vanguard" | "scout-drone" | "raider-mech" | "siege-walker"
+  gearType: "vanguard" | "falcon" | "aegis" | "scout-drone" | "raider-mech" | "siege-walker"
   isPlayer: boolean
   hp: number
   maxHp: number
@@ -322,8 +322,35 @@ export type CombatState = {
 }
 
 /* ==========================================================================
-   PHASE 2 — PROGRESSION, INVENTORY, EQUIPMENT & SAVE SYSTEM TYPES
+   PHASE 2 & 3 — PROGRESSION, GEAR CLASSES, CAMPAIGN, SHOP & SAVE TYPES
    ========================================================================== */
+
+export type StarfrontGearId = "vanguard" | "falcon" | "aegis"
+
+export type StarfrontGearClassDef = {
+  id: StarfrontGearId
+  name: string
+  nameEn: string
+  role: string
+  desc: string
+  color: string
+  avatar: string
+  baseStats: {
+    hp: number
+    sp: number
+    attack: number
+    defense: number
+    speed: number
+  }
+  growth: {
+    hp: number
+    sp: number
+    attack: number
+    defense: number
+    speed: number
+  }
+  skills: CombatSkill[]
+}
 
 export type StarfrontItemSlot = "weapon" | "shield" | "engine"
 
@@ -341,15 +368,19 @@ export type StarfrontItem = {
   hpBonus?: number
   spBonus?: number
   icon?: string
+  price?: number
 }
 
 export type StarfrontProgression = {
-  version: number // schema version (1)
+  version: number // schema version (2)
   level: number
   exp: number
   credits: number
+  activeGearId: StarfrontGearId
+  unlockedGears: StarfrontGearId[]
   inventory: StarfrontItem[]
   equipped: Record<StarfrontItemSlot, string | null>
+  completedMissions: string[]
   battlesWon: number
   battlesLost: number
 }
@@ -362,5 +393,42 @@ export type BattleRewardResult = {
   newLevel: number
   newExp: number
   expRequired: number
+}
+
+export type CampaignMission = {
+  id: string
+  sectorId: string
+  sectorName: string
+  order: number
+  title: string
+  desc: string
+  recommendedLevel: number
+  encounterId: EnemyEncounterType
+  firstClearReward: {
+    credits: number
+    exp: number
+    itemId?: string
+  }
+  repeatReward: {
+    credits: number
+    exp: number
+  }
+  reqMissionId?: string
+}
+
+export type CampaignSector = {
+  id: string
+  name: string
+  subtitle: string
+  desc: string
+  color: string
+  threatLevel: string
+  missions: CampaignMission[]
+}
+
+export type ArmoryShopItem = {
+  item: StarfrontItem
+  buyPrice: number
+  stockUnlimited?: boolean
 }
 

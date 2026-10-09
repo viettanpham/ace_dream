@@ -320,3 +320,47 @@ export type CombatState = {
     effectApplied?: string
   }
 }
+
+/* ==========================================================================
+   PHASE 2 — PROGRESSION, INVENTORY, EQUIPMENT & SAVE SYSTEM TYPES
+   ========================================================================== */
+
+export type StarfrontItemSlot = "weapon" | "shield" | "engine"
+
+export type StarfrontItemRarity = "common" | "rare" | "epic" | "legendary"
+
+export type StarfrontItem = {
+  id: string
+  name: string
+  slot: StarfrontItemSlot
+  rarity: StarfrontItemRarity
+  desc: string
+  attackBonus?: number
+  defenseBonus?: number
+  speedBonus?: number
+  hpBonus?: number
+  spBonus?: number
+  icon?: string
+}
+
+export type StarfrontProgression = {
+  version: number // schema version (1)
+  level: number
+  exp: number
+  credits: number
+  inventory: StarfrontItem[]
+  equipped: Record<StarfrontItemSlot, string | null>
+  battlesWon: number
+  battlesLost: number
+}
+
+export type BattleRewardResult = {
+  expGained: number
+  creditsGained: number
+  leveledUp: boolean
+  oldLevel: number
+  newLevel: number
+  newExp: number
+  expRequired: number
+}
+

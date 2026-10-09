@@ -58,49 +58,56 @@
 |---|---|---|
 | Tài liệu kiến trúc `PROJECT_PLAN.md` & `README.md` | Hoàn thành (Done) | Đã tạo và lưu tại thư mục gốc bằng tiếng Việt |
 | Kiểm tra đồng bộ GitHub | Đã xác nhận (Verified) | Báo cáo chi tiết giới hạn môi trường Git container |
-| Thiết kế Model & Type hệ thống (`types.ts`) | Hoàn thành (Done) | Đã bổ sung CombatUnit, Skill, StatusEffect, CombatState, CombatLogItem |
-| Logic tính toán chiến đấu (`engine.ts`) | Hoàn thành (Done) | Đã xây dựng engine: lượt theo Speed, sát thương Công/Thủ, giảm giáp, lá chắn từ trường, AI kẻ địch |
-| Dữ liệu Vanguard & 3 kẻ địch (`data.ts`) | Hoàn thành (Done) | Vanguard Gear + 3 kỹ năng (Pulse Strike, Armor Break, Emergency Guard) + Scout Drone, Raider Mech, Siege Walker Boss |
-| Giao diện Đấu trường Sci-Fi Combat Arena (`combat-arena.tsx`) | Hoàn thành (Done) | Đấu trường chiến thuật theo lượt chơi được 100%, thanh HP/SP, timeline tốc độ, radar feed, 100% tiếng Việt |
-| Hệ thống trang bị, cấp độ, tiến trình | Dự kiến (Phase 2) | Kế hoạch triển khai ở giai đoạn tiếp theo |
+| Thiết kế Model & Type hệ thống (`types.ts`) | Hoàn thành (Done) | Đầy đủ types CombatUnit, Skill, StarfrontItem, StarfrontProgression |
+| Logic tính toán chiến đấu (`engine.ts`) | Hoàn thành (Done) | Lượt theo Speed, sát thương Công/Thủ, giảm giáp, lá chắn, AI kẻ địch |
+| Dữ liệu Vanguard & 3 kẻ địch (`data.ts`) | Hoàn thành (Done) | Vanguard Gear + 3 kỹ năng + Scout Drone, Raider Mech, Siege Walker Boss |
+| Giao diện Đấu trường Combat Arena (`combat-arena.tsx`) | Hoàn thành (Done) | Đấu trường chiến thuật tương tác, radar feed, 100% tiếng Việt |
+| Tiến trình nhân vật & Cấp độ (`progression.ts`) | Hoàn thành (Done) | Level 1+, EXP scaling (level * 100), Credits, công thức tăng chỉ số khi lên cấp |
+| Kho đồ & Hệ thống trang bị (`starfront-hangar.tsx`) | Hoàn thành (Done) | 3 Slots (Vũ khí, Khiên, Động cơ), 10 món mẫu 4 độ hiếm, xem trước so sánh chỉ số, trang bị/tháo đồ ảnh hưởng trực tiếp đến combat |
+| Lưu và tải game (`storage.ts`) | Hoàn thành (Done) | Tự động lưu LocalStorage (`STARFRONT_SAVE_DATA_V1`), nạp lại an toàn khi reload, nút Reset Save có hộp thoại xác nhận |
+| Chuỗi nhiệm vụ chiến dịch & Gear mới | Dự kiến (Phase 3) | Kế hoạch triển khai ở giai đoạn tiếp theo |
 
 ---
 
 ## 5. Danh Mục File Quan Trọng & Phân Công Nhiệm Vụ (Important Files)
 - `PROJECT_PLAN.md`: Kế hoạch tổng thể và nhật ký tiến độ dự án (tài liệu này).
 - `README.md`: Giới thiệu dự án, hướng dẫn vận hành và kiểm thử.
-- `lib/game/types.ts`: Cấu trúc dữ liệu về Gear, Chỉ số, Kỹ năng, Kẻ địch, Status Effect, Lượt đi.
+- `lib/game/types.ts`: Cấu trúc dữ liệu về Gear, Chỉ số, Kỹ năng, Kẻ địch, Vật phẩm, Tiến trình nhân vật.
 - `lib/game/data.ts`: Thông số Vanguard Gear, 3 kỹ năng khởi đầu và 3 chủng loại quái vật.
 - `lib/game/engine.ts`: Bộ máy quy tắc chiến thuật theo lượt (Speed Initiative, sát thương, AI kẻ địch).
-- `components/game/combat-arena.tsx`: Giao diện đấu trường chiến thuật Phase 1 tương tác trực tiếp.
-- `components/game/console.tsx`: Màn hình điều khiển tích hợp tab Đấu trường (P1) làm trung tâm trải nghiệm.
-- `app/layout.tsx`: Giao diện nền tảng sci-fi với font Orbitron, Rajdhani và metadata STARFRONT.
+- `lib/game/progression.ts`: Logic tiến trình Level, công thức EXP, phần thưởng thắng trận, danh mục vật phẩm mẫu.
+- `lib/game/storage.ts`: Hệ thống lưu và nạp LocalStorage chuẩn hóa an toàn chống crash.
+- `components/game/combat-arena.tsx`: Đấu trường chiến thuật Phase 1 tích hợp tiến trình Phase 2 (nạp chỉ số thực tế, trao thưởng và modal thăng cấp).
+- `components/game/starfront-hangar.tsx`: Xưởng trang bị và kho đồ Vanguard với so sánh chỉ số trực quan.
+- `components/game/console.tsx`: Màn hình điều khiển tích hợp tab STARFRONT (P1-2) làm trung tâm trải nghiệm.
+- `next.config.mjs`: Cấu hình dev origins cho phép preview cross-origin của AI Studio hoạt động trơn tru.
 
 ---
 
 ## 6. Vấn Đề Đã Biết & Trạng Thái Kiểm Thử (Known Issues & Verification)
 - **Kiểm thử biên dịch**: Đã chạy `compile_applet` thành công 100% (`Build succeeded - the applet is compiled`).
-- **Sửa lỗi tương tác click (Đã giải quyết triệt để)**:
-  - *Nguyên nhân cốt lõi*: Next.js 16 ở chế độ dev mặc định chặn tài nguyên dev (`403 Forbidden`) đối với các domain cross-origin từ preview runner Cloud Run của AI Studio (`ais-dev-*.run.app` / `ais-pre-*.run.app`). Điều này khiến trình duyệt tải được HTML tĩnh từ SSR nhưng bị chặn toàn bộ các file JavaScript chunks (`/_next/static/chunks/*.js`), dẫn đến việc React không thể hydrate và toàn bộ event listeners (`onClick`) trên nút bấm không được gán vào DOM.
-  - *Giải pháp triển khai*:
-    1. Cấu hình `allowedDevOrigins: ['**.run.app', 'ais-dev-*.run.app', 'ais-pre-*.run.app', 'localhost:3000']` trong `next.config.mjs`.
-    2. Chuẩn hóa `components/ui/button.tsx` sang Client Component chuẩn React 19 với native `<button>` để loại bỏ phụ thuộc phức tạp của Base UI.
-    3. Chuẩn hóa timestamp nhật ký chiến trận thành dạng thời gian tương đối (`00:01`, `00:04`) để triệt tiêu hoàn toàn lỗi chênh lệch múi giờ gây Hydration Mismatch.
-  - *Kết quả kiểm chứng*: Các JavaScript bundle đã trả về `200 OK` (thay vì `403 Forbidden`). Nút "Kết thúc ngày" cũng như các nút kỹ năng, đổi mục tiêu, tái đấu đã nhận click và thay đổi state trực tiếp trên preview.
+- **Kiểm thử đơn vị logic Phase 2**: Đã chạy script kiểm tra tự động:
+  1. Thắng trận: EXP và Credits tăng đúng một lần (Scout Drone: +60 EXP, +150 Credits).
+  2. Thua trận: Không nhận thưởng chiến thắng.
+  3. Lên cấp: Đủ 100 EXP lên Cấp 2, chỉ số gốc tăng chính xác (HP +80, SP +10, ATK +12, DEF +6, SPD +2).
+  4. Trang bị vũ khí: Chỉ số ATK thay đổi ngay lập tức (ví dụ: gắn Pháo Ray Điện Từ Hyper tăng +58 ATK), nạp vào Combat Unit chính xác.
+  5. Tháo trang bị: Chỉ số phục hồi về giá trị gốc.
+  6. Lưu & khôi phục LocalStorage: Dữ liệu được lưu tự động và khôi phục nguyên vẹn khi tải lại trang; xử lý an toàn fallback nếu dữ liệu lỗi.
+  7. Nút Reset Save: Có dialog xác nhận trước khi xóa dữ liệu.
 - **Môi trường Git**: Không có Git repository khởi tạo cục bộ trong container AI Studio (`fatal: not a git repository`). Mọi thay đổi tập tin được lưu trực tiếp vào workspace và được quản lý đồng bộ qua giao diện AI Studio. Cần đồng bộ thủ công trên giao diện nếu kết nối với repo GitHub bên ngoài.
 
 ---
 
 ## 7. Tác Vụ Khả Thi Tiếp Theo (Next Recommended Task)
-- **Chuẩn bị sang Giai đoạn 2 (Phase 2)**:
-  - Hệ thống Cấp độ (Level) và Điểm kinh nghiệm (EXP) sau mỗi trận thắng.
-  - Phần thưởng Điểm tín dụng (Credits) và Kho trang bị nâng cấp (Vũ khí, Động cơ, Khiên chắn).
-  - Tích hợp lưu trữ dữ liệu chiến đấu vào LocalStorage để giữ lại tiến trình chơi.
+- **Chuẩn bị sang Giai đoạn 3 (Phase 3)**:
+  - Bản đồ chiến dịch (Mission / Sector Campaign Map) với các tuyến ải độ khó tăng dần.
+  - Lớp Gear mới: Infiltrator (chuyên cơ động/né tránh) hoặc Siege Gear (chuyên hỏa lực diện rộng).
+  - Cửa hàng trang bị vũ trụ và hiệu ứng âm thanh web audio sci-fi.
 
 ---
 
 ## 8. Hướng Dẫn Bàn Giao (Handoff Instructions for AI Assistants)
 - Luôn đọc `PROJECT_PLAN.md` trước khi thực hiện bất kỳ chỉnh sửa nào.
-- Phase 1 đã hoàn thành đầy đủ: Đấu trường chiến thuật theo lượt với Vanguard Gear, 3 kỹ năng, 3 kẻ địch, AI tự động, và giao diện Sci-Fi tiếng Việt.
+- Phase 1 và Phase 2 đã hoàn thành trọn vẹn: Đấu trường chiến thuật theo lượt Vanguard, 3 kỹ năng, 3 kẻ địch, tiến trình Level/EXP/Credits, kho đồ trang bị 3 slots, và hệ thống lưu LocalStorage.
 - Giữ nguyên cấu trúc code sạch, không thêm thư viện thừa, duy trì sự tương thích của runtime AI Studio.
 

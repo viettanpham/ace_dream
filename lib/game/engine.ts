@@ -496,8 +496,11 @@ export function cloneUnit(unit: CombatUnit): CombatUnit {
   }
 }
 
-export function createInitialCombatState(encounterId: EnemyEncounterType = "scout-drone"): CombatState {
-  const player = cloneUnit(VANGUARD_INITIAL_UNIT)
+export function createInitialCombatState(
+  encounterId: EnemyEncounterType = "scout-drone",
+  customPlayerUnit?: CombatUnit,
+): CombatState {
+  const player = customPlayerUnit ? cloneUnit(customPlayerUnit) : cloneUnit(VANGUARD_INITIAL_UNIT)
   const enemy = cloneUnit(ENEMIES_DATA[encounterId])
 
   // Thứ tự lượt dựa trên tốc độ (Speed Initiative)

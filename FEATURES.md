@@ -1,0 +1,141 @@
+# STARFRONT — Danh Mục Tính Năng (Feature Registry & Matrix)
+
+Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT**, phân loại rõ ràng giữa các tính năng **Đã Triển Khai (Done)**, **Chưa Triển Khai (Planned)**, và **Cần Xác Minh / Điểm Lưu Ý (Needs Verification)** dựa trên đối chiếu thực tế giữa tài liệu và mã nguồn hiện tại.
+
+---
+
+## 1. Trạng Thái Tổng Thể Các Phân Hệ (Overview Matrix)
+
+| Giai đoạn | Tên phân hệ | Trạng thái | Ghi chú & Đối chiếu mã nguồn thực tế |
+|---|---|---|---|
+| **Phase 1** | Nguyên Mẫu Đấu Trường Theo Lượt (Turn-based Arena) | **Đã triển khai** | Đã có trong `engine.ts`, `data.ts`, `combat-arena.tsx`. Đã kiểm chứng lượt theo tốc độ, SP, HP, sát thương. |
+| **Phase 2** | Tiến Trình Nhân Vật & Kho Trang Bị (Progression & Loadout) | **Đã triển khai** | Đã có trong `progression.ts`, `storage.ts`, `starfront-hangar.tsx`. Level, EXP, Credits, 3 ô trang bị. |
+| **Phase 3** | Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ (Missions, Gears & Shop) | **Đã triển khai** | Đã có trong `campaign-map.tsx`, `starfront-shop.tsx`, `audio.ts`. 3 Sector (9 ải), Vanguard / Falcon / Aegis, Chợ vũ khí, Web Audio. |
+| **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 5 Milestone chi tiết trong roadmap. |
+| **Phase 5** | Tiến Trình Cơ Giáp & Cường Hóa (Gear & Equipment Progression) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
+| **Phase 6** | Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (World & War Expansion) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
+
+---
+
+## 2. Chi Tiết Tính Năng Đã Triển Khai (Implemented Features)
+
+### 2.1. Đấu Trường Cơ Giáp Theo Lượt (Phase 1)
+- **Cơ chế sáng kiến tốc độ (Speed Initiative)**:
+  - So sánh tốc độ giữa Đơn vị Người chơi và Kẻ địch (`player.speed >= enemy.speed`). Đơn vị nhanh hơn đi trước.
+  - Vòng lặp lượt đi: `player-turn` -> `enemy-turn` -> kiểm tra điều kiện kết thúc (`victory` hoặc `defeat`).
+- **Hệ thống chỉ số chiến đấu cốt lõi**:
+  - `HP` (Độ bền vỏ giáp), `SP` (Năng lượng kích hoạt kỹ năng).
+  - `Attack` (Sức tấn công), `Defense` (Khả năng giảm trừ sát thương).
+  - `Speed` (Tốc độ quyết định thứ tự hành động).
+- **Bộ 4 kỹ năng cơ bản của Vanguard Gear**:
+  1. *Đạn Xung Điện (Pulse Strike)*: Sát thương năng lượng đơn mục tiêu.
+  2. *Phá Vỡ Giáp (Armor Break)*: Sát thương kèm debuff giảm 35% phòng thủ trong 2 lượt.
+  3. *Lá Chắn Khẩn Cấp (Emergency Guard)*: Kích hoạt khiên giảm 50% sát thương nhận vào trong 2 lượt.
+  4. *Đòn Bắn Thường (Basic Shot)*: Không tốn SP, hồi lại +15 SP cho buồng lái.
+- **Kẻ địch khởi đầu (3 chủng loại)**:
+  - *Scout Drone*: Tốc độ cao (110 SPD), máu mỏng (750 HP).
+  - *Raider Mech*: Chỉ số cân bằng (1150 HP, 95 SPD).
+  - *Siege Walker (Boss)*: Máu dày (2200 HP), giáp cao (85 DEF), hỏa lực mạnh.
+- **AI kẻ địch cơ bản**:
+  - Tự động kiểm tra thời gian hồi chiêu và năng lượng SP để ưu tiên kỹ năng mạnh nhất, hoặc bắn thường hồi SP.
+- **Giao diện HUD buồng lái Sci-Fi**:
+  - Thanh máu HP, năng lượng SP trực quan với hiệu ứng gradient.
+  - Bảng mục tiêu radar hiển thị kẻ địch đang khóa.
+  - Nhật ký chiến đấu (Combat Log) chi tiết từng hành động bằng tiếng Việt.
+  - Nút hỗ trợ "BẤM ĐỂ ĐI NGAY ⚡" cho phép bỏ qua thời gian chờ của AI nếu muốn thao tác nhanh.
+
+### 2.2. Tiến Trình Nhân Vật & Kho Đồ Hangar (Phase 2)
+- **Hệ thống tăng trưởng**:
+  - Cấp độ (Level 1+), Điểm kinh nghiệm (EXP), Ngân sách Tín dụng (Credits).
+  - Công thức thăng cấp: `expRequired = level * 100`. Mỗi cấp cộng vĩnh viễn chỉ số (+60 HP, +10 SP, +8 ATK, +5 DEF, +2 SPD).
+- **Kho trang bị (Hangar)**:
+  - 3 vị trí trang bị: *Vũ khí (Weapon)*, *Khiên chắn (Shield)*, *Động cơ đẩy (Engine)*.
+  - Cơ chế xem trước so sánh chỉ số (Hover preview stats) trước khi thay thế trang bị.
+  - Tính toán chỉ số tổng hợp: Chỉ số tổng = Chỉ số gốc lớp Gear + Tăng trưởng cấp độ + Tổng chỉ số 3 món đồ đang trang bị.
+- **Hệ thống lưu trữ trình duyệt (LocalStorage)**:
+  - Lưu trữ tự động tiến trình của người chơi qua `STARFRONT_SAVE_DATA_V2`.
+  - Phục hồi an toàn khi tải lại trang web.
+  - Hộp thoại xác nhận an toàn trước khi bấm nút Cài Lại (Reset Save).
+
+### 2.3. Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ Quân Sự (Phase 3)
+- **Bản đồ chiến dịch vũ trụ (Sector Campaign Map)**:
+  - **3 Khu vực chiến lược (Sectors)**:
+    - *Sector 1: Vành Đai Tiểu Hành Tinh Asteroid* (Ải 1-1, 1-2, 1-3).
+    - *Sector 2: Vùng Tinh Vân Plasma Tối* (Ải 2-1, 2-2, 2-3).
+    - *Sector 3: Pháo Đài Không Gian Bastion Core* (Ải 3-1, 3-2, 3-3).
+  - Tổng cộng 9 ải chiến đấu được mở khóa tuần tự (hoàn thành ải trước mới mở ải sau).
+  - Cơ chế phân tách phần thưởng rõ ràng: Thưởng Lần Đầu (First Clear - giá trị cao kèm trang bị thưởng) và Thưởng Lặp Lại (Repeat Clear - hỗ trợ cày cuốc tài nguyên).
+- **3 Lớp Cơ Giáp (Gear Classes)**:
+  - *Vanguard Gear (Cân Bằng)*: 1250 HP, 85 SPD, 140 ATK, 60 DEF.
+  - *Falcon Gear (Tiêm Kích Siêu Tốc)*: 980 HP, 125 SPD (ưu thế ra đòn trước), 165 ATK, 45 DEF. 4 kỹ năng riêng: Đạn Pháo Mach, Tên Lửa Chùm, Tăng Tốc Né Tránh, Bắn Laser Cơ Bản.
+  - *Aegis Gear (Pháo Đài Bọc Thép)*: 1800 HP, 65 SPD, 125 ATK, 120 DEF (siêu trâu). 4 kỹ năng riêng: Đại Bác Hạt Nhân, Tường Hào Quang Titan, Quá Tải Hộ Thể, Đòn Bắn Nén.
+- **Chợ quân sự không gian (Armory Shop)**:
+  - Mua sắm trang bị hiếm/sử thi bằng Credits. Kiểm tra tài chính trước khi mua.
+  - Bán vật phẩm không dùng để thu hồi 60% Credits. Ngăn chặn bán trang bị đang gắn trên người.
+- **Hiệu ứng âm thanh Sci-Fi Web Audio (`audio.ts`)**:
+  - Âm thanh được tổng hợp qua trình duyệt không phụ thuộc asset ngoài: Laser, Va chạm xung chấn, Kích hoạt lá chắn, Khải hoàn chiến thắng, Thăng cấp.
+  - Nút bật/tắt âm thanh (Mute/Unmute) lưu trạng thái tức thì.
+- **Bảo toàn phân hệ Ace Manager**:
+  - Toàn bộ các tab Ace Manager cũ (Dashboard, Pilot, Fleet, Equipment, Base, Map, War Room) giữ nguyên vẹn 100% trong `console.tsx`.
+
+---
+
+## 3. Các Điểm Chưa Xác Minh & Cần Lưu Ý Kỹ Thuật (Needs Verification / Code Observations)
+
+Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu, ghi nhận các điểm kỹ thuật cần lưu ý trước khi triển khai các giai đoạn tiếp theo:
+
+1. **Hiển thị định danh buồng lái khi đổi lớp Gear**:
+   - *Mã nguồn*: Trong `combat-arena.tsx`, tiêu đề Action Deck đã được cập nhật hiển thị theo `activeGearDef.name`. Tuy nhiên, trong `lib/game/engine.ts` (dòng 527), dòng nhật ký khởi tạo trận đấu vẫn chứa chuỗi ký tự cố định: `[TỐC ĐỘ] Tốc độ Vanguard (...)`. Cần điều chỉnh sang chuỗi động tương ứng lớp Gear đang chọn khi tiến hành các tinh chỉnh sau.
+2. **Đồng bộ hóa tức thời giữa Hangar và Đấu trường**:
+   - Khi người chơi bấm đổi Gear trong tab Hangar rồi chuyển tab quay lại Đấu trường, hàm `handleStartEncounter` cần đảm bảo luôn nhận đối tượng `StarfrontProgression` mới nhất mà không phụ thuộc vào trạng thái closure render cũ.
+3. **Môi trường kho lưu trữ Git**:
+   - Container triển khai không có thư mục `.git` cục bộ. Mọi thao tác lưu mã nguồn được thực hiện trên hệ thống file workspace của AI Studio. Cần kiểm tra kỹ trước các thao tác liên quan đến Git commit.
+4. **Cấu hình TypeScript Path Alias (`tsconfig.json`)**:
+   - Tệp `tsconfig.json` đã được bổ sung `baseUrl: "."` và `"paths": { "@/*": ["./*"] }` để đảm bảo lệnh build Next.js / Turbopack luôn biên dịch thành công.
+
+---
+
+## 4. Danh Mục Tính Năng Dự Kiến (Planned Features — Phase 4 to 6)
+
+### 4.1. Giai Đoạn 4: Độ Sâu Chiến Thuật & AI Kẻ Địch (Phase 4 — Planned)
+- **Hệ thống AI đối thủ nâng cao (Enemy Tactical AI)**:
+  - 4 Archetype AI: Tấn công áp đảo (Aggressive), Phòng ngự hỗ trợ (Support/Buffer), Phá rối khống chế (Disruptor), Thích ứng đa pha (Adaptive Boss).
+  - Thuật toán ra quyết định dựa trên điều kiện HP mục tiêu, trạng thái bản thân và thời gian hồi chiêu.
+- **Hệ thống hiệu ứng trạng thái mở rộng (Status Effect System)**:
+  - Chuẩn hóa quy tắc thời hạn (turn tick), cơ chế cộng dồn (Stacking rule), và hóa giải (Cleanse/Dispel).
+  - Bổ sung hiệu ứng mới: Đốt Cháy Plasma (DoT), Ăn Mòn Axit (DoT + giảm giáp), Quá Nhiệt (Stun 1 lượt), Làm Chậm Động Cơ (Slow - giảm SPD), Nhiễu Điện Tử (ECM - giảm độ chính xác).
+- **Cơ chế Boss đa giai đoạn (Multi-Phase Boss & Telegraphed Attacks)**:
+  - Chuyển đổi Phase khi Boss dưới 50% HP (thay đổi âm nhạc, đổi bộ kỹ năng, tăng tốc độ).
+  - Cảnh báo đòn tối thượng trước 1 lượt (Telegraphed Ultimate) để người chơi kịp bật khiên phòng thủ.
+- **Động lực học lượt đánh & Cân bằng sát thương**:
+  - Hàng đợi lượt động (Dynamic turn queue) cập nhật lại ngay trong vòng đấu khi có hiệu ứng thay đổi SPD.
+  - Công thức tính bạo kích, xuyên giáp và né tránh minh bạch.
+- **Phản hồi hình ảnh & Hiệu ứng chiến đấu (Visual Feedback)**:
+  - Rung chấn màn hình khi trúng đòn nặng/chí mạng.
+  - Phù hiệu hiệu ứng trạng thái động kèm số lượt đếm lùi.
+
+### 4.2. Giai Đoạn 5: Tiến Trình Cơ Giáp & Cường Hóa (Phase 5 — Planned)
+- **Hệ thống cường hóa trang bị (Equipment Enhancement +1 to +10)**:
+  - Nâng cấp tăng chỉ số trang bị bằng Credits và Hợp kim (Alloy).
+  - Tỉ lệ thành công lũy tiến, bảo toàn trang bị không bị phá hủy.
+- **Định hình bản sắc sâu cho 3 lớp Gear**:
+  - *Vanguard*: Kỹ năng bị động hồi phục SP, hỏa lực ổn định.
+  - *Falcon*: Tỉ lệ né tránh bẩm sinh, đòn bạo kích gây hiệu ứng Chảy Máu/Quá Nhiệt.
+  - *Aegis*: Khiên phản đòn gai năng lượng, miễn nhiễm một phần hiệu ứng khống chế.
+- **Vòng lặp kinh tế chợ quân sự hoàn chỉnh**:
+  - Phân loại hàng hóa theo độ hiếm (Common -> Rare -> Epic -> Legendary).
+  - Cơ chế tái chế trang bị cũ thành nguyên liệu cường hóa.
+- **Lưu trữ dữ liệu Schema v3**:
+  - Bổ sung trường cấp độ cường hóa của từng món đồ, đảm bảo tương thích ngược 100% với Schema v2.
+
+### 4.3. Giai Đoạn 6: Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (Phase 6 — Planned)
+- **Mở rộng Sector 4 & 5 và Phe Phái Thiên Hà**:
+  - Sector 4 (Hạm Đội Bị Bỏ Rơi) và Sector 5 (Vành Đai Lỗ Đen).
+  - 2 Phe phái đối lập (BCU vs ANI) với điểm danh vọng (Reputation).
+- **Đại chiến Mẹ Hạm Không Gian (Mothership Raids)**:
+  - Trận chiến công thành nhiều bộ phận: Tháp pháo -> Động cơ -> Lõi trung tâm.
+- **Liên kết chiều sâu với Ace Manager**:
+  - Căn cứ Ace Manager sản xuất nguyên liệu cho xưởng STARFRONT Hangar.
+  - Phi công trong Ace Manager trực tiếp lái Gear trong STARFRONT để nhận thêm buff thuộc tính.
+- **Nghiên cứu đề xuất tính năng mạng (Multiplayer Proposal Only)**:
+  - Đánh giá kiến trúc bảng xếp hạng (Leaderboards) và PvP bất đồng bộ. Chỉ đưa ra bản đề xuất phân tích, không tự ý xây dựng máy chủ khi chưa phê duyệt.

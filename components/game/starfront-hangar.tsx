@@ -1,15 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { STARFRONT_GEAR_DEFS } from "@/lib/game/data"
-import { playClickSound } from "@/lib/game/audio"
 import {
-  calculateTotalGearStats,
+  calculateTotalVanguardStats,
   getExpRequiredForLevel,
   SAMPLE_STARFRONT_ITEMS,
 } from "@/lib/game/progression"
 import type {
-  StarfrontGearId,
   StarfrontItem,
   StarfrontItemRarity,
   StarfrontItemSlot,
@@ -76,7 +73,6 @@ interface StarfrontHangarProps {
   onUnequipSlot: (slot: StarfrontItemSlot) => void
   onResetSave: () => void
   onNavigateToCombat: () => void
-  onSelectGear?: (gearId: StarfrontGearId) => void
 }
 
 export function StarfrontHangar({
@@ -85,21 +81,16 @@ export function StarfrontHangar({
   onUnequipSlot,
   onResetSave,
   onNavigateToCombat,
-  onSelectGear,
 }: StarfrontHangarProps) {
   const [selectedSlotFilter, setSelectedSlotFilter] = useState<StarfrontItemSlot | "all">("all")
   const [hoveredItem, setHoveredItem] = useState<StarfrontItem | null>(null)
   const [showResetDialog, setShowResetDialog] = useState(false)
 
-  const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
-  const activeGearDef = STARFRONT_GEAR_DEFS[activeGearId] || STARFRONT_GEAR_DEFS.vanguard
-
   const expRequired = getExpRequiredForLevel(progression.level)
   const expPercentage = Math.min(100, Math.round((progression.exp / expRequired) * 100))
 
-  // Tính toán chỉ số hiện tại dựa theo Gear đang chọn
-  const currentStats = calculateTotalGearStats(
-    activeGearId,
+  // Tính toán chỉ số hiện tại
+  const currentStats = calculateTotalVanguardStats(
     progression.level,
     progression.inventory,
     progression.equipped,
@@ -111,19 +102,12 @@ export function StarfrontHangar({
     : null
 
   const previewStats = previewEquipped
-    ? calculateTotalGearStats(activeGearId, progression.level, progression.inventory, previewEquipped)
+    ? calculateTotalVanguardStats(progression.level, progression.inventory, previewEquipped)
     : null
 
   const filteredInventory = progression.inventory.filter((item) =>
     selectedSlotFilter === "all" ? true : item.slot === selectedSlotFilter,
   )
-
-  const handleGearChange = (gearId: StarfrontGearId) => {
-    playClickSound()
-    if (onSelectGear) {
-      onSelectGear(gearId)
-    }
-  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -206,69 +190,7 @@ export function StarfrontHangar({
         </div>
       </div>
 
-      {/* 2. Bộ Chọn Lớp Cơ Giáp (Gear Class Selection) */}
-      <div className="rounded-sm border border-cyan-500/30 bg-panel/80 p-3.5 shadow-md">
-        <div className="mb-2.5 flex items-center justify-between border-b border-border/40 pb-2">
-          <div className="flex items-center gap-2">
-            <Cpu className="size-4 text-cyan-400" />
-            <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-              CHỌN LỚP CƠ GIÁP XUẤT KÍCH (PHASE 3: 3 LỚP GEAR)
-            </h3>
-          </div>
-          <span className="text-[11px] font-mono text-muted-foreground">
-            Đang điều khiển: <strong className="text-cyan-300">{activeGearDef.name}</strong>
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
-          {(["vanguard", "falcon", "aegis"] as StarfrontGearId[]).map((gId) => {
-            const def = STARFRONT_GEAR_DEFS[gId]
-            const isSelected = activeGearId === gId
-
-            return (
-              <button
-                key={gId}
-                onClick={() => handleGearChange(gId)}
-                className={cn(
-                  "flex flex-col justify-between rounded-sm border p-3 text-left transition-all cursor-pointer",
-                  isSelected
-                    ? "border-cyan-400 bg-cyan-950/60 shadow-[0_0_12px_rgba(34,211,238,0.25)]"
-                    : "border-border/60 bg-panel/40 hover:border-cyan-500/40 hover:bg-panel/80",
-                )}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-display text-xs font-bold text-white">
-                      {def.name}
-                    </span>
-                    <span
-                      className="size-2 rounded-full"
-                      style={{ backgroundColor: def.color }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-cyan-300/80 font-mono block mt-0.5">
-                    {def.role}
-                  </span>
-                  <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">
-                    {def.desc}
-                  </p>
-                </div>
-
-                <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-1.5 text-[10px] font-mono">
-                  <span className="text-muted-foreground">
-                    Gốc: {def.baseStats.speed} SPD · {def.baseStats.attack} ATK
-                  </span>
-                  <span className={cn("font-bold", isSelected ? "text-cyan-300" : "text-muted-foreground")}>
-                    {isSelected ? "✓ Đang chọn" : "Kích hoạt ➔"}
-                  </span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* 3. Hai cánh: 3 Ô Trang Bị Đang Dùng vs Bảng Chỉ Số Thực Tế */}
+      {/* 2. Hai cánh: 3 Ô Trang Bị Đang Dùng vs Bảng Chỉ Số Thực Tế */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Cột 1 & 2: 3 Ô Trang Bị Hiện Tại */}
         <div className="space-y-3 lg:col-span-2">
@@ -455,28 +377,7 @@ export function StarfrontHangar({
           </div>
 
           <div className="mt-4 rounded bg-black/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground border border-border/50">
-            <span className="font-bold text-cyan-300">💡 Lưu ý chiến thuật:</span> Tốc độ (SPD) quyết định ai ra đòn trước trong lượt. Tấn công (ATK) càng cao thì kỹ năng chủ lực càng bùng nổ sát thương.
-          </div>
-
-          {/* Bộ Kỹ Năng Độc Quyền Của Gear Đang Chọn */}
-          <div className="mt-4 border-t border-border/50 pt-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Flame className="size-3.5 text-cyan-400" />
-              <h4 className="font-display text-[11px] font-bold text-cyan-200 uppercase">
-                BỘ KỸ NĂNG ({activeGearDef.name})
-              </h4>
-            </div>
-            <div className="space-y-1.5">
-              {activeGearDef.skills.map((sk) => (
-                <div key={sk.id} className="rounded bg-black/40 p-2 text-[10px] font-mono border border-border/40">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">{sk.name}</span>
-                    <span className="text-cyan-400">{sk.spCost > 0 ? `${sk.spCost} SP` : "Hồi +15 SP"}</span>
-                  </div>
-                  <p className="text-muted-foreground mt-0.5 leading-snug">{sk.desc}</p>
-                </div>
-              ))}
-            </div>
+            <span className="font-bold text-cyan-300">💡 Lưu ý chiến thuật:</span> Tốc độ (SPD) quyết định ai ra đòn trước trong lượt. Tấn công (ATK) càng cao thì kỹ năng Xung Kích Quang càng bùng nổ sát thương.
           </div>
         </div>
       </div>

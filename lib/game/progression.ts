@@ -1,11 +1,8 @@
-import { STARFRONT_GEAR_DEFS, VANGUARD_INITIAL_UNIT, VANGUARD_SKILLS } from "./data"
+import { VANGUARD_INITIAL_UNIT, VANGUARD_SKILLS } from "./data"
 import type {
-  ArmoryShopItem,
   BattleRewardResult,
-  CampaignMission,
   CombatUnit,
   EnemyEncounterType,
-  StarfrontGearId,
   StarfrontItem,
   StarfrontItemSlot,
   StarfrontProgression,
@@ -124,33 +121,27 @@ export function getExpRequiredForLevel(level: number): number {
   return level * 100
 }
 
-/** Chỉ số cơ bản của Gear theo cấp độ (Level growth) */
-export function getBaseStatsForGearAndLevel(gearId: StarfrontGearId = "vanguard", level: number) {
-  const gearDef = STARFRONT_GEAR_DEFS[gearId] || STARFRONT_GEAR_DEFS.vanguard
+/** Chỉ số cơ bản của Vanguard theo cấp độ (Level growth) */
+export function getBaseStatsForLevel(level: number) {
+  const base = VANGUARD_INITIAL_UNIT
   const growthFactor = Math.max(0, level - 1)
 
   return {
-    hp: gearDef.baseStats.hp + growthFactor * gearDef.growth.hp,
-    sp: gearDef.baseStats.sp + growthFactor * gearDef.growth.sp,
-    attack: gearDef.baseStats.attack + growthFactor * gearDef.growth.attack,
-    defense: gearDef.baseStats.defense + growthFactor * gearDef.growth.defense,
-    speed: gearDef.baseStats.speed + growthFactor * gearDef.growth.speed,
+    hp: base.hp + growthFactor * 80,
+    sp: base.sp + growthFactor * 10,
+    attack: base.attack + growthFactor * 12,
+    defense: base.defense + growthFactor * 6,
+    speed: base.speed + growthFactor * 2,
   }
 }
 
-/** Tương thích ngược: Chỉ số cơ bản của Vanguard theo cấp độ */
-export function getBaseStatsForLevel(level: number) {
-  return getBaseStatsForGearAndLevel("vanguard", level)
-}
-
-/** Tính tổng chỉ số hoàn chỉnh bao gồm Gear đã chọn + Cấp độ + Tất cả trang bị đang lắp */
-export function calculateTotalGearStats(
-  gearId: StarfrontGearId = "vanguard",
+/** Tính tổng chỉ số hoàn chỉnh bao gồm Cấp độ + Tất cả trang bị đang lắp */
+export function calculateTotalVanguardStats(
   level: number,
   inventory: StarfrontItem[],
   equipped: Record<StarfrontItemSlot, string | null>,
 ) {
-  const base = getBaseStatsForGearAndLevel(gearId, level)
+  const base = getBaseStatsForLevel(level)
   const bonuses = {
     hp: 0,
     sp: 0,
@@ -192,33 +183,17 @@ export function calculateTotalGearStats(
   }
 }
 
-/** Tương thích ngược */
-export function calculateTotalVanguardStats(
-  level: number,
-  inventory: StarfrontItem[],
-  equipped: Record<StarfrontItemSlot, string | null>,
-) {
-  return calculateTotalGearStats("vanguard", level, inventory, equipped)
-}
-
 /** Xây dựng CombatUnit sẵn sàng đưa vào đấu trường từ tiến trình hiện tại */
-export function buildPlayerCombatUnit(progression: StarfrontProgression): CombatUnit {
-  const activeGear = progression.activeGearId || "vanguard"
-  const gearDef = STARFRONT_GEAR_DEFS[activeGear] || STARFRONT_GEAR_DEFS.vanguard
-
-  const { total } = calculateTotalGearStats(
-    activeGear,
+export function buildVanguardCombatUnit(progression: StarfrontProgression): CombatUnit {
+  const { total } = calculateTotalVanguardStats(
     progression.level,
     progression.inventory,
     progression.equipped,
   )
 
   return {
-    id: `player-${activeGear}`,
-    name: `${gearDef.name} (Cấp ${progression.level})`,
-    title: gearDef.role,
-    gearType: activeGear,
-    isPlayer: true,
+    ...VANGUARD_INITIAL_UNIT,
+    name: `Vanguard Gear (Cấp ${progression.level})`,
     hp: total.hp,
     maxHp: total.maxHp,
     sp: total.sp,
@@ -226,16 +201,10 @@ export function buildPlayerCombatUnit(progression: StarfrontProgression): Combat
     attack: total.attack,
     defense: total.defense,
     speed: total.speed,
-    skills: gearDef.skills,
+    skills: VANGUARD_SKILLS,
     statusEffects: [],
     skillCooldowns: {},
-    avatar: gearDef.avatar,
   }
-}
-
-/** Tương thích ngược: Xây dựng Vanguard CombatUnit */
-export function buildVanguardCombatUnit(progression: StarfrontProgression): CombatUnit {
-  return buildPlayerCombatUnit(progression)
 }
 
 /* ==========================================================================
@@ -335,160 +304,14 @@ export function applyDefeatRecord(current: StarfrontProgression): StarfrontProgr
 }
 
 /* ==========================================================================
-   PHASE 3 — CAMPAIGN MISSION REWARDS & ARMORY SHOP BUY/SELL LOGIC
-   ========================================================================== */
-
-/** Nhận thưởng hoàn thành Ải Chiến Dịch */
-export function applyMissionClearReward(
-  current: StarfrontProgression,
-  mission: CampaignMission,
-): { updated: StarfrontProgression; reward: BattleRewardResult; dropItem?: StarfrontItem; isFirstClear: boolean } {
-  const isFirstClear = !current.completedMissions.includes(mission.id)
-  const expGained = isFirstClear ? mission.firstClearReward.exp : mission.repeatReward.exp
-  const creditsGained = isFirstClear ? mission.firstClearReward.credits : mission.repeatReward.credits
-
-  let newLevel = current.level
-  let newExp = current.exp + expGained
-  let leveledUp = false
-
-  while (true) {
-    const required = getExpRequiredForLevel(newLevel)
-    if (newExp >= required) {
-      newExp -= required
-      newLevel += 1
-      leveledUp = true
-    } else {
-      break
-    }
-  }
-
-  let dropItem: StarfrontItem | undefined
-  if (isFirstClear && mission.firstClearReward.itemId) {
-    const template = SAMPLE_STARFRONT_ITEMS.find((it) => it.id === mission.firstClearReward.itemId)
-    if (template && !current.inventory.some((i) => i.id === template.id)) {
-      dropItem = template
-    }
-  }
-
-  const updatedInventory = dropItem ? [...current.inventory, dropItem] : [...current.inventory]
-  const updatedCompletedMissions = isFirstClear
-    ? [...current.completedMissions, mission.id]
-    : [...current.completedMissions]
-
-  const updated: StarfrontProgression = {
-    ...current,
-    level: newLevel,
-    exp: newExp,
-    credits: current.credits + creditsGained,
-    inventory: updatedInventory,
-    completedMissions: updatedCompletedMissions,
-    battlesWon: current.battlesWon + 1,
-  }
-
-  const reward: BattleRewardResult = {
-    expGained,
-    creditsGained,
-    leveledUp,
-    oldLevel: current.level,
-    newLevel,
-    newExp,
-    expRequired: getExpRequiredForLevel(newLevel),
-  }
-
-  return { updated, reward, dropItem, isFirstClear }
-}
-
-/** Mua vật phẩm từ Chợ Quân Sự */
-export function buyShopItem(
-  current: StarfrontProgression,
-  shopItem: ArmoryShopItem,
-): { success: boolean; updated: StarfrontProgression; message: string } {
-  if (current.credits < shopItem.buyPrice) {
-    return {
-      success: false,
-      updated: current,
-      message: `Không đủ Credits! Cần ${shopItem.buyPrice.toLocaleString("vi-VN")} Credits, bạn chỉ có ${current.credits.toLocaleString("vi-VN")}.`,
-    }
-  }
-
-  // Tạo ID duy nhất cho trang bị mới mua
-  const boughtItem: StarfrontItem = {
-    ...shopItem.item,
-    id: `${shopItem.item.id}_${Date.now()}`,
-  }
-
-  const updated: StarfrontProgression = {
-    ...current,
-    credits: current.credits - shopItem.buyPrice,
-    inventory: [...current.inventory, boughtItem],
-  }
-
-  return {
-    success: true,
-    updated,
-    message: `Đã mua thành công ${shopItem.item.name}! Đã trừ ${shopItem.buyPrice.toLocaleString("vi-VN")} Credits.`,
-  }
-}
-
-/** Bán vật phẩm trong kho để thu hồi Credits */
-export function sellInventoryItem(
-  current: StarfrontProgression,
-  itemId: string,
-): { success: boolean; updated: StarfrontProgression; message: string } {
-  // Kiểm tra vật phẩm có đang được trang bị không
-  const isEquipped = Object.values(current.equipped).includes(itemId)
-  if (isEquipped) {
-    return {
-      success: false,
-      updated: current,
-      message: "Không thể bán trang bị đang được lắp trên cơ giáp! Hãy tháo trang bị trước.",
-    }
-  }
-
-  const itemIndex = current.inventory.findIndex((it) => it.id === itemId)
-  if (itemIndex === -1) {
-    return {
-      success: false,
-      updated: current,
-      message: "Không tìm thấy vật phẩm cần bán trong kho đồ.",
-    }
-  }
-
-  const item = current.inventory[itemIndex]
-  // Định giá bán lại: nếu có price thì lấy 50% price, nếu không thì tính theo rarity
-  const basePrice = item.price || (
-    item.rarity === "legendary" ? 2500 :
-    item.rarity === "epic" ? 1200 :
-    item.rarity === "rare" ? 500 : 200
-  )
-  const sellValue = Math.max(50, Math.round(basePrice * 0.5))
-
-  const newInventory = current.inventory.filter((_, idx) => idx !== itemIndex)
-  const updated: StarfrontProgression = {
-    ...current,
-    credits: current.credits + sellValue,
-    inventory: newInventory,
-  }
-
-  return {
-    success: true,
-    updated,
-    message: `Đã bán ${item.name} và thu hồi +${sellValue.toLocaleString("vi-VN")} Credits!`,
-  }
-}
-
-/* ==========================================================================
    TIẾN TRÌNH KHỞI TẠO MẶC ĐỊNH CHO NGƯỜI CHƠI MỚI (INITIAL PROGRESSION)
    ========================================================================== */
 
 export const INITIAL_STARFRONT_PROGRESSION: StarfrontProgression = {
-  version: 2,
+  version: 1,
   level: 1,
   exp: 0,
   credits: 500,
-  activeGearId: "vanguard",
-  unlockedGears: ["vanguard", "falcon", "aegis"],
-  completedMissions: [],
   // Khởi đầu có sẵn các món đa dạng trong kho để kiểm thử trang bị ngay
   inventory: [
     SAMPLE_STARFRONT_ITEMS[0], // Súng Xung Điện Pulse Carbine (+15 ATK)

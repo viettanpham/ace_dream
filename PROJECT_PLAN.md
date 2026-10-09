@@ -47,80 +47,70 @@
 - Lưu trữ trạng thái game tự động qua trình duyệt (LocalStorage).
 
 ### Giai đoạn 3: Bản đồ khu vực & Chiến dịch (Phase 3 — Missions & Galaxy Map)
-- Lựa chọn bản đồ nhiệm vụ (Sector Map) và chuỗi ải chiến đấu: 3 Sector (Vành Đai Asteroid, Tinh Vân Plasma, Bastion Core), 9 ải với độ khó tăng dần, chuỗi mở khóa nhiệm vụ, phân tách thưởng Lần Đầu (First Clear) và thưởng Lặp Lại (Repeat Clear).
-- Thêm các lớp Gear mới: 3 lớp Cơ Giáp hoàn chỉnh:
-  - **Vanguard Gear**: Cân bằng hỏa lực, giáp và tốc độ (Balanced Striker).
-  - **Falcon Gear**: Tiêm kích tốc độ cực cao (125 SPD, luôn ra đòn trước mục tiêu), né tránh và bão hòa hỏa lực (Speed Infiltrator).
-  - **Aegis Gear**: Pháo đài bọc thép titan hạng nặng (1800 HP, 120 DEF), pháo hạt nhân hủy diệt và lá chắn tuyệt đối (Heavy Siege Fortress).
-- Chợ quân sự không gian (Armory Shop): Mua và bán vật phẩm/trang bị bằng Credits, kiểm tra ràng buộc không bán đồ đang trang bị, ngăn mua đồ khi thiếu Credits.
-- Bổ sung hiệu ứng âm thanh Web Audio Sci-Fi: Tia laser, xung chấn va chạm (Impact), khiên từ trường (Shield), chiến thắng oanh liệt (Victory), thăng cấp (Level Up), âm thanh bấm nút kèm chế độ Bật/Tắt âm thanh (Mute/Unmute).
-- Nâng cấp lưu trữ dữ liệu sang Schema v2 (`STARFRONT_SAVE_DATA_V2`) với cơ chế di chuyển dữ liệu (Migration) tự động và an toàn 100% từ v1.
+- Lựa chọn bản đồ nhiệm vụ (Sector Map) và chuỗi ải chiến đấu.
+- Thêm các lớp Gear mới (ví dụ: Infiltrator chuyên tốc độ/né đòn, Siege Gear chuyên pháo tầm xa).
+- Bổ sung hiệu ứng âm thanh web audio sci-fi và hiệu ứng chuyển động tương tác.
 
 ---
 
 ## 4. Trạng Thái Tính Năng Thực Tế (Feature Status Matrix)
 | Tính năng | Trạng thái | Ghi chú |
 |---|---|---|
-| Tài liệu kiến trúc `PROJECT_PLAN.md` & `README.md` | Hoàn thành (Done) | Đã cập nhật đầy đủ Phase 1, Phase 2 và Phase 3 bằng tiếng Việt |
+| Tài liệu kiến trúc `PROJECT_PLAN.md` & `README.md` | Hoàn thành (Done) | Đã tạo và lưu tại thư mục gốc bằng tiếng Việt |
 | Kiểm tra đồng bộ GitHub | Đã xác nhận (Verified) | Báo cáo chi tiết giới hạn môi trường Git container |
-| Thiết kế Model & Type hệ thống (`types.ts`) | Hoàn thành (Done) | Đầy đủ types CombatUnit, Skill, StarfrontItem, StarfrontProgression, CampaignSector, CampaignMission, ArmoryShopItem |
+| Thiết kế Model & Type hệ thống (`types.ts`) | Hoàn thành (Done) | Đầy đủ types CombatUnit, Skill, StarfrontItem, StarfrontProgression |
 | Logic tính toán chiến đấu (`engine.ts`) | Hoàn thành (Done) | Lượt theo Speed, sát thương Công/Thủ, giảm giáp, lá chắn, AI kẻ địch |
-| Dữ liệu Vanguard, Falcon, Aegis & 3 kẻ địch (`data.ts`) | Hoàn thành (Done) | 3 Lớp Gear với 4 kỹ năng riêng biệt mỗi lớp + Scout Drone, Raider Mech, Siege Walker Boss + 3 Sector 9 ải chiến dịch + Chợ quân sự |
-| Giao diện Đấu trường Combat Arena (`combat-arena.tsx`) | Hoàn thành (Done) | Đấu trường chiến thuật tương tác, radar feed, thanh điều hướng 4 phân hệ con (Đấu trường, Chiến dịch, Hangar, Chợ), nút tắt/bật âm thanh |
-| Tiến trình nhân vật & Cấp độ (`progression.ts`) | Hoàn thành (Done) | Level 1+, EXP scaling (level * 100), Credits, công thức tăng chỉ số khi lên cấp, trao thưởng ải chiến dịch, mua/bán đồ chợ quân sự |
-| Kho đồ & Hệ thống trang bị (`starfront-hangar.tsx`) | Hoàn thành (Done) | 3 Slots (Vũ khí, Khiên, Động cơ), đổi lớp Gear (Vanguard, Falcon, Aegis), xem trước so sánh chỉ số, trang bị/tháo đồ ảnh hưởng trực tiếp đến combat |
-| Bản đồ chiến dịch vũ trụ (`campaign-map.tsx`) | Hoàn thành (Done) | 3 Sector, 9 ải, theo dõi tiến độ hoàn thành, kiểm tra điều kiện mở khóa, xuất kích trực tiếp vào trận đấu |
-| Chợ quân sự không gian (`starfront-shop.tsx`) | Hoàn thành (Done) | Mua sắm trang bị hiếm/sử thi, bán vật phẩm thừa trong kho, kiểm tra tài chính Credits tức thời |
-| Hiệu ứng âm thanh Sci-Fi Web Audio (`audio.ts`) | Hoàn thành (Done) | Tạo âm thanh tổng hợp đa tần số qua Web Audio API, không phụ thuộc file ngoài, có toggle bật/tắt |
-| Lưu và tải game (`storage.ts`) | Hoàn thành (Done) | Tự động lưu LocalStorage Schema v2, tự động di chuyển dữ liệu từ v1 không mất tiến trình, nút Reset Save có hộp thoại xác nhận |
+| Dữ liệu Vanguard & 3 kẻ địch (`data.ts`) | Hoàn thành (Done) | Vanguard Gear + 3 kỹ năng + Scout Drone, Raider Mech, Siege Walker Boss |
+| Giao diện Đấu trường Combat Arena (`combat-arena.tsx`) | Hoàn thành (Done) | Đấu trường chiến thuật tương tác, radar feed, 100% tiếng Việt |
+| Tiến trình nhân vật & Cấp độ (`progression.ts`) | Hoàn thành (Done) | Level 1+, EXP scaling (level * 100), Credits, công thức tăng chỉ số khi lên cấp |
+| Kho đồ & Hệ thống trang bị (`starfront-hangar.tsx`) | Hoàn thành (Done) | 3 Slots (Vũ khí, Khiên, Động cơ), 10 món mẫu 4 độ hiếm, xem trước so sánh chỉ số, trang bị/tháo đồ ảnh hưởng trực tiếp đến combat |
+| Lưu và tải game (`storage.ts`) | Hoàn thành (Done) | Tự động lưu LocalStorage (`STARFRONT_SAVE_DATA_V1`), nạp lại an toàn khi reload, nút Reset Save có hộp thoại xác nhận |
+| Chuỗi nhiệm vụ chiến dịch & Gear mới | Dự kiến (Phase 3) | Kế hoạch triển khai ở giai đoạn tiếp theo |
 
 ---
 
 ## 5. Danh Mục File Quan Trọng & Phân Công Nhiệm Vụ (Important Files)
 - `PROJECT_PLAN.md`: Kế hoạch tổng thể và nhật ký tiến độ dự án (tài liệu này).
 - `README.md`: Giới thiệu dự án, hướng dẫn vận hành và kiểm thử.
-- `lib/game/types.ts`: Cấu trúc dữ liệu về Gear, Chỉ số, Kỹ năng, Kẻ địch, Vật phẩm, Tiến trình nhân vật, Chiến dịch, Chợ.
-- `lib/game/data.ts`: Thông số 3 Lớp Gear (Vanguard, Falcon, Aegis), 3 kẻ địch, 3 Sector (9 ải chiến dịch) và danh mục Chợ quân sự.
+- `lib/game/types.ts`: Cấu trúc dữ liệu về Gear, Chỉ số, Kỹ năng, Kẻ địch, Vật phẩm, Tiến trình nhân vật.
+- `lib/game/data.ts`: Thông số Vanguard Gear, 3 kỹ năng khởi đầu và 3 chủng loại quái vật.
 - `lib/game/engine.ts`: Bộ máy quy tắc chiến thuật theo lượt (Speed Initiative, sát thương, AI kẻ địch).
-- `lib/game/audio.ts`: Hệ thống âm thanh tương tác Web Audio API (Laser, Impact, Shield, Victory, Level Up).
-- `lib/game/progression.ts`: Logic tiến trình Level, công thức EXP, tính toán chỉ số theo lớp Gear, phần thưởng thắng trận và ải chiến dịch, mua/bán chợ.
-- `lib/game/storage.ts`: Hệ thống lưu và nạp LocalStorage chuẩn hóa Schema v2 với migration v1 -> v2 an toàn chống crash.
-- `components/game/combat-arena.tsx`: Đấu trường chiến thuật Phase 1-3 tích hợp tiến trình, nạp chỉ số thực tế, tích hợp chiến dịch, hangar và chợ.
-- `components/game/campaign-map.tsx`: Giao diện bản đồ chiến dịch 3 Sector vũ trụ và 9 tuyến ải nhiệm vụ.
-- `components/game/starfront-hangar.tsx`: Xưởng trang bị, chuyển đổi 3 lớp cơ giáp và kho đồ Vanguard/Falcon/Aegis.
-- `components/game/starfront-shop.tsx`: Giao diện Chợ quân sự mua bán trang bị bằng Credits.
-- `components/game/console.tsx`: Màn hình điều khiển tích hợp tab STARFRONT (P1-3) làm trung tâm trải nghiệm, bảo toàn các phân hệ Ace Manager.
-- `test-phase3.ts`: Script kiểm thử tự động toàn diện 37 test cases cho toàn bộ logic Phase 3.
+- `lib/game/progression.ts`: Logic tiến trình Level, công thức EXP, phần thưởng thắng trận, danh mục vật phẩm mẫu.
+- `lib/game/storage.ts`: Hệ thống lưu và nạp LocalStorage chuẩn hóa an toàn chống crash.
+- `components/game/combat-arena.tsx`: Đấu trường chiến thuật Phase 1 tích hợp tiến trình Phase 2 (nạp chỉ số thực tế, trao thưởng và modal thăng cấp).
+- `components/game/starfront-hangar.tsx`: Xưởng trang bị và kho đồ Vanguard với so sánh chỉ số trực quan.
+- `components/game/console.tsx`: Màn hình điều khiển tích hợp tab STARFRONT (P1-2) làm trung tâm trải nghiệm.
 - `next.config.mjs`: Cấu hình dev origins cho phép preview cross-origin của AI Studio hoạt động trơn tru.
 
 ---
 
 ## 6. Vấn Đề Đã Biết & Trạng Thái Kiểm Thử (Known Issues & Verification)
 - **Kiểm thử biên dịch**: Đã chạy `compile_applet` thành công 100% (`Build succeeded - the applet is compiled`).
-- **Kiểm thử tự động logic Phase 3 (`test-phase3.ts`)**: Đã chạy qua `npx tsx test-phase3.ts` và đạt **37/37 bài kiểm thử (100% PASS)**:
-  1. *3 Lớp Cơ Giáp*: Khởi tạo và tính toán chỉ số chuẩn xác cho Vanguard (HP 1250, SPD 85), Falcon (SPD 125, ATK 165), Aegis (HP 1800, DEF 120).
-  2. *Quyền ưu tiên lượt đi (Initiative)*: Falcon (125 SPD) đi trước Scout Drone (110 SPD); Vanguard (85 SPD) đi sau Scout Drone.
-  3. *Kỹ năng đặc trưng*: Falcon và Aegis mỗi lớp sở hữu 4 kỹ năng chiến đấu độc quyền.
-  4. *Chiến dịch 3 Sector & 9 Ải*: Cơ chế mở khóa tuyến tính hoạt động đúng (ải 1-1 mở sẵn, ải 1-2 cần ải 1-1, ải 1-3 cần ải 1-2).
-  5. *Phần thưởng chiến dịch*: Trao thưởng lần đầu (First Clear) và thưởng lặp lại (Repeat Clear) chính xác EXP, Credits và trang bị thưởng.
-  6. *Chợ quân sự (Armory Shop)*: Mua hàng trừ tiền và thêm vào kho đồ, chặn mua khi thiếu Credits; bán đồ cộng Credits và xóa khỏi kho, chặn bán đồ đang trang bị.
-  7. *Lưu trữ & Migration v1 -> v2*: Dữ liệu v1 cũ được nạp và chuyển đổi mượt mà sang Schema v2, bảo toàn toàn bộ Level, EXP, Credits, kho đồ và trang bị.
 - **Sửa lỗi tương tác lượt chiến đấu (Turn Loop & AI Timer)**:
-  - Đã khắc phục triệt để lỗi hủy timer của AI lượt địch, người chơi tự động nhận lượt khi kẻ địch đánh xong hoặc có thể bấm "BẤM ĐỂ ĐI NGAY ⚡".
+  - *Nguyên nhân*: Trong `combat-arena.tsx`, `useEffect` xử lý lượt AI đưa `isProcessingAI` vào dependency array. Khi gọi `setIsProcessingAI(true)`, React kích hoạt re-render khiến hàm cleanup chạy `clearTimeout(timer)` ngay lập tức trước khi timer kịp nổ (1000ms). Do đó trạng thái bị đóng băng ở `enemy-turn` với thông báo "KẺ ĐỊCH ĐANG HÀNH ĐỘNG...", người chơi không thể tới lượt mình để bấm kỹ năng.
+  - *Giải pháp*: Đã tách `isProcessingAI` ra khỏi dependency array, dùng `useRef` lưu `aiTimeoutRef`, đặt thời gian phản xạ AI tự nhiên (700ms), đồng thời thêm hàm `performEnemyTurn` cho phép bấm nút "BẤM ĐỂ ĐI NGAY ⚡" để bỏ qua thời gian chờ. Khi kẻ địch hành động xong, hệ thống tự động chuyển sang `player-turn` kèm hiệu ứng thông báo rực rỡ "⚡ ĐẾN LƯỢT BẠN (VANGUARD) — HÃY TẤN CÔNG!" và mở khóa các nút kỹ năng.
+- **Kiểm thử đơn vị logic Phase 2**: Đã chạy script kiểm tra tự động:
+  1. Thắng trận: EXP và Credits tăng đúng một lần (Scout Drone: +60 EXP, +150 Credits).
+  2. Thua trận: Không nhận thưởng chiến thắng.
+  3. Lên cấp: Đủ 100 EXP lên Cấp 2, chỉ số gốc tăng chính xác (HP +80, SP +10, ATK +12, DEF +6, SPD +2).
+  4. Trang bị vũ khí: Chỉ số ATK thay đổi ngay lập tức (ví dụ: gắn Pháo Ray Điện Từ Hyper tăng +58 ATK), nạp vào Combat Unit chính xác.
+  5. Tháo trang bị: Chỉ số phục hồi về giá trị gốc.
+  6. Lưu & khôi phục LocalStorage: Dữ liệu được lưu tự động và khôi phục nguyên vẹn khi tải lại trang; xử lý an toàn fallback nếu dữ liệu lỗi.
+  7. Nút Reset Save: Có dialog xác nhận trước khi xóa dữ liệu.
 - **Môi trường Git**: Không có Git repository khởi tạo cục bộ trong container AI Studio (`fatal: not a git repository`). Mọi thay đổi tập tin được lưu trực tiếp vào workspace và được quản lý đồng bộ qua giao diện AI Studio. Cần đồng bộ thủ công trên giao diện nếu kết nối với repo GitHub bên ngoài.
 
 ---
 
 ## 7. Tác Vụ Khả Thi Tiếp Theo (Next Recommended Task)
-- **Chuẩn bị sang Giai đoạn 4 (Phase 4)**:
-  - Hệ thống tinh chỉnh chỉ số trang bị (Enhancement / Crafting).
-  - Chế độ Đấu trường Sinh tồn / Vô tận (Endless Survival Wave).
-  - Tích hợp thêm các phi công đặc nhiệm và liên kết hạm đội Ace Manager.
+- **Chuẩn bị sang Giai đoạn 3 (Phase 3)**:
+  - Bản đồ chiến dịch (Mission / Sector Campaign Map) với các tuyến ải độ khó tăng dần.
+  - Lớp Gear mới: Infiltrator (chuyên cơ động/né tránh) hoặc Siege Gear (chuyên hỏa lực diện rộng).
+  - Cửa hàng trang bị vũ trụ và hiệu ứng âm thanh web audio sci-fi.
 
 ---
 
 ## 8. Hướng Dẫn Bàn Giao (Handoff Instructions for AI Assistants)
 - Luôn đọc `PROJECT_PLAN.md` trước khi thực hiện bất kỳ chỉnh sửa nào.
-- Phase 1, Phase 2 và Phase 3 đã hoàn thành trọn vẹn: Đấu trường chiến thuật theo lượt, 3 lớp Gear (Vanguard, Falcon, Aegis), 3 kẻ địch, tiến trình Level/EXP/Credits, kho đồ trang bị 3 slots, bản đồ chiến dịch 3 Sector 9 ải, Chợ quân sự, âm thanh Sci-Fi Web Audio và hệ thống lưu LocalStorage Schema v2.
+- Phase 1 và Phase 2 đã hoàn thành trọn vẹn: Đấu trường chiến thuật theo lượt Vanguard, 3 kỹ năng, 3 kẻ địch, tiến trình Level/EXP/Credits, kho đồ trang bị 3 slots, và hệ thống lưu LocalStorage.
 - Giữ nguyên cấu trúc code sạch, không thêm thư viện thừa, duy trì sự tương thích của runtime AI Studio.
 

@@ -629,15 +629,14 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
   let lastActionData: CombatState["lastAction"]
 
   if (skill.targetType === "self") {
-    // Kỹ năng bản thân: Phòng thủ / Lá Chắn / Nạp năng lượng
-    const reduction = skill.damageReduction || 0.5
+    // Kỹ năng bản thân: Lá Chắn Khẩn Cấp (Emergency Guard)
     const guardEffect: StatusEffect = {
       id: `guard-${Date.now()}`,
       type: "emergency-guard",
-      name: skill.name,
-      desc: `Giảm ${Math.round(reduction * 100)}% sát thương nhận vào trong ${skill.effectDuration || 2} lượt`,
+      name: "Lá Chắn Khẩn Cấp",
+      desc: "Giảm 50% toàn bộ sát thương nhận vào trong 2 lượt",
       duration: skill.effectDuration || 2,
-      value: reduction,
+      value: skill.damageReduction || 0.5,
     }
 
     // Thay thế hoặc làm mới hiệu ứng
@@ -648,7 +647,7 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
       id: `log-${Date.now()}-guard`,
       turn: state.turnNumber,
       type: "status",
-      text: `[PHÒNG HỘ] ${player.name} kích hoạt ${skill.name}! Tạo trường từ trường chắn giảm ${Math.round(reduction * 100)}% sát thương gánh chịu trong ${guardEffect.duration} lượt.`,
+      text: `[PHÒNG HỘ] Vanguard kích hoạt ${skill.name}! Tạo trường từ trường chắn giảm 50% sát thương gánh chịu trong ${guardEffect.duration} lượt.`,
       actorName: player.name,
       timestamp: now,
     })
@@ -656,7 +655,7 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
     lastActionData = {
       actorId: player.id,
       skillName: skill.name,
-      effectApplied: `${skill.name} (-${Math.round(reduction * 100)}% Sát thương)`,
+      effectApplied: "Lá Chắn Khẩn Cấp (-50% Sát thương)",
     }
   } else {
     // Đòn tấn công hoặc kỹ năng đơn mục tiêu
@@ -668,9 +667,9 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
     const { damage, isCrit, reducedByGuard } = calculateCombatDamage(player, enemy, skill)
     enemy.hp = Math.max(0, enemy.hp - damage)
 
-    let logText = `[TẤN CÔNG] ${player.name} xuất kích ${skill.name} -> Đánh trúng ${enemy.name}, gây ${damage} sát thương!`
+    let logText = `[TẤN CÔNG] Vanguard xuất kích ${skill.name} -> Đánh trúng ${enemy.name}, gây ${damage} sát thương!`
     if (isCrit) {
-      logText = `[BẠO KÍCH 🔥] ${player.name} bắn trúng điểm yếu bằng ${skill.name}! Gây ${damage} sát thương chí mạng!`
+      logText = `[BẠO KÍCH 🔥] Vanguard bắn trúng điểm yếu bằng ${skill.name}! Gây ${damage} sát thương chí mạng!`
     }
     if (reducedByGuard) {
       logText += ` (Giảm thiểu bởi giáp chắn của địch)`
@@ -687,7 +686,7 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
       timestamp: now,
     })
 
-    // Xử lý hiệu ứng Phá Giáp (Armor Break)
+    // Xử lý hiệu ứng Phá Giáp Cơ Khí (Armor Break)
     if (skill.defenseReduction && skill.effectDuration) {
       const armorBreak: StatusEffect = {
         id: `ab-${Date.now()}`,
@@ -704,25 +703,11 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
         id: `log-${Date.now()}-ab`,
         turn: state.turnNumber,
         type: "status",
-        text: `[HIỆU ỨNG ⚡] Vỏ giáp của ${enemy.name} bị nứt toác! Phòng ngự suy giảm ${Math.round((skill.defenseReduction || 0.35) * 100)}% trong ${armorBreak.duration} lượt.`,
+        text: `[HIỆU ỨNG ⚡] Vỏ giáp của ${enemy.name} bị nứt toác! Phòng ngự suy giảm 35% trong ${armorBreak.duration} lượt.`,
         actorName: player.name,
         targetName: enemy.name,
         timestamp: now,
       })
-    }
-
-    // Xử lý hiệu ứng phụ tự bảo vệ (ví dụ: Falcon Ghost Dash)
-    if (skill.damageReduction && skill.effectDuration) {
-      const selfGuard: StatusEffect = {
-        id: `dash-guard-${Date.now()}`,
-        type: "emergency-guard",
-        name: "Lá Chắn Né Tránh",
-        desc: `Giảm ${Math.round(skill.damageReduction * 100)}% sát thương nhận vào`,
-        duration: skill.effectDuration,
-        value: skill.damageReduction,
-      }
-      player.statusEffects = player.statusEffects.filter((e) => e.type !== "emergency-guard")
-      player.statusEffects.push(selfGuard)
     }
 
     lastActionData = {
@@ -739,7 +724,7 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
       id: `log-${Date.now()}-vic`,
       turn: state.turnNumber,
       type: "victory",
-      text: `[CHIẾN THẮNG 🏆] Mục tiêu ${enemy.name} đã bị phá hủy hoàn toàn! Chiến cơ ${player.name} toàn thắng trở về căn cứ!`,
+      text: `[CHIẾN THẮNG 🏆] Mục tiêu ${enemy.name} đã bị phá hủy hoàn toàn! Chiến cơ Vanguard toàn thắng trở về căn cứ!`,
       actorName: "HỆ THỐNG",
       timestamp: now,
     })
@@ -849,12 +834,12 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
     const { damage, isCrit, reducedByGuard } = calculateCombatDamage(enemy, player, selectedSkill)
     player.hp = Math.max(0, player.hp - damage)
 
-    let logText = `[ĐỊCH TẤN CÔNG 💥] ${enemy.name} dùng ${selectedSkill.name} bắn trúng ${player.name}! Gây ${damage} sát thương.`
+    let logText = `[ĐỊCH TẤN CÔNG 💥] ${enemy.name} dùng ${selectedSkill.name} bắn trúng Vanguard! Gây ${damage} sát thương.`
     if (isCrit) {
       logText = `[BẠO KÍCH KẺ ĐỊCH ⚠️] ${enemy.name} kích hoạt hỏa lực cực đại với ${selectedSkill.name}! Gây ${damage} sát thương bùng nổ!`
     }
     if (reducedByGuard) {
-      logText += ` (Lá Chắn phòng hộ của ${player.name} đã triệt tiêu một phần sát thương)`
+      logText += ` (Lá Chắn Khẩn Cấp của Vanguard đã triệt tiêu 50% sát thương)`
     }
 
     newLogs.push({
@@ -882,7 +867,7 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
       id: `log-${Date.now()}-def`,
       turn: state.turnNumber,
       type: "defeat",
-      text: `[THẤT BẠI 💀] Vỏ giáp của ${player.name} bị phá hủy hoàn toàn! Phi công buộc phải kích hoạt buồng phóng thoát hiểm.`,
+      text: `[THẤT BẠI 💀] Vỏ giáp của Vanguard bị phá hủy hoàn toàn! Phi công buộc phải kích hoạt buồng phóng thoát hiểm.`,
       actorName: "HỆ THỐNG",
       timestamp: now,
     })

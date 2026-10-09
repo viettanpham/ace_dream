@@ -407,6 +407,7 @@ export type StarfrontItem = {
   spBonus?: number
   icon?: string
   price?: number
+  enhancementLevel?: number // Cấp cường hóa (+0 đến +10)
 }
 
 export type StarfrontProgression = {
@@ -414,6 +415,7 @@ export type StarfrontProgression = {
   level: number
   exp: number
   credits: number
+  alloy?: number // Hợp kim cường hóa trang bị
   activeGearId: StarfrontGearId
   unlockedGears: StarfrontGearId[]
   inventory: StarfrontItem[]
@@ -426,6 +428,7 @@ export type StarfrontProgression = {
 export type BattleRewardResult = {
   expGained: number
   creditsGained: number
+  alloyGained?: number
   leveledUp: boolean
   oldLevel: number
   newLevel: number
@@ -445,11 +448,13 @@ export type CampaignMission = {
   firstClearReward: {
     credits: number
     exp: number
+    alloy?: number
     itemId?: string
   }
   repeatReward: {
     credits: number
     exp: number
+    alloy?: number
   }
   reqMissionId?: string
 }

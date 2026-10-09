@@ -25,6 +25,7 @@ import {
   applyMissionClearReward,
   applyVictoryReward,
   buildPlayerCombatUnit,
+  enhanceItem,
   getExpRequiredForLevel,
   INITIAL_STARFRONT_PROGRESSION,
 } from "@/lib/game/progression"
@@ -414,6 +415,35 @@ export function CombatArena() {
     handleStartEncounter("scout-drone", fresh, null)
   }
 
+  // Thao tác Cường hóa trang bị trong Hangar (Phase 5 Milestone 5.1)
+  const handleEnhanceItem = (itemId: string) => {
+    const { updated, result } = enhanceItem(progression, itemId)
+    setProgression(updated)
+    saveStarfrontProgression(updated)
+    if (result.success) {
+      playLevelUpSound()
+      const isEquipped = Object.values(updated.equipped).includes(itemId)
+      if (isEquipped) {
+        const newUnit = buildPlayerCombatUnit(updated)
+        setCombatState((prev) => ({
+          ...prev,
+          player: {
+            ...prev.player,
+            attack: newUnit.attack,
+            defense: newUnit.defense,
+            speed: newUnit.speed,
+            hp: Math.min(prev.player.hp, newUnit.hp),
+            maxHp: newUnit.maxHp,
+            maxSp: newUnit.maxSp,
+          },
+        }))
+      }
+    } else {
+      playShieldSound()
+    }
+    return result
+  }
+
   const { player, enemy, status, logs, turnNumber } = combatState
   const playerEffectiveSpeed = getEffectiveSpeed(player)
   const enemyEffectiveSpeed = getEffectiveSpeed(enemy)
@@ -605,6 +635,7 @@ export function CombatArena() {
           progression={progression}
           onEquipItem={handleEquipItem}
           onUnequipSlot={handleUnequipSlot}
+          onEnhanceItem={handleEnhanceItem}
           onResetSave={handleResetSave}
           onSelectGear={handleSelectGear}
           onNavigateToCombat={() => {

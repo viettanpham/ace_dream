@@ -4,6 +4,31 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 5] — Tiến Trình Cơ Giáp & Cường Hóa Trang Bị
+
+*Đang triển khai — Đã hoàn thành Milestone 5.1 (15/15 automated tests passed, build thành công)*
+
+### Tính năng đã hoàn thành:
+- **Milestone 5.1: Hệ Thống Cường Hóa Trang Bị (+1 đến +10) (Equipment Enhancement System)**:
+  - Bảng cấu hình tỉ lệ và chi phí `ENHANCEMENT_TABLE` từ +1 đến +10 cho cả 3 vị trí (Vũ khí, Khiên chắn, Động cơ).
+  - Tỉ lệ thành công theo cơ chế chống ức chế (Anti-Frustration):
+    - Cấp +1 đến +4: Thành công 100% (An toàn tuyệt đối).
+    - Cấp +5 đến +7: Tỉ lệ 80% -> 70% -> 60%, thất bại giữ nguyên cấp, không bao giờ bị phá hủy hay tụt cấp trang bị.
+    - Cấp +8 đến +10: Thử thách tối thượng (45% -> 35% -> 25%), thất bại bảo toàn nguyên vẹn trang bị.
+  - Hàm `getEnhancedItemStats(item)`: Tính toán chỉ số tăng trưởng đơn điệu, tăng từ +12% đến +155% chỉ số gốc, đảm bảo mỗi cấp luôn tăng ít nhất +level điểm thuộc tính.
+  - Hàm `getItemDisplayName(item)`: Định dạng nhãn cấp độ trực quan `[+5] Pháo Cắt Plasma Cao Áp` cùng huy hiệu màu sắc tương ứng (+1..+4 Cyan, +5..+7 Purple, +8..+9 Orange, +10 Gold Tối Thượng).
+  - Hàm `enhanceItem(progression, itemId)`: Kiểm tra tài nguyên Credits và Hợp Kim (Alloy), khấu trừ và thực hiện nâng cấp an toàn.
+  - Thêm tài nguyên nguyên liệu **Hợp Kim (Alloy)**: Khởi tạo 25 Alloy mặc định, nhận thêm Alloy khi chiến thắng Đấu Trường và ải Chiến Dịch.
+  - Giao diện **Xưởng Cường Hóa (Enhancement Lab Modal)** trong Hangar (`starfront-hangar.tsx`):
+    - Thanh cuộn chọn nhanh trang bị trong kho đồ.
+    - Bảng so sánh chỉ số hiện tại vs chỉ số dự kiến sau cường hóa kèm biến động `(+Δ)` xanh lá.
+    - Thanh đo tỉ lệ thành công minh bạch (Success Rate Gauge) và chỉ báo đủ/thiếu tài nguyên Credits & Alloy.
+    - Nút bấm trực tiếp `Cường Hóa ⚡` trên từng thẻ trang bị trong kho và trên 3 ô slot đang trang bị.
+    - Cam kết bảo toàn trang bị hiển thị rõ ràng trên giao diện.
+  - Đồng bộ tức thời: Khi cường hóa trang bị đang lắp, `calculateTotalGearStats` và `buildPlayerCombatUnit` cập nhật chỉ số ngay lập tức vào buồng lái Đấu trường.
+
+---
+
 ## [Phase 4] — Độ Sâu Chiến Thuật, Hệ Thống Hiệu Ứng & AI Kẻ Địch
 
 *Đã hoàn thành & Đã kiểm chứng (36/36 automated tests passed, build thành công)*

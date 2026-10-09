@@ -170,22 +170,24 @@
 ### GIAI ĐOẠN 5: TIẾN TRÌNH CƠ GIÁP & CƯỜNG HÓA TRANG BỊ (PHASE 5 — GEAR & EQUIPMENT PROGRESSION)
 *Mục tiêu: Đào sâu hệ thống phát triển sức mạnh cá nhân của người chơi, phân hóa rõ rệt lối chơi giữa 3 lớp Cơ Giáp, và xây dựng vòng lặp kinh tế tuần hoàn hợp lý.*
 
-#### 🎯 Milestone 5.1: Hệ Thống Cường Hóa Trang Bị (Equipment Enhancement +1 to +10)
+#### 🎯 Milestone 5.1: Hệ Thống Cường Hóa Trang Bị (Equipment Enhancement +1 to +10) `[ĐÃ HOÀN THÀNH]`
 - **Mục tiêu**: Cho phép người chơi nâng cấp trang bị trong kho để gia tăng chỉ số vượt bậc.
-- **Phạm vi**:
+- **Trạng thái**: **Đã hoàn thành & Đã kiểm chứng (15/15 tests Milestone 5.1 passed, build thành công)**.
+- **Phạm vi đã triển khai**:
   - Cấp độ cường hóa từ +1 đến +10 cho cả 3 vị trí (Vũ khí, Khiên chắn, Động cơ).
-  - Chi phí cường hóa: Tiêu tốn Credits và nguyên liệu Hợp Kim (Alloy) thu được từ chiến dịch.
+  - Chi phí cường hóa: Tiêu tốn Credits và nguyên liệu Hợp Kim (Alloy) thu được từ chiến dịch và đấu trường.
   - Cơ chế an toàn (Anti-Frustration):
     - Cấp +1 đến +4: Tỉ lệ thành công 100%.
-    - Cấp +5 đến +7: Tỉ lệ thành công giảm dần (80% -> 60%). Thất bại giữ nguyên cấp, không bao giờ bị phá hủy trang bị.
-    - Cấp +8 đến +10: Cần đá bảo vệ hoặc tiêu tốn lượng Credits lớn để thăng hạng tối thượng.
-  - Hiển thị nhãn cấp độ trực quan: `[+5] Pháo Xung Điện Plasma (Hiếm)`.
+    - Cấp +5 đến +7: Tỉ lệ thành công giảm dần (80% -> 70% -> 60%). Thất bại giữ nguyên cấp, không bao giờ bị phá hủy hay tụt cấp trang bị.
+    - Cấp +8 đến +10: Tỉ lệ thử thách cao (45% -> 35% -> 25%), thất bại bảo toàn cấp độ và trang bị.
+  - Hiển thị nhãn cấp độ trực quan: `[+5] Pháo Xung Điện Plasma (Hiếm)` cùng huy hiệu màu sắc tương ứng theo rank (+1..+4 Cyan, +5..+7 Purple, +8..+9 Orange, +10 Gold Tối Thượng).
+  - Giao diện Xưởng Cường Hóa (Enhancement Lab Modal) trong Hangar với bảng đo tỉ lệ thành công, so sánh chỉ số trước/sau, kiểm tra tài nguyên và cam kết bảo vệ.
 - **Phụ thuộc**: Phase 2 Hangar, `lib/game/progression.ts`.
 - **Tiêu chí hoàn thành (Definition of Done)**:
-  - Chỉ số trang bị cộng thêm được tính toán chính xác vào tổng chỉ số trong buồng lái.
+  - Chỉ số trang bị cộng thêm được tính toán chính xác vào tổng chỉ số trong buồng lái và `buildPlayerCombatUnit`.
   - Giao diện cường hóa trong Hangar hiển thị tỉ lệ thành công và tài nguyên cần thiết minh bạch.
 - **Phương pháp kiểm thử**:
-  - Unit test tính toán chỉ số trang bị ở từng mốc từ +0 đến +10.
+  - Đã kiểm thử tự động toàn diện trong `test-phase5.ts` (15/15 test assertions passed).
 
 #### 🎯 Milestone 5.2: Định Hình Bản Sắc Gameplay Của Từng Lớp Gear (Gear Class Identity & Passives)
 - **Mục tiêu**: Tạo ra 3 phong cách chơi hoàn toàn khác biệt, khuyến khích người chơi đổi Gear theo từng loại nhiệm vụ.

@@ -37,12 +37,16 @@ export function loadStarfrontProgression(): StarfrontProgression {
     const level = Math.max(1, Number(parsed.level) || 1)
     const exp = Math.max(0, Number(parsed.exp) || 0)
     const credits = Math.max(0, Number(parsed.credits) || 0)
+    const alloy = Math.max(0, Number(parsed.alloy !== undefined ? parsed.alloy : 25))
     const battlesWon = Math.max(0, Number(parsed.battlesWon) || 0)
     const battlesLost = Math.max(0, Number(parsed.battlesLost) || 0)
 
-    // Khôi phục kho đồ và trang bị hợp lệ
+    // Khôi phục kho đồ và trang bị hợp lệ, bảo đảm enhancementLevel hợp lệ
     let inventory: StarfrontItem[] = Array.isArray(parsed.inventory) && parsed.inventory.length > 0
-      ? [...parsed.inventory]
+      ? parsed.inventory.map((it) => ({
+          ...it,
+          enhancementLevel: Math.max(0, Math.min(10, Number(it.enhancementLevel) || 0)),
+        }))
       : [...INITIAL_STARFRONT_PROGRESSION.inventory]
 
     // Bổ sung các vật phẩm khởi đầu nếu chưa có trong kho
@@ -77,6 +81,7 @@ export function loadStarfrontProgression(): StarfrontProgression {
       level,
       exp,
       credits,
+      alloy,
       activeGearId,
       unlockedGears,
       inventory,

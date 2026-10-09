@@ -12,12 +12,32 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 2** | Tiến Trình Nhân Vật & Kho Trang Bị (Progression & Loadout) | **Đã triển khai** | Đã có trong `progression.ts`, `storage.ts`, `starfront-hangar.tsx`. Level, EXP, Credits, 3 ô trang bị. |
 | **Phase 3** | Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ (Missions, Gears & Shop) | **Đã triển khai** | Đã có trong `campaign-map.tsx`, `starfront-shop.tsx`, `audio.ts`. 3 Sector (9 ải), Vanguard / Falcon / Aegis, Chợ vũ khí, Web Audio. |
 | **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Đã triển khai** | Hoàn thành Milestones 4.1 -> 4.4: Status Effects (DoT/Stun/Slow/ECM), 4 Archetype AI, Boss 2 Pha Overdrive, Telegraphed Attack, Dynamic Turn Queue & Evasion. Đã kiểm chứng 36/36 tests. |
-| **Phase 5** | Tiến Trình Cơ Giáp & Cường Hóa (Gear & Equipment Progression) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
+| **Phase 5** | Tiến Trình Cơ Giáp & Cường Hóa (Gear & Equipment Progression) | **Đang triển khai** | Hoàn thành Milestone 5.1: Hệ Thống Cường Hóa Trang Bị +1 đến +10, Xưởng Cường Hóa trong Hangar, chi phí Credits & Alloy, cơ chế Anti-Frustration không bao giờ mất đồ. Đã kiểm chứng 15/15 tests. |
 | **Phase 6** | Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (World & War Expansion) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
 
 ---
 
 ## 2. Chi Tiết Tính Năng Đã Triển Khai (Implemented Features)
+
+### 2.5. Hệ Thống Cường Hóa Trang Bị +1 Đến +10 (Phase 5 — Milestone 5.1)
+- **Cường hóa trang bị từ +1 đến +10**:
+  - Hỗ trợ cả 3 ô trang bị: *Vũ khí (Weapon)*, *Khiên chắn (Shield)*, *Động cơ đẩy (Engine)*.
+  - Tăng trưởng chỉ số lũy tiến theo từng cấp: +12% đến +155% chỉ số gốc, đảm bảo mỗi cấp luôn tăng ít nhất +level điểm thuộc tính.
+  - Hiển thị nhãn cấp độ trực quan: `[+5] Pháo Cắt Plasma Cao Áp` cùng huy hiệu màu tương ứng theo rank (+1..+4 Cyan, +5..+7 Purple, +8..+9 Orange, +10 Gold Tối Thượng).
+- **Cơ chế an toàn tuyệt đối (Anti-Frustration Guarantee)**:
+  - Cấp +1 đến +4: Tỉ lệ thành công 100%.
+  - Cấp +5 đến +7: Tỉ lệ thành công 80% -> 70% -> 60%. Thất bại giữ nguyên cấp, KHÔNG BAO GIỜ bị vỡ, rớt cấp hay phá hủy trang bị.
+  - Cấp +8 đến +10: Tỉ lệ 45% -> 35% -> 25%, thất bại vẫn bảo toàn nguyên vẹn cấp độ trang bị.
+- **Tài nguyên nâng cấp & Vòng lặp kinh tế tuần hoàn**:
+  - Tiêu tốn Credits và nguyên liệu Hợp Kim (Alloy).
+  - Thu thập Hợp Kim (Alloy) qua chiến thắng Đấu Trường và ải Chiến Dịch (3 đến 20 Alloy tùy độ khó).
+- **Xưởng Cường Hóa Trực Quan trong Hangar (`starfront-hangar.tsx`)**:
+  - Modal chuyên dụng với thanh cuộn chọn nhanh trang bị trong kho.
+  - Bảng so sánh chỉ số trước và sau nâng cấp kèm chênh lệch xanh lá `(+Δ)`.
+  - Thanh đo tỉ lệ thành công (Success Rate Gauge) và chỉ báo đủ/thiếu tài nguyên minh bạch.
+  - Phản hồi âm thanh tương tác Sci-Fi Web Audio và banner kết quả trực quan.
+- **Tích hợp đồng bộ vào buồng lái & Đấu trường**:
+  - `calculateTotalGearStats` và `buildPlayerCombatUnit` tự động cập nhật sức mạnh ngay khi người chơi cường hóa trang bị.
 
 ### 2.1. Đấu Trường Cơ Giáp Theo Lượt (Phase 1)
 - **Cơ chế sáng kiến tốc độ (Speed Initiative)**:

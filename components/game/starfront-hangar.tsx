@@ -5,8 +5,12 @@ import { STARFRONT_GEAR_DEFS } from "@/lib/game/data"
 import { playClickSound } from "@/lib/game/audio"
 import {
   calculateTotalGearStats,
+  ENHANCEMENT_TABLE,
+  getEnhancedItemStats,
   getExpRequiredForLevel,
+  getItemDisplayName,
   SAMPLE_STARFRONT_ITEMS,
+  type EnhancementResult,
 } from "@/lib/game/progression"
 import type {
   StarfrontGearId,
@@ -25,10 +29,15 @@ import {
   Cpu,
   Flame,
   Gauge,
+  Hammer,
+  Layers,
   RotateCcw,
   Shield,
+  ShieldCheck,
   Sparkles,
   Sword,
+  TrendingUp,
+  Wrench,
   X,
   Zap,
 } from "lucide-react"
@@ -70,6 +79,36 @@ const SLOT_META: Record<StarfrontItemSlot, { label: string; icon: typeof Sword; 
   engine: { label: "Động Cơ Đẩy", icon: Gauge, desc: "Tối ưu tốc độ ra đòn (SPD & SP)" },
 }
 
+/** Lấy huy hiệu cấp cường hóa (+1 đến +10) */
+function getEnhancementBadgeMeta(level: number = 0) {
+  if (level === 0) return null
+  if (level >= 10) {
+    return {
+      text: "+10 TỐI THƯỢNG",
+      className:
+        "bg-amber-500/30 text-amber-300 border-amber-400 font-black shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse",
+    }
+  }
+  if (level >= 8) {
+    return {
+      text: `+${level}`,
+      className:
+        "bg-orange-500/25 text-orange-300 border-orange-400 font-bold shadow-[0_0_8px_rgba(249,115,22,0.4)]",
+    }
+  }
+  if (level >= 5) {
+    return {
+      text: `+${level}`,
+      className:
+        "bg-purple-500/25 text-purple-300 border-purple-400 font-bold shadow-[0_0_8px_rgba(168,85,247,0.4)]",
+    }
+  }
+  return {
+    text: `+${level}`,
+    className: "bg-cyan-500/20 text-cyan-300 border-cyan-400/60 font-bold",
+  }
+}
+
 interface StarfrontHangarProps {
   progression: StarfrontProgression
   onEquipItem: (itemId: string, slot: StarfrontItemSlot) => void
@@ -77,6 +116,7 @@ interface StarfrontHangarProps {
   onResetSave: () => void
   onNavigateToCombat: () => void
   onSelectGear?: (gearId: StarfrontGearId) => void
+  onEnhanceItem?: (itemId: string) => EnhancementResult
 }
 
 export function StarfrontHangar({
@@ -86,18 +126,26 @@ export function StarfrontHangar({
   onResetSave,
   onNavigateToCombat,
   onSelectGear,
+  onEnhanceItem,
 }: StarfrontHangarProps) {
   const [selectedSlotFilter, setSelectedSlotFilter] = useState<StarfrontItemSlot | "all">("all")
   const [hoveredItem, setHoveredItem] = useState<StarfrontItem | null>(null)
   const [showResetDialog, setShowResetDialog] = useState(false)
+
+  // Quản lý trạng thái Xưởng Cường Hóa (Enhancement Lab Modal)
+  const [showEnhanceModal, setShowEnhanceModal] = useState(false)
+  const [selectedEnhanceItemId, setSelectedEnhanceItemId] = useState<string | null>(null)
+  const [lastEnhanceResult, setLastEnhanceResult] = useState<EnhancementResult | null>(null)
+  const [isEnhancing, setIsEnhancing] = useState(false)
 
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
   const activeGearDef = STARFRONT_GEAR_DEFS[activeGearId] || STARFRONT_GEAR_DEFS.vanguard
 
   const expRequired = getExpRequiredForLevel(progression.level)
   const expPercentage = Math.min(100, Math.round((progression.exp / expRequired) * 100))
+  const alloyCount = progression.alloy ?? 25
 
-  // Tính toán chỉ số hiện tại dựa theo Gear đang chọn
+  // Tính toán chỉ số hiện tại dựa theo Gear đang chọn (đã tính cường hóa +1 đến +10)
   const currentStats = calculateTotalGearStats(
     activeGearId,
     progression.level,
@@ -125,6 +173,32 @@ export function StarfrontHangar({
     }
   }
 
+  // Mở giao diện Cường Hóa cho một trang bị cụ thể
+  const handleOpenEnhance = (itemId?: string) => {
+    playClickSound()
+    const targetId = itemId || progression.inventory[0]?.id || null
+    setSelectedEnhanceItemId(targetId)
+    setLastEnhanceResult(null)
+    setShowEnhanceModal(true)
+  }
+
+  // Thực hiện cường hóa trang bị đang chọn
+  const handleExecuteEnhance = () => {
+    if (!selectedEnhanceItemId || !onEnhanceItem || isEnhancing) return
+    setIsEnhancing(true)
+    playClickSound()
+
+    setTimeout(() => {
+      const res = onEnhanceItem(selectedEnhanceItemId)
+      setLastEnhanceResult(res)
+      setIsEnhancing(false)
+    }, 250)
+  }
+
+  const selectedEnhanceItem = progression.inventory.find(
+    (it) => it.id === selectedEnhanceItemId,
+  ) || progression.inventory[0]
+
   return (
     <div className="flex flex-col gap-5">
       {/* 1. Header tóm tắt tiến trình phi cơ Vanguard */}
@@ -144,13 +218,14 @@ export function StarfrontHangar({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Quản lý kho vũ khí, khiên chắn và động cơ đẩy · Mọi nâng cấp đều thay đổi thực tế lực chiến trong đấu trường
+                Quản lý kho vũ khí, khiên chắn và động cơ đẩy · Cường hóa trang bị từ +1 đến +10 gia tăng thực tế lực chiến
               </p>
             </div>
           </div>
 
-          {/* Credits & Chiến tích & Nút thao tác */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Credits & Hợp Kim Alloy & Nút Mở Xưởng Cường Hóa */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Ngân sách Credits */}
             <div className="flex items-center gap-1.5 rounded-sm border border-amber-500/40 bg-amber-950/30 px-3 py-1.5 font-mono text-xs text-amber-300">
               <Coins className="size-4 text-amber-400" />
               <span>Ngân sách:</span>
@@ -160,16 +235,30 @@ export function StarfrontHangar({
               <span>Credits</span>
             </div>
 
-            <div className="flex items-center gap-2 rounded-sm border border-border/70 bg-black/40 px-3 py-1.5 font-mono text-xs text-muted-foreground">
-              <span>Thắng: <strong className="text-emerald-400">{progression.battlesWon}</strong></span>
-              <span>·</span>
-              <span>Bại: <strong className="text-red-400">{progression.battlesLost}</strong></span>
+            {/* Hợp Kim Cường Hóa (Alloy) */}
+            <div className="flex items-center gap-1.5 rounded-sm border border-purple-500/40 bg-purple-950/30 px-3 py-1.5 font-mono text-xs text-purple-300">
+              <Layers className="size-4 text-purple-400" />
+              <span>Hợp Kim:</span>
+              <strong className="text-sm font-bold text-purple-200">
+                {alloyCount}
+              </strong>
+              <span>Alloy</span>
             </div>
+
+            {/* Nút Mở Xưởng Cường Hóa */}
+            <Button
+              onClick={() => handleOpenEnhance()}
+              size="sm"
+              className="gap-1.5 font-display text-xs uppercase tracking-wider bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.35)] cursor-pointer"
+            >
+              <Hammer className="size-3.5" />
+              <span>Xưởng Cường Hóa (+1 đến +10)</span>
+            </Button>
 
             <Button
               onClick={onNavigateToCombat}
               size="sm"
-              className="gap-1.5 font-display text-xs uppercase tracking-wider bg-cyan-500 text-black hover:bg-cyan-400"
+              className="gap-1.5 font-display text-xs uppercase tracking-wider bg-cyan-500 text-black hover:bg-cyan-400 cursor-pointer"
             >
               <span>Vào Đấu Trường</span>
               <ArrowRight className="size-3.5" />
@@ -179,7 +268,7 @@ export function StarfrontHangar({
               variant="outline"
               size="sm"
               onClick={() => setShowResetDialog(true)}
-              className="gap-1 text-xs text-red-400 hover:text-red-300 hover:border-red-500"
+              className="gap-1 text-xs text-red-400 hover:text-red-300 hover:border-red-500 cursor-pointer"
             >
               <RotateCcw className="size-3" />
               <span>Cài lại</span>
@@ -280,7 +369,7 @@ export function StarfrontHangar({
               </h3>
             </div>
             <span className="text-[11px] text-muted-foreground font-mono">
-              Bấm [Tháo đồ] để gỡ hoặc chọn món bên dưới để đổi
+              Bấm [Cường Hóa ⚡] để nâng cấp hoặc [Tháo đồ] để gỡ
             </span>
           </div>
 
@@ -290,6 +379,8 @@ export function StarfrontHangar({
               const SlotIcon = meta.icon
               const equippedItemId = progression.equipped[slotKey]
               const equippedItem = progression.inventory.find((it) => it.id === equippedItemId)
+              const enhBadge = equippedItem ? getEnhancementBadgeMeta(equippedItem.enhancementLevel) : null
+              const enhancedStats = equippedItem ? getEnhancedItemStats(equippedItem) : null
 
               return (
                 <div
@@ -310,92 +401,117 @@ export function StarfrontHangar({
                           {meta.label}
                         </span>
                       </div>
-                      {equippedItem && (
-                        <span
-                          className={cn(
-                            "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase border",
-                            RARITY_CONFIG[equippedItem.rarity].border,
-                            RARITY_CONFIG[equippedItem.rarity].text,
-                          )}
-                        >
-                          {RARITY_CONFIG[equippedItem.rarity].label}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {enhBadge && (
+                          <span className={cn("rounded px-1.5 py-0.2 font-mono text-[9px] border", enhBadge.className)}>
+                            {enhBadge.text}
+                          </span>
+                        )}
+                        {equippedItem && (
+                          <span
+                            className={cn(
+                              "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase border",
+                              RARITY_CONFIG[equippedItem.rarity].border,
+                              RARITY_CONFIG[equippedItem.rarity].text,
+                            )}
+                          >
+                            {RARITY_CONFIG[equippedItem.rarity].label}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Chi tiết trang bị */}
                     {equippedItem ? (
                       <div className="mt-2.5">
-                        <h4 className="font-display text-xs font-bold text-white">
-                          {equippedItem.name}
+                        <h4 className="font-display text-xs font-bold text-white flex items-center gap-1">
+                          {getItemDisplayName(equippedItem)}
                         </h4>
                         <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
                           {equippedItem.desc}
                         </p>
 
-                        {/* Điểm thưởng chỉ số */}
+                        {/* Điểm thưởng chỉ số đã tính Cường Hóa */}
                         <div className="mt-2.5 flex flex-wrap gap-1 font-mono text-[10px]">
-                          {equippedItem.attackBonus && (
+                          {enhancedStats?.attackBonus !== 0 && (
                             <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
-                              ATK +{equippedItem.attackBonus}
+                              ATK +{enhancedStats?.attackBonus}
                             </span>
                           )}
-                          {equippedItem.defenseBonus && (
+                          {enhancedStats?.defenseBonus !== 0 && (
                             <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
-                              DEF {equippedItem.defenseBonus > 0 ? `+${equippedItem.defenseBonus}` : equippedItem.defenseBonus}
+                              DEF {enhancedStats!.defenseBonus > 0 ? `+${enhancedStats!.defenseBonus}` : enhancedStats!.defenseBonus}
                             </span>
                           )}
-                          {equippedItem.speedBonus && (
+                          {enhancedStats?.speedBonus !== 0 && (
                             <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
-                              SPD +{equippedItem.speedBonus}
+                              SPD +{enhancedStats?.speedBonus}
                             </span>
                           )}
-                          {equippedItem.hpBonus && (
+                          {enhancedStats?.hpBonus !== 0 && (
                             <span className="rounded bg-teal-950/60 px-1.5 py-0.5 text-teal-300 border border-teal-500/30">
-                              HP +{equippedItem.hpBonus}
+                              HP +{enhancedStats?.hpBonus}
                             </span>
                           )}
-                          {equippedItem.spBonus && (
+                          {enhancedStats?.spBonus !== 0 && (
                             <span className="rounded bg-cyan-950/60 px-1.5 py-0.5 text-cyan-300 border border-cyan-500/30">
-                              SP +{equippedItem.spBonus}
+                              SP +{enhancedStats?.spBonus}
                             </span>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <div className="py-6 text-center text-muted-foreground/60">
-                        <p className="text-xs italic">-- Chưa lắp trang bị --</p>
-                        <p className="mt-1 text-[10px]">{meta.desc}</p>
+                      <div className="my-5 flex flex-col items-center justify-center text-center text-muted-foreground">
+                        <SlotIcon className="size-8 opacity-30 mb-1" />
+                        <span className="text-xs font-display">CHƯA TRANG BỊ</span>
+                        <span className="text-[10px]">{meta.desc}</span>
                       </div>
                     )}
                   </div>
 
-                  {/* Nút tháo trang bị */}
-                  {equippedItem && (
-                    <div className="mt-3 border-t border-border/40 pt-2 text-right">
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => onUnequipSlot(slotKey)}
-                        className="text-[11px] text-red-400 hover:text-red-300 hover:bg-red-950/40"
-                      >
-                        <X className="size-3 mr-1" /> Tháo trang bị
-                      </Button>
-                    </div>
-                  )}
+                  {/* Nút hành động cho ô slot */}
+                  <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+                    {equippedItem ? (
+                      <>
+                        <Button
+                          size="xs"
+                          variant="ghost"
+                          onClick={() => onUnequipSlot(slotKey)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-950/40 text-[10px] font-mono cursor-pointer"
+                        >
+                          <X className="size-3 mr-0.5" /> Tháo đồ
+                        </Button>
+
+                        <Button
+                          size="xs"
+                          onClick={() => handleOpenEnhance(equippedItem.id)}
+                          className="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-display gap-1 cursor-pointer"
+                        >
+                          <Hammer className="size-3" /> Cường Hóa ⚡
+                        </Button>
+                      </>
+                    ) : (
+                      <span className="text-[10px] font-mono text-muted-foreground italic">
+                        Chọn từ kho đồ bên dưới
+                      </span>
+                    )}
+                  </div>
                 </div>
               )
             })}
           </div>
         </div>
 
-        {/* Cột 3: Bảng Chỉ Số Thực Tế & So Sánh (Stat Inspection Card) */}
-        <div className="rounded-sm border border-cyan-500/40 bg-panel p-4 shadow-xl">
+        {/* Cột 3: Bảng Chỉ Số Thực Tế Trong Đấu Trường */}
+        <div className="rounded-sm border border-cyan-500/40 bg-panel/90 p-4 shadow-xl">
           <div className="mb-3 border-b border-border/60 pb-2">
-            <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-              CHỈ SỐ CHIẾN ĐẤU VANGUARD
-            </h3>
-            <p className="text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Gauge className="size-4 text-cyan-400" />
+              <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+                CHỈ SỐ THỰC TẾ ({activeGearDef.name.toUpperCase()})
+              </h3>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-0.5">
               {hoveredItem
                 ? `⚡ Xem trước thay đổi khi trang bị: ${hoveredItem.name}`
                 : "Chỉ số thực tế được nạp vào sàn đấu"}
@@ -455,7 +571,7 @@ export function StarfrontHangar({
           </div>
 
           <div className="mt-4 rounded bg-black/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground border border-border/50">
-            <span className="font-bold text-cyan-300">💡 Lưu ý chiến thuật:</span> Tốc độ (SPD) quyết định ai ra đòn trước trong lượt. Tấn công (ATK) càng cao thì kỹ năng chủ lực càng bùng nổ sát thương.
+            <span className="font-bold text-cyan-300">💡 Lưu ý cường hóa:</span> Cường hóa trang bị gia tăng trực tiếp sức mạnh cho toàn bộ chỉ số cộng thêm. Cấp càng cao, lực chiến bứt phá càng khủng khiếp!
           </div>
 
           {/* Bộ Kỹ Năng Độc Quyền Của Gear Đang Chọn */}
@@ -481,7 +597,7 @@ export function StarfrontHangar({
         </div>
       </div>
 
-      {/* 3. Kho đồ sở hữu (Inventory List) */}
+      {/* 4. Kho đồ sở hữu (Inventory List) */}
       <div className="rounded-sm border border-border/70 bg-panel/80 p-4 shadow-xl">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
           <div className="flex items-center gap-2">
@@ -509,7 +625,7 @@ export function StarfrontHangar({
                   key={filter}
                   onClick={() => setSelectedSlotFilter(filter)}
                   className={cn(
-                    "rounded-xs border px-2.5 py-1 font-display text-[11px] transition-all",
+                    "rounded-xs border px-2.5 py-1 font-display text-[11px] transition-all cursor-pointer",
                     active
                       ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold"
                       : "border-border/60 text-muted-foreground hover:text-foreground",
@@ -527,6 +643,8 @@ export function StarfrontHangar({
           {filteredInventory.map((item) => {
             const isEquipped = progression.equipped[item.slot] === item.id
             const rarity = RARITY_CONFIG[item.rarity]
+            const enhBadge = getEnhancementBadgeMeta(item.enhancementLevel)
+            const enhancedStats = getEnhancedItemStats(item)
 
             return (
               <div
@@ -542,49 +660,56 @@ export function StarfrontHangar({
               >
                 <div>
                   <div className="flex items-center justify-between gap-1">
-                    <span className="font-display text-xs font-bold text-white group-hover:text-cyan-300">
-                      {item.name}
+                    <span className="font-display text-xs font-bold text-white group-hover:text-cyan-300 flex items-center gap-1">
+                      {getItemDisplayName(item)}
                     </span>
-                    <span
-                      className={cn(
-                        "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase border",
-                        rarity.border,
-                        rarity.text,
+                    <div className="flex items-center gap-1">
+                      {enhBadge && (
+                        <span className={cn("rounded px-1.5 py-0.2 font-mono text-[9px] border", enhBadge.className)}>
+                          {enhBadge.text}
+                        </span>
                       )}
-                    >
-                      {rarity.label}
-                    </span>
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase border",
+                          rarity.border,
+                          rarity.text,
+                        )}
+                      >
+                        {rarity.label}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
                     {item.desc}
                   </p>
 
-                  {/* Chỉ số cộng */}
+                  {/* Chỉ số cộng đã tính cấp cường hóa */}
                   <div className="mt-2.5 flex flex-wrap gap-1 font-mono text-[10px]">
-                    {item.attackBonus && (
+                    {enhancedStats.attackBonus !== 0 && (
                       <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
-                        ATK +{item.attackBonus}
+                        ATK +{enhancedStats.attackBonus}
                       </span>
                     )}
-                    {item.defenseBonus && (
+                    {enhancedStats.defenseBonus !== 0 && (
                       <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
-                        DEF {item.defenseBonus > 0 ? `+${item.defenseBonus}` : item.defenseBonus}
+                        DEF {enhancedStats.defenseBonus > 0 ? `+${enhancedStats.defenseBonus}` : enhancedStats.defenseBonus}
                       </span>
                     )}
-                    {item.speedBonus && (
+                    {enhancedStats.speedBonus !== 0 && (
                       <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
-                        SPD +{item.speedBonus}
+                        SPD +{enhancedStats.speedBonus}
                       </span>
                     )}
-                    {item.hpBonus && (
+                    {enhancedStats.hpBonus !== 0 && (
                       <span className="rounded bg-teal-950/60 px-1.5 py-0.5 text-teal-300 border border-teal-500/30">
-                        HP +{item.hpBonus}
+                        HP +{enhancedStats.hpBonus}
                       </span>
                     )}
-                    {item.spBonus && (
+                    {enhancedStats.spBonus !== 0 && (
                       <span className="rounded bg-cyan-950/60 px-1.5 py-0.5 text-cyan-300 border border-cyan-500/30">
-                        SP +{item.spBonus}
+                        SP +{enhancedStats.spBonus}
                       </span>
                     )}
                   </div>
@@ -596,19 +721,30 @@ export function StarfrontHangar({
                     Slot: {SLOT_META[item.slot].label}
                   </span>
 
-                  {isEquipped ? (
-                    <span className="flex items-center gap-1 font-display text-[11px] font-bold text-cyan-300">
-                      <Check className="size-3.5" /> ĐANG TRANG BỊ
-                    </span>
-                  ) : (
+                  <div className="flex items-center gap-1.5">
                     <Button
                       size="xs"
-                      onClick={() => onEquipItem(item.id, item.slot)}
-                      className="gap-1 font-display text-[10px] uppercase bg-cyan-600 hover:bg-cyan-500 text-white"
+                      onClick={() => handleOpenEnhance(item.id)}
+                      className="gap-1 font-display text-[10px] uppercase bg-purple-600/80 hover:bg-purple-500 text-white cursor-pointer"
                     >
-                      <span>Trang bị</span>
+                      <Hammer className="size-3" />
+                      <span>Cường Hóa</span>
                     </Button>
-                  )}
+
+                    {isEquipped ? (
+                      <span className="flex items-center gap-1 font-display text-[11px] font-bold text-cyan-300">
+                        <Check className="size-3.5" /> ĐANG DÙNG
+                      </span>
+                    ) : (
+                      <Button
+                        size="xs"
+                        onClick={() => onEquipItem(item.id, item.slot)}
+                        className="gap-1 font-display text-[10px] uppercase bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer"
+                      >
+                        <span>Trang bị</span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             )
@@ -616,7 +752,372 @@ export function StarfrontHangar({
         </div>
       </div>
 
-      {/* 4. Hộp thoại xác nhận Cài lại tiến trình (Reset Confirmation Modal) */}
+      {/* 5. Modal Xưởng Cường Hóa Trang Bị (Enhancement Lab Modal) */}
+      {showEnhanceModal && selectedEnhanceItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+          <div className="max-w-2xl w-full rounded-sm border border-purple-500/60 bg-panel p-5 shadow-2xl relative flex flex-col max-h-[90vh] overflow-y-auto">
+            {/* Header Modal */}
+            <div className="flex items-center justify-between border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-9 items-center justify-center rounded bg-purple-950/80 border border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+                  <Hammer className="size-5 text-purple-300" />
+                </div>
+                <div>
+                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-purple-200">
+                    XƯỞNG CƯỜNG HÓA TRANG BỊ // ENHANCEMENT LAB (+1 ĐẾN +10)
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Nâng cấp linh kiện gia tăng sức mạnh vượt bậc · Cơ chế chống ức chế bảo toàn trang bị 100%
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowEnhanceModal(false)}
+                className="size-7 flex items-center justify-center rounded border border-border/60 text-muted-foreground hover:text-white hover:border-purple-400 transition-colors cursor-pointer"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Thanh Chọn Nhanh Trang Bị Trong Kho */}
+            <div className="my-3 border-b border-border/40 pb-3">
+              <span className="text-[10px] font-mono text-muted-foreground uppercase block mb-1.5">
+                Chọn trang bị trong kho để cường hóa:
+              </span>
+              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                {progression.inventory.map((invItem) => {
+                  const isSelected = invItem.id === selectedEnhanceItem.id
+                  const badge = getEnhancementBadgeMeta(invItem.enhancementLevel)
+                  return (
+                    <button
+                      key={invItem.id}
+                      onClick={() => {
+                        playClickSound()
+                        setSelectedEnhanceItemId(invItem.id)
+                        setLastEnhanceResult(null)
+                      }}
+                      className={cn(
+                        "flex shrink-0 items-center gap-1.5 rounded-sm border px-2.5 py-1 text-[11px] font-mono transition-all cursor-pointer",
+                        isSelected
+                          ? "border-purple-400 bg-purple-950/80 text-purple-200 font-bold shadow-[0_0_10px_rgba(168,85,247,0.3)]"
+                          : "border-border/60 bg-black/40 text-muted-foreground hover:text-foreground",
+                      )}
+                    >
+                      <span>{invItem.name}</span>
+                      {badge && (
+                        <span className={cn("rounded px-1 text-[9px] border", badge.className)}>
+                          {badge.text}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Chi Tiết Cường Hóa Món Đồ Đang Chọn */}
+            {(() => {
+              const currentLevel = Math.max(0, Math.min(10, selectedEnhanceItem.enhancementLevel || 0))
+              const isMax = currentLevel >= 10
+              const targetLevel = currentLevel + 1
+              const nextConfig = !isMax ? ENHANCEMENT_TABLE[targetLevel] : null
+              const currentStatsObj = getEnhancedItemStats(selectedEnhanceItem)
+              const nextItemMock: StarfrontItem = { ...selectedEnhanceItem, enhancementLevel: targetLevel }
+              const nextStatsObj = !isMax ? getEnhancedItemStats(nextItemMock) : currentStatsObj
+
+              const hasEnoughCredits = nextConfig ? progression.credits >= nextConfig.creditsCost : false
+              const hasEnoughAlloy = nextConfig ? alloyCount >= nextConfig.alloyCost : false
+              const canEnhance = !isMax && hasEnoughCredits && hasEnoughAlloy && !isEnhancing
+
+              return (
+                <div className="space-y-4">
+                  {/* Khung Thông Tin Cấp Độ Hiện Tại vs Cấp Tiếp Theo */}
+                  <div className="rounded-sm border border-purple-500/40 bg-black/40 p-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-2.5">
+                      <div>
+                        <span className="font-display text-sm font-bold text-white flex items-center gap-1.5">
+                          {getItemDisplayName(selectedEnhanceItem)}
+                        </span>
+                        <span className="text-[11px] font-mono text-muted-foreground">
+                          Vị trí: {SLOT_META[selectedEnhanceItem.slot].label} · Độ hiếm: {RARITY_CONFIG[selectedEnhanceItem.rarity].label}
+                        </span>
+                      </div>
+
+                      {/* Huy Hiệu Cấp Độ */}
+                      <div className="flex items-center gap-2 font-mono">
+                        <span className="rounded bg-black/60 border border-border/70 px-2.5 py-1 text-xs text-muted-foreground">
+                          Cấp: <strong className="text-white">+{currentLevel}</strong>
+                        </span>
+                        {!isMax && (
+                          <>
+                            <ArrowRight className="size-4 text-purple-400" />
+                            <span className="rounded bg-purple-950/80 border border-purple-400 px-2.5 py-1 text-xs font-bold text-purple-200 animate-pulse">
+                              Lên: +{targetLevel}
+                            </span>
+                          </>
+                        )}
+                        {isMax && (
+                          <span className="rounded bg-amber-500/20 border border-amber-400 px-2.5 py-1 text-xs font-bold text-amber-300">
+                            ★ CẤP ĐỘ TỐI THƯỢNG
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bảng So Sánh Chỉ Số Nhận Được */}
+                    <div className="mt-3">
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase block mb-1.5">
+                        Biến động chỉ số sau khi cường hóa:
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-xs">
+                        {/* ATK */}
+                        {currentStatsObj.attackBonus !== 0 && (
+                          <div className="rounded border border-red-500/30 bg-red-950/20 p-2">
+                            <span className="text-[10px] text-red-300 block">Sức Tấn Công (ATK)</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-white">+{currentStatsObj.attackBonus}</span>
+                              {!isMax && (
+                                <span className="text-emerald-400 font-bold text-[11px]">
+                                  ➔ +{nextStatsObj.attackBonus} (+{nextStatsObj.attackBonus - currentStatsObj.attackBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* DEF */}
+                        {currentStatsObj.defenseBonus !== 0 && (
+                          <div className="rounded border border-blue-500/30 bg-blue-950/20 p-2">
+                            <span className="text-[10px] text-blue-300 block">Phòng Thủ (DEF)</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-white">+{currentStatsObj.defenseBonus}</span>
+                              {!isMax && (
+                                <span className="text-emerald-400 font-bold text-[11px]">
+                                  ➔ +{nextStatsObj.defenseBonus} (+{nextStatsObj.defenseBonus - currentStatsObj.defenseBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* SPD */}
+                        {currentStatsObj.speedBonus !== 0 && (
+                          <div className="rounded border border-emerald-500/30 bg-emerald-950/20 p-2">
+                            <span className="text-[10px] text-emerald-300 block">Tốc Độ (SPD)</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-white">+{currentStatsObj.speedBonus}</span>
+                              {!isMax && (
+                                <span className="text-emerald-400 font-bold text-[11px]">
+                                  ➔ +{nextStatsObj.speedBonus} (+{nextStatsObj.speedBonus - currentStatsObj.speedBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* HP */}
+                        {currentStatsObj.hpBonus !== 0 && (
+                          <div className="rounded border border-teal-500/30 bg-teal-950/20 p-2">
+                            <span className="text-[10px] text-teal-300 block">Vỏ Giáp (HP)</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-white">+{currentStatsObj.hpBonus}</span>
+                              {!isMax && (
+                                <span className="text-emerald-400 font-bold text-[11px]">
+                                  ➔ +{nextStatsObj.hpBonus} (+{nextStatsObj.hpBonus - currentStatsObj.hpBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* SP */}
+                        {currentStatsObj.spBonus !== 0 && (
+                          <div className="rounded border border-cyan-500/30 bg-cyan-950/20 p-2">
+                            <span className="text-[10px] text-cyan-300 block">Lõi Năng Lượng (SP)</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-white">+{currentStatsObj.spBonus}</span>
+                              {!isMax && (
+                                <span className="text-emerald-400 font-bold text-[11px]">
+                                  ➔ +{nextStatsObj.spBonus} (+{nextStatsObj.spBonus - currentStatsObj.spBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thanh Đo Tỉ Lệ Thành Công (Success Rate Gauge) */}
+                  {!isMax && nextConfig && (
+                    <div className="rounded-sm border border-border/70 bg-black/40 p-3">
+                      <div className="flex items-center justify-between mb-1.5 text-xs font-mono">
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <TrendingUp className="size-3.5 text-purple-400" />
+                          Tỉ Lệ Thành Công Cấp +{targetLevel}:
+                        </span>
+                        <span
+                          className={cn(
+                            "font-bold",
+                            nextConfig.successRate === 1.0
+                              ? "text-emerald-400"
+                              : nextConfig.successRate >= 0.6
+                                ? "text-amber-300"
+                                : "text-orange-400",
+                          )}
+                        >
+                          {Math.round(nextConfig.successRate * 100)}%{" "}
+                          {nextConfig.successRate === 1.0
+                            ? "(100% An Toàn)"
+                            : nextConfig.successRate >= 0.6
+                              ? "(Thất bại giữ nguyên cấp)"
+                              : "(Cấp cao thử thách)"}
+                        </span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded bg-secondary/80">
+                        <div
+                          className={cn(
+                            "h-full transition-all duration-300",
+                            nextConfig.successRate === 1.0
+                              ? "bg-emerald-400"
+                              : nextConfig.successRate >= 0.6
+                                ? "bg-amber-400"
+                                : "bg-orange-500",
+                          )}
+                          style={{ width: `${Math.round(nextConfig.successRate * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Chi Phí & Tài Nguyên Yêu Cầu */}
+                  {!isMax && nextConfig && (
+                    <div className="grid grid-cols-2 gap-3 font-mono text-xs">
+                      {/* Credits */}
+                      <div
+                        className={cn(
+                          "rounded border p-2.5 flex items-center justify-between",
+                          hasEnoughCredits
+                            ? "border-amber-500/40 bg-amber-950/20"
+                            : "border-red-500/50 bg-red-950/30",
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Coins className="size-4 text-amber-400" />
+                          <div>
+                            <span className="text-[10px] text-muted-foreground block">Credits cần</span>
+                            <span className="font-bold text-amber-300">
+                              {nextConfig.creditsCost.toLocaleString("vi-VN")}
+                            </span>
+                          </div>
+                        </div>
+                        <span className={cn("text-[10px]", hasEnoughCredits ? "text-emerald-400" : "text-red-400")}>
+                          Có: {progression.credits.toLocaleString("vi-VN")}
+                        </span>
+                      </div>
+
+                      {/* Alloy */}
+                      <div
+                        className={cn(
+                          "rounded border p-2.5 flex items-center justify-between",
+                          hasEnoughAlloy
+                            ? "border-purple-500/40 bg-purple-950/20"
+                            : "border-red-500/50 bg-red-950/30",
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Layers className="size-4 text-purple-400" />
+                          <div>
+                            <span className="text-[10px] text-muted-foreground block">Hợp Kim (Alloy) cần</span>
+                            <span className="font-bold text-purple-300">
+                              {nextConfig.alloyCost} Alloy
+                            </span>
+                          </div>
+                        </div>
+                        <span className={cn("text-[10px]", hasEnoughAlloy ? "text-emerald-400" : "text-red-400")}>
+                          Có: {alloyCount}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cam Kết Bảo Vệ Trang Bị (Anti-Frustration Guarantee Banner) */}
+                  <div className="rounded border border-emerald-500/30 bg-emerald-950/20 p-2.5 flex items-center gap-2 text-xs text-emerald-300 font-mono">
+                    <ShieldCheck className="size-4 shrink-0 text-emerald-400" />
+                    <span>
+                      <strong>BẢO VỆ TUYỆT ĐỐI:</strong> Thất bại không bao giờ làm vỡ hay rớt cấp trang bị! Cấp độ sẽ được bảo toàn nguyên vẹn.
+                    </span>
+                  </div>
+
+                  {/* Kết Quả Lần Cường Hóa Gần Nhất */}
+                  {lastEnhanceResult && (
+                    <div
+                      className={cn(
+                        "rounded border p-3 font-mono text-xs animate-in fade-in flex items-center gap-2.5",
+                        lastEnhanceResult.success
+                          ? "border-emerald-400 bg-emerald-950/40 text-emerald-200"
+                          : "border-amber-400 bg-amber-950/40 text-amber-200",
+                      )}
+                    >
+                      {lastEnhanceResult.success ? (
+                        <Sparkles className="size-5 text-emerald-400 shrink-0 animate-bounce" />
+                      ) : (
+                        <AlertTriangle className="size-5 text-amber-400 shrink-0" />
+                      )}
+                      <div>
+                        <span className="font-bold block">
+                          {lastEnhanceResult.success ? "CƯỜNG HÓA THÀNH CÔNG!" : "CƯỜNG HÓA THẤT BẠI"}
+                        </span>
+                        <span className="text-[11px] opacity-90">{lastEnhanceResult.message}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Nút Thao Tác Cường Hóa */}
+                  <div className="pt-2 flex justify-end gap-2.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowEnhanceModal(false)}
+                      className="font-display text-xs cursor-pointer"
+                    >
+                      Đóng
+                    </Button>
+
+                    {!isMax && (
+                      <Button
+                        size="sm"
+                        disabled={!canEnhance}
+                        onClick={handleExecuteEnhance}
+                        className={cn(
+                          "gap-1.5 font-display text-xs uppercase tracking-wider font-bold cursor-pointer",
+                          canEnhance
+                            ? "bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.5)]"
+                            : "bg-secondary text-muted-foreground cursor-not-allowed",
+                        )}
+                      >
+                        <Hammer className="size-3.5" />
+                        <span>
+                          {isEnhancing
+                            ? "Đang Cường Hóa..."
+                            : !hasEnoughCredits
+                              ? "Thiếu Credits"
+                              : !hasEnoughAlloy
+                                ? "Thiếu Alloy"
+                                : `Cường Hóa [+${targetLevel}] Ngay ⚡`}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* 6. Hộp thoại xác nhận Cài lại tiến trình (Reset Confirmation Modal) */}
       {showResetDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
           <div className="max-w-md w-full rounded-sm border border-red-500/60 bg-panel p-5 shadow-2xl">
@@ -628,7 +1129,7 @@ export function StarfrontHangar({
             </div>
 
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Toàn bộ dữ liệu cấp độ Vanguard, số EXP tích lũy, số Credits và chiến tích trận đấu đã lưu trong trình duyệt sẽ được đưa về giá trị mặc định ban đầu (Cấp 1, 500 Credits). Hành động này không thể hoàn tác.
+              Toàn bộ dữ liệu cấp độ Vanguard, số EXP tích lũy, số Credits, Hợp Kim (Alloy) và trang bị cường hóa đã lưu trong trình duyệt sẽ được đưa về giá trị mặc định ban đầu. Hành động này không thể hoàn tác.
             </p>
 
             <div className="mt-5 flex justify-end gap-2.5">
@@ -636,7 +1137,7 @@ export function StarfrontHangar({
                 variant="outline"
                 size="sm"
                 onClick={() => setShowResetDialog(false)}
-                className="text-xs font-display"
+                className="text-xs font-display cursor-pointer"
               >
                 Hủy bỏ
               </Button>
@@ -647,7 +1148,7 @@ export function StarfrontHangar({
                   onResetSave()
                   setShowResetDialog(false)
                 }}
-                className="text-xs font-display uppercase tracking-wider"
+                className="text-xs font-display uppercase tracking-wider cursor-pointer"
               >
                 Đồng ý xóa & Reset
               </Button>

@@ -137,7 +137,7 @@ export function StarfrontHangar({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-display text-base font-bold uppercase tracking-wider text-cyan-200">
-                  XƯỞNG TRANG BỊ VANGUARD // STARFRONT HANGAR
+                  XƯỞNG TRANG BỊ {activeGearDef.name.toUpperCase()} // STARFRONT HANGAR
                 </h2>
                 <span className="rounded bg-cyan-500/20 px-2 py-0.5 font-mono text-xs font-bold text-cyan-300 border border-cyan-500/40">
                   CẤP {progression.level}

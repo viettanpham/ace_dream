@@ -69,6 +69,67 @@ import { CampaignMap } from "./campaign-map"
 import { StarfrontHangar } from "./starfront-hangar"
 import { StarfrontShop } from "./starfront-shop"
 
+const GEAR_THEMES: Record<
+  StarfrontGearId,
+  {
+    border: string
+    borderHover: string
+    bgGradient: string
+    badgeBg: string
+    badgeText: string
+    badgeBorder: string
+    textPrimary: string
+    textAccent: string
+    iconBg: string
+    iconBorder: string
+    iconColor: string
+    spGradient: string
+  }
+> = {
+  vanguard: {
+    border: "border-cyan-500/40",
+    borderHover: "hover:border-cyan-300 hover:bg-cyan-950/40 hover:shadow-[0_0_15px_rgba(34,211,238,0.25)]",
+    bgGradient: "from-cyan-950/20 via-panel/80 to-panel",
+    badgeBg: "bg-cyan-500/20",
+    badgeText: "text-cyan-300",
+    badgeBorder: "border-cyan-500/50",
+    textPrimary: "text-cyan-200",
+    textAccent: "text-cyan-400",
+    iconBg: "bg-cyan-950/60",
+    iconBorder: "border-cyan-400/60 shadow-[0_0_20px_rgba(6,182,212,0.4)]",
+    iconColor: "text-cyan-300",
+    spGradient: "from-cyan-500 to-blue-500",
+  },
+  falcon: {
+    border: "border-purple-500/40",
+    borderHover: "hover:border-purple-300 hover:bg-purple-950/40 hover:shadow-[0_0_15px_rgba(168,85,247,0.25)]",
+    bgGradient: "from-purple-950/20 via-panel/80 to-panel",
+    badgeBg: "bg-purple-500/20",
+    badgeText: "text-purple-300",
+    badgeBorder: "border-purple-500/50",
+    textPrimary: "text-purple-200",
+    textAccent: "text-purple-400",
+    iconBg: "bg-purple-950/60",
+    iconBorder: "border-purple-400/60 shadow-[0_0_20px_rgba(168,85,247,0.4)]",
+    iconColor: "text-purple-300",
+    spGradient: "from-purple-500 to-indigo-500",
+  },
+  aegis: {
+    border: "border-amber-500/40",
+    borderHover: "hover:border-amber-300 hover:bg-amber-950/40 hover:shadow-[0_0_15px_rgba(245,158,11,0.25)]",
+    bgGradient: "from-amber-950/20 via-panel/80 to-panel",
+    badgeBg: "bg-amber-500/20",
+    badgeText: "text-amber-300",
+    badgeBorder: "border-amber-500/50",
+    textPrimary: "text-amber-200",
+    textAccent: "text-amber-400",
+    iconBg: "bg-amber-950/60",
+    iconBorder: "border-amber-400/60 shadow-[0_0_20px_rgba(245,158,11,0.4)]",
+    iconColor: "text-amber-300",
+    spGradient: "from-amber-500 to-orange-500",
+  },
+}
+
 export function CombatArena() {
   // 1. Quản lý tiến trình STARFRONT (Level, EXP, Credits, Trang bị, Gears, Chiến dịch)
   const [progression, setProgression] = useState<StarfrontProgression>(INITIAL_STARFRONT_PROGRESSION)
@@ -76,6 +137,10 @@ export function CombatArena() {
   const [activeSubView, setActiveSubView] = useState<"combat" | "campaign" | "hangar" | "shop">("combat")
   const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(null)
   const [audioMuted, setAudioMutedState] = useState(false)
+
+  const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
+  const activeGearDef = STARFRONT_GEAR_DEFS[activeGearId] || STARFRONT_GEAR_DEFS.vanguard
+  const currentTheme = GEAR_THEMES[activeGearId] || GEAR_THEMES.vanguard
 
   // 2. Trạng thái chiến đấu
   const [selectedEncounter, setSelectedEncounter] = useState<EnemyEncounterType>("scout-drone")
@@ -174,15 +239,35 @@ export function CombatArena() {
   // Đổi lớp Gear (Vanguard, Falcon, Aegis)
   const handleSelectGear = (gearId: StarfrontGearId) => {
     playClickSound()
-    setProgression((prev) => {
-      const updated: StarfrontProgression = {
-        ...prev,
-        activeGearId: gearId,
-      }
-      handleStartEncounter(selectedEncounter, updated, activeCampaignMission)
-      return updated
-    })
+    const updated: StarfrontProgression = {
+      ...progression,
+      activeGearId: gearId,
+    }
+    setProgression(updated)
+    saveStarfrontProgression(updated)
+    handleStartEncounter(selectedEncounter, updated, activeCampaignMission)
   }
+
+  // Chuyển đổi tab phân hệ và luôn đồng bộ buồng lái chiến đấu nếu lớp Gear khác nhau
+  const handleSwitchTab = (targetSubView: "combat" | "campaign" | "hangar" | "shop") => {
+    playClickSound()
+    setActiveSubView(targetSubView)
+    if (targetSubView === "combat") {
+      const currentGear = progression.activeGearId || "vanguard"
+      if (combatState.player.gearType !== currentGear) {
+        handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+      }
+    }
+  }
+
+  // Luôn đồng bộ lại combatState nếu lớp Gear của người chơi thay đổi
+  useEffect(() => {
+    if (!hasLoadedProgression) return
+    const currentGear = progression.activeGearId || "vanguard"
+    if (combatState.player.gearType !== currentGear) {
+      handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+    }
+  }, [progression.activeGearId, hasLoadedProgression])
 
   // Bật / Tắt âm thanh Sci-Fi Web Audio
   const handleToggleAudio = () => {
@@ -337,17 +422,16 @@ export function CombatArena() {
 
   const expRequired = getExpRequiredForLevel(progression.level)
   const expPct = Math.min(100, Math.round((progression.exp / expRequired) * 100))
-  const activeGearDef = STARFRONT_GEAR_DEFS[progression.activeGearId || "vanguard"] || STARFRONT_GEAR_DEFS.vanguard
 
   return (
     <div className="flex flex-col gap-4">
       {/* 1. Header Thanh Tiến Trình Cấp Độ & Chuyển Đổi Tab Con */}
-      <div className="rounded-sm border border-cyan-500/40 bg-black/60 p-3 shadow-xl backdrop-blur-md">
+      <div className={cn("rounded-sm border bg-black/60 p-3 shadow-xl backdrop-blur-md", currentTheme.border)}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Thông tin cấp độ & EXP & Credits */}
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2.5">
-              <span className="flex size-8 items-center justify-center rounded-xs bg-cyan-500/20 font-mono text-sm font-black text-cyan-300 border border-cyan-500/60 shadow-[0_0_10px_rgba(34,211,238,0.3)]">
+              <span className={cn("flex size-8 items-center justify-center rounded-xs font-mono text-sm font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                 {activeGearDef.name.charAt(0)}
               </span>
               <div>
@@ -355,7 +439,7 @@ export function CombatArena() {
                   <span className="font-display text-sm font-bold text-white tracking-wider">
                     {activeGearDef.name.toUpperCase()}
                   </span>
-                  <span className="rounded bg-cyan-500/20 px-1.5 py-0.2 font-mono text-xs font-bold text-cyan-300 border border-cyan-500/40">
+                  <span className={cn("rounded px-1.5 py-0.2 font-mono text-xs font-bold border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                     CẤP {progression.level}
                   </span>
                 </div>
@@ -384,10 +468,7 @@ export function CombatArena() {
           {/* Nút chuyển đổi giữa Đấu trường, Bản đồ chiến dịch, Hangar và Chợ */}
           <div className="flex flex-wrap items-center gap-1.5">
             <button
-              onClick={() => {
-                playClickSound()
-                setActiveSubView("combat")
-              }}
+              onClick={() => handleSwitchTab("combat")}
               className={cn(
                 "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
                 activeSubView === "combat"
@@ -400,10 +481,7 @@ export function CombatArena() {
             </button>
 
             <button
-              onClick={() => {
-                playClickSound()
-                setActiveSubView("campaign")
-              }}
+              onClick={() => handleSwitchTab("campaign")}
               className={cn(
                 "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
                 activeSubView === "campaign"
@@ -416,10 +494,7 @@ export function CombatArena() {
             </button>
 
             <button
-              onClick={() => {
-                playClickSound()
-                setActiveSubView("hangar")
-              }}
+              onClick={() => handleSwitchTab("hangar")}
               className={cn(
                 "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
                 activeSubView === "hangar"
@@ -432,10 +507,7 @@ export function CombatArena() {
             </button>
 
             <button
-              onClick={() => {
-                playClickSound()
-                setActiveSubView("shop")
-              }}
+              onClick={() => handleSwitchTab("shop")}
               className={cn(
                 "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
                 activeSubView === "shop"
@@ -486,7 +558,7 @@ export function CombatArena() {
           onResetSave={handleResetSave}
           onSelectGear={handleSelectGear}
           onNavigateToCombat={() => {
-            setActiveSubView("combat")
+            handleSwitchTab("combat")
             handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
           }}
         />
@@ -617,7 +689,7 @@ export function CombatArena() {
                         : "bg-red-500/20 text-red-300 border border-red-400",
                   )}
                 >
-                  {status === "player-turn" && "⚡ ĐẾN LƯỢT BẠN (VANGUARD) — HÃY TẤN CÔNG!"}
+                  {status === "player-turn" && `⚡ ĐẾN LƯỢT BẠN (${activeGearDef.name.toUpperCase()}) — HÃY TẤN CÔNG!`}
                   {status === "victory" && "CHIẾN THẮNG VANG DỘI"}
                   {status === "defeat" && "THẤT BẠI - BỊ PHÁ HỦY"}
                 </div>
@@ -625,7 +697,7 @@ export function CombatArena() {
             </div>
           </div>
 
-          {/* 4. Lưới Chiến Trường Chính (Vanguard vs Kẻ Địch) */}
+          {/* 4. Lưới Chiến Trường Chính (Người chơi vs Kẻ Địch) */}
           <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* Floating Combat Feedback */}
             {floatingNotification && (
@@ -643,20 +715,20 @@ export function CombatArena() {
               </div>
             )}
 
-            {/* Cột 1: Vanguard (Người chơi) */}
-            <div className="relative overflow-hidden rounded-sm border border-cyan-500/40 bg-gradient-to-b from-cyan-950/20 via-panel/80 to-panel p-4 shadow-xl">
+            {/* Cột 1: Người chơi (Vanguard / Falcon / Aegis) */}
+            <div className={cn("relative overflow-hidden rounded-sm border p-4 shadow-xl bg-gradient-to-b", currentTheme.border, currentTheme.bgGradient)}>
               <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="flex size-5 items-center justify-center rounded-xs bg-cyan-500/20 font-mono text-xs font-black text-cyan-400 border border-cyan-500/50">
-                      V
+                    <span className={cn("flex size-5 items-center justify-center rounded-xs font-mono text-xs font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                      {activeGearDef.name.charAt(0)}
                     </span>
-                    <h3 className="font-display text-base font-bold text-cyan-200">
+                    <h3 className={cn("font-display text-base font-bold", currentTheme.textPrimary)}>
                       {player.name}
                     </h3>
                   </div>
-                  <p className="font-mono text-xs text-cyan-400/80">
-                    Chiến Cơ Tiên Phong · Cấp {progression.level}
+                  <p className={cn("font-mono text-xs", currentTheme.textAccent)}>
+                    {activeGearDef.role} · Cấp {progression.level}
                   </p>
                 </div>
 
@@ -731,14 +803,25 @@ export function CombatArena() {
               </div>
 
               {/* Buồng lái trực quan */}
-              <div className="mt-4 flex h-32 items-center justify-center rounded border border-cyan-500/20 bg-black/50 p-2 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.15)_0%,transparent_70%)]" />
+              <div className={cn("mt-4 flex h-32 items-center justify-center rounded border bg-black/50 p-2 relative overflow-hidden", currentTheme.border)}>
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `radial-gradient(circle at center, ${activeGearDef.color}25 0%, transparent 70%)`,
+                  }}
+                />
                 <div className="relative text-center">
-                  <div className="mx-auto flex size-12 items-center justify-center rounded-full border border-cyan-400/60 bg-cyan-950/60 shadow-[0_0_20px_rgba(6,182,212,0.4)]">
-                    <Sword className="size-6 text-cyan-300" />
+                  <div className={cn("mx-auto flex size-12 items-center justify-center rounded-full border", currentTheme.iconBg, currentTheme.iconBorder)}>
+                    {activeGearId === "aegis" ? (
+                      <Shield className={cn("size-6", currentTheme.iconColor)} />
+                    ) : activeGearId === "falcon" ? (
+                      <Zap className={cn("size-6", currentTheme.iconColor)} />
+                    ) : (
+                      <Sword className={cn("size-6", currentTheme.iconColor)} />
+                    )}
                   </div>
-                  <p className="mt-2 font-display text-xs font-bold text-cyan-200 uppercase tracking-widest">
-                    BUỒNG LÁI VANGUARD TRỰC CHIẾN
+                  <p className={cn("mt-2 font-display text-xs font-bold uppercase tracking-widest", currentTheme.textPrimary)}>
+                    BUỒNG LÁI {activeGearDef.name.toUpperCase()} TRỰC CHIẾN
                   </p>
                   <p className="text-[10px] text-muted-foreground font-mono">
                     {status === "player-turn"
@@ -855,16 +938,16 @@ export function CombatArena() {
           </div>
 
           {/* 5. Khung Điều Khiển Kỹ Năng (Action Deck) */}
-          <div className="rounded-sm border border-cyan-500/30 bg-panel/90 p-4 shadow-xl">
+          <div className={cn("rounded-sm border bg-panel/90 p-4 shadow-xl", currentTheme.border)}>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-2">
               <div className="flex items-center gap-2">
-                <Flame className="size-4 text-cyan-400" />
-                <h4 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-                  BẢNG ĐIỀU KHIỂN KỸ NĂNG VANGUARD
+                <Flame className={cn("size-4", currentTheme.textAccent)} />
+                <h4 className={cn("font-display text-xs font-bold uppercase tracking-wider", currentTheme.textPrimary)}>
+                  BẢNG ĐIỀU KHIỂN KỸ NĂNG {activeGearDef.name.toUpperCase()}
                 </h4>
                 {status === "player-turn" ? (
                   <span className="rounded bg-emerald-500/20 px-2 py-0.5 font-display text-[10px] font-bold text-emerald-300 border border-emerald-400/50 animate-pulse">
-                    ✓ ĐẾN LƯỢT BẠN — CHỌN KỸ NĂNG ĐỂ TẤN CÔNG
+                    ✓ ĐẾN LƯỢT BẠN ({activeGearDef.name.toUpperCase()}) — CHỌN KỸ NĂNG ĐỂ TẤN CÔNG
                   </span>
                 ) : (
                   <span className="rounded bg-amber-500/20 px-2 py-0.5 font-display text-[10px] text-amber-300 border border-amber-400/40">
@@ -873,7 +956,7 @@ export function CombatArena() {
                 )}
               </div>
               <span className="font-mono text-xs text-muted-foreground">
-                SP Hiện Có: <strong className="text-cyan-300">{player.sp}</strong> / {player.maxSp}
+                SP Hiện Có: <strong className={currentTheme.textPrimary}>{player.sp}</strong> / {player.maxSp}
               </span>
             </div>
 
@@ -894,7 +977,7 @@ export function CombatArena() {
                       "group relative flex flex-col justify-between rounded-sm border p-3 text-left transition-all",
                       disabled
                         ? "cursor-not-allowed border-border/40 bg-secondary/30 opacity-60 text-muted-foreground"
-                        : "cursor-pointer border-cyan-500/50 bg-panel/70 hover:border-cyan-300 hover:bg-cyan-950/40 hover:shadow-[0_0_15px_rgba(34,211,238,0.25)]",
+                        : cn("cursor-pointer border-border/60 bg-panel/70", currentTheme.borderHover),
                       skill.id === "pulse-strike" && !disabled && "border-blue-500/60",
                       skill.id === "armor-break" && !disabled && "border-amber-500/60",
                       skill.id === "emergency-guard" && !disabled && "border-emerald-500/60",
@@ -910,7 +993,7 @@ export function CombatArena() {
                             CD: {cooldown} lượt
                           </span>
                         ) : (
-                          <span className="rounded bg-cyan-950/80 px-1.5 py-0.5 font-mono text-[10px] text-cyan-300">
+                          <span className={cn("rounded px-1.5 py-0.5 font-mono text-[10px]", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                             {skill.spCost > 0 ? `${skill.spCost} SP` : "Hồi +15 SP"}
                           </span>
                         )}
@@ -922,7 +1005,7 @@ export function CombatArena() {
 
                     <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-1.5 text-[10px] font-mono">
                       <span className="text-muted-foreground/80">{skill.nameEn}</span>
-                      <span className="font-bold text-cyan-400 group-hover:underline">
+                      <span className={cn("font-bold group-hover:underline", disabled ? "text-muted-foreground" : currentTheme.textAccent)}>
                         {disabled
                           ? hasCooldown
                             ? "Đang hồi"

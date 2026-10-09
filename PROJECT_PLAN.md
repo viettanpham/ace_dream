@@ -306,10 +306,10 @@
 | Chợ quân sự Armory Shop mua bán trang bị | **Đã hoàn thành (Done)** | Phase 3 | Kiểm tra ngân sách, chống bán đồ đang trang bị. |
 | Âm thanh Sci-Fi Web Audio (`audio.ts`) | **Đã hoàn thành (Done)** | Phase 3 | Tổng hợp đa tần số không tệp ngoài, có nút Mute. |
 | Bảo toàn các module Ace Manager cũ | **Đã hoàn thành (Done)** | Phase 1–3 | 7 tab Ace Manager giữ nguyên 100% trong `console.tsx`. |
-| **Chuẩn hóa hệ thống hiệu ứng trạng thái mở rộng** | **Chưa triển khai (Planned)** | Phase 4 (M4.1) | Dự kiến bổ sung DoT, Stun, Slow, ECM, Shield Stacking. |
-| **Hành vi AI đối thủ theo 4 Archetype** | **Chưa triển khai (Planned)** | Phase 4 (M4.2) | Cây quyết định theo ngữ cảnh và phong cách quái. |
-| **Cơ chế Boss đa pha & Cảnh báo đòn tối thượng** | **Chưa triển khai (Planned)** | Phase 4 (M4.3) | Boss Enrage < 50% HP, cảnh báo tụ chiêu trước 1 lượt. |
-| **Dynamic Turn Queue & Cân bằng công thức sát thương** | **Chưa triển khai (Planned)** | Phase 4 (M4.4) | Tính toán lại lượt động khi SPD thay đổi. |
+| **Chuẩn hóa hệ thống hiệu ứng trạng thái mở rộng** | **Đã hoàn thành (Done)** | Phase 4 (M4.1) | DoT Plasma Burn/Acid, Stun, Slow, ECM Jamming, quy tắc Stacking (Refresh/Intensity/Override). |
+| **Hành vi AI đối thủ theo 4 Archetype** | **Đã hoàn thành (Done)** | Phase 4 (M4.2) | 4 Archetype (Disruptor, Aggressive, Defensive, Adaptive-Boss) với cây quyết định thông minh. |
+| **Cơ chế Boss đa pha & Cảnh báo đòn tối thượng** | **Đã hoàn thành (Done)** | Phase 4 (M4.3) | Boss Enrage < 50% HP (Overdrive +30% ATK, +20 SPD), Telegraphed Attack cảnh báo nạp đại pháo hạt nhân. |
+| **Dynamic Turn Queue & Cân bằng công thức sát thương** | **Đã hoàn thành (Done)** | Phase 4 (M4.4) | Hàng đợi lượt động cập nhật tức thời khi SPD biến đổi, bổ sung Xuyên Giáp, Bạo Kích và Né Tránh. |
 | **Phản hồi trực quan rung chấn màn hình & FX** | **Chưa triển khai (Planned)** | Phase 4 (M4.5) | Screen shake, floating numbers phân biệt màu. |
 | **Hệ thống cường hóa trang bị (+1 đến +10)** | **Chưa triển khai (Planned)** | Phase 5 (M5.1) | Nâng cấp bằng Credits + Alloy, chống vỡ trang bị. |
 | **Kỹ năng nội tại phân hóa bản sắc 3 lớp Gear** | **Chưa triển khai (Planned)** | Phase 5 (M5.2) | Vanguard hồi SP, Falcon né/crit, Aegis phản đòn. |

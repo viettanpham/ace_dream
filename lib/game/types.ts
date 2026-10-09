@@ -233,7 +233,18 @@ export type GameState = {
 
 export type CombatSkillId = "pulse-strike" | "armor-break" | "emergency-guard" | "basic-attack"
 
-export type CombatStatusType = "armor-break" | "emergency-guard" | "recharge" | "stun"
+export type CombatStatusType =
+  | "armor-break"
+  | "emergency-guard"
+  | "recharge"
+  | "stun"
+  | "plasma-burn"
+  | "acid-corrosion"
+  | "emp-slow"
+  | "ecm-jamming"
+  | "speed-boost"
+  | "charge-ultimate"
+  | "boss-overdrive"
 
 export type StatusEffect = {
   id: string
@@ -242,6 +253,11 @@ export type StatusEffect = {
   desc: string
   duration: number // turns remaining
   value: number // magnitude (e.g. 0.35 defense reduction or 0.50 damage mitigation)
+  stacks?: number
+  maxStacks?: number
+  stackType?: "refresh" | "intensity" | "override"
+  dotPercent?: number
+  isDebuff?: boolean
 }
 
 export type CombatSkill = {
@@ -256,8 +272,12 @@ export type CombatSkill = {
   defenseReduction?: number
   damageReduction?: number
   effectDuration?: number
+  armorPenetration?: number
+  statusToApply?: Omit<StatusEffect, "id">
   icon?: string
 }
+
+export type EnemyArchetype = "aggressive" | "defensive" | "disruptor" | "adaptive-boss"
 
 export type CombatUnit = {
   id: string
@@ -272,10 +292,18 @@ export type CombatUnit = {
   attack: number
   defense: number
   speed: number
+  evasion?: number
+  critRate?: number
+  critDamage?: number
+  armorPenetration?: number
   statusEffects: StatusEffect[]
   skills: CombatSkill[]
   skillCooldowns: Record<string, number>
   avatar?: string
+  archetype?: EnemyArchetype
+  bossPhase?: 1 | 2
+  isChargingUltimate?: boolean
+  chargedSkillName?: string
 }
 
 export type CombatLogType =
@@ -284,6 +312,8 @@ export type CombatLogType =
   | "damage"
   | "status"
   | "crit"
+  | "evade"
+  | "boss-telegraph"
   | "victory"
   | "defeat"
   | "system"
@@ -312,11 +342,19 @@ export type CombatState = {
   enemy: CombatUnit
   status: BattleStatus
   logs: CombatLogItem[]
+  bossPhaseWarning?: string | null
+  telegraphedAttack?: {
+    isCharging: boolean
+    skillName: string
+    turnsLeft: number
+    description: string
+  } | null
   lastAction?: {
     actorId: string
     skillName: string
     damage?: number
     isCrit?: boolean
+    isEvaded?: boolean
     effectApplied?: string
   }
 }

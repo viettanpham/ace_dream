@@ -4,25 +4,34 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
-## [Chưa phát hành / Kế hoạch] — Lập Kế Hoạch Chi Tiết Phase 4, Phase 5 & Phase 6
+## [Phase 4] — Độ Sâu Chiến Thuật, Hệ Thống Hiệu Ứng & AI Kẻ Địch
 
-*Ngày: 09/10/2026*  
-*Mục tiêu phiên làm việc: Hoàn thiện tài liệu kế hoạch, phân rã milestone, KHÔNG chỉnh sửa mã nguồn ứng dụng, KHÔNG triển khai tính năng gameplay mới.*
+*Đã hoàn thành & Đã kiểm chứng (36/36 automated tests passed, build thành công)*
 
-### Thay đổi tài liệu & Lập kế hoạch:
-- **Cập nhật `PROJECT_PLAN.md`**:
-  - Bổ sung kế hoạch toàn diện cho **Phase 4 (Độ sâu chiến thuật & AI kẻ địch)**, **Phase 5 (Tiến trình cơ giáp & Cường hóa trang bị)**, và **Phase 6 (Mở rộng thế giới & Chiến tranh thiên hà)**.
-  - Phân rã mỗi Phase thành các Milestone nhỏ, độc lập, có thứ tự thực hiện rõ ràng kèm mục tiêu, phạm vi, phụ thuộc, tiêu chí hoàn thành và phương pháp kiểm thử.
-  - Đề xuất Milestone đầu tiên cho Phase 4: `Milestone 4.1 — Chuẩn hóa Hệ Thống Hiệu Ứng Trạng Thái Chiến Đấu`.
-  - Quy định rõ nguyên tắc đối với tính năng nhiều người chơi (Multiplayer / Server): chỉ lập báo cáo đề xuất nghiên cứu khả thi, không tự ý triển khai backend.
-- **Tạo mới `FEATURES.md`**:
-  - Tổng hợp danh mục tính năng hiện có (Phase 1–3), tính năng dự kiến (Phase 4–6), phân loại rõ trạng thái thực tế (*Done*, *Planned*, *Needs Verification*).
-  - Đối chiếu mã nguồn thực tế với tài liệu, ghi nhận các điểm kỹ thuật cần lưu ý (chuỗi log khởi tạo trong `engine.ts`, đồng bộ trạng thái khi chuyển tab).
-- **Tạo mới `CHANGELOG.md`**:
-  - Ghi nhận lịch sử các giai đoạn phát triển từ Phase 1 đến Phase 3 và đợt cập nhật kế hoạch hiện tại.
-- **Bảo toàn hiện trạng**:
-  - Không sửa mã nguồn gameplay hay các phân hệ Ace Manager cũ.
-  - Duy trì sự tương thích của toàn bộ hệ thống.
+### Tính năng đã hoàn thành:
+- **Milestone 4.1: Chuẩn hóa Hệ Thống Hiệu Ứng Trạng Thái & Quy Tắc Xếp Chồng (Status Effects & Stacking)**:
+  - Mở rộng kiểu dữ liệu `CombatStatusType` và `StatusEffect`: DoT Plasma Burn, Acid Corrosion, EMP Slow, ECM Jamming, Stun/Overheat, Emergency Guard, Boss Overdrive, Charge Ultimate.
+  - Quy tắc xếp chồng chuẩn hóa: `refresh` (làm mới thời hạn), `intensity` (cộng dồn tầng tối đa N tầng, ví dụ Acid tối đa 3 tầng), `override` (ghi đè khi hiệu ứng mới mạnh hơn).
+  - Hàm `tickUnitTurn` tự động kích hoạt DoT rút máu ở đầu lượt, trừ thời hạn và dọn dẹp hiệu ứng khi hết hạn; Stun khiến mục tiêu mất lượt hành động.
+- **Milestone 4.2: Hành Vi AI Đối Thủ Theo 4 Archetype (Tactical Enemy AI)**:
+  - Phân loại 4 Archetype chiến thuật:
+    - *Disruptor (Drone Trinh Sát)*: Ưu tiên EMP Slow làm chậm, kích hoạt ECM Jamming khi thấp máu.
+    - *Aggressive (Cơ Giáp Đột Kích)*: Dồn sát thương tên lửa bùng nổ khi người chơi dưới 45% HP, thiêu đốt Plasma Burn.
+    - *Adaptive-Boss (Pháo Đài Công Thành)*: Bật khiên Fortify khi HP < 55%, phun Acid ăn mòn, nạp đại pháo tối thượng.
+  - Cây quyết định theo ngữ cảnh, AI không bao giờ thực hiện hành động trái luật (thiếu SP hoặc đang cooldown).
+- **Milestone 4.3: Cơ Chế Boss Đa Pha & Cảnh Báo Tuyệt Kỹ (Multi-Phase Boss & Telegraphed Attacks)**:
+  - Cơ chế Boss 2 pha: Khi Boss dưới 50% HP, tự động kích hoạt PHA 2 - QUÁ TẢI NĂNG LƯỢNG (Overdrive): +30% ATK, +20 SPD kèm huy hiệu đỏ trên HUD.
+  - Cơ chế cảnh báo đòn đánh tối thượng (Telegraphed Attack): Lượt N sạc pháo hiển thị banner cảnh báo đỏ khẩn cấp trên buồng lái; lượt N+1 xả đòn "Pháo Hạt Nhân Tận Diệt" 240% sát thương xuyên giáp. Nếu boss bị Stun ở lượt nạp sẽ bị ngắt chiêu hoàn toàn.
+- **Milestone 4.4: Hàng Đợi Lượt Động, Né Tránh & Công Thức Sát Thương (Dynamic Turn Queue & Combat Formulas)**:
+  - Dynamic Turn Queue: Tốc độ hiệu dụng (`getEffectiveSpeed`) cập nhật liên tục thứ tự ra đòn trên buồng lái khi có hiệu ứng làm chậm hoặc tăng tốc.
+  - Công thức sát thương tích hợp chỉ số Xuyên Giáp (Armor Penetration) và Bạo Kích (Critical Hit).
+  - Cơ chế Né Tránh (Evasion): Tỉ lệ né tránh theo chênh lệch tốc độ và buff ECM, né đòn nhận 0 sát thương kèm phản hồi "NÉ TRÁNH 💨".
+  - Loại bỏ hoàn toàn chuỗi text cố định "Vanguard" trong `engine.ts`, thay bằng tên động `${player.name}`.
+- **Nâng cấp giao diện buồng lái Đấu Trường (`combat-arena.tsx`)**:
+  - Huy hiệu trạng thái trực quan phân biệt màu và icon (Lửa Plasma, Acid x tầng, Khiên, EMP, ECM, Stun).
+  - Banner cảnh báo Boss nạp đại pháo tối thượng nhấp nháy đỏ trên màn hình.
+  - Huy hiệu "PHA 2: OVERDRIVE 🔥" cạnh tên Boss khi vào pha 2.
+  - Hiển thị chỉ số hiệu dụng thực tế (Tấn Công, Phòng Thủ, Tốc Độ) trên cả hai bên.
 
 ---
 

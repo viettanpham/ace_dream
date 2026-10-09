@@ -11,7 +11,7 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 1** | Nguyên Mẫu Đấu Trường Theo Lượt (Turn-based Arena) | **Đã triển khai** | Đã có trong `engine.ts`, `data.ts`, `combat-arena.tsx`. Đã kiểm chứng lượt theo tốc độ, SP, HP, sát thương. |
 | **Phase 2** | Tiến Trình Nhân Vật & Kho Trang Bị (Progression & Loadout) | **Đã triển khai** | Đã có trong `progression.ts`, `storage.ts`, `starfront-hangar.tsx`. Level, EXP, Credits, 3 ô trang bị. |
 | **Phase 3** | Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ (Missions, Gears & Shop) | **Đã triển khai** | Đã có trong `campaign-map.tsx`, `starfront-shop.tsx`, `audio.ts`. 3 Sector (9 ải), Vanguard / Falcon / Aegis, Chợ vũ khí, Web Audio. |
-| **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 5 Milestone chi tiết trong roadmap. |
+| **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Đã triển khai** | Hoàn thành Milestones 4.1 -> 4.4: Status Effects (DoT/Stun/Slow/ECM), 4 Archetype AI, Boss 2 Pha Overdrive, Telegraphed Attack, Dynamic Turn Queue & Evasion. Đã kiểm chứng 36/36 tests. |
 | **Phase 5** | Tiến Trình Cơ Giáp & Cường Hóa (Gear & Equipment Progression) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
 | **Phase 6** | Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (World & War Expansion) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
 

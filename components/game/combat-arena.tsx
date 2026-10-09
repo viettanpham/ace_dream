@@ -16,6 +16,9 @@ import {
   createInitialCombatState,
   executeEnemyAIAction,
   executePlayerAction,
+  getEffectiveSpeed,
+  getEffectiveDefense,
+  getEffectiveAttack,
 } from "@/lib/game/engine"
 import {
   applyDefeatRecord,
@@ -39,6 +42,7 @@ import type {
   StarfrontItem,
   StarfrontItemSlot,
   StarfrontProgression,
+  StatusEffect,
 } from "@/lib/game/types"
 import { cn } from "@/lib/utils"
 import {
@@ -200,9 +204,11 @@ export function CombatArena() {
           playImpactSound(next.lastAction.isCrit)
         }
         setFloatingNotification({
-          text: next.lastAction.damage
-            ? `-${next.lastAction.damage} HP`
-            : next.lastAction.effectApplied || "Kích hoạt",
+          text: next.lastAction.isEvaded
+            ? "NÉ TRÁNH 💨"
+            : next.lastAction.damage
+              ? `-${next.lastAction.damage} HP`
+              : next.lastAction.effectApplied || "Kích hoạt",
           isCrit: next.lastAction.isCrit,
           isPlayer: false,
         })
@@ -365,9 +371,11 @@ export function CombatArena() {
         setTimeout(() => playImpactSound(next.lastAction?.isCrit), 80)
       }
       setFloatingNotification({
-        text: next.lastAction.damage
-          ? `-${next.lastAction.damage} HP`
-          : next.lastAction.effectApplied || "Kích hoạt",
+        text: next.lastAction.isEvaded
+          ? "NÉ TRÁNH 💨"
+          : next.lastAction.damage
+            ? `-${next.lastAction.damage} HP`
+            : next.lastAction.effectApplied || "Kích hoạt",
         isCrit: next.lastAction.isCrit,
         isPlayer: true,
       })
@@ -415,6 +423,56 @@ export function CombatArena() {
   }
 
   const { player, enemy, status, logs, turnNumber } = combatState
+  const playerEffectiveSpeed = getEffectiveSpeed(player)
+  const enemyEffectiveSpeed = getEffectiveSpeed(enemy)
+  const playerFirst = playerEffectiveSpeed >= enemyEffectiveSpeed
+
+  const renderStatusBadge = (eff: StatusEffect) => {
+    let badgeColor = "bg-cyan-500/20 border-cyan-400/50 text-cyan-200"
+    let IconComponent = Shield
+
+    if (eff.type === "plasma-burn") {
+      badgeColor = "bg-orange-500/20 border-orange-400/50 text-orange-200 animate-pulse"
+      IconComponent = Flame
+    } else if (eff.type === "acid-corrosion") {
+      badgeColor = "bg-lime-500/20 border-lime-400/50 text-lime-200"
+      IconComponent = ShieldAlert
+    } else if (eff.type === "emp-slow") {
+      badgeColor = "bg-blue-500/20 border-blue-400/50 text-blue-200"
+      IconComponent = Zap
+    } else if (eff.type === "ecm-jamming") {
+      badgeColor = "bg-teal-500/20 border-teal-400/50 text-teal-200"
+      IconComponent = Target
+    } else if (eff.type === "stun") {
+      badgeColor = "bg-yellow-500/20 border-yellow-400/50 text-yellow-200 animate-bounce"
+      IconComponent = AlertTriangle
+    } else if (eff.type === "charge-ultimate") {
+      badgeColor = "bg-red-500/30 border-red-400 text-red-200 animate-pulse font-bold"
+      IconComponent = AlertTriangle
+    } else if (eff.type === "boss-overdrive") {
+      badgeColor = "bg-rose-500/30 border-rose-400 text-rose-200 font-bold"
+      IconComponent = Flame
+    } else if (eff.type === "armor-break") {
+      badgeColor = "bg-amber-500/20 border-amber-400/50 text-amber-200"
+      IconComponent = ShieldAlert
+    }
+
+    return (
+      <span
+        key={eff.id}
+        title={eff.desc}
+        className={cn("flex items-center gap-1 rounded border px-2 py-0.5 text-[10px] font-bold shadow-xs", badgeColor)}
+      >
+        <IconComponent className="size-3" />
+        <span>{eff.name}</span>
+        {eff.stacks && eff.stacks > 1 && (
+          <span className="rounded bg-black/50 px-1 text-[9px] text-white">x{eff.stacks}</span>
+        )}
+        <span className="opacity-80">({eff.duration}l)</span>
+      </span>
+    )
+  }
+
   const playerHpPct = Math.max(0, Math.min(100, (player.hp / player.maxHp) * 100))
   const playerSpPct = Math.max(0, Math.min(100, (player.sp / player.maxSp) * 100))
   const enemyHpPct = Math.max(0, Math.min(100, (enemy.hp / enemy.maxHp) * 100))
@@ -633,32 +691,32 @@ export function CombatArena() {
             </div>
           </div>
 
-          {/* 3. Thanh Thứ Tự Lượt Hành Động (Speed Initiative Timeline) */}
+          {/* 3. Thanh Thứ Tự Lượt Hành Động (Speed Initiative Timeline & Dynamic Turn Queue) */}
           <div className="flex items-center justify-between rounded-sm border border-border/70 bg-panel/60 px-4 py-2 font-mono text-xs">
             <div className="flex items-center gap-2">
               <Gauge className="size-4 text-cyan-400" />
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                Thứ tự hành động (Tốc độ):
+                Hàng đợi lượt động (SPD hiệu dụng):
               </span>
               <div className="flex items-center gap-2">
-                {player.speed >= enemy.speed ? (
+                {playerFirst ? (
                   <>
                     <span className="inline-flex items-center gap-1 rounded bg-cyan-500/20 px-2 py-0.5 font-display text-[11px] font-bold text-cyan-300 border border-cyan-500/40">
-                      1. {player.name} ({player.speed} SPD)
+                      1. {player.name} ({playerEffectiveSpeed} SPD{playerEffectiveSpeed !== player.speed ? ` / gốc ${player.speed}` : ""})
                     </span>
                     <span className="text-muted-foreground">➔</span>
                     <span className="inline-flex items-center gap-1 rounded bg-red-500/10 px-2 py-0.5 font-display text-[11px] text-red-300 border border-red-500/30">
-                      2. {enemy.name} ({enemy.speed} SPD)
+                      2. {enemy.name} ({enemyEffectiveSpeed} SPD{enemyEffectiveSpeed !== enemy.speed ? ` / gốc ${enemy.speed}` : ""})
                     </span>
                   </>
                 ) : (
                   <>
                     <span className="inline-flex items-center gap-1 rounded bg-red-500/20 px-2 py-0.5 font-display text-[11px] font-bold text-red-300 border border-red-500/40">
-                      1. {enemy.name} ({enemy.speed} SPD - Nhanh hơn!)
+                      1. {enemy.name} ({enemyEffectiveSpeed} SPD{enemyEffectiveSpeed !== enemy.speed ? ` / gốc ${enemy.speed}` : ""} - Ra đòn trước!)
                     </span>
                     <span className="text-muted-foreground">➔</span>
                     <span className="inline-flex items-center gap-1 rounded bg-cyan-500/10 px-2 py-0.5 font-display text-[11px] text-cyan-300 border border-cyan-500/30">
-                      2. {player.name} ({player.speed} SPD)
+                      2. {player.name} ({playerEffectiveSpeed} SPD{playerEffectiveSpeed !== player.speed ? ` / gốc ${player.speed}` : ""})
                     </span>
                   </>
                 )}
@@ -697,6 +755,26 @@ export function CombatArena() {
             </div>
           </div>
 
+          {/* Cảnh Báo Tuyệt Kỹ Boss Telegraphed Attack (Cơ chế Boss Đa Pha & Cảnh Báo Tuyệt Kỹ) */}
+          {combatState.telegraphedAttack?.isCharging && (
+            <div className="rounded-sm border-2 border-red-500 bg-red-950/90 p-3 shadow-[0_0_25px_rgba(239,68,68,0.5)] animate-pulse flex flex-wrap items-center justify-between gap-3 text-red-200">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="size-5 text-red-400 animate-bounce shrink-0" />
+                <div>
+                  <p className="font-display text-xs font-black uppercase tracking-wider text-red-400">
+                    CẢNH BÁO TỐI CAO // {combatState.telegraphedAttack.skillName.toUpperCase()}
+                  </p>
+                  <p className="font-mono text-xs text-red-200">
+                    {combatState.telegraphedAttack.description}
+                  </p>
+                </div>
+              </div>
+              <span className="rounded bg-red-500/30 px-2.5 py-1 font-mono text-xs font-bold border border-red-400 shrink-0">
+                CÒN 1 LƯỢT: HÃY BẬT KHIÊN HOẶC KHỐNG CHẾ!
+              </span>
+            </div>
+          )}
+
           {/* 4. Lưới Chiến Trường Chính (Người chơi vs Kẻ Địch) */}
           <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2">
             {/* Floating Combat Feedback */}
@@ -732,17 +810,9 @@ export function CombatArena() {
                   </p>
                 </div>
 
-                {/* Trạng thái buff/debuff */}
+                {/* Trạng thái buff/debuff chuẩn hóa */}
                 <div className="flex flex-wrap gap-1">
-                  {player.statusEffects.map((eff) => (
-                    <span
-                      key={eff.id}
-                      className="flex items-center gap-1 rounded bg-cyan-500/20 border border-cyan-400/50 px-2 py-0.5 text-[10px] font-bold text-cyan-200 animate-pulse"
-                    >
-                      <Shield className="size-3 text-cyan-300" />
-                      {eff.name} ({eff.duration} lượt)
-                    </span>
-                  ))}
+                  {player.statusEffects.map((eff) => renderStatusBadge(eff))}
                   {player.statusEffects.length === 0 && (
                     <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng</span>
                   )}
@@ -786,19 +856,19 @@ export function CombatArena() {
                 </div>
               </div>
 
-              {/* Chỉ số tác chiến thực tế */}
+              {/* Chỉ số tác chiến thực tế (Hiển thị chỉ số hiệu dụng) */}
               <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-3 text-center font-mono text-xs">
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[10px] uppercase text-muted-foreground">Tấn Công</span>
-                  <span className="font-bold text-cyan-300">{player.attack}</span>
+                  <span className="font-bold text-cyan-300">{getEffectiveAttack(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[10px] uppercase text-muted-foreground">Phòng Thủ</span>
-                  <span className="font-bold text-cyan-300">{player.defense}</span>
+                  <span className="font-bold text-cyan-300">{getEffectiveDefense(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[10px] uppercase text-muted-foreground">Tốc Độ</span>
-                  <span className="font-bold text-cyan-300">{player.speed}</span>
+                  <span className="font-bold text-cyan-300">{getEffectiveSpeed(player)}</span>
                 </div>
               </div>
 
@@ -843,20 +913,17 @@ export function CombatArena() {
                     <h3 className="font-display text-base font-bold text-red-200">
                       {enemy.name}
                     </h3>
+                    {enemy.bossPhase === 2 && (
+                      <span className="rounded bg-red-500/30 border border-red-400 px-1.5 py-0.5 font-display text-[10px] font-bold text-red-300 animate-pulse">
+                        PHA 2: OVERDRIVE 🔥
+                      </span>
+                    )}
                   </div>
                   <p className="font-mono text-xs text-red-400/80">{enemy.title}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-1">
-                  {enemy.statusEffects.map((eff) => (
-                    <span
-                      key={eff.id}
-                      className="flex items-center gap-1 rounded bg-amber-500/20 border border-amber-400/50 px-2 py-0.5 text-[10px] font-bold text-amber-200 animate-pulse"
-                    >
-                      <ShieldAlert className="size-3 text-amber-300" />
-                      {eff.name} ({eff.duration} lượt)
-                    </span>
-                  ))}
+                  {enemy.statusEffects.map((eff) => renderStatusBadge(eff))}
                   {enemy.statusEffects.length === 0 && (
                     <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng</span>
                   )}
@@ -900,19 +967,19 @@ export function CombatArena() {
                 </div>
               </div>
 
-              {/* Chỉ số tác chiến Địch */}
+              {/* Chỉ số tác chiến Địch (Hiển thị chỉ số hiệu dụng) */}
               <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-3 text-center font-mono text-xs">
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[10px] uppercase text-muted-foreground">Tấn Công</span>
-                  <span className="font-bold text-red-300">{enemy.attack}</span>
+                  <span className="font-bold text-red-300">{getEffectiveAttack(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[10px] uppercase text-muted-foreground">Phòng Thủ</span>
-                  <span className="font-bold text-red-300">{enemy.defense}</span>
+                  <span className="font-bold text-red-300">{getEffectiveDefense(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[10px] uppercase text-muted-foreground">Tốc Độ</span>
-                  <span className="font-bold text-red-300">{enemy.speed}</span>
+                  <span className="font-bold text-red-300">{getEffectiveSpeed(enemy)}</span>
                 </div>
               </div>
 
@@ -1045,6 +1112,8 @@ export function CombatArena() {
                 if (item.type === "enemy-action") textColor = "text-red-400"
                 if (item.type === "crit") textColor = "text-amber-300 font-bold"
                 if (item.type === "status") textColor = "text-emerald-300"
+                if (item.type === "evade") textColor = "text-sky-300 font-bold"
+                if (item.type === "boss-telegraph") textColor = "text-red-400 font-bold bg-red-950/40 px-1 rounded border border-red-500/30"
                 if (item.type === "victory") textColor = "text-emerald-400 font-bold text-sm"
                 if (item.type === "defeat") textColor = "text-red-500 font-bold text-sm"
                 if (item.type === "system") textColor = "text-cyan-400/80"

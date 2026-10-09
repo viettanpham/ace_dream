@@ -496,6 +496,135 @@ export function cloneUnit(unit: CombatUnit): CombatUnit {
   }
 }
 
+/** Lấy tốc độ hiệu dụng sau khi tính toán buff/debuff */
+export function getEffectiveSpeed(unit: CombatUnit): number {
+  let speed = unit.speed
+  for (const eff of unit.statusEffects) {
+    if (eff.type === "emp-slow") {
+      speed -= eff.value
+    } else if (eff.type === "speed-boost") {
+      speed += eff.value
+    } else if (eff.type === "boss-overdrive") {
+      speed += 20
+    }
+  }
+  return Math.max(10, Math.round(speed))
+}
+
+/** Lấy phòng thủ hiệu dụng sau khi tính toán vỡ giáp và ăn mòn acid */
+export function getEffectiveDefense(unit: CombatUnit): number {
+  let defense = unit.defense
+  let reductionPercent = 0
+
+  for (const eff of unit.statusEffects) {
+    if (eff.type === "armor-break") {
+      reductionPercent += eff.value
+    } else if (eff.type === "acid-corrosion") {
+      const stacks = eff.stacks || 1
+      reductionPercent += eff.value * stacks
+    }
+  }
+
+  const multiplier = Math.max(0.1, 1 - Math.min(0.85, reductionPercent))
+  return Math.max(0, Math.round(defense * multiplier))
+}
+
+/** Lấy lực tấn công hiệu dụng */
+export function getEffectiveAttack(unit: CombatUnit): number {
+  let attack = unit.attack
+  for (const eff of unit.statusEffects) {
+    if (eff.type === "boss-overdrive") {
+      attack = Math.round(attack * 1.3)
+    }
+  }
+  return Math.max(10, attack)
+}
+
+/** Lấy tỉ lệ né tránh hiệu dụng (0 - 75%) */
+export function getEffectiveEvasion(unit: CombatUnit): number {
+  let evasion = unit.evasion || 0
+  for (const eff of unit.statusEffects) {
+    if (eff.type === "ecm-jamming") {
+      evasion += eff.value
+    }
+  }
+  return Math.min(75, Math.max(0, Math.round(evasion)))
+}
+
+/** Tính toán hàng đợi thứ tự hành động động (Dynamic Turn Queue) */
+export function calculateTurnQueue(player: CombatUnit, enemy: CombatUnit): string[] {
+  const pSpd = getEffectiveSpeed(player)
+  const eSpd = getEffectiveSpeed(enemy)
+  return pSpd >= eSpd ? [player.id, enemy.id] : [enemy.id, player.id]
+}
+
+/** Áp dụng hiệu ứng trạng thái với quy tắc xếp chồng (Refresh, Intensity, Override) */
+export function applyStatusEffect(
+  target: CombatUnit,
+  newEffect: Omit<StatusEffect, "id">,
+): { applied: boolean; logText: string; effect: StatusEffect } {
+  const stackType = newEffect.stackType || "refresh"
+  const existingIndex = target.statusEffects.findIndex((e) => e.type === newEffect.type)
+
+  if (existingIndex >= 0) {
+    const existing = target.statusEffects[existingIndex]
+
+    if (stackType === "intensity") {
+      // Cộng dồn tầng
+      const maxStacks = newEffect.maxStacks || 3
+      const currentStacks = existing.stacks || 1
+      const nextStacks = Math.min(maxStacks, currentStacks + (newEffect.stacks || 1))
+      existing.stacks = nextStacks
+      existing.duration = Math.max(existing.duration, newEffect.duration)
+      return {
+        applied: true,
+        effect: existing,
+        logText: `[HIỆU ỨNG ⚡] ${newEffect.name} trên ${target.name} tăng cộng dồn lên TẦNG ${nextStacks}/${maxStacks} (${existing.duration} lượt)!`,
+      }
+    } else if (stackType === "override") {
+      // Ghi đè nếu hiệu quả mới mạnh hơn hoặc bằng
+      if (newEffect.value >= existing.value) {
+        target.statusEffects[existingIndex] = {
+          ...newEffect,
+          id: `eff-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        }
+        return {
+          applied: true,
+          effect: target.statusEffects[existingIndex],
+          logText: `[HIỆU ỨNG ⚡] ${newEffect.name} ghi đè hiệu ứng cũ trên ${target.name} (${newEffect.duration} lượt)!`,
+        }
+      } else {
+        return {
+          applied: false,
+          effect: existing,
+          logText: `[HIỆU ỨNG] ${target.name} đang có hiệu ứng bảo hộ mạnh hơn, không bị ghi đè.`,
+        }
+      }
+    } else {
+      // Refresh thời gian hiệu lực
+      existing.duration = Math.max(existing.duration, newEffect.duration)
+      return {
+        applied: true,
+        effect: existing,
+        logText: `[HIỆU ỨNG ⚡] Làm mới thời hạn ${newEffect.name} trên ${target.name} (${existing.duration} lượt)!`,
+      }
+    }
+  }
+
+  // Thêm hiệu ứng mới
+  const created: StatusEffect = {
+    ...newEffect,
+    id: `eff-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    stacks: newEffect.stacks || (stackType === "intensity" ? 1 : undefined),
+  }
+  target.statusEffects.push(created)
+  return {
+    applied: true,
+    effect: created,
+    logText: `[HIỆU ỨNG ⚡] ${target.name} nhận trạng thái ${newEffect.name} trong ${newEffect.duration} lượt!`,
+  }
+}
+
 export function createInitialCombatState(
   encounterId: EnemyEncounterType = "scout-drone",
   customPlayerUnit?: CombatUnit,
@@ -503,8 +632,10 @@ export function createInitialCombatState(
   const player = customPlayerUnit ? cloneUnit(customPlayerUnit) : cloneUnit(VANGUARD_INITIAL_UNIT)
   const enemy = cloneUnit(ENEMIES_DATA[encounterId])
 
-  // Thứ tự lượt dựa trên tốc độ (Speed Initiative)
-  const playerFirst = player.speed >= enemy.speed
+  // Thứ tự lượt dựa trên tốc độ thực tế (Dynamic Speed Initiative)
+  const pSpd = getEffectiveSpeed(player)
+  const eSpd = getEffectiveSpeed(enemy)
+  const playerFirst = pSpd >= eSpd
   const turnQueue = playerFirst ? [player.id, enemy.id] : [enemy.id, player.id]
   const currentTurnActorId = turnQueue[0]
   const initialStatus = playerFirst ? "player-turn" : "enemy-turn"
@@ -524,8 +655,8 @@ export function createInitialCombatState(
       turn: 1,
       type: "system",
       text: playerFirst
-        ? `[TỐC ĐỘ] Tốc độ Vanguard (${player.speed}) cao hơn mục tiêu (${enemy.speed}) -> Giành quyền hành động trước!`
-        : `[TỐC ĐỘ] Mục tiêu ${enemy.name} có tốc độ vượt trội (${enemy.speed} > ${player.speed}) -> Địch tấn công trước!`,
+        ? `[TỐC ĐỘ] Tốc độ ${player.name} (${pSpd}) cao hơn mục tiêu (${eSpd}) -> Giành quyền hành động trước!`
+        : `[TỐC ĐỘ] Mục tiêu ${enemy.name} có tốc độ vượt trội (${eSpd} > ${pSpd} của ${player.name}) -> Địch tấn công trước!`,
       actorName: "HỆ THỐNG",
       timestamp: now,
     },
@@ -543,36 +674,48 @@ export function createInitialCombatState(
   }
 }
 
-/** Tính toán sát thương dựa trên Công, Thủ, Giảm giáp, Giảm sát thương và Bạo kích */
+/** Tính toán sát thương dựa trên Công, Thủ, Xuyên Giáp, Bạo Kích, Giảm Sát Thương và Né Tránh */
 export function calculateCombatDamage(
   attacker: CombatUnit,
   defender: CombatUnit,
   skill: CombatSkill,
-): { damage: number; isCrit: boolean; reducedByGuard: boolean } {
-  // Kiểm tra hiệu ứng giảm giáp trên mục tiêu
-  const armorBreakEffect = defender.statusEffects.find((e) => e.type === "armor-break")
-  const defenseMultiplier = armorBreakEffect ? Math.max(0.2, 1 - armorBreakEffect.value) : 1
-  const effectiveDefense = Math.max(0, defender.defense * defenseMultiplier)
+): { damage: number; isCrit: boolean; isEvaded: boolean; reducedByGuard: boolean } {
+  // 1. Kiểm tra Né Tránh (Evasion)
+  let effectiveEvasion = getEffectiveEvasion(defender)
+  const spdDiff = getEffectiveSpeed(defender) - getEffectiveSpeed(attacker)
+  if (spdDiff > 15) {
+    effectiveEvasion += Math.min(20, Math.round(spdDiff * 0.25))
+  }
+  effectiveEvasion = Math.min(85, Math.max(0, effectiveEvasion))
 
-  // Sát thương cơ bản
+  if (Math.random() * 100 < effectiveEvasion) {
+    return { damage: 0, isCrit: false, isEvaded: true, reducedByGuard: false }
+  }
+
+  // 2. Tính toán Phòng Thủ có tính đến Xuyên Giáp
+  const armorPen = skill.armorPenetration ?? attacker.armorPenetration ?? 0
+  const effectiveDefense = getEffectiveDefense(defender) * Math.max(0, 1 - armorPen)
+
+  // 3. Sát thương cơ bản
   const skillMult = skill.damageMultiplier || 1.0
-  const baseAttackPower = attacker.attack * skillMult
+  const baseAttackPower = getEffectiveAttack(attacker) * skillMult
 
-  // Công thức giảm trừ phòng thủ sci-fi
+  // 4. Công thức giảm trừ phòng thủ sci-fi
   let rawDamage = Math.max(15, Math.round(baseAttackPower - effectiveDefense * 0.65))
 
   // Biến thiên ngẫu nhiên nhẹ (±6%)
   const variance = 0.94 + Math.random() * 0.12
   rawDamage = Math.round(rawDamage * variance)
 
-  // Tỉ lệ chí mạng (15% cho Vanguard, 10% cho địch)
-  const critChance = attacker.isPlayer ? 0.15 : 0.1
+  // 5. Tỉ lệ chí mạng & Sát thương bạo kích
+  const critChance = attacker.critRate ?? (attacker.isPlayer ? 0.15 : 0.1)
   const isCrit = Math.random() < critChance
   if (isCrit) {
-    rawDamage = Math.round(rawDamage * 1.5)
+    const critMult = attacker.critDamage ?? 1.5
+    rawDamage = Math.round(rawDamage * critMult)
   }
 
-  // Kiểm tra hiệu ứng phòng thủ (Emergency Guard / Fortify) trên mục tiêu
+  // 6. Kiểm tra hiệu ứng phòng thủ (Emergency Guard / Fortify) trên mục tiêu
   const guardEffect = defender.statusEffects.find((e) => e.type === "emergency-guard")
   let reducedByGuard = false
   if (guardEffect) {
@@ -580,19 +723,50 @@ export function calculateCombatDamage(
     reducedByGuard = true
   }
 
-  return { damage: rawDamage, isCrit, reducedByGuard }
+  return { damage: Math.max(0, rawDamage), isCrit, isEvaded: false, reducedByGuard }
 }
 
-/** Cập nhật giảm thời gian hiệu lực buff/debuff và hồi chiêu kỹ năng */
-export function tickUnitTurn(unit: CombatUnit): void {
-  // Giảm thời gian hồi chiêu
+/** Cập nhật giảm thời gian hiệu lực buff/debuff, hồi chiêu kỹ năng và kích hoạt DoT (Plasma Burn / Acid) */
+export function tickUnitTurn(unit: CombatUnit): {
+  dotLogs: { text: string; damage: number }[]
+  wasStunned: boolean
+} {
+  const dotLogs: { text: string; damage: number }[] = []
+
+  // 1. Kiểm tra sát thương DoT (Đầu lượt)
+  const burnEffect = unit.statusEffects.find((e) => e.type === "plasma-burn")
+  if (burnEffect) {
+    const dotDmg = Math.max(12, Math.round(unit.attack * (burnEffect.dotPercent || 0.15)))
+    unit.hp = Math.max(0, unit.hp - dotDmg)
+    dotLogs.push({
+      text: `[THIÊU ĐỐT 🔥] Lửa Plasma thiêu đốt vỏ giáp của ${unit.name}, gây ${dotDmg} sát thương nhiệt!`,
+      damage: dotDmg,
+    })
+  }
+
+  const acidEffect = unit.statusEffects.find((e) => e.type === "acid-corrosion")
+  if (acidEffect) {
+    const stacks = acidEffect.stacks || 1
+    const dotDmg = Math.max(10, Math.round(unit.attack * (acidEffect.dotPercent || 0.08) * stacks))
+    unit.hp = Math.max(0, unit.hp - dotDmg)
+    dotLogs.push({
+      text: `[ĂN MÒN 🧪] Acid cực mạnh nung chảy kim loại ${unit.name} (Tầng ${stacks}), gây ${dotDmg} sát thương!`,
+      damage: dotDmg,
+    })
+  }
+
+  // 2. Giảm thời gian hồi chiêu
   for (const k of Object.keys(unit.skillCooldowns)) {
     if (unit.skillCooldowns[k] > 0) {
       unit.skillCooldowns[k] -= 1
     }
   }
 
-  // Giảm thời hạn trạng thái hiệu ứng
+  // 3. Kiểm tra Choáng / Quá nhiệt
+  const stunEffect = unit.statusEffects.find((e) => e.type === "stun")
+  const wasStunned = Boolean(stunEffect)
+
+  // 4. Giảm thời hạn trạng thái hiệu ứng
   unit.statusEffects = unit.statusEffects
     .map((effect) => ({
       ...effect,
@@ -600,25 +774,63 @@ export function tickUnitTurn(unit: CombatUnit): void {
     }))
     .filter((effect) => effect.duration > 0)
 
-  // Hồi phục nhẹ 5 SP tự nhiên mỗi lượt
+  // 5. Hồi phục nhẹ 5 SP tự nhiên mỗi lượt
   unit.sp = Math.min(unit.maxSp, unit.sp + 5)
+
+  return { dotLogs, wasStunned }
 }
 
-/** Thực hiện kỹ năng của Người chơi (Vanguard) */
+/** Thực hiện kỹ năng của Người chơi */
 export function executePlayerAction(state: CombatState, skillId: string): CombatState {
   if (state.status !== "player-turn") return state
-
-  const skill = state.player.skills.find((s) => s.id === skillId)
-  if (!skill) return state
-
-  // Kiểm tra SP và hồi chiêu
-  if (state.player.sp < skill.spCost) return state
-  if ((state.player.skillCooldowns[skill.id] || 0) > 0) return state
 
   const player = cloneUnit(state.player)
   const enemy = cloneUnit(state.enemy)
   const now = `00:${String(Math.min(99, state.turnNumber * 4)).padStart(2, "0")}`
   const newLogs: CombatLogItem[] = [...state.logs]
+
+  // 1. Kiểm tra xem người chơi có bị Choáng (Stun) không
+  const stunEffect = player.statusEffects.find((e) => e.type === "stun")
+  if (stunEffect) {
+    newLogs.push({
+      id: `log-${Date.now()}-pstun`,
+      turn: state.turnNumber,
+      type: "status",
+      text: `[VÔ HIỆU HÓA ⚠️] Hệ thống điều khiển của ${player.name} bị quá nhiệt/choáng! Bị mất lượt hành động!`,
+      actorName: player.name,
+      timestamp: now,
+    })
+    const tickResult = tickUnitTurn(player)
+    for (const d of tickResult.dotLogs) {
+      newLogs.push({
+        id: `log-${Date.now()}-pdot-${Math.random().toString(36).slice(2, 6)}`,
+        turn: state.turnNumber,
+        type: "damage",
+        text: d.text,
+        actorName: "HIỆU ỨNG",
+        targetName: player.name,
+        value: d.damage,
+        timestamp: now,
+      })
+    }
+    const updatedQueue = calculateTurnQueue(player, enemy)
+    return {
+      ...state,
+      player,
+      enemy,
+      turnQueue: updatedQueue,
+      status: "enemy-turn",
+      currentTurnActorId: enemy.id,
+      logs: newLogs,
+    }
+  }
+
+  const skill = player.skills.find((s) => s.id === skillId)
+  if (!skill) return state
+
+  // Kiểm tra SP và hồi chiêu
+  if (player.sp < skill.spCost) return state
+  if ((player.skillCooldowns[skill.id] || 0) > 0) return state
 
   // Trừ tiêu hao SP và đặt thời gian hồi chiêu
   player.sp = Math.max(0, player.sp - skill.spCost)
@@ -631,24 +843,20 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
   if (skill.targetType === "self") {
     // Kỹ năng bản thân: Phòng thủ / Lá Chắn / Nạp năng lượng
     const reduction = skill.damageReduction || 0.5
-    const guardEffect: StatusEffect = {
-      id: `guard-${Date.now()}`,
+    const guardRes = applyStatusEffect(player, {
       type: "emergency-guard",
       name: skill.name,
       desc: `Giảm ${Math.round(reduction * 100)}% sát thương nhận vào trong ${skill.effectDuration || 2} lượt`,
       duration: skill.effectDuration || 2,
       value: reduction,
-    }
-
-    // Thay thế hoặc làm mới hiệu ứng
-    player.statusEffects = player.statusEffects.filter((e) => e.type !== "emergency-guard")
-    player.statusEffects.push(guardEffect)
+      stackType: "override",
+    })
 
     newLogs.push({
       id: `log-${Date.now()}-guard`,
       turn: state.turnNumber,
       type: "status",
-      text: `[PHÒNG HỘ] ${player.name} kích hoạt ${skill.name}! Tạo trường từ trường chắn giảm ${Math.round(reduction * 100)}% sát thương gánh chịu trong ${guardEffect.duration} lượt.`,
+      text: `[PHÒNG HỘ] ${player.name} kích hoạt ${skill.name}! Tạo trường từ trường chắn giảm ${Math.round(reduction * 100)}% sát thương gánh chịu trong ${guardRes.effect.duration} lượt.`,
       actorName: player.name,
       timestamp: now,
     })
@@ -661,75 +869,88 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
   } else {
     // Đòn tấn công hoặc kỹ năng đơn mục tiêu
     if (skill.id === "basic-attack") {
-      // Hồi phục 15 SP khi dùng đòn cơ bản
       player.sp = Math.min(player.maxSp, player.sp + 15)
     }
 
-    const { damage, isCrit, reducedByGuard } = calculateCombatDamage(player, enemy, skill)
-    enemy.hp = Math.max(0, enemy.hp - damage)
+    const { damage, isCrit, isEvaded, reducedByGuard } = calculateCombatDamage(player, enemy, skill)
 
-    let logText = `[TẤN CÔNG] ${player.name} xuất kích ${skill.name} -> Đánh trúng ${enemy.name}, gây ${damage} sát thương!`
-    if (isCrit) {
-      logText = `[BẠO KÍCH 🔥] ${player.name} bắn trúng điểm yếu bằng ${skill.name}! Gây ${damage} sát thương chí mạng!`
-    }
-    if (reducedByGuard) {
-      logText += ` (Giảm thiểu bởi giáp chắn của địch)`
-    }
-
-    newLogs.push({
-      id: `log-${Date.now()}-atk`,
-      turn: state.turnNumber,
-      type: isCrit ? "crit" : "player-action",
-      text: logText,
-      actorName: player.name,
-      targetName: enemy.name,
-      value: damage,
-      timestamp: now,
-    })
-
-    // Xử lý hiệu ứng Phá Giáp (Armor Break)
-    if (skill.defenseReduction && skill.effectDuration) {
-      const armorBreak: StatusEffect = {
-        id: `ab-${Date.now()}`,
-        type: "armor-break",
-        name: "Vỡ Vỏ Giáp",
-        desc: `Giảm ${Math.round((skill.defenseReduction || 0.35) * 100)}% phòng ngự`,
-        duration: skill.effectDuration,
-        value: skill.defenseReduction,
-      }
-      enemy.statusEffects = enemy.statusEffects.filter((e) => e.type !== "armor-break")
-      enemy.statusEffects.push(armorBreak)
-
+    if (isEvaded) {
       newLogs.push({
-        id: `log-${Date.now()}-ab`,
+        id: `log-${Date.now()}-eva`,
         turn: state.turnNumber,
-        type: "status",
-        text: `[HIỆU ỨNG ⚡] Vỏ giáp của ${enemy.name} bị nứt toác! Phòng ngự suy giảm ${Math.round((skill.defenseReduction || 0.35) * 100)}% trong ${armorBreak.duration} lượt.`,
-        actorName: player.name,
-        targetName: enemy.name,
+        type: "evade",
+        text: `[NÉ TRÁNH 💨] ${enemy.name} cơ động lướt khỏi tầm bắn của ${skill.name}! Không nhận sát thương.`,
+        actorName: enemy.name,
         timestamp: now,
       })
-    }
-
-    // Xử lý hiệu ứng phụ tự bảo vệ (ví dụ: Falcon Ghost Dash)
-    if (skill.damageReduction && skill.effectDuration) {
-      const selfGuard: StatusEffect = {
-        id: `dash-guard-${Date.now()}`,
-        type: "emergency-guard",
-        name: "Lá Chắn Né Tránh",
-        desc: `Giảm ${Math.round(skill.damageReduction * 100)}% sát thương nhận vào`,
-        duration: skill.effectDuration,
-        value: skill.damageReduction,
+      lastActionData = {
+        actorId: player.id,
+        skillName: skill.name,
+        damage: 0,
+        isEvaded: true,
       }
-      player.statusEffects = player.statusEffects.filter((e) => e.type !== "emergency-guard")
-      player.statusEffects.push(selfGuard)
-    }
+    } else {
+      enemy.hp = Math.max(0, enemy.hp - damage)
 
-    lastActionData = {
-      actorId: player.id,
-      skillName: skill.name,
-      damage,
-      isCrit,
+      let logText = `[TẤN CÔNG] ${player.name} xuất kích ${skill.name} -> Đánh trúng ${enemy.name}, gây ${damage} sát thương!`
+      if (isCrit) {
+        logText = `[BẠO KÍCH 🔥] ${player.name} bắn trúng điểm yếu bằng ${skill.name}! Gây ${damage} sát thương chí mạng!`
+      }
+      if (reducedByGuard) {
+        logText += ` (Giảm thiểu bởi giáp chắn của địch)`
+      }
+
+      newLogs.push({
+        id: `log-${Date.now()}-atk`,
+        turn: state.turnNumber,
+        type: isCrit ? "crit" : "player-action",
+        text: logText,
+        actorName: player.name,
+        targetName: enemy.name,
+        value: damage,
+        timestamp: now,
+      })
+
+      // Xử lý hiệu ứng Phá Giáp (Armor Break)
+      if (skill.defenseReduction && skill.effectDuration) {
+        const abRes = applyStatusEffect(enemy, {
+          type: "armor-break",
+          name: "Vỡ Vỏ Giáp",
+          desc: `Giảm ${Math.round(skill.defenseReduction * 100)}% phòng ngự`,
+          duration: skill.effectDuration,
+          value: skill.defenseReduction,
+          stackType: "refresh",
+          isDebuff: true,
+        })
+        newLogs.push({
+          id: `log-${Date.now()}-ab`,
+          turn: state.turnNumber,
+          type: "status",
+          text: `[HIỆU ỨNG ⚡] Vỏ giáp của ${enemy.name} bị nứt toác! Phòng ngự suy giảm ${Math.round(skill.defenseReduction * 100)}% trong ${abRes.effect.duration} lượt.`,
+          actorName: player.name,
+          targetName: enemy.name,
+          timestamp: now,
+        })
+      }
+
+      // Xử lý hiệu ứng phụ tự bảo vệ (Falcon Ghost Dash)
+      if (skill.damageReduction && skill.effectDuration) {
+        applyStatusEffect(player, {
+          type: "emergency-guard",
+          name: "Lá Chắn Né Tránh",
+          desc: `Giảm ${Math.round(skill.damageReduction * 100)}% sát thương nhận vào`,
+          duration: skill.effectDuration,
+          value: skill.damageReduction,
+          stackType: "override",
+        })
+      }
+
+      lastActionData = {
+        actorId: player.id,
+        skillName: skill.name,
+        damage,
+        isCrit,
+      }
     }
   }
 
@@ -748,19 +969,55 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
       ...state,
       player,
       enemy,
+      telegraphedAttack: null,
       status: "victory",
       logs: newLogs,
       lastAction: lastActionData,
     }
   }
 
-  // Kết thúc lượt người chơi -> Chuyển sang lượt kẻ địch
-  tickUnitTurn(player)
+  // Kết thúc lượt người chơi -> Kích hoạt DoT & Cooldown tick
+  const tickResult = tickUnitTurn(player)
+  for (const d of tickResult.dotLogs) {
+    newLogs.push({
+      id: `log-${Date.now()}-pdot-${Math.random().toString(36).slice(2, 6)}`,
+      turn: state.turnNumber,
+      type: "damage",
+      text: d.text,
+      actorName: "HIỆU ỨNG",
+      targetName: player.name,
+      value: d.damage,
+      timestamp: now,
+    })
+  }
+
+  if (player.hp <= 0) {
+    newLogs.push({
+      id: `log-${Date.now()}-pdead`,
+      turn: state.turnNumber,
+      type: "defeat",
+      text: `[THẤT BẠI 💀] Cơ giáp ${player.name} đã bị phá hủy do tổn thất kết cấu! Phi công phóng thoát hiểm.`,
+      actorName: "HỆ THỐNG",
+      timestamp: now,
+    })
+    return {
+      ...state,
+      player,
+      enemy,
+      status: "defeat",
+      logs: newLogs,
+      lastAction: lastActionData,
+    }
+  }
+
+  // Cập nhật Dynamic Turn Queue theo tốc độ hiện thời
+  const updatedQueue = calculateTurnQueue(player, enemy)
 
   return {
     ...state,
     player,
     enemy,
+    turnQueue: updatedQueue,
     status: "enemy-turn",
     currentTurnActorId: enemy.id,
     logs: newLogs,
@@ -768,7 +1025,7 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
   }
 }
 
-/** Trí tuệ nhân tạo (AI) quyết định hành động của Kẻ địch */
+/** Trí tuệ nhân tạo (AI) quyết định hành động của Kẻ địch theo Archetype & Cơ chế Boss */
 export function executeEnemyAIAction(state: CombatState): CombatState {
   if (state.status !== "enemy-turn" || state.enemy.hp <= 0) return state
 
@@ -776,107 +1033,289 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
   const player = cloneUnit(state.player)
   const now = `00:${String(Math.min(99, state.turnNumber * 4 + 2)).padStart(2, "0")}`
   const newLogs: CombatLogItem[] = [...state.logs]
+  let bossWarning = state.bossPhaseWarning || null
+  let telegraphState = state.telegraphedAttack || null
 
-  // Chọn chiêu thức thông minh tùy thuộc loại kẻ địch
+  // 1. Kiểm tra Choáng (Stun) của địch
+  const stunEffect = enemy.statusEffects.find((e) => e.type === "stun")
+  if (stunEffect) {
+    if (enemy.isChargingUltimate) {
+      enemy.isChargingUltimate = false
+      telegraphState = null
+      newLogs.push({
+        id: `log-${Date.now()}-echarge-break`,
+        turn: state.turnNumber,
+        type: "system",
+        text: `[NGẮT KỸ NĂNG ⚡] Đòn nạp năng lượng của ${enemy.name} đã bị gián đoạn do choáng váng!`,
+        actorName: "HỆ THỐNG",
+        timestamp: now,
+      })
+    }
+
+    newLogs.push({
+      id: `log-${Date.now()}-estun`,
+      turn: state.turnNumber,
+      type: "status",
+      text: `[VÔ HIỆU HÓA ⚠️] ${enemy.name} bị quá nhiệt/tê liệt hoàn toàn, mất lượt hành động!`,
+      actorName: enemy.name,
+      timestamp: now,
+    })
+
+    const tickRes = tickUnitTurn(enemy)
+    for (const d of tickRes.dotLogs) {
+      newLogs.push({
+        id: `log-${Date.now()}-edot-${Math.random().toString(36).slice(2, 6)}`,
+        turn: state.turnNumber,
+        type: "damage",
+        text: d.text,
+        actorName: "HIỆU ỨNG",
+        targetName: enemy.name,
+        value: d.damage,
+        timestamp: now,
+      })
+    }
+
+    const updatedQueue = calculateTurnQueue(player, enemy)
+    return {
+      ...state,
+      player,
+      enemy,
+      turnQueue: updatedQueue,
+      telegraphedAttack: telegraphState,
+      turnNumber: state.turnNumber + 1,
+      status: "player-turn",
+      currentTurnActorId: player.id,
+      logs: newLogs,
+    }
+  }
+
+  // 2. Cơ chế Boss Đa Pha (Phase 1 -> Phase 2 Enrage khi HP < 50%)
+  if (enemy.gearType === "siege-walker" && (!enemy.bossPhase || enemy.bossPhase === 1) && enemy.hp < enemy.maxHp * 0.5) {
+    enemy.bossPhase = 2
+    bossWarning = "CẢNH BÁO: Pháo Đài kích hoạt PHA 2 - QUÁ TẢI NĂNG LƯỢNG (Overdrive)! +30% Công, +20 Tốc độ!"
+    applyStatusEffect(enemy, {
+      type: "boss-overdrive",
+      name: "Quá Tải Lõi Phản Ứng (Overdrive)",
+      desc: "Lõi lò phản ứng tăng tốc cực hạn: +30% Sức tấn công, +20 Tốc độ",
+      duration: 99,
+      value: 0.3,
+    })
+    newLogs.push({
+      id: `log-${Date.now()}-boss-phase2`,
+      turn: state.turnNumber,
+      type: "boss-telegraph",
+      text: `[BÁO ĐỘNG ĐỎ ⚠️] Lò phản ứng Pháo Đài Công Thành quá tải! Chuyển sang PHA 2: QUÁ TẢI NĂNG LƯỢNG (Overdrive)! Sát thương và tốc độ tăng vọt!`,
+      actorName: "HỆ THỐNG",
+      timestamp: now,
+    })
+  }
+
+  // 3. Quyết định hành động theo Cây Chiến Thuật (Archetype Tactical AI)
   let selectedSkill: CombatSkill = enemy.skills[0]
+  let isExecutingTelegraphUltimate = false
 
-  if (enemy.gearType === "scout-drone") {
-    // Scout Drone: Dùng EMP nếu đủ SP và hết cooldown
+  // Kịch bản Boss đang sạc tuyệt kỹ:
+  if (enemy.isChargingUltimate) {
+    isExecutingTelegraphUltimate = true
+    enemy.isChargingUltimate = false
+    telegraphState = null
+    selectedSkill = {
+      id: "siege-apocalypse-blast",
+      name: "Pháo Hạt Nhân Tận Diệt",
+      nameEn: "Apocalypse Nuclear Blast",
+      desc: "Xả năng lượng hủy diệt toàn bộ khu vực với 240% sát thương bùng nổ xuyên giáp!",
+      spCost: 0,
+      cooldown: 0,
+      targetType: "single-enemy",
+      damageMultiplier: 2.4,
+      armorPenetration: 0.3,
+    }
+  } else if (enemy.archetype === "disruptor") {
+    // DISRUPTOR ARCHETYPE (Scout Drone)
     const empSkill = enemy.skills.find((s) => s.id === "drone-emp")
-    if (empSkill && enemy.sp >= empSkill.spCost && (enemy.skillCooldowns[empSkill.id] || 0) <= 0) {
+    const jammingSkill = enemy.skills.find((s) => s.id === "drone-jamming")
+    const playerSlowed = player.statusEffects.some((e) => e.type === "emp-slow")
+    const droneJammed = enemy.statusEffects.some((e) => e.type === "ecm-jamming")
+
+    if (empSkill && !playerSlowed && enemy.sp >= empSkill.spCost && (enemy.skillCooldowns[empSkill.id] || 0) <= 0) {
       selectedSkill = empSkill
+    } else if (
+      jammingSkill &&
+      !droneJammed &&
+      enemy.hp < enemy.maxHp * 0.7 &&
+      enemy.sp >= jammingSkill.spCost &&
+      (enemy.skillCooldowns[jammingSkill.id] || 0) <= 0
+    ) {
+      selectedSkill = jammingSkill
+    } else {
+      selectedSkill = enemy.skills[0]
     }
-  } else if (enemy.gearType === "raider-mech") {
-    // Raider Mech: Ưu tiên Tên lửa định hướng
+  } else if (enemy.archetype === "aggressive") {
+    // AGGRESSIVE ARCHETYPE (Raider Mech)
     const missile = enemy.skills.find((s) => s.id === "mech-missile")
-    if (missile && enemy.sp >= missile.spCost && (enemy.skillCooldowns[missile.id] || 0) <= 0) {
+    const plasma = enemy.skills.find((s) => s.id === "mech-plasma-burn")
+    const playerBurning = player.statusEffects.some((e) => e.type === "plasma-burn")
+
+    if (
+      missile &&
+      player.hp < player.maxHp * 0.45 &&
+      enemy.sp >= missile.spCost &&
+      (enemy.skillCooldowns[missile.id] || 0) <= 0
+    ) {
       selectedSkill = missile
+    } else if (plasma && !playerBurning && enemy.sp >= plasma.spCost && (enemy.skillCooldowns[plasma.id] || 0) <= 0) {
+      selectedSkill = plasma
+    } else if (missile && enemy.sp >= missile.spCost && (enemy.skillCooldowns[missile.id] || 0) <= 0) {
+      selectedSkill = missile
+    } else {
+      selectedSkill = enemy.skills[0]
     }
-  } else if (enemy.gearType === "siege-walker") {
-    // Siege Walker: Nếu máu dưới 50% thì kích hoạt khiên titan, còn lại xả mưa pháo
+  } else if (enemy.archetype === "adaptive-boss") {
+    // ADAPTIVE BOSS ARCHETYPE (Siege Walker)
     const fortify = enemy.skills.find((s) => s.id === "siege-fortify")
     const barrage = enemy.skills.find((s) => s.id === "siege-barrage")
+    const acid = enemy.skills.find((s) => s.id === "siege-acid")
+    const charge = enemy.skills.find((s) => s.id === "siege-charge")
 
     const hasShield = enemy.statusEffects.some((e) => e.type === "emergency-guard")
+    const acidEffect = player.statusEffects.find((e) => e.type === "acid-corrosion")
+    const acidStacks = acidEffect?.stacks || 0
+
     if (
-      enemy.hp < enemy.maxHp * 0.5 &&
+      enemy.hp < enemy.maxHp * 0.55 &&
       !hasShield &&
       fortify &&
       enemy.sp >= fortify.spCost &&
       (enemy.skillCooldowns[fortify.id] || 0) <= 0
     ) {
       selectedSkill = fortify
+    } else if (charge && state.turnNumber >= 2 && state.turnNumber % 3 === 0 && (enemy.skillCooldowns[charge.id] || 0) <= 0 && enemy.sp >= charge.spCost) {
+      selectedSkill = charge
+    } else if (acid && acidStacks < 3 && enemy.sp >= acid.spCost && (enemy.skillCooldowns[acid.id] || 0) <= 0) {
+      selectedSkill = acid
     } else if (barrage && enemy.sp >= barrage.spCost && (enemy.skillCooldowns[barrage.id] || 0) <= 0) {
       selectedSkill = barrage
+    } else {
+      selectedSkill = enemy.skills[0]
     }
   }
 
   // Tiêu hao SP & Cooldown
   enemy.sp = Math.max(0, enemy.sp - selectedSkill.spCost)
-  if (selectedSkill.cooldown > 0) {
+  if (selectedSkill.cooldown > 0 && selectedSkill.id in enemy.skillCooldowns) {
     enemy.skillCooldowns[selectedSkill.id] = selectedSkill.cooldown
   }
 
   let lastActionData: CombatState["lastAction"]
 
-  if (selectedSkill.targetType === "self") {
-    const shieldEffect: StatusEffect = {
-      id: `enemy-shield-${Date.now()}`,
-      type: "emergency-guard",
-      name: "Tấm Chắn Titan",
-      desc: "Giảm 40% sát thương nhận vào trong 2 lượt",
-      duration: selectedSkill.effectDuration || 2,
-      value: selectedSkill.damageReduction || 0.4,
+  // Xử lý nạp năng lượng (Telegraphed Charge)
+  if (selectedSkill.id === "siege-charge") {
+    enemy.isChargingUltimate = true
+    telegraphState = {
+      isCharging: true,
+      skillName: "Pháo Hạt Nhân Tận Diệt",
+      turnsLeft: 1,
+      description: "CẢNH BÁO NGUY CẤP: Pháo Đài đang sạc đạn hạt nhân! Lượt tới sẽ khai hỏa sát thương cực đại!",
     }
-    enemy.statusEffects = enemy.statusEffects.filter((e) => e.type !== "emergency-guard")
-    enemy.statusEffects.push(shieldEffect)
-
     newLogs.push({
-      id: `log-${Date.now()}-eshield`,
+      id: `log-${Date.now()}-charge`,
       turn: state.turnNumber,
-      type: "status",
-      text: `[PHÒNG THỦ KẺ ĐỊCH] ${enemy.name} kích hoạt ${selectedSkill.name}! Giảm 40% sát thương gánh chịu trong 2 lượt.`,
+      type: "boss-telegraph",
+      text: `[CẢNH BÁO TỐI CAO 🚨] ${enemy.name} kích hoạt ${selectedSkill.name}! Đang nạp năng lượng cực hạn cho đòn đánh hủy diệt ở lượt tới!`,
       actorName: enemy.name,
       timestamp: now,
     })
-
     lastActionData = {
       actorId: enemy.id,
       skillName: selectedSkill.name,
-      effectApplied: "Tấm Chắn Titan",
+      effectApplied: "Sạc Đạn Hạt Nhân",
+    }
+  } else if (selectedSkill.targetType === "self") {
+    // Tự buff
+    if (selectedSkill.statusToApply) {
+      const applyRes = applyStatusEffect(enemy, selectedSkill.statusToApply)
+      newLogs.push({
+        id: `log-${Date.now()}-eself`,
+        turn: state.turnNumber,
+        type: "status",
+        text: `[PHÒNG VỆ ĐỊCH] ${enemy.name} dùng ${selectedSkill.name}: ${applyRes.logText}`,
+        actorName: enemy.name,
+        timestamp: now,
+      })
+    }
+    lastActionData = {
+      actorId: enemy.id,
+      skillName: selectedSkill.name,
+      effectApplied: selectedSkill.name,
     }
   } else {
-    const { damage, isCrit, reducedByGuard } = calculateCombatDamage(enemy, player, selectedSkill)
-    player.hp = Math.max(0, player.hp - damage)
+    // Tấn công đơn mục tiêu
+    const { damage, isCrit, isEvaded, reducedByGuard } = calculateCombatDamage(enemy, player, selectedSkill)
 
-    let logText = `[ĐỊCH TẤN CÔNG 💥] ${enemy.name} dùng ${selectedSkill.name} bắn trúng ${player.name}! Gây ${damage} sát thương.`
-    if (isCrit) {
-      logText = `[BẠO KÍCH KẺ ĐỊCH ⚠️] ${enemy.name} kích hoạt hỏa lực cực đại với ${selectedSkill.name}! Gây ${damage} sát thương bùng nổ!`
-    }
-    if (reducedByGuard) {
-      logText += ` (Lá Chắn phòng hộ của ${player.name} đã triệt tiêu một phần sát thương)`
-    }
+    if (isEvaded) {
+      newLogs.push({
+        id: `log-${Date.now()}-peva`,
+        turn: state.turnNumber,
+        type: "evade",
+        text: `[NÉ TRÁNH 💨] ${player.name} tăng tốc lượn vòng né đòn ${selectedSkill.name} của ${enemy.name}!`,
+        actorName: player.name,
+        timestamp: now,
+      })
+      lastActionData = {
+        actorId: enemy.id,
+        skillName: selectedSkill.name,
+        damage: 0,
+        isEvaded: true,
+      }
+    } else {
+      player.hp = Math.max(0, player.hp - damage)
 
-    newLogs.push({
-      id: `log-${Date.now()}-eatk`,
-      turn: state.turnNumber,
-      type: isCrit ? "crit" : "enemy-action",
-      text: logText,
-      actorName: enemy.name,
-      targetName: player.name,
-      value: damage,
-      timestamp: now,
-    })
+      let logText = isExecutingTelegraphUltimate
+        ? `[TẬN DIỆT HẠT NHÂN ☢️] ${enemy.name} giáng đòn ${selectedSkill.name} hủy diệt! Gây ${damage} sát thương khủng khiếp!`
+        : `[ĐỊCH TẤN CÔNG 💥] ${enemy.name} dùng ${selectedSkill.name} bắn trúng ${player.name}! Gây ${damage} sát thương.`
 
-    lastActionData = {
-      actorId: enemy.id,
-      skillName: selectedSkill.name,
-      damage,
-      isCrit,
+      if (isCrit) {
+        logText = `[BẠO KÍCH KẺ ĐỊCH ⚠️] ${enemy.name} hỏa lực bùng nổ với ${selectedSkill.name}! Gây ${damage} sát thương bạo kích!`
+      }
+      if (reducedByGuard) {
+        logText += ` (Lá Chắn của ${player.name} đã hấp thụ một phần sát thương)`
+      }
+
+      newLogs.push({
+        id: `log-${Date.now()}-eatk`,
+        turn: state.turnNumber,
+        type: isCrit ? "crit" : isExecutingTelegraphUltimate ? "boss-telegraph" : "enemy-action",
+        text: logText,
+        actorName: enemy.name,
+        targetName: player.name,
+        value: damage,
+        timestamp: now,
+      })
+
+      // Gắn debuff nếu skill có statusToApply
+      if (selectedSkill.statusToApply) {
+        const appRes = applyStatusEffect(player, selectedSkill.statusToApply)
+        newLogs.push({
+          id: `log-${Date.now()}-edebuff`,
+          turn: state.turnNumber,
+          type: "status",
+          text: appRes.logText,
+          actorName: enemy.name,
+          targetName: player.name,
+          timestamp: now,
+        })
+      }
+
+      lastActionData = {
+        actorId: enemy.id,
+        skillName: selectedSkill.name,
+        damage,
+        isCrit,
+      }
     }
   }
 
-  // Kiểm tra điều kiện Thất bại
+  // Kiểm tra điều kiện Thất bại của người chơi
   if (player.hp <= 0) {
     newLogs.push({
       id: `log-${Date.now()}-def`,
@@ -891,22 +1330,63 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
       ...state,
       player,
       enemy,
+      bossPhaseWarning: bossWarning,
+      telegraphedAttack: telegraphState,
       status: "defeat",
       logs: newLogs,
       lastAction: lastActionData,
     }
   }
 
-  // Kết thúc lượt địch -> Chuyển sang lượt người chơi, tăng số vòng đấu
-  tickUnitTurn(enemy)
+  // Kết thúc lượt địch -> DoT & Cooldown tick
+  const tickRes = tickUnitTurn(enemy)
+  for (const d of tickRes.dotLogs) {
+    newLogs.push({
+      id: `log-${Date.now()}-edot-${Math.random().toString(36).slice(2, 6)}`,
+      turn: state.turnNumber,
+      type: "damage",
+      text: d.text,
+      actorName: "HIỆU ỨNG",
+      targetName: enemy.name,
+      value: d.damage,
+      timestamp: now,
+    })
+  }
+
+  // Nếu địch chết vì DoT:
+  if (enemy.hp <= 0) {
+    newLogs.push({
+      id: `log-${Date.now()}-vic-dot`,
+      turn: state.turnNumber,
+      type: "victory",
+      text: `[CHIẾN THẮNG 🏆] Mục tiêu ${enemy.name} bị phá hủy bởi sát thương hiệu ứng kéo dài! Toàn thắng trở về căn cứ!`,
+      actorName: "HỆ THỐNG",
+      timestamp: now,
+    })
+    return {
+      ...state,
+      player,
+      enemy,
+      telegraphedAttack: null,
+      status: "victory",
+      logs: newLogs,
+      lastAction: lastActionData,
+    }
+  }
+
+  // Cập nhật Dynamic Turn Queue
+  const updatedQueue = calculateTurnQueue(player, enemy)
 
   return {
     ...state,
     player,
     enemy,
+    turnQueue: updatedQueue,
     turnNumber: state.turnNumber + 1,
     status: "player-turn",
     currentTurnActorId: player.id,
+    bossPhaseWarning: bossWarning,
+    telegraphedAttack: telegraphState,
     logs: newLogs,
     lastAction: lastActionData,
   }

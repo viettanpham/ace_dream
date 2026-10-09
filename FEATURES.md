@@ -98,6 +98,23 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 - **Bảo toàn phân hệ Ace Manager**:
   - Toàn bộ các tab Ace Manager cũ (Dashboard, Pilot, Fleet, Equipment, Base, Map, War Room) giữ nguyên vẹn 100% trong `console.tsx`.
 
+### 2.4. Cường Hóa Trang Bị & Bản Sắc Lớp Cơ Giáp (Phase 5.1 & Phase 5.2 — Đã Hoàn Thành)
+- **Hệ thống Cường Hóa Trang Bị (+1 đến +10) (Milestone 5.1)**:
+  - Nâng cấp vũ khí, khiên chắn, động cơ với mức chỉ số tăng lũy tiến (+10% đến +150%).
+  - Cơ chế bảo vệ: Không bao giờ tụt cấp hay phá hủy trang bị khi thất bại.
+  - Xưởng Cường Hóa (Enhancement Lab) minh bạch tỉ lệ thành công và tài nguyên.
+- **Bản sắc & Kỹ năng Nội tại 3 Lớp Cơ Giáp (Milestone 5.2)**:
+  - **Vanguard Gear (Tiên Phong Cân Bằng)**:
+    - *Lõi Năng Lượng Ổn Định (Stable Core)*: Hồi thêm +5 SP mỗi lượt (tổng +10 SP/lượt). Mỗi chu kỳ 3 lượt (lượt 3, 6, 9...), tự động giảm thêm 1 lượt hồi chiêu (CD) cho kỹ năng đang hồi có thời gian chờ lâu nhất.
+  - **Falcon Gear (Tiêm Kích Sát Thủ)**:
+    - *Khí Động Học Mach (Mach Aerodynamics)*: Tỉ lệ né tránh bẩm sinh +15%, bạo kích cơ sở 25% (Crit DMG 1.75x). Đòn đánh bạo kích có 50% tỉ lệ khai hỏa đòn bắn phụ không tốn SP gây thêm sát thương (50% lượng sát thương bạo kích gốc, tối thiểu 25 DMG).
+  - **Aegis Gear (Pháo Đài Bọc Thép)**:
+    - *Giáp Phản Lực Titan (Titan Reactive Armor)*: Khiên gai phản lại 20% sát thương nhận vào thẳng vào kẻ tấn công (tối thiểu 1 DMG, hạ gục địch thì thắng trận ngay). Kháng 50% hiệu ứng làm chậm tốc độ (EMP-slow) và phá giáp (Armor Break).
+  - **Công Cụ Kiểm Thử Tức Thì Trên UI (Dev Combat Test Controls)**:
+    - Bảng điều khiển kiểm thử nội tại tích hợp trực tiếp tại Đấu trường chiến đấu.
+    - 6 Kịch bản test 1-click (TC-VG-01, TC-FL-01, TC-FL-02, TC-AG-01, TC-AG-02, TC-NON-01).
+    - Thao tác test độc lập, không làm biến đổi hay sai lệch dữ liệu tiến trình lưu trữ của người chơi.
+
 ---
 
 ## 3. Các Điểm Chưa Xác Minh & Cần Lưu Ý Kỹ Thuật (Needs Verification / Code Observations)

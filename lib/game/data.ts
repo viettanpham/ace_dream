@@ -915,6 +915,17 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     desc: "Cơ giáp chiến đấu không gian đa dụng tiêu chuẩn. Cân bằng hoàn hảo giữa hỏa lực, khả năng bảo hộ và tốc độ cơ động.",
     color: "#06b6d4",
     avatar: "/images/alviss-portrait.png",
+    passive: {
+      id: "stable-core",
+      name: "Lõi Năng Lượng Ổn Định",
+      desc: "Hồi thêm +5 SP mỗi lượt (tổng +10 SP/lượt). Mỗi chu kỳ 3 lượt thi đấu, kích hoạt xung năng lượng giảm thêm 1 lượt hồi chiêu cho kỹ năng đang hồi.",
+      shortDesc: "+5 SP/lượt · -1 CD mỗi 3 lượt",
+      icon: "Zap",
+      details: [
+        { label: "Hồi Phục Năng Lượng", value: "+5 SP mỗi lượt (Tổng +10 SP)" },
+        { label: "Chu Kỳ Giảm Hồi Chiêu", value: "Mỗi 3 lượt: -1 Lượt CD kỹ năng" },
+      ],
+    },
     baseStats: {
       hp: 1250,
       sp: 100,
@@ -939,6 +950,17 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     desc: "Chuyên cơ săn lùng tốc độ cao. Luôn giành quyền ra đòn trước tiên (Speed 125), hỏa lực sắc bén nhưng vỏ giáp nhẹ hơn.",
     color: "#a855f7",
     avatar: "/images/alviss-portrait.png",
+    passive: {
+      id: "mach-aero",
+      name: "Khí Động Học Mach",
+      desc: "Tỉ lệ né tránh bẩm sinh +15%. Đòn đánh bạo kích có 50% tỉ lệ kích hoạt thêm 1 đòn bắn phụ siêu tốc không tốn SP.",
+      shortDesc: "+15% Né Tránh bẩm sinh · 50% Bắn bồi khi Bạo Kích",
+      icon: "Wind",
+      details: [
+        { label: "Né Tránh Bẩm Sinh", value: "+15% Evasion vĩnh viễn" },
+        { label: "Đòn Bắn Bồi Khí Động", value: "50% kích hoạt khi Bạo Kích (0 SP)" },
+      ],
+    },
     baseStats: {
       hp: 980,
       sp: 110,
@@ -963,6 +985,17 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     desc: "Cỗ máy chiến tranh hạng nặng bọc giáp titan. Máu cực dày, phòng thủ kiên cố và hỏa lực pháo hạt nhân khủng khiếp.",
     color: "#f59e0b",
     avatar: "/images/alviss-portrait.png",
+    passive: {
+      id: "titan-reactive",
+      name: "Giáp Phản Lực Titan",
+      desc: "Khiên gai phản lại 20% sát thương nhận vào cho kẻ tấn công. Đồng thời kháng 50% hiệu ứng làm chậm (EMP Slow) và phá giáp (Armor Break).",
+      shortDesc: "Phản 20% Sát Thương · Kháng 50% Làm Chậm / Phá Giáp",
+      icon: "ShieldAlert",
+      details: [
+        { label: "Gai Phản Sát Thương", value: "Phản 20% sát thương nhận vào" },
+        { label: "Kháng Bất Lợi", value: "Giảm 50% hiệu lực Phá Giáp & Làm Chậm" },
+      ],
+    },
     baseStats: {
       hp: 1800,
       sp: 90,

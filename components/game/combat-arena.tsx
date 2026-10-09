@@ -19,6 +19,8 @@ import {
   getEffectiveSpeed,
   getEffectiveDefense,
   getEffectiveAttack,
+  getEffectiveEvasion,
+  applyStatusEffect,
 } from "@/lib/game/engine"
 import {
   applyDefeatRecord,
@@ -51,8 +53,11 @@ import {
   ArrowLeft,
   Boxes,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Coins,
   Flame,
+  FlaskConical,
   Gauge,
   Globe2,
   Play,
@@ -66,6 +71,7 @@ import {
   Trophy,
   Volume2,
   VolumeX,
+  Wind,
   Wrench,
   Zap,
 } from "lucide-react"
@@ -170,6 +176,231 @@ export function CombatArena() {
     missionTitle?: string
     isFirstClear?: boolean
   } | null>(null)
+
+  // State ẩn/hiện Dev Combat Test Mode (Phase 5.2)
+  const [showDevTestPanel, setShowDevTestPanel] = useState(false)
+
+  // Dev Test Handler: Đổi nhanh lớp Gear trong trận đấu
+  const handleDevSelectGear = (gearId: StarfrontGearId) => {
+    playClickSound()
+    const updated: StarfrontProgression = {
+      ...progression,
+      activeGearId: gearId,
+    }
+    setProgression(updated)
+    saveStarfrontProgression(updated)
+    const newUnit = buildPlayerCombatUnit(updated)
+    const fresh = createInitialCombatState(selectedEncounter, newUnit)
+    fresh.logs.push({
+      id: `dev-switch-${Date.now()}`,
+      turn: 1,
+      type: "system",
+      text: `[DEV TEST 🛠️] Đã chuyển đổi sang ${STARFRONT_GEAR_DEFS[gearId].name} (${STARFRONT_GEAR_DEFS[gearId].passive.name}). Sẵn sàng kiểm thử nội tại!`,
+      actorName: "DEV TOOLS",
+      timestamp: "00:01",
+    })
+    setCombatState(fresh)
+  }
+
+  // Dev Test Handler 1: Kích hoạt Vanguard SP & Chu kỳ 3 lượt
+  const handleDevTestVanguard = () => {
+    playClickSound()
+    let currentProg = progression
+    if (currentProg.activeGearId !== "vanguard") {
+      currentProg = { ...progression, activeGearId: "vanguard" }
+      setProgression(currentProg)
+      saveStarfrontProgression(currentProg)
+    }
+    const unit = buildPlayerCombatUnit(currentProg)
+    unit.sp = 50
+    unit.skillCooldowns = { "pulse-strike": 2 }
+    const fresh = createInitialCombatState(selectedEncounter, unit)
+    fresh.turnNumber = 3
+    fresh.status = "player-turn"
+    fresh.logs.push({
+      id: `dev-vg-${Date.now()}`,
+      turn: 3,
+      type: "system",
+      text: "[TEST ID: TC-VG-01 ⚡] Thiết lập Vanguard Lượt 3: SP = 50, Đạn Xung Điện có CD = 2 lượt. Bấm kỹ năng bất kỳ hoặc 'BẤM ĐỂ ĐI NGAY' để quan sát Vanguard hồi thêm +5 SP (tổng +10) và giảm thêm 1 lượt CD kỹ năng!",
+      actorName: "DEV TOOLS",
+      timestamp: "00:03",
+    })
+    setCombatState(fresh)
+  }
+
+  // Dev Test Handler 2: Kích hoạt Falcon 100% Bạo Kích & Bắn Bồi Khí Động
+  const handleDevTestFalconCrit = () => {
+    playClickSound()
+    let currentProg = progression
+    if (currentProg.activeGearId !== "falcon") {
+      currentProg = { ...progression, activeGearId: "falcon" }
+      setProgression(currentProg)
+      saveStarfrontProgression(currentProg)
+    }
+    const unit = buildPlayerCombatUnit(currentProg)
+    let stateToUse = combatState
+    if (combatState.player.gearType !== "falcon" || combatState.enemy.hp <= 0) {
+      stateToUse = createInitialCombatState(selectedEncounter, unit)
+    }
+    stateToUse.status = "player-turn"
+    const skillId = stateToUse.player.skills[0].id
+    const next = executePlayerAction(stateToUse, skillId, { forceCrit: true, forceFalconFollowUp: true })
+    if (next.lastAction?.damage) {
+      playImpactSound(true)
+      setFloatingNotification({
+        text: `🔥 BẠO KÍCH + BẮN BỒI! -${next.lastAction.damage} HP`,
+        isCrit: true,
+        isPlayer: true,
+      })
+      setTimeout(() => setFloatingNotification(null), 1800)
+    }
+    setCombatState(next)
+  }
+
+  // Dev Test Handler 3: Kích hoạt Falcon Né Tránh
+  const handleDevTestFalconEvade = () => {
+    playClickSound()
+    let currentProg = progression
+    if (currentProg.activeGearId !== "falcon") {
+      currentProg = { ...progression, activeGearId: "falcon" }
+      setProgression(currentProg)
+      saveStarfrontProgression(currentProg)
+    }
+    const unit = buildPlayerCombatUnit(currentProg)
+    let stateToUse = combatState
+    if (combatState.player.gearType !== "falcon" || combatState.enemy.hp <= 0) {
+      stateToUse = createInitialCombatState(selectedEncounter, unit)
+    }
+    stateToUse.status = "enemy-turn"
+    const next = executeEnemyAIAction(stateToUse, { forceEvade: true })
+    setFloatingNotification({
+      text: "NÉ TRÁNH 💨 (Khí Động Học Mach)",
+      isCrit: false,
+      isPlayer: true,
+    })
+    setTimeout(() => setFloatingNotification(null), 1800)
+    setCombatState(next)
+  }
+
+  // Dev Test Handler 4: Kích hoạt Aegis Phản Sát Thương 20%
+  const handleDevTestAegisReflect = () => {
+    playClickSound()
+    let currentProg = progression
+    if (currentProg.activeGearId !== "aegis") {
+      currentProg = { ...progression, activeGearId: "aegis" }
+      setProgression(currentProg)
+      saveStarfrontProgression(currentProg)
+    }
+    const unit = buildPlayerCombatUnit(currentProg)
+    let stateToUse = combatState
+    if (combatState.player.gearType !== "aegis" || combatState.enemy.hp <= 0) {
+      stateToUse = createInitialCombatState(selectedEncounter, unit)
+    }
+    stateToUse.player.hp = Math.max(stateToUse.player.hp, 1500)
+    stateToUse.status = "enemy-turn"
+    const next = executeEnemyAIAction(stateToUse, { forceNoEvade: true })
+    if (next.lastAction?.damage) {
+      playImpactSound(false)
+      const reflected = Math.max(1, Math.round(next.lastAction.damage * 0.2))
+      setFloatingNotification({
+        text: `🛡️ PHẢN ĐÒN GAI: -${reflected} HP về Địch`,
+        isCrit: false,
+        isPlayer: true,
+      })
+      setTimeout(() => setFloatingNotification(null), 1800)
+    }
+    setCombatState(next)
+  }
+
+  // Dev Test Handler 5: Kích hoạt Aegis Kháng 50% Làm Chậm & Phá Giáp
+  const handleDevTestAegisResist = () => {
+    playClickSound()
+    let currentProg = progression
+    if (currentProg.activeGearId !== "aegis") {
+      currentProg = { ...progression, activeGearId: "aegis" }
+      setProgression(currentProg)
+      saveStarfrontProgression(currentProg)
+    }
+    const unit = buildPlayerCombatUnit(currentProg)
+    let stateToUse = combatState
+    if (combatState.player.gearType !== "aegis" || combatState.enemy.hp <= 0) {
+      stateToUse = createInitialCombatState(selectedEncounter, unit)
+    }
+
+    const empRes = applyStatusEffect(stateToUse.player, {
+      type: "emp-slow",
+      name: "EMP Thử Nghiệm",
+      desc: "Giảm 25 Tốc độ (SPD)",
+      duration: 2,
+      value: 25,
+      isDebuff: true,
+    })
+    const abRes = applyStatusEffect(stateToUse.player, {
+      type: "armor-break",
+      name: "Phá Giáp Thử Nghiệm",
+      desc: "Giảm 35% Phòng ngự",
+      duration: 2,
+      value: 0.35,
+      isDebuff: true,
+    })
+
+    const now = "00:01"
+    const newLogs = [
+      ...stateToUse.logs,
+      {
+        id: `dev-res-${Date.now()}-1`,
+        turn: stateToUse.turnNumber,
+        type: "status" as const,
+        text: empRes.logText,
+        actorName: "DEV TOOLS",
+        timestamp: now,
+      },
+      {
+        id: `dev-res-${Date.now()}-2`,
+        turn: stateToUse.turnNumber,
+        type: "status" as const,
+        text: abRes.logText,
+        actorName: "DEV TOOLS",
+        timestamp: now,
+      },
+    ]
+
+    setCombatState({
+      ...stateToUse,
+      logs: newLogs,
+    })
+  }
+
+  // Dev Test Handler 6: Thử nghiệm Trường Hợp KHÔNG Kích Hoạt (Non-trigger control)
+  const handleDevTestNonTrigger = () => {
+    playClickSound()
+    let currentProg = progression
+    if (currentProg.activeGearId !== "vanguard") {
+      currentProg = { ...progression, activeGearId: "vanguard" }
+      setProgression(currentProg)
+      saveStarfrontProgression(currentProg)
+    }
+    const unit = buildPlayerCombatUnit(currentProg)
+    unit.skillCooldowns = { "pulse-strike": 2 }
+    const fresh = createInitialCombatState(selectedEncounter, unit)
+    fresh.turnNumber = 1
+    fresh.status = "player-turn"
+    fresh.logs.push({
+      id: `dev-non-${Date.now()}`,
+      turn: 1,
+      type: "system",
+      text: "[TEST ID: TC-NON-01 ❌] Kiểm thử KHÔNG KÍCH HOẠT: Vanguard ở Lượt 1 (không phải chu kỳ 3 lượt). Kỹ năng Đạn Xung Điện CD = 2. Khi hành động, chỉ giảm 1 CD tự nhiên, KHÔNG kích hoạt giảm thêm lượt hồi chiêu!",
+      actorName: "DEV TOOLS",
+      timestamp: "00:01",
+    })
+    setCombatState(fresh)
+  }
+
+  // Dev Test Handler: Làm mới lại trận đấu
+  const handleDevResetArena = () => {
+    playClickSound()
+    handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+  }
 
   // Khôi phục dữ liệu đã lưu từ LocalStorage khi khởi chạy
   useEffect(() => {
@@ -607,6 +838,25 @@ export function CombatArena() {
             >
               {audioMuted ? <VolumeX className="size-3.5 text-red-400" /> : <Volume2 className="size-3.5 text-cyan-400" />}
             </button>
+
+            {/* Nút bật tắt Dev Combat Test Controls (Phase 5.2) */}
+            <button
+              onClick={() => {
+                playClickSound()
+                setShowDevTestPanel(!showDevTestPanel)
+              }}
+              title="Mở Bảng Điều Khiển Kiểm Thử Nội Tại Combat (Milestone 5.2)"
+              className={cn(
+                "flex items-center gap-1 rounded-xs border px-2.5 py-1 text-xs font-mono transition-all cursor-pointer ml-1",
+                showDevTestPanel
+                  ? "border-amber-400 bg-amber-950/80 text-amber-300 font-bold shadow-[0_0_10px_rgba(251,191,36,0.3)]"
+                  : "border-border/60 bg-black/40 text-muted-foreground hover:text-amber-300 hover:border-amber-400/50",
+              )}
+            >
+              <FlaskConical className="size-3.5 text-amber-400" />
+              <span className="hidden sm:inline font-bold">🛠️ Test Mode 5.2</span>
+              {showDevTestPanel ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+            </button>
           </div>
         </div>
       </div>
@@ -674,6 +924,152 @@ export function CombatArena() {
               >
                 <ArrowLeft className="size-3" /> Về Bản Đồ Chiến Dịch
               </Button>
+            </div>
+          )}
+
+          {/* 🛠️ BẢNG ĐIỀU KHIỂN KIỂM THỬ NỘI TẠI (DEV COMBAT TEST CONTROLS — MILESTONE 5.2) */}
+          {showDevTestPanel && (
+            <div className="rounded-sm border border-amber-500/60 bg-black/95 p-3.5 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-500/30 pb-2">
+                <div className="flex items-center gap-2">
+                  <FlaskConical className="size-4 text-amber-400" />
+                  <span className="font-display text-xs font-bold text-amber-300 uppercase tracking-wider">
+                    BẢNG ĐIỀU KHIỂN KIỂM THỬ NỘI TẠI (DEV COMBAT TEST CONTROLS — PHASE 5.2)
+                  </span>
+                  <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[9px] font-mono text-amber-300 border border-amber-500/40">
+                    UI TEST HARNESS
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  Kích hoạt trực tiếp các kịch bản test nội tại để xác minh tức thì trên giao diện
+                </span>
+              </div>
+
+              {/* Hàng 1: Đổi Lớp Gear Nhanh Trong Trận Đấu */}
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                <span className="text-[11px] font-mono font-bold text-muted-foreground">Đổi Gear Thử Nghiệm:</span>
+                {(["vanguard", "falcon", "aegis"] as StarfrontGearId[]).map((gId) => {
+                  const def = STARFRONT_GEAR_DEFS[gId]
+                  const isCurrent = activeGearId === gId
+                  return (
+                    <button
+                      key={gId}
+                      onClick={() => handleDevSelectGear(gId)}
+                      className={cn(
+                        "rounded px-2.5 py-1 text-xs font-mono border transition-all cursor-pointer flex items-center gap-1.5",
+                        isCurrent
+                          ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_8px_rgba(34,211,238,0.3)]"
+                          : "border-border/60 bg-black/50 text-muted-foreground hover:text-white hover:border-border",
+                      )}
+                    >
+                      <span className="size-2 rounded-full" style={{ backgroundColor: def.color }} />
+                      <span>{def.name}</span>
+                      <span className="text-[10px] text-amber-300 opacity-90">({def.passive.name})</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Hàng 2: Các Kịch Bản Kích Hoạt Tức Thì (1-Click Test Scenarios) */}
+              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Test Case 1: Vanguard */}
+                <button
+                  onClick={handleDevTestVanguard}
+                  className="flex flex-col justify-between rounded border border-cyan-500/40 bg-cyan-950/20 p-2 text-left hover:bg-cyan-950/40 hover:border-cyan-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300">
+                    <Zap className="size-3.5 text-amber-400 shrink-0" />
+                    <span>TC-VG-01: Vanguard SP & CD Chu Kỳ 3</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Đặt Lượt 3, SP=50, CD=2. Hành động để hồi +5 SP (tổng +10) và giảm thêm 1 CD!
+                  </p>
+                </button>
+
+                {/* Test Case 2: Falcon Crit & Follow-up */}
+                <button
+                  onClick={handleDevTestFalconCrit}
+                  className="flex flex-col justify-between rounded border border-purple-500/40 bg-purple-950/20 p-2 text-left hover:bg-purple-950/40 hover:border-purple-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-purple-300">
+                    <Sparkles className="size-3.5 text-amber-400 shrink-0" />
+                    <span>TC-FL-01: Falcon Bạo Kích & Bắn Bồi</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Ép bạo kích 100% kích hoạt thêm 1 đòn bắn bồi không tốn SP gây thêm sát thương!
+                  </p>
+                </button>
+
+                {/* Test Case 3: Falcon Evasion */}
+                <button
+                  onClick={handleDevTestFalconEvade}
+                  className="flex flex-col justify-between rounded border border-purple-500/40 bg-purple-950/20 p-2 text-left hover:bg-purple-950/40 hover:border-purple-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-purple-300">
+                    <Wind className="size-3.5 text-cyan-400 shrink-0" />
+                    <span>TC-FL-02: Falcon Né Tránh Đòn</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Ép địch đánh trượt vào trạng thái né tránh của Falcon (+15% né bẩm sinh).
+                  </p>
+                </button>
+
+                {/* Test Case 4: Aegis Damage Reflection */}
+                <button
+                  onClick={handleDevTestAegisReflect}
+                  className="flex flex-col justify-between rounded border border-amber-500/40 bg-amber-950/20 p-2 text-left hover:bg-amber-950/40 hover:border-amber-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                    <Shield className="size-3.5 text-amber-400 shrink-0" />
+                    <span>TC-AG-01: Aegis Phản Đòn Gai 20%</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Địch giáng đòn vào Aegis, khiên gai lập tức phản 20% sát thương thẳng vào địch!
+                  </p>
+                </button>
+
+                {/* Test Case 5: Aegis Resistance */}
+                <button
+                  onClick={handleDevTestAegisResist}
+                  className="flex flex-col justify-between rounded border border-amber-500/40 bg-amber-950/20 p-2 text-left hover:bg-amber-950/40 hover:border-amber-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                    <ShieldAlert className="size-3.5 text-emerald-400 shrink-0" />
+                    <span>TC-AG-02: Aegis Kháng 50% Làm Chậm/Giáp</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Áp dụng EMP & Phá Giáp lên Aegis, kiểm tra mức phạt bị triệt tiêu 50%!
+                  </p>
+                </button>
+
+                {/* Test Case 6: Non-trigger control */}
+                <button
+                  onClick={handleDevTestNonTrigger}
+                  className="flex flex-col justify-between rounded border border-red-500/40 bg-red-950/20 p-2 text-left hover:bg-red-950/40 hover:border-red-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-red-300">
+                    <AlertTriangle className="size-3.5 text-red-400 shrink-0" />
+                    <span>TC-NON-01: Test Không Kích Hoạt</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Vanguard ở Lượt 1 (không phải lượt 3) không giảm thêm CD; Không phản đòn nếu không phải Aegis!
+                  </p>
+                </button>
+              </div>
+
+              {/* Footer nút reset */}
+              <div className="mt-2.5 flex items-center justify-between border-t border-amber-500/30 pt-2 text-[11px] font-mono">
+                <span className="text-muted-foreground">
+                  Ghi chú: Thao tác test chỉ tác động phiên thi đấu tạm thời, bảo toàn nguyên vẹn save file.
+                </span>
+                <button
+                  onClick={handleDevResetArena}
+                  className="flex items-center gap-1 text-cyan-300 hover:text-cyan-200 cursor-pointer"
+                >
+                  <RotateCcw className="size-3" />
+                  <span>Khởi động lại sàn đấu</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -842,6 +1238,22 @@ export function CombatArena() {
                 </div>
               </div>
 
+              {/* Huy hiệu Kỹ Năng Nội Tại Của Gear */}
+              <div className="mb-3 rounded border border-border/60 bg-black/40 p-2 text-[10px] font-mono">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                    <Sparkles className="size-3 text-amber-400" />
+                    <span>NỘI TẠI: {activeGearDef.passive.name}</span>
+                  </div>
+                  <span className={cn("rounded px-1.5 py-0.2 text-[9px] border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                    BẢN SẮC GEAR
+                  </span>
+                </div>
+                <p className="mt-1 text-slate-300 leading-snug">
+                  {activeGearDef.passive.desc}
+                </p>
+              </div>
+
               {/* Thanh HP & SP */}
               <div className="space-y-3">
                 <div>
@@ -879,19 +1291,25 @@ export function CombatArena() {
                 </div>
               </div>
 
-              {/* Chỉ số tác chiến thực tế (Hiển thị chỉ số hiệu dụng) */}
-              <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-3 text-center font-mono text-xs">
+              {/* Chỉ số tác chiến thực tế (Hiển thị chỉ số hiệu dụng 4 cột) */}
+              <div className="mt-4 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-3 text-center font-mono text-xs">
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[10px] uppercase text-muted-foreground">Tấn Công</span>
+                  <span className="block text-[9px] uppercase text-muted-foreground">Tấn Công</span>
                   <span className="font-bold text-cyan-300">{getEffectiveAttack(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[10px] uppercase text-muted-foreground">Phòng Thủ</span>
+                  <span className="block text-[9px] uppercase text-muted-foreground">Phòng Thủ</span>
                   <span className="font-bold text-cyan-300">{getEffectiveDefense(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[10px] uppercase text-muted-foreground">Tốc Độ</span>
+                  <span className="block text-[9px] uppercase text-muted-foreground">Tốc Độ</span>
                   <span className="font-bold text-cyan-300">{getEffectiveSpeed(player)}</span>
+                </div>
+                <div className="rounded bg-black/30 p-1.5">
+                  <span className="block text-[9px] uppercase text-muted-foreground">Né Tránh</span>
+                  <span className={cn("font-bold", player.gearType === "falcon" ? "text-amber-300" : "text-cyan-300")}>
+                    {getEffectiveEvasion(player)}%
+                  </span>
                 </div>
               </div>
 
@@ -990,19 +1408,23 @@ export function CombatArena() {
                 </div>
               </div>
 
-              {/* Chỉ số tác chiến Địch (Hiển thị chỉ số hiệu dụng) */}
-              <div className="mt-4 grid grid-cols-3 gap-2 border-t border-border/50 pt-3 text-center font-mono text-xs">
+              {/* Chỉ số tác chiến Địch (Hiển thị chỉ số hiệu dụng 4 cột) */}
+              <div className="mt-4 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-3 text-center font-mono text-xs">
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[10px] uppercase text-muted-foreground">Tấn Công</span>
+                  <span className="block text-[9px] uppercase text-muted-foreground">Tấn Công</span>
                   <span className="font-bold text-red-300">{getEffectiveAttack(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[10px] uppercase text-muted-foreground">Phòng Thủ</span>
+                  <span className="block text-[9px] uppercase text-muted-foreground">Phòng Thủ</span>
                   <span className="font-bold text-red-300">{getEffectiveDefense(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[10px] uppercase text-muted-foreground">Tốc Độ</span>
+                  <span className="block text-[9px] uppercase text-muted-foreground">Tốc Độ</span>
                   <span className="font-bold text-red-300">{getEffectiveSpeed(enemy)}</span>
+                </div>
+                <div className="rounded bg-black/30 p-1.5">
+                  <span className="block text-[9px] uppercase text-muted-foreground">Né Tránh</span>
+                  <span className="font-bold text-red-300">{getEffectiveEvasion(enemy)}%</span>
                 </div>
               </div>
 

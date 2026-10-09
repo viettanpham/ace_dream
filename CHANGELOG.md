@@ -6,9 +6,36 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ## [Phase 5] — Tiến Trình Cơ Giáp & Cường Hóa Trang Bị
 
-*Đang triển khai — Đã hoàn thành Milestone 5.1 (15/15 automated tests passed, build thành công)*
+*Đang triển khai — Đã hoàn thành Milestone 5.1 & Milestone 5.2 (13/13 passives automated tests passed, build thành công)*
 
 ### Tính năng đã hoàn thành:
+- **Milestone 5.2: Định Hình Bản Sắc Gameplay Của Từng Lớp Gear & Kỹ Năng Nội Tại (Gear Class Identity & Passives)**:
+  - **Vanguard Gear (Tiên Phong Cân Bằng)**:
+    - *Nội tại (Passive)*: *Lõi Năng Lượng Ổn Định (Stable Core)*:
+      - Tự động hồi thêm +5 SP mỗi lượt trong `tickUnitTurn` (tổng hồi +10 SP/lượt bao gồm +5 SP cơ bản).
+      - Tại chu kỳ mỗi 3 lượt chiến đấu (lượt 3, 6, 9...), tự động giảm thêm 1 lượt hồi chiêu (CD) cho kỹ năng có thời gian chờ dài nhất.
+      - Log chi tiết: `[NỘI TẠI VANGUARD ⚡] Lõi Năng Lượng Ổn Định hồi thêm +5 SP...` và `...đạt chu kỳ 3 lượt! Giảm thêm 1 lượt hồi chiêu...`.
+  - **Falcon Gear (Tiêm Kích Sát Thủ)**:
+    - *Nội tại (Passive)*: *Khí Động Học Mach (Mach Aerodynamics)*:
+      - Tỉ lệ né tránh bẩm sinh +15% (Evasion cơ sở = 15%, tối đa lên tới 85%).
+      - Tỉ lệ bạo kích cơ sở nâng lên 25% (Crit DMG 1.75x).
+      - Khi đòn đánh gây bạo kích, có 50% tỉ lệ kích hoạt đòn bắn phụ không tốn SP gây thêm sát thương (50% lượng sát thương bạo kích gốc, tối thiểu 25 DMG).
+      - Log chi tiết: `[NỘI TẠI FALCON ⚡] Khí Động Học Mach kích hoạt! Đòn bạo kích khai hỏa tiếp một đòn bắn bồi không tốn SP, gây thêm X sát thương!`.
+  - **Aegis Gear (Pháo Đài Bọc Thép)**:
+    - *Nội tại (Passive)*: *Giáp Phản Lực Titan (Titan Reactive Armor)*:
+      - Khiên gai hấp thụ và phản lại 20% sát thương nhận vào (tối thiểu 1 DMG) thẳng vào kẻ địch trong `executeEnemyAIAction`.
+      - Kháng 50% hiệu ứng làm chậm tốc độ (EMP-slow) và phá giáp (Armor Break), giảm giá trị phạt còn một nửa.
+      - Nếu đòn phản sát thương hạ gục kẻ địch, lập tức kết thúc trận đấu với trạng thái `victory` kèm thông báo khải hoàn.
+      - Log chi tiết: `[NỘI TẠI AEGIS 🛡️] Giáp Phản Lực Titan kích hoạt! Khiên gai hấp thụ và phản lại 20% sát thương...` và `...triệt tiêu 50% hiệu lực...`.
+  - **Giao Diện & Trải Nghiệm Người Chơi (UI & Player Experience)**:
+    - Thẻ nội tại trong Hangar (`starfront-hangar.tsx`) hiển thị tên, công thức và mô tả chi tiết của từng lớp Gear.
+    - Buồng lái Đấu trường (`combat-arena.tsx`) hiển thị huy hiệu `NỘI TẠI: [Tên Nội Tại]` kèm mô tả cơ chế.
+    - Tích hợp **Bảng Điều Khiển Kiểm Thử Nội Tại (Dev Combat Test Controls)** trực tiếp tại Đấu trường:
+      - Bộ chọn chuyển đổi nhanh giữa 3 Gear (Vanguard, Falcon, Aegis).
+      - 6 Kịch bản test 1-click tức thì: `TC-VG-01` (Vanguard SP & CD), `TC-FL-01` (Falcon Crit & Bắn bồi), `TC-FL-02` (Falcon Né đòn), `TC-AG-01` (Aegis Phản đòn 20%), `TC-AG-02` (Aegis Kháng 50% khống chế), `TC-NON-01` (Kiểm thử không kích hoạt khi không thỏa mãn điều kiện).
+      - Đảm bảo an toàn 100% cho save file và tiến trình chiến dịch của người chơi.
+  - **Kết quả Kiểm thử (Automated Tests)**:
+    - Bộ test tự động `tests/passives.test.ts` gồm 13 test case bao phủ toàn bộ điều kiện kích hoạt, công thức sát thương, giảm CD, kháng hiệu ứng, và các ca biên (non-trigger, evade, phản đòn kết liễu). Kết quả: **13/13 PASS**.
 - **Milestone 5.1: Hệ Thống Cường Hóa Trang Bị (+1 đến +10) (Equipment Enhancement System)**:
   - Bảng cấu hình tỉ lệ và chi phí `ENHANCEMENT_TABLE` từ +1 đến +10 cho cả 3 vị trí (Vũ khí, Khiên chắn, Động cơ).
   - Tỉ lệ thành công theo cơ chế chống ức chế (Anti-Frustration):

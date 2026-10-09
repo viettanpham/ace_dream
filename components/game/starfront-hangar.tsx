@@ -38,6 +38,9 @@ import {
   Sword,
   TrendingUp,
   Wrench,
+  Wind,
+  ShieldAlert,
+  Award,
   X,
   Zap,
 } from "lucide-react"
@@ -341,6 +344,17 @@ export function StarfrontHangar({
                   <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">
                     {def.desc}
                   </p>
+
+                  {/* Huy hiệu Nội Tại (Passive Skill Badge) */}
+                  <div className="mt-2 rounded bg-black/50 p-1.5 border border-border/50 text-[10px] font-mono">
+                    <div className="flex items-center gap-1 font-bold text-cyan-300">
+                      <Sparkles className="size-3 text-amber-400" />
+                      <span>{def.passive.name}</span>
+                    </div>
+                    <p className="text-[9.5px] text-muted-foreground mt-0.5 line-clamp-1">
+                      {def.passive.shortDesc}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-1.5 text-[10px] font-mono">
@@ -572,6 +586,32 @@ export function StarfrontHangar({
 
           <div className="mt-4 rounded bg-black/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground border border-border/50">
             <span className="font-bold text-cyan-300">💡 Lưu ý cường hóa:</span> Cường hóa trang bị gia tăng trực tiếp sức mạnh cho toàn bộ chỉ số cộng thêm. Cấp càng cao, lực chiến bứt phá càng khủng khiếp!
+          </div>
+
+          {/* Kỹ Năng Nội Tại & Bản Sắc Cơ Giáp */}
+          <div className="mt-4 rounded border border-cyan-500/40 bg-cyan-950/30 p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="size-3.5 text-amber-400" />
+                <h4 className="font-display text-[11px] font-bold text-amber-300 uppercase tracking-wider">
+                  NỘI TẠI: {activeGearDef.passive.name}
+                </h4>
+              </div>
+              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-mono text-amber-300 border border-amber-500/40">
+                KÍCH HOẠT TỰ ĐỘNG
+              </span>
+            </div>
+            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-200">
+              {activeGearDef.passive.desc}
+            </p>
+            <div className="mt-2 grid grid-cols-1 gap-1 border-t border-cyan-500/30 pt-2 font-mono text-[10px] sm:grid-cols-2">
+              {activeGearDef.passive.details.map((dt, idx) => (
+                <div key={idx} className="flex items-center justify-between rounded bg-black/40 px-2 py-1">
+                  <span className="text-muted-foreground">{dt.label}:</span>
+                  <span className="font-bold text-cyan-300">{dt.value}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Bộ Kỹ Năng Độc Quyền Của Gear Đang Chọn */}

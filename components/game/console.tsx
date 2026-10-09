@@ -18,7 +18,7 @@ import { PilotPanel } from "./pilot-panel"
 type Tab = "combat" | "dashboard" | "pilot" | "fleet" | "equipment" | "base" | "map" | "war"
 
 const NAV: { id: Tab; label: string; icon: typeof Radar; badge?: string }[] = [
-  { id: "combat", label: "STARFRONT (P1-3)", icon: Swords, badge: "Chiến dịch" },
+  { id: "combat", label: "STARFRONT", icon: Swords, badge: "Chiến dịch" },
   { id: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
   { id: "pilot", label: "Nhân vật", icon: UserRound },
   { id: "fleet", label: "Hạm đội", icon: Rocket },

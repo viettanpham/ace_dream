@@ -189,24 +189,31 @@
 - **Phương pháp kiểm thử**:
   - Đã kiểm thử tự động toàn diện trong `test-phase5.ts` (15/15 test assertions passed).
 
-#### 🎯 Milestone 5.2: Định Hình Bản Sắc Gameplay Của Từng Lớp Gear (Gear Class Identity & Passives)
+#### 🎯 Milestone 5.2: Định Hình Bản Sắc Gameplay Của Từng Lớp Gear (Gear Class Identity & Passives) `[ĐÃ HOÀN THÀNH]`
 - **Mục tiêu**: Tạo ra 3 phong cách chơi hoàn toàn khác biệt, khuyến khích người chơi đổi Gear theo từng loại nhiệm vụ.
-- **Phạm vi**:
+- **Trạng thái**: **Đã hoàn thành & Đã kiểm chứng (13/13 tests Milestone 5.2 passed, build thành công)**.
+- **Phạm vi đã triển khai**:
   - **Vanguard Gear (Tiên Phong Cân Bằng)**:
-    - *Nội tại (Passive)*: *Lõi Năng Lượng Ổn Định* — Hồi thêm 5 SP mỗi lượt, giảm 1 lượt hồi chiêu cho kỹ năng bất kỳ sau mỗi 3 lượt.
-    - *Bản sắc*: Vững vàng trong mọi tình huống, thích hợp với các trận chiến kéo dài.
+    - *Nội tại (Passive)*: *Lõi Năng Lượng Ổn Định (Stable Core)*: Hồi thêm +5 SP mỗi lượt (tổng +10 SP/lượt bao gồm +5 tự nhiên). Ở chu kỳ mỗi 3 lượt (lượt 3, 6, 9...), tự động giảm thêm 1 lượt hồi chiêu (CD) cho kỹ năng đang hồi có thời gian chờ dài nhất.
+    - *Bản sắc*: Vững vàng trong mọi tình huống, tài nguyên SP dồi dào, chuỗi xoay tua kỹ năng nhanh và bền bỉ trong các trận chiến kéo dài.
   - **Falcon Gear (Tiêm Kích Sát Thủ)**:
-    - *Nội tại (Passive)*: *Khí Động Học Mach* — Tỉ lệ né tránh bẩm sinh +15%, đòn đánh bạo kích có 50% tỉ lệ kích hoạt thêm 1 đòn bắn phụ không tốn SP.
-    - *Bản sắc*: Đánh nhanh diệt gọn, mạo hiểm với chỉ số giáp mỏng nhưng sát thương bùng nổ.
+    - *Nội tại (Passive)*: *Khí Động Học Mach (Mach Aerodynamics)*: Tỉ lệ né tránh bẩm sinh +15% (Evasion base = 15%), tỉ lệ bạo kích cơ sở nâng lên 25% (Crit DMG 1.75x). Khi đòn đánh gây bạo kích, có 50% tỉ lệ kích hoạt thêm 1 đòn bắn phụ không tốn SP gây thêm sát thương (50% lượng sát thương bạo kích gốc, tối thiểu 25 DMG).
+    - *Bản sắc*: Đánh nhanh diệt gọn, mạo hiểm với vỏ giáp mỏng nhưng né đòn cơ động và sát thương bùng nổ liên hoàn.
   - **Aegis Gear (Pháo Đài Bọc Thép)**:
-    - *Nội tại (Passive)*: *Giáp Phản Lực Titan* — Khiên gai phản lại 20% sát thương nhận vào cho kẻ tấn công, kháng 50% hiệu ứng làm chậm và phá giáp.
-    - *Bản sắc*: Trâu bò lì lợm, càng bị đánh càng tích tụ nộ năng lượng để xả Đại Bác Hạt Nhân.
+    - *Nội tại (Passive)*: *Giáp Phản Lực Titan (Titan Reactive Armor)*: Khiên gai phản lại 20% sát thương nhận vào thẳng vào kẻ tấn công (tối thiểu 1 DMG). Kháng 50% hiệu ứng làm chậm tốc độ (EMP-slow) và phá giáp (Armor Break). Nếu đòn phản sát thương hạ gục kẻ địch, lập tức phân định Chiến Thắng (Victory).
+    - *Bản sắc*: Trâu bò lì lợm, giảm trừ hiệu ứng bất lợi và biến sát thương của kẻ địch thành vũ khí phản kích.
+  - **Tương tác Pipeline Combat & Nhật ký Trận đấu**:
+    - Nhật ký trận đấu (Combat Log) có nhãn riêng: `[NỘI TẠI VANGUARD ⚡]`, `[NỘI TẠI FALCON ⚡]`, `[NỘI TẠI AEGIS 🛡️]`.
+    - Buồng lái Đấu trường và tab Hangar hiển thị thẻ Nội tại với icon, tên, công thức và mô tả chi tiết.
+    - Tích hợp **Bảng Điều Khiển Kiểm Thử Nội Tại (Dev Combat Test Controls)** trực tiếp trên giao diện Đấu Trường để thử nghiệm 6 kịch bản (TC-VG-01, TC-FL-01, TC-FL-02, TC-AG-01, TC-AG-02, TC-NON-01) an toàn mà không ảnh hưởng save file.
 - **Phụ thuộc**: Milestone 5.1, Milestone 4.4.
 - **Tiêu chí hoàn thành (Definition of Done)**:
-  - Các kỹ năng nội tại được kích hoạt tự động và có ghi chú rõ ràng trong nhật ký trận đấu.
-  - Bảng thông tin Gear trong Hangar làm nổi bật bản sắc và nội tại của từng lớp.
+  - Các kỹ năng nội tại được kích hoạt tự động trong combat engine, hiển thị rõ ràng trong log và thông báo nổi.
+  - Bảng thông tin Gear trong Hangar và buồng lái làm nổi bật bản sắc và nội tại của từng lớp.
+  - Bộ automated test 13/13 trường hợp pass 100%.
 - **Phương pháp kiểm thử**:
-  - Unit test kiểm tra kích hoạt nội tại phản đòn của Aegis và hồi SP của Vanguard.
+  - Automated tests tại `tests/passives.test.ts` (13/13 tests PASS).
+  - Manual UI Test Harness trực tiếp tại giao diện Đấu trường.
 
 #### 🎯 Milestone 5.3: Hoàn Thiện Cân Bằng Kinh Tế Chợ Quân Sự & Tái Chế (Armory Economy & Recycling)
 - **Mục tiêu**: Xây dựng vòng lặp kinh tế khép kín (Credits Sink & Source Balance), giải quyết tình trạng tồn đọng trang bị rác trong kho.

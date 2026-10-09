@@ -365,6 +365,18 @@ export type CombatState = {
 
 export type StarfrontGearId = "vanguard" | "falcon" | "aegis"
 
+export type StarfrontGearPassive = {
+  id: string
+  name: string
+  desc: string
+  shortDesc: string
+  icon: string
+  details: {
+    label: string
+    value: string
+  }[]
+}
+
 export type StarfrontGearClassDef = {
   id: StarfrontGearId
   name: string
@@ -373,6 +385,7 @@ export type StarfrontGearClassDef = {
   desc: string
   color: string
   avatar: string
+  passive: StarfrontGearPassive
   baseStats: {
     hp: number
     sp: number

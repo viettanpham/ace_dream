@@ -540,15 +540,27 @@ export function getEffectiveAttack(unit: CombatUnit): number {
   return Math.max(10, attack)
 }
 
-/** Lấy tỉ lệ né tránh hiệu dụng (0 - 75%) */
+export type CombatActionOptions = {
+  forceCrit?: boolean
+  forceFalconFollowUp?: boolean
+  forceEvade?: boolean
+  forceNoEvade?: boolean
+  forceAegisReflect?: boolean
+}
+
+/** Lấy tỉ lệ né tránh hiệu dụng (0 - 85%) */
 export function getEffectiveEvasion(unit: CombatUnit): number {
   let evasion = unit.evasion || 0
+  // Falcon Passive: Khí Động Học Mach (+15% né tránh bẩm sinh)
+  if (unit.gearType === "falcon") {
+    evasion += 15
+  }
   for (const eff of unit.statusEffects) {
     if (eff.type === "ecm-jamming") {
       evasion += eff.value
     }
   }
-  return Math.min(75, Math.max(0, Math.round(evasion)))
+  return Math.min(85, Math.max(0, Math.round(evasion)))
 }
 
 /** Tính toán hàng đợi thứ tự hành động động (Dynamic Turn Queue) */
@@ -563,65 +575,78 @@ export function applyStatusEffect(
   target: CombatUnit,
   newEffect: Omit<StatusEffect, "id">,
 ): { applied: boolean; logText: string; effect: StatusEffect } {
-  const stackType = newEffect.stackType || "refresh"
-  const existingIndex = target.statusEffects.findIndex((e) => e.type === newEffect.type)
+  // Aegis Passive: Giáp Phản Lực Titan — Kháng 50% hiệu ứng làm chậm và phá giáp
+  const effectToApply: Omit<StatusEffect, "id"> = { ...newEffect }
+  let passiveResistLog = ""
+  if (target.gearType === "aegis" && target.isPlayer && (newEffect.type === "emp-slow" || newEffect.type === "armor-break")) {
+    const rawVal = newEffect.value
+    const mitigatedVal = newEffect.type === "emp-slow"
+      ? Math.max(5, Math.round(rawVal * 0.5))
+      : Math.round(rawVal * 0.5 * 100) / 100
+    effectToApply.value = mitigatedVal
+    effectToApply.desc = `${newEffect.desc} (Kháng 50% bởi Giáp Titan)`
+    passiveResistLog = ` [NỘI TẠI AEGIS 🛡️] Giáp Phản Lực Titan triệt tiêu 50% hiệu lực ${newEffect.name} (chỉ còn ${newEffect.type === "emp-slow" ? mitigatedVal + " SPD" : Math.round(mitigatedVal * 100) + "%"})!`
+  }
+
+  const stackType = effectToApply.stackType || "refresh"
+  const existingIndex = target.statusEffects.findIndex((e) => e.type === effectToApply.type)
 
   if (existingIndex >= 0) {
     const existing = target.statusEffects[existingIndex]
 
     if (stackType === "intensity") {
       // Cộng dồn tầng
-      const maxStacks = newEffect.maxStacks || 3
+      const maxStacks = effectToApply.maxStacks || 3
       const currentStacks = existing.stacks || 1
-      const nextStacks = Math.min(maxStacks, currentStacks + (newEffect.stacks || 1))
+      const nextStacks = Math.min(maxStacks, currentStacks + (effectToApply.stacks || 1))
       existing.stacks = nextStacks
-      existing.duration = Math.max(existing.duration, newEffect.duration)
+      existing.duration = Math.max(existing.duration, effectToApply.duration)
       return {
         applied: true,
         effect: existing,
-        logText: `[HIỆU ỨNG ⚡] ${newEffect.name} trên ${target.name} tăng cộng dồn lên TẦNG ${nextStacks}/${maxStacks} (${existing.duration} lượt)!`,
+        logText: `[HIỆU ỨNG ⚡] ${effectToApply.name} trên ${target.name} tăng cộng dồn lên TẦNG ${nextStacks}/${maxStacks} (${existing.duration} lượt)!${passiveResistLog}`,
       }
     } else if (stackType === "override") {
       // Ghi đè nếu hiệu quả mới mạnh hơn hoặc bằng
-      if (newEffect.value >= existing.value) {
+      if (effectToApply.value >= existing.value) {
         target.statusEffects[existingIndex] = {
-          ...newEffect,
+          ...effectToApply,
           id: `eff-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         }
         return {
           applied: true,
           effect: target.statusEffects[existingIndex],
-          logText: `[HIỆU ỨNG ⚡] ${newEffect.name} ghi đè hiệu ứng cũ trên ${target.name} (${newEffect.duration} lượt)!`,
+          logText: `[HIỆU ỨNG ⚡] ${effectToApply.name} ghi đè hiệu ứng cũ trên ${target.name} (${effectToApply.duration} lượt)!${passiveResistLog}`,
         }
       } else {
         return {
           applied: false,
           effect: existing,
-          logText: `[HIỆU ỨNG] ${target.name} đang có hiệu ứng bảo hộ mạnh hơn, không bị ghi đè.`,
+          logText: `[HIỆU ỨNG] ${target.name} đang có hiệu ứng bảo hộ mạnh hơn, không bị ghi đè.${passiveResistLog}`,
         }
       }
     } else {
       // Refresh thời gian hiệu lực
-      existing.duration = Math.max(existing.duration, newEffect.duration)
+      existing.duration = Math.max(existing.duration, effectToApply.duration)
       return {
         applied: true,
         effect: existing,
-        logText: `[HIỆU ỨNG ⚡] Làm mới thời hạn ${newEffect.name} trên ${target.name} (${existing.duration} lượt)!`,
+        logText: `[HIỆU ỨNG ⚡] Làm mới thời hạn ${effectToApply.name} trên ${target.name} (${existing.duration} lượt)!${passiveResistLog}`,
       }
     }
   }
 
   // Thêm hiệu ứng mới
   const created: StatusEffect = {
-    ...newEffect,
+    ...effectToApply,
     id: `eff-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    stacks: newEffect.stacks || (stackType === "intensity" ? 1 : undefined),
+    stacks: effectToApply.stacks || (stackType === "intensity" ? 1 : undefined),
   }
   target.statusEffects.push(created)
   return {
     applied: true,
     effect: created,
-    logText: `[HIỆU ỨNG ⚡] ${target.name} nhận trạng thái ${newEffect.name} trong ${newEffect.duration} lượt!`,
+    logText: `[HIỆU ỨNG ⚡] ${target.name} nhận trạng thái ${effectToApply.name} trong ${effectToApply.duration} lượt!${passiveResistLog}`,
   }
 }
 
@@ -679,17 +704,24 @@ export function calculateCombatDamage(
   attacker: CombatUnit,
   defender: CombatUnit,
   skill: CombatSkill,
+  options?: CombatActionOptions,
 ): { damage: number; isCrit: boolean; isEvaded: boolean; reducedByGuard: boolean } {
   // 1. Kiểm tra Né Tránh (Evasion)
-  let effectiveEvasion = getEffectiveEvasion(defender)
-  const spdDiff = getEffectiveSpeed(defender) - getEffectiveSpeed(attacker)
-  if (spdDiff > 15) {
-    effectiveEvasion += Math.min(20, Math.round(spdDiff * 0.25))
-  }
-  effectiveEvasion = Math.min(85, Math.max(0, effectiveEvasion))
-
-  if (Math.random() * 100 < effectiveEvasion) {
+  if (options?.forceEvade) {
     return { damage: 0, isCrit: false, isEvaded: true, reducedByGuard: false }
+  }
+
+  if (!options?.forceNoEvade && skill.id !== "siege-annihilation") {
+    let effectiveEvasion = getEffectiveEvasion(defender)
+    const spdDiff = getEffectiveSpeed(defender) - getEffectiveSpeed(attacker)
+    if (spdDiff > 15) {
+      effectiveEvasion += Math.min(20, Math.round(spdDiff * 0.25))
+    }
+    effectiveEvasion = Math.min(85, Math.max(0, effectiveEvasion))
+
+    if (Math.random() * 100 < effectiveEvasion) {
+      return { damage: 0, isCrit: false, isEvaded: true, reducedByGuard: false }
+    }
   }
 
   // 2. Tính toán Phòng Thủ có tính đến Xuyên Giáp
@@ -707,11 +739,13 @@ export function calculateCombatDamage(
   const variance = 0.94 + Math.random() * 0.12
   rawDamage = Math.round(rawDamage * variance)
 
-  // 5. Tỉ lệ chí mạng & Sát thương bạo kích
-  const critChance = attacker.critRate ?? (attacker.isPlayer ? 0.15 : 0.1)
-  const isCrit = Math.random() < critChance
+  // 5. Tỉ lệ chí mạng & Sát thương bạo kích (Falcon có thiên hướng chí mạng cao hơn)
+  const defaultCritRate = attacker.gearType === "falcon" ? 0.25 : attacker.isPlayer ? 0.15 : 0.1
+  const critChance = attacker.critRate ?? defaultCritRate
+  const isCrit = options?.forceCrit !== undefined ? options.forceCrit : Math.random() < critChance
   if (isCrit) {
-    const critMult = attacker.critDamage ?? 1.5
+    const defaultCritMult = attacker.gearType === "falcon" ? 1.75 : 1.5
+    const critMult = attacker.critDamage ?? defaultCritMult
     rawDamage = Math.round(rawDamage * critMult)
   }
 
@@ -727,13 +761,15 @@ export function calculateCombatDamage(
 }
 
 /** Cập nhật giảm thời gian hiệu lực buff/debuff, hồi chiêu kỹ năng và kích hoạt DoT (Plasma Burn / Acid) */
-export function tickUnitTurn(unit: CombatUnit): {
+export function tickUnitTurn(unit: CombatUnit, turnNumber?: number): {
   dotLogs: { text: string; damage: number }[]
   expiredLogs: { text: string; effectName: string }[]
+  passiveLogs: { text: string }[]
   wasStunned: boolean
 } {
   const dotLogs: { text: string; damage: number }[] = []
   const expiredLogs: { text: string; effectName: string }[] = []
+  const passiveLogs: { text: string }[] = []
 
   // 1. Kiểm tra sát thương DoT (Đầu lượt)
   const burnEffect = unit.statusEffects.find((e) => e.type === "plasma-burn")
@@ -789,11 +825,36 @@ export function tickUnitTurn(unit: CombatUnit): {
   // 5. Hồi phục nhẹ 5 SP tự nhiên mỗi lượt
   unit.sp = Math.min(unit.maxSp, unit.sp + 5)
 
-  return { dotLogs, expiredLogs, wasStunned }
+  // 6. Vanguard Passive: Lõi Năng Lượng Ổn Định (+5 SP thêm mỗi lượt và -1 Cooldown mỗi 3 lượt)
+  if (unit.gearType === "vanguard" && unit.isPlayer) {
+    unit.sp = Math.min(unit.maxSp, unit.sp + 5)
+    passiveLogs.push({
+      text: `[NỘI TẠI VANGUARD ⚡] Lõi Năng Lượng Ổn Định hồi thêm +5 SP (Tổng hồi +10 SP/lượt, SP: ${unit.sp}/${unit.maxSp}).`,
+    })
+
+    if (turnNumber !== undefined && turnNumber > 0 && turnNumber % 3 === 0) {
+      const coolingDownSkills = Object.keys(unit.skillCooldowns).filter((k) => unit.skillCooldowns[k] > 0)
+      if (coolingDownSkills.length > 0) {
+        // Giảm chiêu có CD cao nhất
+        const targetSkillId = coolingDownSkills.sort((a, b) => unit.skillCooldowns[b] - unit.skillCooldowns[a])[0]
+        unit.skillCooldowns[targetSkillId] = Math.max(0, unit.skillCooldowns[targetSkillId] - 1)
+        const skillName = unit.skills.find((s) => s.id === targetSkillId)?.name || targetSkillId
+        passiveLogs.push({
+          text: `[NỘI TẠI VANGUARD ⚡] Lõi Năng Lượng Ổn Định đạt chu kỳ 3 lượt (Lượt ${turnNumber})! Giảm thêm 1 lượt hồi chiêu cho kỹ năng [${skillName}]!`,
+        })
+      }
+    }
+  }
+
+  return { dotLogs, expiredLogs, passiveLogs, wasStunned }
 }
 
 /** Thực hiện kỹ năng của Người chơi */
-export function executePlayerAction(state: CombatState, skillId: string): CombatState {
+export function executePlayerAction(
+  state: CombatState,
+  skillId: string,
+  options?: CombatActionOptions,
+): CombatState {
   if (state.status !== "player-turn") return state
 
   const player = cloneUnit(state.player)
@@ -812,7 +873,7 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
       actorName: player.name,
       timestamp: now,
     })
-    const tickResult = tickUnitTurn(player)
+    const tickResult = tickUnitTurn(player, state.turnNumber)
     for (const d of tickResult.dotLogs) {
       newLogs.push({
         id: `log-${Date.now()}-pdot-${Math.random().toString(36).slice(2, 6)}`,
@@ -831,6 +892,16 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
         turn: state.turnNumber,
         type: "status",
         text: exp.text,
+        actorName: player.name,
+        timestamp: now,
+      })
+    }
+    for (const p of tickResult.passiveLogs) {
+      newLogs.push({
+        id: `log-${Date.now()}-ppassive-${Math.random().toString(36).slice(2, 6)}`,
+        turn: state.turnNumber,
+        type: "status",
+        text: p.text,
         actorName: player.name,
         timestamp: now,
       })
@@ -894,7 +965,7 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
       player.sp = Math.min(player.maxSp, player.sp + 15)
     }
 
-    const { damage, isCrit, isEvaded, reducedByGuard } = calculateCombatDamage(player, enemy, skill)
+    const { damage, isCrit, isEvaded, reducedByGuard } = calculateCombatDamage(player, enemy, skill, options)
 
     if (isEvaded) {
       newLogs.push({
@@ -932,6 +1003,25 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
         value: damage,
         timestamp: now,
       })
+
+      // Falcon Passive: Khí Động Học Mach — 50% tỉ lệ kích hoạt đòn bắn phụ không tốn SP khi bạo kích
+      let falconFollowUpDmg = 0
+      const shouldFalconFollowUp =
+        options?.forceFalconFollowUp !== undefined ? options.forceFalconFollowUp : Math.random() < 0.50
+      if (isCrit && player.gearType === "falcon" && shouldFalconFollowUp) {
+        falconFollowUpDmg = Math.max(25, Math.round(damage * 0.50))
+        enemy.hp = Math.max(0, enemy.hp - falconFollowUpDmg)
+        newLogs.push({
+          id: `log-${Date.now()}-falcon-followup`,
+          turn: state.turnNumber,
+          type: "crit",
+          text: `[NỘI TẠI FALCON ⚡] Khí Động Học Mach kích hoạt! Đòn bạo kích khai hỏa tiếp một đòn bắn bồi không tốn SP, gây thêm ${falconFollowUpDmg} sát thương!`,
+          actorName: player.name,
+          targetName: enemy.name,
+          value: falconFollowUpDmg,
+          timestamp: now,
+        })
+      }
 
       // Xử lý hiệu ứng Phá Giáp (Armor Break)
       if (skill.defenseReduction && skill.effectDuration) {
@@ -998,8 +1088,8 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
     }
   }
 
-  // Kết thúc lượt người chơi -> Kích hoạt DoT & Cooldown tick
-  const tickResult = tickUnitTurn(player)
+  // Kết thúc lượt người chơi -> Kích hoạt DoT & Cooldown tick (truyền state.turnNumber)
+  const tickResult = tickUnitTurn(player, state.turnNumber)
   for (const d of tickResult.dotLogs) {
     newLogs.push({
       id: `log-${Date.now()}-pdot-${Math.random().toString(36).slice(2, 6)}`,
@@ -1018,6 +1108,16 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
       turn: state.turnNumber,
       type: "status",
       text: exp.text,
+      actorName: player.name,
+      timestamp: now,
+    })
+  }
+  for (const p of tickResult.passiveLogs) {
+    newLogs.push({
+      id: `log-${Date.now()}-ppassive-${Math.random().toString(36).slice(2, 6)}`,
+      turn: state.turnNumber,
+      type: "status",
+      text: p.text,
       actorName: player.name,
       timestamp: now,
     })
@@ -1058,7 +1158,10 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
 }
 
 /** Trí tuệ nhân tạo (AI) quyết định hành động của Kẻ địch theo Archetype & Cơ chế Boss */
-export function executeEnemyAIAction(state: CombatState): CombatState {
+export function executeEnemyAIAction(
+  state: CombatState,
+  options?: CombatActionOptions,
+): CombatState {
   if (state.status !== "enemy-turn" || state.enemy.hp <= 0) return state
 
   const enemy = cloneUnit(state.enemy)
@@ -1093,7 +1196,7 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
       timestamp: now,
     })
 
-    const tickRes = tickUnitTurn(enemy)
+    const tickRes = tickUnitTurn(enemy, state.turnNumber)
     for (const d of tickRes.dotLogs) {
       newLogs.push({
         id: `log-${Date.now()}-edot-${Math.random().toString(36).slice(2, 6)}`,
@@ -1292,7 +1395,7 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
     }
   } else {
     // Tấn công đơn mục tiêu
-    const { damage, isCrit, isEvaded, reducedByGuard } = calculateCombatDamage(enemy, player, selectedSkill)
+    const { damage, isCrit, isEvaded, reducedByGuard } = calculateCombatDamage(enemy, player, selectedSkill, options)
 
     if (isEvaded) {
       newLogs.push({
@@ -1311,6 +1414,13 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
       }
     } else {
       player.hp = Math.max(0, player.hp - damage)
+
+      // Aegis Passive: Giáp Phản Lực Titan — Khiên gai phản lại 20% sát thương nhận vào cho kẻ tấn công
+      let aegisReflectDamage = 0
+      if (player.gearType === "aegis" && player.isPlayer && damage > 0) {
+        aegisReflectDamage = Math.max(1, Math.round(damage * 0.20))
+        enemy.hp = Math.max(0, enemy.hp - aegisReflectDamage)
+      }
 
       let logText = isExecutingTelegraphUltimate
         ? `[TẬN DIỆT HẠT NHÂN ☢️] ${enemy.name} giáng đòn ${selectedSkill.name} hủy diệt! Gây ${damage} sát thương khủng khiếp!`
@@ -1333,6 +1443,40 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
         value: damage,
         timestamp: now,
       })
+
+      if (aegisReflectDamage > 0) {
+        newLogs.push({
+          id: `log-${Date.now()}-aegis-reflect`,
+          turn: state.turnNumber,
+          type: "damage",
+          text: `[NỘI TẠI AEGIS 🛡️] Giáp Phản Lực Titan kích hoạt! Khiên gai hấp thụ và phản lại 20% sát thương (${aegisReflectDamage} sát thương phản đòn) thẳng vào ${enemy.name}!`,
+          actorName: player.name,
+          targetName: enemy.name,
+          value: aegisReflectDamage,
+          timestamp: now,
+        })
+      }
+
+      // Nếu đòn phản sát thương tiêu diệt kẻ địch
+      if (enemy.hp <= 0 && player.hp > 0) {
+        newLogs.push({
+          id: `log-${Date.now()}-vic-reflect`,
+          turn: state.turnNumber,
+          type: "victory",
+          text: `[CHIẾN THẮNG 🏆] Mục tiêu ${enemy.name} đã bị tiêu diệt hoàn toàn bởi sát thương phản đòn từ Giáp Phản Lực Titan! Cơ giáp ${player.name} toàn thắng trở về căn cứ!`,
+          actorName: "HỆ THỐNG",
+          timestamp: now,
+        })
+        return {
+          ...state,
+          player,
+          enemy,
+          telegraphedAttack: null,
+          status: "victory",
+          logs: newLogs,
+          lastAction: lastActionData,
+        }
+      }
 
       // Gắn debuff nếu skill có statusToApply
       if (selectedSkill.statusToApply) {
@@ -1381,7 +1525,7 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
   }
 
   // Kết thúc lượt địch -> DoT & Cooldown tick
-  const tickRes = tickUnitTurn(enemy)
+  const tickRes = tickUnitTurn(enemy, state.turnNumber)
   for (const d of tickRes.dotLogs) {
     newLogs.push({
       id: `log-${Date.now()}-edot-${Math.random().toString(36).slice(2, 6)}`,

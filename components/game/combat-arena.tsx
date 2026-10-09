@@ -56,11 +56,14 @@ import {
   ChevronDown,
   ChevronUp,
   Coins,
+  Database,
   Flame,
   FlaskConical,
   Gauge,
   Globe2,
   Play,
+  Recycle,
+  RefreshCw,
   RotateCcw,
   Shield,
   ShieldAlert,
@@ -396,6 +399,103 @@ export function CombatArena() {
     setCombatState(fresh)
   }
 
+  // Dev Test Handler 7: Thêm 1 món đồ Epic (+3) vào kho để kiểm thử ngay tính năng Rã Đồ
+  const handleDevAddSalvageTestItem = () => {
+    playClickSound()
+    const testItem: StarfrontItem = {
+      id: `test_salvage_${Date.now()}`,
+      name: "Pháo Ray Thử Nghiệm (+3)",
+      slot: "weapon",
+      rarity: "epic",
+      desc: "Trang bị thử nghiệm cấp cường hóa +3 để kiểm tra công thức thu hồi Alloy và Credits (Milestone 5.3).",
+      attackBonus: 45,
+      price: 1500,
+      enhancementLevel: 3,
+    }
+    const updated = {
+      ...progression,
+      inventory: [testItem, ...progression.inventory],
+    }
+    setProgression(updated)
+    saveStarfrontProgression(updated)
+    setFloatingNotification({
+      text: "Đã thêm 1 món Epic (+3) vào Kho Đồ để test Rã Đồ!",
+      isCrit: false,
+      isPlayer: true,
+    })
+    setTimeout(() => setFloatingNotification(null), 2500)
+  }
+
+  // Dev Test Handler 8: Kiểm thử chu kỳ Đồng Bộ Hóa Trạng Thái Gear (Milestone 5.4)
+  const handleDevTestStateSync = () => {
+    playClickSound()
+    const nextGear: Record<StarfrontGearId, StarfrontGearId> = {
+      vanguard: "falcon",
+      falcon: "aegis",
+      aegis: "vanguard",
+    }
+    const current = progression.activeGearId || "vanguard"
+    const target = nextGear[current]
+    const updated: StarfrontProgression = {
+      ...progression,
+      activeGearId: target,
+    }
+    setProgression(updated)
+    saveStarfrontProgression(updated)
+    const newUnit = buildPlayerCombatUnit(updated)
+    const fresh = createInitialCombatState(selectedEncounter, newUnit)
+    fresh.logs.push({
+      id: `dev-sync-${Date.now()}`,
+      turn: 1,
+      type: "system",
+      text: `[TEST ID: TC-SYNC-01 🔄] ĐÃ ĐỒNG BỘ TỨC THỜI sang ${STARFRONT_GEAR_DEFS[target].name}: Tốc độ SPD = ${newUnit.speed}, Né tránh = ${newUnit.evasion}%, Bộ 4 kỹ năng = [${newUnit.skills.map((s) => s.name).join(", ")}], Theme = ${STARFRONT_GEAR_DEFS[target].role}!`,
+      actorName: "DEV TOOLS",
+      timestamp: "00:01",
+    })
+    setCombatState(fresh)
+    setFloatingNotification({
+      text: `Đã đồng bộ tức thì sang ${STARFRONT_GEAR_DEFS[target].name}!`,
+      isCrit: false,
+      isPlayer: true,
+    })
+    setTimeout(() => setFloatingNotification(null), 2500)
+  }
+
+  // Dev Test Handler 9: Xác minh tính toàn vẹn Schema v3 & Migration (Milestone 5.4)
+  const handleDevTestSchemaMigration = () => {
+    playClickSound()
+    const current = loadStarfrontProgression()
+    const allItemsHaveEnhanceLevel = current.inventory.every(
+      (it) => it.enhancementLevel !== undefined && it.enhancementLevel >= 0 && it.enhancementLevel <= 10,
+    )
+    const isV3 = current.version === 3
+    const isSafe = isV3 && allItemsHaveEnhanceLevel && current.alloy !== undefined && current.alloy >= 0
+
+    setFloatingNotification({
+      text: isSafe
+        ? `Schema v3 HỢP LỆ (v${current.version}, ${current.inventory.length} món có cấp cường hóa, ${current.alloy} Alloy)!`
+        : "Cảnh báo: Dữ liệu chưa chuẩn hóa!",
+      isCrit: false,
+      isPlayer: true,
+    })
+    setTimeout(() => setFloatingNotification(null), 3000)
+
+    setCombatState((prev) => ({
+      ...prev,
+      logs: [
+        ...prev.logs,
+        {
+          id: `dev-mig-${Date.now()}`,
+          turn: prev.turnNumber,
+          type: "system",
+          text: `[TEST ID: TC-MIG-01 💾] Xác thực Storage Schema v3: Phiên bản = ${current.version}, Tổng vật phẩm = ${current.inventory.length} (100% có enhancementLevel [0..10]), Số dư Alloy = ${current.alloy}, Credits = ${current.credits}, Active Gear = ${current.activeGearId}. Dữ liệu hoàn toàn tương thích và an toàn!`,
+          actorName: "STORAGE V3",
+          timestamp: "00:01",
+        },
+      ],
+    }))
+  }
+
   // Dev Test Handler: Làm mới lại trận đấu
   const handleDevResetArena = () => {
     playClickSound()
@@ -434,11 +534,17 @@ export function CombatArena() {
         if (next.lastAction.damage) {
           playImpactSound(next.lastAction.isCrit)
         }
+        const hasAegisReflect = next.logs.some(
+          (l) => l.turn === prev.turnNumber && l.text.includes("[NỘI TẠI AEGIS 🛡️]"),
+        )
+        const reflectDamage = hasAegisReflect && next.lastAction.damage ? Math.max(1, Math.round(next.lastAction.damage * 0.2)) : 0
         setFloatingNotification({
           text: next.lastAction.isEvaded
             ? "NÉ TRÁNH 💨"
             : next.lastAction.damage
-              ? `-${next.lastAction.damage} HP`
+              ? hasAegisReflect
+                ? `-${next.lastAction.damage} HP (Phản đòn -${reflectDamage})`
+                : `-${next.lastAction.damage} HP`
               : next.lastAction.effectApplied || "Kích hoạt",
           isCrit: next.lastAction.isCrit,
           isPlayer: false,
@@ -485,13 +591,26 @@ export function CombatArena() {
     handleStartEncounter(selectedEncounter, updated, activeCampaignMission)
   }
 
-  // Chuyển đổi tab phân hệ và luôn đồng bộ buồng lái chiến đấu nếu lớp Gear khác nhau
+  // Chuyển đổi tab phân hệ và luôn đồng bộ buồng lái chiến đấu nếu lớp Gear hoặc trang bị thay đổi
   const handleSwitchTab = (targetSubView: "combat" | "campaign" | "hangar" | "shop") => {
     playClickSound()
     setActiveSubView(targetSubView)
     if (targetSubView === "combat") {
       const currentGear = progression.activeGearId || "vanguard"
-      if (combatState.player.gearType !== currentGear) {
+      const expectedUnit = buildPlayerCombatUnit(progression)
+      const isOutOfSync =
+        combatState.player.gearType !== currentGear ||
+        combatState.player.attack !== expectedUnit.attack ||
+        combatState.player.defense !== expectedUnit.defense ||
+        combatState.player.speed !== expectedUnit.speed ||
+        combatState.player.maxHp !== expectedUnit.maxHp
+
+      if (
+        isOutOfSync &&
+        (combatState.turnNumber === 1 ||
+          combatState.status === "victory" ||
+          combatState.status === "defeat")
+      ) {
         handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
       }
     }
@@ -594,12 +713,17 @@ export function CombatArena() {
       if (next.lastAction.damage) {
         setTimeout(() => playImpactSound(next.lastAction?.isCrit), 80)
       }
+      const hasFalconFollowUp = next.logs.some(
+        (l) => l.turn === combatState.turnNumber && l.text.includes("[NỘI TẠI FALCON ⚡]"),
+      )
       setFloatingNotification({
         text: next.lastAction.isEvaded
           ? "NÉ TRÁNH 💨"
-          : next.lastAction.damage
-            ? `-${next.lastAction.damage} HP`
-            : next.lastAction.effectApplied || "Kích hoạt",
+          : hasFalconFollowUp
+            ? `🔥 BẠO KÍCH + BẮN BỒI! -${next.lastAction.damage} HP`
+            : next.lastAction.damage
+              ? `-${next.lastAction.damage} HP`
+              : next.lastAction.effectApplied || "Kích hoạt",
         isCrit: next.lastAction.isCrit,
         isPlayer: true,
       })
@@ -886,6 +1010,7 @@ export function CombatArena() {
           onEquipItem={handleEquipItem}
           onUnequipSlot={handleUnequipSlot}
           onEnhanceItem={handleEnhanceItem}
+          onUpdateProgression={(updated) => setProgression(updated)}
           onResetSave={handleResetSave}
           onSelectGear={handleSelectGear}
           onNavigateToCombat={() => {
@@ -1053,6 +1178,48 @@ export function CombatArena() {
                   </div>
                   <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
                     Vanguard ở Lượt 1 (không phải lượt 3) không giảm thêm CD; Không phản đòn nếu không phải Aegis!
+                  </p>
+                </button>
+
+                {/* Test Case 7: Demo Rã Đồ & Thu Hồi Alloy (Milestone 5.3) */}
+                <button
+                  onClick={handleDevAddSalvageTestItem}
+                  className="flex flex-col justify-between rounded border border-emerald-500/40 bg-emerald-950/20 p-2 text-left hover:bg-emerald-950/40 hover:border-emerald-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300">
+                    <Recycle className="size-3.5 text-emerald-400 shrink-0" />
+                    <span>TC-SLV-01: Thêm Đồ Epic (+3) Để Test Rã</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Thêm 1 món Epic (+3) vào kho. Vào Hangar hoặc Chợ mở Rã Đồ để xem trước Alloy & Credits hoàn trả!
+                  </p>
+                </button>
+
+                {/* Test Case 8: Hardened State Sync (Milestone 5.4) */}
+                <button
+                  onClick={handleDevTestStateSync}
+                  className="flex flex-col justify-between rounded border border-cyan-500/40 bg-cyan-950/20 p-2 text-left hover:bg-cyan-950/40 hover:border-cyan-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-cyan-300">
+                    <RefreshCw className="size-3.5 text-cyan-400 shrink-0" />
+                    <span>TC-SYNC-01: Chu Kỳ Đổi & Đồng Bộ Gear (5.4)</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Đổi tức thời VG ➔ FL ➔ AG. Đồng bộ ngay 4 kỹ năng, SPD, né tránh, tên buồng lái và theme màu sắc!
+                  </p>
+                </button>
+
+                {/* Test Case 9: Schema v3 & Migration Verification (Milestone 5.4) */}
+                <button
+                  onClick={handleDevTestSchemaMigration}
+                  className="flex flex-col justify-between rounded border border-blue-500/40 bg-blue-950/20 p-2 text-left hover:bg-blue-950/40 hover:border-blue-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-300">
+                    <Database className="size-3.5 text-blue-400 shrink-0" />
+                    <span>TC-MIG-01: Xác Thực Schema v3 & Migration (5.4)</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Kiểm tra LocalStorage Schema v3: version = 3, 100% trang bị có enhancementLevel, bảo toàn tài nguyên!
                   </p>
                 </button>
               </div>

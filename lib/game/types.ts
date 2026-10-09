@@ -424,7 +424,7 @@ export type StarfrontItem = {
 }
 
 export type StarfrontProgression = {
-  version: number // schema version (2)
+  version: number // schema version (3)
   level: number
   exp: number
   credits: number
@@ -436,6 +436,7 @@ export type StarfrontProgression = {
   completedMissions: string[]
   battlesWon: number
   battlesLost: number
+  freeShopRefreshes?: number // Lượt làm mới Chợ Quân Sự miễn phí tích lũy từ chiến thắng
 }
 
 export type BattleRewardResult = {
@@ -486,5 +487,26 @@ export type ArmoryShopItem = {
   item: StarfrontItem
   buyPrice: number
   stockUnlimited?: boolean
+  requiredSectorId?: string // Yêu cầu hoàn thành Sector để mở khóa (sector-1, sector-2, sector-3)
+  tierName?: string // Tên tầng hiển thị (Cơ Bản, Sector 1, Sector 2, Sector 3 Legendary)
+}
+
+/** Ước tính tài nguyên nhận lại khi Tái Chế / Rã Đồ (Salvage) */
+export type SalvageEstimate = {
+  alloyGained: number
+  baseAlloy: number
+  enhancementAlloyRefund: number
+  creditsGained: number
+  baseCredits: number
+  enhancementCreditsRefund: number
+}
+
+/** Kết quả thực hiện Tái Chế / Rã Đồ */
+export type SalvageExecutionResult = {
+  success: boolean
+  updated: StarfrontProgression
+  message: string
+  salvagedItem?: StarfrontItem
+  estimate?: SalvageEstimate
 }
 

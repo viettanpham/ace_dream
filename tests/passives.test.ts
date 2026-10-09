@@ -3,7 +3,6 @@ import assert from "node:assert/strict"
 import {
   STARFRONT_GEAR_DEFS,
   VANGUARD_INITIAL_UNIT,
-  STARFRONT_ENCOUNTERS,
 } from "../lib/game/data"
 import {
   calculateCombatDamage,

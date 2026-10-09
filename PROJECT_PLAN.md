@@ -215,32 +215,63 @@
   - Automated tests tại `tests/passives.test.ts` (13/13 tests PASS).
   - Manual UI Test Harness trực tiếp tại giao diện Đấu trường.
 
-#### 🎯 Milestone 5.3: Hoàn Thiện Cân Bằng Kinh Tế Chợ Quân Sự & Tái Chế (Armory Economy & Recycling)
+#### 🎯 Milestone 5.3: Hoàn Thiện Cân Bằng Kinh Tế Chợ Quân Sự & Tái Chế (Armory Economy & Recycling) `[ĐÃ HOÀN THÀNH]`
 - **Mục tiêu**: Xây dựng vòng lặp kinh tế khép kín (Credits Sink & Source Balance), giải quyết tình trạng tồn đọng trang bị rác trong kho.
-- **Phạm vi**:
-  - Tính năng Tái Chế / Rã Đồ (Salvage): Rã trang bị không dùng để thu lại Hợp Kim Cường Hóa (Alloy) và một phần Credits.
-  - Cập nhật kho hàng Chợ Quân Sự:
-    - Bổ sung vật phẩm theo tiến trình: Hoàn thành Sector 1 mở hàng Rare, Sector 2 mở hàng Epic, Sector 3 mở hàng Legendary.
-    - Hệ thống làm mới gian hàng (Shop Refresh) có giới hạn theo lượt chiến thắng.
+- **Trạng thái**: **Đã hoàn thành & Đã kiểm chứng (14/14 tests Milestone 5.3 passed, 13/13 tests Milestone 5.2 regression passed, build thành công)**.
+- **Phạm vi đã triển khai**:
+  - **Tính năng Tái Chế / Rã Đồ (Salvage)**:
+    - Rã trang bị không dùng để thu hồi nguyên liệu Hợp Kim Cường Hóa (Alloy) và Credits.
+    - Công thức thu hồi toán học nhất quán:
+      * Base Alloy theo Rarity: Common = 2, Rare = 5, Epic = 12, Legendary = 25.
+      * Enhancement Alloy Refund: Hoàn trả 60% lượng Alloy đã đầu tư qua cường hóa (+1 đến +10), tối thiểu +2 Alloy mỗi cấp.
+      * Credits Refund: 35% giá trị gốc của trang bị + 30% Credits đã đầu tư qua cường hóa.
+  - **Khóa An Toàn & Bảo Vệ Dữ Liệu Tuyệt Đối**:
+    - Ngăn chặn hoàn toàn việc rã trang bị đang được gắn trên buồng lái (Equipped Protection).
+    - Chống nhận tài nguyên trùng lặp (Double-click / Duplicate Salvage Protection): Khi một món đã rã, ID lập tức bị loại bỏ khỏi kho.
+    - Tài nguyên Alloy và Credits luôn tăng trưởng dương, không bao giờ bị âm hoặc sai lệch.
+  - **Cập nhật kho hàng Chợ Quân Sự Phân Tầng**:
+    - Mở khóa theo tiến trình Sector: Tầng Cơ Bản (Mở ngay), Tầng Sector 1 (Ải 1-3), Tầng Sector 2 (Ải 2-3), Tầng Sector 3 (Ải 3-3 Legendary Tối Cực).
+    - Khóa các trang bị chưa đạt điều kiện hiển thị rõ lý do: `🔒 Yêu cầu hoàn thành Sector X...`.
+    - Tính năng Làm Mới Gian Hàng (Shop Refresh): Ưu tiên sử dụng lượt miễn phí tích lũy từ chiến thắng (`freeShopRefreshes`), hoặc tốn 100 Credits.
+  - **Giao diện Người Dùng**:
+    - Hộp thoại `SalvageModal` xác nhận rã đồ hiển thị chi tiết số lượng Alloy & Credits thu hồi trước khi xác nhận.
+    - Nút `Tái Chế ♻️` tích hợp đồng thời ở cả tab Chợ Quân Sự (`starfront-shop.tsx`) và kho đồ Hangar (`starfront-hangar.tsx`).
+    - Nút kiểm thử tức thì `TC-SLV-01` trong Dev Test Controls trên buồng lái.
 - **Phụ thuộc**: Milestone 5.1.
 - **Tiêu chí hoàn thành (Definition of Done)**:
-  - Người chơi luôn có động lực tiêu Credits và tích lũy nguyên liệu để nâng cấp trang bị.
+  - Người chơi luôn có động lực tiêu Credits và tích lũy nguyên liệu Alloy để nâng cấp trang bị.
   - Ngăn chặn hoàn toàn việc rã hoặc bán nhầm trang bị đang được gắn trên buồng lái.
+  - Bộ automated test 14/14 trường hợp pass 100%.
 - **Phương pháp kiểm thử**:
-  - Test case: Rã trang bị nhận đủ nguyên liệu; cố tình rã đồ đang trang bị bị hệ thống từ chối an toàn.
+  - Automated tests tại `tests/economy-recycling.test.ts` (14/14 tests PASS).
+  - Regression tests tại `tests/passives.test.ts` (13/13 tests PASS).
+  - Manual UI Test Cases trực tiếp tại tab Chợ và tab Hangar.
 
-#### 🎯 Milestone 5.4: Bảo Đảm An Toàn Dữ Liệu & Đồng Bộ Lựa Chọn Gear (Storage Schema v3 & State Sync)
+#### 🎯 Milestone 5.4: Bảo Đảm An Toàn Dữ Liệu & Đồng Bộ Lựa Chọn Gear (Storage Schema v3 & State Sync) `[ĐÃ HOÀN THÀNH]`
 - **Mục tiêu**: Nâng cấp cấu trúc lưu trữ LocalStorage lên Schema v3 để hỗ trợ cấp cường hóa, và giải quyết triệt để vấn đề đồng bộ khi đổi Gear.
-- **Phạm vi**:
-  - Di chuyển dữ liệu tự động (Migration v2 -> v3): Giữ nguyên 100% cấp độ, EXP, Credits, vật phẩm hiện có; tự động gán `enhancementLevel: 0` cho các trang bị cũ.
-  - Đồng bộ hóa trạng thái tức thời (Hardened State Synchronization):
-    - Đảm bảo khi người chơi đổi sang Falcon hoặc Aegis trong tab Hangar, buồng lái Đấu trường lập tức cập nhật đầy đủ tên, màu sắc theme, bộ 4 kỹ năng và chỉ số SPD tương ứng mà không bị gián đoạn hay lưu giữ trạng thái cũ.
+- **Trạng thái**: **Đã hoàn thành & Đã kiểm chứng (8/8 tests Milestone 5.4 passed, 27/27 regression tests passed, build thành công)**.
+- **Phạm vi đã triển khai**:
+  - **Di chuyển dữ liệu tự động (Migration v1/v2 -> v3)**:
+    - Lưu trữ Schema v3 qua khóa `STARFRONT_SAVE_DATA_V3`.
+    - Hàm di chuyển thuần `migrateProgressionToV3`:
+      * Giữ nguyên 100% cấp độ, EXP, Credits, Alloy, số trận thắng/thua, nhiệm vụ đã hoàn thành.
+      * Tự động khởi tạo `alloy = 25`, `freeShopRefreshes = 1` nếu di chuyển từ save v1.
+      * Chuẩn hóa toàn bộ trang bị trong kho đồ: Tự động gán `enhancementLevel = 0` cho các trang bị cũ chưa có cấp, bảo toàn cấp cường hóa (+1 đến +10) đã có.
+      * Bổ sung đầy đủ trang bị starter nếu kho đồ bị thiếu; kẹp giới hạn an toàn [0..10] cho cấp cường hóa và [1..max] cho cấp độ người chơi.
+  - **Đồng bộ hóa trạng thái tức thời (Hardened State Synchronization)**:
+    - Khi người chơi đổi sang Vanguard, Falcon hoặc Aegis (trong Hangar hoặc qua Dev Test Controls), buồng lái Đấu trường lập tức cập nhật đầy đủ tên cơ giáp, bảng màu sắc theme, bộ 4 kỹ năng trong Action Deck, chỉ số SPD và né tránh bẩm sinh (Falcon +15% né, 25% crit, Aegis phản đòn 20%).
+    - Khi chuyển tab quay lại Đấu trường sau khi trang bị hoặc cường hóa đồ trong Hangar, hàm `handleSwitchTab` tự động phát hiện độ lệch chỉ số và đồng bộ hóa lại `combatState` ngay lập tức.
+  - **Công Cụ Kiểm Thử Tức Thì**:
+    - Bổ sung `TC-SYNC-01: Chu Kỳ Đổi & Đồng Bộ Gear (5.4)` và `TC-MIG-01: Xác Thực Schema v3 & Migration (5.4)` trên Dev Combat Test Controls.
 - **Phụ thuộc**: Milestone 5.1, Milestone 5.2.
 - **Tiêu chí hoàn thành (Definition of Done)**:
   - Dữ liệu người chơi từ các phiên bản trước tải lên mượt mà không lỗi.
   - Chuyển đổi giữa Hangar và Đấu trường hoạt động trơn tru 100%.
+  - Bộ automated test 8/8 trường hợp pass 100%.
 - **Phương pháp kiểm thử**:
-  - Unit test kiểm tra hàm migration v2 -> v3 với các mẫu save data cũ.
+  - Automated tests tại `tests/storage-sync.test.ts` (8/8 tests PASS).
+  - Regression tests tại `tests/passives.test.ts` (13/13 tests PASS) và `tests/economy-recycling.test.ts` (14/14 tests PASS).
+  - Manual UI Test Cases trực tiếp tại buồng lái Đấu Trường.
 
 ---
 

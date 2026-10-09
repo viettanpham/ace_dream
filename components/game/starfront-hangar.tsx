@@ -12,6 +12,7 @@ import {
   SAMPLE_STARFRONT_ITEMS,
   type EnhancementResult,
 } from "@/lib/game/progression"
+import { saveStarfrontProgression } from "@/lib/game/storage"
 import type {
   StarfrontGearId,
   StarfrontItem,
@@ -31,6 +32,7 @@ import {
   Gauge,
   Hammer,
   Layers,
+  Recycle,
   RotateCcw,
   Shield,
   ShieldCheck,
@@ -44,6 +46,7 @@ import {
   X,
   Zap,
 } from "lucide-react"
+import { SalvageModal } from "./salvage-modal"
 import { useState } from "react"
 
 const RARITY_CONFIG: Record<
@@ -120,6 +123,7 @@ interface StarfrontHangarProps {
   onNavigateToCombat: () => void
   onSelectGear?: (gearId: StarfrontGearId) => void
   onEnhanceItem?: (itemId: string) => EnhancementResult
+  onUpdateProgression?: (updated: StarfrontProgression) => void
 }
 
 export function StarfrontHangar({
@@ -130,10 +134,12 @@ export function StarfrontHangar({
   onNavigateToCombat,
   onSelectGear,
   onEnhanceItem,
+  onUpdateProgression,
 }: StarfrontHangarProps) {
   const [selectedSlotFilter, setSelectedSlotFilter] = useState<StarfrontItemSlot | "all">("all")
   const [hoveredItem, setHoveredItem] = useState<StarfrontItem | null>(null)
   const [showResetDialog, setShowResetDialog] = useState(false)
+  const [selectedSalvageItem, setSelectedSalvageItem] = useState<StarfrontItem | null>(null)
 
   // Quản lý trạng thái Xưởng Cường Hóa (Enhancement Lab Modal)
   const [showEnhanceModal, setShowEnhanceModal] = useState(false)
@@ -771,6 +777,18 @@ export function StarfrontHangar({
                       <span>Cường Hóa</span>
                     </Button>
 
+                    {!isEquipped && (
+                      <Button
+                        size="xs"
+                        onClick={() => setSelectedSalvageItem(item)}
+                        className="gap-1 font-display text-[10px] uppercase bg-emerald-700/80 hover:bg-emerald-600 text-white cursor-pointer"
+                        title="Tái chế rã đồ thu hồi Hợp Kim (Alloy) và Credits"
+                      >
+                        <Recycle className="size-3" />
+                        <span>Rã Đồ</span>
+                      </Button>
+                    )}
+
                     {isEquipped ? (
                       <span className="flex items-center gap-1 font-display text-[11px] font-bold text-cyan-300">
                         <Check className="size-3.5" /> ĐANG DÙNG
@@ -1196,6 +1214,21 @@ export function StarfrontHangar({
           </div>
         </div>
       )}
+
+      {/* Modal Tái Chế / Rã Đồ Trong Hangar */}
+      <SalvageModal
+        item={selectedSalvageItem}
+        progression={progression}
+        isOpen={Boolean(selectedSalvageItem)}
+        onClose={() => setSelectedSalvageItem(null)}
+        onSuccess={(updated) => {
+          if (onUpdateProgression) {
+            onUpdateProgression(updated)
+          } else {
+            saveStarfrontProgression(updated)
+          }
+        }}
+      />
     </div>
   )
 }

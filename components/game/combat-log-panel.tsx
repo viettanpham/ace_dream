@@ -171,6 +171,34 @@ export function CombatLogPanel({
 
   // Lấy biểu tượng và kiểu dáng theo loại sự kiện
   const getItemBadge = (item: CombatLogItem) => {
+    if (item.text.includes("[NỘI TẠI VANGUARD")) {
+      return {
+        icon: Zap,
+        badge: "NỘI TẠI VANGUARD",
+        badgeColor: "bg-cyan-500/25 text-cyan-300 border-cyan-400/60 font-bold shadow-[0_0_8px_rgba(6,182,212,0.3)]",
+        textColor: "text-cyan-200 font-semibold",
+        borderColor: "border-cyan-500/40 bg-cyan-950/20",
+      }
+    }
+    if (item.text.includes("[NỘI TẠI FALCON")) {
+      return {
+        icon: Sparkles,
+        badge: "NỘI TẠI FALCON",
+        badgeColor: "bg-purple-500/25 text-purple-300 border-purple-400/60 font-bold shadow-[0_0_8px_rgba(168,85,247,0.3)]",
+        textColor: "text-purple-200 font-semibold",
+        borderColor: "border-purple-500/40 bg-purple-950/20",
+      }
+    }
+    if (item.text.includes("[NỘI TẠI AEGIS")) {
+      return {
+        icon: ShieldAlert,
+        badge: "NỘI TẠI AEGIS",
+        badgeColor: "bg-amber-500/25 text-amber-300 border-amber-400/60 font-bold shadow-[0_0_8px_rgba(245,158,11,0.3)]",
+        textColor: "text-amber-200 font-semibold",
+        borderColor: "border-amber-500/40 bg-amber-950/20",
+      }
+    }
+
     switch (item.type) {
       case "player-action":
         return {

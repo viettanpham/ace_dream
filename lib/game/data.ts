@@ -1235,6 +1235,7 @@ export const CAMPAIGN_SECTORS: CampaignSector[] = [
    ========================================================================== */
 
 export const ARMORY_SHOP_ITEMS: ArmoryShopItem[] = [
+  // TẦNG CƠ BẢN (MỞ NGAY TỪ ĐẦU)
   {
     item: {
       id: "shop_wpn_plasma_cutter",
@@ -1247,20 +1248,7 @@ export const ARMORY_SHOP_ITEMS: ArmoryShopItem[] = [
       price: 850,
     },
     buyPrice: 850,
-  },
-  {
-    item: {
-      id: "shop_wpn_hyper_railgun",
-      name: "Đại Pháo Ray Điện Từ Hyper Prime",
-      slot: "weapon",
-      rarity: "epic",
-      desc: "Gia tốc đạn hạt nhân mini công phá cực đại giáp trụ mục tiêu.",
-      attackBonus: 65,
-      speedBonus: 8,
-      defenseBonus: -5,
-      price: 2200,
-    },
-    buyPrice: 2200,
+    tierName: "Cơ Bản (Mở ngay)",
   },
   {
     item: {
@@ -1274,6 +1262,39 @@ export const ARMORY_SHOP_ITEMS: ArmoryShopItem[] = [
       price: 900,
     },
     buyPrice: 900,
+    tierName: "Cơ Bản (Mở ngay)",
+  },
+  {
+    item: {
+      id: "shop_eng_warp_thruster",
+      name: "Động Cơ Gia Tốc Warp Mk.II",
+      slot: "engine",
+      rarity: "rare",
+      desc: "Bộ đẩy phản lực thế hệ mới giúp cơ giáp lướt gió không gian tốc độ cao.",
+      speedBonus: 20,
+      attackBonus: 10,
+      price: 1000,
+    },
+    buyPrice: 1000,
+    tierName: "Cơ Bản (Mở ngay)",
+  },
+
+  // TẦNG SECTOR 1 (YÊU CẦU HOÀN THÀNH VÀNH ĐAI TIỂU HÀNH TINH ASTEROID)
+  {
+    item: {
+      id: "shop_wpn_hyper_railgun",
+      name: "Đại Pháo Ray Điện Từ Hyper Prime",
+      slot: "weapon",
+      rarity: "epic",
+      desc: "Gia tốc đạn hạt nhân mini công phá cực đại giáp trụ mục tiêu.",
+      attackBonus: 65,
+      speedBonus: 8,
+      defenseBonus: -5,
+      price: 2200,
+    },
+    buyPrice: 2200,
+    requiredSectorId: "sector-1",
+    tierName: "Mở Khóa: Sector 1",
   },
   {
     item: {
@@ -1288,20 +1309,11 @@ export const ARMORY_SHOP_ITEMS: ArmoryShopItem[] = [
       price: 2500,
     },
     buyPrice: 2500,
+    requiredSectorId: "sector-1",
+    tierName: "Mở Khóa: Sector 1",
   },
-  {
-    item: {
-      id: "shop_eng_warp_thruster",
-      name: "Động Cơ Gia Tốc Warp Mk.II",
-      slot: "engine",
-      rarity: "rare",
-      desc: "Bộ đẩy phản lực thế hệ mới giúp cơ giáp lướt gió không gian tốc độ cao.",
-      speedBonus: 20,
-      attackBonus: 10,
-      price: 1000,
-    },
-    buyPrice: 1000,
-  },
+
+  // TẦNG SECTOR 2 (YÊU CẦU HOÀN THÀNH TINH VÂN PLASMA TỐI)
   {
     item: {
       id: "shop_eng_antimatter_drive",
@@ -1315,6 +1327,74 @@ export const ARMORY_SHOP_ITEMS: ArmoryShopItem[] = [
       price: 3200,
     },
     buyPrice: 3200,
+    requiredSectorId: "sector-2",
+    tierName: "Mở Khóa: Sector 2",
+  },
+  {
+    item: {
+      id: "shop_wpn_singularity_lance",
+      name: "Thương Năng Lượng Điểm Kỳ Dị Singularity",
+      slot: "weapon",
+      rarity: "epic",
+      desc: "Phóng chùm photon nén cực độ tạo lỗ đen vi mô nghiền nát vỏ tàu địch.",
+      attackBonus: 75,
+      speedBonus: 10,
+      hpBonus: 150,
+      price: 3500,
+    },
+    buyPrice: 3500,
+    requiredSectorId: "sector-2",
+    tierName: "Mở Khóa: Sector 2",
+  },
+
+  // TẦNG SECTOR 3 (YÊU CẦU HOÀN THÀNH PHÁO ĐÀI BASTION CORE — TỐI CỰC LEGENDARY)
+  {
+    item: {
+      id: "shop_wpn_stellar_annihilator",
+      name: "Súng Hủy Diệt Tinh Vân Prime",
+      slot: "weapon",
+      rarity: "legendary",
+      desc: "Vũ khí chế tác từ lõi sao băng. Sức mạnh hủy diệt nguyên tử vô tiền khoáng hậu.",
+      attackBonus: 95,
+      speedBonus: 12,
+      spBonus: 25,
+      price: 6500,
+    },
+    buyPrice: 6500,
+    requiredSectorId: "sector-3",
+    tierName: "Hàng Tối Thượng: Sector 3 (Legendary)",
+  },
+  {
+    item: {
+      id: "shop_shd_stellar_bulwark",
+      name: "Pháo Đài Bất Hoại Event Horizon",
+      slot: "shield",
+      rarity: "legendary",
+      desc: "Khiên chắn trọng lực bẻ cong mọi loại đạn pháo và hồi phục cực hạn HP.",
+      defenseBonus: 75,
+      hpBonus: 950,
+      spBonus: 35,
+      price: 6000,
+    },
+    buyPrice: 6000,
+    requiredSectorId: "sector-3",
+    tierName: "Hàng Tối Thượng: Sector 3 (Legendary)",
+  },
+  {
+    item: {
+      id: "shop_eng_chronos_drive",
+      name: "Động Cơ Dịch Chuyển Lượng Tử Chronos",
+      slot: "engine",
+      rarity: "legendary",
+      desc: "Bẻ cong không-thời gian mang lại tốc độ tuyệt đỉnh và ưu thế ra đòn áp đảo.",
+      speedBonus: 45,
+      attackBonus: 20,
+      spBonus: 40,
+      price: 7000,
+    },
+    buyPrice: 7000,
+    requiredSectorId: "sector-3",
+    tierName: "Hàng Tối Thượng: Sector 3 (Legendary)",
   },
 ]
 

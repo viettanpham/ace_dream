@@ -115,18 +115,55 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
     - 6 Kịch bản test 1-click (TC-VG-01, TC-FL-01, TC-FL-02, TC-AG-01, TC-AG-02, TC-NON-01).
     - Thao tác test độc lập, không làm biến đổi hay sai lệch dữ liệu tiến trình lưu trữ của người chơi.
 
+### 2.5. Kinh Tế Chợ Quân Sự & Tái Chế Trang Bị (Phase 5.3 — Đã Hoàn Thành)
+- **Hệ thống Tái Chế / Phân Rã Trang Bị (Salvage System)**:
+  - Rã các trang bị không dùng trong kho đồ để thu hồi nguyên liệu quý **Hợp Kim (Alloy)** và **Credits**.
+  - **Công thức hoàn trả tài nguyên**:
+    - *Base Alloy theo Rarity*: Common = 2, Rare = 5, Epic = 12, Legendary = 25 Alloy.
+    - *Enhancement Alloy Refund*: Hoàn trả 60% tổng lượng Alloy đã đầu tư qua cường hóa (+1 đến +10), tối thiểu +2 Alloy mỗi cấp.
+    - *Credits Refund*: 35% giá trị cơ sở của trang bị + 30% tổng lượng Credits đã đầu tư qua cường hóa.
+  - **Cơ chế An toàn Dữ liệu Tuyệt đối (Data Safety & Protection)**:
+    - *Khóa trang bị đang lắp*: Ngăn chặn tuyệt đối việc rã trang bị đang được trang bị trên buồng lái (Equipped Protection). Nút Rã đồ tự động ẩn, và backend từ chối thao tác nếu ID đang được trang bị.
+    - *Chống trùng lặp / Double-click*: ID vật phẩm bị xóa lập tức khỏi kho ngay khi xác nhận rã; không bao giờ nhận Alloy hoặc Credits lặp lại.
+    - *Tài nguyên không âm*: Giá trị Alloy và Credits luôn tăng trưởng dương, đồng bộ thời gian thực giữa UI và LocalStorage.
+    - *Xử lý an toàn khi hủy hoặc kho rỗng*: Không thay đổi dữ liệu khi người chơi bấm Hủy hoặc thoát modal.
+- **Phân Tầng Chợ Quân Sự Theo Sector (Tiered Armory Shop)**:
+  - Khóa/mở khóa vật phẩm tự động theo tiến trình Chiến Dịch: Tầng Cơ Bản (Mở ngay), Sector 1 (Ải 1-3), Sector 2 (Ải 2-3), Sector 3 Legendary Tối Cực (Ải 3-3).
+  - Hiển thị trực quan thông báo lý do khóa: `🔒 Yêu cầu hoàn thành Sector X...`.
+  - Cơ chế Làm Mới Gian Hàng (Shop Refresh): Ưu tiên dùng lượt miễn phí tích lũy từ chiến thắng (`freeShopRefreshes`), hoặc tốn 100 Credits nếu hết lượt.
+- **Giao Diện Người Dùng & Test Controls**:
+  - Hộp thoại `SalvageModal` hiển thị bảng ước tính chi tiết lượng Alloy và Credits thu hồi trước khi người chơi nhấn xác nhận.
+  - Nút `Rã Đồ ♻️` được tích hợp ở cả tab Hangar (`starfront-hangar.tsx`) và tab Tái Chế trong Chợ Quân Sự (`starfront-shop.tsx`).
+  - Nút kiểm thử tức thì `TC-SLV-01` trong Dev Combat Test Controls trên buồng lái để thêm trang bị Epic (+3) vào kho thử nghiệm.
+
+### 2.6. Bảo Đảm An Toàn Dữ Liệu & Đồng Bộ Lựa Chọn Gear (Phase 5.4 — Đã Hoàn Thành)
+- **Nâng cấp Storage Schema v3 (`STARFRONT_SAVE_DATA_V3`)**:
+  - Hỗ trợ di chuyển tự động (Auto-Migration) từ phiên bản cũ v1 hoặc v2 lên v3 mà không làm mất mát bất kỳ tài nguyên, cấp độ, hay trang bị nào.
+  - Chuẩn hóa toàn bộ trang bị: Mọi món đồ đều có `enhancementLevel` nằm trong khoảng an toàn `[0..10]`.
+  - Khởi tạo mặc định an toàn cho các trường tài nguyên mới (`alloy = 25`, `freeShopRefreshes = 1`) đối với người chơi cũ.
+- **Đồng Bộ Hóa Trạng Thái Tức Thời (Hardened State Synchronization)**:
+  - Đổi Gear trong Hangar (hoặc qua Dev Controls) lập tức cập nhật buồng lái Đấu trường:
+    * Tên cơ giáp và cấp độ hiển thị.
+    * Theme màu sắc (Cyan Tiên Phong / Tím Tiêm Kích / Hổ Phách Pháo Đài).
+    * Bộ 4 kỹ năng trong Action Deck cập nhật theo đúng lớp Gear đã chọn.
+    * Tốc độ SPD và các chỉ số thụ động (Falcon 15% né, 25% crit, Aegis phản đòn 20%).
+  - Khi quay lại Đấu trường từ Hangar sau khi cường hóa hoặc thay đổi trang bị, buồng lái tự động kiểm tra và đồng bộ hóa lại chỉ số thực tế.
+- **Bổ Sung Test Controls Milestone 5.4**:
+  - `TC-SYNC-01`: Thử nghiệm chu kỳ chuyển đổi và đồng bộ tức thì Vanguard ➔ Falcon ➔ Aegis.
+  - `TC-MIG-01`: Xác thực tính toàn vẹn của Storage Schema v3 trong LocalStorage.
+
 ---
 
 ## 3. Các Điểm Chưa Xác Minh & Cần Lưu Ý Kỹ Thuật (Needs Verification / Code Observations)
 
-Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu, ghi nhận các điểm kỹ thuật cần lưu ý trước khi triển khai các giai đoạn tiếp theo:
+Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu, ghi nhận các điểm kỹ thuật đã xử lý và cần lưu ý:
 
 1. **Hiển thị định danh buồng lái khi đổi lớp Gear**:
-   - *Mã nguồn*: Trong `combat-arena.tsx`, tiêu đề Action Deck đã được cập nhật hiển thị theo `activeGearDef.name`. Tuy nhiên, trong `lib/game/engine.ts` (dòng 527), dòng nhật ký khởi tạo trận đấu vẫn chứa chuỗi ký tự cố định: `[TỐC ĐỘ] Tốc độ Vanguard (...)`. Cần điều chỉnh sang chuỗi động tương ứng lớp Gear đang chọn khi tiến hành các tinh chỉnh sau.
+   - *Đã giải quyết*: Dòng nhật ký khởi tạo trận đấu và Action Deck sử dụng chuỗi động `${player.name}` tương ứng lớp Gear đang chọn (`lib/game/engine.ts`).
 2. **Đồng bộ hóa tức thời giữa Hangar và Đấu trường**:
-   - Khi người chơi bấm đổi Gear trong tab Hangar rồi chuyển tab quay lại Đấu trường, hàm `handleStartEncounter` cần đảm bảo luôn nhận đối tượng `StarfrontProgression` mới nhất mà không phụ thuộc vào trạng thái closure render cũ.
+   - *Đã giải quyết trong Phase 5.4*: Khi người chơi bấm đổi Gear hoặc thay đổi trang bị trong Hangar rồi chuyển tab quay lại Đấu trường, hàm `handleSwitchTab` và `handleSelectGear` tự động đồng bộ hóa `combatState` với `StarfrontProgression` mới nhất.
 3. **Môi trường kho lưu trữ Git**:
-   - Container triển khai không có thư mục `.git` cục bộ. Mọi thao tác lưu mã nguồn được thực hiện trên hệ thống file workspace của AI Studio. Cần kiểm tra kỹ trước các thao tác liên quan đến Git commit.
+   - Container triển khai không có thư mục `.git` cục bộ. Mọi thao tác lưu mã nguồn được thực hiện trên hệ thống file workspace của AI Studio.
 4. **Cấu hình TypeScript Path Alias (`tsconfig.json`)**:
    - Tệp `tsconfig.json` đã được bổ sung `baseUrl: "."` và `"paths": { "@/*": ["./*"] }` để đảm bảo lệnh build Next.js / Turbopack luôn biên dịch thành công.
 

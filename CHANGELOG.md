@@ -6,9 +6,53 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ## [Phase 5] — Tiến Trình Cơ Giáp & Cường Hóa Trang Bị
 
-*Đang triển khai — Đã hoàn thành Milestone 5.1 & Milestone 5.2 (13/13 passives automated tests passed, build thành công)*
+*Đang triển khai — Đã hoàn thành Milestone 5.1, 5.2, 5.3 & 5.4 (35/35 automated tests passed, build thành công)*
 
 ### Tính năng đã hoàn thành:
+- **Milestone 5.4: Bảo Đảm An Toàn Dữ Liệu & Đồng Bộ Lựa Chọn Gear (Storage Schema v3 & State Sync)**:
+  - **Nâng Cấp Storage Schema v3 (`STARFRONT_SAVE_DATA_V3`)**:
+    - Xây dựng hàm di chuyển dữ liệu thuần `migrateProgressionToV3`:
+      * Hỗ trợ tự động nâng cấp từ các phiên bản lưu trữ cũ v1 (`STARFRONT_SAVE_DATA_V1`) và v2 (`STARFRONT_SAVE_DATA_V2`) lên v3.
+      * Bảo toàn 100% Cấp độ, EXP, Credits, Alloy, Số trận thắng/thua, Nhiệm vụ chiến dịch đã hoàn thành.
+      * Chuẩn hóa toàn bộ trang bị trong kho đồ: Tự động gán `enhancementLevel = 0` cho các món cũ nếu thiếu, bảo toàn nguyên vẹn cấp cường hóa (+1 đến +10) đã có.
+      * Tự động khởi tạo an toàn tài nguyên `alloy = 25` và `freeShopRefreshes = 1` cho người chơi từ v1.
+      * Bổ sung trang bị khởi đầu cơ bản nếu kho đồ thiếu hụt; kẹp giá trị an toàn trong khoảng `[0..10]` cho cấp cường hóa.
+  - **Đồng Bộ Hóa Trạng Thái Tức Thời (Hardened State Synchronization)**:
+    - Giải quyết triệt để vấn đề mất đồng bộ hoặc trễ nhịp khi đổi giữa các lớp Gear (Vanguard, Falcon, Aegis):
+      * Khi đổi Gear trong tab Hangar hoặc qua Dev Controls, buồng lái Đấu Trường lập tức cập nhật: Tên cơ giáp, bảng màu sắc theme, bộ 4 kỹ năng trong Action Deck, chỉ số Tốc Độ (SPD) và Né Tránh bẩm sinh (Falcon +15% né, 25% crit, Aegis 20% phản đòn).
+      * Khi chuyển tab từ Hangar quay lại Đấu trường sau khi thay đổi trang bị hoặc cường hóa đồ, hàm `handleSwitchTab` tự động phát hiện độ lệch chỉ số và đồng bộ hóa lại `combatState` với `buildPlayerCombatUnit(progression)`.
+  - **Bổ Sung Test Controls Milestone 5.4**:
+    - `TC-SYNC-01: Chu Kỳ Đổi & Đồng Bộ Gear (5.4)`: Chuyển đổi nhanh theo chu kỳ VG ➔ FL ➔ AG và xác thực đồng bộ buồng lái.
+    - `TC-MIG-01: Xác Thực Schema v3 & Migration (5.4)`: Kiểm tra tính toàn vẹn và hợp lệ của dữ liệu lưu trữ Schema v3.
+  - **Kết Quả Kiểm Thử Tự Động (Automated Tests)**:
+    - Bộ test tự động `tests/storage-sync.test.ts` (8/8 tests PASS).
+    - Bộ test hồi quy `tests/passives.test.ts` (13/13 tests PASS).
+    - Bộ test hồi quy `tests/economy-recycling.test.ts` (14/14 tests PASS).
+    - Tổng cộng 35/35 automated tests pass 100%. TypeScript check (`npx tsc --noEmit`) và compile (`compile_applet`) sạch lỗi.
+- **Milestone 5.3: Hoàn Thiện Cân Bằng Kinh Tế Chợ Quân Sự & Tái Chế (Armory Economy & Recycling)**:
+  - **Tính năng Tái Chế / Rã Đồ (Salvage System)**:
+    - Rã các trang bị không dùng để thu hồi nguyên liệu Hợp Kim Cường Hóa (Alloy) và Credits.
+    - Công thức thu hồi tài nguyên chặt chẽ và nhất quán:
+      * Base Alloy theo Rarity: Common = 2, Rare = 5, Epic = 12, Legendary = 25 Alloy.
+      * Enhancement Alloy Refund: Hoàn trả 60% lượng Alloy đã đầu tư qua cường hóa (+1 đến +10), đảm bảo tối thiểu +2 Alloy mỗi cấp.
+      * Credits Refund: 35% giá trị cơ sở của trang bị + 30% Credits đã đầu tư qua cường hóa.
+  - **Khóa An Toàn & Bảo Vệ Dữ Liệu Tuyệt Đối (Data Safety & Security Guarantees)**:
+    - *Khóa trang bị đang dùng (Equipped Protection)*: Không cho phép rã trang bị đang được lắp trên cơ giáp. Nút rã đồ ẩn trên trang bị đang dùng, và logic backend từ chối thao tác nếu ID đang được trang bị.
+    - *Chống nhận tài nguyên trùng lặp (Duplicate / Double-click Protection)*: Sau khi rã, trang bị lập tức được loại bỏ khỏi kho; lần gọi thứ hai trên cùng ID sẽ bị từ chối và không cộng dồn tài nguyên.
+    - *Bảo toàn số dư*: Số dư Alloy và Credits luôn tăng trưởng không âm, phản ánh chính xác giữa UI và LocalStorage save data.
+    - *Không reset hay phá hủy save file*: Giữ nguyên 100% dữ liệu người chơi hiện có.
+  - **Cập nhật Phân Tầng Chợ Quân Sự (Tiered Armory Shop)**:
+    - Mở khóa vật phẩm theo tiến trình Sector: Hàng Cơ Bản (mở sẵn), Sector 1 (hoàn thành Ải 1-3), Sector 2 (hoàn thành Ải 2-3), Sector 3 Legendary (hoàn thành Ải 3-3).
+    - Hiển thị trực quan trạng thái khóa kèm lý do yêu cầu.
+    - Cơ chế Làm Mới Gian Hàng (Shop Refresh): Ưu tiên sử dụng lượt miễn phí tích lũy từ chiến thắng (`freeShopRefreshes`), hoặc tốn 100 Credits nếu hết lượt miễn phí. Chiến thắng Arena hoặc Campaign cộng +1 lượt miễn phí.
+  - **Giao Diện Người Dùng (UI/UX)**:
+    - Hộp thoại `SalvageModal` xác nhận rã đồ với bảng phân tích chi tiết lượng Alloy và Credits hoàn trả (phân tách rõ gốc độ hiếm vs phần thưởng cấp cường hóa).
+    - Tích hợp nút `Rã Đồ ♻️` trực tiếp trên kho đồ Hangar (`starfront-hangar.tsx`) và tab `Tái Chế` trong Chợ Quân Sự (`starfront-shop.tsx`).
+    - Nút `TC-SLV-01` trong Dev Combat Test Controls trên buồng lái Đấu Trường để thêm trang bị thử nghiệm phục vụ kiểm thử thủ công tức thì.
+  - **Kết quả Kiểm thử Tự động (Automated Tests)**:
+    - Bộ test tự động `tests/economy-recycling.test.ts` (14/14 tests PASS).
+    - Bộ test hồi quy `tests/passives.test.ts` (13/13 tests PASS).
+    - Tổng cộng 27/27 automated tests pass 100%. TypeScript check (`npx tsc --noEmit`) và build Next.js (`npm run build`) hoàn toàn sạch lỗi.
 - **Milestone 5.2: Định Hình Bản Sắc Gameplay Của Từng Lớp Gear & Kỹ Năng Nội Tại (Gear Class Identity & Passives)**:
   - **Vanguard Gear (Tiên Phong Cân Bằng)**:
     - *Nội tại (Passive)*: *Lõi Năng Lượng Ổn Định (Stable Core)*:

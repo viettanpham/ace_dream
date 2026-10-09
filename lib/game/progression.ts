@@ -5,8 +5,11 @@ import type {
   CampaignMission,
   CombatUnit,
   EnemyEncounterType,
+  SalvageEstimate,
+  SalvageExecutionResult,
   StarfrontGearId,
   StarfrontItem,
+  StarfrontItemRarity,
   StarfrontItemSlot,
   StarfrontProgression,
 } from "./types"
@@ -511,6 +514,7 @@ export function applyVictoryReward(
     alloy: (current.alloy ?? 25) + alloyGained,
     inventory: updatedInventory,
     battlesWon: current.battlesWon + 1,
+    freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
   }
 
   const reward: BattleRewardResult = {
@@ -588,6 +592,7 @@ export function applyMissionClearReward(
     inventory: updatedInventory,
     completedMissions: updatedCompletedMissions,
     battlesWon: current.battlesWon + 1,
+    freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
   }
 
   const reward: BattleRewardResult = {
@@ -684,15 +689,215 @@ export function sellInventoryItem(
 }
 
 /* ==========================================================================
+   MILESTONE 5.3 — ARMORY ECONOMY & RECYCLING (TÁI CHẾ / RÃ ĐỒ & CHỢ PHÂN TẦNG)
+   ========================================================================== */
+
+/**
+ * Tính toán chính xác lượng Hợp Kim (Alloy) và Credits nhận lại khi Tái Chế / Rã Đồ
+ * Quy tắc:
+ * 1. Base Alloy theo Rarity: Common = 2, Rare = 5, Epic = 12, Legendary = 25
+ * 2. Enhancement Refund: Hoàn trả 60% lượng Alloy đã đầu tư (tối thiểu +2 Alloy mỗi cấp)
+ * 3. Base Credits: 35% giá trị vật phẩm
+ * 4. Enhancement Credits Refund: 30% lượng Credits đã đầu tư qua cường hóa
+ */
+export function calculateSalvageEstimate(item: StarfrontItem): SalvageEstimate {
+  const baseAlloyMap: Record<StarfrontItemRarity, number> = {
+    common: 2,
+    rare: 5,
+    epic: 12,
+    legendary: 25,
+  }
+  const baseAlloy = baseAlloyMap[item.rarity] || 2
+
+  const enhanceLvl = Math.max(0, Math.min(10, item.enhancementLevel || 0))
+  let totalInvestedAlloy = 0
+  let totalInvestedCredits = 0
+
+  for (let l = 1; l <= enhanceLvl; l++) {
+    const cfg = ENHANCEMENT_TABLE[l]
+    if (cfg) {
+      totalInvestedAlloy += cfg.alloyCost
+      totalInvestedCredits += cfg.creditsCost
+    }
+  }
+
+  // Hoàn trả 60% Alloy đã đầu tư, tối thiểu enhanceLvl * 2
+  const enhancementAlloyRefund =
+    enhanceLvl > 0
+      ? Math.max(enhanceLvl * 2, Math.round(totalInvestedAlloy * 0.6))
+      : 0
+  const alloyGained = baseAlloy + enhancementAlloyRefund
+
+  const basePrice =
+    item.price ||
+    (item.rarity === "legendary"
+      ? 2500
+      : item.rarity === "epic"
+        ? 1200
+        : item.rarity === "rare"
+          ? 500
+          : 200)
+
+  const baseCredits = Math.max(50, Math.round(basePrice * 0.35))
+  const enhancementCreditsRefund =
+    enhanceLvl > 0 ? Math.round(totalInvestedCredits * 0.3) : 0
+  const creditsGained = baseCredits + enhancementCreditsRefund
+
+  return {
+    alloyGained,
+    baseAlloy,
+    enhancementAlloyRefund,
+    creditsGained,
+    baseCredits,
+    enhancementCreditsRefund,
+  }
+}
+
+/**
+ * Thực hiện rã trang bị trong kho để thu hồi nguyên liệu an toàn
+ * Bảo đảm:
+ * - Không cho phép rã trang bị đang được lắp trên cơ giáp
+ * - Không thể rã trùng lặp hoặc lặp lại
+ * - Không để tài nguyên âm hay dữ liệu bị sai lệch
+ */
+export function salvageInventoryItem(
+  current: StarfrontProgression,
+  itemId: string,
+): SalvageExecutionResult {
+  // 1. Kiểm tra vật phẩm có đang được trang bị không
+  const isEquipped = Object.values(current.equipped).includes(itemId)
+  if (isEquipped) {
+    return {
+      success: false,
+      updated: current,
+      message: "Không thể tái chế trang bị đang lắp trên cơ giáp! Hãy tháo trang bị ra trước khi rã đồ.",
+    }
+  }
+
+  // 2. Tìm vật phẩm trong kho
+  const itemIndex = current.inventory.findIndex((it) => it.id === itemId)
+  if (itemIndex === -1) {
+    return {
+      success: false,
+      updated: current,
+      message: "Không tìm thấy vật phẩm cần tái chế trong kho đồ.",
+    }
+  }
+
+  const item = current.inventory[itemIndex]
+  const estimate = calculateSalvageEstimate(item)
+
+  // 3. Loại bỏ vật phẩm khỏi kho và cộng tài nguyên an toàn
+  const newInventory = current.inventory.filter((_, idx) => idx !== itemIndex)
+  const currentAlloy = current.alloy ?? 25
+
+  const updated: StarfrontProgression = {
+    ...current,
+    alloy: currentAlloy + estimate.alloyGained,
+    credits: current.credits + estimate.creditsGained,
+    inventory: newInventory,
+  }
+
+  return {
+    success: true,
+    updated,
+    salvagedItem: item,
+    estimate,
+    message: `Đã tái chế thành công ${item.name}! Nhận lại +${estimate.alloyGained} Hợp Kim (Alloy) và +${estimate.creditsGained.toLocaleString("vi-VN")} Credits.`,
+  }
+}
+
+/** Kiểm tra vật phẩm trong Chợ Quân Sự đã được mở khóa theo tiến trình Sector chưa */
+export function isShopItemUnlocked(
+  shopItem: ArmoryShopItem,
+  progression: StarfrontProgression,
+): { unlocked: boolean; reason?: string } {
+  if (!shopItem.requiredSectorId) {
+    return { unlocked: true }
+  }
+
+  if (shopItem.requiredSectorId === "sector-1") {
+    const hasCleared = progression.completedMissions.includes("mis-1-3")
+    return {
+      unlocked: hasCleared,
+      reason: hasCleared
+        ? undefined
+        : "Yêu cầu hoàn thành Sector 1: Vành Đai Asteroid (Ải 1-3)",
+    }
+  }
+
+  if (shopItem.requiredSectorId === "sector-2") {
+    const hasCleared = progression.completedMissions.includes("mis-2-3")
+    return {
+      unlocked: hasCleared,
+      reason: hasCleared
+        ? undefined
+        : "Yêu cầu hoàn thành Sector 2: Tinh Vân Plasma Tối (Ải 2-3)",
+    }
+  }
+
+  if (shopItem.requiredSectorId === "sector-3") {
+    const hasCleared = progression.completedMissions.includes("mis-3-3")
+    return {
+      unlocked: hasCleared,
+      reason: hasCleared
+        ? undefined
+        : "Yêu cầu hoàn thành Sector 3: Pháo Đài Bastion Core (Ải 3-3)",
+    }
+  }
+
+  return { unlocked: true }
+}
+
+/** Làm mới danh mục hàng Chợ Quân Sự (Shop Refresh) */
+export function refreshArmoryShop(
+  current: StarfrontProgression,
+): { success: boolean; updated: StarfrontProgression; message: string } {
+  const freeRefreshes = current.freeShopRefreshes || 0
+  if (freeRefreshes > 0) {
+    const updated: StarfrontProgression = {
+      ...current,
+      freeShopRefreshes: freeRefreshes - 1,
+    }
+    return {
+      success: true,
+      updated,
+      message: `Đã làm mới gian hàng bằng lượt miễn phí! (Còn lại ${freeRefreshes - 1} lượt)`,
+    }
+  }
+
+  const cost = 100
+  if (current.credits < cost) {
+    return {
+      success: false,
+      updated: current,
+      message: `Không đủ Credits để làm mới gian hàng! Cần ${cost} Credits, bạn có ${current.credits.toLocaleString("vi-VN")}.`,
+    }
+  }
+
+  const updated: StarfrontProgression = {
+    ...current,
+    credits: current.credits - cost,
+  }
+
+  return {
+    success: true,
+    updated,
+    message: `Đã làm mới danh mục Chợ Quân Sự! Đã trừ ${cost} Credits.`,
+  }
+}
+
+/* ==========================================================================
    TIẾN TRÌNH KHỞI TẠO MẶC ĐỊNH CHO NGƯỜI CHƠI MỚI (INITIAL PROGRESSION)
    ========================================================================== */
 
 export const INITIAL_STARFRONT_PROGRESSION: StarfrontProgression = {
-  version: 2,
+  version: 3,
   level: 1,
   exp: 0,
   credits: 500,
   alloy: 25,
+  freeShopRefreshes: 1,
   activeGearId: "vanguard",
   unlockedGears: ["vanguard", "falcon", "aegis"],
   completedMissions: [],

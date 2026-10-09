@@ -6,6 +6,9 @@ import type {
   GearClassDef,
   ItemDef,
   Sector,
+  CombatSkill,
+  CombatUnit,
+  EnemyEncounterType,
 } from "./types"
 
 export const GEAR_CLASSES: Record<GearClass, GearClassDef> = {

@@ -729,9 +729,11 @@ export function calculateCombatDamage(
 /** Cập nhật giảm thời gian hiệu lực buff/debuff, hồi chiêu kỹ năng và kích hoạt DoT (Plasma Burn / Acid) */
 export function tickUnitTurn(unit: CombatUnit): {
   dotLogs: { text: string; damage: number }[]
+  expiredLogs: { text: string; effectName: string }[]
   wasStunned: boolean
 } {
   const dotLogs: { text: string; damage: number }[] = []
+  const expiredLogs: { text: string; effectName: string }[] = []
 
   // 1. Kiểm tra sát thương DoT (Đầu lượt)
   const burnEffect = unit.statusEffects.find((e) => e.type === "plasma-burn")
@@ -766,18 +768,28 @@ export function tickUnitTurn(unit: CombatUnit): {
   const stunEffect = unit.statusEffects.find((e) => e.type === "stun")
   const wasStunned = Boolean(stunEffect)
 
-  // 4. Giảm thời hạn trạng thái hiệu ứng
-  unit.statusEffects = unit.statusEffects
-    .map((effect) => ({
-      ...effect,
-      duration: effect.duration - 1,
-    }))
-    .filter((effect) => effect.duration > 0)
+  // 4. Giảm thời hạn trạng thái hiệu ứng & ghi nhận hiệu ứng hết hạn
+  const remainingEffects: StatusEffect[] = []
+  for (const effect of unit.statusEffects) {
+    const nextDuration = effect.duration - 1
+    if (nextDuration <= 0) {
+      expiredLogs.push({
+        text: `[HẾT HIỆU LỰC ⏳] Trạng thái ${effect.name} trên ${unit.name} đã kết thúc.`,
+        effectName: effect.name,
+      })
+    } else {
+      remainingEffects.push({
+        ...effect,
+        duration: nextDuration,
+      })
+    }
+  }
+  unit.statusEffects = remainingEffects
 
   // 5. Hồi phục nhẹ 5 SP tự nhiên mỗi lượt
   unit.sp = Math.min(unit.maxSp, unit.sp + 5)
 
-  return { dotLogs, wasStunned }
+  return { dotLogs, expiredLogs, wasStunned }
 }
 
 /** Thực hiện kỹ năng của Người chơi */
@@ -810,6 +822,16 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
         actorName: "HIỆU ỨNG",
         targetName: player.name,
         value: d.damage,
+        timestamp: now,
+      })
+    }
+    for (const exp of tickResult.expiredLogs) {
+      newLogs.push({
+        id: `log-${Date.now()}-pexp-${Math.random().toString(36).slice(2, 6)}`,
+        turn: state.turnNumber,
+        type: "status",
+        text: exp.text,
+        actorName: player.name,
         timestamp: now,
       })
     }
@@ -990,6 +1012,16 @@ export function executePlayerAction(state: CombatState, skillId: string): Combat
       timestamp: now,
     })
   }
+  for (const exp of tickResult.expiredLogs) {
+    newLogs.push({
+      id: `log-${Date.now()}-pexp-${Math.random().toString(36).slice(2, 6)}`,
+      turn: state.turnNumber,
+      type: "status",
+      text: exp.text,
+      actorName: player.name,
+      timestamp: now,
+    })
+  }
 
   if (player.hp <= 0) {
     newLogs.push({
@@ -1071,6 +1103,16 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
         actorName: "HIỆU ỨNG",
         targetName: enemy.name,
         value: d.damage,
+        timestamp: now,
+      })
+    }
+    for (const exp of tickRes.expiredLogs) {
+      newLogs.push({
+        id: `log-${Date.now()}-eexp-${Math.random().toString(36).slice(2, 6)}`,
+        turn: state.turnNumber,
+        type: "status",
+        text: exp.text,
+        actorName: enemy.name,
         timestamp: now,
       })
     }
@@ -1349,6 +1391,16 @@ export function executeEnemyAIAction(state: CombatState): CombatState {
       actorName: "HIỆU ỨNG",
       targetName: enemy.name,
       value: d.damage,
+      timestamp: now,
+    })
+  }
+  for (const exp of tickRes.expiredLogs) {
+    newLogs.push({
+      id: `log-${Date.now()}-eexp-${Math.random().toString(36).slice(2, 6)}`,
+      turn: state.turnNumber,
+      type: "status",
+      text: exp.text,
+      actorName: enemy.name,
       timestamp: now,
     })
   }

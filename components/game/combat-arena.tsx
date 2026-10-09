@@ -70,6 +70,7 @@ import {
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { CampaignMap } from "./campaign-map"
+import { CombatLogPanel } from "./combat-log-panel"
 import { StarfrontHangar } from "./starfront-hangar"
 import { StarfrontShop } from "./starfront-shop"
 
@@ -168,8 +169,6 @@ export function CombatArena() {
     missionTitle?: string
     isFirstClear?: boolean
   } | null>(null)
-
-  const logContainerRef = useRef<HTMLDivElement>(null)
 
   // Khôi phục dữ liệu đã lưu từ LocalStorage khi khởi chạy
   useEffect(() => {
@@ -284,13 +283,6 @@ export function CombatArena() {
       playClickSound()
     }
   }
-
-  // Tự động cuộn xuống cuối nhật ký
-  useEffect(() => {
-    if (logContainerRef.current) {
-      logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight
-    }
-  }, [combatState.logs])
 
   // Xử lý lượt đi của AI Kẻ địch với delay tự nhiên (700ms)
   // Quan trọng: KHÔNG đưa isProcessingAI vào dependency array để tránh bị hủy timer khi re-render
@@ -1088,50 +1080,14 @@ export function CombatArena() {
             </div>
           </div>
 
-          {/* 6. Nhật Ký Giao Tranh (Combat Log) */}
-          <div className="rounded-sm border border-border/70 bg-panel/60 p-4">
-            <div className="mb-2 flex items-center justify-between border-b border-border/50 pb-2 text-xs">
-              <div className="flex items-center gap-2">
-                <Sparkles className="size-3.5 text-cyan-400" />
-                <span className="font-display text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  NHẬT KÝ CHIẾN TRƯỜNG // RADAR FEED
-                </span>
-              </div>
-              <span className="font-mono text-[11px] text-muted-foreground">
-                Tổng cộng: {logs.length} sự kiện
-              </span>
-            </div>
-
-            <div
-              ref={logContainerRef}
-              className="h-40 overflow-y-auto rounded bg-black/40 p-3 font-mono text-xs leading-relaxed space-y-1.5"
-            >
-              {logs.map((item) => {
-                let textColor = "text-muted-foreground"
-                if (item.type === "player-action") textColor = "text-cyan-300"
-                if (item.type === "enemy-action") textColor = "text-red-400"
-                if (item.type === "crit") textColor = "text-amber-300 font-bold"
-                if (item.type === "status") textColor = "text-emerald-300"
-                if (item.type === "evade") textColor = "text-sky-300 font-bold"
-                if (item.type === "boss-telegraph") textColor = "text-red-400 font-bold bg-red-950/40 px-1 rounded border border-red-500/30"
-                if (item.type === "victory") textColor = "text-emerald-400 font-bold text-sm"
-                if (item.type === "defeat") textColor = "text-red-500 font-bold text-sm"
-                if (item.type === "system") textColor = "text-cyan-400/80"
-
-                return (
-                  <div key={item.id} className={cn("flex items-start gap-2", textColor)}>
-                    <span suppressHydrationWarning className="shrink-0 text-muted-foreground/50">
-                      [{item.timestamp}]
-                    </span>
-                    <span className="shrink-0 rounded bg-secondary/40 px-1 text-[10px] text-muted-foreground">
-                      Lượt {item.turn}
-                    </span>
-                    <span>{item.text}</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          {/* 6. Nhật Ký Giao Tranh Thời Gian Thực (Scrollable Real-Time Combat Log Panel) */}
+          <CombatLogPanel
+            logs={logs}
+            currentTurn={combatState.turnNumber}
+            playerUnitName={player.name}
+            enemyUnitName={enemy.name}
+            className={currentTheme.border}
+          />
 
           {/* 7. Hộp Thoại Kết Thúc Trận Đấu & Trao Thưởng Tiến Trình (Phase 2 Rewards Modal) */}
           {(status === "victory" || status === "defeat") && (

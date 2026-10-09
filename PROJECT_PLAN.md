@@ -86,6 +86,9 @@
 
 ## 6. Vấn Đề Đã Biết & Trạng Thái Kiểm Thử (Known Issues & Verification)
 - **Kiểm thử biên dịch**: Đã chạy `compile_applet` thành công 100% (`Build succeeded - the applet is compiled`).
+- **Sửa lỗi tương tác lượt chiến đấu (Turn Loop & AI Timer)**:
+  - *Nguyên nhân*: Trong `combat-arena.tsx`, `useEffect` xử lý lượt AI đưa `isProcessingAI` vào dependency array. Khi gọi `setIsProcessingAI(true)`, React kích hoạt re-render khiến hàm cleanup chạy `clearTimeout(timer)` ngay lập tức trước khi timer kịp nổ (1000ms). Do đó trạng thái bị đóng băng ở `enemy-turn` với thông báo "KẺ ĐỊCH ĐANG HÀNH ĐỘNG...", người chơi không thể tới lượt mình để bấm kỹ năng.
+  - *Giải pháp*: Đã tách `isProcessingAI` ra khỏi dependency array, dùng `useRef` lưu `aiTimeoutRef`, đặt thời gian phản xạ AI tự nhiên (700ms), đồng thời thêm hàm `performEnemyTurn` cho phép bấm nút "BẤM ĐỂ ĐI NGAY ⚡" để bỏ qua thời gian chờ. Khi kẻ địch hành động xong, hệ thống tự động chuyển sang `player-turn` kèm hiệu ứng thông báo rực rỡ "⚡ ĐẾN LƯỢT BẠN (VANGUARD) — HÃY TẤN CÔNG!" và mở khóa các nút kỹ năng.
 - **Kiểm thử đơn vị logic Phase 2**: Đã chạy script kiểm tra tự động:
   1. Thắng trận: EXP và Credits tăng đúng một lần (Scout Drone: +60 EXP, +150 Credits).
   2. Thua trận: Không nhận thưởng chiến thắng.

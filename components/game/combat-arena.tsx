@@ -70,6 +70,7 @@ export function CombatArena() {
   // 3. Quản lý nhận thưởng chính xác 1 lần duy nhất (Chống cộng lặp lại)
   const rewardClaimedRef = useRef(false)
   const defeatRecordedRef = useRef(false)
+  const aiTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [lastVictoryReward, setLastVictoryReward] = useState<{
     reward: BattleRewardResult
     dropItem?: StarfrontItem
@@ -94,11 +95,40 @@ export function CombatArena() {
     }
   }, [progression, hasLoadedProgression])
 
+  // Thực hiện lượt đi của Kẻ địch ngay lập tức (dùng cho cả timer tự động và click thủ công)
+  const performEnemyTurn = () => {
+    if (combatState.status !== "enemy-turn" || combatState.enemy.hp <= 0) return
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current)
+      aiTimeoutRef.current = null
+    }
+    setCombatState((prev) => {
+      if (prev.status !== "enemy-turn" || prev.enemy.hp <= 0) return prev
+      const next = executeEnemyAIAction(prev)
+      if (next.lastAction) {
+        setFloatingNotification({
+          text: next.lastAction.damage
+            ? `-${next.lastAction.damage} HP`
+            : next.lastAction.effectApplied || "Kích hoạt",
+          isCrit: next.lastAction.isCrit,
+          isPlayer: false,
+        })
+        setTimeout(() => setFloatingNotification(null), 1600)
+      }
+      return next
+    })
+    setIsProcessingAI(false)
+  }
+
   // Đổi mục tiêu hoặc khởi động lại trận đấu
   const handleStartEncounter = (
     encounterId: EnemyEncounterType,
     currentProg: StarfrontProgression = progression,
   ) => {
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current)
+      aiTimeoutRef.current = null
+    }
     setSelectedEncounter(encounterId)
     setIsProcessingAI(false)
     rewardClaimedRef.current = false
@@ -116,32 +146,25 @@ export function CombatArena() {
     }
   }, [combatState.logs])
 
-  // Xử lý lượt đi của AI Kẻ địch với delay tự nhiên (1.0s)
+  // Xử lý lượt đi của AI Kẻ địch với delay tự nhiên (700ms)
+  // Quan trọng: KHÔNG đưa isProcessingAI vào dependency array để tránh bị hủy timer khi re-render
   useEffect(() => {
-    if (combatState.status === "enemy-turn" && !isProcessingAI && combatState.enemy.hp > 0) {
+    if (combatState.status === "enemy-turn" && combatState.enemy.hp > 0) {
       setIsProcessingAI(true)
-      const timer = setTimeout(() => {
-        setCombatState((prev) => {
-          if (prev.status !== "enemy-turn") return prev
-          const next = executeEnemyAIAction(prev)
-          if (next.lastAction) {
-            setFloatingNotification({
-              text: next.lastAction.damage
-                ? `-${next.lastAction.damage} HP`
-                : next.lastAction.effectApplied || "Kích hoạt",
-              isCrit: next.lastAction.isCrit,
-              isPlayer: false,
-            })
-            setTimeout(() => setFloatingNotification(null), 1800)
-          }
-          return next
-        })
-        setIsProcessingAI(false)
-      }, 1000)
+      aiTimeoutRef.current = setTimeout(() => {
+        performEnemyTurn()
+      }, 700)
 
-      return () => clearTimeout(timer)
+      return () => {
+        if (aiTimeoutRef.current) {
+          clearTimeout(aiTimeoutRef.current)
+          aiTimeoutRef.current = null
+        }
+      }
+    } else {
+      setIsProcessingAI(false)
     }
-  }, [combatState.status, combatState.enemy.hp, isProcessingAI])
+  }, [combatState.status, combatState.turnNumber])
 
   // Xử lý trao thưởng duy nhất 1 lần khi CHIẾN THẮNG (Không bị lặp lại khi render)
   useEffect(() => {
@@ -387,23 +410,31 @@ export function CombatArena() {
               <span className="rounded bg-black/40 px-2 py-0.5 text-muted-foreground">
                 Vòng đấu: <strong className="text-foreground">#{turnNumber}</strong>
               </span>
-              <div
-                className={cn(
-                  "flex items-center gap-1.5 rounded px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider",
-                  status === "player-turn"
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/50 animate-pulse"
-                    : status === "enemy-turn"
-                      ? "bg-amber-500/20 text-amber-300 border border-amber-400/50"
+              {status === "enemy-turn" ? (
+                <button
+                  onClick={performEnemyTurn}
+                  title="Bấm để kích hoạt lượt kẻ địch ngay lập tức (không cần chờ)"
+                  className="flex items-center gap-1.5 rounded border border-amber-400/60 bg-amber-950/80 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-300 transition-colors hover:bg-amber-900 cursor-pointer shadow-[0_0_10px_rgba(251,191,36,0.25)] animate-pulse"
+                >
+                  <span className="size-2 rounded-full bg-amber-400" />
+                  <span>KẺ ĐỊCH ĐANG HÀNH ĐỘNG... (BẤM ĐỂ ĐI NGAY ⚡)</span>
+                </button>
+              ) : (
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider",
+                    status === "player-turn"
+                      ? "bg-cyan-500/25 text-cyan-200 border border-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.35)] animate-pulse"
                       : status === "victory"
                         ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400"
                         : "bg-red-500/20 text-red-300 border border-red-400",
-                )}
-              >
-                {status === "player-turn" && "LƯỢT CỦA BẠN (VANGUARD)"}
-                {status === "enemy-turn" && "KẺ ĐỊCH ĐANG HÀNH ĐỘNG..."}
-                {status === "victory" && "CHIẾN THẮNG VANG DỘI"}
-                {status === "defeat" && "THẤT BẠI - BỊ PHÁ HỦY"}
-              </div>
+                  )}
+                >
+                  {status === "player-turn" && "⚡ ĐẾN LƯỢT BẠN (VANGUARD) — HÃY TẤN CÔNG!"}
+                  {status === "victory" && "CHIẾN THẮNG VANG DỘI"}
+                  {status === "defeat" && "THẤT BẠI - BỊ PHÁ HỦY"}
+                </div>
+              )}
             </div>
           </div>
 
@@ -524,8 +555,8 @@ export function CombatArena() {
                   </p>
                   <p className="text-[10px] text-muted-foreground font-mono">
                     {status === "player-turn"
-                      ? "Sẵn sàng nhận lệnh kích hoạt kỹ năng"
-                      : "Đang chờ đối thủ phản kích..."}
+                      ? "⚡ ĐẾN LƯỢT BẠN! Hãy chọn 1 trong các kỹ năng bên dưới để tấn công."
+                      : "⏳ Đang trong lượt của đối phương... Bạn có thể bấm nút trên để đi ngay."}
                   </p>
                 </div>
               </div>
@@ -638,12 +669,21 @@ export function CombatArena() {
 
           {/* 5. Khung Điều Khiển Kỹ Năng (Action Deck) */}
           <div className="rounded-sm border border-cyan-500/30 bg-panel/90 p-4 shadow-xl">
-            <div className="mb-3 flex items-center justify-between border-b border-border/70 pb-2">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-2">
               <div className="flex items-center gap-2">
                 <Flame className="size-4 text-cyan-400" />
                 <h4 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
                   BẢNG ĐIỀU KHIỂN KỸ NĂNG VANGUARD
                 </h4>
+                {status === "player-turn" ? (
+                  <span className="rounded bg-emerald-500/20 px-2 py-0.5 font-display text-[10px] font-bold text-emerald-300 border border-emerald-400/50 animate-pulse">
+                    ✓ ĐẾN LƯỢT BẠN — CHỌN KỸ NĂNG ĐỂ TẤN CÔNG
+                  </span>
+                ) : (
+                  <span className="rounded bg-amber-500/20 px-2 py-0.5 font-display text-[10px] text-amber-300 border border-amber-400/40">
+                    ⏳ LƯỢT KẺ ĐỊCH (ĐANG PHẢN KÍCH...)
+                  </span>
+                )}
               </div>
               <span className="font-mono text-xs text-muted-foreground">
                 SP Hiện Có: <strong className="text-cyan-300">{player.sp}</strong> / {player.maxSp}

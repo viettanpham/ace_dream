@@ -30,6 +30,7 @@ import type {
 } from "@/lib/game/types"
 import { cn } from "@/lib/utils"
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowRight,
   ArrowUpDown,
@@ -47,16 +48,20 @@ import {
   HelpCircle,
   Info,
   Layers,
+  Lock,
   Recycle,
   RotateCcw,
   Search,
   Shield,
   ShieldAlert,
   ShieldCheck,
+  SlidersHorizontal,
   Sparkles,
   Sword,
+  Target,
   TrendingDown,
   TrendingUp,
+  Unlock,
   Wind,
   X,
   Zap,
@@ -161,8 +166,24 @@ export function getEnhancementBadgeMeta(level: number = 0) {
   }
 }
 
-type HangarTab = "loadout" | "inventory" | "enhancement"
+export type HangarTab = "loadout" | "skills" | "inventory" | "enhancement"
 type InventorySortBy = "rarity" | "enhancement" | "rating" | "name"
+
+export interface SkillSlotDetail {
+  slotIndex: number // 1, 2, 3, 4, 5
+  slotRole: string // "Đòn Cơ Bản", "Chủ Động 1", etc.
+  category: "basic" | "active" | "ultimate"
+  categoryLabel: string // "Đòn Đánh Cơ Bản", "Chủ Động", "Tuyệt Kỹ Tối Thượng"
+  skill: CombatSkill
+  isNative: boolean
+  isEquipped: boolean
+  slotLevel: number // 1..20
+  slotMultiplier: number // 1.025 (+2.5%)
+  compatibilityDesc: string
+  allowedScope: "all-or-gear" | "gear-locked"
+  icon: typeof Zap
+  colorTheme: string
+}
 
 interface StarfrontHangarProps {
   progression: StarfrontProgression
@@ -185,7 +206,7 @@ export function StarfrontHangar({
   onEnhanceItem,
   onUpdateProgression,
 }: StarfrontHangarProps) {
-  // Tabs: Buồng Lái & Trang Bị, Kho Đồ & Tái Chế, Xưởng Cường Hóa
+  // Tabs: Buồng Lái & Trang Bị, Mô-Đun Kỹ Năng (5 Ô), Kho Đồ & Tái Chế, Xưởng Cường Hóa
   const [activeTab, setActiveTab] = useState<HangarTab>("loadout")
 
   // Bộ lọc & sắp xếp kho đồ
@@ -206,6 +227,9 @@ export function StarfrontHangar({
   const [selectedEnhanceItemId, setSelectedEnhanceItemId] = useState<string | null>(null)
   const [lastEnhanceResult, setLastEnhanceResult] = useState<EnhancementResult | null>(null)
   const [isEnhancing, setIsEnhancing] = useState(false)
+
+  // Modal Chọn / Cấu hình Mô-đun Kỹ Năng (Skill Module Selection Modal)
+  const [selectedSkillSlot, setSelectedSkillSlot] = useState<SkillSlotDetail | null>(null)
 
   // Lớp Gear hiện tại
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
@@ -231,6 +255,11 @@ export function StarfrontHangar({
   const combatRating = useMemo(() => {
     return calculateGearCombatRating(currentStats.total)
   }, [currentStats.total])
+
+  // Danh sách 5 Slot Kỹ Năng chi tiết cho Gear đang chọn
+  const fiveSkillSlots: SkillSlotDetail[] = useMemo(() => {
+    return buildDetailedSkillSlots(activeGearDef)
+  }, [activeGearDef])
 
   // Chỉ số so sánh khi xem trước món đồ (hover hoặc inspected)
   const previewItem = hoveredItem || inspectedItem
@@ -308,6 +337,12 @@ export function StarfrontHangar({
     setShowEnhanceModal(true)
   }
 
+  // Mở Modal Chọn Mô-Đun Kỹ Năng
+  const handleOpenSkillSlot = (slot: SkillSlotDetail) => {
+    playClickSound()
+    setSelectedSkillSlot(slot)
+  }
+
   // Thực thi Cường Hóa
   const handleExecuteEnhance = () => {
     if (!selectedEnhanceItemId || !onEnhanceItem || isEnhancing) return
@@ -346,7 +381,6 @@ export function StarfrontHangar({
                 alt={activeGearDef.name}
                 className="size-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]"
                 onError={(e) => {
-                  // Fallback graceful
                   e.currentTarget.style.display = "none"
                 }}
               />
@@ -365,7 +399,7 @@ export function StarfrontHangar({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {activeGearDef.role} · Điều phối trang bị, mô-đun kỹ năng & phân bổ điểm phi cơ
+                {activeGearDef.role} · Điều phối trang bị, 5 ô mô-đun kỹ năng & phân bổ điểm phi cơ
               </p>
             </div>
           </div>
@@ -391,7 +425,7 @@ export function StarfrontHangar({
             {/* Điểm Kỹ Năng (Skill Points) */}
             <div className="flex items-center gap-1.5 rounded-sm border border-cyan-500/40 bg-cyan-950/30 px-3 py-1.5 text-cyan-300 shadow-inner">
               <Sparkles className="size-4 text-cyan-400" />
-              <span className="text-muted-foreground">Điểm Kỹ Năng:</span>
+              <span className="text-muted-foreground">Điểm Phi Cơ:</span>
               <strong className="text-sm font-bold text-cyan-200">
                 {skillPoints.available}/{skillPoints.total} SP
               </strong>
@@ -550,7 +584,7 @@ export function StarfrontHangar({
       </section>
 
       {/* ====================================================================
-          3. THANH ĐIỀU HƯỚNG TAB PHÂN HỆ HANGAR (LOADOUT / INVENTORY / LAB)
+          3. THANH ĐIỀU HƯỚNG TAB PHÂN HỆ HANGAR (LOADOUT / SKILLS / INVENTORY / LAB)
           ==================================================================== */}
       <div className="flex items-center justify-between border-b border-border/60 pb-2">
         <div className="flex items-center gap-1 p-1 bg-black/40 rounded-sm border border-border/50">
@@ -568,6 +602,22 @@ export function StarfrontHangar({
           >
             <Cpu className="size-3.5" />
             <span>Buồng Lái & Trang Bị</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playClickSound()
+              setActiveTab("skills")
+            }}
+            className={cn(
+              "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
+              activeTab === "skills"
+                ? "bg-cyan-500 text-black font-bold shadow-[0_0_10px_rgba(6,182,212,0.4)]"
+                : "text-muted-foreground hover:text-white",
+            )}
+          >
+            <Flame className="size-3.5" />
+            <span>Mô-Đun Kỹ Năng (5 Ô)</span>
           </button>
 
           <button
@@ -594,7 +644,7 @@ export function StarfrontHangar({
             className="px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs text-purple-300 hover:text-purple-200 hover:bg-purple-950/40 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <Hammer className="size-3.5 text-purple-400" />
-            <span>Xưởng Cường Hóa (+1 đến +10)</span>
+            <span>Xưởng Cường Hóa (+1..+10)</span>
           </button>
         </div>
 
@@ -614,7 +664,7 @@ export function StarfrontHangar({
         <div className="space-y-4">
           {/* Lưới chính: Cột trái (Tàu chiến & 3 Slot trang bị) vs Cột phải (Bảng chỉ số & Lực chiến) */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            {/* KHU VỰC TRUNG TÂM PHI CƠ & 3 Ô TRANG BỊ BAO QUANH (8 CỘT) */}
+            {/* KHU VỰC TRUNG TÂM PHI CƠ & 3 Ô TRANG BỊ BAO QUANH (7 CỘT) */}
             <div className="lg:col-span-7 flex flex-col gap-4">
               {/* Tấm Blueprint Hologram Tàu Chiến Trung Tâm */}
               <div className="relative overflow-hidden rounded-sm border border-cyan-500/40 bg-gradient-to-b from-black/90 via-cyan-950/25 to-black/95 p-4 shadow-2xl flex flex-col items-center justify-center min-h-[320px]">
@@ -654,8 +704,18 @@ export function StarfrontHangar({
                   </p>
                 </div>
 
-                {/* Nút Chuyển Nhanh Sang Kho Đồ */}
-                <div className="mt-3 flex items-center gap-2">
+                {/* Nút Chuyển Nhanh Sang Kho Đồ & Ô Kỹ Năng */}
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                  <Button
+                    size="xs"
+                    onClick={() => setActiveTab("skills")}
+                    variant="outline"
+                    className="font-display text-[11px] gap-1 text-amber-300 border-amber-500/40 hover:bg-amber-950/60 cursor-pointer"
+                  >
+                    <Flame className="size-3" />
+                    <span>Xem 5 Ô Mô-Đun Kỹ Năng</span>
+                  </Button>
+
                   <Button
                     size="xs"
                     onClick={() => setActiveTab("inventory")}
@@ -958,7 +1018,7 @@ export function StarfrontHangar({
           </div>
 
           {/* ====================================================================
-              4. BUỒNG KỸ NĂNG 5 SLOT CHI TIẾT (5-SLOT SKILL MODULE DECK)
+              4. KHUNG TÓM TẮT 5 Ô KỸ NĂNG TRONG LOADOUT
               ==================================================================== */}
           <div className="rounded-sm border border-cyan-500/40 bg-panel/80 p-4 shadow-xl">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
@@ -969,7 +1029,7 @@ export function StarfrontHangar({
                     HỆ THỐNG MÔ-ĐUN KỸ NĂNG & 5 SLOTS CHIẾN ĐẤU // {activeGearDef.name.toUpperCase()}
                   </h3>
                   <span className="text-[11px] text-muted-foreground font-mono">
-                    Chuẩn hóa buồng kỹ năng 5 vị trí: 1 Đòn cơ bản · 3 Kỹ năng chủ động · 1 Tuyệt kỹ tối thượng
+                    Bấm vào từng ô để mở bảng cấu hình mô-đun hoặc kiểm tra tính tương thích
                   </span>
                 </div>
               </div>
@@ -979,117 +1039,119 @@ export function StarfrontHangar({
                 <Sparkles className="size-3.5 text-cyan-400" />
                 <span className="text-muted-foreground">Điểm Phi Cơ:</span>
                 <strong className="text-cyan-300 font-bold">{skillPoints.available} SP Khả Dụng</strong>
-                <span className="text-muted-foreground text-[10px]">
-                  (+2 SP / Cấp phi thuyền)
-                </span>
               </div>
             </div>
 
-            {/* Lưới 5 Slot Kỹ Năng */}
+            {/* Lưới 5 Slot Kỹ Năng dạng Thẻ Tương Tác */}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {buildFiveSkillSlots(activeGearDef).map((slotInfo) => {
-                const { slotIndex, slotRole, skill, isNative, ultimateBadge } = slotInfo
-
-                return (
-                  <div
-                    key={slotIndex}
-                    className={cn(
-                      "flex flex-col justify-between rounded-sm border p-3 shadow-md transition-all",
-                      slotIndex === 5
-                        ? "border-amber-400/60 bg-gradient-to-b from-amber-950/30 to-panel/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
-                        : "border-border/60 bg-black/40 hover:border-cyan-500/40",
-                    )}
-                  >
-                    <div>
-                      {/* Tiêu đề Slot */}
-                      <div className="flex items-center justify-between border-b border-border/40 pb-1.5 text-[10px] font-mono">
-                        <span className="font-bold text-cyan-300">SLOT 0{slotIndex}</span>
-                        <span className="rounded bg-black/60 px-1.5 py-0.2 border border-border/50 text-muted-foreground">
-                          {slotRole}
-                        </span>
-                      </div>
-
-                      {/* Thông tin Kỹ Năng */}
-                      <div className="mt-2">
-                        <div className="flex items-start justify-between gap-1">
-                          <h4 className="font-display text-xs font-bold text-white line-clamp-1">
-                            {skill.name}
-                          </h4>
-                          {ultimateBadge && (
-                            <span className="rounded px-1.5 py-0.2 font-mono text-[9px] font-black uppercase bg-amber-500/30 text-amber-300 border border-amber-400 shrink-0">
-                              ULTIMATE
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-[9.5px] text-muted-foreground font-mono block">
-                          {skill.nameEn}
-                        </span>
-
-                        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground line-clamp-3">
-                          {skill.desc}
-                        </p>
-                      </div>
-
-                      {/* Tiêu hao & Hồi chiêu */}
-                      <div className="mt-2.5 flex flex-wrap gap-1 font-mono text-[10px]">
-                        <span
-                          className={cn(
-                            "rounded px-1.5 py-0.5 border",
-                            skill.spCost > 0
-                              ? "bg-cyan-950/60 text-cyan-300 border-cyan-500/30"
-                              : "bg-emerald-950/60 text-emerald-300 border-emerald-500/30",
-                          )}
-                        >
-                          {skill.spCost > 0 ? `${skill.spCost} SP` : "+15 SP Nạp"}
-                        </span>
-
-                        <span className="rounded bg-slate-900 px-1.5 py-0.5 text-slate-300 border border-slate-700">
-                          {skill.cooldown > 0 ? `CD: ${skill.cooldown} lượt` : "Không CD"}
-                        </span>
-
-                        {skill.damageMultiplier && (
-                          <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
-                            {Math.round(skill.damageMultiplier * 100)}% ATK
-                          </span>
-                        )}
-
-                        {skill.damageReduction && (
-                          <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
-                            Giảm {Math.round(skill.damageReduction * 100)}% DMG
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Footer Cấp Ô & Tương Thích */}
-                    <div className="mt-3 border-t border-border/40 pt-2 text-[10px] font-mono">
-                      <div className="flex items-center justify-between text-muted-foreground">
-                        <span>Cấp Ô: Cấp 1/20</span>
-                        <span className="text-cyan-300 font-bold">+2.5% Hiệu Lực</span>
-                      </div>
-                      <div className="mt-1 flex items-center justify-between text-[9px] text-muted-foreground">
-                        <span>{isNative ? "Bản Sắc Gear" : "All-Gear"}</span>
-                        <span>{slotIndex === 5 ? "Khóa Gear" : "Linh Hoạt"}</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Ghi chú hệ thống nâng cấp */}
-            <div className="mt-3 rounded bg-black/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground border border-border/40 flex items-start gap-2">
-              <Info className="size-4 shrink-0 text-cyan-400 mt-0.5" />
-              <span>
-                <strong>Quy tắc buồng kỹ năng Phase 5.7:</strong> Cấp nâng gắn liền với Ô (Slot-Bound, tối đa Cấp 20), không mất khi đổi module. Slot 1–4 cho phép All-Gear hoặc Gear-specific (tối đa 2 slot All-Gear). Slot 5 khóa cứng tuyệt kỹ độc quyền của lớp cơ giáp đang xuất kích.
-              </span>
+              {fiveSkillSlots.map((slotInfo) => (
+                <SkillSlotCard
+                  key={slotInfo.slotIndex}
+                  slotInfo={slotInfo}
+                  onSelectSlot={() => handleOpenSkillSlot(slotInfo)}
+                />
+              ))}
             </div>
           </div>
         </div>
       )}
 
       {/* ====================================================================
-          TAB 2: KHO ĐỒ, TÌM KIẾM, SẮP XẾP & BẢNG SO SÁNH (INVENTORY VIEW)
+          TAB 2: TRUNG TÂM 5 Ô MÔ-ĐUN KỸ NĂNG CHUYÊN SÂU (DEDICATED SKILLS TAB)
+          ==================================================================== */}
+      {activeTab === "skills" && (
+        <div className="space-y-4">
+          <div className="rounded-sm border border-cyan-500/40 bg-panel/90 p-4 shadow-xl">
+            {/* Header Tab Kỹ Năng */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded bg-cyan-950/80 border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.4)]">
+                  <Flame className="size-5 text-cyan-300" />
+                </div>
+                <div>
+                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-cyan-200">
+                    TRUNG TÂM QUẢN LÝ MÔ-ĐUN KỸ NĂNG // 5-SLOT DECK SYSTEM
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Độc lập giữa Cấp Ô phi cơ (Slot-Bound, Max Lv.20) và Mô-đun (Module Rarity/Level) · Quy chuẩn tương thích Phase 5.7
+                  </p>
+                </div>
+              </div>
+
+              {/* Thẻ Điểm SP Phi Thuyền */}
+              <div className="flex items-center gap-3 rounded bg-black/60 px-3.5 py-2 border border-cyan-500/40 font-mono text-xs">
+                <Sparkles className="size-4 text-cyan-400" />
+                <div>
+                  <div className="text-muted-foreground text-[10px]">ĐIỂM KỸ NĂNG PHI CƠ</div>
+                  <div className="text-sm font-bold text-cyan-300">
+                    {skillPoints.available} / {skillPoints.total} SP Khả Dụng
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground border-l border-border/50 pl-2">
+                  (+2 SP / cấp)
+                </span>
+              </div>
+            </div>
+
+            {/* Bảng Quy Tắc Tương Thích 5 Vị Trí Slot */}
+            <div className="mb-4 grid grid-cols-1 gap-2.5 sm:grid-cols-3 text-xs font-mono">
+              <div className="rounded bg-black/40 p-2.5 border border-cyan-500/30">
+                <div className="flex items-center gap-1.5 font-bold text-cyan-300 mb-1">
+                  <Zap className="size-3.5 text-cyan-400" />
+                  <span>SLOT 1: ĐÒN CƠ BẢN</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  0 SP tiêu hao · Hồi nạp +15 SP năng lượng lõi khi đánh trúng · Cho phép All-Gear hoặc Mô-đun của đúng Gear.
+                </p>
+              </div>
+
+              <div className="rounded bg-black/40 p-2.5 border border-purple-500/30">
+                <div className="flex items-center gap-1.5 font-bold text-purple-300 mb-1">
+                  <Sword className="size-3.5 text-purple-400" />
+                  <span>SLOT 2–4: CHỦ ĐỘNG (DECK)</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  20–45 SP · Tự do gắn kỹ năng All-Gear hoặc độc quyền Gear (Tối đa 2/3 slot dùng All-Gear, ít nhất 1 slot độc quyền).
+                </p>
+              </div>
+
+              <div className="rounded bg-black/40 p-2.5 border border-amber-500/30">
+                <div className="flex items-center gap-1.5 font-bold text-amber-300 mb-1">
+                  <Sparkles className="size-3.5 text-amber-400" />
+                  <span>SLOT 5: TUYỆT KỸ TỐI THƯỢNG</span>
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  50–70 SP · Khóa cứng 100% chiêu thức Ultimate của đúng Gear đang xuất kích ({activeGearDef.name}).
+                </p>
+              </div>
+            </div>
+
+            {/* Lưới 5 Slot Kỹ Năng Đầy Đủ */}
+            <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-5">
+              {fiveSkillSlots.map((slotInfo) => (
+                <SkillSlotCard
+                  key={slotInfo.slotIndex}
+                  slotInfo={slotInfo}
+                  onSelectSlot={() => handleOpenSkillSlot(slotInfo)}
+                  detailedView={true}
+                />
+              ))}
+            </div>
+
+            {/* Lưu Ý Hệ Thống & Trạng Thái Triển Khai */}
+            <div className="mt-4 rounded border border-border/60 bg-black/50 p-3 text-xs font-mono text-muted-foreground flex items-start gap-2.5">
+              <Info className="size-4 shrink-0 text-cyan-400 mt-0.5" />
+              <div>
+                <strong className="text-cyan-300 block mb-0.5">Trạng Thái Kiến Trúc Hệ Thống:</strong>
+                Giao diện 5 Slot đã sẵn sàng tích hợp với hệ thống vật phẩm Mô-Đun Kỹ Năng độc lập. Hiện tại, buồng lái tự động nạp bộ 5 kỹ năng chiến thuật bẩm sinh chuẩn của {activeGearDef.name}. Người chơi có thể bấm vào từng ô để xem thông số, yêu cầu tương thích và cấu hình kỹ năng.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          TAB 3: KHO ĐỒ, TÌM KIẾM, SẮP XẾP & BẢNG SO SÁNH (INVENTORY VIEW)
           ==================================================================== */}
       {activeTab === "inventory" && (
         <div className="space-y-4">
@@ -1119,7 +1181,7 @@ export function StarfrontHangar({
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      className="absolute right-1.5 top-1.5 text-muted-foreground hover:text-white"
+                      className="absolute right-1.5 top-1.5 text-muted-foreground hover:text-white cursor-pointer"
                     >
                       <X className="size-3.5" />
                     </button>
@@ -1187,7 +1249,7 @@ export function StarfrontHangar({
                   </div>
                   <button
                     onClick={() => setInspectedItem(null)}
-                    className="text-muted-foreground hover:text-white text-xs font-mono"
+                    className="text-muted-foreground hover:text-white text-xs font-mono cursor-pointer"
                   >
                     Đóng bảng [×]
                   </button>
@@ -1394,7 +1456,19 @@ export function StarfrontHangar({
       )}
 
       {/* ====================================================================
-          5. MODAL XƯỞNG CƯỜNG HÓA TRANG BỊ (+1 ĐẾN +10)
+          MODAL CHỌN & CẤU HÌNH MÔ-ĐUN KỸ NĂNG (SKILL MODULE SELECTION MODAL)
+          ==================================================================== */}
+      {selectedSkillSlot && (
+        <SkillModuleSelectModal
+          slot={selectedSkillSlot}
+          activeGearDef={activeGearDef}
+          progression={progression}
+          onClose={() => setSelectedSkillSlot(null)}
+        />
+      )}
+
+      {/* ====================================================================
+          MODAL XƯỞNG CƯỜNG HÓA TRANG BỊ (+1 ĐẾN +10)
           ==================================================================== */}
       {showEnhanceModal && selectedEnhanceItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
@@ -1672,7 +1746,7 @@ export function StarfrontHangar({
       )}
 
       {/* ====================================================================
-          6. MODAL XÁC NHẬN CÀI LẠI TIẾN TRÌNH (RESET CONFIRMATION)
+          MODAL XÁC NHẬN CÀI LẠI TIẾN TRÌNH (RESET CONFIRMATION)
           ==================================================================== */}
       {showResetDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in">
@@ -1714,7 +1788,7 @@ export function StarfrontHangar({
       )}
 
       {/* ====================================================================
-          7. MODAL TÁI CHẾ / RÃ ĐỒ (SALVAGE MODAL INTEGRATION)
+          MODAL TÁI CHẾ / RÃ ĐỒ (SALVAGE MODAL INTEGRATION)
           ==================================================================== */}
       <SalvageModal
         item={selectedSalvageItem}
@@ -1729,6 +1803,468 @@ export function StarfrontHangar({
           }
         }}
       />
+    </div>
+  )
+}
+
+/* ==========================================================================
+   SUBCOMPONENT: THẺ Ô KỸ NĂNG TRỰC QUAN (SKILL SLOT CARD)
+   ========================================================================== */
+
+function SkillSlotCard({
+  slotInfo,
+  onSelectSlot,
+  detailedView = false,
+}: {
+  slotInfo: SkillSlotDetail
+  onSelectSlot: () => void
+  detailedView?: boolean
+}) {
+  const { slotIndex, slotRole, category, categoryLabel, skill, isEquipped, slotLevel, icon: Icon } = slotInfo
+  const isUltimate = slotIndex === 5
+
+  return (
+    <div
+      onClick={onSelectSlot}
+      className={cn(
+        "group relative flex flex-col justify-between rounded-sm border p-3 shadow-md transition-all cursor-pointer",
+        isUltimate
+          ? "border-amber-400/60 bg-gradient-to-b from-amber-950/30 via-panel to-panel shadow-[0_0_12px_rgba(245,158,11,0.2)] hover:border-amber-300 hover:shadow-[0_0_18px_rgba(245,158,11,0.35)]"
+          : "border-border/60 bg-black/45 hover:border-cyan-400/80 hover:bg-black/60 hover:shadow-[0_0_12px_rgba(6,182,212,0.2)]",
+      )}
+    >
+      <div>
+        {/* Header Slot */}
+        <div className="flex items-center justify-between border-b border-border/40 pb-2 text-[10px] font-mono">
+          <div className="flex items-center gap-1.5">
+            <span
+              className={cn(
+                "flex size-5 items-center justify-center rounded font-bold text-[9px] border",
+                isUltimate
+                  ? "bg-amber-500/20 text-amber-300 border-amber-400/50"
+                  : "bg-cyan-500/20 text-cyan-300 border-cyan-400/50",
+              )}
+            >
+              0{slotIndex}
+            </span>
+            <span className="font-bold text-white uppercase">{slotRole}</span>
+          </div>
+
+          <span
+            className={cn(
+              "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold border",
+              isUltimate
+                ? "bg-amber-500/20 text-amber-300 border-amber-400"
+                : category === "basic"
+                  ? "bg-emerald-950/60 text-emerald-300 border-emerald-500/40"
+                  : "bg-purple-950/60 text-purple-300 border-purple-500/40",
+            )}
+          >
+            {categoryLabel}
+          </span>
+        </div>
+
+        {/* Nội dung Kỹ Năng / Mô-Đun */}
+        <div className="mt-2.5">
+          <div className="flex items-start gap-2">
+            <div
+              className={cn(
+                "flex size-8 shrink-0 items-center justify-center rounded border p-1 shadow-sm",
+                isUltimate
+                  ? "border-amber-400/60 bg-amber-950/50 text-amber-300"
+                  : category === "basic"
+                    ? "border-cyan-400/60 bg-cyan-950/50 text-cyan-300"
+                    : "border-purple-400/60 bg-purple-950/50 text-purple-300",
+              )}
+            >
+              <Icon className="size-4" />
+            </div>
+
+            <div className="min-w-0 flex-1">
+              <h4 className="font-display text-xs font-bold text-white group-hover:text-cyan-300 truncate">
+                {skill.name}
+              </h4>
+              <span className="text-[9.5px] text-muted-foreground font-mono block truncate">
+                {skill.nameEn}
+              </span>
+            </div>
+          </div>
+
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+            {skill.desc}
+          </p>
+
+          {/* Tiêu hao & Lượt hồi */}
+          <div className="mt-2.5 flex flex-wrap gap-1 font-mono text-[10px]">
+            <span
+              className={cn(
+                "rounded px-1.5 py-0.5 border",
+                skill.spCost > 0
+                  ? "bg-cyan-950/60 text-cyan-300 border-cyan-500/30"
+                  : "bg-emerald-950/60 text-emerald-300 border-emerald-500/30",
+              )}
+            >
+              {skill.spCost > 0 ? `${skill.spCost} SP` : "+15 SP Nạp"}
+            </span>
+
+            <span className="rounded bg-slate-900 px-1.5 py-0.5 text-slate-300 border border-slate-700">
+              {skill.cooldown > 0 ? `CD: ${skill.cooldown} lượt` : "Không CD"}
+            </span>
+
+            {skill.damageMultiplier && (
+              <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
+                {Math.round(skill.damageMultiplier * 100)}% ATK
+              </span>
+            )}
+
+            {skill.damageReduction && (
+              <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
+                Giảm {Math.round(skill.damageReduction * 100)}% DMG
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Thao Tác & Trạng Thái */}
+      <div className="mt-3 border-t border-border/40 pt-2 text-[10px] font-mono">
+        <div className="flex items-center justify-between text-muted-foreground">
+          <span>Cấp Ô: Cấp {slotLevel}/20</span>
+          <span className="text-cyan-300 font-bold">+2.5% Hiệu Lực</span>
+        </div>
+
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-[9px] text-muted-foreground flex items-center gap-1">
+            <CheckCircle2 className="size-3 text-emerald-400" />
+            <span>Đã Gắn Module</span>
+          </span>
+
+          <span className="font-display text-[10px] font-bold text-cyan-400 group-hover:underline flex items-center gap-0.5">
+            <span>Cấu hình</span>
+            <ChevronRight className="size-3" />
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ==========================================================================
+   MODAL: CHỌN & CẤU HÌNH MÔ-ĐUN KỸ NĂNG (SKILL MODULE SELECTION MODAL)
+   ========================================================================== */
+
+function SkillModuleSelectModal({
+  slot,
+  activeGearDef,
+  progression,
+  onClose,
+}: {
+  slot: SkillSlotDetail
+  activeGearDef: (typeof STARFRONT_GEAR_DEFS)[StarfrontGearId]
+  progression: StarfrontProgression
+  onClose: () => void
+}) {
+  const [feedbackNotice, setFeedbackNotice] = useState<string | null>(null)
+  const isUltimate = slot.slotIndex === 5
+  const Icon = slot.icon
+
+  // Danh mục mô-đun tham khảo từ các hệ cơ giáp để minh họa và kiểm tra tính tương thích
+  const sampleModuleRoster = useMemo(() => {
+    const list: {
+      id: string
+      name: string
+      nameEn: string
+      gearName: string
+      gearId: StarfrontGearId
+      category: "basic" | "active" | "ultimate"
+      spCost: number
+      cooldown: number
+      desc: string
+      rarity: StarfrontItemRarity
+      level: number
+      isCompatible: boolean
+      reason: string
+    }[] = []
+
+    // Đưa vào các kỹ năng thực tế hiện có trong game
+    Object.values(STARFRONT_GEAR_DEFS).forEach((gDef) => {
+      gDef.skills.forEach((sk, idx) => {
+        let isCompatible = false
+        let reason = ""
+
+        if (slot.slotIndex === 1) {
+          // Slot 1: Basic attack
+          if (idx === 0) {
+            isCompatible = gDef.id === activeGearDef.id
+            reason = isCompatible ? "Khớp hoàn toàn với cơ giáp hiện tại" : "Khác lớp cơ giáp (Slot 1 chỉ nhận đòn của đúng Gear)"
+          } else {
+            isCompatible = false
+            reason = "Đây là kỹ năng chủ động, không thể gắn vào ô Đòn Cơ Bản (Slot 1)"
+          }
+        } else if (slot.slotIndex >= 2 && slot.slotIndex <= 4) {
+          // Slot 2-4: Active skills
+          if (idx > 0 && idx < 4) {
+            isCompatible = gDef.id === activeGearDef.id
+            reason = isCompatible ? "Tương thích 100% với khung trang bị" : "Thuộc bản sắc lớp cơ giáp khác"
+          } else if (idx === 0) {
+            isCompatible = false
+            reason = "Đòn đánh cơ bản chỉ dùng cho Slot 1"
+          } else {
+            isCompatible = false
+            reason = "Kỹ năng tối thượng chỉ dành cho Slot 5"
+          }
+        } else if (slot.slotIndex === 5) {
+          // Slot 5: Ultimate
+          if (idx === 4 || sk.id.includes("ultimate") || sk.id.includes("nova") || sk.id.includes("blitz") || sk.id.includes("cannon")) {
+            isCompatible = gDef.id === activeGearDef.id
+            reason = isCompatible ? "Tuyệt kỹ độc quyền của cơ giáp hiện tại" : `Khóa theo cơ giáp ${gDef.name}, không thể lắp sang ${activeGearDef.name}`
+          } else {
+            isCompatible = false
+            reason = "Slot 5 bắt buộc là Kỹ Năng Tối Thượng (Ultimate)"
+          }
+        }
+
+        list.push({
+          id: `${gDef.id}-${sk.id}`,
+          name: sk.name,
+          nameEn: sk.nameEn,
+          gearName: gDef.name,
+          gearId: gDef.id,
+          category: idx === 0 ? "basic" : idx === 4 ? "ultimate" : "active",
+          spCost: sk.spCost,
+          cooldown: sk.cooldown,
+          desc: sk.desc,
+          rarity: idx === 4 ? "legendary" : idx === 0 ? "rare" : "epic",
+          level: 1,
+          isCompatible,
+          reason,
+        })
+      })
+    })
+
+    return list
+  }, [slot, activeGearDef])
+
+  const handleAttemptEquip = (mod: (typeof sampleModuleRoster)[0]) => {
+    playClickSound()
+    if (!mod.isCompatible) {
+      setFeedbackNotice(`Không thể trang bị: ${mod.reason}`)
+      return
+    }
+
+    // Khi người chơi cố gắng trang bị, cung cấp thông báo rõ ràng về trạng thái Phase 5.7
+    setFeedbackNotice(
+      `Hệ thống kho lưu trữ Mô-đun rời đang thuộc lộ trình Phase 5.7 (docs/SKILL_SYSTEM.md). Cơ giáp hiện đang trang bị kỹ năng bẩm sinh [${slot.skill.name}] hoạt động ổn định.`,
+    )
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
+      <div className="max-w-2xl w-full rounded-sm border border-cyan-500/60 bg-panel p-5 shadow-2xl relative flex flex-col max-h-[90vh] overflow-y-auto">
+        {/* Header Modal */}
+        <div className="flex items-center justify-between border-b border-border/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div
+              className={cn(
+                "flex size-9 items-center justify-center rounded border shadow-md",
+                isUltimate
+                  ? "bg-amber-950/80 border-amber-400 text-amber-300"
+                  : "bg-cyan-950/80 border-cyan-400 text-cyan-300",
+              )}
+            >
+              <Icon className="size-5" />
+            </div>
+            <div>
+              <h3 className="font-display text-sm font-bold uppercase tracking-wider text-white">
+                CẤU HÌNH MÔ-ĐUN // SLOT 0{slot.slotIndex}: {slot.slotRole.toUpperCase()}
+              </h3>
+              <p className="text-[11px] text-muted-foreground font-mono">
+                Kiểm tra tính tương thích, thông số sát thương & quy tắc gắn mô-đun
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="size-7 flex items-center justify-center rounded border border-border/60 text-muted-foreground hover:text-white hover:border-cyan-400 transition-colors cursor-pointer"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Thông báo phản hồi nếu có */}
+        {feedbackNotice && (
+          <div className="my-3 rounded border border-amber-400/80 bg-amber-950/40 p-3 font-mono text-xs text-amber-200 animate-in fade-in flex items-start gap-2">
+            <Info className="size-4 shrink-0 text-amber-400 mt-0.5" />
+            <div className="flex-1">
+              <span>{feedbackNotice}</span>
+            </div>
+            <button
+              onClick={() => setFeedbackNotice(null)}
+              className="text-amber-300 hover:text-white text-[10px]"
+            >
+              [Đóng]
+            </button>
+          </div>
+        )}
+
+        {/* 1. MÔ-ĐUN HIỆN ĐANG GẮN TRONG Ô */}
+        <div className="my-3 rounded border border-cyan-500/40 bg-black/50 p-3.5">
+          <div className="flex items-center justify-between text-[10px] font-mono mb-2">
+            <span className="text-muted-foreground uppercase">MÔ-ĐUN HIỆN TẠI TRONG Ô:</span>
+            <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-emerald-300 font-bold border border-emerald-500/40">
+              ✓ ĐANG KẾT NỐI
+            </span>
+          </div>
+
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <h4 className="font-display text-sm font-bold text-white flex items-center gap-2">
+                <span>{slot.skill.name}</span>
+                <span className="text-xs font-mono font-normal text-muted-foreground">
+                  ({slot.skill.nameEn})
+                </span>
+              </h4>
+              <p className="mt-1 text-xs text-slate-300 leading-relaxed">
+                {slot.skill.desc}
+              </p>
+            </div>
+
+            <div className="shrink-0 text-right font-mono text-xs">
+              <span className="rounded bg-black/60 px-2 py-0.5 border border-border/60 text-cyan-300 font-bold block">
+                Cấp Ô: {slot.slotLevel}/20
+              </span>
+              <span className="text-[10px] text-muted-foreground block mt-1">
+                +2.5% Hiệu Lực
+              </span>
+            </div>
+          </div>
+
+          {/* Tiêu hao & Hiệu số */}
+          <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-xs border-t border-border/40 pt-2">
+            <span className="rounded bg-cyan-950/60 px-2 py-0.5 text-cyan-300 border border-cyan-500/30">
+              Tiêu hao: {slot.skill.spCost > 0 ? `${slot.skill.spCost} SP` : "+15 SP Nạp"}
+            </span>
+            <span className="rounded bg-slate-900 px-2 py-0.5 text-slate-300 border border-slate-700">
+              Thời gian hồi: {slot.skill.cooldown > 0 ? `${slot.skill.cooldown} lượt` : "0 lượt"}
+            </span>
+            {slot.skill.damageMultiplier && (
+              <span className="rounded bg-red-950/60 px-2 py-0.5 text-red-300 border border-red-500/30">
+                Sát thương: {Math.round(slot.skill.damageMultiplier * 100)}% ATK
+              </span>
+            )}
+            {slot.skill.damageReduction && (
+              <span className="rounded bg-blue-950/60 px-2 py-0.5 text-blue-300 border border-blue-500/30">
+                Lá chắn: Giảm {Math.round(slot.skill.damageReduction * 100)}% DMG
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 2. QUY TẮC TƯƠNG THÍCH CHO Ô NÀY */}
+        <div className="mb-3 rounded border border-border/60 bg-panel/60 p-3 text-xs font-mono">
+          <div className="flex items-center gap-1.5 font-bold text-cyan-300 mb-1">
+            <SlidersHorizontal className="size-3.5 text-cyan-400" />
+            <span>QUY TẮC TƯƠNG THÍCH CHO {slot.slotRole.toUpperCase()}:</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            {slot.slotIndex === 1 && (
+              "Slot 1 (Đòn Cơ Bản): Cho phép All-Gear hoặc Mô-đun của đúng Gear. Luôn tạo 15 SP khi tấn công và không tốn năng lượng."
+            )}
+            {slot.slotIndex >= 2 && slot.slotIndex <= 4 && (
+              "Slot 2–4 (Kỹ Năng Chủ Động): Cho phép kết hợp mô-đun All-Gear hoặc đúng Gear. Tối đa 2 trong 3 slot được dùng All-Gear, ít nhất 1 slot phải là kỹ năng bản sắc của lớp."
+            )}
+            {slot.slotIndex === 5 && (
+              `Slot 5 (Tuyệt Kỹ Tối Thượng): Khóa cứng 100% chiêu thức Ultimate của đúng Gear hiện tại (${activeGearDef.name}). Không thể lắp tuyệt kỹ của phi cơ khác.`
+            )}
+          </p>
+        </div>
+
+        {/* 3. DANH SÁCH MÔ-ĐUN TRONG KHO & KHẢ DỤNG */}
+        <div>
+          <div className="mb-2 flex items-center justify-between font-mono text-xs">
+            <span className="font-bold text-white uppercase flex items-center gap-1.5">
+              <Boxes className="size-3.5 text-cyan-400" />
+              <span>DANH MỤC MÔ-ĐUN & TRẠNG THÁI TƯƠNG THÍCH</span>
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              Kho hiện tại: 0 Mô-đun rời (Đang dùng Kỹ Năng Bẩm Sinh)
+            </span>
+          </div>
+
+          <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+            {sampleModuleRoster.map((mod) => (
+              <div
+                key={mod.id}
+                className={cn(
+                  "rounded border p-2.5 transition-all text-xs font-mono flex flex-col justify-between gap-1.5",
+                  mod.isCompatible
+                    ? "border-cyan-500/40 bg-black/40 hover:border-cyan-400 hover:bg-black/60"
+                    : "border-red-500/20 bg-red-950/10 opacity-70",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-white font-display text-xs">
+                        {mod.name}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground">
+                        ({mod.gearName})
+                      </span>
+                      <span
+                        className={cn(
+                          "rounded px-1.5 py-0.2 text-[9px] font-bold border",
+                          mod.isCompatible
+                            ? "bg-emerald-950/60 text-emerald-300 border-emerald-500/40"
+                            : "bg-red-950/60 text-red-300 border-red-500/40",
+                        )}
+                      >
+                        {mod.isCompatible ? "✓ TƯƠNG THÍCH" : "✕ KHÔNG TƯƠNG THÍCH"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">
+                      {mod.desc}
+                    </p>
+                  </div>
+
+                  <Button
+                    size="xs"
+                    disabled={!mod.isCompatible}
+                    onClick={() => handleAttemptEquip(mod)}
+                    className={cn(
+                      "shrink-0 font-display text-[10px] uppercase font-bold cursor-pointer",
+                      mod.isCompatible
+                        ? "bg-cyan-600 hover:bg-cyan-500 text-white"
+                        : "bg-secondary text-muted-foreground cursor-not-allowed",
+                    )}
+                  >
+                    {mod.isCompatible ? "Gắn Vào Ô" : "Khóa"}
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/30 pt-1">
+                  <span>{mod.spCost > 0 ? `${mod.spCost} SP` : "+15 SP"} · CD: {mod.cooldown} lượt</span>
+                  <span className={mod.isCompatible ? "text-cyan-300" : "text-red-400"}>
+                    {mod.reason}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer Modal */}
+        <div className="mt-4 pt-3 border-t border-border/50 flex justify-end">
+          <Button
+            size="sm"
+            onClick={onClose}
+            className="font-display text-xs cursor-pointer bg-cyan-600 hover:bg-cyan-500 text-white font-bold"
+          >
+            Đóng Cửa Sổ
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -1865,12 +2401,11 @@ function ItemComparisonCard({
 }
 
 /**
- * Xây dựng danh sách 5 Slot Kỹ Năng từ cấu hình Gear hiện tại
- * Slot 1: Basic Attack
- * Slots 2-4: Active Skills
- * Slot 5: Ultimate Skill
+ * Xây dựng danh sách 5 Slot Kỹ Năng chi tiết từ cấu hình Gear hiện tại
  */
-function buildFiveSkillSlots(gearDef: (typeof STARFRONT_GEAR_DEFS)[StarfrontGearId]) {
+function buildDetailedSkillSlots(
+  gearDef: (typeof STARFRONT_GEAR_DEFS)[StarfrontGearId],
+): SkillSlotDetail[] {
   const skills = gearDef.skills || []
 
   const slot1 = skills[0] || {
@@ -1920,7 +2455,6 @@ function buildFiveSkillSlots(gearDef: (typeof STARFRONT_GEAR_DEFS)[StarfrontGear
     effectDuration: 2,
   }
 
-  // Slot 5: Ultimate Skill độc quyền của từng Gear
   const slot5Ultimate: CombatSkill =
     gearDef.id === "falcon"
       ? {
@@ -1957,10 +2491,80 @@ function buildFiveSkillSlots(gearDef: (typeof STARFRONT_GEAR_DEFS)[StarfrontGear
           }
 
   return [
-    { slotIndex: 1, slotRole: "Đòn Cơ Bản", skill: slot1, isNative: true, ultimateBadge: false },
-    { slotIndex: 2, slotRole: "Chủ Động 1", skill: slot2, isNative: true, ultimateBadge: false },
-    { slotIndex: 3, slotRole: "Chủ Động 2", skill: slot3, isNative: true, ultimateBadge: false },
-    { slotIndex: 4, slotRole: "Chủ Động 3", skill: slot4, isNative: true, ultimateBadge: false },
-    { slotIndex: 5, slotRole: "Tuyệt Kỹ Tối Thượng", skill: slot5Ultimate, isNative: true, ultimateBadge: true },
+    {
+      slotIndex: 1,
+      slotRole: "Đòn Cơ Bản",
+      category: "basic",
+      categoryLabel: "Đòn Cơ Bản",
+      skill: slot1,
+      isNative: true,
+      isEquipped: true,
+      slotLevel: 1,
+      slotMultiplier: 1.025,
+      compatibilityDesc: "All-Gear hoặc đúng Gear",
+      allowedScope: "all-or-gear",
+      icon: Zap,
+      colorTheme: "#06b6d4",
+    },
+    {
+      slotIndex: 2,
+      slotRole: "Chủ Động 1",
+      category: "active",
+      categoryLabel: "Chủ Động",
+      skill: slot2,
+      isNative: true,
+      isEquipped: true,
+      slotLevel: 1,
+      slotMultiplier: 1.025,
+      compatibilityDesc: "All-Gear hoặc đúng Gear (Tối đa 2/3 All-Gear)",
+      allowedScope: "all-or-gear",
+      icon: Sword,
+      colorTheme: "#a855f7",
+    },
+    {
+      slotIndex: 3,
+      slotRole: "Chủ Động 2",
+      category: "active",
+      categoryLabel: "Chủ Động",
+      skill: slot3,
+      isNative: true,
+      isEquipped: true,
+      slotLevel: 1,
+      slotMultiplier: 1.025,
+      compatibilityDesc: "All-Gear hoặc đúng Gear (Tối đa 2/3 All-Gear)",
+      allowedScope: "all-or-gear",
+      icon: ShieldAlert,
+      colorTheme: "#ec4899",
+    },
+    {
+      slotIndex: 4,
+      slotRole: "Chủ Động 3",
+      category: "active",
+      categoryLabel: "Chủ Động",
+      skill: slot4,
+      isNative: true,
+      isEquipped: true,
+      slotLevel: 1,
+      slotMultiplier: 1.025,
+      compatibilityDesc: "All-Gear hoặc đúng Gear (Tối đa 2/3 All-Gear)",
+      allowedScope: "all-or-gear",
+      icon: Shield,
+      colorTheme: "#3b82f6",
+    },
+    {
+      slotIndex: 5,
+      slotRole: "Tuyệt Kỹ Tối Thượng",
+      category: "ultimate",
+      categoryLabel: "Ultimate",
+      skill: slot5Ultimate,
+      isNative: true,
+      isEquipped: true,
+      slotLevel: 1,
+      slotMultiplier: 1.025,
+      compatibilityDesc: `Khóa 100% chiêu thức của ${gearDef.name}`,
+      allowedScope: "gear-locked",
+      icon: Sparkles,
+      colorTheme: "#f59e0b",
+    },
   ]
 }

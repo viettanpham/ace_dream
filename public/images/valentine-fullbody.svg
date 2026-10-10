@@ -1,0 +1,207 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 800" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradients -->
+    <linearGradient id="val-bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#021f18"/>
+      <stop offset="50%" stop-color="#042f24"/>
+      <stop offset="100%" stop-color="#01140f"/>
+    </linearGradient>
+    <radialGradient id="val-glow" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#064e3b" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="val-hair" x1="0%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#d1fae5"/>
+      <stop offset="40%" stop-color="#6ee7b7"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="val-skin" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff1f2"/>
+      <stop offset="50%" stop-color="#ffe4e6"/>
+      <stop offset="100%" stop-color="#fecdd3"/>
+    </linearGradient>
+    <linearGradient id="val-suit-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+    <linearGradient id="val-suit-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+    <linearGradient id="val-skirt" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e"/>
+      <stop offset="50%" stop-color="#042f2e"/>
+      <stop offset="100%" stop-color="#021c1b"/>
+    </linearGradient>
+    <linearGradient id="val-boot" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="70%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </linearGradient>
+    <filter id="val-neon-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Sci-Fi Tech Frame -->
+  <rect width="540" height="800" fill="url(#val-bg-grad)"/>
+  <circle cx="270" cy="280" r="240" fill="url(#val-glow)"/>
+
+  <!-- Tech Grid Background lines -->
+  <g stroke="#10b981" stroke-width="1" opacity="0.15">
+    <line x1="40" y1="0" x2="40" y2="800"/>
+    <line x1="500" y1="0" x2="500" y2="800"/>
+    <line x1="0" y1="120" x2="540" y2="120"/>
+    <line x1="0" y1="450" x2="540" y2="450"/>
+    <line x1="0" y1="680" x2="540" y2="680"/>
+    <circle cx="270" cy="260" r="180" fill="none" stroke-dasharray="8 6"/>
+    <circle cx="270" cy="260" r="120" fill="none" stroke-dasharray="4 4"/>
+  </g>
+
+  <!-- Holographic Shield Halo Behind Head -->
+  <g opacity="0.45" filter="url(#val-neon-glow)">
+    <polygon points="270,90 390,160 390,320 270,390 150,320 150,160" fill="none" stroke="#34d399" stroke-width="1.5"/>
+    <path d="M 270,110 L 370,170 L 370,300 L 270,360 L 170,300 L 170,170 Z" fill="none" stroke="#10b981" stroke-width="1" stroke-dasharray="6 4"/>
+  </g>
+
+  <!-- Long Flowing Silver-Emerald Hair (Back Layer) -->
+  <path d="M 180,180 Q 140,280 150,420 Q 160,520 200,580 Q 220,530 205,420 Q 195,300 220,200 Z" fill="url(#val-hair)"/>
+  <path d="M 360,180 Q 400,280 390,420 Q 380,520 340,580 Q 320,530 335,420 Q 345,300 320,200 Z" fill="url(#val-hair)"/>
+  <path d="M 160,250 Q 130,360 145,480 Q 180,450 170,360 Z" fill="#047857" opacity="0.7"/>
+  <path d="M 380,250 Q 410,360 395,480 Q 360,450 370,360 Z" fill="#047857" opacity="0.7"/>
+
+  <!-- Body / Thighs & Legs with Sexy Thigh-High Armor Boots -->
+  <!-- Left Thigh & Right Thigh (Skin) -->
+  <path d="M 220,440 L 210,540 L 245,540 L 255,440 Z" fill="url(#val-skin)"/>
+  <path d="M 285,440 L 295,540 L 330,540 L 320,440 Z" fill="url(#val-skin)"/>
+  <!-- Subtle thigh garter straps -->
+  <path d="M 212,480 L 252,480" stroke="#047857" stroke-width="4"/>
+  <path d="M 288,480 L 328,480" stroke="#047857" stroke-width="4"/>
+  <circle cx="232" cy="480" r="4" fill="#34d399"/>
+  <circle cx="308" cy="480" r="4" fill="#34d399"/>
+
+  <!-- Sexy High-Tech Thigh-High Boots -->
+  <!-- Left Boot -->
+  <path d="M 206,530 Q 200,630 205,720 L 245,720 Q 248,630 248,530 Z" fill="url(#val-boot)"/>
+  <path d="M 195,715 L 200,745 L 252,745 L 250,715 Z" fill="#0f172a"/>
+  <!-- Boot Neon Armor Trim -->
+  <path d="M 207,535 L 247,535" stroke="#10b981" stroke-width="3" filter="url(#val-neon-glow)"/>
+  <path d="M 226,545 L 226,690" stroke="#34d399" stroke-width="2"/>
+  <rect x="215" y="610" width="22" height="18" rx="3" fill="#10b981" opacity="0.8"/>
+
+  <!-- Right Boot -->
+  <path d="M 292,530 Q 292,630 295,720 L 335,720 Q 340,630 334,530 Z" fill="url(#val-boot)"/>
+  <path d="M 290,715 L 288,745 L 340,745 L 345,715 Z" fill="#0f172a"/>
+  <!-- Boot Neon Armor Trim -->
+  <path d="M 293,535 L 333,535" stroke="#10b981" stroke-width="3" filter="url(#val-neon-glow)"/>
+  <path d="M 314,545 L 314,690" stroke="#34d399" stroke-width="2"/>
+  <rect x="303" y="610" width="22" height="18" rx="3" fill="#10b981" opacity="0.8"/>
+
+  <!-- Short Sexy Pilot Uniform Skirt (High-waisted, pleated sci-fi skirt) -->
+  <path d="M 215,380 L 325,380 L 350,450 L 190,450 Z" fill="url(#val-skirt)"/>
+  <!-- Skirt pleat shadows & neon hem -->
+  <path d="M 230,380 L 218,450" stroke="#042f2e" stroke-width="2.5"/>
+  <path d="M 255,380 L 250,450" stroke="#042f2e" stroke-width="2.5"/>
+  <path d="M 285,380 L 290,450" stroke="#042f2e" stroke-width="2.5"/>
+  <path d="M 310,380 L 322,450" stroke="#042f2e" stroke-width="2.5"/>
+  <path d="M 188,448 L 352,448" stroke="#10b981" stroke-width="3" filter="url(#val-neon-glow)"/>
+
+  <!-- Pilot Torso: Sexy Tailored Bodysuit & Open Collar Flight Jacket -->
+  <!-- Inner bodysuit / corset contour -->
+  <path d="M 230,260 Q 220,320 220,380 L 320,380 Q 320,320 310,260 Z" fill="url(#val-suit-dark)"/>
+  <!-- Cleavage / chest skin window -->
+  <path d="M 248,220 Q 270,285 292,220 Z" fill="url(#val-skin)"/>
+  <!-- Chest contours -->
+  <path d="M 235,260 Q 255,300 270,275 Q 285,300 305,260" stroke="#334155" stroke-width="1.5" fill="none"/>
+
+  <!-- Open Pilot Jacket (Chic cut, emerald & obsidian panels) -->
+  <path d="M 215,220 L 235,370 L 210,370 L 190,260 Z" fill="url(#val-suit-accent)"/>
+  <path d="M 325,220 L 305,370 L 330,370 L 350,260 Z" fill="url(#val-suit-accent)"/>
+  <!-- Jacket Collar -->
+  <path d="M 235,210 L 215,250 L 245,260 Z" fill="#047857"/>
+  <path d="M 305,210 L 325,250 L 295,260 Z" fill="#047857"/>
+
+  <!-- Belt & Utility Holster -->
+  <rect x="215" y="370" width="110" height="12" rx="2" fill="#0f172a" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="260" y="367" width="20" height="18" rx="3" fill="#34d399"/>
+  <!-- Holster on right hip -->
+  <rect x="325" y="375" width="22" height="34" rx="4" fill="#042f2e" stroke="#10b981" stroke-width="1"/>
+  <circle cx="336" cy="390" r="4" fill="#6ee7b7"/>
+
+  <!-- Arms & Sleeves -->
+  <!-- Left Arm (with Medical/Aegis Gauntlet) -->
+  <path d="M 195,230 L 165,340 L 190,345 L 215,250 Z" fill="url(#val-suit-dark)"/>
+  <!-- Left Gauntlet -->
+  <rect x="155" y="335" width="38" height="42" rx="4" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+  <circle cx="174" cy="355" r="7" fill="#10b981" filter="url(#val-neon-glow)"/>
+  <!-- Left Hand (Dainty glove) -->
+  <path d="M 160,377 L 165,420 L 185,420 L 188,377 Z" fill="url(#val-skin)"/>
+
+  <!-- Right Arm (Resting on hip, confident sexy pose) -->
+  <path d="M 345,230 L 375,320 L 350,335 L 325,250 Z" fill="url(#val-suit-dark)"/>
+  <path d="M 375,320 L 355,375 L 335,370 L 350,335 Z" fill="#0f172a"/>
+  <!-- Right Hand resting on belt -->
+  <path d="M 335,365 L 325,385 L 342,390 Z" fill="url(#val-skin)"/>
+
+  <!-- Neck & Collar -->
+  <path d="M 250,195 L 250,225 L 290,225 L 290,195 Z" fill="url(#val-skin)"/>
+  <rect x="250" y="210" width="40" height="6" fill="#047857"/>
+
+  <!-- Face & Head -->
+  <path d="M 235,145 Q 235,215 270,215 Q 305,215 305,145 Q 305,115 270,115 Q 235,115 235,145 Z" fill="url(#val-skin)"/>
+  <!-- Blush -->
+  <ellipse cx="248" cy="175" rx="8" ry="4" fill="#f43f5e" opacity="0.3"/>
+  <ellipse cx="292" cy="175" rx="8" ry="4" fill="#f43f5e" opacity="0.3"/>
+
+  <!-- Beautiful Eyes (Captivating Emerald) -->
+  <!-- Left Eye -->
+  <ellipse cx="254" cy="160" rx="9" ry="6" fill="#ffffff"/>
+  <ellipse cx="255" cy="160" rx="6" ry="6" fill="#059669"/>
+  <ellipse cx="255" cy="160" rx="3.5" ry="3.5" fill="#064e3b"/>
+  <circle cx="253" cy="158" r="2" fill="#ffffff"/>
+  <path d="M 244,154 Q 255,148 265,154" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+  <!-- Eyelash flick -->
+  <path d="M 265,154 L 269,150" stroke="#0f172a" stroke-width="2"/>
+
+  <!-- Right Eye -->
+  <ellipse cx="286" cy="160" rx="9" ry="6" fill="#ffffff"/>
+  <ellipse cx="285" cy="160" rx="6" ry="6" fill="#059669"/>
+  <ellipse cx="285" cy="160" rx="3.5" ry="3.5" fill="#064e3b"/>
+  <circle cx="283" cy="158" r="2" fill="#ffffff"/>
+  <path d="M 275,154 Q 285,148 296,154" stroke="#0f172a" stroke-width="2.5" fill="none"/>
+  <!-- Eyelash flick -->
+  <path d="M 296,154 L 300,150" stroke="#0f172a" stroke-width="2"/>
+
+  <!-- Cute Nose & Alluring Smiling Lips -->
+  <path d="M 269,170 L 271,173" stroke="#f43f5e" stroke-width="1.5"/>
+  <path d="M 263,186 Q 270,193 277,186" stroke="#e11d48" stroke-width="2.5" fill="none"/>
+  <!-- Lip gloss shine -->
+  <circle cx="270" cy="188" r="1.5" fill="#ffffff"/>
+
+  <!-- Bangs & Front Hair (Chic layered anime hairstyle) -->
+  <path d="M 230,140 Q 225,90 270,90 Q 315,90 310,140 Q 305,175 300,185 Q 295,140 285,145 Q 270,175 260,145 Q 245,185 240,175 Q 235,175 230,140 Z" fill="url(#val-hair)"/>
+  <!-- Hair Highlights -->
+  <path d="M 245,110 Q 270,100 295,110" stroke="#ffffff" stroke-width="2" opacity="0.6" fill="none"/>
+
+  <!-- High-Tech Pilot Headset / Visor Earclip -->
+  <rect x="228" y="145" width="8" height="18" rx="2" fill="#047857" stroke="#34d399" stroke-width="1"/>
+  <circle cx="232" cy="154" r="3" fill="#10b981" filter="url(#val-neon-glow)"/>
+  <!-- Headset Mic -->
+  <path d="M 232,160 Q 240,185 255,185" stroke="#34d399" stroke-width="1.5" fill="none"/>
+
+  <!-- Pilot Floating Holographic Crest: VALENTINE · AEGIS SUPPORT -->
+  <g transform="translate(40, 720)">
+    <rect width="460" height="52" rx="4" fill="#042f24" opacity="0.85" stroke="#10b981" stroke-width="1.5"/>
+    <text x="20" y="24" fill="#34d399" font-family="monospace" font-size="11" font-weight="bold" letter-spacing="2">CALLSIGN: AEGIS ANGEL // PILOT NO. 02</text>
+    <text x="20" y="42" fill="#ffffff" font-family="sans-serif" font-size="15" font-weight="900" letter-spacing="1">VALENTINE VANCE <tspan fill="#6ee7b7" font-size="12" font-weight="bold">· NỮ (22T)</tspan></text>
+    <rect x="360" y="12" width="85" height="28" rx="3" fill="#065f46" stroke="#34d399" stroke-width="1"/>
+    <text x="402" y="30" fill="#a7f3d0" font-family="monospace" font-size="10" font-weight="bold" text-anchor="middle">AEGIS FIT</text>
+  </g>
+</svg>

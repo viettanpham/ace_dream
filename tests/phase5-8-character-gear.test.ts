@@ -259,7 +259,7 @@ describe("Milestone 5.8 — Character & Gear Selection System", () => {
       const unit = buildPlayerCombatUnit(prog)
       assert.equal(unit.gearType, "falcon")
       assert.equal(unit.pilotId, "alviss")
-      assert.equal(unit.pilotName, "Alviss Reed")
+      assert.equal(unit.pilotName, "Levi Reed")
       // Né tránh: Falcon (15%) + Alviss nội tại (8%) + Agility 10 (2%) = 25%
       assert.equal(unit.evasion, 25)
     })

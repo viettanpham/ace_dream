@@ -2401,7 +2401,7 @@ function ItemComparisonCard({
 /**
  * Xây dựng danh sách 5 Slot Kỹ Năng chi tiết từ cấu hình Gear hiện tại
  */
-function buildDetailedSkillSlots(
+export function buildDetailedSkillSlots(
   gearDef: (typeof STARFRONT_GEAR_DEFS)[StarfrontGearId],
 ): SkillSlotDetail[] {
   const skills = gearDef.skills || []

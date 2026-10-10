@@ -795,6 +795,8 @@ export function StarfrontShell() {
                 onUpdateProgression={handleUpdateProgression}
                 onNavigateToHangar={() => handleSwitchSection("hangar")}
                 onNavigateToCombat={() => handleSwitchSection("battlefield")}
+                onEquipItem={handleEquipItem}
+                onUnequipSlot={handleUnequipSlot}
               />
             )}
 

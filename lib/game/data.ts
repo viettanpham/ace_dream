@@ -1490,8 +1490,24 @@ export interface StarfrontPilotDef {
   age: number
   gender: string
   avatar: string
+  fullBodyAvatar: string
   description: string
   bio: string
+  traits: string[]
+  trail?: {
+    name: string
+    nameEn: string
+    auraColor: string
+    effectDesc: string
+    bonusSummary: string
+  }
+  traitDetails?: Array<{
+    name: string
+    tag: string
+    desc: string
+    benefit: string
+  }>
+  quote?: string
   recommendedGear: StarfrontGearId
   synergyTitle: string
   synergyBonus: string
@@ -1521,9 +1537,25 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
     specialty: "Hỏa lực dồn ép & Cận chiến tầm trung",
     age: 30,
     gender: "Nam",
-    avatar: "/images/marcus-portrait.svg",
-    description: "Chiến binh dày dạn kinh nghiệm qua hàng trăm trận đánh, thành thạo các loại pháo hạt nhân và vũ khí công thành.",
+    avatar: "/images/marcus-fullbody.svg",
+    fullBodyAvatar: "/images/marcus-fullbody.svg",
+    description: "Chiến binh nam dày dạn kinh nghiệm qua hàng trăm trận đánh khốc liệt, sở hữu thể hình vạm vỡ cùng giáp ngực chiến thuật hạng nặng.",
     bio: "Từng là chỉ huy tiền tuyến của Vành đai Asteroid, Marcus sở hữu trực giác xuất sắc về điểm yếu của giáp đối phương. Khi xuất kích cùng Vanguard, anh tối ưu hóa khả năng dồn ép hỏa lực và tiết kiệm năng lượng.",
+    traits: ["Chiến binh Dày dạn", "Giáp Ngực Exo-suit", "Hỏa lực Áp đảo", "Chỉ huy Bản lĩnh"],
+    trail: {
+      name: "Vệt Lửa Trọng Pháo",
+      nameEn: "Heavy Artillery Trail",
+      auraColor: "#06b6d4",
+      effectDesc: "Để lại vệt khói pháo ion áp bức chiến trường, dồn ép mục tiêu khiến địch không thể hồi phục hoàn toàn.",
+      bonusSummary: "+8% Sát thương khi địch >70% HP · +10% Sát thương kỹ năng Vanguard",
+    },
+    traitDetails: [
+      { name: "Chiến binh Dày dạn", tag: "Kinh Nghiệm", desc: "Trải qua hơn 100 giờ không chiến tiền tuyến tại Vành đai Asteroid", benefit: "Tăng 10% khả năng chống chịu khi HP dưới 40%" },
+      { name: "Giáp Ngực Exo-suit", tag: "Cơ Bắp", desc: "Khung ngoại giáp cơ khí hạng nặng trợ lực vận hành vũ khí lớn", benefit: "+2.0 ATK cho mỗi điểm phân bổ Tấn công" },
+      { name: "Hỏa lực Áp đảo", tag: "Tiến Công", desc: "Tận dụng góc bắn pháo tối ưu để ép đối thủ phải phòng ngự bị động", benefit: "+8% tổng sát thương đòn đánh lên địch máu cao" },
+      { name: "Chỉ huy Bản lĩnh", tag: "Chiến Thuật", desc: "Bình tĩnh trước mọi hỏa lực hội tụ, giữ vững nhịp độ tác chiến", benefit: "Tiết kiệm 15% tiêu hao năng lượng kỹ năng" },
+    ],
+    quote: "Khi đại pháo Vanguard gầm vang, không một chiến tuyến nào có thể đứng vững.",
     recommendedGear: "vanguard",
     synergyTitle: "Hiệp Đồng Hỏa Lực Vanguard",
     synergyBonus: "+10% Sát thương kỹ năng & Hồi phục năng lượng bền bỉ",
@@ -1551,9 +1583,25 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
     specialty: "Bảo hộ trường lực & Phục hồi khẩn cấp",
     age: 22,
     gender: "Nữ",
-    avatar: "/images/valentine-portrait.svg",
-    description: "Nữ phi công cứu hộ thiên tài với phản xạ điều phối lá chắn năng lượng vi hạt phi thường.",
-    bio: "Tốt nghiệp thủ khoa Học viện Quân sự Thiên Hà, Valentine sở hữu kỹ thuật điều biến trường lực Aegis độc nhất, có khả năng kích hoạt nguồn dự phòng khẩn cấp khi khiên bị xuyên thủng.",
+    avatar: "/images/valentine-fullbody.svg",
+    fullBodyAvatar: "/images/valentine-fullbody.svg",
+    description: "Nữ phi công cứu hộ thiên tài 22 tuổi, xinh đẹp và sexy quyến rũ trong bộ quân phục váy ngắn phi công thanh lịch cùng đôi bốt cao cổ, sở hữu phản xạ điều phối lá chắn Aegis tối thượng.",
+    bio: "Tốt nghiệp thủ khoa Học viện Quân sự Thiên Hà ở tuổi 22, Valentine sở hữu nhan sắc quyến rũ kiêu sa và kỹ thuật điều biến trường lực Aegis độc nhất, có khả năng kích hoạt nguồn dự phòng khẩn cấp khi khiên bị xuyên thủng.",
+    traits: ["Xinh đẹp & Quyến rũ", "Váy ngắn phi công", "Thiên tài Hộ khiên", "Thủ khoa Học viện"],
+    trail: {
+      name: "Hào Quang Ngọc Bích Aegis",
+      nameEn: "Emerald Sanctuary Trail",
+      auraColor: "#10b981",
+      effectDesc: "Tỏa ra quầng sáng trường lực ngọc bích bao bọc phi cơ, hóa giải sóng xung kích và bảo hộ buồng lái.",
+      bonusSummary: "Tái tạo 30% Khiên khi vỡ khiên (1 lần/trận) · +15% Dung lượng khiên Aegis",
+    },
+    traitDetails: [
+      { name: "Xinh đẹp & Quyến rũ", tag: "Nhan Sắc", desc: "Nữ thần học viện với khí chất kiêu sa, thu hút mọi ánh nhìn nơi boong tàu", benefit: "Tăng 5% tinh thần chiến đấu toàn đội" },
+      { name: "Váy ngắn phi công", tag: "Thời Trang", desc: "Trang phục phi công váy ngắn thanh lịch, tích hợp sợi dẫn vi mạch nano", benefit: "Tối ưu hóa thao tác điều khiển buồng lái thêm 12%" },
+      { name: "Thiên tài Hộ khiên", tag: "Phòng Ngự", desc: "Khả năng phân tích tần số trường lực đối phương trong từng mili-giây", benefit: "Tái tạo ngay 30% khiên khi gặp nguy hiểm tử địa" },
+      { name: "Thủ khoa Học viện", tag: "Học Thuật", desc: "Nắm vững lý thuyết vận hành mọi hệ thống phòng vệ và khiên năng lượng", benefit: "+30 Khiên tối đa cho mỗi điểm phân bổ Khiên" },
+    ],
+    quote: "Lá chắn của tôi sẽ bảo vệ bạn trước mọi hiểm nguy ngoài vũ trụ.",
     recommendedGear: "aegis",
     synergyTitle: "Hiệp Đồng Bất Hoại Aegis",
     synergyBonus: "+15% Dung lượng khiên & Kháng hiệu ứng tối ưu",
@@ -1575,15 +1623,31 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
   },
   {
     id: "alviss",
-    name: "Alviss Reed",
-    callsign: "SHADOW HAWK",
-    title: "Chiến Thuật Gia Tốc Độ (Tactical Interceptor)",
+    name: "Levi Reed",
+    callsign: "SHADOW FALCON",
+    title: "Nữ Át Chủ Tốc Độ (Supersonic Ace)",
     specialty: "Tác chiến cơ động, né tránh & đột kích chớp nhoáng",
     age: 24,
-    gender: "Nam",
-    avatar: "/images/alviss-portrait.svg",
-    description: "Phi công tiêm kích sở hữu phản xạ diều hâu, luôn nắm bắt quyền chủ động và tiên cơ xuất chiêu.",
-    bio: "Nổi tiếng với biệt danh 'Bóng Ma Tinh Vân', Alviss khai thác tối đa tốc độ của Falcon Interceptor để xuất chiêu trước đối thủ và áp chế bằng các đòn bạo kích liên hoàn.",
+    gender: "Nữ",
+    avatar: "/images/levi-fullbody.svg",
+    fullBodyAvatar: "/images/levi-fullbody.svg",
+    description: "Nữ át chủ bài 24 tuổi, xinh đẹp và sexy quyến rũ trong bộ đồ phi công váy bó sát tôn trọn đường cong cơ thể, nổi tiếng với đôi mắt hổ phách sắc sảo và tốc độ diều hâu bất bại.",
+    bio: "Được mệnh danh là 'Bóng Ma Tinh Vân', Levi sở hữu nhan sắc quyến rũ đầy mê hoặc cùng phản xạ cơ động siêu phàm. Cô khai thác tối đa tốc độ của Falcon Interceptor để xuất chiêu chớp nhoáng trước đối thủ và né tránh hoàn hảo.",
+    traits: ["Xinh đẹp & Gợi cảm", "Váy bó sát khí động", "Phản xạ Thần tốc", "Át chủ tiêm kích"],
+    trail: {
+      name: "Bóng Ma Diều Hâu Vàng",
+      nameEn: "Golden Falcon Mirage Trail",
+      auraColor: "#f59e0b",
+      effectDesc: "Để lại chuỗi tàn ảnh quang học vàng cam sau mỗi lần cơ động, gây nhiễu loạn radar ngắm bắn của kẻ thù.",
+      bonusSummary: "+15 SPD trong 3 lượt đầu · +8% Tỉ lệ Né tránh vĩnh viễn · +0.2% Né/điểm SPD",
+    },
+    traitDetails: [
+      { name: "Xinh đẹp & Gợi cảm", tag: "Quyến Rũ", desc: "Đường cong quyến rũ kết hợp phong thái sắc lạnh khiến đối phương phân tâm", benefit: "Giảm 5% độ chính xác của mục tiêu khi nhắm vào cô" },
+      { name: "Váy bó sát khí động", tag: "Khí Động", desc: "Bộ flightsuit ôm sát khí động học siêu nhẹ, giảm tải áp suất G cực hạn", benefit: "+1.0 SPD & +0.2% Né tránh cho mỗi điểm Cơ động" },
+      { name: "Phản xạ Thần tốc", tag: "Cơ Động", desc: "Thời gian phản ứng thần kinh chỉ 0.08 giây, nhanh gấp 3 lần phi công thường", benefit: "+15 Tốc độ hành động trong 3 lượt đầu tiên" },
+      { name: "Át chủ tiêm kích", tag: "Không Chiến", desc: "Kỷ lục bắn hạ 42 tàu địch không một vết trầy xước trên thân Falcon", benefit: "+8% Tỉ lệ Né tránh vĩnh viễn trên mọi chiến trường" },
+    ],
+    quote: "Nhanh hơn ánh sáng, nguy hiểm hơn một tia chớp — đừng chớp mắt kẻo bạn sẽ bỏ lỡ tôi.",
     recommendedGear: "falcon",
     synergyTitle: "Hiệp Đồng Tốc Biến Falcon",
     synergyBonus: "+15 SPD trong 3 lượt đầu & +8% Tỉ lệ Né tránh vĩnh viễn",
@@ -1609,11 +1673,27 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
     callsign: "BUNKER BREAKER",
     title: "Bậc Thầy Pháo Kích (Aircraft Specialist)",
     specialty: "Đại pháo công thành & Hỏa lực xuyên giáp hạng nặng",
-    age: 22,
+    age: 28,
     gender: "Nam",
-    avatar: "/images/eric-portrait.svg",
-    description: "Phi công công thành kiên định, chuyên điều khiển các cỗ máy hỏa lực hạng nặng nghiền nát boong-ke địch.",
+    avatar: "/images/eric-fullbody.svg",
+    fullBodyAvatar: "/images/eric-fullbody.svg",
+    description: "Phi công nam công thành kiên định 28 tuổi, vóc dáng phong trần và tự tin trong bộ flightsuit đỏ đen sắc bén, chuyên gia điều khiển hỏa lực pháo kích.",
     bio: "Xuất thân từ sư đoàn pháo kích chiến thuật, Eric hiểu rõ cấu trúc của mọi loại giáp kim loại. Các phát bắn của anh luôn mang thuộc tính xuyên giáp, vô hiệu hóa lớp phòng ngự dày đặc.",
+    traits: ["Chuyên gia Không chiến", "Flightsuit Đỏ đen", "Xuyên giáp Hạt nhân", "Bắn phá Boong-ke"],
+    trail: {
+      name: "Vệt Đạn Pháo Hạt Nhân",
+      nameEn: "Crimson Penetrator Trail",
+      auraColor: "#ef4444",
+      effectDesc: "Phóng thích hạt plasma nhiệt độ cao bám theo đường đạn, thiêu đốt và làm suy yếu kết cấu giáp mục tiêu.",
+      bonusSummary: "Cố định +20% Xuyên Giáp (Armor Penetration) · Bỏ qua lớp khiên phòng vệ",
+    },
+    traitDetails: [
+      { name: "Chuyên gia Không chiến", tag: "Kỹ Thuật", desc: "Hiểu rõ điểm hàn và khe giáp của mọi dòng cơ giáp chiến tranh", benefit: "Tăng 15% hiệu quả khi tấn công mục tiêu bọc giáp nặng" },
+      { name: "Flightsuit Đỏ đen", tag: "Chiến Giáp", desc: "Bộ quân phục chiến thuật chịu nhiệt cao, giảm sốc xung chấn từ phản lực", benefit: "+1.5 DEF cho mỗi điểm phân bổ Phòng ngự" },
+      { name: "Xuyên giáp Hạt nhân", tag: "Đột Phá", desc: "Tích hợp đầu đạn hạt nhân vi mô vào pháo chính của cơ giáp", benefit: "+20% Xuyên Giáp cố định trên mọi kỹ năng" },
+      { name: "Bắn phá Boong-ke", tag: "Công Thành", desc: "Chuyên trị các mục tiêu cố thủ, căn cứ ngầm và Boss thiết giáp khổng lồ", benefit: "+0.4% Tỉ lệ Bạo Kích cho mỗi điểm Chiến thuật" },
+    ],
+    quote: "Giáp của đối phương chỉ là một trở ngại tạm thời trước mũi pháo của tôi.",
     recommendedGear: "vanguard",
     synergyTitle: "Hiệp Đồng Xuyên Phá Hạng Nặng",
     synergyBonus: "+20% Xuyên Giáp cố định trên mọi kỹ năng tấn công",

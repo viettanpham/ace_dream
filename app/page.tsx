@@ -1,5 +1,5 @@
-import { GameConsole } from "@/components/game/console"
+import { StarfrontShell } from "@/components/game/starfront-shell"
 
 export default function Page() {
-  return <GameConsole />
+  return <StarfrontShell />
 }

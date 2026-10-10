@@ -326,7 +326,7 @@ export function PlayerStatus({
           >
             {propAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={propAvatar} alt={displayName} className="size-full object-cover" />
+              <img src={propAvatar} alt={displayName} className="size-full object-cover object-top" referrerPolicy="no-referrer" />
             ) : displayGear === "aegis" ? (
               <ShieldCheck className="size-6 text-amber-400" />
             ) : displayGear === "falcon" ? (

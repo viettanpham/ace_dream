@@ -357,7 +357,7 @@ export function CharacterGearSelect({
               <img
                 src={activePilotDef.avatar}
                 alt={activePilotDef.name}
-                className="size-full object-cover"
+                className="size-full object-cover object-top"
               />
               <span className="absolute bottom-0 right-0 bg-cyan-950/90 px-1 font-mono text-[8px] font-bold text-cyan-300">
                 L{activePilotProg.level}
@@ -541,7 +541,7 @@ export function CharacterGearSelect({
                               <img
                                 src={pilot.avatar}
                                 alt={pilot.name}
-                                className="size-full object-cover"
+                                className="size-full object-cover object-top"
                               />
                               <span className="absolute bottom-0 right-0 bg-cyan-950/90 px-1 font-mono text-[8px] font-bold text-cyan-300">
                                 Cấp {pData.level}
@@ -908,7 +908,7 @@ export function CharacterGearSelect({
               <img
                 src={activePilotDef.fullBodyAvatar || activePilotDef.avatar}
                 alt={activePilotDef.name}
-                className="size-full max-h-[540px] object-contain drop-shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-transform duration-300 group-hover:scale-102"
+                className="size-full max-h-[540px] object-cover sm:object-contain object-top drop-shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-transform duration-300 group-hover:scale-102"
               />
 
               {/* Tag Đang Ghép Đôi Xuất Kích */}
@@ -1608,7 +1608,7 @@ export function CharacterGearSelect({
                         <img
                           src={pDef.fullBodyAvatar || pDef.avatar}
                           alt={pDef.name}
-                          className="size-full object-contain"
+                          className="size-full object-cover object-top"
                         />
                       </div>
 

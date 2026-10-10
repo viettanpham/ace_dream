@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -8,8 +9,8 @@ const nextConfig = {
   },
   allowedDevOrigins: [
     '**.run.app',
-    'ais-dev-m6gdbi5crjt24tweina5dk-295074508516.asia-southeast1.run.app',
-    'ais-pre-m6gdbi5crjt24tweina5dk-295074508516.asia-southeast1.run.app',
+    'ais-dev-cb76xhdo2pnh32xyg4bjps-725478499877.asia-southeast1.run.app',
+    'ais-pre-cb76xhdo2pnh32xyg4bjps-725478499877.asia-southeast1.run.app',
     'localhost:3000',
     '127.0.0.1:3000',
   ],

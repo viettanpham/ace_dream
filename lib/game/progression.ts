@@ -580,7 +580,7 @@ export function buildPlayerCombatUnit(progression: StarfrontProgression): Combat
     skills: gearDef.skills,
     statusEffects: [],
     skillCooldowns: {},
-    avatar: gearDef.avatar,
+    avatar: pilotDef.avatar || gearDef.avatar,
     pilotId: activePilotId,
     pilotName: pilotDef.name,
     pilotPassiveTriggered: false,

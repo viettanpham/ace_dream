@@ -70,10 +70,10 @@ const commonSkills = (gear: GearClass, skills: [string, string, string][]) => [
 ]
 
 export const PILOT_PROFILES = [
-  { id: "marcus", name: "Marcus", age: 30, gender: "Nam", description: "Chiến binh dày dạn, chuyên gia vũ khí", specialty: "Weapons Specialist", gear: "A" as const, avatar: "/images/marcus-portrait.svg", aircraftName: "Vanguard", armorType: "Heavy Armor", baseStats: { attack: 10, defense: 5, agility: 4, shield: 8, vision: 3 }, trail: ["+20% sát thương vũ khí Cannon", "+30% chỉ số trang bị ARMOR"], skills: commonSkills("A", [["siege-mode", "Siege Mode", "Chuyển sang chế độ pháo đài, tăng tầm bắn"], ["snare-shot", "Snare Shot", "Bắn đạn ghìm, làm chậm mục tiêu"], ["barrier", "Barrier", "Dựng khiên chắn cho phi cơ"]]) },
-  { id: "valentine", name: "Valentine", age: 22, gender: "Nữ", description: "Phi công cứu hộ quyến rũ và tận tâm", specialty: "Rescue / Support", gear: "M" as const, avatar: "/images/valentine-portrait.svg", aircraftName: "Aurora", armorType: "Support Armor", baseStats: { attack: 3, defense: 8, agility: 4, shield: 9, vision: 6 }, trail: ["+30% chỉ số trang bị ARMOR", "+30% DEF phi cơ", "+30% hiệu quả hồi máu đồng minh"], skills: commonSkills("M", [["healing-field", "Healing Field", "Tạo vùng hồi phục cho toàn hạm đội"], ["raging-fire", "Raging Fire", "Kích hoạt hỏa lực hỗ trợ"], ["full-recovery", "Full Recovery", "Hồi phục mạnh cho một phi cơ"]]) },
-  { id: "alviss", name: "Alviss", age: 24, gender: "Nam", description: "Chiến thuật gia với đôi mắt như diều hâu", specialty: "Tactical Interceptor", gear: "I" as const, avatar: "/images/alviss-portrait.svg", aircraftName: "Falcon", armorType: "Light Armor", baseStats: { attack: 11, defense: 3, agility: 12, shield: 2, vision: 2 }, trail: ["+10% chỉ số trang bị WEAPON", "+30% chỉ số MISSILE", "+10% chỉ số ENGINE"], skills: commonSkills("I", [["frenzy", "Frenzy", "Tăng tốc độ khai hỏa và sát thương"], ["overbooster", "Overbooster", "Đẩy động cơ vượt giới hạn"], ["berserker", "Berserker", "Tăng sức mạnh khi HP thấp"]]) },
-  { id: "eric", name: "Eric", age: 22, gender: "Nam", description: "Phi công điềm đạm, thiên tài điều khiển oanh tạc cơ", specialty: "Aircraft Specialist", gear: "B" as const, avatar: "/images/eric-portrait.svg", aircraftName: "Hammerfall", armorType: "Siege Armor", baseStats: { attack: 15, defense: 5, agility: 2, shield: 6, vision: 2 }, trail: ["+50% chỉ số trang bị MISSILE"], skills: commonSkills("B", [["ground-bombing", "Ground Bombing Mode", "Oanh tạc mặt đất, phá căn cứ"], ["air-bombing", "Air Bombing Mode", "Tập trung hỏa lực trên không"], ["big-boom", "Big Boom", "Đạn nổ diện rộng cực mạnh"]]) },
+  { id: "marcus", name: "Marcus", age: 30, gender: "Nam", description: "Chiến binh dày dạn, chuyên gia vũ khí", specialty: "Weapons Specialist", gear: "A" as const, avatar: "/images/marcus-portrait.jpg", aircraftName: "Vanguard", armorType: "Heavy Armor", baseStats: { attack: 10, defense: 5, agility: 4, shield: 8, vision: 3 }, trail: ["+20% sát thương vũ khí Cannon", "+30% chỉ số trang bị ARMOR"], skills: commonSkills("A", [["siege-mode", "Siege Mode", "Chuyển sang chế độ pháo đài, tăng tầm bắn"], ["snare-shot", "Snare Shot", "Bắn đạn ghìm, làm chậm mục tiêu"], ["barrier", "Barrier", "Dựng khiên chắn cho phi cơ"]]) },
+  { id: "valentine", name: "Valentine", age: 22, gender: "Nữ", description: "Phi công cứu hộ quyến rũ và tận tâm", specialty: "Rescue / Support", gear: "M" as const, avatar: "/images/valentine-portrait.jpg", aircraftName: "Aurora", armorType: "Support Armor", baseStats: { attack: 3, defense: 8, agility: 4, shield: 9, vision: 6 }, trail: ["+30% chỉ số trang bị ARMOR", "+30% DEF phi cơ", "+30% hiệu quả hồi máu đồng minh"], skills: commonSkills("M", [["healing-field", "Healing Field", "Tạo vùng hồi phục cho toàn hạm đội"], ["raging-fire", "Raging Fire", "Kích hoạt hỏa lực hỗ trợ"], ["full-recovery", "Full Recovery", "Hồi phục mạnh cho một phi cơ"]]) },
+  { id: "alviss", name: "Alviss", age: 24, gender: "Nam", description: "Chiến thuật gia với đôi mắt như diều hâu", specialty: "Tactical Interceptor", gear: "I" as const, avatar: "/images/alviss-portrait.jpg", aircraftName: "Falcon", armorType: "Light Armor", baseStats: { attack: 11, defense: 3, agility: 12, shield: 2, vision: 2 }, trail: ["+10% chỉ số trang bị WEAPON", "+30% chỉ số MISSILE", "+10% chỉ số ENGINE"], skills: commonSkills("I", [["frenzy", "Frenzy", "Tăng tốc độ khai hỏa và sát thương"], ["overbooster", "Overbooster", "Đẩy động cơ vượt giới hạn"], ["berserker", "Berserker", "Tăng sức mạnh khi HP thấp"]]) },
+  { id: "eric", name: "Eric", age: 22, gender: "Nam", description: "Phi công điềm đạm, thiên tài điều khiển oanh tạc cơ", specialty: "Aircraft Specialist", gear: "B" as const, avatar: "/images/eric-portrait.jpg", aircraftName: "Hammerfall", armorType: "Siege Armor", baseStats: { attack: 15, defense: 5, agility: 2, shield: 6, vision: 2 }, trail: ["+50% chỉ số trang bị MISSILE"], skills: commonSkills("B", [["ground-bombing", "Ground Bombing Mode", "Oanh tạc mặt đất, phá căn cứ"], ["air-bombing", "Air Bombing Mode", "Tập trung hỏa lực trên không"], ["big-boom", "Big Boom", "Đạn nổ diện rộng cực mạnh"]]) },
 ] as const
 
 export const ITEM_DEFS: ItemDef[] = [
@@ -539,7 +539,7 @@ export const VANGUARD_INITIAL_UNIT: CombatUnit = {
   statusEffects: [],
   skills: VANGUARD_SKILLS,
   skillCooldowns: {},
-  avatar: "/images/alviss-portrait.png",
+  avatar: "/images/marcus-portrait.jpg",
 }
 
 export const ENEMIES_DATA: Record<EnemyEncounterType, CombatUnit> = {
@@ -914,7 +914,7 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     role: "Cơ Giáp Cân Bằng (Balanced Striker)",
     desc: "Cơ giáp chiến đấu không gian đa dụng tiêu chuẩn. Cân bằng hoàn hảo giữa hỏa lực, khả năng bảo hộ và tốc độ cơ động.",
     color: "#06b6d4",
-    avatar: "/images/alviss-portrait.png",
+    avatar: "/images/marcus-portrait.jpg",
     illustration: "/images/vanguard.svg",
     passive: {
       id: "stable-core",
@@ -950,7 +950,7 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     role: "Tiêm Kích Tốc Độ (Speed Infiltrator)",
     desc: "Chuyên cơ săn lùng tốc độ cao. Luôn giành quyền ra đòn trước tiên (Speed 125), hỏa lực sắc bén nhưng vỏ giáp nhẹ hơn.",
     color: "#a855f7",
-    avatar: "/images/alviss-portrait.png",
+    avatar: "/images/alviss-portrait.jpg",
     illustration: "/images/falcon.svg",
     passive: {
       id: "mach-aero",
@@ -986,7 +986,7 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     role: "Pháo Đài Bọc Thép (Heavy Siege Armor)",
     desc: "Cỗ máy chiến tranh hạng nặng bọc giáp titan. Máu cực dày, phòng thủ kiên cố và hỏa lực pháo hạt nhân khủng khiếp.",
     color: "#f59e0b",
-    avatar: "/images/alviss-portrait.png",
+    avatar: "/images/valentine-portrait.jpg",
     illustration: "/images/aegis.svg",
     passive: {
       id: "titan-reactive",
@@ -1537,8 +1537,8 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
     specialty: "Hỏa lực dồn ép & Cận chiến tầm trung",
     age: 30,
     gender: "Nam",
-    avatar: "/images/marcus-fullbody.svg",
-    fullBodyAvatar: "/images/marcus-fullbody.svg",
+    avatar: "/images/marcus-portrait.jpg",
+    fullBodyAvatar: "/images/marcus-portrait.jpg",
     description: "Chiến binh nam dày dạn kinh nghiệm qua hàng trăm trận đánh khốc liệt, sở hữu thể hình vạm vỡ cùng giáp ngực chiến thuật hạng nặng.",
     bio: "Từng là chỉ huy tiền tuyến của Vành đai Asteroid, Marcus sở hữu trực giác xuất sắc về điểm yếu của giáp đối phương. Khi xuất kích cùng Vanguard, anh tối ưu hóa khả năng dồn ép hỏa lực và tiết kiệm năng lượng.",
     traits: ["Chiến binh Dày dạn", "Giáp Ngực Exo-suit", "Hỏa lực Áp đảo", "Chỉ huy Bản lĩnh"],
@@ -1583,8 +1583,8 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
     specialty: "Bảo hộ trường lực & Phục hồi khẩn cấp",
     age: 22,
     gender: "Nữ",
-    avatar: "/images/valentine-fullbody.svg",
-    fullBodyAvatar: "/images/valentine-fullbody.svg",
+    avatar: "/images/valentine-portrait.jpg",
+    fullBodyAvatar: "/images/valentine-portrait.jpg",
     description: "Nữ phi công cứu hộ thiên tài 22 tuổi, xinh đẹp và sexy quyến rũ trong bộ quân phục váy ngắn phi công thanh lịch cùng đôi bốt cao cổ, sở hữu phản xạ điều phối lá chắn Aegis tối thượng.",
     bio: "Tốt nghiệp thủ khoa Học viện Quân sự Thiên Hà ở tuổi 22, Valentine sở hữu nhan sắc quyến rũ kiêu sa và kỹ thuật điều biến trường lực Aegis độc nhất, có khả năng kích hoạt nguồn dự phòng khẩn cấp khi khiên bị xuyên thủng.",
     traits: ["Xinh đẹp & Quyến rũ", "Váy ngắn phi công", "Thiên tài Hộ khiên", "Thủ khoa Học viện"],
@@ -1629,8 +1629,8 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
     specialty: "Tác chiến cơ động, né tránh & đột kích chớp nhoáng",
     age: 24,
     gender: "Nữ",
-    avatar: "/images/levi-fullbody.svg",
-    fullBodyAvatar: "/images/levi-fullbody.svg",
+    avatar: "/images/alviss-portrait.jpg",
+    fullBodyAvatar: "/images/alviss-portrait.jpg",
     description: "Nữ át chủ bài 24 tuổi, xinh đẹp và sexy quyến rũ trong bộ đồ phi công váy bó sát tôn trọn đường cong cơ thể, nổi tiếng với đôi mắt hổ phách sắc sảo và tốc độ diều hâu bất bại.",
     bio: "Được mệnh danh là 'Bóng Ma Tinh Vân', Levi sở hữu nhan sắc quyến rũ đầy mê hoặc cùng phản xạ cơ động siêu phàm. Cô khai thác tối đa tốc độ của Falcon Interceptor để xuất chiêu chớp nhoáng trước đối thủ và né tránh hoàn hảo.",
     traits: ["Xinh đẹp & Gợi cảm", "Váy bó sát khí động", "Phản xạ Thần tốc", "Át chủ tiêm kích"],
@@ -1675,8 +1675,8 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
     specialty: "Đại pháo công thành & Hỏa lực xuyên giáp hạng nặng",
     age: 28,
     gender: "Nam",
-    avatar: "/images/eric-fullbody.svg",
-    fullBodyAvatar: "/images/eric-fullbody.svg",
+    avatar: "/images/eric-portrait.jpg",
+    fullBodyAvatar: "/images/eric-portrait.jpg",
     description: "Phi công nam công thành kiên định 28 tuổi, vóc dáng phong trần và tự tin trong bộ flightsuit đỏ đen sắc bén, chuyên gia điều khiển hỏa lực pháo kích.",
     bio: "Xuất thân từ sư đoàn pháo kích chiến thuật, Eric hiểu rõ cấu trúc của mọi loại giáp kim loại. Các phát bắn của anh luôn mang thuộc tính xuyên giáp, vô hiệu hóa lớp phòng ngự dày đặc.",
     traits: ["Chuyên gia Không chiến", "Flightsuit Đỏ đen", "Xuyên giáp Hạt nhân", "Bắn phá Boong-ke"],

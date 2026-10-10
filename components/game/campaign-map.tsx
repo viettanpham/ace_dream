@@ -3,6 +3,11 @@
 import { Button } from "@/components/ui/button"
 import { CAMPAIGN_SECTORS } from "@/lib/game/data"
 import { playClickSound } from "@/lib/game/audio"
+import {
+  STANDARD_CAMPAIGN_QUESTS,
+  QUEST_QUALITY_CONFIG,
+  ENEMY_VARIANTS_CONFIG,
+} from "@/lib/game/scaling"
 import type { CampaignMission, CampaignSector, StarfrontProgression } from "@/lib/game/types"
 import { cn } from "@/lib/utils"
 import {
@@ -10,7 +15,10 @@ import {
   CheckCircle2,
   ChevronRight,
   Coins,
+  Gauge,
+  Gift,
   Globe2,
+  Layers,
   Lock,
   Play,
   Radar,
@@ -165,11 +173,28 @@ export function CampaignMap({ progression, onDeployMission }: CampaignMapProps) 
             )
             const isAvailable = !isLocked
 
+            // Dữ liệu mở rộng Phase 5.5 từ STANDARD_CAMPAIGN_QUESTS
+            const questData = STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === mission.id)
+            const questLevel = questData?.level ?? mission.recommendedLevel
+            const questQuality = questData?.quality ?? "standard"
+            const qualityCfg = QUEST_QUALITY_CONFIG[questQuality]
+            const variantCfg = questData ? ENEMY_VARIANTS_CONFIG[questData.variantId] : undefined
+            const preview = questData?.previewReward
+
+            // Chuẩn bị payload nhiệm vụ có đầy đủ thông số cho Buồng lái
+            const enrichedMission: CampaignMission = {
+              ...mission,
+              level: questLevel,
+              quality: questQuality,
+              variantId: questData?.variantId,
+              previewReward: preview,
+            }
+
             return (
               <div
                 key={mission.id}
                 className={cn(
-                  "relative flex flex-col justify-between gap-3 rounded-sm border p-4 transition-all md:flex-row md:items-center",
+                  "relative flex flex-col justify-between gap-4 rounded-sm border p-4 transition-all md:flex-row md:items-center",
                   isCompleted
                     ? "border-emerald-500/40 bg-emerald-950/15"
                     : isAvailable
@@ -178,7 +203,7 @@ export function CampaignMap({ progression, onDeployMission }: CampaignMapProps) 
                 )}
               >
                 {/* Thông tin ải */}
-                <div className="space-y-1.5 md:max-w-xl">
+                <div className="space-y-2 md:max-w-lg">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="flex size-6 items-center justify-center rounded-xs font-mono text-xs font-bold bg-black/40 border border-border/70 text-cyan-300">
                       {mission.order}
@@ -187,9 +212,17 @@ export function CampaignMap({ progression, onDeployMission }: CampaignMapProps) 
                       {mission.title}
                     </h5>
 
+                    {/* Huy hiệu Level & Quality */}
+                    <span className="rounded bg-black/60 px-1.5 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
+                      CẤP {questLevel}
+                    </span>
+                    <span className={cn("rounded px-2 py-0.5 font-mono text-[10px] font-bold border", qualityCfg.badgeColor)}>
+                      {qualityCfg.name} {"★".repeat(qualityCfg.stars)}
+                    </span>
+
                     {isCompleted ? (
                       <span className="flex items-center gap-1 rounded bg-emerald-500/20 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-300 border border-emerald-400/50">
-                        <CheckCircle2 className="size-3" /> ĐÃ HOÀN THÀNH
+                        <CheckCircle2 className="size-3" /> ĐÃ XONG
                       </span>
                     ) : isAvailable ? (
                       <span className="flex items-center gap-1 rounded bg-cyan-500/20 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-400/50 animate-pulse">
@@ -197,7 +230,7 @@ export function CampaignMap({ progression, onDeployMission }: CampaignMapProps) 
                       </span>
                     ) : (
                       <span className="flex items-center gap-1 rounded bg-red-950/60 px-2 py-0.5 font-mono text-[10px] text-red-400 border border-red-500/40">
-                        <Lock className="size-3" /> CHƯA MỞ KHÓA
+                        <Lock className="size-3" /> KHÓA
                       </span>
                     )}
                   </div>
@@ -206,33 +239,63 @@ export function CampaignMap({ progression, onDeployMission }: CampaignMapProps) 
                     {mission.desc}
                   </p>
 
-                  <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-muted-foreground pt-1">
+                  <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-muted-foreground pt-0.5">
                     <span>
-                      Đề xuất: <strong className="text-cyan-300">Cấp {mission.recommendedLevel}+</strong>
+                      Mục tiêu: <strong className="text-amber-300">{variantCfg?.name || mission.encounterId}</strong>
                     </span>
                     <span>·</span>
                     <span>
-                      Mục tiêu: <strong className="text-amber-300 uppercase">{mission.encounterId}</strong>
+                      Độ khó: <strong className="text-cyan-300">{questData?.difficultyRating || "Tiêu Chuẩn"}</strong>
                     </span>
                   </div>
                 </div>
 
-                {/* Phần thưởng & Nút xuất kích */}
-                <div className="flex flex-col items-start gap-2 border-t border-border/40 pt-3 md:items-end md:border-t-0 md:pt-0">
-                  <div className="font-mono text-xs text-right">
-                    <span className="text-[10px] uppercase text-muted-foreground block">
-                      {isCompleted ? "Thưởng đánh lại:" : "Thưởng qua màn đầu:"}
+                {/* Hộp xem trước phần thưởng (Reward Preview Card) & Nút xuất kích */}
+                <div className="flex flex-col items-start gap-2.5 border-t border-border/40 pt-3 md:items-end md:border-t-0 md:pt-0">
+                  {/* Reward Preview */}
+                  <div className="w-full rounded border border-border/60 bg-black/40 p-2.5 font-mono text-xs md:w-auto">
+                    <span className="text-[10px] font-bold uppercase text-muted-foreground block mb-1 flex items-center gap-1">
+                      <Gift className="size-3 text-cyan-400" /> PHẦN THƯỞNG DỰ KIẾN (PREVIEW):
                     </span>
-                    <div className="flex items-center gap-2 font-bold">
-                      <span className="text-cyan-300">
-                        +{isCompleted ? mission.repeatReward.exp : mission.firstClearReward.exp} EXP
+
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5 font-bold">
+                      <span className="flex items-center gap-1 text-amber-300">
+                        <Coins className="size-3 text-amber-400" />
+                        +{preview?.credits.toLocaleString("vi-VN") ?? (isCompleted ? mission.repeatReward.credits : mission.firstClearReward.credits)} Cr
                       </span>
-                      <span className="text-amber-300">
-                        +{isCompleted ? mission.repeatReward.credits : mission.firstClearReward.credits} Cr
+                      <span>·</span>
+                      <span className="flex items-center gap-1 text-purple-300">
+                        <Layers className="size-3 text-purple-400" />
+                        +{preview?.alloy ?? (mission.sectorId === "sector-1" ? 3 : 8)} Alloy
                       </span>
                     </div>
+
+                    {/* Trang bị thưởng cố định */}
+                    {preview?.item && (
+                      <div className="flex items-center gap-1.5 rounded border border-cyan-500/30 bg-cyan-950/30 px-2 py-1 text-[11px]">
+                        <span className={cn(
+                          "rounded px-1 py-0.2 text-[9px] font-bold uppercase border",
+                          preview.item.rarity === "legendary"
+                            ? "bg-amber-950/60 text-amber-300 border-amber-400/60"
+                            : preview.item.rarity === "epic"
+                              ? "bg-purple-950/60 text-purple-300 border-purple-400/60"
+                              : preview.item.rarity === "rare"
+                                ? "bg-cyan-950/60 text-cyan-300 border-cyan-400/60"
+                                : "bg-slate-900/60 text-slate-300 border-slate-600/50"
+                        )}>
+                          {preview.item.rarity === "legendary" ? "Huyền Thoại" : preview.item.rarity === "epic" ? "Sử Thi" : preview.item.rarity === "rare" ? "Hiếm" : "Thường"}
+                        </span>
+                        <span className="font-bold text-white truncate max-w-[190px]">
+                          {preview.item.name}
+                        </span>
+                        <span className="text-muted-foreground text-[10px]">
+                          {preview.item.slot === "weapon" ? `(+${preview.item.attackBonus} ATK)` : preview.item.slot === "shield" ? `(+${preview.item.defenseBonus} DEF)` : `(+${preview.item.speedBonus} SPD)`}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
+                  {/* Nút hành động */}
                   {isLocked ? (
                     <Button disabled size="sm" variant="outline" className="gap-1.5 opacity-60">
                       <Lock className="size-3.5" /> Khóa (Hoàn thành ải trước)
@@ -240,9 +303,9 @@ export function CampaignMap({ progression, onDeployMission }: CampaignMapProps) 
                   ) : (
                     <Button
                       size="sm"
-                      onClick={() => handleDeploy(mission)}
+                      onClick={() => handleDeploy(enrichedMission)}
                       className={cn(
-                        "gap-1.5 font-display text-xs uppercase tracking-wider font-bold transition-all shadow-md",
+                        "gap-1.5 font-display text-xs uppercase tracking-wider font-bold transition-all shadow-md cursor-pointer",
                         isCompleted
                           ? "border border-emerald-500/50 bg-emerald-950/60 text-emerald-200 hover:bg-emerald-900"
                           : "border border-cyan-400 bg-cyan-600 text-white hover:bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.4)]",

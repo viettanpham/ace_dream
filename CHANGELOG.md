@@ -4,11 +4,32 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
-## [Phase 5] — Tiến Trình Cơ Giáp & Cường Hóa Trang Bị
+## [Phase 5] — Tiến Trình Cơ Giáp, Cường Hóa & Nhiệm Vụ Phân Tầng
 
-*Đang triển khai — Đã hoàn thành Milestone 5.1, 5.2, 5.3 & 5.4 (35/35 automated tests passed, build thành công)*
+*Đã hoàn thành toàn bộ Phase 5: Milestones 5.1, 5.2, 5.3, 5.4 & 5.5 (48/48 automated tests passed, build thành công)*
 
 ### Tính năng đã hoàn thành:
+- **Milestone 5.5: Hệ Thống Nhiệm Vụ Phân Tầng, Kẻ Địch Biến Thể & Rơi Đồ Trang Bị Ngẫu Nhiên (Mission Scaling, Enemy Variants & Equipment Loot System)**:
+  - **Phân Tầng Nhiệm Vụ & Cân Bằng Toán Học (Quest Level 1–15 & 5 Bậc Phẩm Chất)**:
+    - Bảng cấu hình cân bằng tập trung tại `lib/game/scaling.ts` (`QUEST_LEVEL_SCALING`, `QUEST_QUALITY_CONFIG`, `ENEMY_VARIANTS_CONFIG`).
+    - Quest Level: Điều chỉnh cấp độ (1–15), độ khó và chỉ số quái (HP 18%/lvl, ATK 12%/lvl, DEF 10%/lvl, SPD tối đa +30).
+    - Quest Quality: 5 bậc phẩm chất (`standard`, `veteran`, `elite`, `heroic`, `legendary`) với hệ số độ khó, hệ số Credits/Alloy và bảng xác suất rơi đồ phân tầng (Common -> Legendary).
+  - **9 Biến Thể Kẻ Địch Chuyên Biệt (Enemy Variants)**:
+    - *Scout Drone*: `recon` (Trinh sát tiêu chuẩn), `interceptor` (Tốc độ cực hạn, né tránh 25%), `jammer` (Nhiễu radar ECM, kích hoạt trường nhiễu né đòn).
+    - *Raider Mech*: `assault` (Đột kích quy ước), `berserker` (Cuồng nộ bạo kích +25% ATK, 30% Crit), `heavy` (Thiết giáp titan +30% HP, +30% DEF).
+    - *Siege Walker*: `fortress` (Pháo đài tiêu chuẩn), `annihilator` (Kẻ hủy diệt hạt nhân +30% ATK, 35% Xuyên giáp), `colossus` (Khổng lồ bất hoại +35% HP, +35% DEF, khởi đầu có khiên gia cố).
+  - **Hệ Thống Rơi Đồ Trang Bị & Thuộc Tính Ngẫu Nhiên (Equipment Loot System)**:
+    - Mỗi lần hoàn thành hợp lệ trao ĐÚNG 1 trang bị ngẫu nhiên có cấp độ và độ hiếm.
+    - Sinh thuộc tính (stat affixes) ngẫu nhiên theo ô đồ (Vũ khí: ATK chính, Khiên: DEF chính, Động cơ: SPD chính) và cấp độ (itemLevel).
+    - Số lượng thuộc tính cộng thêm tăng theo độ hiếm (Common: 1, Rare: 2, Epic: 3, Legendary: 4).
+    - Thuộc tính sinh 1 lần duy nhất cho mỗi item instance và lưu cố định, tương thích hoàn toàn với buồng lái chiến đấu, Xưởng Cường Hóa (+1..+10) và Tái Chế (Salvage).
+  - **Xem Trước Phần Thưởng Minh Bạch (Reward Preview) & Tính Toàn Vẹn**:
+    - Danh sách nhiệm vụ công bố rõ trước khi xuất kích: Cấp độ quest, Huy hiệu phẩm chất, Biến thể kẻ địch, Credits, Alloy và đúng 1 trang bị dự kiến (kèm huy hiệu độ hiếm, tên và thuộc tính xem trước).
+    - Dữ liệu nhiệm vụ và phần thưởng ổn định 100% sau khi xuất kích, không bị thay đổi khi tải lại trang web (reload).
+    - Chống nhận trùng lặp khi hoàn thành nhiều lần hoặc reload.
+  - **Bộ Kiểm Thử Tự Động (Automated Tests)**:
+    - Bộ test tự động `tests/phase5-5-mission-scaling.test.ts` gồm 13 test case (`TC-MIS-01` đến `TC-REG-01`) pass 100%.
+    - Tổng cộng 48/48 automated tests pass 100%.
 - **Milestone 5.4: Bảo Đảm An Toàn Dữ Liệu & Đồng Bộ Lựa Chọn Gear (Storage Schema v3 & State Sync)**:
   - **Nâng Cấp Storage Schema v3 (`STARFRONT_SAVE_DATA_V3`)**:
     - Xây dựng hàm di chuyển dữ liệu thuần `migrateProgressionToV3`:

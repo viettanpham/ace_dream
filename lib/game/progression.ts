@@ -12,6 +12,7 @@ import type {
   StarfrontItemRarity,
   StarfrontItemSlot,
   StarfrontProgression,
+  StarfrontQuest,
 } from "./types"
 
 /* ==========================================================================
@@ -543,17 +544,21 @@ export function applyDefeatRecord(current: StarfrontProgression): StarfrontProgr
    PHASE 3 — CAMPAIGN MISSION REWARDS & ARMORY SHOP BUY/SELL LOGIC
    ========================================================================== */
 
-/** Nhận thưởng hoàn thành Ải Chiến Dịch */
+/** Nhận thưởng hoàn thành Ải Chiến Dịch (Hỗ trợ Preview Thưởng & Đảm bảo đúng 1 Trang Bị Rơi) */
 export function applyMissionClearReward(
   current: StarfrontProgression,
   mission: CampaignMission,
-): { updated: StarfrontProgression; reward: BattleRewardResult; dropItem?: StarfrontItem; isFirstClear: boolean } {
+): { updated: StarfrontProgression; reward: BattleRewardResult; dropItem: StarfrontItem; isFirstClear: boolean } {
   const isFirstClear = !current.completedMissions.includes(mission.id)
+  
+  // Nếu có previewReward (Phase 5.5), lấy chính xác số liệu từ preview đã công bố
+  let creditsGained = mission.previewReward?.credits ?? (isFirstClear ? mission.firstClearReward.credits : mission.repeatReward.credits)
+  let alloyGained = mission.previewReward?.alloy ?? (
+    isFirstClear
+      ? (mission.firstClearReward.alloy ?? (mission.sectorId === "sector-1" ? 5 : mission.sectorId === "sector-2" ? 10 : 20))
+      : (mission.repeatReward.alloy ?? (mission.sectorId === "sector-1" ? 2 : mission.sectorId === "sector-2" ? 4 : 8))
+  )
   const expGained = isFirstClear ? mission.firstClearReward.exp : mission.repeatReward.exp
-  const creditsGained = isFirstClear ? mission.firstClearReward.credits : mission.repeatReward.credits
-  const alloyGained = isFirstClear
-    ? (mission.firstClearReward.alloy ?? (mission.sectorId === "sector-1" ? 5 : mission.sectorId === "sector-2" ? 10 : 20))
-    : (mission.repeatReward.alloy ?? (mission.sectorId === "sector-1" ? 2 : mission.sectorId === "sector-2" ? 4 : 8))
 
   let newLevel = current.level
   let newExp = current.exp + expGained
@@ -570,15 +575,27 @@ export function applyMissionClearReward(
     }
   }
 
-  let dropItem: StarfrontItem | undefined
-  if (isFirstClear && mission.firstClearReward.itemId) {
+  // Trao ĐÚNG 1 trang bị rơi
+  let dropItem: StarfrontItem
+  if (mission.previewReward?.item) {
+    const previewItem = mission.previewReward.item
+    dropItem = current.inventory.some((i) => i.id === previewItem.id)
+      ? { ...previewItem, id: `${previewItem.id}_${Date.now()}` }
+      : { ...previewItem }
+  } else if (isFirstClear && mission.firstClearReward.itemId) {
     const template = SAMPLE_STARFRONT_ITEMS.find((it) => it.id === mission.firstClearReward.itemId)
-    if (template && !current.inventory.some((i) => i.id === template.id)) {
-      dropItem = template
+    dropItem = template || SAMPLE_STARFRONT_ITEMS[0]
+  } else {
+    // Fallback trang bị ngẫu nhiên
+    const idx = (current.battlesWon + current.inventory.length) % SAMPLE_STARFRONT_ITEMS.length
+    const fallbackTemplate = SAMPLE_STARFRONT_ITEMS[idx]
+    dropItem = {
+      ...fallbackTemplate,
+      id: `${fallbackTemplate.id}_clear_${Date.now()}`,
     }
   }
 
-  const updatedInventory = dropItem ? [...current.inventory, dropItem] : [...current.inventory]
+  const updatedInventory = [...current.inventory, dropItem]
   const updatedCompletedMissions = isFirstClear
     ? [...current.completedMissions, mission.id]
     : [...current.completedMissions]
@@ -593,6 +610,74 @@ export function applyMissionClearReward(
     completedMissions: updatedCompletedMissions,
     battlesWon: current.battlesWon + 1,
     freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
+  }
+
+  const reward: BattleRewardResult = {
+    expGained,
+    creditsGained,
+    alloyGained,
+    leveledUp,
+    oldLevel: current.level,
+    newLevel,
+    newExp,
+    expRequired: getExpRequiredForLevel(newLevel),
+  }
+
+  return { updated, reward, dropItem, isFirstClear }
+}
+
+/** Nhận thưởng hoàn thành Nhiệm Vụ Phân Tầng (Phase 5.5 StarfrontQuest) */
+export function applyQuestCompletionReward(
+  current: StarfrontProgression,
+  quest: StarfrontQuest,
+): { updated: StarfrontProgression; reward: BattleRewardResult; dropItem: StarfrontItem; isFirstClear: boolean } {
+  const isFirstClear = !current.completedMissions.includes(quest.id)
+  const expGained = quest.level * 80 + 50
+  const creditsGained = quest.previewReward.credits
+  const alloyGained = quest.previewReward.alloy
+
+  let newLevel = current.level
+  let newExp = current.exp + expGained
+  let leveledUp = false
+
+  while (true) {
+    const required = getExpRequiredForLevel(newLevel)
+    if (newExp >= required) {
+      newExp -= required
+      newLevel += 1
+      leveledUp = true
+    } else {
+      break
+    }
+  }
+
+  // Trao ĐÚNG 1 trang bị rơi từ preview
+  const previewItem = quest.previewReward.item
+  const dropItem: StarfrontItem = current.inventory.some((i) => i.id === previewItem.id)
+    ? { ...previewItem, id: `${previewItem.id}_${Date.now()}` }
+    : { ...previewItem }
+
+  const updatedInventory = [...current.inventory, dropItem]
+  const updatedCompletedMissions = isFirstClear
+    ? [...current.completedMissions, quest.id]
+    : [...current.completedMissions]
+
+  const updatedCompletedQuestIds = current.completedQuestIds
+    ? (isFirstClear ? [...current.completedQuestIds, quest.id] : [...current.completedQuestIds])
+    : (isFirstClear ? [quest.id] : [])
+
+  const updated: StarfrontProgression = {
+    ...current,
+    level: newLevel,
+    exp: newExp,
+    credits: current.credits + creditsGained,
+    alloy: (current.alloy ?? 25) + alloyGained,
+    inventory: updatedInventory,
+    completedMissions: updatedCompletedMissions,
+    completedQuestIds: updatedCompletedQuestIds,
+    battlesWon: current.battlesWon + 1,
+    freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
+    activeQuest: null,
   }
 
   const reward: BattleRewardResult = {

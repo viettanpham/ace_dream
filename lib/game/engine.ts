@@ -653,9 +653,10 @@ export function applyStatusEffect(
 export function createInitialCombatState(
   encounterId: EnemyEncounterType = "scout-drone",
   customPlayerUnit?: CombatUnit,
+  customEnemyUnit?: CombatUnit,
 ): CombatState {
   const player = customPlayerUnit ? cloneUnit(customPlayerUnit) : cloneUnit(VANGUARD_INITIAL_UNIT)
-  const enemy = cloneUnit(ENEMIES_DATA[encounterId])
+  const enemy = customEnemyUnit ? cloneUnit(customEnemyUnit) : cloneUnit(ENEMIES_DATA[encounterId])
 
   // Thứ tự lượt dựa trên tốc độ thực tế (Dynamic Speed Initiative)
   const pSpd = getEffectiveSpeed(player)

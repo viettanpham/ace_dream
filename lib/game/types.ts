@@ -421,6 +421,44 @@ export type StarfrontItem = {
   icon?: string
   price?: number
   enhancementLevel?: number // Cấp cường hóa (+0 đến +10)
+  level?: number // Cấp độ trang bị (1 - 15)
+  statsRandomized?: boolean // Đánh dấu thuộc tính ngẫu nhiên đã chốt
+}
+
+export type QuestQuality = "standard" | "veteran" | "elite" | "heroic" | "legendary"
+
+export type EnemyVariantId =
+  | "recon"
+  | "interceptor"
+  | "jammer"
+  | "assault"
+  | "berserker"
+  | "heavy"
+  | "fortress"
+  | "annihilator"
+  | "colossus"
+
+export type QuestRewardPreview = {
+  credits: number
+  alloy: number
+  item: StarfrontItem
+  guaranteedRarity: StarfrontItemRarity
+}
+
+export type StarfrontQuest = {
+  id: string
+  title: string
+  desc: string
+  sectorId: string
+  sectorName?: string
+  level: number
+  quality: QuestQuality
+  encounterType: EnemyEncounterType
+  variantId: EnemyVariantId
+  difficultyRating: string
+  previewReward: QuestRewardPreview
+  reqMissionId?: string
+  order?: number
 }
 
 export type StarfrontProgression = {
@@ -437,6 +475,8 @@ export type StarfrontProgression = {
   battlesWon: number
   battlesLost: number
   freeShopRefreshes?: number // Lượt làm mới Chợ Quân Sự miễn phí tích lũy từ chiến thắng
+  activeQuest?: StarfrontQuest | null // Nhiệm vụ đang nhận
+  completedQuestIds?: string[]
 }
 
 export type BattleRewardResult = {
@@ -459,6 +499,10 @@ export type CampaignMission = {
   desc: string
   recommendedLevel: number
   encounterId: EnemyEncounterType
+  level?: number // Quest level (1 - 15)
+  quality?: QuestQuality
+  variantId?: EnemyVariantId
+  previewReward?: QuestRewardPreview
   firstClearReward: {
     credits: number
     exp: number

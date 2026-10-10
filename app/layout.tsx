@@ -16,9 +16,14 @@ const rajdhani = Rajdhani({
 })
 
 export const metadata: Metadata = {
-  title: 'STARFRONT // 2D Sci-Fi Gear RPG',
+  title: 'STARFRONT',
   description:
-    'Game nhập vai chiến thuật cơ giáp theo lượt 2D nguyên bản lấy cảm hứng từ bầu không khí ACE Online.',
+    'Original browser-based 2D sci-fi turn-based RPG inspired by the gameplay atmosphere of ACE Online.',
+  openGraph: {
+    title: 'STARFRONT',
+    description:
+      'Original browser-based 2D sci-fi turn-based RPG inspired by the gameplay atmosphere of ACE Online.',
+  },
   generator: 'v0.app',
 }
 

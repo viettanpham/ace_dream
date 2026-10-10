@@ -710,6 +710,11 @@ export function StarfrontHangar({
                       {getItemDisplayName(item)}
                     </span>
                     <div className="flex items-center gap-1">
+                      {item.level && (
+                        <span className="rounded px-1.5 py-0.2 font-mono text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-600">
+                          Lv.{item.level}
+                        </span>
+                      )}
                       {enhBadge && (
                         <span className={cn("rounded px-1.5 py-0.2 font-mono text-[9px] border", enhBadge.className)}>
                           {enhBadge.text}

@@ -32,6 +32,11 @@ import {
   INITIAL_STARFRONT_PROGRESSION,
 } from "@/lib/game/progression"
 import {
+  createScaledEnemyUnit,
+  generateEquipmentReward,
+  STANDARD_CAMPAIGN_QUESTS,
+} from "@/lib/game/scaling"
+import {
   loadStarfrontProgression,
   resetStarfrontProgression,
   saveStarfrontProgression,
@@ -40,6 +45,7 @@ import type {
   BattleRewardResult,
   CampaignMission,
   CombatState,
+  CombatUnit,
   EnemyEncounterType,
   StarfrontGearId,
   StarfrontItem,
@@ -60,7 +66,9 @@ import {
   Flame,
   FlaskConical,
   Gauge,
+  Gift,
   Globe2,
+  Layers,
   Play,
   Recycle,
   RefreshCw,
@@ -496,6 +504,76 @@ export function CombatArena() {
     }))
   }
 
+  // Dev Test Handler 10: Thử thách Boss Bastion Colossus Lv.9 Legendary (Phase 5.5)
+  const handleDevTestMissionScaling = () => {
+    playClickSound()
+    const mission = STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === "m3-3") || STANDARD_CAMPAIGN_QUESTS[STANDARD_CAMPAIGN_QUESTS.length - 1]
+    const campaignMission: CampaignMission = {
+      id: mission.id,
+      sectorId: mission.sectorId,
+      sectorName: mission.sectorName || "Bastion Core",
+      order: mission.order || 3,
+      title: mission.title,
+      desc: mission.desc,
+      recommendedLevel: mission.level,
+      encounterId: mission.encounterType,
+      level: mission.level,
+      quality: mission.quality,
+      variantId: mission.variantId,
+      previewReward: mission.previewReward,
+      firstClearReward: {
+        credits: mission.previewReward.credits,
+        exp: 750,
+        alloy: mission.previewReward.alloy,
+      },
+      repeatReward: {
+        credits: Math.round(mission.previewReward.credits * 0.7),
+        exp: 350,
+      },
+    }
+    setActiveCampaignMission(campaignMission)
+    handleStartEncounter(mission.encounterType, progression, campaignMission)
+    setFloatingNotification({
+      text: `Đã kích hoạt Ải 3-3: Colossus [Lv.${mission.level}] Legendary Boss!`,
+      isCrit: true,
+      isPlayer: false,
+    })
+    setTimeout(() => setFloatingNotification(null), 3000)
+  }
+
+  // Dev Test Handler 11: Rơi Đồ Trang Bị & Sinh Thuộc Tính Ngẫu Nhiên (Phase 5.5)
+  const handleDevTestLootSystem = () => {
+    playClickSound()
+    const loot = generateEquipmentReward(5, "heroic", "weapon", Date.now())
+    const updated: StarfrontProgression = {
+      ...progression,
+      inventory: [...progression.inventory, loot],
+    }
+    setProgression(updated)
+    saveStarfrontProgression(updated)
+    setFloatingNotification({
+      text: `Rơi đồ: ${loot.name} (${loot.rarity.toUpperCase()})!`,
+      isCrit: true,
+      isPlayer: true,
+    })
+    setTimeout(() => setFloatingNotification(null), 3000)
+
+    setCombatState((prev) => ({
+      ...prev,
+      logs: [
+        ...prev.logs,
+        {
+          id: `dev-loot-${Date.now()}`,
+          turn: prev.turnNumber,
+          type: "system",
+          text: `[TEST ID: TC-LOOT-01 🎁] Đã sinh trang bị ngẫu nhiên: ${loot.name} (Phẩm chất: ${loot.rarity}, Cấp: ${loot.level}). Thuộc tính: +${loot.attackBonus || 0} ATK, +${loot.defenseBonus || 0} DEF, +${loot.speedBonus || 0} SPD, +${loot.hpBonus || 0} HP. Đã lưu vào kho đồ thành công!`,
+          actorName: "LOOT SYSTEM 5.5",
+          timestamp: "00:01",
+        },
+      ],
+    }))
+  }
+
   // Dev Test Handler: Làm mới lại trận đấu
   const handleDevResetArena = () => {
     playClickSound()
@@ -567,6 +645,7 @@ export function CombatArena() {
       aiTimeoutRef.current = null
     }
     setSelectedEncounter(encounterId)
+    const effectiveMission = missionContext !== undefined ? missionContext : activeCampaignMission
     if (missionContext !== undefined) {
       setActiveCampaignMission(missionContext)
     }
@@ -576,7 +655,15 @@ export function CombatArena() {
     setLastVictoryReward(null)
 
     const playerUnit = buildPlayerCombatUnit(currentProg)
-    setCombatState(createInitialCombatState(encounterId, playerUnit))
+    let scaledEnemyUnit: CombatUnit | undefined = undefined
+    if (effectiveMission) {
+      const qData = STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === effectiveMission.id)
+      const lvl = effectiveMission.level ?? qData?.level ?? effectiveMission.recommendedLevel ?? 1
+      const quality = effectiveMission.quality ?? qData?.quality ?? "standard"
+      const variantId = effectiveMission.variantId ?? qData?.variantId ?? "recon"
+      scaledEnemyUnit = createScaledEnemyUnit(encounterId, variantId, lvl, quality)
+    }
+    setCombatState(createInitialCombatState(encounterId, playerUnit, scaledEnemyUnit))
   }
 
   // Đổi lớp Gear (Vanguard, Falcon, Aegis)
@@ -1222,6 +1309,34 @@ export function CombatArena() {
                     Kiểm tra LocalStorage Schema v3: version = 3, 100% trang bị có enhancementLevel, bảo toàn tài nguyên!
                   </p>
                 </button>
+
+                {/* Test Case 10: Mission Scaling & Boss Bastion (Milestone 5.5) */}
+                <button
+                  onClick={handleDevTestMissionScaling}
+                  className="flex flex-col justify-between rounded border border-amber-500/40 bg-amber-950/20 p-2 text-left hover:bg-amber-950/40 hover:border-amber-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-300">
+                    <Trophy className="size-3.5 text-amber-400 shrink-0" />
+                    <span>TC-SCALE-01: Boss Colossus Lv.9 Legendary (5.5)</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Kích hoạt Ải 3-3: Colossus Lv.9 phẩm chất Legendary (HP 5,800+, Khiên Titan Khởi Đầu, Thưởng Legendary Item)!
+                  </p>
+                </button>
+
+                {/* Test Case 11: Loot System & Affix Roll (Milestone 5.5) */}
+                <button
+                  onClick={handleDevTestLootSystem}
+                  className="flex flex-col justify-between rounded border border-purple-500/40 bg-purple-950/20 p-2 text-left hover:bg-purple-950/40 hover:border-purple-400 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-purple-300">
+                    <Gift className="size-3.5 text-purple-400 shrink-0" />
+                    <span>TC-LOOT-01: Nhận Đồ Ngẫu Nhiên & 4 Affixes (5.5)</span>
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    Sinh 1 món đồ Heroic/Legendary với các dòng thuộc tính ngẫu nhiên (ATK, DEF, SPD, HP) và lưu vào kho đồ!
+                  </p>
+                </button>
               </div>
 
               {/* Footer nút reset */}
@@ -1753,7 +1868,7 @@ export function CombatArena() {
                     <span>PHẦN THƯỞNG CHIẾN TÍCH (ĐÃ LƯU TỰ ĐỘNG)</span>
                   </div>
 
-                  <div className="mt-2.5 grid grid-cols-2 gap-3 text-xs">
+                  <div className="mt-2.5 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
                     <div className="flex items-center gap-1.5 text-cyan-300">
                       <Sparkles className="size-4 text-cyan-400" />
                       <span>EXP Nhận Được:</span>
@@ -1763,8 +1878,16 @@ export function CombatArena() {
                     <div className="flex items-center gap-1.5 text-amber-300">
                       <Coins className="size-4 text-amber-400" />
                       <span>Credits Nhận Được:</span>
-                      <strong className="text-white">+{lastVictoryReward.reward.creditsGained}</strong>
+                      <strong className="text-white">+{lastVictoryReward.reward.creditsGained.toLocaleString("vi-VN")}</strong>
                     </div>
+
+                    {lastVictoryReward.reward.alloyGained !== undefined && lastVictoryReward.reward.alloyGained > 0 && (
+                      <div className="flex items-center gap-1.5 text-purple-300">
+                        <Layers className="size-4 text-purple-400" />
+                        <span>Hợp Kim (Alloy):</span>
+                        <strong className="text-white">+{lastVictoryReward.reward.alloyGained}</strong>
+                      </div>
+                    )}
                   </div>
 
                   {/* Thông báo thăng cấp nếu có */}
@@ -1777,13 +1900,70 @@ export function CombatArena() {
                     </div>
                   )}
 
-                  {/* Thông báo rơi vật phẩm nếu có */}
+                  {/* Thông báo rơi vật phẩm nếu có (Chi Tiết Trang Bị Phase 5.5) */}
                   {lastVictoryReward.dropItem && (
-                    <div className="mt-2.5 rounded bg-cyan-500/20 border border-cyan-400/60 p-2 text-xs text-cyan-200 flex items-center gap-2">
-                      <Boxes className="size-4 text-cyan-300 shrink-0" />
-                      <span>
-                        <strong>🎁 CHIẾN LỢI PHẨM RƠI:</strong> {lastVictoryReward.dropItem.name} ({lastVictoryReward.dropItem.slot}) đã được chuyển vào Kho đồ!
-                      </span>
+                    <div className="mt-3 rounded border border-cyan-500/40 bg-cyan-950/40 p-2.5 text-xs text-cyan-200">
+                      <div className="flex items-center justify-between gap-2 border-b border-cyan-500/30 pb-1.5 mb-1.5">
+                        <div className="flex items-center gap-1.5">
+                          <Gift className="size-4 text-cyan-300" />
+                          <strong className="text-white uppercase tracking-wider">CHIẾN LỢI PHẨM RƠI // 1 TRANG BỊ DUY NHẤT:</strong>
+                        </div>
+                        <span className={cn(
+                          "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase border",
+                          lastVictoryReward.dropItem.rarity === "legendary"
+                            ? "bg-amber-950/80 text-amber-300 border-amber-400/70"
+                            : lastVictoryReward.dropItem.rarity === "epic"
+                              ? "bg-purple-950/80 text-purple-300 border-purple-400/70"
+                              : lastVictoryReward.dropItem.rarity === "rare"
+                                ? "bg-cyan-950/80 text-cyan-300 border-cyan-400/70"
+                                : "bg-slate-900/80 text-slate-300 border-slate-600/50"
+                        )}>
+                          {lastVictoryReward.dropItem.rarity === "legendary"
+                            ? "Huyền Thoại"
+                            : lastVictoryReward.dropItem.rarity === "epic"
+                              ? "Sử Thi"
+                              : lastVictoryReward.dropItem.rarity === "rare"
+                                ? "Hiếm"
+                                : "Thường"}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="font-bold text-white text-sm">
+                          {lastVictoryReward.dropItem.name}
+                        </span>
+                        <span className="rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-cyan-300 border border-cyan-500/30">
+                          Ô: {lastVictoryReward.dropItem.slot === "weapon" ? "Vũ Khí" : lastVictoryReward.dropItem.slot === "shield" ? "Khiên Giáp" : "Động Cơ"}
+                        </span>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-mono">
+                        {lastVictoryReward.dropItem.attackBonus && (
+                          <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
+                            +{lastVictoryReward.dropItem.attackBonus} Tấn Công
+                          </span>
+                        )}
+                        {lastVictoryReward.dropItem.defenseBonus && (
+                          <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
+                            +{lastVictoryReward.dropItem.defenseBonus} Phòng Ngự
+                          </span>
+                        )}
+                        {lastVictoryReward.dropItem.speedBonus && (
+                          <span className="rounded bg-amber-950/60 px-1.5 py-0.5 text-amber-300 border border-amber-500/30">
+                            +{lastVictoryReward.dropItem.speedBonus} Tốc Độ
+                          </span>
+                        )}
+                        {lastVictoryReward.dropItem.hpBonus && (
+                          <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
+                            +{lastVictoryReward.dropItem.hpBonus} Giáp HP
+                          </span>
+                        )}
+                        {lastVictoryReward.dropItem.spBonus && (
+                          <span className="rounded bg-purple-950/60 px-1.5 py-0.5 text-purple-300 border border-purple-500/30">
+                            +{lastVictoryReward.dropItem.spBonus} SP
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

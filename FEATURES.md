@@ -12,12 +12,65 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 2** | Tiến Trình Nhân Vật & Kho Trang Bị (Progression & Loadout) | **Đã triển khai** | Đã có trong `progression.ts`, `storage.ts`, `starfront-hangar.tsx`. Level, EXP, Credits, 3 ô trang bị. |
 | **Phase 3** | Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ (Missions, Gears & Shop) | **Đã triển khai** | Đã có trong `campaign-map.tsx`, `starfront-shop.tsx`, `audio.ts`. 3 Sector (9 ải), Vanguard / Falcon / Aegis, Chợ vũ khí, Web Audio. |
 | **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Đã triển khai** | Hoàn thành Milestones 4.1 -> 4.4: Status Effects (DoT/Stun/Slow/ECM), 4 Archetype AI, Boss 2 Pha Overdrive, Telegraphed Attack, Dynamic Turn Queue & Evasion. Đã kiểm chứng 36/36 tests. |
-| **Phase 5** | Tiến Trình Cơ Giáp & Cường Hóa (Gear & Equipment Progression) | **Đang triển khai** | Hoàn thành Milestone 5.1: Hệ Thống Cường Hóa Trang Bị +1 đến +10, Xưởng Cường Hóa trong Hangar, chi phí Credits & Alloy, cơ chế Anti-Frustration không bao giờ mất đồ. Đã kiểm chứng 15/15 tests. |
+| **Phase 5** | Tiến Trình Cơ Giáp, Cường Hóa & Nhiệm Vụ Phân Tầng (Progression, Gear & Quests) | **Đã triển khai** | Hoàn thành Milestones 5.1 -> 5.5: Cường Hóa +1..+10, Nội Tại 3 Lớp Gear, Tái Chế & Chợ Phân Tầng, Schema v3 & Đồng Bộ State, Mission Scaling (1–15), 9 Biến Thể Quái, Rơi Đúng 1 Trang Bị Ngẫu Nhiên và Preview Thưởng Minh Bạch. |
 | **Phase 6** | Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (World & War Expansion) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
 
 ---
 
 ## 2. Chi Tiết Tính Năng Đã Triển Khai (Implemented Features)
+
+### 2.7. Nhiệm Vụ Phân Tầng, Kẻ Địch Biến Thể & Rơi Đồ Trang Bị (Phase 5 — Milestone 5.5)
+- **Hệ Thống Phân Tầng Nhiệm Vụ (Quest Level 1–15 & 5 Bậc Phẩm Chất)**:
+  - *Quest Level*: Điều chỉnh nền tảng sức mạnh quái theo cấp độ, quyết định power của trang bị rơi và tỷ lệ kinh tế Credits/Alloy.
+  - *Quest Quality*: 5 bậc phẩm chất chuẩn hóa (`standard` Tiêu Chuẩn 1.0x, `veteran` Tinh Nhuệ 1.25x, `elite` Tinh Anh 1.5x, `heroic` Anh Hùng 1.8x, `legendary` Truyền Thuyết 2.2x).
+- **Hệ Thống Biến Thể Kẻ Địch (9 Enemy Variants)**:
+  - *Scout Drone*: Recon (Cơ bản), Interceptor (+15 SPD, 25% Né), Jammer (+DEF, khởi đầu buff ECM Jamming).
+  - *Raider Mech*: Assault (Cơ bản), Berserker (+25% ATK, 30% Crit, -20% DEF), Heavy (+30% HP, +30% DEF).
+  - *Siege Walker*: Fortress (Cơ bản), Annihilator (+30% ATK, +15% Xuyên Giáp), Colossus (+35% HP, +35% DEF, khởi đầu có khiên gia cố Titan).
+  - Công thức tính chỉ số chặt chẽ: `FinalStat = Math.round(Base * Variant * LevelScale * QualityMult)`, kẹp chặn biên chống tràn số hoặc âm.
+- **Hệ Thống Rơi Đồ Trang Bị & Thuộc Tính Ngẫu Nhiên (Equipment Loot & Random Stats)**:
+  - Mỗi lần hoàn thành hợp lệ trao ĐÚNG 1 trang bị ngẫu nhiên có cấp độ và độ hiếm.
+  - Bể thuộc tính riêng theo 3 vị trí trang bị:
+    * Weapon: ATK (chính), SPD, SP, HP.
+    * Shield: DEF (chính), HP, SP, SPD.
+    * Engine: SPD (chính), ATK, SP, HP.
+  - Số lượng thuộc tính cộng thêm theo độ hiếm: Common (1 affix), Rare (2 affixes), Epic (3 affixes), Legendary (4 affixes).
+  - Chỉ số sinh 1 lần duy nhất cho mỗi item instance, lưu cố định trong kho và tương thích hoàn toàn với Xưởng Cường Hóa (+1..+10) và Tái Chế (Salvage).
+- **Công Bố Phần Thưởng Trước Khi Xuất Kích (Reward Preview)**:
+  - Danh sách nhiệm vụ thể hiện rõ ràng: Tên/ID, Cấp độ nhiệm vụ, Huy hiệu phẩm chất, Biến thể kẻ địch, Credits dự kiến, Alloy dự kiến, và đúng 1 trang bị rơi (kèm huy hiệu độ hiếm, tên và thuộc tính xem trước).
+  - Dữ liệu preview đọc từ cấu hình thực tế của quest, không bị đổi khi accept hoặc reload trang.
+  - Cơ chế chống nhận thưởng trùng lặp khi hoàn thành nhiều lần hoặc reload kết quả.
+
+---
+
+## 3. Các Điểm Chưa Xác Minh & Cần Lưu Ý Kỹ Thuật (Needs Verification / Code Observations)
+
+Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu, ghi nhận các điểm kỹ thuật đã xử lý và cần lưu ý:
+
+1. **Hiển thị định danh buồng lái khi đổi lớp Gear**:
+   - *Đã giải quyết*: Dòng nhật ký khởi tạo trận đấu và Action Deck sử dụng chuỗi động `${player.name}` tương ứng lớp Gear đang chọn (`lib/game/engine.ts`).
+2. **Đồng bộ hóa tức thời giữa Hangar và Đấu trường**:
+   - *Đã giải quyết trong Phase 5.4*: Khi người chơi bấm đổi Gear hoặc thay đổi trang bị trong Hangar rồi chuyển tab quay lại Đấu trường, hàm `handleSwitchTab` và `handleSelectGear` tự động đồng bộ hóa `combatState` với `StarfrontProgression` mới nhất.
+3. **Môi trường kho lưu trữ Git**:
+   - Container triển khai không có thư mục `.git` cục bộ. Mọi thao tác lưu mã nguồn được thực hiện trên hệ thống file workspace của AI Studio.
+4. **Cấu hình TypeScript Path Alias (`tsconfig.json`)**:
+   - Tệp `tsconfig.json` đã được bổ sung `baseUrl: "."` và `"paths": { "@/*": ["./*"] }` để đảm bảo lệnh build Next.js / Turbopack luôn biên dịch thành công.
+
+---
+
+## 4. Danh Mục Tính Năng Dự Kiến (Planned Features — Phase 6)
+
+### 4.1. Giai Đoạn 6: Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (Phase 6 — Planned)
+- **Mở rộng Sector 4 & 5 và Phe Phái Thiên Hà**:
+  - Sector 4 (Hạm Đội Bị Bỏ Rơi) và Sector 5 (Vành Đai Lỗ Đen).
+  - 2 Phe phái đối lập (BCU vs ANI) với điểm danh vọng (Reputation).
+- **Đại chiến Mẹ Hạm Không Gian (Mothership Raids)**:
+  - Trận chiến công thành nhiều bộ phận: Tháp pháo -> Động cơ -> Lõi trung tâm.
+- **Liên kết chiều sâu với Ace Manager**:
+  - Căn cứ Ace Manager sản xuất nguyên liệu cho xưởng STARFRONT Hangar.
+  - Phi công trong Ace Manager trực tiếp lái Gear trong STARFRONT để nhận thêm buff thuộc tính.
+- **Nghiên cứu đề xuất tính năng mạng (Multiplayer Proposal Only)**:
+  - Đánh giá kiến trúc bảng xếp hạng (Leaderboards) và PvP bất đồng bộ. Chỉ đưa ra bản đề xuất phân tích, không tự ý xây dựng máy chủ khi chưa phê duyệt.
 
 ### 2.5. Hệ Thống Cường Hóa Trang Bị +1 Đến +10 (Phase 5 — Milestone 5.1)
 - **Cường hóa trang bị từ +1 đến +10**:
@@ -169,40 +222,9 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-## 4. Danh Mục Tính Năng Dự Kiến (Planned Features — Phase 4 to 6)
+## 4. Danh Mục Tính Năng Dự Kiến (Planned Features — Phase 6)
 
-### 4.1. Giai Đoạn 4: Độ Sâu Chiến Thuật & AI Kẻ Địch (Phase 4 — Planned)
-- **Hệ thống AI đối thủ nâng cao (Enemy Tactical AI)**:
-  - 4 Archetype AI: Tấn công áp đảo (Aggressive), Phòng ngự hỗ trợ (Support/Buffer), Phá rối khống chế (Disruptor), Thích ứng đa pha (Adaptive Boss).
-  - Thuật toán ra quyết định dựa trên điều kiện HP mục tiêu, trạng thái bản thân và thời gian hồi chiêu.
-- **Hệ thống hiệu ứng trạng thái mở rộng (Status Effect System)**:
-  - Chuẩn hóa quy tắc thời hạn (turn tick), cơ chế cộng dồn (Stacking rule), và hóa giải (Cleanse/Dispel).
-  - Bổ sung hiệu ứng mới: Đốt Cháy Plasma (DoT), Ăn Mòn Axit (DoT + giảm giáp), Quá Nhiệt (Stun 1 lượt), Làm Chậm Động Cơ (Slow - giảm SPD), Nhiễu Điện Tử (ECM - giảm độ chính xác).
-- **Cơ chế Boss đa giai đoạn (Multi-Phase Boss & Telegraphed Attacks)**:
-  - Chuyển đổi Phase khi Boss dưới 50% HP (thay đổi âm nhạc, đổi bộ kỹ năng, tăng tốc độ).
-  - Cảnh báo đòn tối thượng trước 1 lượt (Telegraphed Ultimate) để người chơi kịp bật khiên phòng thủ.
-- **Động lực học lượt đánh & Cân bằng sát thương**:
-  - Hàng đợi lượt động (Dynamic turn queue) cập nhật lại ngay trong vòng đấu khi có hiệu ứng thay đổi SPD.
-  - Công thức tính bạo kích, xuyên giáp và né tránh minh bạch.
-- **Phản hồi hình ảnh & Hiệu ứng chiến đấu (Visual Feedback)**:
-  - Rung chấn màn hình khi trúng đòn nặng/chí mạng.
-  - Phù hiệu hiệu ứng trạng thái động kèm số lượt đếm lùi.
-
-### 4.2. Giai Đoạn 5: Tiến Trình Cơ Giáp & Cường Hóa (Phase 5 — Planned)
-- **Hệ thống cường hóa trang bị (Equipment Enhancement +1 to +10)**:
-  - Nâng cấp tăng chỉ số trang bị bằng Credits và Hợp kim (Alloy).
-  - Tỉ lệ thành công lũy tiến, bảo toàn trang bị không bị phá hủy.
-- **Định hình bản sắc sâu cho 3 lớp Gear**:
-  - *Vanguard*: Kỹ năng bị động hồi phục SP, hỏa lực ổn định.
-  - *Falcon*: Tỉ lệ né tránh bẩm sinh, đòn bạo kích gây hiệu ứng Chảy Máu/Quá Nhiệt.
-  - *Aegis*: Khiên phản đòn gai năng lượng, miễn nhiễm một phần hiệu ứng khống chế.
-- **Vòng lặp kinh tế chợ quân sự hoàn chỉnh**:
-  - Phân loại hàng hóa theo độ hiếm (Common -> Rare -> Epic -> Legendary).
-  - Cơ chế tái chế trang bị cũ thành nguyên liệu cường hóa.
-- **Lưu trữ dữ liệu Schema v3**:
-  - Bổ sung trường cấp độ cường hóa của từng món đồ, đảm bảo tương thích ngược 100% với Schema v2.
-
-### 4.3. Giai Đoạn 6: Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (Phase 6 — Planned)
+### 4.1. Giai Đoạn 6: Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (Phase 6 — Planned)
 - **Mở rộng Sector 4 & 5 và Phe Phái Thiên Hà**:
   - Sector 4 (Hạm Đội Bị Bỏ Rơi) và Sector 5 (Vành Đai Lỗ Đen).
   - 2 Phe phái đối lập (BCU vs ANI) với điểm danh vọng (Reputation).

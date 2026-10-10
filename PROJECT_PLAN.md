@@ -248,7 +248,7 @@
   - Manual UI Test Cases trực tiếp tại tab Chợ và tab Hangar.
 
 #### 🎯 Milestone 5.4: Bảo Đảm An Toàn Dữ Liệu & Đồng Bộ Lựa Chọn Gear (Storage Schema v3 & State Sync) `[ĐÃ HOÀN THÀNH]`
-- **Mục tiêu**: Nâng cấp cấu trúc lưu trữ LocalStorage lên Schema v3 để hỗ trợ cấp cường hóa, và giải quyết triệt để vấn đề đồng bộ khi đổi Gear.
+- **Mục tiêu**: Nâng cấp cấu trúc lưu trữ LocalStorage lên Schema v3 để hỗ trợ cấp cường hóa, bảo toàn dữ liệu và giải quyết triệt để vấn đề đồng bộ khi đổi Gear.
 - **Trạng thái**: **Đã hoàn thành & Đã kiểm chứng (8/8 tests Milestone 5.4 passed, 27/27 regression tests passed, build thành công)**.
 - **Phạm vi đã triển khai**:
   - **Di chuyển dữ liệu tự động (Migration v1/v2 -> v3)**:
@@ -263,15 +263,111 @@
     - Khi chuyển tab quay lại Đấu trường sau khi trang bị hoặc cường hóa đồ trong Hangar, hàm `handleSwitchTab` tự động phát hiện độ lệch chỉ số và đồng bộ hóa lại `combatState` ngay lập tức.
   - **Công Cụ Kiểm Thử Tức Thì**:
     - Bổ sung `TC-SYNC-01: Chu Kỳ Đổi & Đồng Bộ Gear (5.4)` và `TC-MIG-01: Xác Thực Schema v3 & Migration (5.4)` trên Dev Combat Test Controls.
-- **Phụ thuộc**: Milestone 5.1, Milestone 5.2.
-- **Tiêu chí hoàn thành (Definition of Done)**:
-  - Dữ liệu người chơi từ các phiên bản trước tải lên mượt mà không lỗi.
-  - Chuyển đổi giữa Hangar và Đấu trường hoạt động trơn tru 100%.
-  - Bộ automated test 8/8 trường hợp pass 100%.
+- **Tiêu chí chấp nhận (Acceptance Criteria)**:
+  - `AC-5.4-1`: Tải save file v1 nâng cấp an toàn lên Schema v3, không mất Credits/EXP, bổ sung alloy = 25.
+  - `AC-5.4-2`: Tải save file v2 bảo toàn nguyên vẹn cấp cường hóa và activeGearId.
+  - `AC-5.4-3`: Đổi Gear giữa Vanguard, Falcon, Aegis cập nhật ngay lập tức buồng lái không cần F5.
+  - `AC-5.4-4`: Migration an toàn khi gọi lặp nhiều lần (idempotent), không nhân đôi tài nguyên hay vật phẩm.
+- **Test Cases Milestone 5.4**:
+  - `TC-P54-01 (Storage Migration v1/v2 -> v3)`: Preconditions: Save v1 hoặc v2 có sẵn. Steps: Gọi `migrateProgressionToV3`. Expected: Schema version = 3, alloy >= 25, item enhancementLevel chuẩn hóa [0..10]. Status: PASS.
+  - `TC-P54-02 (State Sync Hangar <-> Arena)`: Preconditions: Đổi activeGearId sang Falcon hoặc Aegis. Steps: Kiểm tra CombatUnit trong arena. Expected: Skills, theme màu, passive và SPD phản ánh chính xác. Status: PASS.
+  - `TC-P54-03 (Data Resilience & Bounds)`: Preconditions: Dữ liệu save chứa thuộc tính âm/NaN. Steps: Gọi migration. Expected: Dữ liệu kẹp trong khoảng hợp lệ, không crash. Status: PASS.
 - **Phương pháp kiểm thử**:
   - Automated tests tại `tests/storage-sync.test.ts` (8/8 tests PASS).
   - Regression tests tại `tests/passives.test.ts` (13/13 tests PASS) và `tests/economy-recycling.test.ts` (14/14 tests PASS).
   - Manual UI Test Cases trực tiếp tại buồng lái Đấu Trường.
+
+#### 🎯 Milestone 5.5: Hệ Thống Nhiệm Vụ Phân Tầng, Kẻ Địch Biến Thể & Rơi Đồ Trang Bị Ngẫu Nhiên (Mission Scaling, Enemy Variants & Equipment Loot System) `[ĐÃ HOÀN THÀNH]`
+- **Mục tiêu**: Xây dựng hệ thống nhiệm vụ có Cấp độ (Quest Level) và Phẩm chất (Quest Quality), tự điều chỉnh độ khó và chỉ số kẻ địch theo từng quest; đồng thời công bố trước toàn bộ phần thưởng (Credits, Alloy và đúng 1 trang bị rơi kèm độ hiếm/chỉ số), tạo ra vòng lặp săn đồ cày cuốc hấp dẫn.
+- **Trạng thái**: **Đã hoàn thành & Đã kiểm chứng (13/13 automated tests passed, build thành công)**.
+- **Phạm vi triển khai**:
+  - **1. Phân Tầng Nhiệm Vụ: Quest Level (1–15) & Quest Quality (5 Bậc)**:
+    - *Quest Level*: Quyết định nền tảng sức mạnh quái, level trang bị rơi và quy mô kinh tế (Credits & Alloy).
+    - *Quest Quality*: 5 bậc phẩm chất:
+      1. `standard` (Tiêu Chuẩn - Xám/Trắng): Hệ số độ khó 1.00x, Hệ số thưởng 1.0x.
+      2. `veteran` (Tinh Nhuệ - Lục): Hệ số độ khó 1.15x, Hệ số thưởng 1.25x.
+      3. `elite` (Tinh Anh - Lam): Hệ số độ khó 1.30x, Hệ số thưởng 1.55x (Credits) / 1.50x (Alloy).
+      4. `heroic` (Anh Hùng - Tím): Hệ số độ khó 1.50x, Hệ số thưởng 1.90x (Credits) / 1.80x (Alloy).
+      5. `legendary` (Truyền Thuyết - Cam Vàng): Hệ số độ khó 1.75x, Hệ số thưởng 2.40x (Credits) / 2.20x (Alloy).
+  - **2. Bảng Cân Bằng Chi Tiết (Balance Tables & Formulas)**:
+    - **A. Quest Level Scaling**:
+      * HP Quái: `ScaleHP = 1 + (level - 1) * 0.18` (L1: 1.0x, L5: 1.72x, L10: 2.62x, L15: 3.52x)
+      * ATK Quái: `ScaleATK = 1 + (level - 1) * 0.12` (L1: 1.0x, L5: 1.48x, L10: 2.08x, L15: 2.68x)
+      * DEF Quái: `ScaleDEF = 1 + (level - 1) * 0.10` (L1: 1.0x, L5: 1.40x, L10: 1.90x, L15: 2.40x)
+      * SPD Quái: `ScaleSPD = 1 + (level - 1) * 0.02` (Kẹp tối đa +30 SPD, giới hạn [20..160] để giữ nhịp độ chiến thuật)
+      * Base Credits: `Credits(level) = Math.round(150 + level * 120)`
+      * Base Alloy: `Alloy(level) = Math.max(1, Math.round(1 + level * 0.8))`
+      * Equipment Level: `itemLevel = questLevel`
+    - **B. Quest Quality Multipliers & Drop Probabilities**:
+      * Bảng trọng số Rarity rơi đồ theo Quality:
+        | Quality | Common | Rare | Epic | Legendary |
+        |---|---|---|---|---|
+        | Standard | 75% | 25% | 0% | 0% |
+        | Veteran | 45% | 45% | 10% | 0% |
+        | Elite | 20% | 55% | 22% | 3% |
+        | Heroic | 5% | 40% | 45% | 10% |
+        | Legendary | 0% | 15% | 55% | 30% |
+      * Thưởng Credits thực nhận: `Math.round(BaseCredits(level) * qualityCreditsMult)`
+      * Thưởng Alloy thực nhận: `Math.max(1, Math.round(BaseAlloy(level) * qualityAlloyMult))`
+    - **C. Chủng Loại & Biến Thể Kẻ Địch (Enemy Classes & 9 Variants)**:
+      * **Scout Drone (3 Biến thể)**:
+        - `recon` (Trinh Sát Do Thám - Mặc định): 1.0x HP, 1.0x ATK, 1.0x DEF, 110 SPD, 15% Né.
+        - `interceptor` (Đánh Chặn Siêu Tốc): 0.85x HP, 1.15x ATK, 0.85x DEF, 125 SPD, 25% Né.
+        - `jammer` (Nhiễu Sóng Radar ECM): 1.10x HP, 0.90x ATK, 1.15x DEF, 110 SPD, 20% Né, khởi đầu có buff ECM Jamming.
+      * **Raider Mech (3 Biến thể)**:
+        - `assault` (Đột Kích Tiền Tuyến - Mặc định): 1.0x HP, 1.0x ATK, 1.0x DEF, 78 SPD, 20% Crit.
+        - `berserker` (Cuồng Nộ Hỏa Lực): 0.90x HP, 1.25x ATK, 0.80x DEF, 83 SPD, 30% Crit, 1.85x Crit DMG.
+        - `heavy` (Thiết Giáp Tiên Phong): 1.30x HP, 0.95x ATK, 1.30x DEF, 70 SPD, 10% Crit.
+      * **Siege Walker (3 Biến thể)**:
+        - `fortress` (Pháo Đài Công Thành - Mặc định): 1.0x HP, 1.0x ATK, 1.0x DEF, 52 SPD, 20% Xuyên Giáp.
+        - `annihilator` (Kẻ Hủy Diệt Hạt Nhân): 0.95x HP, 1.30x ATK, 0.90x DEF, 52 SPD, 35% Xuyên Giáp.
+        - `colossus` (Khổng Lồ Bất Hoại): 1.35x HP, 0.90x ATK, 1.35x DEF, 48 SPD, khởi đầu có khiên gia cố Titan.
+      * Phối hợp chủng loại theo cấp độ: Cấp 1–3 chỉ xuất hiện Scout Drone và Raider Mech Assault; Tuyệt đối không sinh Siege Walker ở cấp thấp.
+    - **D. Thứ Tự Tính Chỉ Số Kẻ Địch**:
+      * `FinalStat = Math.round(BaseStat * VariantModifier * LevelStatScale * QualityModifier)`
+      * Kẹp chặn biên: HP >= 100, SP >= 20, ATK >= 10, DEF >= 0, SPD [20..160], EVA [0%..85%]. Không xuất hiện NaN hoặc Infinity.
+    - **E. Hệ Thống Rơi Đồ Trang Bị (Equipment Loot System)**:
+      * Mỗi lần hoàn thành hợp lệ thưởng ĐÚNG 1 trang bị.
+      * Rarity: Common (1 affix), Rare (2 affixes), Epic (3 affixes), Legendary (4 affixes).
+      * Bể thuộc tính theo ô đồ (Slot Affix Pool):
+        - `weapon`: ATK (chính), SPD, SP, HP
+        - `shield`: DEF (chính), HP, SP, SPD
+        - `engine`: SPD (chính), ATK, SP, HP
+      * Giá trị chỉ số ngẫu nhiên theo công thức:
+        `BasePower = 1 + (itemLevel - 1) * 0.15`
+        `RarityMult = Common: 1.0x | Rare: 1.35x | Epic: 1.75x | Legendary: 2.25x`
+      * Trang bị được sinh một lần duy nhất cho mỗi item instance, gắn `level`, `rarity` và stats cố định trong save data.
+    - **F. Xem Trước Phần Thưởng (Reward Preview) & Tính Toàn Vẹn**:
+      * Danh sách nhiệm vụ công bố trước: Tên/ID, Level quest, Quality badge, Enemy variant & Độ khó, Credits dự kiến, Alloy dự kiến, và đúng 1 trang bị dự kiến (kèm rarity badge, tên và chỉ số preview).
+      * Khi accept quest, dữ liệu enemy và loot preview được chốt và lưu giữ ổn định. Reload không thay đổi reward đã công bố.
+      * Chống nhận thưởng trùng lặp (Idempotent completion protection).
+- **Phụ thuộc**: Milestone 5.1, 5.2, 5.3, 5.4, `lib/game/scaling.ts`, `lib/game/engine.ts`, `lib/game/progression.ts`, `lib/game/types.ts`.
+- **Tiêu chí chấp nhận (Definition of Done)**:
+  - 100% nhiệm vụ có level, quality và phần thưởng xem trước minh bạch.
+  - Hoàn thành nhiệm vụ nhận đúng 1 trang bị, cùng lượng Credits và Alloy khớp 100% với preview.
+  - Kẻ địch biến thể thể hiện đúng base stats, variant modifier và level/quality scaling.
+  - Toàn bộ trang bị rơi có cấp độ và chỉ số ngẫu nhiên tương thích hoàn hảo với buồng lái, xưởng cường hóa, chợ và rã đồ.
+  - Không xuất hiện NaN/Infinity, không rò rỉ dữ liệu, không cấp trùng thưởng khi reload.
+- **Bộ Automated Tests Milestone 5.5**:
+  - `TC-MIS-01 — Mission Scaling`: Kiểm tra scaling stats của kẻ địch theo nhiều mốc level (L1, L3, L5, L10, L15), kẹp chặn biên hợp lệ.
+  - `TC-QUAL-01 — Quest Quality`: Kiểm tra 5 bậc chất lượng (Standard -> Legendary), hệ số thưởng và tỉ lệ rơi đồ.
+  - `TC-ENEMY-01 — Enemy Variants`: Kiểm tra 9 biến thể kẻ địch (Recon, Interceptor, Jammer, Assault, Berserker, Heavy, Fortress, Annihilator, Colossus).
+  - `TC-LOOT-01 — Equipment Loot`: Hoàn thành quest nhận đúng 1 trang bị mới vào kho đồ.
+  - `TC-REWARD-01 — Reward Integrity`: Xác minh Credits/Alloy, chống nhận lặp lại khi gọi hàm hoặc reload kết quả.
+  - `TC-PREVIEW-01 — Quest Reward Preview`: Đối chiếu thông tin xem trước trước khi xuất kích với phần thưởng thực nhận sau chiến thắng.
+  - `TC-STAT-01 — Equipment Random Stats`: Kiểm tra bể thuộc tính (stat pool) theo Weapon, Shield, Engine và scale theo level.
+  - `TC-RARITY-01 — Equipment Rarity`: Kiểm tra số lượng affix và multiplier theo 4 bậc Common/Rare/Epic/Legendary.
+  - `TC-INV-01 — Inventory UI & Data`: Kiểm tra hiển thị cấp độ, huy hiệu phẩm chất và chỉ số trang bị trong kho đồ.
+  - `TC-SAVE-01 — Save/Load`: Kiểm tra lưu trữ quest đang thực hiện và trang bị mới rơi vào LocalStorage Schema v3.
+  - `TC-MIG-01 — Legacy Save`: Kiểm tra nạp save cũ Schema v1/v2/v3 không có quest, dữ liệu được bảo toàn nguyên vẹn.
+  - `TC-INT-01 — System Integration`: Kiểm tra trang bị rơi được lắp vào cơ giáp, cường hóa (+1..+10) và rã đồ thu hồi Alloy an toàn.
+  - `TC-REG-01 — Regression`: Chạy kiểm thử hồi quy toàn bộ Milestone 5.2, 5.3, 5.4.
+- **Kịch bản kiểm thử thủ công (Manual UI Test Scenarios)**:
+  - *Scenario 1*: Mở bản đồ chiến dịch, kiểm tra từng ải hiển thị rõ cấp độ, huy hiệu phẩm chất, kẻ địch biến thể và thẻ phần thưởng xem trước.
+  - *Scenario 2*: Nhấn "Xuất Kích Ngay", kiểm tra buồng lái tải đúng tên và chỉ số kẻ địch đã scale.
+  - *Scenario 3*: Đánh bại kẻ địch, kiểm tra màn hình chiến thắng trao đúng 1 trang bị rơi, Credits và Alloy khớp thẻ preview.
+  - *Scenario 4*: Chuyển sang Hangar, kiểm tra trang bị vừa nhận xuất hiện trong kho với cấp độ và chỉ số chính xác, có thể cường hóa hoặc rã đồ.
+  - *Scenario 5*: Tải lại trang web (F5), kiểm tra tiến trình, kho đồ và trang bị vẫn giữ nguyên 100%.
 
 ---
 
@@ -351,10 +447,11 @@
 | **Cơ chế Boss đa pha & Cảnh báo đòn tối thượng** | **Đã hoàn thành (Done)** | Phase 4 (M4.3) | Boss Enrage < 50% HP (Overdrive +30% ATK, +20 SPD), Telegraphed Attack cảnh báo nạp đại pháo hạt nhân. |
 | **Dynamic Turn Queue & Cân bằng công thức sát thương** | **Đã hoàn thành (Done)** | Phase 4 (M4.4) | Hàng đợi lượt động cập nhật tức thời khi SPD biến đổi, bổ sung Xuyên Giáp, Bạo Kích và Né Tránh. |
 | **Phản hồi trực quan rung chấn màn hình & FX** | **Chưa triển khai (Planned)** | Phase 4 (M4.5) | Screen shake, floating numbers phân biệt màu. |
-| **Hệ thống cường hóa trang bị (+1 đến +10)** | **Chưa triển khai (Planned)** | Phase 5 (M5.1) | Nâng cấp bằng Credits + Alloy, chống vỡ trang bị. |
-| **Kỹ năng nội tại phân hóa bản sắc 3 lớp Gear** | **Chưa triển khai (Planned)** | Phase 5 (M5.2) | Vanguard hồi SP, Falcon né/crit, Aegis phản đòn. |
-| **Vòng lặp kinh tế chợ & Tái chế rã đồ** | **Chưa triển khai (Planned)** | Phase 5 (M5.3) | Rã đồ thừa lấy Hợp kim, cân bằng chi tiêu Credits. |
-| **Lưu trữ Schema v3 & Đồng bộ trạng thái tức thời** | **Chưa triển khai (Planned)** | Phase 5 (M5.4) | Nâng cấp an toàn schema, đồng bộ mượt Hangar <-> Arena. |
+| **Hệ thống cường hóa trang bị (+1 đến +10)** | **Đã hoàn thành (Done)** | Phase 5 (M5.1) | Nâng cấp bằng Credits + Alloy, bảo toàn cấp trang bị. 15/15 tests PASS. |
+| **Kỹ năng nội tại phân hóa bản sắc 3 lớp Gear** | **Đã hoàn thành (Done)** | Phase 5 (M5.2) | Vanguard hồi SP, Falcon né/crit/bắn bồi, Aegis phản đòn/kháng debuff. 13/13 tests PASS. |
+| **Vòng lặp kinh tế chợ & Tái chế rã đồ** | **Đã hoàn thành (Done)** | Phase 5 (M5.3) | Rã đồ thừa lấy Hợp kim, chống rã đồ đang đeo, phân tầng chợ theo Sector. 14/14 tests PASS. |
+| **Lưu trữ Schema v3 & Đồng bộ trạng thái tức thời** | **Đã hoàn thành (Done)** | Phase 5 (M5.4) | Tự động nâng cấp v1/v2 -> v3, chuẩn hóa [0..10], đồng bộ mượt Hangar <-> Arena. 8/8 tests PASS. |
+| **Nhiệm vụ phân tầng, Biến thể quái & Rơi đồ trang bị** | **Đã hoàn thành (Done)** | Phase 5 (M5.5) | Quest Level (1–15), 5 phẩm chất, 9 biến thể quái, rơi đúng 1 trang bị ngẫu nhiên có cấp và thuộc tính, preview phần thưởng cố định. |
 | **Mở rộng Sector 4, 5 & Hệ thống phe phái thiên hà** | **Chưa triển khai (Planned)** | Phase 6 (M6.1) | BCU vs ANI, điểm danh vọng phe phái. |
 | **Đại chiến Mẹ Hạm không gian & Dị thường môi trường** | **Chưa triển khai (Planned)** | Phase 6 (M6.2) | Boss đa bộ phận, bão bức xạ mặt trời. |
 | **Liên kết chiều sâu với phân hệ Ace Manager** | **Chưa triển khai (Planned)** | Phase 6 (M6.3) | Căn cứ cấp nguyên liệu, Phi công lái Gear tăng chỉ số. |

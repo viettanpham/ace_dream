@@ -35,7 +35,9 @@ export function migrateProgressionToV3(parsed: any): StarfrontProgression {
   let inventory: StarfrontItem[] = Array.isArray(parsed.inventory) && parsed.inventory.length > 0
     ? parsed.inventory.map((it: any) => ({
         ...it,
+        level: Math.max(1, Math.min(15, Number(it?.level) || 1)),
         enhancementLevel: Math.max(0, Math.min(10, Number(it?.enhancementLevel) || 0)),
+        statsRandomized: Boolean(it?.statsRandomized),
       }))
     : [...INITIAL_STARFRONT_PROGRESSION.inventory]
 
@@ -44,6 +46,7 @@ export function migrateProgressionToV3(parsed: any): StarfrontProgression {
     if (!inventory.some((it) => it.id === starter.id)) {
       inventory.push({
         ...starter,
+        level: starter.level || 1,
         enhancementLevel: starter.enhancementLevel || 0,
       })
     }
@@ -69,6 +72,14 @@ export function migrateProgressionToV3(parsed: any): StarfrontProgression {
     ? parsed.completedMissions.filter((m: any) => typeof m === "string")
     : []
 
+  const activeQuest = parsed.activeQuest && typeof parsed.activeQuest === "object"
+    ? parsed.activeQuest
+    : null
+
+  const completedQuestIds: string[] = Array.isArray(parsed.completedQuestIds)
+    ? parsed.completedQuestIds.filter((q: any) => typeof q === "string")
+    : []
+
   return {
     version: 3,
     level,
@@ -83,6 +94,8 @@ export function migrateProgressionToV3(parsed: any): StarfrontProgression {
     completedMissions,
     battlesWon,
     battlesLost,
+    activeQuest,
+    completedQuestIds,
   }
 }
 

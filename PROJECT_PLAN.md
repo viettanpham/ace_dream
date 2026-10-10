@@ -27,6 +27,13 @@
   - `lib/game/progression.ts`: Xử lý Level, EXP, Credits, công thức tăng chỉ số, trả thưởng ải.
   - `lib/game/audio.ts`: Hệ thống tổng hợp âm thanh Web Audio API (Laser, Impact, Shield, Victory, Level Up).
   - `lib/game/storage.ts`: Quản lý lưu trữ LocalStorage, schema migration an toàn.
+- **Tài liệu thiết kế kiến trúc hệ thống (`docs/`)**:
+  - [`docs/GAME_SYSTEMS.md`](./docs/GAME_SYSTEMS.md): Danh mục hệ thống, nguyên tắc phân tách trách nhiệm và phân loại trạng thái.
+  - [`docs/ITEM_BALANCE.md`](./docs/ITEM_BALANCE.md): Rarity, Power Budget, Power Tokens (PT), Rating và công thức định giá.
+  - [`docs/EQUIPMENT_SYSTEM.md`](./docs/EQUIPMENT_SYSTEM.md): 3 vị trí trang bị, All-Gear vs Gear-Specific, Cường hóa (+1..+10) và Tái chế.
+  - [`docs/SKILL_SYSTEM.md`](./docs/SKILL_SYSTEM.md): 5 Skill Slots, Skill Modules, Aircraft SP, nâng cấp Slot và Specter Gear.
+  - [`docs/COMBAT_SYSTEM.md`](./docs/COMBAT_SYSTEM.md): Vòng lặp lượt đi, công thức sát thương, hiệu ứng trạng thái và AI kẻ địch.
+  - [`docs/SAVE_DATA.md`](./docs/SAVE_DATA.md): Save Schema v3, quy tắc bất biến, migration v3 -> v4 và an toàn SSR.
 
 ---
 
@@ -419,6 +426,12 @@
 #### 🎯 Milestone 5.7: Hệ Thống Mô-đun Kỹ Năng & Trang Bị Thống Nhất (Unified Equipment & Skill Module System) `[KẾ HOẠCH CHI TIẾT / PLANNING]`
 - **Mục tiêu**: Thiết kế kiến trúc Shared Item Balance System dùng chung cho cả Trang bị (Equipment: Weapon, Shield, Engine) và Mô-đun kỹ năng (Skill Modules: Basic Attack, Active Skills 1-3, Ultimate), chuẩn hóa ngân sách sức mạnh (Power Budget), cơ chế random có giới hạn, hệ thống Rating, công thức định giá thương mại, và hệ thống 5 Slot kỹ năng kèm cơ chế nâng cấp slot bằng Aircraft Skill Points.
 - **Trạng thái**: **Đang lập kế hoạch (Planning Phase — Chưa triển khai mã nguồn gameplay)**.
+- **Tài liệu tham chiếu chi tiết (`docs/`)**:
+  - Quy tắc cân bằng & Power Budget: [`docs/ITEM_BALANCE.md`](./docs/ITEM_BALANCE.md)
+  - Quy tắc trang bị & tương thích: [`docs/EQUIPMENT_SYSTEM.md`](./docs/EQUIPMENT_SYSTEM.md)
+  - Quy tắc 5 slot kỹ năng & Specter: [`docs/SKILL_SYSTEM.md`](./docs/SKILL_SYSTEM.md)
+  - Quy tắc chiến đấu: [`docs/COMBAT_SYSTEM.md`](./docs/COMBAT_SYSTEM.md)
+  - Quy tắc Save Schema v4: [`docs/SAVE_DATA.md`](./docs/SAVE_DATA.md)
 - **Phạm vi kiến trúc chi tiết**:
   - **1. Shared Item Balance Framework**:
     - Quản lý đồng nhất: Level, Rarity (4 bậc hiện có: `common`, `rare`, `epic`, `legendary`), Power Budget, Random Affixes, Rating và Pricing.

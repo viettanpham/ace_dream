@@ -69,6 +69,13 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 ### 2.9. Hệ Thống Mô-đun Kỹ Năng & Trang Bị Thống Nhất (Phase 5 — Milestone 5.7) `[KẾ HOẠCH CHI TIẾT / PLANNED — CHƯA TRIỂN KHAI CODE]`
 - **Mục tiêu**: Chuẩn hóa hệ thống Shared Item Balance System dùng chung cho Trang bị (Weapon, Shield, Engine) và Mô-đun Kỹ Năng (Slot 1–5), thiết lập ngân sách sức mạnh (Power Budget), cơ chế random có giới hạn, xếp hạng Item/Skill Rating, định giá thương mại, và hệ thống 5 Slot kỹ năng kèm cơ chế nâng cấp slot bằng Aircraft Skill Points.
 - **Trạng thái**: **Đang lập kế hoạch (Planning)** — Chưa triển khai mã nguồn gameplay.
+- **Tài liệu đặc tả kiến trúc chi tiết (`docs/`)**:
+  - Danh mục hệ thống & nguyên tắc: [`docs/GAME_SYSTEMS.md`](./docs/GAME_SYSTEMS.md)
+  - Cân bằng vật phẩm & Power Budget: [`docs/ITEM_BALANCE.md`](./docs/ITEM_BALANCE.md)
+  - Hệ thống trang bị & tương thích: [`docs/EQUIPMENT_SYSTEM.md`](./docs/EQUIPMENT_SYSTEM.md)
+  - 5 Slot kỹ năng, nâng cấp ô & Specter: [`docs/SKILL_SYSTEM.md`](./docs/SKILL_SYSTEM.md)
+  - Cơ chế chiến đấu theo lượt: [`docs/COMBAT_SYSTEM.md`](./docs/COMBAT_SYSTEM.md)
+  - Cấu trúc dữ liệu lưu & Migration v4: [`docs/SAVE_DATA.md`](./docs/SAVE_DATA.md)
 - **Tóm tắt thiết kế kiến trúc**:
   - *Shared Item Balance System*: Khung đánh giá và ngân sách sức mạnh chung dựa trên hệ số quy đổi Power Tokens (1 ATK = 1.0 PT, 1 DEF = 1.2 PT, 1 SPD = 1.5 PT, 1 HP = 0.08 PT, 1% Crit = 3.0 PT, 1% Evasion = 3.5 PT, v.v.).
   - *Phân cấp tương thích*: All-Gear (75% drop pool, linh hoạt cho mọi Gear) vs Gear-specific (25% drop pool, chuyên biệt theo Gear với +10% ngân sách sức mạnh).

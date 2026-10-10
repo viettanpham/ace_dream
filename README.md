@@ -60,7 +60,8 @@ npm run build
 
 ## 📋 Kế Hoạch Dự Án Chi Tiết (Project Plan)
 
-Chi tiết đầy đủ về kiến trúc hệ thống, lộ trình các giai đoạn phát triển, trạng thái tính năng và quy trình triển khai có tại tập tin:
-👉 **[`PROJECT_PLAN.md`](./PROJECT_PLAN.md)**
+Chi tiết đầy đủ về lộ trình phát triển, trạng thái tính năng và tài liệu thiết kế chi tiết:
+- 👉 **[`PROJECT_PLAN.md`](./PROJECT_PLAN.md)**: Kế hoạch dự án, lộ trình các giai đoạn và tiêu chí kiểm thử.
+- 👉 **[`docs/GAME_SYSTEMS.md`](./docs/GAME_SYSTEMS.md)**: Danh mục thiết kế hệ thống chi tiết (Item Balance, Equipment, Skills, Combat, Save Data).
 
-Vui lòng tham khảo tập tin trên trước khi bắt đầu hoặc tiếp tục bất kỳ tác vụ nào.
+Vui lòng tham khảo các tập tin trên trước khi bắt đầu hoặc tiếp tục bất kỳ tác vụ nào.

@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <radialGradient id="aegis-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#451a03" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#1c0d02" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#0a0401" stop-opacity="0.95"/>
+    </radialGradient>
+    <linearGradient id="aegis-hull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="50%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <linearGradient id="aegis-shield-plate" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+    <linearGradient id="aegis-glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="amber-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Radar Grid -->
+  <rect width="400" height="400" rx="16" fill="url(#aegis-bg)"/>
+  <circle cx="200" cy="200" r="160" fill="none" stroke="#b45309" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
+  <circle cx="200" cy="200" r="110" fill="none" stroke="#f59e0b" stroke-width="1" stroke-opacity="0.25"/>
+  <circle cx="200" cy="200" r="50" fill="none" stroke="#fbbf24" stroke-width="1" stroke-opacity="0.4"/>
+  <line x1="200" y1="20" x2="200" y2="380" stroke="#b45309" stroke-width="1" stroke-dasharray="3,6" opacity="0.25"/>
+  <line x1="20" y1="200" x2="380" y2="200" stroke="#b45309" stroke-width="1" stroke-dasharray="3,6" opacity="0.25"/>
+
+  <!-- Heavy Shield Arc Field -->
+  <path d="M 50 180 A 160 160 0 0 1 350 180" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-dasharray="8,6" opacity="0.45"/>
+  <path d="M 80 180 A 130 130 0 0 1 320 180" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Main Hull Silhouette (Aegis Fortress - Broad, Heavy Armored) -->
+  <g filter="url(#amber-glow)">
+    <!-- Broad Armored Shoulders & Wing Plating -->
+    <path d="M 200 80 L 310 160 L 325 250 L 270 280 L 230 260 L 200 280 L 170 260 L 130 280 L 75 250 L 90 160 Z" fill="#2d1303" stroke="#f59e0b" stroke-width="2.5"/>
+
+    <!-- Heavy Shield Generator Bulkheads (Left & Right) -->
+    <polygon points="90,160 135,140 145,230 75,245" fill="url(#aegis-shield-plate)" stroke="#fbbf24" stroke-width="1.5"/>
+    <polygon points="310,160 265,140 255,230 325,245" fill="url(#aegis-shield-plate)" stroke="#fbbf24" stroke-width="1.5"/>
+
+    <!-- Central Armored Core Fuselage -->
+    <path d="M 200 50 L 245 130 L 230 270 L 200 295 L 170 270 L 155 130 Z" fill="url(#aegis-hull)" stroke="#fde047" stroke-width="2.5"/>
+
+    <!-- Twin Heavy Siege Cannons -->
+    <rect x="150" y="70" width="12" height="70" rx="3" fill="#78350f" stroke="#fbbf24" stroke-width="1.5"/>
+    <line x1="156" y1="70" x2="156" y2="40" stroke="#fde047" stroke-width="2.5" stroke-linecap="round"/>
+    <rect x="238" y="70" width="12" height="70" rx="3" fill="#78350f" stroke="#fbbf24" stroke-width="1.5"/>
+    <line x1="244" y1="70" x2="244" y2="40" stroke="#fde047" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- Reinforced Armored Cockpit Bunker -->
+    <polygon points="200,120 220,160 200,185 180,160" fill="#fef08a" opacity="0.85"/>
+    <polygon points="200,128 212,156 200,174 188,156" fill="#ffffff" opacity="0.9"/>
+
+    <!-- Heavy Dual Reactor Thrusters -->
+    <path d="M 165 275 L 175 345 L 185 275 Z" fill="url(#aegis-glow)"/>
+    <path d="M 215 275 L 225 345 L 235 275 Z" fill="url(#aegis-glow)"/>
+    <ellipse cx="175" cy="275" rx="10" ry="5" fill="#fde047"/>
+    <ellipse cx="225" cy="275" rx="10" ry="5" fill="#fde047"/>
+
+    <!-- Hardpoint Nodes -->
+    <circle cx="110" cy="190" r="4.5" fill="#f59e0b" stroke="#ffffff" stroke-width="1.5"/>
+    <circle cx="290" cy="190" r="4.5" fill="#f59e0b" stroke="#ffffff" stroke-width="1.5"/>
+    <circle cx="200" cy="225" r="5" fill="#fde047" stroke="#ffffff" stroke-width="1.5"/>
+  </g>
+
+  <!-- Technical Overlay HUD -->
+  <text x="30" y="50" font-family="monospace" font-size="12" font-weight="bold" fill="#fbbf24" letter-spacing="2">AG-03 // AEGIS</text>
+  <text x="30" y="66" font-family="monospace" font-size="9" fill="#d97706">HEAVY SIEGE FORTRESS</text>
+  <text x="250" y="370" font-family="monospace" font-size="10" fill="#fbbf24" opacity="0.7">DEF: 120 // TITAN ARMOR</text>
+  <path d="M 20 20 L 40 20 M 20 20 L 20 40" stroke="#fbbf24" stroke-width="2" fill="none"/>
+  <path d="M 380 20 L 360 20 M 380 20 L 380 40" stroke="#fbbf24" stroke-width="2" fill="none"/>
+  <path d="M 20 380 L 40 380 M 20 380 L 20 360" stroke="#fbbf24" stroke-width="2" fill="none"/>
+  <path d="M 380 380 L 360 380 M 380 380 L 380 360" stroke="#fbbf24" stroke-width="2" fill="none"/>
+</svg>

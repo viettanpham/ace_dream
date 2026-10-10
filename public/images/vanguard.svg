@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <radialGradient id="vanguard-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#083344" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#041b24" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#02080d" stop-opacity="0.95"/>
+    </radialGradient>
+    <linearGradient id="vanguard-hull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="50%" stop-color="#0891b2"/>
+      <stop offset="100%" stop-color="#155e75"/>
+    </linearGradient>
+    <linearGradient id="vanguard-glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="cyan-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Radar Grid -->
+  <rect width="400" height="400" rx="16" fill="url(#vanguard-bg)"/>
+  <circle cx="200" cy="200" r="160" fill="none" stroke="#0891b2" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
+  <circle cx="200" cy="200" r="100" fill="none" stroke="#22d3ee" stroke-width="1" stroke-opacity="0.25"/>
+  <circle cx="200" cy="200" r="40" fill="none" stroke="#22d3ee" stroke-width="1" stroke-opacity="0.4"/>
+  <line x1="200" y1="20" x2="200" y2="380" stroke="#0891b2" stroke-width="1" stroke-dasharray="3,6" opacity="0.25"/>
+  <line x1="20" y1="200" x2="380" y2="200" stroke="#0891b2" stroke-width="1" stroke-dasharray="3,6" opacity="0.25"/>
+
+  <!-- Energy Field Lines -->
+  <path d="M 60 270 Q 200 320 340 270" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.4"/>
+
+  <!-- Main Hull Silhouette (Vanguard Fighter) -->
+  <g filter="url(#cyan-glow)">
+    <!-- Wings / Outriggers -->
+    <path d="M 200 90 L 290 270 L 250 280 L 200 240 L 150 280 L 110 270 Z" fill="#0e3a47" stroke="#22d3ee" stroke-width="2"/>
+    <path d="M 200 60 L 235 180 L 200 290 L 165 180 Z" fill="url(#vanguard-hull)" stroke="#67e8f9" stroke-width="2.5"/>
+    
+    <!-- Forward Canards -->
+    <polygon points="200,45 215,95 185,95" fill="#38bdf8"/>
+    <polygon points="200,55 240,140 200,160 160,140" fill="#0891b2" opacity="0.7"/>
+
+    <!-- Wingtip Cannons -->
+    <rect x="90" y="240" width="8" height="40" rx="2" fill="#22d3ee"/>
+    <line x1="94" y1="240" x2="94" y2="200" stroke="#67e8f9" stroke-width="2" stroke-linecap="round"/>
+    <rect x="302" y="240" width="8" height="40" rx="2" fill="#22d3ee"/>
+    <line x1="306" y1="240" x2="306" y2="200" stroke="#67e8f9" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Cockpit Canopy -->
+    <ellipse cx="200" cy="140" rx="14" ry="32" fill="#a5f3fc" opacity="0.9"/>
+    <ellipse cx="200" cy="135" rx="8" ry="18" fill="#ffffff" opacity="0.8"/>
+
+    <!-- Engine Thrusters -->
+    <path d="M 175 285 L 185 340 L 195 285 Z" fill="url(#vanguard-glow)"/>
+    <path d="M 205 285 L 215 340 L 225 285 Z" fill="url(#vanguard-glow)"/>
+    <ellipse cx="185" cy="285" rx="8" ry="4" fill="#67e8f9"/>
+    <ellipse cx="215" cy="285" rx="8" ry="4" fill="#67e8f9"/>
+    
+    <!-- Hardpoint Nodes -->
+    <circle cx="150" cy="220" r="4" fill="#38bdf8" stroke="#ffffff" stroke-width="1"/>
+    <circle cx="250" cy="220" r="4" fill="#38bdf8" stroke="#ffffff" stroke-width="1"/>
+    <circle cx="200" cy="200" r="5" fill="#22d3ee" stroke="#ffffff" stroke-width="1.5"/>
+  </g>
+
+  <!-- Technical Overlay HUD -->
+  <text x="30" y="50" font-family="monospace" font-size="12" font-weight="bold" fill="#22d3ee" letter-spacing="2">VG-01 // VANGUARD</text>
+  <text x="30" y="66" font-family="monospace" font-size="9" fill="#0891b2">BALANCED STRIKER</text>
+  <text x="270" y="370" font-family="monospace" font-size="10" fill="#22d3ee" opacity="0.7">STATUS: OPTIMAL</text>
+  <path d="M 20 20 L 40 20 M 20 20 L 20 40" stroke="#22d3ee" stroke-width="2" fill="none"/>
+  <path d="M 380 20 L 360 20 M 380 20 L 380 40" stroke="#22d3ee" stroke-width="2" fill="none"/>
+  <path d="M 20 380 L 40 380 M 20 380 L 20 360" stroke="#22d3ee" stroke-width="2" fill="none"/>
+  <path d="M 380 380 L 360 380 M 380 380 L 380 360" stroke="#22d3ee" stroke-width="2" fill="none"/>
+</svg>

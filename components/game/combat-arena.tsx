@@ -156,13 +156,51 @@ const GEAR_THEMES: Record<
   },
 }
 
-export function CombatArena() {
+export interface CombatArenaProps {
+  progression?: StarfrontProgression
+  onUpdateProgression?: (updated: StarfrontProgression) => void
+  activeCampaignMission?: CampaignMission | null
+  onClearCampaignMission?: () => void
+  onNavigateSection?: (section: "home" | "battlefield" | "missions" | "shop" | "hangar") => void
+  isEmbeddedInShell?: boolean
+}
+
+export function CombatArena({
+  progression: initialProgression,
+  onUpdateProgression,
+  activeCampaignMission: parentMission,
+  onClearCampaignMission,
+  onNavigateSection,
+  isEmbeddedInShell = false,
+}: CombatArenaProps = {}) {
   // 1. Quản lý tiến trình STARFRONT (Level, EXP, Credits, Trang bị, Gears, Chiến dịch)
-  const [progression, setProgression] = useState<StarfrontProgression>(INITIAL_STARFRONT_PROGRESSION)
-  const [hasLoadedProgression, setHasLoadedProgression] = useState(false)
+  const [progression, setProgression] = useState<StarfrontProgression>(
+    initialProgression || INITIAL_STARFRONT_PROGRESSION,
+  )
+  const [hasLoadedProgression, setHasLoadedProgression] = useState(Boolean(initialProgression))
   const [activeSubView, setActiveSubView] = useState<"combat" | "campaign" | "hangar" | "shop">("combat")
-  const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(null)
+  const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(
+    parentMission !== undefined ? parentMission : null,
+  )
   const [audioMuted, setAudioMutedState] = useState(false)
+
+  // Đồng bộ progression từ parent shell nếu có thay đổi
+  useEffect(() => {
+    if (initialProgression) {
+      setProgression(initialProgression)
+      setHasLoadedProgression(true)
+    }
+  }, [initialProgression])
+
+  // Đồng bộ activeCampaignMission từ parent shell
+  useEffect(() => {
+    if (parentMission !== undefined) {
+      setActiveCampaignMission(parentMission)
+      if (parentMission) {
+        handleStartEncounter(parentMission.encounterId, progression, parentMission)
+      }
+    }
+  }, [parentMission])
 
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
   const activeGearDef = STARFRONT_GEAR_DEFS[activeGearId] || STARFRONT_GEAR_DEFS.vanguard
@@ -585,6 +623,23 @@ export function CombatArena() {
 
   // Khôi phục dữ liệu đã lưu từ LocalStorage khi khởi chạy
   useEffect(() => {
+    if (initialProgression) {
+      setProgression(initialProgression)
+      setHasLoadedProgression(true)
+      setAudioMutedState(isAudioMuted())
+      const customPlayer = buildPlayerCombatUnit(initialProgression)
+      const encId = parentMission?.encounterId || selectedEncounter || "scout-drone"
+      let scaledEnemy: CombatUnit | undefined = undefined
+      if (parentMission) {
+        const lvl = parentMission.level ?? parentMission.recommendedLevel ?? 1
+        const quality = parentMission.quality ?? "standard"
+        const variantId = parentMission.variantId ?? "recon"
+        scaledEnemy = createScaledEnemyUnit(encId, variantId, lvl, quality)
+      }
+      setCombatState(createInitialCombatState(encId, customPlayer, scaledEnemy))
+      return
+    }
+
     const saved = loadStarfrontProgression()
     setProgression(saved)
     setHasLoadedProgression(true)
@@ -598,6 +653,9 @@ export function CombatArena() {
   useEffect(() => {
     if (hasLoadedProgression) {
       saveStarfrontProgression(progression)
+      if (onUpdateProgression) {
+        onUpdateProgression(progression)
+      }
     }
   }, [progression, hasLoadedProgression])
 
@@ -955,138 +1013,141 @@ export function CombatArena() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* 1. Header Thanh Tiến Trình Cấp Độ & Chuyển Đổi Tab Con */}
-      <div className={cn("rounded-sm border bg-black/60 p-3 shadow-xl backdrop-blur-md", currentTheme.border)}>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Thông tin cấp độ & EXP & Credits */}
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2.5">
-              <span className={cn("flex size-8 items-center justify-center rounded-xs font-mono text-sm font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
-                {activeGearDef.name.charAt(0)}
-              </span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-display text-sm font-bold text-white tracking-wider">
-                    {activeGearDef.name.toUpperCase()}
-                  </span>
-                  <span className={cn("rounded px-1.5 py-0.2 font-mono text-xs font-bold border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
-                    CẤP {progression.level}
-                  </span>
+      {/* 1. Header Thanh Tiến Trình Cấp Độ & Chuyển Đổi Tab Con (Chỉ hiển thị khi chạy độc lập ngoài StarfrontShell) */}
+      {!isEmbeddedInShell && (
+        <div className={cn("rounded-sm border bg-black/60 p-3 shadow-xl backdrop-blur-md", currentTheme.border)}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {/* Thông tin cấp độ & EXP & Credits */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-2.5">
+                <span className={cn("flex size-8 items-center justify-center rounded-xs font-mono text-sm font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                  {activeGearDef.name.charAt(0)}
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-sm font-bold text-white tracking-wider">
+                      {activeGearDef.name.toUpperCase()}
+                    </span>
+                    <span className={cn("rounded px-1.5 py-0.2 font-mono text-xs font-bold border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                      CẤP {progression.level}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
+                    <span>EXP: {progression.exp} / {expRequired} ({expPct}%)</span>
+                    <span>·</span>
+                    <span className="flex items-center gap-1 text-amber-300">
+                      <Coins className="size-3 text-amber-400" />
+                      <strong>{progression.credits.toLocaleString("vi-VN")}</strong> Credits
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground font-mono">
-                  <span>EXP: {progression.exp} / {expRequired} ({expPct}%)</span>
-                  <span>·</span>
-                  <span className="flex items-center gap-1 text-amber-300">
-                    <Coins className="size-3 text-amber-400" />
-                    <strong>{progression.credits.toLocaleString("vi-VN")}</strong> Credits
-                  </span>
+              </div>
+
+              {/* Thanh EXP mini */}
+              <div className="hidden sm:block w-36">
+                <div className="h-1.5 w-full overflow-hidden rounded-xs bg-secondary">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-300"
+                    style={{ width: `${expPct}%` }}
+                  />
                 </div>
               </div>
             </div>
 
-            {/* Thanh EXP mini */}
-            <div className="hidden sm:block w-36">
-              <div className="h-1.5 w-full overflow-hidden rounded-xs bg-secondary">
-                <div
-                  className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 transition-all duration-300"
-                  style={{ width: `${expPct}%` }}
-                />
-              </div>
+            {/* Nút chuyển đổi giữa Đấu trường, Bản đồ chiến dịch, Hangar và Chợ */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                onClick={() => handleSwitchTab("combat")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
+                  activeSubView === "combat"
+                    ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
+                    : "border-border/60 text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Sword className="size-3.5" />
+                <span>Đấu Trường</span>
+              </button>
+
+              <button
+                onClick={() => handleSwitchTab("campaign")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
+                  activeSubView === "campaign"
+                    ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
+                    : "border-border/60 text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Globe2 className="size-3.5 text-cyan-400" />
+                <span>Bản Đồ Chiến Dịch ({progression.completedMissions.length}/9)</span>
+              </button>
+
+              <button
+                onClick={() => handleSwitchTab("hangar")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
+                  activeSubView === "hangar"
+                    ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
+                    : "border-border/60 text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Boxes className="size-3.5" />
+                <span>Kho Đồ & Hangar ({progression.inventory.length})</span>
+              </button>
+
+              <button
+                onClick={() => handleSwitchTab("shop")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
+                  activeSubView === "shop"
+                    ? "border-amber-400 bg-amber-950/80 text-amber-200 font-bold shadow-[0_0_10px_rgba(251,191,36,0.25)]"
+                    : "border-border/60 text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <ShoppingBag className="size-3.5 text-amber-400" />
+                <span>Chợ Quân Sự</span>
+              </button>
+
+              {/* Nút bật tắt âm thanh Web Audio */}
+              <button
+                onClick={handleToggleAudio}
+                title={audioMuted ? "Bật âm thanh Sci-Fi" : "Tắt âm thanh"}
+                className="flex size-7 items-center justify-center rounded-xs border border-border/60 bg-black/40 text-muted-foreground hover:text-foreground hover:border-cyan-400 cursor-pointer transition-colors ml-1"
+              >
+                {audioMuted ? <VolumeX className="size-3.5 text-red-400" /> : <Volume2 className="size-3.5 text-cyan-400" />}
+              </button>
+
+              {/* Nút bật tắt Dev Combat Test Controls (Phase 5.2) */}
+              <button
+                onClick={() => {
+                  playClickSound()
+                  setShowDevTestPanel(!showDevTestPanel)
+                }}
+                title="Mở Bảng Điều Khiển Kiểm Thử Nội Tại Combat (Milestone 5.2)"
+                className={cn(
+                  "flex items-center gap-1 rounded-xs border px-2.5 py-1 text-xs font-mono transition-all cursor-pointer ml-1",
+                  showDevTestPanel
+                    ? "border-amber-400 bg-amber-950/80 text-amber-300 font-bold shadow-[0_0_10px_rgba(251,191,36,0.3)]"
+                    : "border-border/60 bg-black/40 text-muted-foreground hover:text-amber-300 hover:border-amber-400/50",
+                )}
+              >
+                <FlaskConical className="size-3.5 text-amber-400" />
+                <span className="hidden sm:inline font-bold">🛠️ Test Mode 5.2</span>
+                {showDevTestPanel ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+              </button>
             </div>
-          </div>
-
-          {/* Nút chuyển đổi giữa Đấu trường, Bản đồ chiến dịch, Hangar và Chợ */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              onClick={() => handleSwitchTab("combat")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
-                activeSubView === "combat"
-                  ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
-                  : "border-border/60 text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Sword className="size-3.5" />
-              <span>Đấu Trường</span>
-            </button>
-
-            <button
-              onClick={() => handleSwitchTab("campaign")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
-                activeSubView === "campaign"
-                  ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
-                  : "border-border/60 text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Globe2 className="size-3.5 text-cyan-400" />
-              <span>Bản Đồ Chiến Dịch ({progression.completedMissions.length}/9)</span>
-            </button>
-
-            <button
-              onClick={() => handleSwitchTab("hangar")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
-                activeSubView === "hangar"
-                  ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold shadow-[0_0_10px_rgba(34,211,238,0.25)]"
-                  : "border-border/60 text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <Boxes className="size-3.5" />
-              <span>Kho Đồ & Hangar ({progression.inventory.length})</span>
-            </button>
-
-            <button
-              onClick={() => handleSwitchTab("shop")}
-              className={cn(
-                "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
-                activeSubView === "shop"
-                  ? "border-amber-400 bg-amber-950/80 text-amber-200 font-bold shadow-[0_0_10px_rgba(251,191,36,0.25)]"
-                  : "border-border/60 text-muted-foreground hover:text-foreground",
-              )}
-            >
-              <ShoppingBag className="size-3.5 text-amber-400" />
-              <span>Chợ Quân Sự</span>
-            </button>
-
-            {/* Nút bật tắt âm thanh Web Audio */}
-            <button
-              onClick={handleToggleAudio}
-              title={audioMuted ? "Bật âm thanh Sci-Fi" : "Tắt âm thanh"}
-              className="flex size-7 items-center justify-center rounded-xs border border-border/60 bg-black/40 text-muted-foreground hover:text-foreground hover:border-cyan-400 cursor-pointer transition-colors ml-1"
-            >
-              {audioMuted ? <VolumeX className="size-3.5 text-red-400" /> : <Volume2 className="size-3.5 text-cyan-400" />}
-            </button>
-
-            {/* Nút bật tắt Dev Combat Test Controls (Phase 5.2) */}
-            <button
-              onClick={() => {
-                playClickSound()
-                setShowDevTestPanel(!showDevTestPanel)
-              }}
-              title="Mở Bảng Điều Khiển Kiểm Thử Nội Tại Combat (Milestone 5.2)"
-              className={cn(
-                "flex items-center gap-1 rounded-xs border px-2.5 py-1 text-xs font-mono transition-all cursor-pointer ml-1",
-                showDevTestPanel
-                  ? "border-amber-400 bg-amber-950/80 text-amber-300 font-bold shadow-[0_0_10px_rgba(251,191,36,0.3)]"
-                  : "border-border/60 bg-black/40 text-muted-foreground hover:text-amber-300 hover:border-amber-400/50",
-              )}
-            >
-              <FlaskConical className="size-3.5 text-amber-400" />
-              <span className="hidden sm:inline font-bold">🛠️ Test Mode 5.2</span>
-              {showDevTestPanel ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-            </button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* HIỂN THỊ PHÂN HỆ THEO TAB: CHIẾN DỊCH, CHỢ, HANGAR HOẶC COMBAT ARENA */}
-      {activeSubView === "campaign" && (
+      {/* HIỂN THỊ PHÂN HỆ THEO TAB: CHIẾN DỊCH, CHỢ, HANGAR (Chỉ dùng khi chạy độc lập ngoài Shell) */}
+      {!isEmbeddedInShell && activeSubView === "campaign" && (
         <CampaignMap
           progression={progression}
           onUpdateProgression={(updated) => {
             setProgression(updated)
             saveStarfrontProgression(updated)
+            onUpdateProgression?.(updated)
           }}
           onDeployMission={(mission) => {
             setActiveCampaignMission(mission)
@@ -1096,23 +1157,27 @@ export function CombatArena() {
         />
       )}
 
-      {activeSubView === "shop" && (
+      {!isEmbeddedInShell && activeSubView === "shop" && (
         <StarfrontShop
           progression={progression}
           onUpdateProgression={(updated) => {
             setProgression(updated)
             saveStarfrontProgression(updated)
+            onUpdateProgression?.(updated)
           }}
         />
       )}
 
-      {activeSubView === "hangar" && (
+      {!isEmbeddedInShell && activeSubView === "hangar" && (
         <StarfrontHangar
           progression={progression}
           onEquipItem={handleEquipItem}
           onUnequipSlot={handleUnequipSlot}
           onEnhanceItem={handleEnhanceItem}
-          onUpdateProgression={(updated) => setProgression(updated)}
+          onUpdateProgression={(updated) => {
+            setProgression(updated)
+            onUpdateProgression?.(updated)
+          }}
           onResetSave={handleResetSave}
           onSelectGear={handleSelectGear}
           onNavigateToCombat={() => {
@@ -1122,7 +1187,7 @@ export function CombatArena() {
         />
       )}
 
-      {activeSubView === "combat" && (
+      {(isEmbeddedInShell || activeSubView === "combat") && (
         <>
           {/* Banner thông báo khi đang thực hiện nhiệm vụ chiến dịch */}
           {activeCampaignMission && (
@@ -1144,8 +1209,16 @@ export function CombatArena() {
                 variant="outline"
                 onClick={() => {
                   playClickSound()
-                  setActiveCampaignMission(null)
-                  setActiveSubView("campaign")
+                  if (onClearCampaignMission) {
+                    onClearCampaignMission()
+                  } else {
+                    setActiveCampaignMission(null)
+                  }
+                  if (onNavigateSection) {
+                    onNavigateSection("missions")
+                  } else {
+                    setActiveSubView("campaign")
+                  }
                 }}
                 className="gap-1 text-xs border-cyan-500/50 text-cyan-300 hover:bg-cyan-950/50"
               >

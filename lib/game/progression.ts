@@ -421,6 +421,58 @@ export function calculateTotalVanguardStats(
   return calculateTotalGearStats("vanguard", level, inventory, equipped)
 }
 
+/**
+ * Tính toán Item Rating dựa trên bảng Power Token (PT) và cấp cường hóa (+0 đến +10)
+ * Theo quy chuẩn docs/ITEM_BALANCE.md: Rating = Math.round(TotalActualPowerTokens / 1.5)
+ */
+export function calculateItemRating(item: StarfrontItem): number {
+  const enhanced = getEnhancedItemStats(item)
+  const pt =
+    (enhanced.attackBonus || 0) * 1.0 +
+    (enhanced.defenseBonus || 0) * 1.2 +
+    (enhanced.speedBonus || 0) * 1.5 +
+    (enhanced.hpBonus || 0) * 0.08 +
+    (enhanced.spBonus || 0) * 1.2
+  return Math.max(10, Math.round(pt / 1.5))
+}
+
+/**
+ * Tính toán Lực Chiến Tổng Thể (Gear Combat Rating) cho Cơ Giáp
+ */
+export function calculateGearCombatRating(totalStats: {
+  attack: number
+  defense: number
+  speed: number
+  hp: number
+  sp: number
+}): number {
+  const pt =
+    totalStats.attack * 1.0 +
+    totalStats.defense * 1.2 +
+    totalStats.speed * 1.5 +
+    totalStats.hp * 0.08 +
+    totalStats.sp * 1.2
+  return Math.round(pt * 1.25)
+}
+
+/**
+ * Tính toán Điểm Kỹ Năng Phi Thuyền (Aircraft Skill Points) theo cấp độ
+ * Quy tắc docs/SKILL_SYSTEM.md: +2 SP mỗi cấp phi thuyền
+ */
+export function getAircraftSkillPoints(level: number, allocated: number = 0): {
+  total: number
+  allocated: number
+  available: number
+} {
+  const total = Math.max(0, (level - 1) * 2)
+  const alloc = Math.min(total, Math.max(0, allocated))
+  return {
+    total,
+    allocated: alloc,
+    available: Math.max(0, total - alloc),
+  }
+}
+
 /** Xây dựng CombatUnit sẵn sàng đưa vào đấu trường từ tiến trình hiện tại */
 export function buildPlayerCombatUnit(progression: StarfrontProgression): CombatUnit {
   const activeGear = progression.activeGearId || "vanguard"

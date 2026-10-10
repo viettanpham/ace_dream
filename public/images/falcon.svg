@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="100%" height="100%">
+  <defs>
+    <radialGradient id="falcon-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3b0764" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#1e0533" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#07010d" stop-opacity="0.95"/>
+    </radialGradient>
+    <linearGradient id="falcon-hull" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="50%" stop-color="#9333ea"/>
+      <stop offset="100%" stop-color="#581c87"/>
+    </linearGradient>
+    <linearGradient id="falcon-glow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e879f9" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="purple-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Radar Grid -->
+  <rect width="400" height="400" rx="16" fill="url(#falcon-bg)"/>
+  <circle cx="200" cy="200" r="160" fill="none" stroke="#7e22ce" stroke-width="1" stroke-dasharray="4,6" opacity="0.3"/>
+  <circle cx="200" cy="200" r="100" fill="none" stroke="#a855f7" stroke-width="1" stroke-opacity="0.25"/>
+  <circle cx="200" cy="200" r="40" fill="none" stroke="#c084fc" stroke-width="1" stroke-opacity="0.4"/>
+  <line x1="200" y1="20" x2="200" y2="380" stroke="#7e22ce" stroke-width="1" stroke-dasharray="3,6" opacity="0.25"/>
+  <line x1="20" y1="200" x2="380" y2="200" stroke="#7e22ce" stroke-width="1" stroke-dasharray="3,6" opacity="0.25"/>
+
+  <!-- Speed Vectors -->
+  <path d="M 40 320 L 170 120" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="8,8" opacity="0.4"/>
+  <path d="M 360 320 L 230 120" stroke="#a855f7" stroke-width="1.5" stroke-dasharray="8,8" opacity="0.4"/>
+
+  <!-- Main Hull Silhouette (Falcon Interceptor - Sleek, Swept Forward) -->
+  <g filter="url(#purple-glow)">
+    <!-- Razor Swept Wings -->
+    <path d="M 200 110 L 330 220 L 280 235 L 210 210 L 200 240 L 190 210 L 120 235 L 70 220 Z" fill="#2e1065" stroke="#c084fc" stroke-width="2"/>
+    
+    <!-- Central Needle Fuselage -->
+    <path d="M 200 35 L 225 170 L 200 310 L 175 170 Z" fill="url(#falcon-hull)" stroke="#e879f9" stroke-width="2.5"/>
+
+    <!-- Wing Flaps & Kinetic Fins -->
+    <polygon points="200,30 210,80 190,80" fill="#f0abfc"/>
+    <polygon points="310,210 350,225 320,240" fill="#a855f7"/>
+    <polygon points="90,210 50,225 80,240" fill="#a855f7"/>
+
+    <!-- Twin Micro Missile Bays -->
+    <rect x="145" y="160" width="6" height="24" rx="2" fill="#e879f9"/>
+    <rect x="249" y="160" width="6" height="24" rx="2" fill="#e879f9"/>
+
+    <!-- Cockpit Canopy (Narrow Speed Cockpit) -->
+    <ellipse cx="200" cy="120" rx="10" ry="34" fill="#f5d0fe" opacity="0.9"/>
+    <ellipse cx="200" cy="115" rx="5" ry="18" fill="#ffffff" opacity="0.8"/>
+
+    <!-- Tri-Thruster Afterburners -->
+    <path d="M 190 305 L 200 365 L 210 305 Z" fill="url(#falcon-glow)"/>
+    <ellipse cx="200" cy="305" rx="9" ry="4" fill="#f0abfc"/>
+    
+    <!-- Hardpoint Nodes -->
+    <circle cx="120" cy="190" r="3.5" fill="#f472b6" stroke="#ffffff" stroke-width="1"/>
+    <circle cx="280" cy="190" r="3.5" fill="#f472b6" stroke="#ffffff" stroke-width="1"/>
+    <circle cx="200" cy="180" r="4" fill="#c084fc" stroke="#ffffff" stroke-width="1.5"/>
+  </g>
+
+  <!-- Technical Overlay HUD -->
+  <text x="30" y="50" font-family="monospace" font-size="12" font-weight="bold" fill="#c084fc" letter-spacing="2">FL-02 // FALCON</text>
+  <text x="30" y="66" font-family="monospace" font-size="9" fill="#9333ea">SPEED INFILTRATOR</text>
+  <text x="270" y="370" font-family="monospace" font-size="10" fill="#c084fc" opacity="0.7">SPD: 125 // MACH 5+</text>
+  <path d="M 20 20 L 40 20 M 20 20 L 20 40" stroke="#c084fc" stroke-width="2" fill="none"/>
+  <path d="M 380 20 L 360 20 M 380 20 L 380 40" stroke="#c084fc" stroke-width="2" fill="none"/>
+  <path d="M 20 380 L 40 380 M 20 380 L 20 360" stroke="#c084fc" stroke-width="2" fill="none"/>
+  <path d="M 380 380 L 360 380 M 380 380 L 380 360" stroke="#c084fc" stroke-width="2" fill="none"/>
+</svg>

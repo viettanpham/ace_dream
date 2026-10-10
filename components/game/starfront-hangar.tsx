@@ -1,19 +1,27 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { STARFRONT_GEAR_DEFS } from "@/lib/game/data"
-import { playClickSound } from "@/lib/game/audio"
+import {
+  playClickSound,
+  playLevelUpSound,
+  playShieldSound,
+} from "@/lib/game/audio"
 import {
   calculateTotalGearStats,
   ENHANCEMENT_TABLE,
   getEnhancedItemStats,
   getExpRequiredForLevel,
   getItemDisplayName,
-  SAMPLE_STARFRONT_ITEMS,
+  calculateItemRating,
+  calculateGearCombatRating,
+  getAircraftSkillPoints,
   type EnhancementResult,
 } from "@/lib/game/progression"
 import { saveStarfrontProgression } from "@/lib/game/storage"
 import type {
+  CombatSkill,
   StarfrontGearId,
   StarfrontItem,
   StarfrontItemRarity,
@@ -24,75 +32,113 @@ import { cn } from "@/lib/utils"
 import {
   AlertTriangle,
   ArrowRight,
+  ArrowUpDown,
   Boxes,
   Check,
+  CheckCircle2,
+  ChevronRight,
   Coins,
   Cpu,
+  Eye,
+  Filter,
   Flame,
   Gauge,
   Hammer,
+  HelpCircle,
+  Info,
   Layers,
   Recycle,
   RotateCcw,
+  Search,
   Shield,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Sword,
+  TrendingDown,
   TrendingUp,
-  Wrench,
   Wind,
-  ShieldAlert,
-  Award,
   X,
   Zap,
 } from "lucide-react"
 import { SalvageModal } from "./salvage-modal"
-import { useState } from "react"
 
-const RARITY_CONFIG: Record<
+/* ==========================================================================
+   CẤU HÌNH GIAO DIỆN & PHẨM CHẤT (THEME & RARITY CONFIG)
+   ========================================================================== */
+
+export const RARITY_CONFIG: Record<
   StarfrontItemRarity,
-  { label: string; border: string; bg: string; text: string }
+  { label: string; border: string; bg: string; text: string; glow: string; badgeBg: string }
 > = {
   common: {
     label: "Thường",
-    border: "border-slate-500/40",
-    bg: "bg-slate-900/40",
+    border: "border-slate-500/50",
+    bg: "bg-slate-900/50",
     text: "text-slate-300",
+    glow: "shadow-[0_0_8px_rgba(100,116,139,0.2)]",
+    badgeBg: "bg-slate-800 text-slate-300 border-slate-600",
   },
   rare: {
     label: "Hiếm",
     border: "border-cyan-400/60",
     bg: "bg-cyan-950/40",
     text: "text-cyan-300",
+    glow: "shadow-[0_0_12px_rgba(6,182,212,0.3)]",
+    badgeBg: "bg-cyan-900/60 text-cyan-300 border-cyan-500/50",
   },
   epic: {
     label: "Sử Thi",
     border: "border-purple-400/60",
     bg: "bg-purple-950/40",
     text: "text-purple-300",
+    glow: "shadow-[0_0_15px_rgba(168,85,247,0.35)]",
+    badgeBg: "bg-purple-900/60 text-purple-300 border-purple-500/50",
   },
   legendary: {
     label: "Huyền Thoại",
     border: "border-amber-400/70",
     bg: "bg-amber-950/40",
     text: "text-amber-300",
+    glow: "shadow-[0_0_18px_rgba(245,158,11,0.4)]",
+    badgeBg: "bg-amber-900/60 text-amber-300 border-amber-500/60",
   },
 }
 
-const SLOT_META: Record<StarfrontItemSlot, { label: string; icon: typeof Sword; desc: string }> = {
-  weapon: { label: "Vũ Khí Chính", icon: Sword, desc: "Tăng mạnh lực sát thương (ATK)" },
-  shield: { label: "Khiên Phòng Hộ", icon: Shield, desc: "Gia cố độ bền giáp (DEF & HP)" },
-  engine: { label: "Động Cơ Đẩy", icon: Gauge, desc: "Tối ưu tốc độ ra đòn (SPD & SP)" },
+export const SLOT_META: Record<
+  StarfrontItemSlot,
+  { label: string; shortLabel: string; icon: typeof Sword; desc: string; statKey: string }
+> = {
+  weapon: {
+    label: "Vũ Khí Chính",
+    shortLabel: "Vũ Khí",
+    icon: Sword,
+    desc: "Tập trung hỏa lực sát thương (ATK)",
+    statKey: "ATK",
+  },
+  shield: {
+    label: "Khiên Phòng Hộ",
+    shortLabel: "Khiên",
+    icon: Shield,
+    desc: "Gia cố độ bền giáp và vỏ (DEF & HP)",
+    statKey: "DEF",
+  },
+  engine: {
+    label: "Động Cơ Đẩy",
+    shortLabel: "Động Cơ",
+    icon: Gauge,
+    desc: "Tối ưu hóa tốc độ ra đòn (SPD & SP)",
+    statKey: "SPD",
+  },
 }
 
-/** Lấy huy hiệu cấp cường hóa (+1 đến +10) */
-function getEnhancementBadgeMeta(level: number = 0) {
-  if (level === 0) return null
+export function getEnhancementBadgeMeta(level: number = 0) {
+  if (level <= 0) return null
   if (level >= 10) {
     return {
       text: "+10 TỐI THƯỢNG",
       className:
-        "bg-amber-500/30 text-amber-300 border-amber-400 font-black shadow-[0_0_12px_rgba(245,158,11,0.6)] animate-pulse",
+        "bg-amber-500/30 text-amber-300 border-amber-400 font-black shadow-[0_0_14px_rgba(245,158,11,0.6)] animate-pulse",
     }
   }
   if (level >= 8) {
@@ -115,6 +161,9 @@ function getEnhancementBadgeMeta(level: number = 0) {
   }
 }
 
+type HangarTab = "loadout" | "inventory" | "enhancement"
+type InventorySortBy = "rarity" | "enhancement" | "rating" | "name"
+
 interface StarfrontHangarProps {
   progression: StarfrontProgression
   onEquipItem: (itemId: string, slot: StarfrontItemSlot) => void
@@ -136,45 +185,113 @@ export function StarfrontHangar({
   onEnhanceItem,
   onUpdateProgression,
 }: StarfrontHangarProps) {
-  const [selectedSlotFilter, setSelectedSlotFilter] = useState<StarfrontItemSlot | "all">("all")
+  // Tabs: Buồng Lái & Trang Bị, Kho Đồ & Tái Chế, Xưởng Cường Hóa
+  const [activeTab, setActiveTab] = useState<HangarTab>("loadout")
+
+  // Bộ lọc & sắp xếp kho đồ
+  const [slotFilter, setSlotFilter] = useState<StarfrontItemSlot | "all">("all")
+  const [sortBy, setSortBy] = useState<InventorySortBy>("rarity")
+  const [searchQuery, setSearchQuery] = useState("")
+
+  // Item đang chọn hoặc đang di chuột qua để xem trước so sánh
   const [hoveredItem, setHoveredItem] = useState<StarfrontItem | null>(null)
+  const [inspectedItem, setInspectedItem] = useState<StarfrontItem | null>(null)
+
+  // Dialogs
   const [showResetDialog, setShowResetDialog] = useState(false)
   const [selectedSalvageItem, setSelectedSalvageItem] = useState<StarfrontItem | null>(null)
 
-  // Quản lý trạng thái Xưởng Cường Hóa (Enhancement Lab Modal)
+  // Xưởng Cường Hóa Modal
   const [showEnhanceModal, setShowEnhanceModal] = useState(false)
   const [selectedEnhanceItemId, setSelectedEnhanceItemId] = useState<string | null>(null)
   const [lastEnhanceResult, setLastEnhanceResult] = useState<EnhancementResult | null>(null)
   const [isEnhancing, setIsEnhancing] = useState(false)
 
+  // Lớp Gear hiện tại
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
   const activeGearDef = STARFRONT_GEAR_DEFS[activeGearId] || STARFRONT_GEAR_DEFS.vanguard
 
+  // Tiến trình cấp độ và tài nguyên
   const expRequired = getExpRequiredForLevel(progression.level)
   const expPercentage = Math.min(100, Math.round((progression.exp / expRequired) * 100))
   const alloyCount = progression.alloy ?? 25
+  const skillPoints = getAircraftSkillPoints(progression.level)
 
-  // Tính toán chỉ số hiện tại dựa theo Gear đang chọn (đã tính cường hóa +1 đến +10)
-  const currentStats = calculateTotalGearStats(
-    activeGearId,
-    progression.level,
-    progression.inventory,
-    progression.equipped,
-  )
+  // Chỉ số thực tế của cơ giáp hiện tại
+  const currentStats = useMemo(() => {
+    return calculateTotalGearStats(
+      activeGearId,
+      progression.level,
+      progression.inventory,
+      progression.equipped,
+    )
+  }, [activeGearId, progression.level, progression.inventory, progression.equipped])
 
-  // Tính toán chỉ số so sánh nếu hover vào 1 món đồ
-  const previewEquipped = hoveredItem
-    ? { ...progression.equipped, [hoveredItem.slot]: hoveredItem.id }
-    : null
+  // Lực chiến tổng thể (Combat Readiness Rating)
+  const combatRating = useMemo(() => {
+    return calculateGearCombatRating(currentStats.total)
+  }, [currentStats.total])
 
-  const previewStats = previewEquipped
-    ? calculateTotalGearStats(activeGearId, progression.level, progression.inventory, previewEquipped)
-    : null
+  // Chỉ số so sánh khi xem trước món đồ (hover hoặc inspected)
+  const previewItem = hoveredItem || inspectedItem
+  const previewEquipped = useMemo(() => {
+    if (!previewItem) return null
+    return { ...progression.equipped, [previewItem.slot]: previewItem.id }
+  }, [previewItem, progression.equipped])
 
-  const filteredInventory = progression.inventory.filter((item) =>
-    selectedSlotFilter === "all" ? true : item.slot === selectedSlotFilter,
-  )
+  const previewStats = useMemo(() => {
+    if (!previewEquipped) return null
+    return calculateTotalGearStats(
+      activeGearId,
+      progression.level,
+      progression.inventory,
+      previewEquipped,
+    )
+  }, [activeGearId, progression.level, progression.inventory, previewEquipped])
 
+  // Lọc và sắp xếp kho đồ
+  const filteredAndSortedInventory = useMemo(() => {
+    let list = progression.inventory.filter((item) => {
+      const matchSlot = slotFilter === "all" ? true : item.slot === slotFilter
+      const matchSearch =
+        searchQuery.trim() === ""
+          ? true
+          : item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.desc.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchSlot && matchSearch
+    })
+
+    const rarityOrder: Record<StarfrontItemRarity, number> = {
+      legendary: 4,
+      epic: 3,
+      rare: 2,
+      common: 1,
+    }
+
+    list = [...list].sort((a, b) => {
+      if (sortBy === "rarity") {
+        const diffRarity = rarityOrder[b.rarity] - rarityOrder[a.rarity]
+        if (diffRarity !== 0) return diffRarity
+        return (b.enhancementLevel || 0) - (a.enhancementLevel || 0)
+      }
+      if (sortBy === "enhancement") {
+        const diffEnh = (b.enhancementLevel || 0) - (a.enhancementLevel || 0)
+        if (diffEnh !== 0) return diffEnh
+        return rarityOrder[b.rarity] - rarityOrder[a.rarity]
+      }
+      if (sortBy === "rating") {
+        return calculateItemRating(b) - calculateItemRating(a)
+      }
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name, "vi")
+      }
+      return 0
+    })
+
+    return list
+  }, [progression.inventory, slotFilter, sortBy, searchQuery])
+
+  // Đổi Gear
   const handleGearChange = (gearId: StarfrontGearId) => {
     playClickSound()
     if (onSelectGear) {
@@ -182,7 +299,7 @@ export function StarfrontHangar({
     }
   }
 
-  // Mở giao diện Cường Hóa cho một trang bị cụ thể
+  // Mở Cường Hóa
   const handleOpenEnhance = (itemId?: string) => {
     playClickSound()
     const targetId = itemId || progression.inventory[0]?.id || null
@@ -191,7 +308,7 @@ export function StarfrontHangar({
     setShowEnhanceModal(true)
   }
 
-  // Thực hiện cường hóa trang bị đang chọn
+  // Thực thi Cường Hóa
   const handleExecuteEnhance = () => {
     if (!selectedEnhanceItemId || !onEnhanceItem || isEnhancing) return
     setIsEnhancing(true)
@@ -204,80 +321,109 @@ export function StarfrontHangar({
     }, 250)
   }
 
-  const selectedEnhanceItem = progression.inventory.find(
-    (it) => it.id === selectedEnhanceItemId,
-  ) || progression.inventory[0]
+  const selectedEnhanceItem =
+    progression.inventory.find((it) => it.id === selectedEnhanceItemId) ||
+    progression.inventory[0]
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* 1. Header tóm tắt tiến trình phi cơ Vanguard */}
-      <div className="rounded-sm border border-cyan-500/30 bg-gradient-to-r from-panel via-cyan-950/20 to-panel p-4 shadow-xl backdrop-blur-md">
+    <div className="flex flex-col gap-4 font-sans text-foreground">
+      {/* ====================================================================
+          1. THANH TỔNG HÀNH DINH HANGAR & TÀI NGUYÊN (COMMAND HEADER)
+          ==================================================================== */}
+      <section className="relative overflow-hidden rounded-sm border border-cyan-500/40 bg-gradient-to-r from-panel via-cyan-950/20 to-panel p-4 shadow-xl backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* Thông tin phi cơ & Lực chiến */}
           <div className="flex items-center gap-3">
-            <div className="flex size-12 items-center justify-center rounded-sm border border-cyan-400/60 bg-cyan-950/60 text-cyan-300 shadow-[0_0_15px_rgba(34,211,238,0.3)]">
-              <Cpu className="size-6 animate-pulse" />
+            <div
+              className="flex size-12 shrink-0 items-center justify-center rounded-sm border p-1 shadow-md"
+              style={{
+                borderColor: activeGearDef.color,
+                backgroundColor: `${activeGearDef.color}15`,
+              }}
+            >
+              <img
+                src={activeGearDef.illustration || `/images/${activeGearId}.svg`}
+                alt={activeGearDef.name}
+                className="size-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]"
+                onError={(e) => {
+                  // Fallback graceful
+                  e.currentTarget.style.display = "none"
+                }}
+              />
             </div>
+
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-base font-bold uppercase tracking-wider text-cyan-200">
-                  XƯỞNG TRANG BỊ {activeGearDef.name.toUpperCase()} // STARFRONT HANGAR
-                </h2>
+                <h1 className="font-display text-base font-bold uppercase tracking-wider text-white">
+                  XƯỞNG TÁC CHIẾN {activeGearDef.name.toUpperCase()}
+                </h1>
                 <span className="rounded bg-cyan-500/20 px-2 py-0.5 font-mono text-xs font-bold text-cyan-300 border border-cyan-500/40">
                   CẤP {progression.level}
                 </span>
+                <span className="rounded bg-amber-500/20 px-2 py-0.5 font-mono text-xs font-bold text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                  <Zap className="size-3 text-amber-400" /> Lực Chiến: {combatRating.toLocaleString("vi-VN")}
+                </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Quản lý kho vũ khí, khiên chắn và động cơ đẩy · Cường hóa trang bị từ +1 đến +10 gia tăng thực tế lực chiến
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {activeGearDef.role} · Điều phối trang bị, mô-đun kỹ năng & phân bổ điểm phi cơ
               </p>
             </div>
           </div>
 
-          {/* Credits & Hợp Kim Alloy & Nút Mở Xưởng Cường Hóa */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Ngân sách Credits */}
-            <div className="flex items-center gap-1.5 rounded-sm border border-amber-500/40 bg-amber-950/30 px-3 py-1.5 font-mono text-xs text-amber-300">
+          {/* Thanh Tài Nguyên & Nút Tác Vụ Nhanh */}
+          <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+            {/* Tín Dụng Credits */}
+            <div className="flex items-center gap-1.5 rounded-sm border border-amber-500/40 bg-amber-950/30 px-3 py-1.5 text-amber-300 shadow-inner">
               <Coins className="size-4 text-amber-400" />
-              <span>Ngân sách:</span>
+              <span className="text-muted-foreground">Credits:</span>
               <strong className="text-sm font-bold text-amber-200">
                 {progression.credits.toLocaleString("vi-VN")}
               </strong>
-              <span>Credits</span>
             </div>
 
             {/* Hợp Kim Cường Hóa (Alloy) */}
-            <div className="flex items-center gap-1.5 rounded-sm border border-purple-500/40 bg-purple-950/30 px-3 py-1.5 font-mono text-xs text-purple-300">
+            <div className="flex items-center gap-1.5 rounded-sm border border-purple-500/40 bg-purple-950/30 px-3 py-1.5 text-purple-300 shadow-inner">
               <Layers className="size-4 text-purple-400" />
-              <span>Hợp Kim:</span>
-              <strong className="text-sm font-bold text-purple-200">
-                {alloyCount}
-              </strong>
-              <span>Alloy</span>
+              <span className="text-muted-foreground">Alloy:</span>
+              <strong className="text-sm font-bold text-purple-200">{alloyCount}</strong>
             </div>
 
-            {/* Nút Mở Xưởng Cường Hóa */}
+            {/* Điểm Kỹ Năng (Skill Points) */}
+            <div className="flex items-center gap-1.5 rounded-sm border border-cyan-500/40 bg-cyan-950/30 px-3 py-1.5 text-cyan-300 shadow-inner">
+              <Sparkles className="size-4 text-cyan-400" />
+              <span className="text-muted-foreground">Điểm Kỹ Năng:</span>
+              <strong className="text-sm font-bold text-cyan-200">
+                {skillPoints.available}/{skillPoints.total} SP
+              </strong>
+            </div>
+
+            {/* Mở Xưởng Cường Hóa */}
             <Button
               onClick={() => handleOpenEnhance()}
               size="sm"
               className="gap-1.5 font-display text-xs uppercase tracking-wider bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(168,85,247,0.35)] cursor-pointer"
             >
               <Hammer className="size-3.5" />
-              <span>Xưởng Cường Hóa (+1 đến +10)</span>
+              <span>Xưởng Cường Hóa</span>
             </Button>
 
+            {/* Vào Đấu Trường */}
             <Button
               onClick={onNavigateToCombat}
               size="sm"
-              className="gap-1.5 font-display text-xs uppercase tracking-wider bg-cyan-500 text-black hover:bg-cyan-400 cursor-pointer"
+              className="gap-1.5 font-display text-xs uppercase tracking-wider bg-cyan-500 text-black hover:bg-cyan-400 font-bold shadow-[0_0_15px_rgba(6,182,212,0.35)] cursor-pointer"
             >
               <span>Vào Đấu Trường</span>
               <ArrowRight className="size-3.5" />
             </Button>
 
+            {/* Cài lại tiến trình */}
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowResetDialog(true)}
               className="gap-1 text-xs text-red-400 hover:text-red-300 hover:border-red-500 cursor-pointer"
+              title="Cài lại dữ liệu tiến trình"
             >
               <RotateCcw className="size-3" />
               <span>Cài lại</span>
@@ -285,40 +431,42 @@ export function StarfrontHangar({
           </div>
         </div>
 
-        {/* Thanh tiến trình EXP */}
-        <div className="mt-4 border-t border-border/50 pt-3">
-          <div className="mb-1.5 flex justify-between font-mono text-xs">
+        {/* Thanh EXP Phi Cơ */}
+        <div className="mt-3 border-t border-border/50 pt-2.5">
+          <div className="mb-1 flex justify-between font-mono text-xs">
             <span className="flex items-center gap-1.5 text-cyan-300">
-              <Sparkles className="size-3.5 text-cyan-400" /> KINH NGHIỆM CHIẾN ĐẤU (EXP)
+              <Sparkles className="size-3.5 text-cyan-400" /> TIẾN TRÌNH KINH NGHIỆM PHI THUYỀN (EXP)
             </span>
             <span className="text-muted-foreground">
-              <strong className="text-white">{progression.exp}</strong> / {expRequired} EXP ({expPercentage}%)
+              <strong className="text-white">{progression.exp}</strong> / {expRequired} EXP ({expPercentage}%) · +2 Điểm Kỹ Năng / Cấp
             </span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-xs bg-secondary/70">
+          <div className="h-1.5 w-full overflow-hidden rounded-xs bg-secondary/80">
             <div
-              className="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 transition-all duration-300 shadow-[0_0_10px_rgba(34,211,238,0.5)]"
+              className="h-full bg-gradient-to-r from-blue-500 via-cyan-400 to-emerald-400 transition-all duration-300 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
               style={{ width: `${expPercentage}%` }}
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* 2. Bộ Chọn Lớp Cơ Giáp (Gear Class Selection) */}
-      <div className="rounded-sm border border-cyan-500/30 bg-panel/80 p-3.5 shadow-md">
+      {/* ====================================================================
+          2. BỘ CHỌN LỚP CƠ GIÁP (GEAR SELECTION CARDS - 3 LỚP GEAR)
+          ==================================================================== */}
+      <section className="rounded-sm border border-cyan-500/30 bg-panel/80 p-3.5 shadow-md">
         <div className="mb-2.5 flex items-center justify-between border-b border-border/40 pb-2">
           <div className="flex items-center gap-2">
             <Cpu className="size-4 text-cyan-400" />
-            <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-              CHỌN LỚP CƠ GIÁP XUẤT KÍCH (PHASE 3: 3 LỚP GEAR)
-            </h3>
+            <h2 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+              CHỌN CƠ GIÁP XUẤT KÍCH (PHASE 3: 3 LỚP CHIẾN ĐẤU)
+            </h2>
           </div>
           <span className="text-[11px] font-mono text-muted-foreground">
-            Đang điều khiển: <strong className="text-cyan-300">{activeGearDef.name}</strong>
+            Đang kích hoạt: <strong className="text-cyan-300">{activeGearDef.name}</strong>
           </span>
         </div>
 
-        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {(["vanguard", "falcon", "aegis"] as StarfrontGearId[]).map((gId) => {
             const def = STARFRONT_GEAR_DEFS[gId]
             const isSelected = activeGearId === gId
@@ -328,32 +476,49 @@ export function StarfrontHangar({
                 key={gId}
                 onClick={() => handleGearChange(gId)}
                 className={cn(
-                  "flex flex-col justify-between rounded-sm border p-3 text-left transition-all cursor-pointer",
+                  "group relative flex flex-col justify-between rounded-sm border p-3.5 text-left transition-all cursor-pointer",
                   isSelected
-                    ? "border-cyan-400 bg-cyan-950/60 shadow-[0_0_12px_rgba(34,211,238,0.25)]"
-                    : "border-border/60 bg-panel/40 hover:border-cyan-500/40 hover:bg-panel/80",
+                    ? "border-cyan-400 bg-cyan-950/60 shadow-[0_0_15px_rgba(34,211,238,0.25)]"
+                    : "border-border/60 bg-panel/50 hover:border-cyan-500/40 hover:bg-panel/90",
                 )}
               >
                 <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-display text-xs font-bold text-white">
-                      {def.name}
-                    </span>
-                    <span
-                      className="size-2 rounded-full"
-                      style={{ backgroundColor: def.color }}
-                    />
+                  {/* Header thẻ cơ giáp: Tên & Hình minh họa thu nhỏ */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="size-2.5 rounded-full"
+                          style={{ backgroundColor: def.color }}
+                        />
+                        <span className="font-display text-sm font-bold text-white group-hover:text-cyan-300">
+                          {def.name}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-cyan-300/90 font-mono block mt-0.5">
+                        {def.role}
+                      </span>
+                    </div>
+
+                    <div
+                      className="size-11 shrink-0 rounded border p-0.5 bg-black/40"
+                      style={{ borderColor: `${def.color}60` }}
+                    >
+                      <img
+                        src={def.illustration || `/images/${gId}.svg`}
+                        alt={def.name}
+                        className="size-full object-contain"
+                      />
+                    </div>
                   </div>
-                  <span className="text-[10px] text-cyan-300/80 font-mono block mt-0.5">
-                    {def.role}
-                  </span>
-                  <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">
+
+                  <p className="mt-2 text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
                     {def.desc}
                   </p>
 
-                  {/* Huy hiệu Nội Tại (Passive Skill Badge) */}
-                  <div className="mt-2 rounded bg-black/50 p-1.5 border border-border/50 text-[10px] font-mono">
-                    <div className="flex items-center gap-1 font-bold text-cyan-300">
+                  {/* Huy hiệu Kỹ Năng Nội Tại (Passive Skill) */}
+                  <div className="mt-2.5 rounded bg-black/60 p-2 border border-border/50 text-[10px] font-mono">
+                    <div className="flex items-center gap-1 font-bold text-amber-300">
                       <Sparkles className="size-3 text-amber-400" />
                       <span>{def.passive.name}</span>
                     </div>
@@ -363,461 +528,876 @@ export function StarfrontHangar({
                   </div>
                 </div>
 
-                <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-1.5 text-[10px] font-mono">
+                {/* Footer thẻ: Chỉ số nền & Nút kích hoạt */}
+                <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono">
                   <span className="text-muted-foreground">
-                    Gốc: {def.baseStats.speed} SPD · {def.baseStats.attack} ATK
+                    Gốc: <strong className="text-slate-200">{def.baseStats.speed}</strong> SPD ·{" "}
+                    <strong className="text-slate-200">{def.baseStats.attack}</strong> ATK
                   </span>
-                  <span className={cn("font-bold", isSelected ? "text-cyan-300" : "text-muted-foreground")}>
-                    {isSelected ? "✓ Đang chọn" : "Kích hoạt ➔"}
+                  <span
+                    className={cn(
+                      "font-bold flex items-center gap-1",
+                      isSelected ? "text-cyan-300" : "text-muted-foreground group-hover:text-cyan-300",
+                    )}
+                  >
+                    {isSelected ? "✓ Đang kích hoạt" : "Chọn cơ giáp ➔"}
                   </span>
                 </div>
               </button>
             )
           })}
         </div>
+      </section>
+
+      {/* ====================================================================
+          3. THANH ĐIỀU HƯỚNG TAB PHÂN HỆ HANGAR (LOADOUT / INVENTORY / LAB)
+          ==================================================================== */}
+      <div className="flex items-center justify-between border-b border-border/60 pb-2">
+        <div className="flex items-center gap-1 p-1 bg-black/40 rounded-sm border border-border/50">
+          <button
+            onClick={() => {
+              playClickSound()
+              setActiveTab("loadout")
+            }}
+            className={cn(
+              "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
+              activeTab === "loadout"
+                ? "bg-cyan-500 text-black font-bold shadow-[0_0_10px_rgba(6,182,212,0.4)]"
+                : "text-muted-foreground hover:text-white",
+            )}
+          >
+            <Cpu className="size-3.5" />
+            <span>Buồng Lái & Trang Bị</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playClickSound()
+              setActiveTab("inventory")
+            }}
+            className={cn(
+              "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
+              activeTab === "inventory"
+                ? "bg-cyan-500 text-black font-bold shadow-[0_0_10px_rgba(6,182,212,0.4)]"
+                : "text-muted-foreground hover:text-white",
+            )}
+          >
+            <Boxes className="size-3.5" />
+            <span>Kho Đồ & Tái Chế ({progression.inventory.length})</span>
+          </button>
+
+          <button
+            onClick={() => {
+              playClickSound()
+              handleOpenEnhance()
+            }}
+            className="px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs text-purple-300 hover:text-purple-200 hover:bg-purple-950/40 transition-all cursor-pointer flex items-center gap-1.5"
+          >
+            <Hammer className="size-3.5 text-purple-400" />
+            <span>Xưởng Cường Hóa (+1 đến +10)</span>
+          </button>
+        </div>
+
+        {/* Trạng thái xem trước nếu có món đồ đang hover */}
+        {previewItem && (
+          <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-cyan-300 animate-pulse">
+            <Eye className="size-3.5 text-cyan-400" />
+            <span>Đang xem trước: {getItemDisplayName(previewItem)}</span>
+          </div>
+        )}
       </div>
 
-      {/* 3. Hai cánh: 3 Ô Trang Bị Đang Dùng vs Bảng Chỉ Số Thực Tế */}
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Cột 1 & 2: 3 Ô Trang Bị Hiện Tại */}
-        <div className="space-y-3 lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-border/60 pb-2">
-            <div className="flex items-center gap-2">
-              <Sword className="size-4 text-cyan-400" />
-              <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-                THIẾT LẬP TRANG BỊ HIỆN TẠI (3 SLOTS)
-              </h3>
+      {/* ====================================================================
+          TAB 1: BUỒNG LÁI, TRANG BỊ & KỸ NĂNG (LOADOUT VIEW)
+          ==================================================================== */}
+      {activeTab === "loadout" && (
+        <div className="space-y-4">
+          {/* Lưới chính: Cột trái (Tàu chiến & 3 Slot trang bị) vs Cột phải (Bảng chỉ số & Lực chiến) */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            {/* KHU VỰC TRUNG TÂM PHI CƠ & 3 Ô TRANG BỊ BAO QUANH (8 CỘT) */}
+            <div className="lg:col-span-7 flex flex-col gap-4">
+              {/* Tấm Blueprint Hologram Tàu Chiến Trung Tâm */}
+              <div className="relative overflow-hidden rounded-sm border border-cyan-500/40 bg-gradient-to-b from-black/90 via-cyan-950/25 to-black/95 p-4 shadow-2xl flex flex-col items-center justify-center min-h-[320px]">
+                {/* Lưới Radar & Scanning Line */}
+                <div className="pointer-events-none absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.4)_0%,transparent_75%)]" />
+
+                {/* HUD Overlay Góc */}
+                <div className="absolute left-3 top-3 font-mono text-[10px] text-cyan-400/80">
+                  <span>HULL // {activeGearDef.id.toUpperCase()}_MK{progression.level}</span>
+                  <div className="text-[9px] text-muted-foreground">STATUS: COMBAT_READY</div>
+                </div>
+
+                <div className="absolute right-3 top-3 font-mono text-right text-[10px] text-amber-300/90">
+                  <div className="flex items-center gap-1 justify-end font-bold">
+                    <Zap className="size-3 text-amber-400" />
+                    <span>LỰC CHIẾN: {combatRating}</span>
+                  </div>
+                  <div className="text-[9px] text-muted-foreground">RATING FORMULA PT</div>
+                </div>
+
+                {/* Hình Ảnh SVG Phi Thuyền Trung Tâm */}
+                <div className="relative my-3 size-56 sm:size-64 flex items-center justify-center">
+                  <img
+                    src={activeGearDef.illustration || `/images/${activeGearId}.svg`}
+                    alt={activeGearDef.name}
+                    className="size-full object-contain filter drop-shadow-[0_0_25px_rgba(6,182,212,0.45)] transition-transform duration-300 hover:scale-105"
+                  />
+                </div>
+
+                {/* Tên và Nhãn Cơ Giáp Đang Chọn */}
+                <div className="text-center z-10">
+                  <h3 className="font-display text-base font-bold tracking-wider text-white">
+                    {activeGearDef.name.toUpperCase()}
+                  </h3>
+                  <p className="text-xs text-cyan-300/90 font-mono mt-0.5">
+                    {activeGearDef.role} · Cấp Độ {progression.level}
+                  </p>
+                </div>
+
+                {/* Nút Chuyển Nhanh Sang Kho Đồ */}
+                <div className="mt-3 flex items-center gap-2">
+                  <Button
+                    size="xs"
+                    onClick={() => setActiveTab("inventory")}
+                    variant="outline"
+                    className="font-display text-[11px] gap-1 text-cyan-300 border-cyan-500/40 hover:bg-cyan-950/60 cursor-pointer"
+                  >
+                    <Boxes className="size-3" />
+                    <span>Mở Kho Đồ ({progression.inventory.length} Món)</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* 3 Ô TRANG BỊ (WEAPON, SHIELD, ENGINE) SẮP XẾP QUANH TÀU */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {(["weapon", "shield", "engine"] as StarfrontItemSlot[]).map((slotKey) => {
+                  const meta = SLOT_META[slotKey]
+                  const SlotIcon = meta.icon
+                  const equippedItemId = progression.equipped[slotKey]
+                  const equippedItem = progression.inventory.find((it) => it.id === equippedItemId)
+                  const enhBadge = equippedItem ? getEnhancementBadgeMeta(equippedItem.enhancementLevel) : null
+                  const enhancedStats = equippedItem ? getEnhancedItemStats(equippedItem) : null
+                  const itemRating = equippedItem ? calculateItemRating(equippedItem) : null
+
+                  return (
+                    <div
+                      key={slotKey}
+                      onMouseEnter={() => equippedItem && setHoveredItem(equippedItem)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      className={cn(
+                        "group relative flex flex-col justify-between rounded-sm border p-3 shadow-md transition-all",
+                        equippedItem
+                          ? `${RARITY_CONFIG[equippedItem.rarity].border} ${RARITY_CONFIG[equippedItem.rarity].bg} ${RARITY_CONFIG[equippedItem.rarity].glow}`
+                          : "border-border/60 bg-panel/40 border-dashed",
+                      )}
+                    >
+                      <div>
+                        {/* Header Slot */}
+                        <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                          <div className="flex items-center gap-1.5">
+                            <SlotIcon className="size-4 text-cyan-400" />
+                            <span className="font-display text-xs font-bold text-white">
+                              {meta.shortLabel}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {enhBadge && (
+                              <span className={cn("rounded px-1.5 py-0.2 font-mono text-[9px] border", enhBadge.className)}>
+                                {enhBadge.text}
+                              </span>
+                            )}
+                            {equippedItem && (
+                              <span
+                                className={cn(
+                                  "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase border",
+                                  RARITY_CONFIG[equippedItem.rarity].border,
+                                  RARITY_CONFIG[equippedItem.rarity].text,
+                                )}
+                              >
+                                {RARITY_CONFIG[equippedItem.rarity].label}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Chi tiết trang bị */}
+                        {equippedItem ? (
+                          <div className="mt-2.5">
+                            <div className="flex items-start justify-between gap-1">
+                              <h4 className="font-display text-xs font-bold text-white group-hover:text-cyan-300">
+                                {getItemDisplayName(equippedItem)}
+                              </h4>
+                              {itemRating && (
+                                <span className="text-[10px] font-mono text-amber-300 font-bold shrink-0">
+                                  {itemRating} R
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                              {equippedItem.desc}
+                            </p>
+
+                            {/* Chỉ số cộng thêm */}
+                            <div className="mt-2 flex flex-wrap gap-1 font-mono text-[10px]">
+                              {enhancedStats?.attackBonus !== 0 && (
+                                <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
+                                  ATK +{enhancedStats?.attackBonus}
+                                </span>
+                              )}
+                              {enhancedStats?.defenseBonus !== 0 && (
+                                <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
+                                  DEF {enhancedStats!.defenseBonus > 0 ? `+${enhancedStats!.defenseBonus}` : enhancedStats!.defenseBonus}
+                                </span>
+                              )}
+                              {enhancedStats?.speedBonus !== 0 && (
+                                <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
+                                  SPD +{enhancedStats?.speedBonus}
+                                </span>
+                              )}
+                              {enhancedStats?.hpBonus !== 0 && (
+                                <span className="rounded bg-teal-950/60 px-1.5 py-0.5 text-teal-300 border border-teal-500/30">
+                                  HP +{enhancedStats?.hpBonus}
+                                </span>
+                              )}
+                              {enhancedStats?.spBonus !== 0 && (
+                                <span className="rounded bg-cyan-950/60 px-1.5 py-0.5 text-cyan-300 border border-cyan-500/30">
+                                  SP +{enhancedStats?.spBonus}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => {
+                              setSlotFilter(slotKey)
+                              setActiveTab("inventory")
+                            }}
+                            className="my-5 flex flex-col items-center justify-center text-center text-muted-foreground cursor-pointer hover:text-cyan-300"
+                          >
+                            <SlotIcon className="size-7 opacity-40 mb-1" />
+                            <span className="text-xs font-display font-bold">CHƯA TRANG BỊ</span>
+                            <span className="text-[10px] mt-0.5">Bấm để chọn từ kho đồ</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Hành động trên Slot */}
+                      <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+                        {equippedItem ? (
+                          <>
+                            <Button
+                              size="xs"
+                              variant="ghost"
+                              onClick={() => onUnequipSlot(slotKey)}
+                              className="text-red-400 hover:text-red-300 hover:bg-red-950/40 text-[10px] font-mono cursor-pointer"
+                            >
+                              <X className="size-3 mr-0.5" /> Tháo đồ
+                            </Button>
+
+                            <Button
+                              size="xs"
+                              onClick={() => handleOpenEnhance(equippedItem.id)}
+                              className="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-display gap-1 cursor-pointer"
+                            >
+                              <Hammer className="size-3" /> Cường Hóa ⚡
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            size="xs"
+                            onClick={() => {
+                              setSlotFilter(slotKey)
+                              setActiveTab("inventory")
+                            }}
+                            variant="outline"
+                            className="w-full text-[10px] font-mono text-cyan-300 border-cyan-500/40 hover:bg-cyan-950/60 cursor-pointer"
+                          >
+                            + Lắp {meta.shortLabel}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-            <span className="text-[11px] text-muted-foreground font-mono">
-              Bấm [Cường Hóa ⚡] để nâng cấp hoặc [Tháo đồ] để gỡ
-            </span>
+
+            {/* BẢNG CHỈ SỐ THỰC TẾ & SO SÁNH PREVIEW (5 CỘT) */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              <div className="rounded-sm border border-cyan-500/40 bg-panel/90 p-4 shadow-xl">
+                <div className="mb-3 border-b border-border/60 pb-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Gauge className="size-4 text-cyan-400" />
+                      <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+                        CHỈ SỐ THỰC TẾ // BẢNG LỰC CHIẾN
+                      </h3>
+                    </div>
+                    <span className="rounded bg-cyan-500/20 px-2 py-0.5 font-mono text-[10px] text-cyan-300 border border-cyan-500/40 font-bold">
+                      CẤP {progression.level}
+                    </span>
+                  </div>
+
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {previewItem
+                      ? `⚡ So sánh khi thay: ${getItemDisplayName(previewItem)}`
+                      : "Tổng hợp chỉ số cơ sở + tăng trưởng cấp độ + trang bị đã cường hóa"}
+                  </p>
+                </div>
+
+                {/* Các chỉ số chính */}
+                <div className="space-y-2.5 font-mono text-xs">
+                  {/* Tấn Công (ATK) */}
+                  <StatRow
+                    label="TẤN CÔNG (ATK)"
+                    current={currentStats.total.attack}
+                    base={currentStats.base.attack}
+                    bonus={currentStats.bonuses.attack}
+                    preview={previewStats?.total.attack}
+                    color="text-amber-400"
+                  />
+
+                  {/* Phòng Thủ (DEF) */}
+                  <StatRow
+                    label="PHÒNG THỦ (DEF)"
+                    current={currentStats.total.defense}
+                    base={currentStats.base.defense}
+                    bonus={currentStats.bonuses.defense}
+                    preview={previewStats?.total.defense}
+                    color="text-blue-400"
+                  />
+
+                  {/* Tốc Độ (SPD) */}
+                  <StatRow
+                    label="TỐC ĐỘ (SPD)"
+                    current={currentStats.total.speed}
+                    base={currentStats.base.speed}
+                    bonus={currentStats.bonuses.speed}
+                    preview={previewStats?.total.speed}
+                    color="text-emerald-400"
+                  />
+
+                  {/* Độ Bền Vỏ (HP) */}
+                  <StatRow
+                    label="ĐỘ BỀN VỎ (HP)"
+                    current={currentStats.total.hp}
+                    base={currentStats.base.hp}
+                    bonus={currentStats.bonuses.hp}
+                    preview={previewStats?.total.hp}
+                    color="text-teal-400"
+                  />
+
+                  {/* Lõi Năng Lượng (SP) */}
+                  <StatRow
+                    label="LÕI NĂNG LƯỢNG (SP)"
+                    current={currentStats.total.sp}
+                    base={currentStats.base.sp}
+                    bonus={currentStats.bonuses.sp}
+                    preview={previewStats?.total.sp}
+                    color="text-cyan-400"
+                  />
+                </div>
+
+                {/* Chỉ số phụ bẩm sinh & Đặc tính lớp */}
+                <div className="mt-4 border-t border-border/50 pt-3">
+                  <span className="text-[10px] font-mono uppercase text-muted-foreground block mb-2">
+                    Chỉ số chiến thuật bổ trợ:
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
+                    <div className="rounded bg-black/40 p-2 border border-border/40">
+                      <span className="text-muted-foreground block text-[9.5px]">TỈ LỆ BẠO KÍCH</span>
+                      <strong className="text-white font-bold">
+                        {activeGearId === "falcon" ? "18%" : "10%"} Base
+                      </strong>
+                    </div>
+
+                    <div className="rounded bg-black/40 p-2 border border-border/40">
+                      <span className="text-muted-foreground block text-[9.5px]">NÉ TRÁNH BẨM SINH</span>
+                      <strong className="text-white font-bold">
+                        {activeGearId === "falcon" ? "20% (+15% Passive)" : "5% Base"}
+                      </strong>
+                    </div>
+
+                    <div className="rounded bg-black/40 p-2 border border-border/40">
+                      <span className="text-muted-foreground block text-[9.5px]">HỒI PHỤC NĂNG LƯỢNG</span>
+                      <strong className="text-cyan-300 font-bold">
+                        {activeGearId === "vanguard" ? "+10 SP / Lượt" : "+5 SP / Lượt"}
+                      </strong>
+                    </div>
+
+                    <div className="rounded bg-black/40 p-2 border border-border/40">
+                      <span className="text-muted-foreground block text-[9.5px]">PHẢN ĐÒN / KHÁNG</span>
+                      <strong className="text-amber-300 font-bold">
+                        {activeGearId === "aegis" ? "20% Phản · 50% Kháng" : "Tiêu chuẩn"}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nội tại Gear */}
+                <div className="mt-4 rounded border border-cyan-500/40 bg-cyan-950/30 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Sparkles className="size-3.5 text-amber-400" />
+                      <h4 className="font-display text-[11px] font-bold text-amber-300 uppercase tracking-wider">
+                        NỘI TẠI: {activeGearDef.passive.name}
+                      </h4>
+                    </div>
+                    <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-mono text-amber-300 border border-amber-500/40">
+                      TỰ ĐỘNG
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-200">
+                    {activeGearDef.passive.desc}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-            {(["weapon", "shield", "engine"] as StarfrontItemSlot[]).map((slotKey) => {
-              const meta = SLOT_META[slotKey]
-              const SlotIcon = meta.icon
-              const equippedItemId = progression.equipped[slotKey]
-              const equippedItem = progression.inventory.find((it) => it.id === equippedItemId)
-              const enhBadge = equippedItem ? getEnhancementBadgeMeta(equippedItem.enhancementLevel) : null
-              const enhancedStats = equippedItem ? getEnhancedItemStats(equippedItem) : null
+          {/* ====================================================================
+              4. BUỒNG KỸ NĂNG 5 SLOT CHI TIẾT (5-SLOT SKILL MODULE DECK)
+              ==================================================================== */}
+          <div className="rounded-sm border border-cyan-500/40 bg-panel/80 p-4 shadow-xl">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
+              <div className="flex items-center gap-2">
+                <Flame className="size-4 text-cyan-400" />
+                <div>
+                  <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+                    HỆ THỐNG MÔ-ĐUN KỸ NĂNG & 5 SLOTS CHIẾN ĐẤU // {activeGearDef.name.toUpperCase()}
+                  </h3>
+                  <span className="text-[11px] text-muted-foreground font-mono">
+                    Chuẩn hóa buồng kỹ năng 5 vị trí: 1 Đòn cơ bản · 3 Kỹ năng chủ động · 1 Tuyệt kỹ tối thượng
+                  </span>
+                </div>
+              </div>
 
-              return (
-                <div
-                  key={slotKey}
-                  className={cn(
-                    "flex flex-col justify-between rounded-sm border p-3.5 shadow-md transition-all",
-                    equippedItem
-                      ? `${RARITY_CONFIG[equippedItem.rarity].border} ${RARITY_CONFIG[equippedItem.rarity].bg}`
-                      : "border-border/60 bg-panel/40",
-                  )}
-                >
-                  <div>
-                    {/* Header ô slot */}
-                    <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                      <div className="flex items-center gap-1.5">
-                        <SlotIcon className="size-4 text-cyan-400" />
-                        <span className="font-display text-xs font-bold text-foreground">
-                          {meta.label}
+              {/* Thông tin Điểm Kỹ Năng SP Phi Cơ */}
+              <div className="flex items-center gap-2 rounded bg-black/50 px-3 py-1.5 border border-cyan-500/40 font-mono text-xs">
+                <Sparkles className="size-3.5 text-cyan-400" />
+                <span className="text-muted-foreground">Điểm Phi Cơ:</span>
+                <strong className="text-cyan-300 font-bold">{skillPoints.available} SP Khả Dụng</strong>
+                <span className="text-muted-foreground text-[10px]">
+                  (+2 SP / Cấp phi thuyền)
+                </span>
+              </div>
+            </div>
+
+            {/* Lưới 5 Slot Kỹ Năng */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {buildFiveSkillSlots(activeGearDef).map((slotInfo) => {
+                const { slotIndex, slotRole, skill, isNative, ultimateBadge } = slotInfo
+
+                return (
+                  <div
+                    key={slotIndex}
+                    className={cn(
+                      "flex flex-col justify-between rounded-sm border p-3 shadow-md transition-all",
+                      slotIndex === 5
+                        ? "border-amber-400/60 bg-gradient-to-b from-amber-950/30 to-panel/80 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                        : "border-border/60 bg-black/40 hover:border-cyan-500/40",
+                    )}
+                  >
+                    <div>
+                      {/* Tiêu đề Slot */}
+                      <div className="flex items-center justify-between border-b border-border/40 pb-1.5 text-[10px] font-mono">
+                        <span className="font-bold text-cyan-300">SLOT 0{slotIndex}</span>
+                        <span className="rounded bg-black/60 px-1.5 py-0.2 border border-border/50 text-muted-foreground">
+                          {slotRole}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        {enhBadge && (
-                          <span className={cn("rounded px-1.5 py-0.2 font-mono text-[9px] border", enhBadge.className)}>
-                            {enhBadge.text}
+
+                      {/* Thông tin Kỹ Năng */}
+                      <div className="mt-2">
+                        <div className="flex items-start justify-between gap-1">
+                          <h4 className="font-display text-xs font-bold text-white line-clamp-1">
+                            {skill.name}
+                          </h4>
+                          {ultimateBadge && (
+                            <span className="rounded px-1.5 py-0.2 font-mono text-[9px] font-black uppercase bg-amber-500/30 text-amber-300 border border-amber-400 shrink-0">
+                              ULTIMATE
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[9.5px] text-muted-foreground font-mono block">
+                          {skill.nameEn}
+                        </span>
+
+                        <p className="mt-1.5 text-[11px] leading-relaxed text-muted-foreground line-clamp-3">
+                          {skill.desc}
+                        </p>
+                      </div>
+
+                      {/* Tiêu hao & Hồi chiêu */}
+                      <div className="mt-2.5 flex flex-wrap gap-1 font-mono text-[10px]">
+                        <span
+                          className={cn(
+                            "rounded px-1.5 py-0.5 border",
+                            skill.spCost > 0
+                              ? "bg-cyan-950/60 text-cyan-300 border-cyan-500/30"
+                              : "bg-emerald-950/60 text-emerald-300 border-emerald-500/30",
+                          )}
+                        >
+                          {skill.spCost > 0 ? `${skill.spCost} SP` : "+15 SP Nạp"}
+                        </span>
+
+                        <span className="rounded bg-slate-900 px-1.5 py-0.5 text-slate-300 border border-slate-700">
+                          {skill.cooldown > 0 ? `CD: ${skill.cooldown} lượt` : "Không CD"}
+                        </span>
+
+                        {skill.damageMultiplier && (
+                          <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
+                            {Math.round(skill.damageMultiplier * 100)}% ATK
                           </span>
                         )}
-                        {equippedItem && (
-                          <span
-                            className={cn(
-                              "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase border",
-                              RARITY_CONFIG[equippedItem.rarity].border,
-                              RARITY_CONFIG[equippedItem.rarity].text,
-                            )}
-                          >
-                            {RARITY_CONFIG[equippedItem.rarity].label}
+
+                        {skill.damageReduction && (
+                          <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
+                            Giảm {Math.round(skill.damageReduction * 100)}% DMG
                           </span>
                         )}
                       </div>
                     </div>
 
-                    {/* Chi tiết trang bị */}
-                    {equippedItem ? (
-                      <div className="mt-2.5">
-                        <h4 className="font-display text-xs font-bold text-white flex items-center gap-1">
-                          {getItemDisplayName(equippedItem)}
-                        </h4>
-                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
-                          {equippedItem.desc}
+                    {/* Footer Cấp Ô & Tương Thích */}
+                    <div className="mt-3 border-t border-border/40 pt-2 text-[10px] font-mono">
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <span>Cấp Ô: Cấp 1/20</span>
+                        <span className="text-cyan-300 font-bold">+2.5% Hiệu Lực</span>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between text-[9px] text-muted-foreground">
+                        <span>{isNative ? "Bản Sắc Gear" : "All-Gear"}</span>
+                        <span>{slotIndex === 5 ? "Khóa Gear" : "Linh Hoạt"}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Ghi chú hệ thống nâng cấp */}
+            <div className="mt-3 rounded bg-black/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground border border-border/40 flex items-start gap-2">
+              <Info className="size-4 shrink-0 text-cyan-400 mt-0.5" />
+              <span>
+                <strong>Quy tắc buồng kỹ năng Phase 5.7:</strong> Cấp nâng gắn liền với Ô (Slot-Bound, tối đa Cấp 20), không mất khi đổi module. Slot 1–4 cho phép All-Gear hoặc Gear-specific (tối đa 2 slot All-Gear). Slot 5 khóa cứng tuyệt kỹ độc quyền của lớp cơ giáp đang xuất kích.
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          TAB 2: KHO ĐỒ, TÌM KIẾM, SẮP XẾP & BẢNG SO SÁNH (INVENTORY VIEW)
+          ==================================================================== */}
+      {activeTab === "inventory" && (
+        <div className="space-y-4">
+          <div className="rounded-sm border border-border/70 bg-panel/90 p-4 shadow-xl">
+            {/* Thanh Công Cụ Lọc, Tìm Kiếm & Sắp Xếp */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+              {/* Tiêu đề & Đếm */}
+              <div className="flex items-center gap-2">
+                <Boxes className="size-4 text-cyan-400" />
+                <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+                  KHO ĐỒ TRANG BỊ HIỆN CÓ ({filteredAndSortedInventory.length}/{progression.inventory.length} MÓN)
+                </h3>
+              </div>
+
+              {/* Tìm kiếm & Bộ lọc & Sắp xếp */}
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Ô tìm kiếm */}
+                <div className="relative">
+                  <Search className="absolute left-2 top-2 size-3 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Tìm theo tên..."
+                    className="h-7 w-36 sm:w-44 rounded-xs border border-border/60 bg-black/50 pl-7 pr-2 font-mono text-xs text-white placeholder:text-muted-foreground focus:border-cyan-400 focus:outline-none"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-1.5 top-1.5 text-muted-foreground hover:text-white"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Bộ lọc slot */}
+                <div className="flex items-center gap-1 bg-black/40 p-0.5 rounded border border-border/50">
+                  {(["all", "weapon", "shield", "engine"] as const).map((filter) => {
+                    const active = slotFilter === filter
+                    const label =
+                      filter === "all"
+                        ? "Tất cả"
+                        : filter === "weapon"
+                          ? "Vũ khí"
+                          : filter === "shield"
+                            ? "Khiên"
+                            : "Động cơ"
+                    return (
+                      <button
+                        key={filter}
+                        onClick={() => {
+                          playClickSound()
+                          setSlotFilter(filter)
+                        }}
+                        className={cn(
+                          "rounded-xs px-2.5 py-1 font-display text-[11px] transition-all cursor-pointer",
+                          active
+                            ? "bg-cyan-500 text-black font-bold shadow-sm"
+                            : "text-muted-foreground hover:text-white",
+                        )}
+                      >
+                        {label}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Sắp xếp */}
+                <div className="flex items-center gap-1 font-mono text-xs">
+                  <ArrowUpDown className="size-3 text-muted-foreground" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as InventorySortBy)}
+                    className="h-7 rounded-xs border border-border/60 bg-black/50 px-2 text-xs text-slate-200 focus:border-cyan-400 focus:outline-none cursor-pointer"
+                  >
+                    <option value="rarity">Độ hiếm (Cao ➔ Thấp)</option>
+                    <option value="enhancement">Cấp cường hóa (+10 ➔ +0)</option>
+                    <option value="rating">Lực chiến (Rating)</option>
+                    <option value="name">Tên A-Z</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* BẢNG SO SÁNH TRỰC QUAN SIDE-BY-SIDE NẾU ĐANG CHỌN 1 MÓN ĐỒ */}
+            {inspectedItem && (
+              <div className="mb-4 rounded border border-cyan-400/80 bg-gradient-to-r from-cyan-950/40 via-panel to-cyan-950/40 p-3.5 shadow-xl animate-in fade-in">
+                <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Eye className="size-4 text-cyan-400" />
+                    <span className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+                      BẢNG SO SÁNH TRỰC QUAN: {getItemDisplayName(inspectedItem)} vs ĐỒ HIỆN TẠI
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setInspectedItem(null)}
+                    className="text-muted-foreground hover:text-white text-xs font-mono"
+                  >
+                    Đóng bảng [×]
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                  {/* Món đồ đang soi */}
+                  <ItemComparisonCard
+                    title="MÓN ĐANG CHỌN TỪ KHO"
+                    item={inspectedItem}
+                    isCurrentlyEquipped={progression.equipped[inspectedItem.slot] === inspectedItem.id}
+                  />
+
+                  {/* Món đồ hiện đang gắn trong slot tương ứng */}
+                  {(() => {
+                    const currentEquippedId = progression.equipped[inspectedItem.slot]
+                    const currentEquippedItem = progression.inventory.find(
+                      (it) => it.id === currentEquippedId,
+                    )
+
+                    return (
+                      <ItemComparisonCard
+                        title={`ĐỒ ĐANG LẮP TRONG Ô [${SLOT_META[inspectedItem.slot].label.toUpperCase()}]`}
+                        item={currentEquippedItem || null}
+                        isCurrentlyEquipped={true}
+                      />
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* LƯỚI DANH SÁCH MÓN ĐỒ TRONG KHO */}
+            {filteredAndSortedInventory.length === 0 ? (
+              <div className="my-10 flex flex-col items-center justify-center text-center text-muted-foreground">
+                <Boxes className="size-10 opacity-30 mb-2" />
+                <span className="text-sm font-display">KHÔNG TÌM THẤY VẬT PHẨM</span>
+                <span className="text-xs mt-1">Thử đổi từ khóa tìm kiếm hoặc chỉnh lại bộ lọc vị trí slot</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredAndSortedInventory.map((item) => {
+                  const isEquipped = progression.equipped[item.slot] === item.id
+                  const rarity = RARITY_CONFIG[item.rarity]
+                  const enhBadge = getEnhancementBadgeMeta(item.enhancementLevel)
+                  const enhancedStats = getEnhancedItemStats(item)
+                  const itemRating = calculateItemRating(item)
+                  const isInspected = inspectedItem?.id === item.id
+
+                  return (
+                    <div
+                      key={item.id}
+                      onMouseEnter={() => setHoveredItem(item)}
+                      onMouseLeave={() => setHoveredItem(null)}
+                      className={cn(
+                        "group relative flex flex-col justify-between rounded-sm border p-3 transition-all",
+                        isInspected
+                          ? "border-cyan-400 bg-cyan-950/50 shadow-[0_0_15px_rgba(6,182,212,0.3)] ring-1 ring-cyan-400"
+                          : isEquipped
+                            ? "border-cyan-400/80 bg-cyan-950/30 shadow-[0_0_10px_rgba(34,211,238,0.15)]"
+                            : `${rarity.border} ${rarity.bg} hover:border-cyan-300/80 hover:bg-black/60`,
+                      )}
+                    >
+                      <div>
+                        {/* Header Item Card */}
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-display text-xs font-bold text-white group-hover:text-cyan-300 flex items-center gap-1">
+                            {getItemDisplayName(item)}
+                          </span>
+
+                          <div className="flex items-center gap-1">
+                            {/* Rating badge */}
+                            <span className="rounded px-1.5 py-0.2 font-mono text-[9px] font-bold bg-amber-950/60 text-amber-300 border border-amber-500/40">
+                              {itemRating} R
+                            </span>
+
+                            {item.level && (
+                              <span className="rounded px-1.5 py-0.2 font-mono text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-600">
+                                Lv.{item.level}
+                              </span>
+                            )}
+
+                            {enhBadge && (
+                              <span className={cn("rounded px-1.5 py-0.2 font-mono text-[9px] border", enhBadge.className)}>
+                                {enhBadge.text}
+                              </span>
+                            )}
+
+                            <span
+                              className={cn(
+                                "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase border",
+                                rarity.border,
+                                rarity.text,
+                              )}
+                            >
+                              {rarity.label}
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                          {item.desc}
                         </p>
 
-                        {/* Điểm thưởng chỉ số đã tính Cường Hóa */}
+                        {/* Chỉ số cộng đã tính cấp cường hóa */}
                         <div className="mt-2.5 flex flex-wrap gap-1 font-mono text-[10px]">
-                          {enhancedStats?.attackBonus !== 0 && (
+                          {enhancedStats.attackBonus !== 0 && (
                             <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
-                              ATK +{enhancedStats?.attackBonus}
+                              ATK +{enhancedStats.attackBonus}
                             </span>
                           )}
-                          {enhancedStats?.defenseBonus !== 0 && (
+                          {enhancedStats.defenseBonus !== 0 && (
                             <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
-                              DEF {enhancedStats!.defenseBonus > 0 ? `+${enhancedStats!.defenseBonus}` : enhancedStats!.defenseBonus}
+                              DEF {enhancedStats.defenseBonus > 0 ? `+${enhancedStats.defenseBonus}` : enhancedStats.defenseBonus}
                             </span>
                           )}
-                          {enhancedStats?.speedBonus !== 0 && (
+                          {enhancedStats.speedBonus !== 0 && (
                             <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
-                              SPD +{enhancedStats?.speedBonus}
+                              SPD +{enhancedStats.speedBonus}
                             </span>
                           )}
-                          {enhancedStats?.hpBonus !== 0 && (
+                          {enhancedStats.hpBonus !== 0 && (
                             <span className="rounded bg-teal-950/60 px-1.5 py-0.5 text-teal-300 border border-teal-500/30">
-                              HP +{enhancedStats?.hpBonus}
+                              HP +{enhancedStats.hpBonus}
                             </span>
                           )}
-                          {enhancedStats?.spBonus !== 0 && (
+                          {enhancedStats.spBonus !== 0 && (
                             <span className="rounded bg-cyan-950/60 px-1.5 py-0.5 text-cyan-300 border border-cyan-500/30">
-                              SP +{enhancedStats?.spBonus}
+                              SP +{enhancedStats.spBonus}
                             </span>
                           )}
                         </div>
                       </div>
-                    ) : (
-                      <div className="my-5 flex flex-col items-center justify-center text-center text-muted-foreground">
-                        <SlotIcon className="size-8 opacity-30 mb-1" />
-                        <span className="text-xs font-display">CHƯA TRANG BỊ</span>
-                        <span className="text-[10px]">{meta.desc}</span>
+
+                      {/* Footer: Thao tác & Rã đồ & Trang bị */}
+                      <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-[10px] text-muted-foreground uppercase">
+                            {SLOT_META[item.slot].shortLabel}
+                          </span>
+
+                          <button
+                            onClick={() => {
+                              playClickSound()
+                              setInspectedItem(isInspected ? null : item)
+                            }}
+                            className="text-[10px] font-mono text-cyan-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                          >
+                            <Eye className="size-2.5" />
+                            <span>{isInspected ? "Ẩn" : "So sánh"}</span>
+                          </button>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            size="xs"
+                            onClick={() => handleOpenEnhance(item.id)}
+                            className="gap-1 font-display text-[10px] uppercase bg-purple-600/80 hover:bg-purple-500 text-white cursor-pointer"
+                          >
+                            <Hammer className="size-3" />
+                            <span>Cường Hóa</span>
+                          </Button>
+
+                          {!isEquipped && (
+                            <Button
+                              size="xs"
+                              onClick={() => setSelectedSalvageItem(item)}
+                              className="gap-1 font-display text-[10px] uppercase bg-emerald-700/80 hover:bg-emerald-600 text-white cursor-pointer"
+                              title="Tái chế rã đồ thu hồi Hợp Kim (Alloy) và Credits"
+                            >
+                              <Recycle className="size-3" />
+                              <span>Rã Đồ</span>
+                            </Button>
+                          )}
+
+                          {isEquipped ? (
+                            <Button
+                              size="xs"
+                              variant="outline"
+                              onClick={() => onUnequipSlot(item.slot)}
+                              className="gap-1 font-display text-[10px] uppercase text-red-400 border-red-500/50 hover:bg-red-950/40 cursor-pointer"
+                            >
+                              <X className="size-3" />
+                              <span>Tháo đồ</span>
+                            </Button>
+                          ) : (
+                            <Button
+                              size="xs"
+                              onClick={() => onEquipItem(item.id, item.slot)}
+                              className="gap-1 font-display text-[10px] uppercase bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
+                            >
+                              <span>Trang bị</span>
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Nút hành động cho ô slot */}
-                  <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-xs">
-                    {equippedItem ? (
-                      <>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          onClick={() => onUnequipSlot(slotKey)}
-                          className="text-red-400 hover:text-red-300 hover:bg-red-950/40 text-[10px] font-mono cursor-pointer"
-                        >
-                          <X className="size-3 mr-0.5" /> Tháo đồ
-                        </Button>
-
-                        <Button
-                          size="xs"
-                          onClick={() => handleOpenEnhance(equippedItem.id)}
-                          className="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-display gap-1 cursor-pointer"
-                        >
-                          <Hammer className="size-3" /> Cường Hóa ⚡
-                        </Button>
-                      </>
-                    ) : (
-                      <span className="text-[10px] font-mono text-muted-foreground italic">
-                        Chọn từ kho đồ bên dưới
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Cột 3: Bảng Chỉ Số Thực Tế Trong Đấu Trường */}
-        <div className="rounded-sm border border-cyan-500/40 bg-panel/90 p-4 shadow-xl">
-          <div className="mb-3 border-b border-border/60 pb-2">
-            <div className="flex items-center gap-2">
-              <Gauge className="size-4 text-cyan-400" />
-              <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-                CHỈ SỐ THỰC TẾ ({activeGearDef.name.toUpperCase()})
-              </h3>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-0.5">
-              {hoveredItem
-                ? `⚡ Xem trước thay đổi khi trang bị: ${hoveredItem.name}`
-                : "Chỉ số thực tế được nạp vào sàn đấu"}
-            </p>
-          </div>
-
-          <div className="space-y-2.5 font-mono text-xs">
-            {/* Tấn Công (ATK) */}
-            <StatRow
-              label="TẤN CÔNG (ATK)"
-              current={currentStats.total.attack}
-              base={currentStats.base.attack}
-              bonus={currentStats.bonuses.attack}
-              preview={previewStats?.total.attack}
-              color="text-amber-400"
-            />
-
-            {/* Phòng Thủ (DEF) */}
-            <StatRow
-              label="PHÒNG THỦ (DEF)"
-              current={currentStats.total.defense}
-              base={currentStats.base.defense}
-              bonus={currentStats.bonuses.defense}
-              preview={previewStats?.total.defense}
-              color="text-blue-400"
-            />
-
-            {/* Tốc Độ (SPD) */}
-            <StatRow
-              label="TỐC ĐỘ (SPD)"
-              current={currentStats.total.speed}
-              base={currentStats.base.speed}
-              bonus={currentStats.bonuses.speed}
-              preview={previewStats?.total.speed}
-              color="text-emerald-400"
-            />
-
-            {/* Vỏ Giáp (HP) */}
-            <StatRow
-              label="ĐỘ BỀN VỎ (HP)"
-              current={currentStats.total.hp}
-              base={currentStats.base.hp}
-              bonus={currentStats.bonuses.hp}
-              preview={previewStats?.total.hp}
-              color="text-teal-400"
-            />
-
-            {/* Năng Lượng (SP) */}
-            <StatRow
-              label="LÕI NĂNG LƯỢNG (SP)"
-              current={currentStats.total.sp}
-              base={currentStats.base.sp}
-              bonus={currentStats.bonuses.sp}
-              preview={previewStats?.total.sp}
-              color="text-cyan-400"
-            />
-          </div>
-
-          <div className="mt-4 rounded bg-black/40 p-2.5 text-[11px] leading-relaxed text-muted-foreground border border-border/50">
-            <span className="font-bold text-cyan-300">💡 Lưu ý cường hóa:</span> Cường hóa trang bị gia tăng trực tiếp sức mạnh cho toàn bộ chỉ số cộng thêm. Cấp càng cao, lực chiến bứt phá càng khủng khiếp!
-          </div>
-
-          {/* Kỹ Năng Nội Tại & Bản Sắc Cơ Giáp */}
-          <div className="mt-4 rounded border border-cyan-500/40 bg-cyan-950/30 p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Sparkles className="size-3.5 text-amber-400" />
-                <h4 className="font-display text-[11px] font-bold text-amber-300 uppercase tracking-wider">
-                  NỘI TẠI: {activeGearDef.passive.name}
-                </h4>
-              </div>
-              <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-mono text-amber-300 border border-amber-500/40">
-                KÍCH HOẠT TỰ ĐỘNG
-              </span>
-            </div>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-slate-200">
-              {activeGearDef.passive.desc}
-            </p>
-            <div className="mt-2 grid grid-cols-1 gap-1 border-t border-cyan-500/30 pt-2 font-mono text-[10px] sm:grid-cols-2">
-              {activeGearDef.passive.details.map((dt, idx) => (
-                <div key={idx} className="flex items-center justify-between rounded bg-black/40 px-2 py-1">
-                  <span className="text-muted-foreground">{dt.label}:</span>
-                  <span className="font-bold text-cyan-300">{dt.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bộ Kỹ Năng Độc Quyền Của Gear Đang Chọn */}
-          <div className="mt-4 border-t border-border/50 pt-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Flame className="size-3.5 text-cyan-400" />
-              <h4 className="font-display text-[11px] font-bold text-cyan-200 uppercase">
-                BỘ KỸ NĂNG ({activeGearDef.name})
-              </h4>
-            </div>
-            <div className="space-y-1.5">
-              {activeGearDef.skills.map((sk) => (
-                <div key={sk.id} className="rounded bg-black/40 p-2 text-[10px] font-mono border border-border/40">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">{sk.name}</span>
-                    <span className="text-cyan-400">{sk.spCost > 0 ? `${sk.spCost} SP` : "Hồi +15 SP"}</span>
-                  </div>
-                  <p className="text-muted-foreground mt-0.5 leading-snug">{sk.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Kho đồ sở hữu (Inventory List) */}
-      <div className="rounded-sm border border-border/70 bg-panel/80 p-4 shadow-xl">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
-          <div className="flex items-center gap-2">
-            <Boxes className="size-4 text-cyan-400" />
-            <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-              KHO ĐỒ VẬT PHẨM SỞ HỮU ({progression.inventory.length} MÓN)
-            </h3>
-          </div>
-
-          {/* Bộ lọc slot */}
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] text-muted-foreground uppercase mr-1">Bộ lọc:</span>
-            {(["all", "weapon", "shield", "engine"] as const).map((filter) => {
-              const active = selectedSlotFilter === filter
-              const label =
-                filter === "all"
-                  ? "Tất cả"
-                  : filter === "weapon"
-                    ? "Vũ khí"
-                    : filter === "shield"
-                      ? "Khiên"
-                      : "Động cơ"
-              return (
-                <button
-                  key={filter}
-                  onClick={() => setSelectedSlotFilter(filter)}
-                  className={cn(
-                    "rounded-xs border px-2.5 py-1 font-display text-[11px] transition-all cursor-pointer",
-                    active
-                      ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 font-bold"
-                      : "border-border/60 text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Lưới các món đồ trong kho */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredInventory.map((item) => {
-            const isEquipped = progression.equipped[item.slot] === item.id
-            const rarity = RARITY_CONFIG[item.rarity]
-            const enhBadge = getEnhancementBadgeMeta(item.enhancementLevel)
-            const enhancedStats = getEnhancedItemStats(item)
-
-            return (
-              <div
-                key={item.id}
-                onMouseEnter={() => setHoveredItem(item)}
-                onMouseLeave={() => setHoveredItem(null)}
-                className={cn(
-                  "group relative flex flex-col justify-between rounded-sm border p-3 transition-all",
-                  isEquipped
-                    ? "border-cyan-400/80 bg-cyan-950/30 shadow-[0_0_12px_rgba(34,211,238,0.15)]"
-                    : `${rarity.border} ${rarity.bg} hover:border-cyan-300/80 hover:bg-black/50`,
-                )}
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="font-display text-xs font-bold text-white group-hover:text-cyan-300 flex items-center gap-1">
-                      {getItemDisplayName(item)}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      {item.level && (
-                        <span className="rounded px-1.5 py-0.2 font-mono text-[9px] font-bold bg-slate-800 text-slate-300 border border-slate-600">
-                          Lv.{item.level}
-                        </span>
-                      )}
-                      {enhBadge && (
-                        <span className={cn("rounded px-1.5 py-0.2 font-mono text-[9px] border", enhBadge.className)}>
-                          {enhBadge.text}
-                        </span>
-                      )}
-                      <span
-                        className={cn(
-                          "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase border",
-                          rarity.border,
-                          rarity.text,
-                        )}
-                      >
-                        {rarity.label}
-                      </span>
                     </div>
-                  </div>
-
-                  <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
-                    {item.desc}
-                  </p>
-
-                  {/* Chỉ số cộng đã tính cấp cường hóa */}
-                  <div className="mt-2.5 flex flex-wrap gap-1 font-mono text-[10px]">
-                    {enhancedStats.attackBonus !== 0 && (
-                      <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
-                        ATK +{enhancedStats.attackBonus}
-                      </span>
-                    )}
-                    {enhancedStats.defenseBonus !== 0 && (
-                      <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
-                        DEF {enhancedStats.defenseBonus > 0 ? `+${enhancedStats.defenseBonus}` : enhancedStats.defenseBonus}
-                      </span>
-                    )}
-                    {enhancedStats.speedBonus !== 0 && (
-                      <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
-                        SPD +{enhancedStats.speedBonus}
-                      </span>
-                    )}
-                    {enhancedStats.hpBonus !== 0 && (
-                      <span className="rounded bg-teal-950/60 px-1.5 py-0.5 text-teal-300 border border-teal-500/30">
-                        HP +{enhancedStats.hpBonus}
-                      </span>
-                    )}
-                    {enhancedStats.spBonus !== 0 && (
-                      <span className="rounded bg-cyan-950/60 px-1.5 py-0.5 text-cyan-300 border border-cyan-500/30">
-                        SP +{enhancedStats.spBonus}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Nút hành động */}
-                <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-xs">
-                  <span className="font-mono text-[10px] text-muted-foreground uppercase">
-                    Slot: {SLOT_META[item.slot].label}
-                  </span>
-
-                  <div className="flex items-center gap-1.5">
-                    <Button
-                      size="xs"
-                      onClick={() => handleOpenEnhance(item.id)}
-                      className="gap-1 font-display text-[10px] uppercase bg-purple-600/80 hover:bg-purple-500 text-white cursor-pointer"
-                    >
-                      <Hammer className="size-3" />
-                      <span>Cường Hóa</span>
-                    </Button>
-
-                    {!isEquipped && (
-                      <Button
-                        size="xs"
-                        onClick={() => setSelectedSalvageItem(item)}
-                        className="gap-1 font-display text-[10px] uppercase bg-emerald-700/80 hover:bg-emerald-600 text-white cursor-pointer"
-                        title="Tái chế rã đồ thu hồi Hợp Kim (Alloy) và Credits"
-                      >
-                        <Recycle className="size-3" />
-                        <span>Rã Đồ</span>
-                      </Button>
-                    )}
-
-                    {isEquipped ? (
-                      <span className="flex items-center gap-1 font-display text-[11px] font-bold text-cyan-300">
-                        <Check className="size-3.5" /> ĐANG DÙNG
-                      </span>
-                    ) : (
-                      <Button
-                        size="xs"
-                        onClick={() => onEquipItem(item.id, item.slot)}
-                        className="gap-1 font-display text-[10px] uppercase bg-cyan-600 hover:bg-cyan-500 text-white cursor-pointer"
-                      >
-                        <span>Trang bị</span>
-                      </Button>
-                    )}
-                  </div>
-                </div>
+                  )
+                })}
               </div>
-            )
-          })}
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* 5. Modal Xưởng Cường Hóa Trang Bị (Enhancement Lab Modal) */}
+      {/* ====================================================================
+          5. MODAL XƯỞNG CƯỜNG HÓA TRANG BỊ (+1 ĐẾN +10)
+          ==================================================================== */}
       {showEnhanceModal && selectedEnhanceItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
           <div className="max-w-2xl w-full rounded-sm border border-purple-500/60 bg-panel p-5 shadow-2xl relative flex flex-col max-h-[90vh] overflow-y-auto">
             {/* Header Modal */}
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
@@ -830,7 +1410,7 @@ export function StarfrontHangar({
                     XƯỞNG CƯỜNG HÓA TRANG BỊ // ENHANCEMENT LAB (+1 ĐẾN +10)
                   </h3>
                   <p className="text-[11px] text-muted-foreground font-mono">
-                    Nâng cấp linh kiện gia tăng sức mạnh vượt bậc · Cơ chế chống ức chế bảo toàn trang bị 100%
+                    Nâng cấp linh kiện gia tăng sức mạnh vượt bậc · Cơ chế bảo vệ toàn diện 100% không lo vỡ đồ
                   </p>
                 </div>
               </div>
@@ -848,29 +1428,29 @@ export function StarfrontHangar({
               <span className="text-[10px] font-mono text-muted-foreground uppercase block mb-1.5">
                 Chọn trang bị trong kho để cường hóa:
               </span>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
-                {progression.inventory.map((invItem) => {
-                  const isSelected = invItem.id === selectedEnhanceItem.id
-                  const badge = getEnhancementBadgeMeta(invItem.enhancementLevel)
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                {progression.inventory.map((it) => {
+                  const isChosen = it.id === selectedEnhanceItem.id
+                  const badge = getEnhancementBadgeMeta(it.enhancementLevel)
                   return (
                     <button
-                      key={invItem.id}
+                      key={it.id}
                       onClick={() => {
                         playClickSound()
-                        setSelectedEnhanceItemId(invItem.id)
+                        setSelectedEnhanceItemId(it.id)
                         setLastEnhanceResult(null)
                       }}
                       className={cn(
-                        "flex shrink-0 items-center gap-1.5 rounded-sm border px-2.5 py-1 text-[11px] font-mono transition-all cursor-pointer",
-                        isSelected
-                          ? "border-purple-400 bg-purple-950/80 text-purple-200 font-bold shadow-[0_0_10px_rgba(168,85,247,0.3)]"
-                          : "border-border/60 bg-black/40 text-muted-foreground hover:text-foreground",
+                        "flex items-center gap-1.5 rounded-xs border px-2 py-1 text-xs font-mono transition-all cursor-pointer",
+                        isChosen
+                          ? "border-purple-400 bg-purple-950/80 text-purple-200 font-bold shadow-sm"
+                          : "border-border/60 text-muted-foreground hover:text-white hover:bg-black/40",
                       )}
                     >
-                      <span>{invItem.name}</span>
+                      <span>{it.name}</span>
                       {badge && (
-                        <span className={cn("rounded px-1 text-[9px] border", badge.className)}>
-                          {badge.text}
+                        <span className="text-[9px] font-bold text-amber-300">
+                          [{badge.text}]
                         </span>
                       )}
                     </button>
@@ -879,224 +1459,135 @@ export function StarfrontHangar({
               </div>
             </div>
 
-            {/* Chi Tiết Cường Hóa Món Đồ Đang Chọn */}
+            {/* Chi Tiết Món Đồ Đang Được Cường Hóa */}
             {(() => {
-              const currentLevel = Math.max(0, Math.min(10, selectedEnhanceItem.enhancementLevel || 0))
-              const isMax = currentLevel >= 10
-              const targetLevel = currentLevel + 1
-              const nextConfig = !isMax ? ENHANCEMENT_TABLE[targetLevel] : null
-              const currentStatsObj = getEnhancedItemStats(selectedEnhanceItem)
-              const nextItemMock: StarfrontItem = { ...selectedEnhanceItem, enhancementLevel: targetLevel }
-              const nextStatsObj = !isMax ? getEnhancedItemStats(nextItemMock) : currentStatsObj
+              const currentLvl = Math.max(0, Math.min(10, selectedEnhanceItem.enhancementLevel || 0))
+              const isMax = currentLvl >= 10
+              const targetLevel = currentLvl + 1
+              const config = ENHANCEMENT_TABLE[targetLevel]
+              const currentEnhanced = getEnhancedItemStats(selectedEnhanceItem)
 
-              const hasEnoughCredits = nextConfig ? progression.credits >= nextConfig.creditsCost : false
-              const hasEnoughAlloy = nextConfig ? alloyCount >= nextConfig.alloyCost : false
+              const nextMockItem: StarfrontItem = {
+                ...selectedEnhanceItem,
+                enhancementLevel: targetLevel,
+              }
+              const nextEnhanced = getEnhancedItemStats(nextMockItem)
+
+              const hasEnoughCredits = config ? progression.credits >= config.creditsCost : false
+              const hasEnoughAlloy = config ? alloyCount >= config.alloyCost : false
               const canEnhance = !isMax && hasEnoughCredits && hasEnoughAlloy && !isEnhancing
 
               return (
                 <div className="space-y-4">
-                  {/* Khung Thông Tin Cấp Độ Hiện Tại vs Cấp Tiếp Theo */}
-                  <div className="rounded-sm border border-purple-500/40 bg-black/40 p-3.5">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-2.5">
-                      <div>
-                        <span className="font-display text-sm font-bold text-white flex items-center gap-1.5">
-                          {getItemDisplayName(selectedEnhanceItem)}
+                  {/* Khung Thông Tin Cấp Độ Hiện Tại vs Cấp Kế Tiếp */}
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {/* Cột Trái: Cấp Hiện Tại */}
+                    <div className="rounded border border-border/60 bg-black/40 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase">
+                          CẤP HIỆN TẠI
                         </span>
-                        <span className="text-[11px] font-mono text-muted-foreground">
-                          Vị trí: {SLOT_META[selectedEnhanceItem.slot].label} · Độ hiếm: {RARITY_CONFIG[selectedEnhanceItem.rarity].label}
+                        <span className="font-mono text-xs font-bold text-purple-300">
+                          {currentLvl > 0 ? `+${currentLvl}` : "Gốc (+0)"}
                         </span>
                       </div>
-
-                      {/* Huy Hiệu Cấp Độ */}
-                      <div className="flex items-center gap-2 font-mono">
-                        <span className="rounded bg-black/60 border border-border/70 px-2.5 py-1 text-xs text-muted-foreground">
-                          Cấp: <strong className="text-white">+{currentLevel}</strong>
-                        </span>
-                        {!isMax && (
-                          <>
-                            <ArrowRight className="size-4 text-purple-400" />
-                            <span className="rounded bg-purple-950/80 border border-purple-400 px-2.5 py-1 text-xs font-bold text-purple-200 animate-pulse">
-                              Lên: +{targetLevel}
-                            </span>
-                          </>
+                      <h4 className="mt-1 font-display text-sm font-bold text-white">
+                        {getItemDisplayName(selectedEnhanceItem)}
+                      </h4>
+                      <div className="mt-2 space-y-1 font-mono text-xs">
+                        {currentEnhanced.attackBonus !== 0 && (
+                          <div className="text-red-300">ATK +{currentEnhanced.attackBonus}</div>
                         )}
-                        {isMax && (
-                          <span className="rounded bg-amber-500/20 border border-amber-400 px-2.5 py-1 text-xs font-bold text-amber-300">
-                            ★ CẤP ĐỘ TỐI THƯỢNG
+                        {currentEnhanced.defenseBonus !== 0 && (
+                          <div className="text-blue-300">DEF +{currentEnhanced.defenseBonus}</div>
+                        )}
+                        {currentEnhanced.speedBonus !== 0 && (
+                          <div className="text-emerald-300">SPD +{currentEnhanced.speedBonus}</div>
+                        )}
+                        {currentEnhanced.hpBonus !== 0 && (
+                          <div className="text-teal-300">HP +{currentEnhanced.hpBonus}</div>
+                        )}
+                        {currentEnhanced.spBonus !== 0 && (
+                          <div className="text-cyan-300">SP +{currentEnhanced.spBonus}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Cột Phải: Cấp Tiếp Theo */}
+                    <div className="rounded border border-purple-400/60 bg-purple-950/30 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-purple-300 uppercase font-bold">
+                          {isMax ? "ĐÃ ĐẠT TỐI ĐA" : `MỤC TIÊU: +${targetLevel}`}
+                        </span>
+                        {!isMax && config && (
+                          <span className="font-mono text-xs font-bold text-emerald-400">
+                            Tỉ lệ: {Math.round(config.successRate * 100)}%
                           </span>
                         )}
                       </div>
-                    </div>
-
-                    {/* Bảng So Sánh Chỉ Số Nhận Được */}
-                    <div className="mt-3">
-                      <span className="text-[10px] font-mono text-muted-foreground uppercase block mb-1.5">
-                        Biến động chỉ số sau khi cường hóa:
-                      </span>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-xs">
-                        {/* ATK */}
-                        {currentStatsObj.attackBonus !== 0 && (
-                          <div className="rounded border border-red-500/30 bg-red-950/20 p-2">
-                            <span className="text-[10px] text-red-300 block">Sức Tấn Công (ATK)</span>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="text-white">+{currentStatsObj.attackBonus}</span>
-                              {!isMax && (
-                                <span className="text-emerald-400 font-bold text-[11px]">
-                                  ➔ +{nextStatsObj.attackBonus} (+{nextStatsObj.attackBonus - currentStatsObj.attackBonus})
-                                </span>
-                              )}
+                      <h4 className="mt-1 font-display text-sm font-bold text-purple-200">
+                        {isMax ? "CẤP TỐI THƯỢNG (+10)" : `[+${targetLevel}] ${selectedEnhanceItem.name}`}
+                      </h4>
+                      {!isMax ? (
+                        <div className="mt-2 space-y-1 font-mono text-xs">
+                          {nextEnhanced.attackBonus !== 0 && (
+                            <div className="text-red-300 font-bold flex items-center justify-between">
+                              <span>ATK:</span>
+                              <span>+{nextEnhanced.attackBonus} (+{nextEnhanced.attackBonus - currentEnhanced.attackBonus})</span>
                             </div>
-                          </div>
-                        )}
-
-                        {/* DEF */}
-                        {currentStatsObj.defenseBonus !== 0 && (
-                          <div className="rounded border border-blue-500/30 bg-blue-950/20 p-2">
-                            <span className="text-[10px] text-blue-300 block">Phòng Thủ (DEF)</span>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="text-white">+{currentStatsObj.defenseBonus}</span>
-                              {!isMax && (
-                                <span className="text-emerald-400 font-bold text-[11px]">
-                                  ➔ +{nextStatsObj.defenseBonus} (+{nextStatsObj.defenseBonus - currentStatsObj.defenseBonus})
-                                </span>
-                              )}
+                          )}
+                          {nextEnhanced.defenseBonus !== 0 && (
+                            <div className="text-blue-300 font-bold flex items-center justify-between">
+                              <span>DEF:</span>
+                              <span>+{nextEnhanced.defenseBonus} (+{nextEnhanced.defenseBonus - currentEnhanced.defenseBonus})</span>
                             </div>
-                          </div>
-                        )}
-
-                        {/* SPD */}
-                        {currentStatsObj.speedBonus !== 0 && (
-                          <div className="rounded border border-emerald-500/30 bg-emerald-950/20 p-2">
-                            <span className="text-[10px] text-emerald-300 block">Tốc Độ (SPD)</span>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="text-white">+{currentStatsObj.speedBonus}</span>
-                              {!isMax && (
-                                <span className="text-emerald-400 font-bold text-[11px]">
-                                  ➔ +{nextStatsObj.speedBonus} (+{nextStatsObj.speedBonus - currentStatsObj.speedBonus})
-                                </span>
-                              )}
+                          )}
+                          {nextEnhanced.speedBonus !== 0 && (
+                            <div className="text-emerald-300 font-bold flex items-center justify-between">
+                              <span>SPD:</span>
+                              <span>+{nextEnhanced.speedBonus} (+{nextEnhanced.speedBonus - currentEnhanced.speedBonus})</span>
                             </div>
-                          </div>
-                        )}
-
-                        {/* HP */}
-                        {currentStatsObj.hpBonus !== 0 && (
-                          <div className="rounded border border-teal-500/30 bg-teal-950/20 p-2">
-                            <span className="text-[10px] text-teal-300 block">Vỏ Giáp (HP)</span>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="text-white">+{currentStatsObj.hpBonus}</span>
-                              {!isMax && (
-                                <span className="text-emerald-400 font-bold text-[11px]">
-                                  ➔ +{nextStatsObj.hpBonus} (+{nextStatsObj.hpBonus - currentStatsObj.hpBonus})
-                                </span>
-                              )}
+                          )}
+                          {nextEnhanced.hpBonus !== 0 && (
+                            <div className="text-teal-300 font-bold flex items-center justify-between">
+                              <span>HP:</span>
+                              <span>+{nextEnhanced.hpBonus} (+{nextEnhanced.hpBonus - currentEnhanced.hpBonus})</span>
                             </div>
-                          </div>
-                        )}
-
-                        {/* SP */}
-                        {currentStatsObj.spBonus !== 0 && (
-                          <div className="rounded border border-cyan-500/30 bg-cyan-950/20 p-2">
-                            <span className="text-[10px] text-cyan-300 block">Lõi Năng Lượng (SP)</span>
-                            <div className="flex items-center gap-1 mt-0.5">
-                              <span className="text-white">+{currentStatsObj.spBonus}</span>
-                              {!isMax && (
-                                <span className="text-emerald-400 font-bold text-[11px]">
-                                  ➔ +{nextStatsObj.spBonus} (+{nextStatsObj.spBonus - currentStatsObj.spBonus})
-                                </span>
-                              )}
+                          )}
+                          {nextEnhanced.spBonus !== 0 && (
+                            <div className="text-cyan-300 font-bold flex items-center justify-between">
+                              <span>SP:</span>
+                              <span>+{nextEnhanced.spBonus} (+{nextEnhanced.spBonus - currentEnhanced.spBonus})</span>
                             </div>
-                          </div>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-4 text-xs font-mono text-amber-300">
+                          Trang bị đã đạt mốc tối thượng, không thể nâng cấp thêm.
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Thanh Đo Tỉ Lệ Thành Công (Success Rate Gauge) */}
-                  {!isMax && nextConfig && (
-                    <div className="rounded-sm border border-border/70 bg-black/40 p-3">
-                      <div className="flex items-center justify-between mb-1.5 text-xs font-mono">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <TrendingUp className="size-3.5 text-purple-400" />
-                          Tỉ Lệ Thành Công Cấp +{targetLevel}:
-                        </span>
-                        <span
-                          className={cn(
-                            "font-bold",
-                            nextConfig.successRate === 1.0
-                              ? "text-emerald-400"
-                              : nextConfig.successRate >= 0.6
-                                ? "text-amber-300"
-                                : "text-orange-400",
-                          )}
-                        >
-                          {Math.round(nextConfig.successRate * 100)}%{" "}
-                          {nextConfig.successRate === 1.0
-                            ? "(100% An Toàn)"
-                            : nextConfig.successRate >= 0.6
-                              ? "(Thất bại giữ nguyên cấp)"
-                              : "(Cấp cao thử thách)"}
-                        </span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded bg-secondary/80">
-                        <div
-                          className={cn(
-                            "h-full transition-all duration-300",
-                            nextConfig.successRate === 1.0
-                              ? "bg-emerald-400"
-                              : nextConfig.successRate >= 0.6
-                                ? "bg-amber-400"
-                                : "bg-orange-500",
-                          )}
-                          style={{ width: `${Math.round(nextConfig.successRate * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Chi Phí & Tài Nguyên Yêu Cầu */}
-                  {!isMax && nextConfig && (
-                    <div className="grid grid-cols-2 gap-3 font-mono text-xs">
-                      {/* Credits */}
-                      <div
-                        className={cn(
-                          "rounded border p-2.5 flex items-center justify-between",
-                          hasEnoughCredits
-                            ? "border-amber-500/40 bg-amber-950/20"
-                            : "border-red-500/50 bg-red-950/30",
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
+                  {/* Chi Phí Nâng Cấp */}
+                  {!isMax && config && (
+                    <div className="grid grid-cols-2 gap-3 border-t border-border/40 pt-3 font-mono text-xs">
+                      {/* Tiêu hao Credits */}
+                      <div className="rounded bg-black/40 p-2.5 border border-border/40 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-amber-300">
                           <Coins className="size-4 text-amber-400" />
-                          <div>
-                            <span className="text-[10px] text-muted-foreground block">Credits cần</span>
-                            <span className="font-bold text-amber-300">
-                              {nextConfig.creditsCost.toLocaleString("vi-VN")}
-                            </span>
-                          </div>
+                          <span>Chi phí: {config.creditsCost.toLocaleString("vi-VN")} Credits</span>
                         </div>
                         <span className={cn("text-[10px]", hasEnoughCredits ? "text-emerald-400" : "text-red-400")}>
                           Có: {progression.credits.toLocaleString("vi-VN")}
                         </span>
                       </div>
 
-                      {/* Alloy */}
-                      <div
-                        className={cn(
-                          "rounded border p-2.5 flex items-center justify-between",
-                          hasEnoughAlloy
-                            ? "border-purple-500/40 bg-purple-950/20"
-                            : "border-red-500/50 bg-red-950/30",
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
+                      {/* Tiêu hao Hợp Kim Alloy */}
+                      <div className="rounded bg-black/40 p-2.5 border border-border/40 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-purple-300">
                           <Layers className="size-4 text-purple-400" />
-                          <div>
-                            <span className="text-[10px] text-muted-foreground block">Hợp Kim (Alloy) cần</span>
-                            <span className="font-bold text-purple-300">
-                              {nextConfig.alloyCost} Alloy
-                            </span>
-                          </div>
+                          <span>Chi phí: {config.alloyCost} Hợp Kim (Alloy)</span>
                         </div>
                         <span className={cn("text-[10px]", hasEnoughAlloy ? "text-emerald-400" : "text-red-400")}>
                           Có: {alloyCount}
@@ -1105,7 +1596,7 @@ export function StarfrontHangar({
                     </div>
                   )}
 
-                  {/* Cam Kết Bảo Vệ Trang Bị (Anti-Frustration Guarantee Banner) */}
+                  {/* Cam kết bảo toàn 100% */}
                   <div className="rounded border border-emerald-500/30 bg-emerald-950/20 p-2.5 flex items-center gap-2 text-xs text-emerald-300 font-mono">
                     <ShieldCheck className="size-4 shrink-0 text-emerald-400" />
                     <span>
@@ -1113,7 +1604,7 @@ export function StarfrontHangar({
                     </span>
                   </div>
 
-                  {/* Kết Quả Lần Cường Hóa Gần Nhất */}
+                  {/* Kết quả lần cường hóa gần nhất */}
                   {lastEnhanceResult && (
                     <div
                       className={cn(
@@ -1137,7 +1628,7 @@ export function StarfrontHangar({
                     </div>
                   )}
 
-                  {/* Nút Thao Tác Cường Hóa */}
+                  {/* Nút Hành Động */}
                   <div className="pt-2 flex justify-end gap-2.5">
                     <Button
                       variant="outline"
@@ -1180,9 +1671,11 @@ export function StarfrontHangar({
         </div>
       )}
 
-      {/* 6. Hộp thoại xác nhận Cài lại tiến trình (Reset Confirmation Modal) */}
+      {/* ====================================================================
+          6. MODAL XÁC NHẬN CÀI LẠI TIẾN TRÌNH (RESET CONFIRMATION)
+          ==================================================================== */}
       {showResetDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in">
           <div className="max-w-md w-full rounded-sm border border-red-500/60 bg-panel p-5 shadow-2xl">
             <div className="flex items-center gap-3 text-red-400">
               <AlertTriangle className="size-6 animate-pulse" />
@@ -1192,7 +1685,7 @@ export function StarfrontHangar({
             </div>
 
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
-              Toàn bộ dữ liệu cấp độ Vanguard, số EXP tích lũy, số Credits, Hợp Kim (Alloy) và trang bị cường hóa đã lưu trong trình duyệt sẽ được đưa về giá trị mặc định ban đầu. Hành động này không thể hoàn tác.
+              Toàn bộ dữ liệu cấp độ phi cơ, số EXP tích lũy, số Credits, Hợp Kim (Alloy) và trang bị cường hóa đã lưu trong trình duyệt sẽ được đưa về giá trị mặc định ban đầu. Hành động này không thể hoàn tác.
             </p>
 
             <div className="mt-5 flex justify-end gap-2.5">
@@ -1211,7 +1704,7 @@ export function StarfrontHangar({
                   onResetSave()
                   setShowResetDialog(false)
                 }}
-                className="text-xs font-display uppercase tracking-wider cursor-pointer"
+                className="text-xs font-display uppercase tracking-wider cursor-pointer font-bold"
               >
                 Đồng ý xóa & Reset
               </Button>
@@ -1220,7 +1713,9 @@ export function StarfrontHangar({
         </div>
       )}
 
-      {/* Modal Tái Chế / Rã Đồ Trong Hangar */}
+      {/* ====================================================================
+          7. MODAL TÁI CHẾ / RÃ ĐỒ (SALVAGE MODAL INTEGRATION)
+          ==================================================================== */}
       <SalvageModal
         item={selectedSalvageItem}
         progression={progression}
@@ -1237,6 +1732,10 @@ export function StarfrontHangar({
     </div>
   )
 }
+
+/* ==========================================================================
+   HELPER SUB-COMPONENTS
+   ========================================================================== */
 
 function StatRow({
   label,
@@ -1267,14 +1766,201 @@ function StatRow({
         {diff !== 0 && (
           <span
             className={cn(
-              "font-bold text-xs animate-pulse",
+              "font-bold text-xs animate-pulse flex items-center gap-0.5",
               diff > 0 ? "text-emerald-400" : "text-red-400",
             )}
           >
+            {diff > 0 ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
             ➔ {preview} ({diff > 0 ? `+${diff}` : diff})
           </span>
         )}
       </div>
     </div>
   )
+}
+
+function ItemComparisonCard({
+  title,
+  item,
+  isCurrentlyEquipped,
+}: {
+  title: string
+  item: StarfrontItem | null
+  isCurrentlyEquipped: boolean
+}) {
+  if (!item) {
+    return (
+      <div className="rounded border border-border/50 bg-black/40 p-3 text-center">
+        <span className="text-[10px] font-mono text-muted-foreground uppercase">{title}</span>
+        <div className="my-4 text-xs font-mono text-muted-foreground italic">
+          (Ô này hiện chưa được gắn trang bị)
+        </div>
+      </div>
+    )
+  }
+
+  const rarity = RARITY_CONFIG[item.rarity]
+  const enhBadge = getEnhancementBadgeMeta(item.enhancementLevel)
+  const stats = getEnhancedItemStats(item)
+  const rating = calculateItemRating(item)
+
+  return (
+    <div className={cn("rounded border p-3", rarity.border, rarity.bg)}>
+      <div className="flex items-center justify-between text-[10px] font-mono">
+        <span className="text-muted-foreground uppercase">{title}</span>
+        {isCurrentlyEquipped && (
+          <span className="text-cyan-300 font-bold">✓ ĐANG LẮP TRÊN TÀU</span>
+        )}
+      </div>
+
+      <div className="mt-1.5 flex items-center justify-between gap-1">
+        <h5 className="font-display text-xs font-bold text-white">
+          {getItemDisplayName(item)}
+        </h5>
+        <div className="flex items-center gap-1">
+          <span className="rounded px-1.5 py-0.2 font-mono text-[9px] font-bold bg-amber-950/60 text-amber-300 border border-amber-500/40">
+            {rating} R
+          </span>
+          {enhBadge && (
+            <span className={cn("rounded px-1.5 py-0.2 font-mono text-[9px] border", enhBadge.className)}>
+              {enhBadge.text}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">
+        {item.desc}
+      </p>
+
+      <div className="mt-2 flex flex-wrap gap-1 font-mono text-[10px]">
+        {stats.attackBonus !== 0 && (
+          <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
+            ATK +{stats.attackBonus}
+          </span>
+        )}
+        {stats.defenseBonus !== 0 && (
+          <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
+            DEF {stats.defenseBonus > 0 ? `+${stats.defenseBonus}` : stats.defenseBonus}
+          </span>
+        )}
+        {stats.speedBonus !== 0 && (
+          <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
+            SPD +{stats.speedBonus}
+          </span>
+        )}
+        {stats.hpBonus !== 0 && (
+          <span className="rounded bg-teal-950/60 px-1.5 py-0.5 text-teal-300 border border-teal-500/30">
+            HP +{stats.hpBonus}
+          </span>
+        )}
+        {stats.spBonus !== 0 && (
+          <span className="rounded bg-cyan-950/60 px-1.5 py-0.5 text-cyan-300 border border-cyan-500/30">
+            SP +{stats.spBonus}
+          </span>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Xây dựng danh sách 5 Slot Kỹ Năng từ cấu hình Gear hiện tại
+ * Slot 1: Basic Attack
+ * Slots 2-4: Active Skills
+ * Slot 5: Ultimate Skill
+ */
+function buildFiveSkillSlots(gearDef: (typeof STARFRONT_GEAR_DEFS)[StarfrontGearId]) {
+  const skills = gearDef.skills || []
+
+  const slot1 = skills[0] || {
+    id: "basic-attack",
+    name: "Tia Năng Lượng Thường",
+    nameEn: "Basic Shot",
+    desc: "Đòn đánh cơ bản nạp lại 15 SP.",
+    spCost: 0,
+    cooldown: 0,
+    targetType: "single-enemy" as const,
+    damageMultiplier: 1.0,
+  }
+
+  const slot2 = skills[1] || {
+    id: "active-1",
+    name: "Xung Kích Chiến Thuật",
+    nameEn: "Tactical Strike",
+    desc: "Kỹ năng tấn công chủ lực.",
+    spCost: 25,
+    cooldown: 0,
+    targetType: "single-enemy" as const,
+    damageMultiplier: 1.5,
+  }
+
+  const slot3 = skills[2] || {
+    id: "active-2",
+    name: "Sóng Phá Giáp",
+    nameEn: "Disruptor Beam",
+    desc: "Gây sát thương và giảm phòng ngự mục tiêu.",
+    spCost: 35,
+    cooldown: 3,
+    targetType: "single-enemy" as const,
+    damageMultiplier: 1.2,
+    defenseReduction: 0.35,
+    effectDuration: 2,
+  }
+
+  const slot4 = skills[3] || {
+    id: "active-3",
+    name: "Lá Chắn Khẩn Cấp",
+    nameEn: "Emergency Guard",
+    desc: "Kích hoạt tấm chắn giảm sát thương nhận vào.",
+    spCost: 30,
+    cooldown: 4,
+    targetType: "self" as const,
+    damageReduction: 0.5,
+    effectDuration: 2,
+  }
+
+  // Slot 5: Ultimate Skill độc quyền của từng Gear
+  const slot5Ultimate: CombatSkill =
+    gearDef.id === "falcon"
+      ? {
+          id: "falcon-ultimate",
+          name: "Bão Siêu Tốc Phantom Blitz",
+          nameEn: "Mach Phantom Blitz",
+          desc: "Đột phá tốc độ ánh sáng gây 240% sát thương bạo kích, đồng thời kích hoạt 100% né tránh đòn đánh trong lượt kế tiếp.",
+          spCost: 55,
+          cooldown: 5,
+          targetType: "single-enemy",
+          damageMultiplier: 2.4,
+        }
+      : gearDef.id === "aegis"
+        ? {
+            id: "aegis-ultimate",
+            name: "Pháo Kích Hạt Nhân Pháo Đài",
+            nameEn: "Judgement Fortress Cannon",
+            desc: "Tập trung toàn bộ năng lượng bắn chùm pháo hạt nhân công phá cực mạnh gây 260% sát thương xuyên thủng 100% giáp.",
+            spCost: 60,
+            cooldown: 5,
+            targetType: "single-enemy",
+            damageMultiplier: 2.6,
+            armorPenetration: 1.0,
+          }
+        : {
+            id: "vanguard-ultimate",
+            name: "Bão Xung Quang Overdrive Nova",
+            nameEn: "Overdrive Photon Nova",
+            desc: "Giải phóng toàn bộ xung năng lượng lõi gây 230% sát thương, hồi đầy khiên và duy trì +10 SP mỗi lượt.",
+            spCost: 50,
+            cooldown: 5,
+            targetType: "single-enemy",
+            damageMultiplier: 2.3,
+          }
+
+  return [
+    { slotIndex: 1, slotRole: "Đòn Cơ Bản", skill: slot1, isNative: true, ultimateBadge: false },
+    { slotIndex: 2, slotRole: "Chủ Động 1", skill: slot2, isNative: true, ultimateBadge: false },
+    { slotIndex: 3, slotRole: "Chủ Động 2", skill: slot3, isNative: true, ultimateBadge: false },
+    { slotIndex: 4, slotRole: "Chủ Động 3", skill: slot4, isNative: true, ultimateBadge: false },
+    { slotIndex: 5, slotRole: "Tuyệt Kỹ Tối Thượng", skill: slot5Ultimate, isNative: true, ultimateBadge: true },
+  ]
 }

@@ -387,6 +387,7 @@ export type StarfrontGearClassDef = {
   desc: string
   color: string
   avatar: string
+  illustration?: string
   passive: StarfrontGearPassive
   baseStats: {
     hp: number

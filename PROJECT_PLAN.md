@@ -416,6 +416,68 @@
   - `TC-P56-11`: resetSideQuests làm mới chuỗi nhiệm vụ phụ và scale theo level người chơi.
   - `TC-P56-12`: migrateProgressionToV3 bảo toàn currentShopItems, sideQuests và missionOverrides.
 
+#### 🎯 Milestone 5.7: Hệ Thống Mô-đun Kỹ Năng & Trang Bị Thống Nhất (Unified Equipment & Skill Module System) `[KẾ HOẠCH CHI TIẾT / PLANNING]`
+- **Mục tiêu**: Thiết kế kiến trúc Shared Item Balance System dùng chung cho cả Trang bị (Equipment: Weapon, Shield, Engine) và Mô-đun kỹ năng (Skill Modules: Basic Attack, Active Skills 1-3, Ultimate), chuẩn hóa ngân sách sức mạnh (Power Budget), cơ chế random có giới hạn, hệ thống Rating, công thức định giá thương mại, và hệ thống 5 Slot kỹ năng kèm cơ chế nâng cấp slot bằng Aircraft Skill Points.
+- **Trạng thái**: **Đang lập kế hoạch (Planning Phase — Chưa triển khai mã nguồn gameplay)**.
+- **Phạm vi kiến trúc chi tiết**:
+  - **1. Shared Item Balance Framework**:
+    - Quản lý đồng nhất: Level, Rarity (4 bậc hiện có: `common`, `rare`, `epic`, `legendary`), Power Budget, Random Affixes, Rating và Pricing.
+    - Không ép chung công thức hiệu quả mà dùng chung framework kiểm soát ngân sách: Mỗi loại có bảng trọng số quy đổi riêng (Weight Table).
+    - Quy đổi giá trị gameplay chuẩn (Power Tokens - PT):
+      * 1 ATK = 1.0 PT; 1 DEF = 1.2 PT; 1 SPD = 1.5 PT; 10 HP = 0.8 PT (1 HP = 0.08 PT); 1 SP = 1.2 PT.
+      * 1% Crit Rate = 3.0 PT; 1% Crit Damage = 1.5 PT; 1% Evasion = 3.5 PT; 1% Armor Penetration = 2.0 PT; 1% Damage Mitigation = 3.0 PT.
+      * DoT (1% Max HP/lượt) = 2.5 PT; Debuff (-10% DEF/lượt) = 15.0 PT; Stun (1 lượt) = 45.0 PT.
+    - Công thức ngân sách: `PowerBudget = (BaseBudget + Level * Growth) * RarityMult * CompatibilityMult`.
+  - **2. Equipment System (All-Gear vs Gear-Specific)**:
+    - 3 Loại trang bị:
+      * *Weapon*: Tập trung ATK chính, thuộc tính phụ: SPD, Crit Rate, Armor Penetration, DoT Plasma.
+      * *Shield*: Tập trung DEF & Dung lượng Khiên, thuộc tính phụ: HP, Damage Mitigation, Debuff Resistance.
+      * *Engine*: Tập trung SPD/AGI, thuộc tính phụ: Evasion, SP Regen, Initiative, Action Acceleration.
+    - 2 Phạm vi tương thích:
+      * *All-Gear*: Dùng được trên mọi Gear (Vanguard, Falcon, Aegis, Specter). Tỷ lệ xuất hiện: 75% trong drop/shop pools. Ngân sách chuẩn (1.0x).
+      * *Gear-Specific*: Chỉ trang bị đúng Gear. Tỷ lệ xuất hiện: 25% (hiếm). Ngân sách +10% (1.10x), sở hữu thuộc tính chuyên biệt tối ưu cho nội tại của Gear đó.
+  - **3. Skill Module System (5 Slots)**:
+    - Cấu trúc 5 Slot kỹ năng:
+      * *Slot 1 (Basic Attack)*: Đòn bắn cơ bản không tốn SP, tạo +15 SP, 0 CD. Tương thích: All-Gear hoặc Gear-specific.
+      * *Slot 2–4 (Active Skills)*: 3 kỹ năng chiến thuật chủ động (Sát thương, Buff, Debuff, Hồi khiên, DoT). Tương thích: All-Gear hoặc Gear-specific; **Tối đa 2 trong 3 slot được dùng All-Gear** (ít nhất 1 slot phải là kỹ năng chuyên biệt của Gear hiện tại).
+      * *Slot 5 (Ultimate)*: Tuyệt kỹ tối thượng uy lực cao. **100% bắt buộc là Ultimate của đúng Gear đang lái**.
+    - Ràng buộc hiệu ứng: Duration 1–3 lượt, Stacking theo 3 cơ chế chuẩn (`refresh`, `intensity` max 3-5 tầng, `override`), SP cost: Basic 0 SP, Active 20–45 SP, Ultimate 50–70 SP. Cooldown: Basic 0 lượt, Active 2–4 lượt, Ultimate 4–6 lượt.
+  - **4. Aircraft Level & Skill Points (Slot Upgrade System)**:
+    - Mỗi khi Aircraft thăng 1 Cấp (Level Up), nhận được **2 Skill Points**.
+    - Nâng cấp kỹ năng gắn cố định với **Slot (Ô Kỹ Năng)**, không gắn với Module. Thay đổi Module không làm mất cấp nâng của ô (`slotLevels[slotId]`).
+    - Phân biệt:
+      * *Module Level*: Xác định chỉ số nền tảng của module khi rớt/mua (giới hạn theo Rarity).
+      * *Slot Upgrade Level*: Hệ số khuếch đại cố định của phi thuyền trên slot đó: `SlotMultiplier = 1 + (SlotLevel * 0.025)` (+2.5% hiệu lực mỗi cấp slot).
+    - Giới hạn cấp Module theo Rarity:
+      * *All-Gear*: Common Max Lv.10, Rare Max Lv.15, Epic Max Lv.20, Legendary Max Lv.25.
+      * *Gear-Specific* (+10 cấp): Common Max Lv.20, Rare Max Lv.25, Epic Max Lv.30, Legendary Max Lv.35.
+    - Giới hạn cấp Slot: Max Lv.20. Chi phí SP: Lv 1-5 (1 SP), Lv 6-10 (2 SP), Lv 11-15 (3 SP), Lv 16-20 (4 SP).
+  - **5. Rating & Định Giá Thương Mại**:
+    - `Item/Skill Rating = Math.round(ActualPowerTokens / 1.5)`.
+    - `BuyPrice = Math.round(BaseCost * (1 + Level * 0.15) * RarityMult * CompatibilityMult * (Rating / BaseRating))`.
+    - Giá Gear-Specific cao hơn 30% so với All-Gear cùng level/rarity.
+    - Bán lại: 35% giá mua cơ sở; Tái chế (Salvage): Thu hồi Alloy theo Rarity và cấp cường hóa.
+  - **6. Thiết Kế Lớp Cơ Giáp Thứ Tư: Specter — Tactical Support**:
+    - Vai trò: Tiêm kích hỗ trợ tác chiến điện tử (Electronic Warfare & Tactical Control). Màu đại diện: Xanh ngọc lục bảo `#10b981`.
+    - Nội tại: *Hệ Thống Phân Tích Điểm Yếu (Tactical Analyzer)*: Giảm 15% Né Tránh của địch; kỹ năng buff/debuff tích lũy điểm *Tactical Charge* (tối đa 5 tầng, mỗi tầng +6% hiệu lực kỹ năng kế tiếp).
+    - Bộ 5 kỹ năng đặc trưng:
+      * Slot 1 (Basic): *Tia Quét Phân Rã (Disruption Beam)* — 100% ATK, hồi +15 SP, giảm 10% DEF địch trong 2 lượt.
+      * Slot 2 (Active): *Xung Sóng EMP Làm Chậm (EMP Pulse)* — 120% ATK, làm chậm EMP Slow (-25 SPD) trong 2 lượt.
+      * Slot 3 (Active): *Màng Kháng Từ Trường (Nanite Dispersal Field)* — Hồi 350 Shield, thanh tẩy 1 debuff.
+      * Slot 4 (Active): *Quá Tải Lõi Tăng Áp (Quantum Overdrive)* — Tăng +25 SPD và +20% Crit trong 2 lượt.
+      * Slot 5 (Ultimate): *Giao Thức Pháo Kích Quỹ Đạo (Orbital Strike Protocol)* — 240% sát thương diện rộng, gây Choáng (Stun) 1 lượt và Acid Corrosion (-30% DEF, 5% DoT) trong 3 lượt.
+  - **7. Lưu Trữ Bền Vững & Nâng Cấp Schema v4**:
+    - Nâng cấp schema lên v4 (`STARFRONT_SAVE_DATA_V4`).
+    - Bổ sung vào `StarfrontProgression`: `skillPoints`, `slotLevels: Record<1|2|3|4|5, number>`, `equippedSkills: Record<1|2|3|4|5, string | null>`, `skillInventory: SkillModuleItem[]`.
+    - Tương thích ngược tuyệt đối: Nạp save v3 tự động khởi tạo `skillPoints = (level - 1) * 2`, cấp bộ skill mặc định của Gear đang chọn, không làm mất bất kỳ trang bị hay tiến trình nào.
+  - **8. Lộ Trình Phân Rã Các Bước Triển Khai (Milestone Sub-phases)**:
+    - *Milestone 5.7.1*: Định nghĩa TypeScript Interfaces, Data Structures & Schema v4 Migration (`types.ts`, `storage.ts`).
+    - *Milestone 5.7.2*: Thuật toán Shared Power Budget, Random Affixes Rebalance & Rating Calculator (`scaling.ts`, `progression.ts`).
+    - *Milestone 5.7.3*: 5-Slot Skill Module Deck & Tích hợp Combat Engine (`engine.ts`, `data.ts`).
+    - *Milestone 5.7.4*: Giao diện Xưởng Hangar Skill Deck & Chợ Quân Sự 2 Tab (`starfront-hangar.tsx`, `starfront-shop.tsx`).
+    - *Milestone 5.7.5*: Cấu hình Lớp Cơ Giáp Specter (Tactical Support).
+    - *Milestone 5.7.6*: Bộ Kiểm Thử Tự Động & Kiểm Thử Hồi Quy (`tests/phase5-7-skill-modules.test.ts`).
+
 ---
 
 ### GIAI ĐOẠN 6: MỞ RỘNG THẾ GIỚI & CHIẾN TRANH THIÊN HÀ (PHASE 6 — WORLD & WAR EXPANSION)
@@ -500,6 +562,7 @@
 | **Lưu trữ Schema v3 & Đồng bộ trạng thái tức thời** | **Đã hoàn thành (Done)** | Phase 5 (M5.4) | Tự động nâng cấp v1/v2 -> v3, chuẩn hóa [0..10], đồng bộ mượt Hangar <-> Arena. 8/8 tests PASS. |
 | **Nhiệm vụ phân tầng, Biến thể quái & Rơi đồ trang bị** | **Đã hoàn thành (Done)** | Phase 5 (M5.5) | Quest Level (1–15), 5 phẩm chất, 9 biến thể quái, rơi đúng 1 trang bị ngẫu nhiên có cấp và thuộc tính, preview phần thưởng cố định. |
 | **Sửa mở khóa vũ khí, Refresh Chợ & Khóa cấu hình ải** | **Đã hoàn thành (Done)** | Phase 5 (M5.6) | Sửa ải 3-3 mở khóa vũ khí Sector 3, Refresh Chợ 100 Cr/lượt miễn phí, khóa địch chính tuyến trong Arena, Sector 4 Event Horizon, Reset ải & Side Quests. 12/12 tests PASS. |
+| **Mô-đun Kỹ Năng & Trang Bị Thống Nhất (5 Slots)** | **Kế hoạch (Planned)** | Phase 5 (M5.7) | Shared Power Budget, All-Gear vs Gear-Specific, 5 Skill Slots, Aircraft Skill Points (+2 SP/lvl), Rating & Pricing, Specter Tactical Support. |
 | **Mở rộng Sector 4, 5 & Hệ thống phe phái thiên hà** | **Chưa triển khai (Planned)** | Phase 6 (M6.1) | BCU vs ANI, điểm danh vọng phe phái. |
 | **Đại chiến Mẹ Hạm không gian & Dị thường môi trường** | **Chưa triển khai (Planned)** | Phase 6 (M6.2) | Boss đa bộ phận, bão bức xạ mặt trời. |
 | **Liên kết chiều sâu với phân hệ Ace Manager** | **Chưa triển khai (Planned)** | Phase 6 (M6.3) | Căn cứ cấp nguyên liệu, Phi công lái Gear tăng chỉ số. |

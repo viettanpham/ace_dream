@@ -12,7 +12,7 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 2** | Tiến Trình Nhân Vật & Kho Trang Bị (Progression & Loadout) | **Đã triển khai** | Đã có trong `progression.ts`, `storage.ts`, `starfront-hangar.tsx`. Level, EXP, Credits, 3 ô trang bị. |
 | **Phase 3** | Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ (Missions, Gears & Shop) | **Đã triển khai** | Đã có trong `campaign-map.tsx`, `starfront-shop.tsx`, `audio.ts`. 3 Sector (9 ải), Vanguard / Falcon / Aegis, Chợ vũ khí, Web Audio. |
 | **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Đã triển khai** | Hoàn thành Milestones 4.1 -> 4.4: Status Effects (DoT/Stun/Slow/ECM), 4 Archetype AI, Boss 2 Pha Overdrive, Telegraphed Attack, Dynamic Turn Queue & Evasion. Đã kiểm chứng 36/36 tests. |
-| **Phase 5** | Tiến Trình Cơ Giáp, Cường Hóa & Nhiệm Vụ Phân Tầng (Progression, Gear & Quests) | **Đã triển khai** | Hoàn thành Milestones 5.1 -> 5.6: Cường Hóa +1..+10, Nội Tại 3 Lớp Gear, Tái Chế & Chợ Phân Tầng, Schema v3 & Đồng Bộ State, Mission Scaling (1–15), 9 Biến Thể Quái, Sửa Mở Khóa Vũ Khí 3-3, Refresh Chợ (100 Cr/Free), Khóa Địch Chính Tuyến, Sector 4 Event Horizon, Reset Ải & Nhiệm Vụ Phụ (Side Quests). |
+| **Phase 5** | Tiến Trình Cơ Giáp, Cường Hóa & Nhiệm Vụ Phân Tầng (Progression, Gear & Quests) | **Đang mở rộng** | Đã hoàn thành Milestones 5.1 -> 5.6 (60/60 tests PASS). Milestone 5.7 (Unified Equipment & Skill Module System) đang trong giai đoạn Lập Kế Hoạch (Planning — Chưa triển khai code gameplay). |
 | **Phase 6** | Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (World & War Expansion) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
 
 ---
@@ -65,6 +65,18 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 - **Lưu Trữ Bền Vững & Chống Rò Rỉ Trạng Thái**:
   - Dữ liệu gian hàng hiện tại (`currentShopItems`), danh sách nhiệm vụ phụ (`sideQuests`) và cấu hình ải sau reset (`missionOverrides`) được lưu cố định vào `StarfrontProgression` và đồng bộ qua LocalStorage Schema v3.
   - Sau khi tải lại trang web (reload), danh sách shop, nhiệm vụ và điều kiện mở khóa hoàn toàn nguyên vẹn, không bị tự động random lại ngoài ý muốn.
+
+### 2.9. Hệ Thống Mô-đun Kỹ Năng & Trang Bị Thống Nhất (Phase 5 — Milestone 5.7) `[KẾ HOẠCH CHI TIẾT / PLANNED — CHƯA TRIỂN KHAI CODE]`
+- **Mục tiêu**: Chuẩn hóa hệ thống Shared Item Balance System dùng chung cho Trang bị (Weapon, Shield, Engine) và Mô-đun Kỹ Năng (Slot 1–5), thiết lập ngân sách sức mạnh (Power Budget), cơ chế random có giới hạn, xếp hạng Item/Skill Rating, định giá thương mại, và hệ thống 5 Slot kỹ năng kèm cơ chế nâng cấp slot bằng Aircraft Skill Points.
+- **Trạng thái**: **Đang lập kế hoạch (Planning)** — Chưa triển khai mã nguồn gameplay.
+- **Tóm tắt thiết kế kiến trúc**:
+  - *Shared Item Balance System*: Khung đánh giá và ngân sách sức mạnh chung dựa trên hệ số quy đổi Power Tokens (1 ATK = 1.0 PT, 1 DEF = 1.2 PT, 1 SPD = 1.5 PT, 1 HP = 0.08 PT, 1% Crit = 3.0 PT, 1% Evasion = 3.5 PT, v.v.).
+  - *Phân cấp tương thích*: All-Gear (75% drop pool, linh hoạt cho mọi Gear) vs Gear-specific (25% drop pool, chuyên biệt theo Gear với +10% ngân sách sức mạnh).
+  - *Hệ thống 5 Slot Kỹ Năng*: Slot 1 (Basic Attack tạo SP), Slot 2–4 (Active Skills, tối đa 2/3 slot All-Gear), Slot 5 (Bắt buộc Ultimate của đúng Gear).
+  - *Nâng cấp ô kỹ năng (Slot Upgrade)*: Tăng 1 Aircraft Level nhận +2 Skill Points; nâng cấp gắn cố định theo Slot (không mất cấp khi đổi module), tăng +2.5% hiệu quả/cấp (Max Lv.20).
+  - *Cấp độ Module theo Rarity*: All-Gear (Common Lv.10, Rare Lv.15, Epic Lv.20, Legendary Lv.25); Gear-specific (+10 cấp tương ứng: Lv.20/25/30/35).
+  - *Lớp Cơ Giáp Thứ Tư — Specter (Tactical Support)*: Định hướng tác chiến điện tử & kiểm soát nhịp độ với nội tại tích tầng Tactical Charge và chiêu cuối Orbital Strike Protocol.
+  - *Schema Migration v4*: Mở rộng lưu trữ `skillPoints`, `slotLevels`, `equippedSkills`, `skillInventory` bảo toàn dữ liệu cũ v1/v2/v3.
 
 ---
 

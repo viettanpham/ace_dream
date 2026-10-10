@@ -19,6 +19,7 @@ import {
   CheckCircle2,
   Coins,
   Heart,
+  Loader2,
   Lock,
   Recycle,
   RotateCcw,
@@ -26,6 +27,7 @@ import {
   ShoppingBag,
   Sparkles,
   Sword,
+  Tag,
   Zap,
 } from "lucide-react"
 import { useState } from "react"
@@ -38,12 +40,23 @@ interface StarfrontShopProps {
 
 export function StarfrontShop({ progression, onUpdateProgression }: StarfrontShopProps) {
   const [shopTab, setShopTab] = useState<"buy" | "sell" | "salvage">("buy")
-  const [feedback, setFeedback] = useState<{ text: string; isError?: boolean } | null>(null)
+  const [feedback, setFeedback] = useState<{
+    text: string
+    isError?: boolean
+    priceDetail?: string
+    costType?: "free" | "credits" | "none"
+  } | null>(null)
   const [selectedSalvageItem, setSelectedSalvageItem] = useState<StarfrontItem | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const showNotification = (text: string, isError = false) => {
-    setFeedback({ text, isError })
-    setTimeout(() => setFeedback(null), 3500)
+  const showNotification = (
+    text: string,
+    isError = false,
+    priceDetail?: string,
+    costType?: "free" | "credits" | "none",
+  ) => {
+    setFeedback({ text, isError, priceDetail, costType })
+    setTimeout(() => setFeedback(null), 4500)
   }
 
   const handleBuy = (item: ArmoryShopItem) => {
@@ -58,7 +71,12 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
     if (result.success) {
       playLevelUpSound()
       onUpdateProgression(result.updated)
-      showNotification(result.message)
+      showNotification(
+        result.message,
+        false,
+        `-${item.buyPrice.toLocaleString("vi-VN")} Credits`,
+        "credits",
+      )
     } else {
       showNotification(result.message, true)
     }
@@ -77,15 +95,54 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
   }
 
   const handleRefreshShop = () => {
+    if (isRefreshing) return
     playClickSound()
-    const result = refreshArmoryShop(progression)
-    if (result.success) {
-      playLevelUpSound()
-      onUpdateProgression(result.updated)
-      showNotification(result.message)
-    } else {
-      showNotification(result.message, true)
+
+    const freeRefreshes = progression.freeShopRefreshes || 0
+    const cost = 100
+    const hasEnoughCredits = progression.credits >= cost
+
+    // Kiểm tra sớm điều kiện tài chính trước khi tải
+    if (freeRefreshes === 0 && !hasEnoughCredits) {
+      showNotification(
+        `Không đủ Credits để làm mới gian hàng! Cần ${cost} Credits, ngân khố hiện có ${progression.credits.toLocaleString("vi-VN")} Credits.`,
+        true,
+        `Thiếu ${(cost - progression.credits).toLocaleString("vi-VN")} Credits`,
+        "credits",
+      )
+      return
     }
+
+    // Kích hoạt trạng thái loading và giải mã danh mục vũ khí
+    setIsRefreshing(true)
+
+    setTimeout(() => {
+      const result = refreshArmoryShop(progression)
+      setIsRefreshing(false)
+
+      if (result.success) {
+        playLevelUpSound()
+        onUpdateProgression(result.updated)
+
+        if (freeRefreshes > 0) {
+          showNotification(
+            result.message,
+            false,
+            `Miễn phí • Còn ${result.updated.freeShopRefreshes ?? 0} lượt`,
+            "free",
+          )
+        } else {
+          showNotification(
+            result.message,
+            false,
+            `-100 Credits (Dư: ${result.updated.credits.toLocaleString("vi-VN")} Cr)`,
+            "credits",
+          )
+        }
+      } else {
+        showNotification(result.message, true, undefined, "none")
+      }
+    }, 550)
   }
 
   // Lọc các vật phẩm trong kho không được trang bị để có thể bán hoặc tái chế
@@ -125,7 +182,7 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
             </div>
           </div>
 
-          {/* Ngân Khố & Hợp Kim */}
+          {/* Ngân Khố, Hợp Kim & Lượt Làm Mới */}
           <div className="flex flex-wrap items-center gap-2.5">
             {/* Credits */}
             <div className="flex items-center gap-2 rounded bg-amber-950/40 border border-amber-400/50 px-3 py-1.5 shadow-[0_0_12px_rgba(251,191,36,0.2)]">
@@ -150,26 +207,55 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
                 <span className="text-emerald-300">Alloy</span>
               </div>
             </div>
+
+            {/* Lượt làm mới miễn phí */}
+            <div className="flex items-center gap-2 rounded bg-cyan-950/40 border border-cyan-400/50 px-3 py-1.5 shadow-[0_0_12px_rgba(34,211,238,0.2)]">
+              <RotateCcw className="size-4 text-cyan-400" />
+              <div className="font-mono text-xs">
+                <span className="text-[10px] text-muted-foreground block uppercase">Làm Mới Miễn Phí:</span>
+                <strong className="text-sm text-white font-bold">
+                  {freeRefreshes}
+                </strong>{" "}
+                <span className="text-cyan-300">Lượt</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Thông báo thao tác */}
+      {/* Thông báo thao tác kèm chi tiết khấu trừ giá tiền */}
       {feedback && (
         <div
           className={cn(
-            "rounded-sm border p-3 font-mono text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-2",
+            "rounded-sm border p-3 font-mono text-xs flex flex-wrap items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 shadow-md",
             feedback.isError
               ? "border-red-500/50 bg-red-950/80 text-red-200"
               : "border-emerald-500/50 bg-emerald-950/80 text-emerald-200",
           )}
         >
-          {feedback.isError ? (
-            <AlertTriangle className="size-4 text-red-400 shrink-0" />
-          ) : (
-            <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+          <div className="flex items-center gap-2">
+            {feedback.isError ? (
+              <AlertTriangle className="size-4 text-red-400 shrink-0" />
+            ) : (
+              <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+            )}
+            <span className="font-medium">{feedback.text}</span>
+          </div>
+
+          {feedback.priceDetail && (
+            <div
+              className={cn(
+                "rounded px-2.5 py-0.5 text-[11px] font-bold border shrink-0 font-mono shadow-sm",
+                feedback.costType === "free"
+                  ? "border-emerald-400/60 bg-emerald-900/60 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.25)]"
+                  : feedback.costType === "credits"
+                  ? "border-amber-400/60 bg-amber-900/60 text-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.25)]"
+                  : "border-zinc-500/40 bg-zinc-900 text-zinc-300",
+              )}
+            >
+              {feedback.priceDetail}
+            </div>
           )}
-          <span>{feedback.text}</span>
         </div>
       )}
 
@@ -225,19 +311,40 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
           </button>
         </div>
 
-        {/* Nút Làm Mới Gian Hàng */}
+        {/* Nút Làm Mới Nhanh trên thanh Tab */}
         {shopTab === "buy" && (
           <button
+            type="button"
             onClick={handleRefreshShop}
-            className="flex items-center gap-1.5 rounded-xs border border-cyan-500/40 bg-cyan-950/40 px-3 py-1.5 font-mono text-xs text-cyan-200 hover:bg-cyan-950/80 hover:border-cyan-400 transition-all cursor-pointer shadow-sm"
+            disabled={isRefreshing || (freeRefreshes === 0 && progression.credits < 100)}
+            className={cn(
+              "flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-mono text-xs transition-all cursor-pointer shadow-sm select-none",
+              isRefreshing
+                ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 cursor-wait animate-pulse"
+                : freeRefreshes > 0
+                ? "border-emerald-500/50 bg-emerald-950/50 text-emerald-200 hover:bg-emerald-950 hover:border-emerald-400"
+                : progression.credits >= 100
+                ? "border-cyan-500/40 bg-cyan-950/40 text-cyan-200 hover:bg-cyan-950/80 hover:border-cyan-400"
+                : "border-red-500/30 bg-zinc-950/60 text-zinc-500 cursor-not-allowed opacity-60",
+            )}
           >
-            <RotateCcw className="size-3.5 text-cyan-400 animate-spin-slow" />
+            {isRefreshing ? (
+              <Loader2 className="size-3.5 text-cyan-400 animate-spin" />
+            ) : (
+              <RotateCcw className="size-3.5 text-cyan-400" />
+            )}
             <span>
-              Làm Mới Gian Hàng{" "}
-              {freeRefreshes > 0 ? (
-                <strong className="text-emerald-400">(Miễn phí: {freeRefreshes})</strong>
+              {isRefreshing ? (
+                "Đang Quét..."
               ) : (
-                <span className="text-amber-300">(100 Cr)</span>
+                <>
+                  Làm Mới{" "}
+                  {freeRefreshes > 0 ? (
+                    <strong className="text-emerald-400">(Miễn phí: {freeRefreshes})</strong>
+                  ) : (
+                    <span className="text-amber-300">(100 Cr)</span>
+                  )}
+                </>
               )}
             </span>
           </button>
@@ -246,7 +353,184 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
 
       {/* GIAO DIỆN 1: MUA TRANG BỊ */}
       {shopTab === "buy" && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col gap-3">
+          {/* BANNER ĐIỀU KHIỂN & BẢNG GIÁ LÀM MỚI (MILITARY SHOP REFRESH UI) */}
+          <div className="rounded-sm border border-cyan-500/40 bg-gradient-to-r from-panel/95 via-black/80 to-panel/95 p-3.5 shadow-xl backdrop-blur-md">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3.5">
+              {/* Thông tin bảng giá và chính sách làm mới */}
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex size-7 items-center justify-center rounded-xs border border-cyan-400/50 bg-cyan-950/60 shadow-[0_0_10px_rgba(34,211,238,0.25)]">
+                    <Sparkles className="size-3.5 text-cyan-300" />
+                  </div>
+                  <div>
+                    <h4 className="font-display text-xs font-bold uppercase tracking-wider text-white">
+                      QUÂN NHU VŨ TRỤ // LÀM MỚI GIAN HÀNG (ARMORY RESTOCK)
+                    </h4>
+                    <span className="text-[10px] font-mono text-cyan-300/80">
+                      Ngẫu nhiên lại 6 vật phẩm trang bị theo bể Sector & phẩm chất
+                    </span>
+                  </div>
+                </div>
+
+                {/* Thẻ chi tiết định giá và tài chính */}
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  <div className="flex items-center gap-1.5 rounded bg-black/50 border border-border/70 px-2.5 py-1 font-mono text-xs">
+                    <span className="text-[11px] text-muted-foreground uppercase">Đơn giá:</span>
+                    <strong className="text-amber-300 font-bold">100 Credits</strong>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 rounded bg-black/50 border border-border/70 px-2.5 py-1 font-mono text-xs">
+                    <span className="text-[11px] text-muted-foreground uppercase">Lượt miễn phí:</span>
+                    {freeRefreshes > 0 ? (
+                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                        <span className="size-1.5 rounded-full bg-emerald-400 animate-ping" />
+                        {freeRefreshes} lượt (Ưu tiên)
+                      </span>
+                    ) : (
+                      <span className="text-zinc-500">0 lượt</span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 rounded bg-black/50 border border-border/70 px-2.5 py-1 font-mono text-xs">
+                    <span className="text-[11px] text-muted-foreground uppercase">Dự toán:</span>
+                    {freeRefreshes > 0 ? (
+                      <span className="text-emerald-300 font-bold">0 Credits (Miễn phí)</span>
+                    ) : progression.credits >= 100 ? (
+                      <span className="text-amber-300 font-bold">-100 Credits (Khả dụng)</span>
+                    ) : (
+                      <span className="text-red-400 font-bold">
+                        Thiếu {(100 - progression.credits).toLocaleString("vi-VN")} Credits
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Visual Button: Nút Làm Mới Trực Quan */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleRefreshShop}
+                  disabled={isRefreshing || (freeRefreshes === 0 && progression.credits < 100)}
+                  className={cn(
+                    "group relative flex items-center justify-center gap-2.5 rounded-xs border px-4 py-2.5 font-display text-xs uppercase tracking-wider font-bold transition-all cursor-pointer shadow-lg select-none",
+                    isRefreshing
+                      ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 cursor-wait shadow-[0_0_18px_rgba(34,211,238,0.4)]"
+                      : freeRefreshes > 0
+                      ? "border-emerald-400/90 bg-gradient-to-r from-emerald-950/90 via-black to-emerald-950/90 hover:border-emerald-300 text-emerald-200 hover:text-white shadow-[0_0_16px_rgba(16,185,129,0.35)] active:scale-95"
+                      : progression.credits >= 100
+                      ? "border-cyan-400/90 bg-gradient-to-r from-cyan-950/90 via-black to-cyan-950/90 hover:border-cyan-300 text-cyan-200 hover:text-white shadow-[0_0_16px_rgba(34,211,238,0.35)] active:scale-95"
+                      : "border-red-500/40 bg-zinc-950/80 text-zinc-500 cursor-not-allowed opacity-60",
+                  )}
+                  title={
+                    freeRefreshes > 0
+                      ? `Làm mới miễn phí (Còn ${freeRefreshes} lượt)`
+                      : progression.credits >= 100
+                      ? "Làm mới với giá 100 Credits"
+                      : `Không đủ Credits (Cần 100 Credits, hiện có ${progression.credits} Credits)`
+                  }
+                >
+                  {isRefreshing ? (
+                    <>
+                      <Loader2 className="size-4 animate-spin text-cyan-400" />
+                      <span className="tracking-widest">Đang Quét Kho Hàng...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="size-4 text-cyan-400 group-hover:rotate-180 transition-transform duration-500" />
+                      <span>LÀM MỚI GIAN HÀNG</span>
+                      <span
+                        className={cn(
+                          "rounded px-2 py-0.5 font-mono text-[11px] font-bold border",
+                          freeRefreshes > 0
+                            ? "border-emerald-400/60 bg-emerald-500/20 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.25)]"
+                            : progression.credits >= 100
+                            ? "border-amber-400/60 bg-amber-500/20 text-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.25)]"
+                            : "border-red-400/40 bg-red-950/60 text-red-400",
+                        )}
+                      >
+                        {freeRefreshes > 0 ? (
+                          `MIỄN PHÍ (${freeRefreshes})`
+                        ) : progression.credits >= 100 ? (
+                          "100 CREDITS"
+                        ) : (
+                          "THIẾU TIỀN"
+                        )}
+                      </span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* HIỂN THỊ LOADING HOẶC DANH SÁCH VẬT PHẨM */}
+          {isRefreshing ? (
+            <div className="space-y-3 animate-in fade-in">
+              {/* Radar quét trung tâm */}
+              <div className="relative overflow-hidden rounded-sm border border-cyan-400/60 bg-gradient-to-r from-cyan-950/90 via-black to-cyan-950/90 p-4 text-center shadow-[0_0_20px_rgba(34,211,238,0.25)]">
+                <div className="relative flex flex-col items-center justify-center gap-1.5">
+                  <div className="flex items-center gap-2 font-display text-sm font-bold tracking-wider text-cyan-300">
+                    <Loader2 className="size-4 animate-spin text-cyan-400" />
+                    <span>HỆ THỐNG ĐANG QUÉT & TÁI LẬP KHO QUÂN NHU...</span>
+                  </div>
+                  <p className="font-mono text-xs text-muted-foreground">
+                    Đang ngẫu nhiên hóa trang bị • Kiểm tra điều kiện mở khóa Sector • Thiết lập giá niêm yết Credits
+                  </p>
+                </div>
+              </div>
+
+              {/* 6 Skeleton Hologram Cards */}
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  "QUÉT VŨ KHÍ NĂNG LƯỢNG",
+                  "GIẢI MÃ PHÒNG HỘ SHIELD",
+                  "TÍNH TOÁN ĐỘNG CƠ WARP",
+                  "ĐỒNG BỘ CHỈ SỐ HUY HIỆU",
+                  "KẾT NỐI KHO VẬT TƯ QUÂN SỰ",
+                  "ĐỊNH GIÁ TÍN DỤNG CHỢ",
+                ].map((label, idx) => (
+                  <div
+                    key={idx}
+                    className="relative overflow-hidden rounded-sm border border-cyan-500/30 bg-panel/70 p-4 shadow-sm"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="h-4 w-20 rounded bg-cyan-950/80 border border-cyan-500/40 animate-pulse text-[10px] font-mono text-cyan-400 flex items-center justify-center px-1">
+                          SCANNING...
+                        </span>
+                        <span className="h-3 w-16 rounded bg-zinc-800 animate-pulse" />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <div className="h-5 w-3/4 rounded bg-cyan-900/40 animate-pulse" />
+                        <span className="font-mono text-[10px] text-cyan-400/80 block">
+                          [{label}]
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="h-3 w-full rounded bg-zinc-900/80 animate-pulse" />
+                        <div className="h-3 w-4/5 rounded bg-zinc-900/80 animate-pulse" />
+                      </div>
+
+                      <div className="flex gap-2 pt-1">
+                        <div className="h-4 w-16 rounded bg-zinc-800/80 animate-pulse" />
+                        <div className="h-4 w-16 rounded bg-zinc-800/80 animate-pulse" />
+                      </div>
+
+                      <div className="flex items-center justify-between border-t border-border/40 pt-2.5">
+                        <div className="h-4 w-20 rounded bg-amber-950/50 border border-amber-500/30 animate-pulse" />
+                        <div className="h-7 w-20 rounded bg-cyan-950/80 border border-cyan-500/40 animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 animate-in fade-in duration-300">
           {shopItemsToDisplay.map((shopItem) => {
             const it = shopItem.item
             const unlockCheck = isShopItemUnlocked(shopItem, progression)
@@ -370,6 +654,8 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
               </div>
             )
           })}
+            </div>
+          )}
         </div>
       )}
 

@@ -2,7 +2,7 @@
 
 ---
 
-## 1. Tổng Quan Dự Án & Phạm Vi Cốt Lõi (Project Overview)
+## 1. Tổng Quan Dự Án & Mục Tiêu Cốt Lõi (Project Overview)
 
 **STARFRONT** là tựa game nhập vai chiến thuật theo lượt 2D (Turn-based RPG) đề tài khoa học viễn tưởng không gian, lấy cảm hứng từ bầu không khí cơ giáp chiến đấu của *ACE Online*.
 - **Bản quyền & Phong cách**: 100% nội dung sáng tạo độc lập (Original IP).
@@ -12,37 +12,42 @@
 
 ---
 
-## 2. Bản Đồ Tài Liệu Kiến Trúc & Lộ Trình (Documentation Index)
+## 2. Hướng Dẫn Nhanh Dành Cho Kỹ Sư AI (AI Agent Quick Context)
 
-Nhằm tối ưu hóa hiệu năng ngữ cảnh và tổ chức mã nguồn tinh gọn, tài liệu dự án được phân tách theo cấu trúc chuẩn:
+Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà không cần đọc lại chi tiết toàn bộ các phase cũ:
 
-### 📍 Lộ Trình Phát Triển (Roadmap)
-- **Giai đoạn hiện tại (Current Phase)**: [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md)
-  *Phạm vi, luồng giao diện 3 bước, tiêu chí chấp nhận và rủi ro của **Phase 5.8: Hệ Thống Ghép Đôi Nhân Vật & Cơ Giáp**.*
-- **Các giai đoạn đã hoàn thành (Completed Phases)**: [`docs/roadmap/COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md)
-  *Tóm tắt kết quả Phase 1 (Chiến đấu nguyên mẫu), Phase 2 (Tiến trình & Hangar), Phase 3 (Chiến dịch & Chợ), Phase 4 (Độ sâu chiến thuật M4.1–M4.4), Phase 5 (Cường hóa, Nội tại, Rã đồ, Nhiệm vụ M5.1–M5.6).*
-- **Các giai đoạn tương lai (Future Phases)**: [`docs/roadmap/FUTURE_PHASES.md`](./docs/roadmap/FUTURE_PHASES.md)
-  *Hoàn thiện Mô-đun kỹ năng rời Phase 5.7, Specter Gear, và Phase 6 (Phe phái thiên hà BCU vs ANI, Trận chiến Mẹ Hạm, Đề xuất Multiplayer).*
+| Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
+|---|---|
+| **Trạng thái hiện tại của dự án?** | Đã hoàn thành Phase 1 đến Phase 5.6 (60/60 tests PASS). Khung UI 5 Slot Kỹ Năng của Phase 5.7 đã xong trên buồng lái. |
+| **Phase tiếp theo cần thực hiện?** | **Phase 5.8: Hệ Thống Ghép Đôi Nhân Vật & Cơ Giáp (Character & Gear Selection System)**. |
+| **Tài liệu BẮT BUỘC đọc trước khi sửa code?** | 1. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) (Phạm vi & Tiêu chí chấp nhận Phase 5.8)<br>2. [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) (Đặc tả luồng 3 bước, khóa 5 trận, tiến trình phi công) |
+| **Các hệ thống liên quan trực tiếp?** | - `lib/game/types.ts` & `lib/game/storage.ts`: Mở rộng kiểu dữ liệu & Save Schema v4.<br>- `lib/game/progression.ts`: Hàm tính toán chỉ số `calculateTotalGearStats` & cấp EXP.<br>- `components/game/character-gear-select.tsx`: Giao diện ghép đôi 3 bước độc lập.<br>- `components/game/starfront-shell.tsx`: Điều hướng menu cấp cao mới. |
 
-### ⚙️ Tài Liệu Thiết Kế Hệ Thống Chi Tiết (System Architecture)
-- **Hệ thống Nhân vật & Cơ giáp**: [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md)
-  *Quy trình ghép đôi 3 bước, cơ chế khóa 5 trận/nhiệm vụ, tiến trình độc lập phi công (+5 điểm/cấp), và phân rã chỉ số.*
-- **Hệ thống Kỹ năng & Mô-đun (5 Slots)**: [`docs/SKILL_SYSTEM.md`](./docs/SKILL_SYSTEM.md)
-  *5 Ô kỹ năng, quy tắc tương thích All-Gear vs Gear-specific, và nâng cấp Slot phi cơ (+2 SP/cấp).*
-- **Hệ thống Trang bị & Cường hóa**: [`docs/EQUIPMENT_SYSTEM.md`](./docs/EQUIPMENT_SYSTEM.md)
-  *3 Vị trí trang bị, cấp cường hóa +1..+10, và cơ chế Tái chế rã đồ (Salvage).*
-- **Cân bằng Trang bị & Power Budget**: [`docs/ITEM_BALANCE.md`](./docs/ITEM_BALANCE.md)
-  *Hệ thống quy đổi Power Tokens (PT), công thức Rating và định giá thương mại.*
-- **Hệ thống Chiến đấu & Hiệu ứng**: [`docs/COMBAT_SYSTEM.md`](./docs/COMBAT_SYSTEM.md)
-  *Vòng lặp sáng kiến tốc độ, công thức sát thương, 3 cơ chế cộng dồn hiệu ứng, và 4 Archetype AI.*
-- **Lưu trữ & Di chuyển Dữ liệu**: [`docs/SAVE_DATA.md`](./docs/SAVE_DATA.md)
-  *Quy tắc di chuyển an toàn LocalStorage Schema v1 -> v2 -> v3 -> v4.*
-- **Danh mục Phân hệ Toàn Dự Án**: [`docs/GAME_SYSTEMS.md`](./docs/GAME_SYSTEMS.md)
-  *Phân loại trách nhiệm giữa buồng lái STARFRONT và phân hệ Ace Manager.*
+*Lưu ý: Không đọc tài liệu lịch sử cũ trừ khi cần đối chiếu tương thích ngược (Backward Compatibility).*
 
 ---
 
-## 3. Trạng Thái Tổng Quát Các Giai Đoạn (High-Level Phase Matrix)
+## 3. Bản Đồ Tài Liệu Kiến Trúc & Lộ Trình (Documentation Index)
+
+Toàn bộ tài liệu chi tiết được tổ chức module hóa trong thư mục `docs/`:
+
+### 📍 Lộ Trình Phát Triển (`docs/roadmap/`)
+- **Phase Hiện Tại**: [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Kế hoạch Phase 5.8 (Luồng 3 bước, Khóa 5 trận/nhiệm vụ, Điểm thuộc tính phi công).
+- **Lịch Sử Đã Hoàn Thành**: [`docs/roadmap/COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) — Tóm tắt gọn Phase 1, Phase 2, Phase 3, Phase 4 (M4.1–M4.4), Phase 5 (M5.1–M5.6) và kiểm định Phase 5.7.
+- **Lộ Trình Tương Lai**: [`docs/roadmap/FUTURE_PHASES.md`](./docs/roadmap/FUTURE_PHASES.md) — Kế hoạch hoàn thiện Mô-đun kỹ năng rời Phase 5.7, Specter Gear, và Phase 6 (Phe phái thiên hà, Trận chiến Mẹ Hạm, Nghiên cứu Multiplayer).
+
+### ⚙️ Đặc Tả Hệ Thống Chuyên Sâu (`docs/systems/`)
+- **Nhân Vật & Cơ Giáp**: [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) — Quy trình ghép đôi 3 bước, cơ chế khóa 5 trận, tiến trình độc lập phi công (+5 điểm/cấp), và phân rã chỉ số.
+- **Kỹ Năng & 5 Slot Mô-đun**: [`docs/systems/SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) — 5 Ô kỹ năng, tương thích All-Gear vs Gear-specific, và nâng cấp Slot phi cơ (+2 SP/cấp).
+- **Trang Bị & Kho Đồ**: [`docs/systems/EQUIPMENT_SYSTEM.md`](./docs/systems/EQUIPMENT_SYSTEM.md) — 3 Vị trí trang bị, cấp cường hóa +1..+10, và cơ chế Tái chế rã đồ (Salvage).
+- **Cân Bằng & Power Budget**: [`docs/systems/ITEM_BALANCE.md`](./docs/systems/ITEM_BALANCE.md) — Quy đổi Power Tokens (PT), công thức Item Rating và định giá thương mại.
+- **Chiến Đấu & Hiệu Ứng**: [`docs/systems/COMBAT_SYSTEM.md`](./docs/systems/COMBAT_SYSTEM.md) — Sáng kiến tốc độ, công thức sát thương, 11 hiệu ứng trạng thái, và 4 Archetype AI.
+- **Lưu Trữ & Di Chuyển Schema**: [`docs/systems/SAVE_DATA.md`](./docs/systems/SAVE_DATA.md) — Quy tắc bảo toàn dữ liệu và di chuyển an toàn Schema v1 ➔ v2 ➔ v3 ➔ v4.
+- **Danh Mục Tổng Thể Hệ Thống**: [`docs/systems/GAME_SYSTEMS.md`](./docs/systems/GAME_SYSTEMS.md) — Phân loại trách nhiệm giữa buồng lái STARFRONT và phân hệ Ace Manager.
+
+---
+
+## 4. Ma Trận Trạng Thái Tổng Quát (High-Level Phase Matrix)
 
 | Giai Đoạn | Tên Phân Hệ | Trạng Thái | Tài Liệu Tham Chiếu |
 |---|---|---|---|
@@ -51,15 +56,16 @@ Nhằm tối ưu hóa hiệu năng ngữ cảnh và tổ chức mã nguồn tinh
 | **Phase 3** | Bản đồ 3 Sector, 3 Lớp Gear, Chợ quân sự, Âm thanh | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
 | **Phase 4** | Hiệu ứng trạng thái DoT/Stun/Slow, AI 4 Archetype, Boss Enrage | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
 | **Phase 5 (5.1–5.6)** | Cường hóa +10, Nội tại Gear, Rã đồ, Nhiệm vụ 1–15 & Biến thể quái | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
-| **Phase 5.7** | Khung giao diện 5 Slot Kỹ Năng & Điểm SP Phi Thuyền | **Khung UI Đã Xong (UI Shell Done)** | [`SKILL_SYSTEM.md`](./docs/SKILL_SYSTEM.md) |
+| **Phase 5.7** | Khung giao diện 5 Slot Kỹ Năng & Điểm SP Phi Thuyền | **Khung UI Đã Xong (UI Shell Done)** | [`SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) |
 | **Phase 5.8** | **Ghép Đôi Nhân Vật & Cơ Giáp (3 Bước, Khóa 5 Trận, +5 Điểm)** | **ĐANG LẬP KẾ HOẠCH (PLANNING)** | [`CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) |
 | **Phase 6.1–6.4** | Mở rộng Thế giới, Phe phái BCU/ANI, Đại chiến Mẹ Hạm | **Lộ trình tương lai (Planned)** | [`FUTURE_PHASES.md`](./docs/roadmap/FUTURE_PHASES.md) |
 
 ---
 
-## 4. Hành Động Tiếp Theo (Next Steps)
+## 5. Hành Động Tiếp Theo (Next Steps)
 
-Sau khi phê duyệt kế hoạch kiến trúc Phase 5.8 trong [`CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) và [`CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md):
-1. Tiến hành triển khai Step 1 (Mở rộng kiểu dữ liệu & Save Schema v4 trong `types.ts` và `storage.ts`).
-2. Tích hợp điểm thuộc tính phi công vào công thức tính chỉ số chiến đấu (`calculateTotalGearStats`).
-3. Triển khai component giao diện `character-gear-select.tsx` với luồng liên kết 3 bước và cơ chế khóa 5 nhiệm vụ / trận thắng.
+Khi có hiệu lệnh chuyển từ Lập Kế Hoạch sang Triển Khai mã nguồn Phase 5.8:
+1. Đọc kỹ [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) và [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md).
+2. Mở rộng TypeScript interfaces và viết hàm `migrateProgressionToV4` trong `lib/game/types.ts` và `lib/game/storage.ts`.
+3. Mở rộng hàm `calculateTotalGearStats` trong `lib/game/progression.ts` tích hợp chỉ số phi công.
+4. Xây dựng component giao diện `components/game/character-gear-select.tsx` và gắn vào `starfront-shell.tsx`.

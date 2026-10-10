@@ -54,6 +54,7 @@ import {
   Sparkles,
   Swords,
   UserRound,
+  Users,
   Volume2,
   VolumeX,
   Warehouse,
@@ -66,6 +67,8 @@ import { CombatArena } from "./combat-arena"
 import { CampaignMap } from "./campaign-map"
 import { StarfrontShop } from "./starfront-shop"
 import { StarfrontHangar } from "./starfront-hangar"
+import { CharacterGearSelect } from "./character-gear-select"
+import { STARFRONT_PILOT_MAP } from "@/lib/game/data"
 
 // Các phân hệ tác chiến bổ trợ (Fleet & Base Operations)
 import { GameProvider } from "@/lib/game/store"
@@ -77,6 +80,7 @@ import { MapPanel } from "./map-panel"
 
 export type StarfrontSection =
   | "home"
+  | "character-gear"
   | "battlefield"
   | "missions"
   | "shop"
@@ -111,6 +115,24 @@ const SECTIONS: SectionConfig[] = [
     submenus: () => [
       { id: "overview", label: "Bảng Chỉ Huy Tác Chiến" },
       { id: "gears", label: "Hồ Sơ 3 Lớp Cơ Giáp" },
+    ],
+  },
+  {
+    id: "character-gear",
+    label: "Nhân Vật & Cơ Giáp",
+    shortLabel: "Nhân Vật & Gear",
+    icon: Users,
+    badge: (p) => {
+      const pilotId = p.activePairing?.pilotId || "marcus"
+      const gearId = p.activePairing?.gearId || p.activeGearId || "vanguard"
+      const pName = STARFRONT_PILOT_MAP[pilotId]?.name.split(" ")[0] || "Marcus"
+      const gName = (gearId.charAt(0).toUpperCase() + gearId.slice(1))
+      return `${pName}/${gName}`
+    },
+    submenus: () => [
+      { id: "pair-flow", label: "Ghép Đôi 3 Bước" },
+      { id: "pilot-list", label: "4 Hồ Sơ Phi Công" },
+      { id: "gear-list", label: "3 Lớp Cơ Giáp" },
     ],
   },
   {
@@ -683,20 +705,23 @@ export function StarfrontShell() {
 
             {/* Phải: Huy hiệu Cơ giáp & Tài nguyên Nhanh */}
             <div className="flex items-center gap-2 font-mono text-xs">
-              {/* Huy hiệu Gear */}
+              {/* Huy hiệu Cặp Đôi Phi Công & Cơ Giáp */}
               <div
-                onClick={() => handleSwitchSection("home")}
+                onClick={() => handleSwitchSection("character-gear")}
                 className="hidden sm:flex items-center gap-1.5 rounded border px-2.5 py-1 cursor-pointer transition-colors hover:bg-black/40"
                 style={{
                   borderColor: `${activeGearDef.color}60`,
                   backgroundColor: `${activeGearDef.color}15`,
                 }}
+                title="Quản lý Nhân Vật & Cơ Giáp (Phase 5.8)"
               >
                 <span
                   className="size-2 rounded-full"
                   style={{ backgroundColor: activeGearDef.color }}
                 />
-                <span className="font-bold text-white">{activeGearDef.name}</span>
+                <span className="font-bold text-white">
+                  {STARFRONT_PILOT_MAP[progression.activePairing?.pilotId || "marcus"]?.name.split(" ")[0] || "Marcus"} · {activeGearDef.name}
+                </span>
                 <span className="text-[10px] text-muted-foreground">· Cấp {progression.level}</span>
               </div>
 
@@ -763,6 +788,16 @@ export function StarfrontShell() {
               />
             )}
 
+            {/* Phân hệ: Nhân Vật & Cơ Giáp (Character & Gear - Phase 5.8) */}
+            {activeSection === "character-gear" && (
+              <CharacterGearSelect
+                progression={progression}
+                onUpdateProgression={handleUpdateProgression}
+                onNavigateToHangar={() => handleSwitchSection("hangar")}
+                onNavigateToCombat={() => handleSwitchSection("battlefield")}
+              />
+            )}
+
             {/* Phân hệ 2: Đấu Trường (Battlefield) */}
             {activeSection === "battlefield" && (
               <CombatArena
@@ -802,6 +837,7 @@ export function StarfrontShell() {
                 onUpdateProgression={handleUpdateProgression}
                 onResetSave={handleResetSave}
                 onSelectGear={handleSelectGear}
+                onNavigateToCharacterGear={() => handleSwitchSection("character-gear")}
                 onNavigateToCombat={() => handleSwitchSection("battlefield")}
               />
             )}

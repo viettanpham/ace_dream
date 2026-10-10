@@ -302,6 +302,9 @@ export type CombatUnit = {
   skills: CombatSkill[]
   skillCooldowns: Record<string, number>
   avatar?: string
+  pilotId?: string
+  pilotName?: string
+  pilotPassiveTriggered?: boolean
   archetype?: EnemyArchetype
   bossPhase?: 1 | 2
   isChargingUltimate?: boolean
@@ -464,14 +467,44 @@ export type StarfrontQuest = {
   order?: number
 }
 
+export type PilotAttributeKey = "attack" | "defense" | "agility" | "shield" | "tactical"
+
+export interface PilotProgressionData {
+  id: string
+  level: number
+  exp: number
+  allocatedStats: {
+    attack: number
+    defense: number
+    agility: number
+    shield: number
+    tactical: number
+  }
+  availablePoints: number
+}
+
+export interface ActivePairingState {
+  pilotId: string
+  gearId: StarfrontGearId
+  isLocked: boolean
+  unlockProgress: {
+    completedMissions: number
+    wonBattles: number
+    targetCount: number // 5
+  }
+}
+
 export type StarfrontProgression = {
-  version: number // schema version (3)
+  version: number // schema version (4)
   level: number
   exp: number
   credits: number
   alloy?: number // Hợp kim cường hóa trang bị
   activeGearId: StarfrontGearId
   unlockedGears: StarfrontGearId[]
+  activePairing?: ActivePairingState
+  pilots?: Record<string, PilotProgressionData>
+  gearSlotLevels?: Record<StarfrontGearId, Record<1 | 2 | 3 | 4 | 5, number>>
   inventory: StarfrontItem[]
   equipped: Record<StarfrontItemSlot, string | null>
   completedMissions: string[]

@@ -1,12 +1,21 @@
-import { STARFRONT_GEAR_DEFS, VANGUARD_INITIAL_UNIT, VANGUARD_SKILLS } from "./data"
+import {
+  STARFRONT_GEAR_DEFS,
+  STARFRONT_PILOT_MAP,
+  STARFRONT_PILOTS,
+  VANGUARD_INITIAL_UNIT,
+  VANGUARD_SKILLS,
+} from "./data"
 import { buildQuestRewardPreview, findCampaignQuest } from "./scaling"
 import type {
+  ActivePairingState,
   ArmoryShopItem,
   BattleRewardResult,
   CampaignMission,
   CombatUnit,
   EnemyEncounterType,
   EnemyVariantId,
+  PilotAttributeKey,
+  PilotProgressionData,
   QuestQuality,
   QuestRewardPreview,
   SalvageEstimate,
@@ -362,12 +371,13 @@ export function getBaseStatsForLevel(level: number) {
   return getBaseStatsForGearAndLevel("vanguard", level)
 }
 
-/** Tính tổng chỉ số hoàn chỉnh bao gồm Gear đã chọn + Cấp độ + Tất cả trang bị đang lắp (có tính cấp cường hóa +1 đến +10) */
+/** Tính tổng chỉ số hoàn chỉnh bao gồm Gear đã chọn + Cấp độ + Tất cả trang bị đang lắp + Điểm thuộc tính Phi công */
 export function calculateTotalGearStats(
   gearId: StarfrontGearId = "vanguard",
   level: number,
   inventory: StarfrontItem[],
   equipped: Record<StarfrontItemSlot, string | null>,
+  pilotData?: PilotProgressionData,
 ) {
   const base = getBaseStatsForGearAndLevel(gearId, level)
   const bonuses = {
@@ -396,9 +406,36 @@ export function calculateTotalGearStats(
     }
   }
 
+  const equipmentBonuses = {
+    hp: bonuses.hp,
+    sp: bonuses.sp,
+    attack: bonuses.attack,
+    defense: bonuses.defense,
+    speed: bonuses.speed,
+  }
+
+  const pilotBonuses = {
+    attack: pilotData?.allocatedStats ? (pilotData.allocatedStats.attack || 0) * 2.0 : 0,
+    defense: pilotData?.allocatedStats ? (pilotData.allocatedStats.defense || 0) * 1.5 : 0,
+    speed: pilotData?.allocatedStats ? (pilotData.allocatedStats.agility || 0) * 1.0 : 0,
+  }
+
+  // Cộng điểm thuộc tính đã phân bổ của phi công (Phase 5.8: +2 ATK/pt, +1.5 DEF/pt, +1 SPD/pt)
+  if (pilotData?.allocatedStats) {
+    const allocated = pilotData.allocatedStats
+    bonuses.attack += (allocated.attack || 0) * 2.0
+    bonuses.defense += (allocated.defense || 0) * 1.5
+    bonuses.speed += (allocated.agility || 0) * 1.0
+  }
+
   return {
     base,
     bonuses,
+    breakdown: {
+      base,
+      equipment: equipmentBonuses,
+      pilot: pilotBonuses,
+    },
     total: {
       hp: Math.max(100, base.hp + bonuses.hp),
       maxHp: Math.max(100, base.hp + bonuses.hp),
@@ -417,8 +454,9 @@ export function calculateTotalVanguardStats(
   level: number,
   inventory: StarfrontItem[],
   equipped: Record<StarfrontItemSlot, string | null>,
+  pilotData?: PilotProgressionData,
 ) {
-  return calculateTotalGearStats("vanguard", level, inventory, equipped)
+  return calculateTotalGearStats("vanguard", level, inventory, equipped, pilotData)
 }
 
 /**
@@ -475,15 +513,48 @@ export function getAircraftSkillPoints(level: number, allocated: number = 0): {
 
 /** Xây dựng CombatUnit sẵn sàng đưa vào đấu trường từ tiến trình hiện tại */
 export function buildPlayerCombatUnit(progression: StarfrontProgression): CombatUnit {
-  const activeGear = progression.activeGearId || "vanguard"
+  const activeGear = progression.activePairing?.isLocked
+    ? progression.activePairing.gearId
+    : (progression.activeGearId || progression.activePairing?.gearId || "vanguard")
+  const activePilotId = progression.activePairing?.pilotId || "marcus"
   const gearDef = STARFRONT_GEAR_DEFS[activeGear] || STARFRONT_GEAR_DEFS.vanguard
+  const pilotDef = STARFRONT_PILOT_MAP[activePilotId] || STARFRONT_PILOTS[0]
+  const pilotData = progression.pilots?.[activePilotId]
 
   const { total } = calculateTotalGearStats(
     activeGear,
     progression.level,
     progression.inventory,
     progression.equipped,
+    pilotData,
   )
+
+  const allocated = pilotData?.allocatedStats || {
+    attack: 0,
+    defense: 0,
+    agility: 0,
+    shield: 0,
+    tactical: 0,
+  }
+
+  // Shield: Cơ bản theo Gear + 30 Khiên mỗi điểm Shield của phi công
+  const baseShield = activeGear === "aegis" ? 480 : activeGear === "vanguard" ? 300 : 180
+  const pilotShieldBonus = (allocated.shield || 0) * 30
+  const totalShield = baseShield + pilotShieldBonus
+
+  // Evasion: Falcon (+15%) + Alviss nội tại (+8%) + 0.2% mỗi điểm Agility
+  const baseEvasion = activeGear === "falcon" ? 15 : 0
+  const alvissEvasion = activePilotId === "alviss" ? 8 : 0
+  const pilotAgilityEvasion = Math.round((allocated.agility || 0) * 0.2)
+  const totalEvasion = baseEvasion + alvissEvasion + pilotAgilityEvasion
+
+  // Crit: Falcon (+25%) / Gear khác (+15%) + 0.4% mỗi điểm Tactical
+  const baseCrit = activeGear === "falcon" ? 0.25 : 0.15
+  const pilotTacticalCrit = (allocated.tactical || 0) * 0.004
+  const totalCritRate = Math.min(0.75, baseCrit + pilotTacticalCrit)
+
+  // Armor Penetration: Eric (+20% cố định)
+  const armorPenetration = activePilotId === "eric" ? 0.20 : 0
 
   return {
     id: `player-${activeGear}`,
@@ -491,28 +562,300 @@ export function buildPlayerCombatUnit(progression: StarfrontProgression): Combat
     title: gearDef.role,
     gearType: activeGear,
     isPlayer: true,
+    pilotId: activePilotId,
+    pilotName: pilotDef.name,
     hp: total.hp,
     maxHp: total.maxHp,
     sp: total.sp,
     maxSp: total.maxSp,
-    shield: activeGear === "aegis" ? 480 : activeGear === "vanguard" ? 300 : 180,
-    maxShield: activeGear === "aegis" ? 480 : activeGear === "vanguard" ? 300 : 180,
-    attack: total.attack,
-    defense: total.defense,
-    speed: total.speed,
-    evasion: activeGear === "falcon" ? 15 : 0,
-    critRate: activeGear === "falcon" ? 0.25 : 0.15,
+    shield: totalShield,
+    maxShield: totalShield,
+    attack: Math.round(total.attack),
+    defense: Math.round(total.defense),
+    speed: Math.round(total.speed),
+    evasion: totalEvasion,
+    critRate: Number(totalCritRate.toFixed(3)),
     critDamage: activeGear === "falcon" ? 1.75 : 1.5,
+    armorPenetration,
     skills: gearDef.skills,
     statusEffects: [],
     skillCooldowns: {},
     avatar: gearDef.avatar,
+    pilotId: activePilotId,
+    pilotName: pilotDef.name,
+    pilotPassiveTriggered: false,
   }
 }
 
 /** Tương thích ngược: Xây dựng Vanguard CombatUnit */
 export function buildVanguardCombatUnit(progression: StarfrontProgression): CombatUnit {
   return buildPlayerCombatUnit(progression)
+}
+
+/* ==========================================================================
+   PHASE 5.8 — HỆ THỐNG TIẾN TRÌNH PHI CÔNG & GHÉP ĐÔI (PILOT PROGRESSION & PAIRING)
+   ========================================================================== */
+
+export const INITIAL_PILOT_PROGRESSION: Record<string, PilotProgressionData> = {
+  marcus: {
+    id: "marcus",
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  },
+  valentine: {
+    id: "valentine",
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  },
+  alviss: {
+    id: "alviss",
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  },
+  eric: {
+    id: "eric",
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  },
+}
+
+export const INITIAL_ACTIVE_PAIRING: ActivePairingState = {
+  pilotId: "marcus",
+  gearId: "vanguard",
+  isLocked: false,
+  unlockProgress: {
+    completedMissions: 0,
+    wonBattles: 0,
+    targetCount: 5,
+  },
+}
+
+/** Công thức EXP yêu cầu để tăng cấp phi công: Math.round(120 * Math.pow(level, 1.4)) */
+export function getPilotExpRequiredForLevel(level: number): number {
+  return Math.round(120 * Math.pow(Math.max(1, level), 1.4))
+}
+
+/**
+ * Xử lý trao EXP cho phi công đang ghép đôi và cập nhật tiến độ mở khóa sau trận đánh / hoàn thành nhiệm vụ
+ */
+export function processPairingProgressionAfterActivity(
+  progression: StarfrontProgression,
+  type: "battle" | "mission",
+  expGained: number,
+): {
+  activePairing: ActivePairingState
+  pilots: Record<string, PilotProgressionData>
+  pilotLeveledUp: boolean
+  pilotNewLevel: number
+  justUnlocked: boolean
+} {
+  const currentPairing: ActivePairingState = progression.activePairing || {
+    pilotId: "marcus",
+    gearId: progression.activeGearId || "vanguard",
+    isLocked: false,
+    unlockProgress: { completedMissions: 0, wonBattles: 0, targetCount: 5 },
+  }
+
+  // 1. Chỉ trao EXP cho phi công đang được ghép đôi
+  const pilotId = currentPairing.pilotId || "marcus"
+  const pilots: Record<string, PilotProgressionData> = {
+    ...(progression.pilots || INITIAL_PILOT_PROGRESSION),
+  }
+  const currentPilot = pilots[pilotId] || {
+    id: pilotId,
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  }
+
+  let pLevel = currentPilot.level
+  let pExp = currentPilot.exp + expGained
+  let pAvailable = currentPilot.availablePoints
+  let pilotLeveledUp = false
+
+  while (pLevel < 30) {
+    const req = getPilotExpRequiredForLevel(pLevel)
+    if (pExp >= req) {
+      pExp -= req
+      pLevel += 1
+      pAvailable += 5
+      pilotLeveledUp = true
+    } else {
+      break
+    }
+  }
+
+  pilots[pilotId] = {
+    ...currentPilot,
+    level: pLevel,
+    exp: pExp,
+    availablePoints: pAvailable,
+  }
+
+  // 2. Cập nhật tiến độ mở khóa nếu đang bị khóa
+  let isLocked = currentPairing.isLocked
+  let completedMissions = currentPairing.unlockProgress?.completedMissions || 0
+  let wonBattles = currentPairing.unlockProgress?.wonBattles || 0
+  let justUnlocked = false
+
+  if (isLocked) {
+    if (type === "battle") {
+      wonBattles += 1
+    } else if (type === "mission") {
+      completedMissions += 1
+    }
+
+    if (wonBattles >= 5 || completedMissions >= 5) {
+      isLocked = false
+      justUnlocked = true
+    }
+  }
+
+  const updatedPairing: ActivePairingState = {
+    ...currentPairing,
+    isLocked,
+    unlockProgress: {
+      completedMissions,
+      wonBattles,
+      targetCount: 5,
+    },
+  }
+
+  return {
+    activePairing: updatedPairing,
+    pilots,
+    pilotLeveledUp,
+    pilotNewLevel: pLevel,
+    justUnlocked,
+  }
+}
+
+/** Phân bổ 1 điểm thuộc tính cho phi công (+5 điểm nhận được mỗi khi lên cấp) */
+export function allocatePilotPoint(
+  current: StarfrontProgression,
+  pilotId: string,
+  statKey: PilotAttributeKey,
+): { success: boolean; updated: StarfrontProgression; message: string } {
+  const pilots = { ...(current.pilots || INITIAL_PILOT_PROGRESSION) }
+  const pilot = pilots[pilotId]
+  if (!pilot) {
+    return { success: false, updated: current, message: "Không tìm thấy hồ sơ phi công!" }
+  }
+  if (pilot.availablePoints <= 0) {
+    return { success: false, updated: current, message: "Không còn điểm thuộc tính để phân bổ!" }
+  }
+
+  const newAllocated = {
+    ...pilot.allocatedStats,
+    [statKey]: (pilot.allocatedStats[statKey] || 0) + 1,
+  }
+
+  pilots[pilotId] = {
+    ...pilot,
+    allocatedStats: newAllocated,
+    availablePoints: pilot.availablePoints - 1,
+  }
+
+  const updated: StarfrontProgression = {
+    ...current,
+    pilots,
+  }
+  return { success: true, updated, message: `Đã phân bổ +1 điểm vào ${statKey.toUpperCase()} cho phi công!` }
+}
+
+/** Cài lại toàn bộ điểm thuộc tính của phi công (Hoàn trả 100% điểm với chi phí Credits) */
+export function resetPilotPoints(
+  current: StarfrontProgression,
+  pilotId: string,
+  creditCost: number = 200,
+): { success: boolean; updated: StarfrontProgression; message: string } {
+  const pilots = { ...(current.pilots || INITIAL_PILOT_PROGRESSION) }
+  const pilot = pilots[pilotId]
+  if (!pilot) {
+    return { success: false, updated: current, message: "Không tìm thấy hồ sơ phi công!" }
+  }
+  if (current.credits < creditCost) {
+    return {
+      success: false,
+      updated: current,
+      message: `Không đủ Credits! Cần ${creditCost} Credits để tẩy điểm, bạn chỉ có ${current.credits}.`,
+    }
+  }
+
+  const totalPoints = Math.max(0, (pilot.level - 1) * 5)
+  pilots[pilotId] = {
+    ...pilot,
+    allocatedStats: {
+      attack: 0,
+      defense: 0,
+      agility: 0,
+      shield: 0,
+      tactical: 0,
+    },
+    availablePoints: totalPoints,
+  }
+
+  const updated: StarfrontProgression = {
+    ...current,
+    credits: current.credits - creditCost,
+    pilots,
+  }
+  return {
+    success: true,
+    updated,
+    message: `Đã cài lại toàn bộ ${totalPoints} điểm thuộc tính cho phi công ${pilotId.toUpperCase()}!`,
+  }
+}
+
+/** Xác nhận ghép đôi Phi Công & Cơ Giáp và khóa trong 5 nhiệm vụ hoặc 5 trận thắng */
+export function confirmPairing(
+  current: StarfrontProgression,
+  pilotId: string,
+  gearId: StarfrontGearId,
+): { success: boolean; updated: StarfrontProgression; message: string } {
+  // Nếu đang khóa và chưa đạt điều kiện mở khóa, ngăn chặn thay đổi
+  if (current.activePairing?.isLocked) {
+    const { completedMissions, wonBattles } = current.activePairing.unlockProgress
+    if (completedMissions < 5 && wonBattles < 5) {
+      return {
+        success: false,
+        updated: current,
+        message: `Cặp đôi hiện tại đang bị khóa (${completedMissions}/5 Nhiệm Vụ hoặc ${wonBattles}/5 Trận Thắng)! Chưa thể đổi cặp đôi mới.`,
+      }
+    }
+  }
+
+  const newPairing: ActivePairingState = {
+    pilotId,
+    gearId,
+    isLocked: true,
+    unlockProgress: {
+      completedMissions: 0,
+      wonBattles: 0,
+      targetCount: 5,
+    },
+  }
+
+  const updated: StarfrontProgression = {
+    ...current,
+    activeGearId: gearId,
+    activePairing: newPairing,
+  }
+
+  return {
+    success: true,
+    updated,
+    message: `Đã xác nhận cặp đôi xuất kích thành công! Cặp đôi sẽ được khóa cố định trong 5 nhiệm vụ hoặc 5 trận thắng tiếp theo.`,
+  }
 }
 
 /* ==========================================================================
@@ -585,6 +928,9 @@ export function applyVictoryReward(
 
   const updatedInventory = dropItem ? [...current.inventory, dropItem] : [...current.inventory]
 
+  // Cập nhật tiến độ Phi Công & Bộ đếm mở khóa cặp đôi
+  const pairingRes = processPairingProgressionAfterActivity(current, "battle", expGained)
+
   const updated: StarfrontProgression = {
     ...current,
     level: newLevel,
@@ -594,6 +940,8 @@ export function applyVictoryReward(
     inventory: updatedInventory,
     battlesWon: current.battlesWon + 1,
     freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
+    activePairing: pairingRes.activePairing,
+    pilots: pairingRes.pilots,
   }
 
   const reward: BattleRewardResult = {
@@ -678,6 +1026,9 @@ export function applyMissionClearReward(
     ? [...current.completedMissions, mission.id]
     : [...current.completedMissions]
 
+  // Cập nhật tiến độ Phi Công & Bộ đếm mở khóa cặp đôi (type: "mission")
+  const pairingRes = processPairingProgressionAfterActivity(current, "mission", expGained)
+
   const updated: StarfrontProgression = {
     ...current,
     level: newLevel,
@@ -688,6 +1039,8 @@ export function applyMissionClearReward(
     completedMissions: updatedCompletedMissions,
     battlesWon: current.battlesWon + 1,
     freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
+    activePairing: pairingRes.activePairing,
+    pilots: pairingRes.pilots,
   }
 
   const reward: BattleRewardResult = {
@@ -744,6 +1097,9 @@ export function applyQuestCompletionReward(
     ? (isFirstClear ? [...current.completedQuestIds, quest.id] : [...current.completedQuestIds])
     : (isFirstClear ? [quest.id] : [])
 
+  // Cập nhật tiến độ Phi Công & Bộ đếm mở khóa cặp đôi (type: "mission")
+  const pairingRes = processPairingProgressionAfterActivity(current, "mission", expGained)
+
   const updated: StarfrontProgression = {
     ...current,
     level: newLevel,
@@ -756,6 +1112,8 @@ export function applyQuestCompletionReward(
     battlesWon: current.battlesWon + 1,
     freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
     activeQuest: null,
+    activePairing: pairingRes.activePairing,
+    pilots: pairingRes.pilots,
   }
 
   const reward: BattleRewardResult = {
@@ -1446,6 +1804,8 @@ export const INITIAL_STARFRONT_PROGRESSION: StarfrontProgression = {
   freeShopRefreshes: 1,
   activeGearId: "vanguard",
   unlockedGears: ["vanguard", "falcon", "aegis"],
+  activePairing: INITIAL_ACTIVE_PAIRING,
+  pilots: INITIAL_PILOT_PROGRESSION,
   completedMissions: [],
   // Khởi đầu có sẵn các món đa dạng trong kho để kiểm thử trang bị ngay
   inventory: [

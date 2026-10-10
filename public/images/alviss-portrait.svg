@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" width="100%" height="100%">
+  <defs>
+    <radialGradient id="alv-bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#451a03" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#1c1917" stop-opacity="1"/>
+    </radialGradient>
+    <linearGradient id="alv-armor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="50%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="alv-visor" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <filter id="a-glow">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="320" height="320" rx="16" fill="url(#alv-bg)"/>
+  <circle cx="160" cy="160" r="130" fill="none" stroke="#d97706" stroke-width="1.5" stroke-dasharray="6,6" opacity="0.4"/>
+  <!-- Aerodynamic Shoulders -->
+  <path d="M70,270 L110,210 L160,225 L210,210 L250,270 L265,320 L55,320 Z" fill="#292524" stroke="#f59e0b" stroke-width="2"/>
+  <path d="M85,245 L125,215 L145,235 L95,275 Z" fill="url(#alv-armor)" opacity="0.85"/>
+  <path d="M235,245 L195,215 L175,235 L225,275 Z" fill="url(#alv-armor)" opacity="0.85"/>
+  <!-- Neck Collar -->
+  <path d="M125,200 L160,220 L195,200 L185,175 L135,175 Z" fill="#451a03" stroke="#fbbf24" stroke-width="1.5"/>
+  <!-- Hawk-like Sleek Helmet -->
+  <path d="M110,135 Q110,60 160,60 Q210,60 210,135 Q210,190 160,200 Q110,190 110,135 Z" fill="#1c1917" stroke="#f59e0b" stroke-width="2.5"/>
+  <!-- Falcon Angular Visor -->
+  <polygon points="120,125 160,110 200,125 190,155 160,165 130,155" fill="url(#alv-visor)" filter="url(#a-glow)"/>
+  <line x1="135" y1="135" x2="185" y2="135" stroke="#fffbeb" stroke-width="2" opacity="0.9"/>
+  <!-- Top Fin -->
+  <polygon points="157,45 163,45 161,70 159,70" fill="#f59e0b"/>
+  <!-- Tactical HUD Marks -->
+  <text x="25" y="40" fill="#fbbf24" font-family="monospace" font-size="10" font-weight="bold" opacity="0.8">PILOT: ALVISS // I-CLASS</text>
+  <text x="25" y="55" fill="#fde68a" font-family="monospace" font-size="8" opacity="0.6">SPEC: TACTICAL INTERCEPTOR</text>
+  <path d="M260,35 L285,35 L285,60" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.6"/>
+  <path d="M35,275 L35,295 L55,295" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.6"/>
+</svg>

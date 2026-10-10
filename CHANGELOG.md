@@ -4,6 +4,40 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 5.8] — Hệ Thống Ghép Đôi Nhân Vật & Cơ Giáp (Character & Gear Selection System)
+
+*Đã hoàn thành toàn bộ Phase 5.8 (75/75 automated tests passed, build thành công)*
+
+### Tính năng đã hoàn thành:
+- **Menu Độc Lập Nhân Vật & Cơ Giáp (Character & Gear)**:
+  - Bổ sung menu cấp cao `Nhân Vật & Cơ Giáp` trên thanh điều hướng chính (`starfront-shell.tsx`) với icon `Users` và huy hiệu hiển thị cặp đôi hiện tại (vd: `Marcus/Vanguard`).
+  - Chuyển toàn bộ chức năng chọn Cơ giáp ra khỏi Hangar sang menu này.
+  - Hangar hiển thị banner tổ hợp xuất kích đang hoạt động kèm nút "Đổi Cặp Đôi & Phân Bổ Điểm ➔" liên kết trực tiếp sang menu Nhân Vật & Cơ Giáp, giữ nguyên 3 tab quản lý trang bị, cường hóa và kho đồ/tái chế.
+- **Quy Trình Ghép Đôi Liên Kết 3 Bước (Linked 3-Step Selection Flow)**:
+  - **Bước 1 — Chọn Phi Công**: Hiển thị danh mục 4 phi công (Marcus, Valentine, Alviss, Eric) kèm ảnh chân dung SVG vector chất lượng cao, cấp độ, EXP bar, điểm thuộc tính và kỹ năng nội tại. Thẻ chưa chọn hiển thị mờ hơn (subdued), không disable. Hỗ trợ xem chi tiết độc lập mà không tự động đổi cặp đôi đang khóa.
+  - **Bước 2 — Chọn Cơ Giáp**: Hiển thị 3 lớp cơ giáp (Vanguard, Falcon, Aegis) với hình minh họa, vai trò, nội tại cơ giáp, lực chiến và 5 ô kỹ năng. Tương tác tương hỗ hai chiều (Cross-Highlight): chọn phi công sẽ làm nổi bật cơ giáp gợi ý (Synergy Match) và ngược lại.
+  - **Bước 3 — Đánh Giá & Xác Nhận Cặp Đôi**: Cột trái hiển thị hồ sơ Phi công, cột giữa hiển thị tổng hợp chỉ số chiến đấu thực tế kèm phân rã nguồn gốc (Gốc cơ giáp + Trang bị Hangar + Điểm phi công), cột phải hiển thị hồ sơ Cơ giáp. Hỗ trợ Back/Forward đầy đủ giữa các bước.
+- **Cơ Chế Khóa & Mở Khóa Xuất Kích (Lock & Unlock Rules)**:
+  - Khi bấm Xác Nhận, lưu trữ cặp đôi và khóa lựa chọn (`isLocked = true`).
+  - Khởi tạo bộ đếm mở khóa: `completedMissions: 0`, `wonBattles: 0`, `targetCount: 5`.
+  - Tự động mở khóa khi đạt 5 nhiệm vụ chiến dịch HOẶC 5 trận thắng đấu trường (whichever occurs first).
+  - Khi đang khóa, người chơi vẫn tự do xem hồ sơ và phân bổ điểm thuộc tính; nút xác nhận đổi cặp đôi mới hiển thị rõ tiến độ mở khóa.
+  - Xử lý an toàn: Không đếm trận thoát giữa chừng/thất bại, chống cộng trùng sự kiện qua cờ xác nhận, bảo toàn 100% khi tải lại trang hoặc save/load.
+- **Tiến Trình Độc Lập Của Phi Công (Pilot Progression)**:
+  - 4 Phi công có cấp độ (1–30) và EXP riêng biệt.
+  - Chỉ phi công đang ghép đôi xuất kích mới nhận EXP sau trận đấu trường hoặc nhiệm vụ chiến dịch.
+  - Mỗi cấp nhận 5 điểm thuộc tính tự do phân bổ vào: Tấn công (+2 ATK/pt), Phòng ngự (+1.5 DEF/pt), Cơ động (+1 SPD/pt), Khiên (+30 Khiên/pt), Chiến thuật (+0.4% Crit/pt).
+  - Hỗ trợ nút "Tẩy Điểm Thuộc Tính" hoàn trả 100% điểm với chi phí Credits.
+- **Tích Hợp Chiến Đấu & Hiệu Ứng Ghép Đôi**:
+  - `buildPlayerCombatUnit` và `calculateTotalGearStats` tích hợp toàn bộ điểm phân bổ thuộc tính của phi công vào chỉ số chiến đấu.
+  - Kỹ năng nội tại phi công hoạt động chuẩn xác: Marcus (Hỏa lực dồn ép), Valentine (Lá chắn cấp cứu), Alviss (Tốc độ & né tránh), Eric (Xuyên giáp +20%).
+- **Lưu Trữ Bền Vững & Migration Schema v4**:
+  - Mở rộng kiểu dữ liệu `StarfrontProgression` và lưu trữ bền vững với `STORAGE_KEY_V4`.
+  - Hàm `migrateProgressionToV4` di chuyển an toàn từ mọi phiên bản v1, v2, v3 sang v4.
+- **Bộ Kiểm Thử Tự Động (Automated Tests)**:
+  - Bổ sung `tests/phase5-8-character-gear.test.ts` với 15/15 unit tests pass 100%.
+  - Toàn bộ 75/75 automated tests của dự án pass 100%.
+
 ## [Phase 5] — Tiến Trình Cơ Giáp, Cường Hóa & Nhiệm Vụ Phân Tầng
 
 *Đã hoàn thành toàn bộ Phase 5: Milestones 5.1, 5.2, 5.3, 5.4, 5.5 & 5.6 (60/60 automated tests passed, build thành công)*

@@ -496,9 +496,13 @@ export function cloneUnit(unit: CombatUnit): CombatUnit {
   }
 }
 
-/** Lấy tốc độ hiệu dụng sau khi tính toán buff/debuff */
-export function getEffectiveSpeed(unit: CombatUnit): number {
+/** Lấy tốc độ hiệu dụng sau khi tính toán buff/debuff và nội tại phi công */
+export function getEffectiveSpeed(unit: CombatUnit, turnNumber?: number): number {
   let speed = unit.speed
+  // Alviss Passive: Sáng Kiến Diều Hâu (+15 SPD trong 3 lượt đầu)
+  if (unit.pilotId === "alviss" && (turnNumber === undefined || turnNumber <= 3)) {
+    speed += 15
+  }
   for (const eff of unit.statusEffects) {
     if (eff.type === "emp-slow") {
       speed -= eff.value
@@ -750,6 +754,13 @@ export function calculateCombatDamage(
     rawDamage = Math.round(rawDamage * critMult)
   }
 
+  // 5b. Marcus Passive: Hỏa Lực Dồn Ép (+8% sát thương khi mục tiêu còn trên 70% HP)
+  let marcusPassiveApplied = false
+  if (attacker.pilotId === "marcus" && defender.maxHp > 0 && (defender.hp / defender.maxHp) > 0.70) {
+    rawDamage = Math.round(rawDamage * 1.08)
+    marcusPassiveApplied = true
+  }
+
   // 6. Kiểm tra hiệu ứng phòng thủ (Emergency Guard / Fortify) trên mục tiêu
   const guardEffect = defender.statusEffects.find((e) => e.type === "emergency-guard")
   let reducedByGuard = false
@@ -758,7 +769,7 @@ export function calculateCombatDamage(
     reducedByGuard = true
   }
 
-  return { damage: Math.max(0, rawDamage), isCrit, isEvaded: false, reducedByGuard }
+  return { damage: Math.max(0, rawDamage), isCrit, isEvaded: false, reducedByGuard, marcusPassiveApplied }
 }
 
 /** Cập nhật giảm thời gian hiệu lực buff/debuff, hồi chiêu kỹ năng và kích hoạt DoT (Plasma Burn / Acid) */
@@ -966,7 +977,7 @@ export function executePlayerAction(
       player.sp = Math.min(player.maxSp, player.sp + 15)
     }
 
-    const { damage, isCrit, isEvaded, reducedByGuard } = calculateCombatDamage(player, enemy, skill, options)
+    const { damage, isCrit, isEvaded, reducedByGuard, marcusPassiveApplied } = calculateCombatDamage(player, enemy, skill, options)
 
     if (isEvaded) {
       newLogs.push({
@@ -1004,6 +1015,17 @@ export function executePlayerAction(
         value: damage,
         timestamp: now,
       })
+
+      if (marcusPassiveApplied) {
+        newLogs.push({
+          id: `log-${Date.now()}-marcus-passive`,
+          turn: state.turnNumber,
+          type: "status",
+          text: `[NỘI TẠI MARCUS 🎯] Hỏa Lực Dồn Ép của Marcus tăng thêm 8% sát thương do mục tiêu còn trên 70% HP!`,
+          actorName: player.name,
+          timestamp: now,
+        })
+      }
 
       // Falcon Passive: Khí Động Học Mach — 50% tỉ lệ kích hoạt đòn bắn phụ không tốn SP khi bạo kích
       let falconFollowUpDmg = 0
@@ -1414,7 +1436,33 @@ export function executeEnemyAIAction(
         isEvaded: true,
       }
     } else {
-      player.hp = Math.max(0, player.hp - damage)
+      let actualDmgToHp = damage
+      let shieldAbsorbed = 0
+      if (player.shield !== undefined && player.shield > 0) {
+        shieldAbsorbed = Math.min(player.shield, damage)
+        player.shield -= shieldAbsorbed
+        actualDmgToHp = damage - shieldAbsorbed
+      }
+      player.hp = Math.max(0, player.hp - actualDmgToHp)
+
+      // Valentine Passive: Emergency Overcharge — Khi khiên lần đầu giảm về 0, hồi 30% khiên tối đa (1 lần/trận)
+      if (
+        player.pilotId === "valentine" &&
+        !player.pilotPassiveTriggered &&
+        (player.shield === 0 || player.shield === undefined)
+      ) {
+        player.pilotPassiveTriggered = true
+        const restoredShield = Math.max(50, Math.round((player.maxShield || 300) * 0.30))
+        player.shield = restoredShield
+        newLogs.push({
+          id: `log-${Date.now()}-val-passive`,
+          turn: state.turnNumber,
+          type: "status",
+          text: `[NỘI TẠI VALENTINE 🛡️] Lá Chắn Cấp Cứu của Valentine kích hoạt khẩn cấp khi khiên bị vỡ! Tái tạo ${restoredShield} Khiên năng lượng (1 lần/trận)!`,
+          actorName: player.name,
+          timestamp: now,
+        })
+      }
 
       // Aegis Passive: Giáp Phản Lực Titan — Khiên gai phản lại 20% sát thương nhận vào cho kẻ tấn công
       let aegisReflectDamage = 0

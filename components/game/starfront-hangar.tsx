@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
-import { STARFRONT_GEAR_DEFS } from "@/lib/game/data"
+import { STARFRONT_GEAR_DEFS, STARFRONT_PILOT_MAP } from "@/lib/game/data"
 import {
   playClickSound,
   playLevelUpSound,
@@ -62,6 +62,7 @@ import {
   TrendingDown,
   TrendingUp,
   Unlock,
+  Users,
   Wind,
   X,
   Zap,
@@ -194,6 +195,7 @@ interface StarfrontHangarProps {
   onSelectGear?: (gearId: StarfrontGearId) => void
   onEnhanceItem?: (itemId: string) => EnhancementResult
   onUpdateProgression?: (updated: StarfrontProgression) => void
+  onNavigateToCharacterGear?: () => void
 }
 
 export function StarfrontHangar({
@@ -205,6 +207,7 @@ export function StarfrontHangar({
   onSelectGear,
   onEnhanceItem,
   onUpdateProgression,
+  onNavigateToCharacterGear,
 }: StarfrontHangarProps) {
   // Tabs: Buồng Lái & Trang Bị, Mô-Đun Kỹ Năng (5 Ô), Kho Đồ & Tái Chế, Xưởng Cường Hóa
   const [activeTab, setActiveTab] = useState<HangarTab>("loadout")
@@ -231,9 +234,18 @@ export function StarfrontHangar({
   // Modal Chọn / Cấu hình Mô-đun Kỹ Năng (Skill Module Selection Modal)
   const [selectedSkillSlot, setSelectedSkillSlot] = useState<SkillSlotDetail | null>(null)
 
-  // Lớp Gear hiện tại
+  // Lớp Gear và Phi Công hiện tại
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
   const activeGearDef = STARFRONT_GEAR_DEFS[activeGearId] || STARFRONT_GEAR_DEFS.vanguard
+  const activePairing = progression.activePairing || {
+    pilotId: "marcus",
+    gearId: activeGearId,
+    isLocked: false,
+    unlockProgress: { completedMissions: 0, wonBattles: 0, targetCount: 5 },
+  }
+  const activePilotId = activePairing.pilotId || "marcus"
+  const activePilotDef = STARFRONT_PILOT_MAP[activePilotId] || STARFRONT_PILOT_MAP.marcus
+  const activePilotProg = progression.pilots?.[activePilotId]
 
   // Tiến trình cấp độ và tài nguyên
   const expRequired = getExpRequiredForLevel(progression.level)
@@ -241,15 +253,16 @@ export function StarfrontHangar({
   const alloyCount = progression.alloy ?? 25
   const skillPoints = getAircraftSkillPoints(progression.level)
 
-  // Chỉ số thực tế của cơ giáp hiện tại
+  // Chỉ số thực tế của cơ giáp hiện tại (kèm điểm thuộc tính phi công)
   const currentStats = useMemo(() => {
     return calculateTotalGearStats(
       activeGearId,
       progression.level,
       progression.inventory,
       progression.equipped,
+      activePilotProg,
     )
-  }, [activeGearId, progression.level, progression.inventory, progression.equipped])
+  }, [activeGearId, progression.level, progression.inventory, progression.equipped, activePilotProg])
 
   // Lực chiến tổng thể (Combat Readiness Rating)
   const combatRating = useMemo(() => {
@@ -485,101 +498,86 @@ export function StarfrontHangar({
       </section>
 
       {/* ====================================================================
-          2. BỘ CHỌN LỚP CƠ GIÁP (GEAR SELECTION CARDS - 3 LỚP GEAR)
+          2. THÔNG TIN CƠ GIÁP & PHI CÔNG ĐANG HOẠT ĐỘNG (ACTIVE PAIRING BANNER)
           ==================================================================== */}
-      <section className="rounded-sm border border-cyan-500/30 bg-panel/80 p-3.5 shadow-md">
-        <div className="mb-2.5 flex items-center justify-between border-b border-border/40 pb-2">
-          <div className="flex items-center gap-2">
-            <Cpu className="size-4 text-cyan-400" />
-            <h2 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-              CHỌN CƠ GIÁP XUẤT KÍCH (PHASE 3: 3 LỚP CHIẾN ĐẤU)
-            </h2>
-          </div>
-          <span className="text-[11px] font-mono text-muted-foreground">
-            Đang kích hoạt: <strong className="text-cyan-300">{activeGearDef.name}</strong>
-          </span>
-        </div>
+      <section className="rounded-sm border border-cyan-500/30 bg-panel/80 p-4 shadow-md backdrop-blur-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          {/* Cụm Thông Tin Phi Công & Cơ Giáp đang hoạt động */}
+          <div className="flex flex-wrap items-center gap-4">
+            {/* Chân dung Phi Công */}
+            <div className="relative size-16 shrink-0 overflow-hidden rounded-sm border border-cyan-500/40 bg-black/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]">
+              <img
+                src={activePilotDef.avatar}
+                alt={activePilotDef.name}
+                className="size-full object-cover"
+              />
+              <span className="absolute bottom-0 right-0 bg-cyan-950/90 px-1 font-mono text-[9px] font-bold text-cyan-300 border-t border-l border-cyan-500/40">
+                Cấp {activePilotProg?.level || 1}
+              </span>
+            </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          {(["vanguard", "falcon", "aegis"] as StarfrontGearId[]).map((gId) => {
-            const def = STARFRONT_GEAR_DEFS[gId]
-            const isSelected = activeGearId === gId
-
-            return (
-              <button
-                key={gId}
-                onClick={() => handleGearChange(gId)}
-                className={cn(
-                  "group relative flex flex-col justify-between rounded-sm border p-3.5 text-left transition-all cursor-pointer",
-                  isSelected
-                    ? "border-cyan-400 bg-cyan-950/60 shadow-[0_0_15px_rgba(34,211,238,0.25)]"
-                    : "border-border/60 bg-panel/50 hover:border-cyan-500/40 hover:bg-panel/90",
-                )}
-              >
-                <div>
-                  {/* Header thẻ cơ giáp: Tên & Hình minh họa thu nhỏ */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className="size-2.5 rounded-full"
-                          style={{ backgroundColor: def.color }}
-                        />
-                        <span className="font-display text-sm font-bold text-white group-hover:text-cyan-300">
-                          {def.name}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-cyan-300/90 font-mono block mt-0.5">
-                        {def.role}
-                      </span>
-                    </div>
-
-                    <div
-                      className="size-11 shrink-0 rounded border p-0.5 bg-black/40"
-                      style={{ borderColor: `${def.color}60` }}
-                    >
-                      <img
-                        src={def.illustration || `/images/${gId}.svg`}
-                        alt={def.name}
-                        className="size-full object-contain"
-                      />
-                    </div>
-                  </div>
-
-                  <p className="mt-2 text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-                    {def.desc}
-                  </p>
-
-                  {/* Huy hiệu Kỹ Năng Nội Tại (Passive Skill) */}
-                  <div className="mt-2.5 rounded bg-black/60 p-2 border border-border/50 text-[10px] font-mono">
-                    <div className="flex items-center gap-1 font-bold text-amber-300">
-                      <Sparkles className="size-3 text-amber-400" />
-                      <span>{def.passive.name}</span>
-                    </div>
-                    <p className="text-[9.5px] text-muted-foreground mt-0.5 line-clamp-1">
-                      {def.passive.shortDesc}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer thẻ: Chỉ số nền & Nút kích hoạt */}
-                <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono">
-                  <span className="text-muted-foreground">
-                    Gốc: <strong className="text-slate-200">{def.baseStats.speed}</strong> SPD ·{" "}
-                    <strong className="text-slate-200">{def.baseStats.attack}</strong> ATK
-                  </span>
+            {/* Chi tiết Phi Công & Cơ Giáp */}
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-display text-base font-black tracking-wider text-white">
+                  {activePilotDef.name}
+                </span>
+                <span className="rounded bg-cyan-950/80 px-1.5 py-0.5 font-mono text-[10px] text-cyan-300 border border-cyan-500/40">
+                  {activePilotDef.callsign}
+                </span>
+                <span className="text-muted-foreground text-xs font-mono">/</span>
+                <div className="flex items-center gap-1.5 font-display text-sm font-bold text-white">
                   <span
-                    className={cn(
-                      "font-bold flex items-center gap-1",
-                      isSelected ? "text-cyan-300" : "text-muted-foreground group-hover:text-cyan-300",
-                    )}
-                  >
-                    {isSelected ? "✓ Đang kích hoạt" : "Chọn cơ giáp ➔"}
-                  </span>
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: activeGearDef.color }}
+                  />
+                  <span>{activeGearDef.name}</span>
                 </div>
-              </button>
-            )
-          })}
+              </div>
+
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-mono text-muted-foreground">
+                <span className="text-cyan-400 font-semibold">{activeGearDef.role}</span>
+                <span>•</span>
+                <span>Lực chiến: <strong className="text-amber-300 font-bold">{combatRating}</strong></span>
+                <span>•</span>
+                <span>Nội tại phi công: <strong className="text-slate-200">{activePilotDef.passive.name}</strong></span>
+                <span>•</span>
+                <span>Nội tại cơ giáp: <strong className="text-slate-200">{activeGearDef.passive.name}</strong></span>
+              </div>
+
+              {/* Trạng thái Khóa / Mở Khóa */}
+              <div className="mt-2 flex items-center gap-2">
+                {activePairing.isLocked ? (
+                  <span className="inline-flex items-center gap-1.5 rounded bg-amber-950/50 border border-amber-500/50 px-2 py-0.5 text-[11px] font-mono text-amber-300">
+                    <Lock className="size-3 text-amber-400" />
+                    <span>Đang khóa xuất kích: {activePairing.unlockProgress.completedMissions}/5 Nhiệm Vụ hoặc {activePairing.unlockProgress.wonBattles}/5 Trận Thắng</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded bg-emerald-950/50 border border-emerald-500/50 px-2 py-0.5 text-[11px] font-mono text-emerald-300">
+                    <Unlock className="size-3 text-emerald-400" />
+                    <span>Đã mở khóa · Sẵn sàng thay đổi tổ hợp xuất kích</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Nút điều hướng sang Menu Nhân Vật & Cơ Giáp */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                playClickSound()
+                if (onNavigateToCharacterGear) {
+                  onNavigateToCharacterGear()
+                }
+              }}
+              className="flex items-center justify-center gap-2 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-display text-xs font-bold uppercase tracking-wider px-4 py-2.5 shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-all cursor-pointer border border-cyan-400/40"
+            >
+              <Users className="size-4" />
+              <span>Đổi Cặp Đôi & Phân Bổ Điểm</span>
+              <ArrowRight className="size-3.5" />
+            </button>
+          </div>
         </div>
       </section>
 

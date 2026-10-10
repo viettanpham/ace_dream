@@ -18,10 +18,10 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | Đã hoàn thành Phase 1 đến Phase 5.6 (60/60 tests PASS). Khung UI 5 Slot Kỹ Năng của Phase 5.7 đã xong trên buồng lái. |
-| **Phase tiếp theo cần thực hiện?** | **Phase 5.8: Hệ Thống Ghép Đôi Nhân Vật & Cơ Giáp (Character & Gear Selection System)**. |
-| **Tài liệu BẮT BUỘC đọc trước khi sửa code?** | 1. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) (Phạm vi & Tiêu chí chấp nhận Phase 5.8)<br>2. [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) (Đặc tả luồng 3 bước, khóa 5 trận, tiến trình phi công) |
-| **Các hệ thống liên quan trực tiếp?** | - `lib/game/types.ts` & `lib/game/storage.ts`: Mở rộng kiểu dữ liệu & Save Schema v4.<br>- `lib/game/progression.ts`: Hàm tính toán chỉ số `calculateTotalGearStats` & cấp EXP.<br>- `components/game/character-gear-select.tsx`: Giao diện ghép đôi 3 bước độc lập.<br>- `components/game/starfront-shell.tsx`: Điều hướng menu cấp cao mới. |
+| **Trạng thái hiện tại của dự án?** | Đã hoàn thành Phase 1 đến Phase 5.8 (75/75 tests PASS). Hệ thống Ghép Đôi Nhân Vật & Cơ Giáp đã vận hành đầy đủ. |
+| **Phase tiếp theo cần thực hiện?** | **Phase 5.9 / Phase 6**: Tích hợp Mô-đun kỹ năng rời, Specter Gear & Phân hệ Chiến tranh Mẹ hạm. |
+| **Tài liệu BẮT BUỘC đọc trước khi sửa code?** | 1. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md)<br>2. [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) |
+| **Các hệ thống liên quan trực tiếp?** | - `lib/game/types.ts` & `lib/game/storage.ts`: Save Schema v4 & migration.<br>- `lib/game/progression.ts`: Hàm tính toán chỉ số, EXP, và khóa cặp đôi.<br>- `components/game/character-gear-select.tsx`: Giao diện ghép đôi 3 bước.<br>- `components/game/starfront-shell.tsx`: Điều hướng menu độc lập Nhân Vật & Cơ Giáp. |
 
 *Lưu ý: Không đọc tài liệu lịch sử cũ trừ khi cần đối chiếu tương thích ngược (Backward Compatibility).*
 
@@ -57,7 +57,7 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa trong thư m�
 | **Phase 4** | Hiệu ứng trạng thái DoT/Stun/Slow, AI 4 Archetype, Boss Enrage | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
 | **Phase 5 (5.1–5.6)** | Cường hóa +10, Nội tại Gear, Rã đồ, Nhiệm vụ 1–15 & Biến thể quái | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
 | **Phase 5.7** | Khung giao diện 5 Slot Kỹ Năng & Điểm SP Phi Thuyền | **Khung UI Đã Xong (UI Shell Done)** | [`SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) |
-| **Phase 5.8** | **Ghép Đôi Nhân Vật & Cơ Giáp (3 Bước, Khóa 5 Trận, +5 Điểm)** | **ĐANG LẬP KẾ HOẠCH (PLANNING)** | [`CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) |
+| **Phase 5.8** | **Ghép Đôi Nhân Vật & Cơ Giáp (3 Bước, Khóa 5 Trận, +5 Điểm)** | **ĐÃ HOÀN THÀNH (DONE)** | [`CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) |
 | **Phase 6.1–6.4** | Mở rộng Thế giới, Phe phái BCU/ANI, Đại chiến Mẹ Hạm | **Lộ trình tương lai (Planned)** | [`FUTURE_PHASES.md`](./docs/roadmap/FUTURE_PHASES.md) |
 
 ---

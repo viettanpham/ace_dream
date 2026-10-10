@@ -33,6 +33,7 @@ import {
 } from "@/lib/game/progression"
 import {
   createScaledEnemyUnit,
+  findCampaignQuest,
   generateEquipmentReward,
   STANDARD_CAMPAIGN_QUESTS,
 } from "@/lib/game/scaling"
@@ -69,6 +70,7 @@ import {
   Gift,
   Globe2,
   Layers,
+  Lock,
   Play,
   Recycle,
   RefreshCw,
@@ -89,6 +91,7 @@ import {
 import { useEffect, useRef, useState } from "react"
 import { CampaignMap } from "./campaign-map"
 import { CombatLogPanel } from "./combat-log-panel"
+import { PlayerStatus } from "./player-status"
 import { StarfrontHangar } from "./starfront-hangar"
 import { StarfrontShop } from "./starfront-shop"
 
@@ -657,10 +660,13 @@ export function CombatArena() {
     const playerUnit = buildPlayerCombatUnit(currentProg)
     let scaledEnemyUnit: CombatUnit | undefined = undefined
     if (effectiveMission) {
-      const qData = STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === effectiveMission.id)
+      const override = currentProg.missionOverrides?.[effectiveMission.id]
+      const qData =
+        findCampaignQuest(effectiveMission.id) ||
+        STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === effectiveMission.id)
       const lvl = effectiveMission.level ?? qData?.level ?? effectiveMission.recommendedLevel ?? 1
-      const quality = effectiveMission.quality ?? qData?.quality ?? "standard"
-      const variantId = effectiveMission.variantId ?? qData?.variantId ?? "recon"
+      const quality = override?.quality ?? effectiveMission.quality ?? qData?.quality ?? "standard"
+      const variantId = override?.variantId ?? effectiveMission.variantId ?? qData?.variantId ?? "recon"
       scaledEnemyUnit = createScaledEnemyUnit(encounterId, variantId, lvl, quality)
     }
     setCombatState(createInitialCombatState(encounterId, playerUnit, scaledEnemyUnit))
@@ -763,6 +769,7 @@ export function CombatArena() {
             missionTitle: activeCampaignMission.title,
             isFirstClear,
           })
+          saveStarfrontProgression(updated)
           return updated
         } else {
           const { updated, reward, dropItem } = applyVictoryReward(prev, selectedEncounter)
@@ -770,6 +777,7 @@ export function CombatArena() {
             setTimeout(playLevelUpSound, 600)
           }
           setLastVictoryReward({ reward, dropItem })
+          saveStarfrontProgression(updated)
           return updated
         }
       })
@@ -1076,6 +1084,10 @@ export function CombatArena() {
       {activeSubView === "campaign" && (
         <CampaignMap
           progression={progression}
+          onUpdateProgression={(updated) => {
+            setProgression(updated)
+            saveStarfrontProgression(updated)
+          }}
           onDeployMission={(mission) => {
             setActiveCampaignMission(mission)
             setActiveSubView("combat")
@@ -1087,7 +1099,10 @@ export function CombatArena() {
       {activeSubView === "shop" && (
         <StarfrontShop
           progression={progression}
-          onUpdateProgression={(updated) => setProgression(updated)}
+          onUpdateProgression={(updated) => {
+            setProgression(updated)
+            saveStarfrontProgression(updated)
+          }}
         />
       )}
 
@@ -1355,7 +1370,7 @@ export function CombatArena() {
             </div>
           )}
 
-          {/* 2. Thanh Chọn Mục Tiêu Đối Đầu */}
+          {/* 2. Thanh Chọn Mục Tiêu Đối Đầu / Cố Định Theo Nhiệm Vụ */}
           <div className="rounded-sm border border-cyan-500/30 bg-black/40 p-3 shadow-lg backdrop-blur-md">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -1365,30 +1380,55 @@ export function CombatArena() {
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5">
-                {ENCOUNTER_INFO.map((enc) => {
-                  const active = selectedEncounter === enc.id
-                  return (
-                    <button
-                      key={enc.id}
-                      onClick={() => handleStartEncounter(enc.id)}
-                      className={cn(
-                        "relative flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all",
-                        active
-                          ? "border-cyan-400 bg-cyan-950/60 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.3)] font-bold"
-                          : "border-border/60 bg-panel/40 text-muted-foreground hover:border-cyan-500/40 hover:text-foreground",
-                      )}
-                    >
-                      <span
-                        className="size-2 rounded-full"
-                        style={{ backgroundColor: enc.color }}
-                      />
-                      <span>{enc.name}</span>
-                      <span className="text-[10px] opacity-75">({enc.difficulty})</span>
-                    </button>
-                  )
-                })}
-              </div>
+              {activeCampaignMission ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2 rounded border border-amber-500/50 bg-amber-950/40 px-3 py-1.5 font-mono text-xs">
+                    <Lock className="size-3.5 text-amber-400" />
+                    <span className="text-amber-300 font-bold">
+                      ĐÃ KHÓA THEO NHIỆM VỤ: {enemy.name}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                      ({activeCampaignMission.title})
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      playClickSound()
+                      setActiveCampaignMission(null)
+                      handleStartEncounter("scout-drone", progression, null)
+                    }}
+                    className="flex items-center gap-1 rounded-xs border border-border/70 bg-secondary/40 px-2.5 py-1 text-[11px] font-mono text-muted-foreground hover:text-white hover:border-cyan-400 transition-colors cursor-pointer"
+                    title="Hủy ải chiến dịch để mở khóa chọn đối thủ tự do"
+                  >
+                    <span>Hủy Ải (Chọn Tự Do)</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {ENCOUNTER_INFO.map((enc) => {
+                    const active = selectedEncounter === enc.id
+                    return (
+                      <button
+                        key={enc.id}
+                        onClick={() => handleStartEncounter(enc.id)}
+                        className={cn(
+                          "relative flex items-center gap-1.5 rounded-xs border px-3 py-1.5 font-display text-xs transition-all cursor-pointer",
+                          active
+                            ? "border-cyan-400 bg-cyan-950/60 text-cyan-200 shadow-[0_0_12px_rgba(34,211,238,0.3)] font-bold"
+                            : "border-border/60 bg-panel/40 text-muted-foreground hover:border-cyan-500/40 hover:text-foreground",
+                        )}
+                      >
+                        <span
+                          className="size-2 rounded-full"
+                          style={{ backgroundColor: enc.color }}
+                        />
+                        <span>{enc.name}</span>
+                        <span className="text-[10px] opacity-75">({enc.difficulty})</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 

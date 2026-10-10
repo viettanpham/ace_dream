@@ -316,7 +316,7 @@ describe("Milestone 5.5 — Mission Scaling, Enemy Variants & Equipment Loot Sys
   describe("13. TC-REG-01: Kiểm Thử Tương Thích & Hồi Quy (Progression, Passives & Economy)", () => {
     it("Trang bị loot ngẫu nhiên tương thích hoàn toàn với Cường Hóa (+1), Tái Chế (Salvage) và Buồng Lái", () => {
       // 1. Tạo 1 trang bị vũ khí ngẫu nhiên
-      const lootWeapon = generateEquipmentReward(3, "rare", "weapon", 555)
+      const lootWeapon = generateEquipmentReward(3, "elite", "weapon", 555)
 
       let prog: StarfrontProgression = {
         ...INITIAL_STARFRONT_PROGRESSION,

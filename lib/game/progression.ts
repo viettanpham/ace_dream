@@ -1,10 +1,14 @@
 import { STARFRONT_GEAR_DEFS, VANGUARD_INITIAL_UNIT, VANGUARD_SKILLS } from "./data"
+import { buildQuestRewardPreview, findCampaignQuest } from "./scaling"
 import type {
   ArmoryShopItem,
   BattleRewardResult,
   CampaignMission,
   CombatUnit,
   EnemyEncounterType,
+  EnemyVariantId,
+  QuestQuality,
+  QuestRewardPreview,
   SalvageEstimate,
   SalvageExecutionResult,
   StarfrontGearId,
@@ -88,6 +92,16 @@ export const SAMPLE_STARFRONT_ITEMS: StarfrontItem[] = [
     hpBonus: 500,
     spBonus: 15,
   },
+  {
+    id: "shd_stellar_bulwark",
+    name: "Pháo Đài Bất Hoại Event Horizon",
+    slot: "shield",
+    rarity: "legendary",
+    desc: "Khiên chắn trọng lực bẻ cong mọi loại đạn pháo và hồi phục cực hạn HP.",
+    defenseBonus: 75,
+    hpBonus: 950,
+    spBonus: 35,
+  },
 
   // ĐỘNG CƠ TĂNG TỐC (ENGINES)
   {
@@ -116,6 +130,16 @@ export const SAMPLE_STARFRONT_ITEMS: StarfrontItem[] = [
     speedBonus: 26,
     spBonus: 25,
     hpBonus: 150,
+  },
+  {
+    id: "eng_chronos_drive",
+    name: "Động Cơ Dịch Chuyển Lượng Tử Chronos",
+    slot: "engine",
+    rarity: "legendary",
+    desc: "Bẻ cong không-thời gian mang lại tốc độ tuyệt đỉnh và ưu thế ra đòn áp đảo.",
+    speedBonus: 45,
+    attackBonus: 20,
+    spBonus: 40,
   },
 ]
 
@@ -419,6 +443,8 @@ export function buildPlayerCombatUnit(progression: StarfrontProgression): Combat
     maxHp: total.maxHp,
     sp: total.sp,
     maxSp: total.maxSp,
+    shield: activeGear === "aegis" ? 480 : activeGear === "vanguard" ? 300 : 180,
+    maxShield: activeGear === "aegis" ? 480 : activeGear === "vanguard" ? 300 : 180,
     attack: total.attack,
     defense: total.defense,
     speed: total.speed,
@@ -699,6 +725,17 @@ export function buyShopItem(
   current: StarfrontProgression,
   shopItem: ArmoryShopItem,
 ): { success: boolean; updated: StarfrontProgression; message: string } {
+  // 1. Kiểm tra điều kiện mở khóa
+  const unlockCheck = isShopItemUnlocked(shopItem, current)
+  if (!unlockCheck.unlocked) {
+    return {
+      success: false,
+      updated: current,
+      message: `Vật phẩm chưa mở khóa! ${unlockCheck.reason}`,
+    }
+  }
+
+  // 2. Kiểm tra số dư Credits
   if (current.credits < shopItem.buyPrice) {
     return {
       success: false,
@@ -707,16 +744,26 @@ export function buyShopItem(
     }
   }
 
-  // Tạo ID duy nhất cho trang bị mới mua
+  // 3. Tạo ID duy nhất cho trang bị mới mua
   const boughtItem: StarfrontItem = {
     ...shopItem.item,
     id: `${shopItem.item.id}_${Date.now()}`,
+    enhancementLevel: 0,
+    statsRandomized: true,
   }
+
+  // Cập nhật trạng thái đã mua trong currentShopItems nếu có
+  const currentShopItems = current.currentShopItems
+    ? current.currentShopItems.map((si) =>
+        si.item.id === shopItem.item.id ? { ...si, isPurchased: true } : si,
+      )
+    : undefined
 
   const updated: StarfrontProgression = {
     ...current,
     credits: current.credits - shopItem.buyPrice,
     inventory: [...current.inventory, boughtItem],
+    currentShopItems,
   }
 
   return {
@@ -892,17 +939,39 @@ export function salvageInventoryItem(
   }
 }
 
-/** Kiểm tra vật phẩm trong Chợ Quân Sự đã được mở khóa theo tiến trình Sector chưa */
+/** Kiểm tra vật phẩm trong Chợ Quân Sự đã được mở khóa theo tiến trình Sector chưa (Sửa triệt để lỗi 3-3) */
 export function isShopItemUnlocked(
   shopItem: ArmoryShopItem,
   progression: StarfrontProgression,
 ): { unlocked: boolean; reason?: string } {
+  // 1. Kiểm tra trực tiếp theo requiredMissionId nếu có
+  if (shopItem.requiredMissionId) {
+    const req = shopItem.requiredMissionId
+    const hasCleared = progression.completedMissions.some(
+      (m) =>
+        m === req ||
+        m === req.replace("m", "mis") ||
+        m === req.replace("mis", "m") ||
+        (req.includes("3-3") && (m.includes("3-3") || m === "m3-3" || m === "mis-3-3")),
+    )
+    if (!hasCleared) {
+      return {
+        unlocked: false,
+        reason: `Yêu cầu hoàn thành nhiệm vụ ${req.toUpperCase()}`,
+      }
+    }
+  }
+
+  // 2. Không yêu cầu Sector nào
   if (!shopItem.requiredSectorId) {
     return { unlocked: true }
   }
 
+  // 3. Yêu cầu Sector 1 (Ải 1-3)
   if (shopItem.requiredSectorId === "sector-1") {
-    const hasCleared = progression.completedMissions.includes("mis-1-3")
+    const hasCleared = progression.completedMissions.some(
+      (m) => m === "m1-3" || m === "mis-1-3" || m.includes("1-3"),
+    )
     return {
       unlocked: hasCleared,
       reason: hasCleared
@@ -911,8 +980,11 @@ export function isShopItemUnlocked(
     }
   }
 
+  // 4. Yêu cầu Sector 2 (Ải 2-3)
   if (shopItem.requiredSectorId === "sector-2") {
-    const hasCleared = progression.completedMissions.includes("mis-2-3")
+    const hasCleared = progression.completedMissions.some(
+      (m) => m === "m2-3" || m === "mis-2-3" || m.includes("2-3"),
+    )
     return {
       unlocked: hasCleared,
       reason: hasCleared
@@ -921,8 +993,11 @@ export function isShopItemUnlocked(
     }
   }
 
+  // 5. Yêu cầu Sector 3 (Ải 3-3) - Sửa lỗi đồng bộ định danh m3-3 / mis-3-3
   if (shopItem.requiredSectorId === "sector-3") {
-    const hasCleared = progression.completedMissions.includes("mis-3-3")
+    const hasCleared = progression.completedMissions.some(
+      (m) => m === "m3-3" || m === "mis-3-3" || m.includes("3-3"),
+    )
     return {
       unlocked: hasCleared,
       reason: hasCleared
@@ -931,23 +1006,220 @@ export function isShopItemUnlocked(
     }
   }
 
+  // 6. Yêu cầu Sector 4 (Ải 4-3)
+  if (shopItem.requiredSectorId === "sector-4") {
+    const hasCleared = progression.completedMissions.some(
+      (m) => m === "m4-3" || m === "mis-4-3" || m.includes("4-3"),
+    )
+    return {
+      unlocked: hasCleared,
+      reason: hasCleared
+        ? undefined
+        : "Yêu cầu hoàn thành Sector 4: Hư Không Vô Tận (Ải 4-3)",
+    }
+  }
+
   return { unlocked: true }
 }
 
-/** Làm mới danh mục hàng Chợ Quân Sự (Shop Refresh) */
+/** Tạo danh mục hàng Chợ Quân Sự ngẫu nhiên theo pool trang bị hiện có */
+export function generateShopCatalog(progression: StarfrontProgression): ArmoryShopItem[] {
+  // Pool các vật phẩm vũ khí, khiên, động cơ
+  const weaponPool: ArmoryShopItem[] = [
+    {
+      item: {
+        id: "shop_wpn_plasma_cutter",
+        name: "Pháo Cắt Plasma Cao Áp Mk.II",
+        slot: "weapon",
+        rarity: "rare",
+        desc: "Chùm plasma siêu nhiệt nung chảy vỏ thép. Tăng mạnh sức tấn công và tốc độ ra đòn.",
+        attackBonus: 36,
+        speedBonus: 5,
+        price: 850,
+      },
+      buyPrice: 850,
+      tierName: "Cơ Bản (Mở ngay)",
+      isPurchased: false,
+    },
+    {
+      item: {
+        id: "shop_wpn_hyper_railgun",
+        name: "Đại Pháo Ray Điện Từ Hyper Prime",
+        slot: "weapon",
+        rarity: "epic",
+        desc: "Gia tốc đạn hạt nhân mini công phá cực đại giáp trụ mục tiêu.",
+        attackBonus: 65,
+        speedBonus: 8,
+        defenseBonus: -5,
+        price: 2200,
+      },
+      buyPrice: 2200,
+      requiredSectorId: "sector-1",
+      tierName: "Mở Khóa: Sector 1",
+      isPurchased: false,
+    },
+    {
+      item: {
+        id: "shop_wpn_singularity_lance",
+        name: "Thương Năng Lượng Điểm Kỳ Dị Singularity",
+        slot: "weapon",
+        rarity: "epic",
+        desc: "Phóng chùm photon nén cực độ tạo lỗ đen vi mô nghiền nát vỏ tàu địch.",
+        attackBonus: 75,
+        speedBonus: 10,
+        hpBonus: 150,
+        price: 3500,
+      },
+      buyPrice: 3500,
+      requiredSectorId: "sector-2",
+      tierName: "Mở Khóa: Sector 2",
+      isPurchased: false,
+    },
+    {
+      item: {
+        id: "shop_wpn_stellar_annihilator",
+        name: "Súng Hủy Diệt Tinh Vân Prime",
+        slot: "weapon",
+        rarity: "legendary",
+        desc: "Vũ khí chế tác từ lõi sao băng. Sức mạnh hủy diệt nguyên tử vô tiền khoáng hậu.",
+        attackBonus: 95,
+        speedBonus: 12,
+        spBonus: 25,
+        price: 6500,
+      },
+      buyPrice: 6500,
+      requiredSectorId: "sector-3",
+      requiredMissionId: "m3-3",
+      tierName: "Hàng Tối Thượng: Sector 3 (Legendary)",
+      isPurchased: false,
+    },
+  ]
+
+  const shieldPool: ArmoryShopItem[] = [
+    {
+      item: {
+        id: "shop_shd_nano_barrier",
+        name: "Khiên Nano Tự Phục Hồi V3",
+        slot: "shield",
+        rarity: "rare",
+        desc: "Vi hạt nano tự liên kết hàn gắn các tổn thương trên vỏ bọc ngay lập tức.",
+        defenseBonus: 30,
+        hpBonus: 350,
+        price: 900,
+      },
+      buyPrice: 900,
+      tierName: "Cơ Bản (Mở ngay)",
+      isPurchased: false,
+    },
+    {
+      item: {
+        id: "shop_shd_aegis_forcefield",
+        name: "Trường Lực Ion Aegis Tối Thượng",
+        slot: "shield",
+        rarity: "epic",
+        desc: "Lưới chắn ion hóa triệt tiêu động năng đạn pháo và hồi năng lượng lõi.",
+        defenseBonus: 52,
+        hpBonus: 600,
+        spBonus: 20,
+        price: 2500,
+      },
+      buyPrice: 2500,
+      requiredSectorId: "sector-1",
+      tierName: "Mở Khóa: Sector 1",
+      isPurchased: false,
+    },
+    {
+      item: {
+        id: "shop_shd_stellar_bulwark",
+        name: "Pháo Đài Bất Hoại Event Horizon",
+        slot: "shield",
+        rarity: "legendary",
+        desc: "Khiên chắn trọng lực bẻ cong mọi loại đạn pháo và hồi phục cực hạn HP.",
+        defenseBonus: 75,
+        hpBonus: 950,
+        spBonus: 35,
+        price: 6000,
+      },
+      buyPrice: 6000,
+      requiredSectorId: "sector-3",
+      tierName: "Hàng Tối Thượng: Sector 3 (Legendary)",
+      isPurchased: false,
+    },
+  ]
+
+  const enginePool: ArmoryShopItem[] = [
+    {
+      item: {
+        id: "shop_eng_warp_thruster",
+        name: "Động Cơ Gia Tốc Warp Mk.II",
+        slot: "engine",
+        rarity: "rare",
+        desc: "Bộ đẩy phản lực thế hệ mới giúp cơ giáp lướt gió không gian tốc độ cao.",
+        speedBonus: 20,
+        attackBonus: 10,
+        price: 1000,
+      },
+      buyPrice: 1000,
+      tierName: "Cơ Bản (Mở ngay)",
+      isPurchased: false,
+    },
+    {
+      item: {
+        id: "shop_eng_antimatter_drive",
+        name: "Động Cơ Phản Vật Chất Dark Nova",
+        slot: "engine",
+        rarity: "epic",
+        desc: "Nạp năng lượng phản vật chất vô hạn, tăng vượt trội Tốc độ, SP và HP.",
+        speedBonus: 32,
+        spBonus: 30,
+        hpBonus: 200,
+        price: 3200,
+      },
+      buyPrice: 3200,
+      requiredSectorId: "sector-2",
+      tierName: "Mở Khóa: Sector 2",
+      isPurchased: false,
+    },
+    {
+      item: {
+        id: "shop_eng_chronos_drive",
+        name: "Động Cơ Dịch Chuyển Lượng Tử Chronos",
+        slot: "engine",
+        rarity: "legendary",
+        desc: "Bẻ cong không-thời gian mang lại tốc độ tuyệt đỉnh và ưu thế ra đòn áp đảo.",
+        speedBonus: 45,
+        attackBonus: 20,
+        spBonus: 40,
+        price: 7000,
+      },
+      buyPrice: 7000,
+      requiredSectorId: "sector-4",
+      tierName: "Hàng Thần Thoại: Sector 4 (Legendary)",
+      isPurchased: false,
+    },
+  ]
+
+  // Trả về danh sách đầy đủ các vật phẩm được format chuẩn
+  return [...weaponPool, ...shieldPool, ...enginePool]
+}
+
+/** Làm mới danh mục hàng Chợ Quân Sự (Shop Refresh - Random lại danh mục bán) */
 export function refreshArmoryShop(
   current: StarfrontProgression,
 ): { success: boolean; updated: StarfrontProgression; message: string } {
   const freeRefreshes = current.freeShopRefreshes || 0
+  const newCatalog = generateShopCatalog(current)
+
   if (freeRefreshes > 0) {
     const updated: StarfrontProgression = {
       ...current,
       freeShopRefreshes: freeRefreshes - 1,
+      currentShopItems: newCatalog,
     }
     return {
       success: true,
       updated,
-      message: `Đã làm mới gian hàng bằng lượt miễn phí! (Còn lại ${freeRefreshes - 1} lượt)`,
+      message: `Đã làm mới danh mục hàng bằng lượt miễn phí! (Còn lại ${freeRefreshes - 1} lượt)`,
     }
   }
 
@@ -963,12 +1235,149 @@ export function refreshArmoryShop(
   const updated: StarfrontProgression = {
     ...current,
     credits: current.credits - cost,
+    currentShopItems: newCatalog,
   }
 
   return {
     success: true,
     updated,
     message: `Đã làm mới danh mục Chợ Quân Sự! Đã trừ ${cost} Credits.`,
+  }
+}
+
+/**
+ * Reset / Reroll cấu hình thử thách và phần thưởng cho Ải chiến dịch đã hoàn thành
+ * Bảo đảm: Không làm mất tiến trình đã hoàn thành, kho đồ hay cấp độ người chơi
+ */
+export function resetCampaignMissionConfig(
+  current: StarfrontProgression,
+  missionId: string,
+): { success: boolean; updated: StarfrontProgression; message: string } {
+  const isCompleted = current.completedMissions.some(
+    (m) =>
+      m === missionId ||
+      m === missionId.replace("m", "mis") ||
+      m === missionId.replace("mis", "m") ||
+      (missionId.includes("-") && m.endsWith(missionId.split("-").slice(1).join("-"))),
+  )
+
+  if (!isCompleted) {
+    return {
+      success: false,
+      updated: current,
+      message: "Chỉ có thể reset cấu hình thử thách cho những Ải bạn đã hoàn thành!",
+    }
+  }
+
+  const baseQuest = findCampaignQuest(missionId)
+  const lvl = baseQuest?.level || 1
+
+  const qualities: QuestQuality[] = ["standard", "veteran", "elite", "heroic"]
+  if (lvl >= 7) qualities.push("legendary")
+  const newQuality = qualities[Math.floor(Math.random() * qualities.length)]
+
+  const variants: EnemyVariantId[] = ["recon", "interceptor", "jammer", "assault", "berserker", "heavy", "fortress"]
+  if (newQuality === "legendary" || lvl >= 9) variants.push("colossus", "annihilator")
+  const newVariant = variants[Math.floor(Math.random() * variants.length)]
+
+  const newPreview = buildQuestRewardPreview(lvl, newQuality, undefined, Date.now() % 100000)
+
+  const updatedOverrides = {
+    ...(current.missionOverrides || {}),
+    [missionId]: {
+      quality: newQuality,
+      variantId: newVariant,
+      previewReward: newPreview,
+    },
+  }
+
+  const updated: StarfrontProgression = {
+    ...current,
+    missionOverrides: updatedOverrides,
+  }
+
+  return {
+    success: true,
+    updated,
+    message: `Đã reset thử thách Ải ${missionId.toUpperCase()}: Phẩm chất mới [${newQuality.toUpperCase()}] & Phần thưởng ngẫu nhiên mới!`,
+  }
+}
+
+/** Sinh danh mục Nhiệm Vụ Phụ Tuyến (Side Quests / Tiền Thưởng Bounties) */
+export function generateSideQuests(playerLevel: number, count: number = 3): StarfrontQuest[] {
+  const templates = [
+    {
+      idPrefix: "sq-recon",
+      title: "Tiền Thưởng: Tiêu Diệt Toán Trinh Sát Tinh Tặc",
+      desc: "Trinh sát cơ của cướp biển vũ trụ đang lảng vảng do thám căn cứ. Tiêu diệt chúng để bảo toàn bí mật.",
+      encounterType: "scout-drone" as const,
+      variants: ["recon", "interceptor", "jammer"] as EnemyVariantId[],
+      quality: "standard" as QuestQuality,
+    },
+    {
+      idPrefix: "sq-convoy",
+      title: "Hộ Tống: Đập Tan Cuộc Đột Kích Đội Tàu Vận Tải",
+      desc: "Đoàn tàu tiếp tế hợp kim bị phục kích bởi cơ giáp đột kích. Can thiệp khẩn cấp giải cứu đội tàu.",
+      encounterType: "raider-mech" as const,
+      variants: ["assault", "berserker"] as EnemyVariantId[],
+      quality: "veteran" as QuestQuality,
+    },
+    {
+      idPrefix: "sq-fortress",
+      title: "Truy Quét: Hủy Diệt Pháo Đài Vũ Trụ Lạc Lối",
+      desc: "Một pháo đài tự hành cổ xưa đang xả đạn bừa bãi vào tuyến hàng hải. Phá hủy lõi pháo để lập lại trật tự.",
+      encounterType: "siege-walker" as const,
+      variants: ["heavy", "fortress"] as EnemyVariantId[],
+      quality: "elite" as QuestQuality,
+    },
+  ]
+
+  const quests: StarfrontQuest[] = templates.slice(0, count).map((tmpl, idx) => {
+    const qLvl = Math.max(1, Math.min(15, playerLevel + (idx === 0 ? -1 : idx === 1 ? 0 : 1)))
+    const variantId = tmpl.variants[Math.floor(Math.random() * tmpl.variants.length)]
+    const preview = buildQuestRewardPreview(
+      qLvl,
+      tmpl.quality,
+      undefined,
+      (playerLevel * 37 + idx * 19 + Date.now()) % 100000,
+    )
+    // Phần thưởng thấp hơn nhiệm vụ chính tuyến (~25% ít hơn)
+    preview.credits = Math.max(150, Math.round(preview.credits * 0.75))
+    preview.alloy = Math.max(1, Math.round(preview.alloy * 0.75))
+
+    return {
+      id: `sq-${tmpl.encounterType}-${idx + 1}`,
+      title: tmpl.title,
+      desc: tmpl.desc,
+      sectorId: "side-quests",
+      sectorName: "Tiền Thưởng Phụ Tuyến",
+      level: qLvl,
+      quality: tmpl.quality,
+      encounterType: tmpl.encounterType,
+      variantId,
+      difficultyRating: tmpl.quality === "elite" ? "Nguy Hiểm" : tmpl.quality === "veteran" ? "Khó" : "Dễ",
+      previewReward: preview,
+      order: idx + 1,
+    }
+  })
+
+  return quests
+}
+
+/** Reset chuỗi nhiệm vụ phụ tuyến */
+export function resetSideQuests(
+  current: StarfrontProgression,
+): { success: boolean; updated: StarfrontProgression; message: string } {
+  const newSideQuests = generateSideQuests(current.level)
+  const updated: StarfrontProgression = {
+    ...current,
+    sideQuests: newSideQuests,
+    activeQuest: null,
+  }
+  return {
+    success: true,
+    updated,
+    message: "Đã làm mới danh sách Nhiệm Vụ Phụ Tuyến thành công!",
   }
 }
 

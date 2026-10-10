@@ -369,6 +369,53 @@
   - *Scenario 4*: Chuyển sang Hangar, kiểm tra trang bị vừa nhận xuất hiện trong kho với cấp độ và chỉ số chính xác, có thể cường hóa hoặc rã đồ.
   - *Scenario 5*: Tải lại trang web (F5), kiểm tra tiến trình, kho đồ và trang bị vẫn giữ nguyên 100%.
 
+#### 🎯 Milestone 5.6: Sửa Lỗi Tiến Trình Nhiệm Vụ, Mở Khóa Vũ Khí, Làm Mới Chợ Quân Sự & Mở Rộng Chiến Dịch (Mission Progression, Shop Refresh & Unlock Fixes) `[ĐÃ HOÀN THÀNH]`
+- **Mục tiêu**: Khắc phục triệt để lỗi điều kiện mở khóa vũ khí Sector 3 (ải 3-3), bổ sung tính năng Làm mới (Refresh) gian hàng Chợ Quân Sự có chi phí và lượt miễn phí hợp lý, khóa cứng cấu hình địch trong Đấu Trường cho các trận đánh thuộc chiến dịch chính tuyến, bổ sung Sector 4 và mở rộng chuỗi ải chính tuyến, tích hợp danh mục nhiệm vụ tiền thưởng phụ tuyến (Side Quests) có cơ chế reset minh bạch, đồng bộ dữ liệu bền vững qua reload.
+- **Trạng thái**: **Đã hoàn thành & Đã kiểm chứng (12/12 automated tests passed, build thành công)**.
+- **Phạm vi triển khai**:
+  - **1. Sửa Lỗi Mở Khóa Vũ Khí & Đồng Bộ Điều Kiện Ải 3-3**:
+    - Đồng bộ logic kiểm tra `isShopItemUnlocked` giữa dữ liệu tiến trình (`completedMissions`), logic mua `buyShopItem` và UI hiển thị tại `starfront-shop.tsx`.
+    - Hỗ trợ cả định danh mới (`m3-3`, `m2-3`, `m1-3`) lẫn định danh legacy (`mis-3-3`, `mis-2-3`, `mis-1-3`), mở khóa tức thì cho `shop_wpn_stellar_annihilator` khi hoàn thành ải 3-3 kể cả khi tải lại trang web.
+    - Chặn hoàn toàn việc tự động mở khóa vũ khí khi người chơi chưa hoàn thành đúng ải điều kiện.
+  - **2. Làm Mới Gian Hàng Chợ Quân Sự (Shop Refresh)**:
+    - Bổ sung nút **Làm Mới Gian Hàng (Refresh)** tại tab Mua Trang Bị với hiệu ứng quay và nhãn chi phí rõ ràng.
+    - Kinh tế làm mới cân bằng: Ưu tiên sử dụng lượt miễn phí (`freeShopRefreshes`), khi hết lượt miễn phí sẽ tiêu hao 100 Credits; chặn thao tác khi không đủ Credits và thông báo thân thiện.
+    - Random lại 6 món trang bị theo bể item phân tầng Sector và phẩm chất; hiển thị đầy đủ tên, độ hiếm, chỉ số, giá bán, điều kiện mở khóa và lưu cờ `isPurchased: true` khi đã mua.
+  - **3. Khóa Cấu Hình Địch & Chuẩn Hóa Chỉ Số Cho Nhiệm Vụ Chính Tuyến**:
+    - Khi người chơi chọn ải chiến dịch từ Bản Đồ, hệ thống chốt sẵn `activeCampaignMission` kèm cấp độ, phẩm chất và biến thể địch.
+    - Trong buồng lái Đấu Trường, khóa thanh chọn đối thủ tự do kèm huy hiệu cảnh báo `ĐÃ KHÓA THEO NHIỆM VỤ: [Tên Địch]`, ngăn đổi sang địch Dễ/Trung bình/Khó ngoài cấu hình ải. Cung cấp nút `Hủy Ải (Chọn Tự Do)` nếu muốn quay lại luyện tập.
+    - Chỉ số HP, ATK, DEF, SPD của địch được tính toán đồng bộ theo công thức chuẩn của `scaling.ts`, đảm bảo thông số ở màn hình chuẩn bị khớp 100% với địch thực tế trong trận.
+  - **4. Mở Rộng Chiến Dịch Chính Tuyến & Cơ Chế Reset Ải**:
+    - Bổ sung Sector 4: *Vành Đai Sự Kiện Chân Trời (Event Horizon Outpost)* với 3 ải mở rộng (`m4-1`, `m4-2`, `m4-3`) tiếp nối cấu trúc campaign.
+    - Cho phép reset cấu hình và phần thưởng của từng ải đã hoàn thành (`resetCampaignMissionConfig`) hoặc reset toàn bộ ải đã hoàn thành trong Sector hiện tại.
+    - Reset ngẫu nhiên lại Phẩm chất (`quality`), Biến thể địch (`variantId`) và Trang bị rơi dự kiến (`previewReward`) mà không làm mất tiến trình đã lưu, kho đồ hay tài nguyên người chơi.
+  - **5. Hệ Thống Nhiệm Vụ Tiền Thưởng Phụ Tuyến (Side Quests)**:
+    - Khu vực nhiệm vụ phụ tuyến riêng biệt với tab trực quan trên giao diện Bản Đồ Chiến Dịch (`campaign-map.tsx`).
+    - Nhiệm vụ phụ có quy mô cấp độ bám sát người chơi, mục tiêu và biến thể địch ngẫu nhiên, phần thưởng Credits/Alloy và trang bị được cân đối thấp hơn nhiệm vụ chính tuyến tương đương.
+    - Nút `Làm Mới Nhiệm Vụ Phụ` cho phép đổi chuỗi 3 nhiệm vụ phụ mới; phần thưởng công bố trước khớp 100% với phần thưởng thực nhận sau chiến thắng.
+  - **6. Bảo Toàn Dữ Liệu & Khả Năng Lưu Trữ (State Persistence)**:
+    - Dữ liệu gian hàng hiện tại (`currentShopItems`), danh mục nhiệm vụ phụ (`sideQuests`) và cấu hình ải ghi đè sau reset (`missionOverrides`) được lưu cố định vào tiến trình `StarfrontProgression` và đồng bộ qua LocalStorage Schema v3.
+- **Phụ thuộc**: Milestone 5.5, `lib/game/scaling.ts`, `lib/game/progression.ts`, `lib/game/storage.ts`, `components/game/starfront-shop.tsx`, `components/game/campaign-map.tsx`, `components/game/combat-arena.tsx`.
+- **Tiêu chí chấp nhận (Definition of Done)**:
+  - Hoàn thành ải 3-3 mở khóa ngay lập tức vũ khí Stellar Annihilator trên UI và logic mua.
+  - Nút Refresh Chợ hoạt động trơn tru với lượt miễn phí và 100 Credits, random lại đầy đủ thông tin item.
+  - Vào trận từ Campaign Map bị khóa chọn địch tự do, chỉ số địch scale chuẩn xác theo level và variant.
+  - Cho phép reset ải chính tuyến đã hoàn thành và reset chuỗi nhiệm vụ phụ, không gây mất dữ liệu hay duplicate reward ngoài ý muốn.
+  - 100% automated tests pass, build production thành công.
+- **Bộ Automated Tests Milestone 5.6**:
+  - `TC-P56-01`: Vũ khí Sector 3 (m3-3) mở khóa ngay khi hoàn thành ải 3-3 (hỗ trợ cả m3-3 và mis-3-3).
+  - `TC-P56-02`: Chặn tự động mở khóa vũ khí khi chưa hoàn thành Sector, từ chối mua và báo lỗi.
+  - `TC-P56-03`: refreshArmoryShop ưu tiên sử dụng lượt miễn phí.
+  - `TC-P56-04`: refreshArmoryShop trừ 100 Credits khi hết lượt miễn phí và chặn khi thiếu tiền.
+  - `TC-P56-05`: Mua hàng cập nhật trạng thái isPurchased và đưa vào kho đồ.
+  - `TC-P56-06`: CAMPAIGN_SECTORS có 4 Sector với Sector 4 Event Horizon đầy đủ 3 ải.
+  - `TC-P56-07`: findCampaignQuest tìm thấy cả nhiệm vụ tiêu chuẩn và mở rộng.
+  - `TC-P56-08`: createScaledEnemyUnit sinh địch đúng cấu hình và chỉ số cấp độ.
+  - `TC-P56-09`: resetCampaignMissionConfig chỉ cho phép reset ải đã hoàn thành và bảo toàn kho đồ.
+  - `TC-P56-10`: generateSideQuests sinh đúng danh mục nhiệm vụ phụ với phần thưởng dự kiến.
+  - `TC-P56-11`: resetSideQuests làm mới chuỗi nhiệm vụ phụ và scale theo level người chơi.
+  - `TC-P56-12`: migrateProgressionToV3 bảo toàn currentShopItems, sideQuests và missionOverrides.
+
 ---
 
 ### GIAI ĐOẠN 6: MỞ RỘNG THẾ GIỚI & CHIẾN TRANH THIÊN HÀ (PHASE 6 — WORLD & WAR EXPANSION)
@@ -452,6 +499,7 @@
 | **Vòng lặp kinh tế chợ & Tái chế rã đồ** | **Đã hoàn thành (Done)** | Phase 5 (M5.3) | Rã đồ thừa lấy Hợp kim, chống rã đồ đang đeo, phân tầng chợ theo Sector. 14/14 tests PASS. |
 | **Lưu trữ Schema v3 & Đồng bộ trạng thái tức thời** | **Đã hoàn thành (Done)** | Phase 5 (M5.4) | Tự động nâng cấp v1/v2 -> v3, chuẩn hóa [0..10], đồng bộ mượt Hangar <-> Arena. 8/8 tests PASS. |
 | **Nhiệm vụ phân tầng, Biến thể quái & Rơi đồ trang bị** | **Đã hoàn thành (Done)** | Phase 5 (M5.5) | Quest Level (1–15), 5 phẩm chất, 9 biến thể quái, rơi đúng 1 trang bị ngẫu nhiên có cấp và thuộc tính, preview phần thưởng cố định. |
+| **Sửa mở khóa vũ khí, Refresh Chợ & Khóa cấu hình ải** | **Đã hoàn thành (Done)** | Phase 5 (M5.6) | Sửa ải 3-3 mở khóa vũ khí Sector 3, Refresh Chợ 100 Cr/lượt miễn phí, khóa địch chính tuyến trong Arena, Sector 4 Event Horizon, Reset ải & Side Quests. 12/12 tests PASS. |
 | **Mở rộng Sector 4, 5 & Hệ thống phe phái thiên hà** | **Chưa triển khai (Planned)** | Phase 6 (M6.1) | BCU vs ANI, điểm danh vọng phe phái. |
 | **Đại chiến Mẹ Hạm không gian & Dị thường môi trường** | **Chưa triển khai (Planned)** | Phase 6 (M6.2) | Boss đa bộ phận, bão bức xạ mặt trời. |
 | **Liên kết chiều sâu với phân hệ Ace Manager** | **Chưa triển khai (Planned)** | Phase 6 (M6.3) | Căn cứ cấp nguyên liệu, Phi công lái Gear tăng chỉ số. |

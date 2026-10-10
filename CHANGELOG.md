@@ -6,9 +6,35 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ## [Phase 5] — Tiến Trình Cơ Giáp, Cường Hóa & Nhiệm Vụ Phân Tầng
 
-*Đã hoàn thành toàn bộ Phase 5: Milestones 5.1, 5.2, 5.3, 5.4 & 5.5 (48/48 automated tests passed, build thành công)*
+*Đã hoàn thành toàn bộ Phase 5: Milestones 5.1, 5.2, 5.3, 5.4, 5.5 & 5.6 (60/60 automated tests passed, build thành công)*
 
 ### Tính năng đã hoàn thành:
+- **Milestone 5.6: Sửa Lỗi Tiến Trình Nhiệm Vụ, Mở Khóa Vũ Khí, Làm Mới Chợ Quân Sự & Mở Rộng Chiến Dịch (Mission Progression, Shop Refresh & Unlock Fixes)**:
+  - **Sửa Lỗi Mở Khóa Vũ Khí Ải 3-3 & Đồng Bộ Dữ Liệu**:
+    - Khắc phục lỗi vũ khí Sector 3 (`shop_wpn_stellar_annihilator`) bị khóa sau khi qua ải 3-3: Đồng bộ điều kiện mở khóa `isShopItemUnlocked` hỗ trợ cả 2 định danh `m3-3` và `mis-3-3`.
+    - Đồng bộ tuyệt đối giữa dữ liệu tiến trình (`completedMissions`), logic giao dịch (`buyShopItem`) và giao diện Chợ Quân Sự (`starfront-shop.tsx`).
+    - Chặn hoàn toàn việc tự động mở khóa vũ khí khi chưa hoàn thành đúng ải yêu cầu.
+  - **Làm Mới Gian Hàng Chợ Quân Sự (Shop Refresh)**:
+    - Bổ sung nút "Làm Mới Gian Hàng" trên giao diện Chợ tab Mua Trang Bị với hiệu ứng xoay và nhãn chi phí minh bạch.
+    - Cơ chế chi phí kinh tế: Tự động trừ lượt miễn phí (`freeShopRefreshes`) trước; khi hết lượt miễn phí tốn 100 Credits; chặn và báo lỗi nếu không đủ Credits.
+    - Cập nhật đầy đủ 6 món đồ ngẫu nhiên theo pool Sector, cập nhật tên, độ hiếm, chỉ số, giá bán, điều kiện mở khóa và lưu trạng thái `isPurchased`.
+  - **Khóa Cấu Hình Địch Khi Vào Trận Chính Tuyến**:
+    - Khi nhận ải từ Campaign Map, hệ thống chốt sẵn `activeCampaignMission` và khóa thanh chọn đối thủ trong buồng lái Đấu Trường (`combat-arena.tsx`) kèm nhãn `ĐÃ KHÓA THEO NHIỆM VỤ: [Tên Địch]`.
+    - Người chơi không thể đổi sang các mức Dễ/Trung bình/Khó ngoài cấu hình ải; cung cấp nút `Hủy Ải (Chọn Tự Do)` để trở về chế độ đấu tự do.
+    - Chỉ số kẻ địch (HP, ATK, DEF, SPD) được đồng bộ chính xác theo cấp độ và biến thể nhiệm vụ.
+  - **Mở Rộng Chiến Dịch & Cơ Chế Reset Ải**:
+    - Mở rộng Sector 4: *Vành Đai Sự Kiện Chân Trời (Event Horizon Outpost)* với 3 ải mở rộng (`m4-1`, `m4-2`, `m4-3`).
+    - Hỗ trợ reset cấu hình và phần thưởng của từng ải đã hoàn thành (`resetCampaignMissionConfig`) hoặc reset toàn bộ ải trong Sector, tạo mới ngẫu nhiên phẩm chất, biến thể và trang bị rơi dự kiến.
+    - Bảo toàn 100% tiến trình đã hoàn thành, kho đồ, cấp cường hóa và Credits/Alloy của người chơi.
+  - **Hệ Thống Nhiệm Vụ Phụ Tuyến (Side Quests)**:
+    - Bổ sung giao diện danh sách nhiệm vụ phụ riêng biệt trên Bản Đồ Chiến Dịch (`campaign-map.tsx`).
+    - Nhiệm vụ phụ bám sát cấp độ người chơi, phần thưởng Credits/Alloy và trang bị cân đối thấp hơn nhiệm vụ chính; hỗ trợ nút reset chuỗi nhiệm vụ phụ bất kỳ lúc nào.
+    - Phần thưởng xem trước khớp 100% với phần thưởng thực nhận sau chiến thắng.
+  - **Lưu Trữ Bền Vững (State Persistence)**:
+    - Lưu cố định `currentShopItems`, `sideQuests`, `missionOverrides` vào tiến trình `StarfrontProgression` và đồng bộ qua LocalStorage Schema v3; không bị reset ngẫu nhiên khi tải lại trang web.
+  - **Bộ Kiểm Thử Tự Động (Automated Tests)**:
+    - 12/12 automated test cases (`TC-P56-01` đến `TC-P56-12`) tại `tests/phase5-6-mission-progression-shop.test.ts` pass 100%.
+    - Tổng cộng toàn bộ 60/60 automated tests pass 100%.
 - **Milestone 5.5: Hệ Thống Nhiệm Vụ Phân Tầng, Kẻ Địch Biến Thể & Rơi Đồ Trang Bị Ngẫu Nhiên (Mission Scaling, Enemy Variants & Equipment Loot System)**:
   - **Phân Tầng Nhiệm Vụ & Cân Bằng Toán Học (Quest Level 1–15 & 5 Bậc Phẩm Chất)**:
     - Bảng cấu hình cân bằng tập trung tại `lib/game/scaling.ts` (`QUEST_LEVEL_SCALING`, `QUEST_QUALITY_CONFIG`, `ENEMY_VARIANTS_CONFIG`).

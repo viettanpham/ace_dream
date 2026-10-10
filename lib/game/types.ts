@@ -289,6 +289,8 @@ export type CombatUnit = {
   maxHp: number
   sp: number
   maxSp: number
+  shield?: number
+  maxShield?: number
   attack: number
   defense: number
   speed: number
@@ -477,6 +479,9 @@ export type StarfrontProgression = {
   freeShopRefreshes?: number // Lượt làm mới Chợ Quân Sự miễn phí tích lũy từ chiến thắng
   activeQuest?: StarfrontQuest | null // Nhiệm vụ đang nhận
   completedQuestIds?: string[]
+  currentShopItems?: ArmoryShopItem[] // Danh sách hàng chợ quân sự hiện tại
+  sideQuests?: StarfrontQuest[] // Danh sách nhiệm vụ phụ tuyến
+  missionOverrides?: Record<string, { quality?: QuestQuality; variantId?: EnemyVariantId; previewReward?: QuestRewardPreview }>
 }
 
 export type BattleRewardResult = {
@@ -531,8 +536,10 @@ export type ArmoryShopItem = {
   item: StarfrontItem
   buyPrice: number
   stockUnlimited?: boolean
-  requiredSectorId?: string // Yêu cầu hoàn thành Sector để mở khóa (sector-1, sector-2, sector-3)
+  requiredSectorId?: string // Yêu cầu hoàn thành Sector để mở khóa (sector-1, sector-2, sector-3, sector-4)
+  requiredMissionId?: string // Yêu cầu hoàn thành trực tiếp một Ải cụ thể (ví dụ: m3-3)
   tierName?: string // Tên tầng hiển thị (Cơ Bản, Sector 1, Sector 2, Sector 3 Legendary)
+  isPurchased?: boolean // Đánh dấu đã mua trong đợt hàng hiện tại
 }
 
 /** Ước tính tài nguyên nhận lại khi Tái Chế / Rã Đồ (Salvage) */

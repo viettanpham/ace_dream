@@ -96,6 +96,11 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
   const currentAlloy = progression.alloy ?? 25
   const freeRefreshes = progression.freeShopRefreshes ?? 0
 
+  const shopItemsToDisplay =
+    progression.currentShopItems && progression.currentShopItems.length > 0
+      ? progression.currentShopItems
+      : ARMORY_SHOP_ITEMS
+
   return (
     <div className="flex flex-col gap-4 animate-in fade-in">
       {/* 1. Header Chợ Quân Sự */}
@@ -111,7 +116,7 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
                   CHỢ QUÂN SỰ VŨ TRỤ // STARFRONT ARMORY & RECYCLING
                 </h3>
                 <span className="rounded bg-amber-500/20 px-2 py-0.5 font-mono text-xs font-bold text-amber-300 border border-amber-400/40">
-                  PHASE 5.3
+                  PHASE 5.6
                 </span>
               </div>
               <p className="text-xs text-muted-foreground font-mono">
@@ -184,7 +189,7 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
             )}
           >
             <ShoppingBag className="size-3.5" />
-            <span>Mua Trang Bị ({ARMORY_SHOP_ITEMS.length})</span>
+            <span>Mua Trang Bị ({shopItemsToDisplay.length})</span>
           </button>
 
           <button
@@ -242,7 +247,7 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
       {/* GIAO DIỆN 1: MUA TRANG BỊ */}
       {shopTab === "buy" && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {ARMORY_SHOP_ITEMS.map((shopItem) => {
+          {shopItemsToDisplay.map((shopItem) => {
             const it = shopItem.item
             const unlockCheck = isShopItemUnlocked(shopItem, progression)
             const canAfford = progression.credits >= shopItem.buyPrice && unlockCheck.unlocked
@@ -334,20 +339,31 @@ export function StarfrontShop({ progression, onUpdateProgression }: StarfrontSho
                         Credits
                       </div>
 
-                      <Button
-                        size="sm"
-                        disabled={!canAfford}
-                        onClick={() => handleBuy(shopItem)}
-                        className={cn(
-                          "font-display text-xs uppercase tracking-wider font-bold gap-1.5 cursor-pointer",
-                          canAfford
-                            ? "bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_10px_rgba(251,191,36,0.3)]"
-                            : "opacity-60",
-                        )}
-                      >
-                        <ShoppingBag className="size-3.5" />
-                        {canAfford ? "Mua Ngay" : "Thiếu Tiền"}
-                      </Button>
+                      {shopItem.isPurchased ? (
+                        <Button
+                          size="sm"
+                          disabled
+                          className="font-display text-xs uppercase tracking-wider font-bold gap-1.5 opacity-70 bg-zinc-800 text-emerald-400 border border-emerald-500/40"
+                        >
+                          <CheckCircle2 className="size-3.5 text-emerald-400" />
+                          Đã Mua
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          disabled={!canAfford}
+                          onClick={() => handleBuy(shopItem)}
+                          className={cn(
+                            "font-display text-xs uppercase tracking-wider font-bold gap-1.5 cursor-pointer",
+                            canAfford
+                              ? "bg-amber-600 hover:bg-amber-500 text-white shadow-[0_0_10px_rgba(251,191,36,0.3)]"
+                              : "opacity-60",
+                          )}
+                        >
+                          <ShoppingBag className="size-3.5" />
+                          {canAfford ? "Mua Ngay" : "Thiếu Tiền"}
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>

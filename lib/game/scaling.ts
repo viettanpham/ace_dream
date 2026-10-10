@@ -780,3 +780,65 @@ export const STANDARD_CAMPAIGN_QUESTS: StarfrontQuest[] = [
     previewReward: buildQuestRewardPreview(9, "legendary", "weapon", 303),
   },
 ]
+
+/* ==========================================================================
+   PHASE 5.6 — EXPANDED CAMPAIGN QUESTS (SECTOR 4: EVENT HORIZON)
+   ========================================================================== */
+
+export const EXTENDED_CAMPAIGN_QUESTS: StarfrontQuest[] = [
+  {
+    id: "m4-1",
+    sectorId: "sector-4",
+    sectorName: "Event Horizon",
+    order: 1,
+    title: "Nhiệm Vụ 4-1: Tuần Tra Ranh Giới Hư Không",
+    desc: "Tiêu diệt các tiêm kích bóng tối áp sát biên giới vành đai không gian sâu.",
+    level: 10,
+    quality: "heroic",
+    encounterType: "raider-mech",
+    variantId: "annihilator",
+    difficultyRating: "Thần Thoại I",
+    reqMissionId: "m3-3",
+    previewReward: buildQuestRewardPreview(10, "heroic", "weapon", 401),
+  },
+  {
+    id: "m4-2",
+    sectorId: "sector-4",
+    sectorName: "Event Horizon",
+    order: 2,
+    title: "Nhiệm Vụ 4-2: Bão Từ Trường Lượng Tử",
+    desc: "Đột kích trạm tiếp tế năng lượng tối của kẻ thù trong cơn bão bức xạ hạt nhân.",
+    level: 11,
+    quality: "heroic",
+    encounterType: "siege-walker",
+    variantId: "fortress",
+    difficultyRating: "Thần Thoại II",
+    reqMissionId: "m4-1",
+    previewReward: buildQuestRewardPreview(11, "heroic", "shield", 402),
+  },
+  {
+    id: "m4-3",
+    sectorId: "sector-4",
+    sectorName: "Event Horizon",
+    order: 3,
+    title: "Nhiệm Vụ 4-3: Trận Chiến Tối Hậu Lỗ Đen Omega",
+    desc: "Quyết chiến với Hạm Đội Thần Thoại Colossus bảo vệ lõi Lỗ Đen Omega. Khẳng định bá chủ dải ngân hà!",
+    level: 12,
+    quality: "legendary",
+    encounterType: "siege-walker",
+    variantId: "colossus",
+    difficultyRating: "Tối Thượng Tột Cùng",
+    reqMissionId: "m4-2",
+    previewReward: buildQuestRewardPreview(12, "legendary", "engine", 403),
+  },
+]
+
+export const ALL_CAMPAIGN_QUESTS: StarfrontQuest[] = [
+  ...STANDARD_CAMPAIGN_QUESTS,
+  ...EXTENDED_CAMPAIGN_QUESTS,
+]
+
+/** Tìm thông tin nhiệm vụ theo ID trên toàn bộ danh mục chiến dịch */
+export function findCampaignQuest(id: string): StarfrontQuest | undefined {
+  return ALL_CAMPAIGN_QUESTS.find((q) => q.id === id) || STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === id)
+}

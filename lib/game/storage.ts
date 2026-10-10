@@ -80,6 +80,18 @@ export function migrateProgressionToV3(parsed: any): StarfrontProgression {
     ? parsed.completedQuestIds.filter((q: any) => typeof q === "string")
     : []
 
+  const currentShopItems = Array.isArray(parsed.currentShopItems)
+    ? parsed.currentShopItems
+    : undefined
+
+  const sideQuests = Array.isArray(parsed.sideQuests)
+    ? parsed.sideQuests
+    : undefined
+
+  const missionOverrides = parsed.missionOverrides && typeof parsed.missionOverrides === "object"
+    ? parsed.missionOverrides
+    : undefined
+
   return {
     version: 3,
     level,
@@ -96,6 +108,9 @@ export function migrateProgressionToV3(parsed: any): StarfrontProgression {
     battlesLost,
     activeQuest,
     completedQuestIds,
+    currentShopItems,
+    sideQuests,
+    missionOverrides,
   }
 }
 

@@ -1,16 +1,19 @@
 # STARFRONT — Kế Hoạch Triển Khai Giai Đoạn Hiện Tại (Current Phase Scope)
 
-## GIAI ĐOẠN HIỆN TẠI: PHASE 5.11 — PILOT/GEAR SELECTION FLOW ENHANCEMENT
+## GIAI ĐOẠN HIỆN TẠI: PHASE 5.12 — POST-MISSION RESULTS SCREEN & D3 COMBAT EFFICIENCY VISUALIZATION
 
 ---
 
 ## 1. Mục Tiêu & Trạng Thái Giai Đoạn (Phase Status)
-- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 98/98 Tests PASS, Build Thành Công)**.
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 102/102 Tests PASS, Build Thành Công)**.
 - **Mục tiêu cốt lõi**:
-  - **Tùy Chọn Đổi Sau Khi Hoàn Thành 5/5 Nhiệm Vụ (Optional Selection)**: Cho phép người chơi tùy chọn thay đổi tổ hợp phi công & cơ giáp sau khi hoàn tất chỉ tiêu 5/5 nhiệm vụ hoặc 5 trận thắng. Không bắt buộc thay đổi nếu lựa chọn hiện tại đã hợp lệ; cho phép tiếp tục xuất kích ngay mà không thay đổi gì.
-  - **Bắt Buộc Chọn Khi Chưa Có Lựa Chọn Hợp Lệ (Mandatory Selection)**: Khi game vừa reset hoặc khởi tạo chưa có cặp đôi hợp lệ (`isValidPilotGearSelection === false`), kích hoạt hộp thoại bắt buộc và khóa các phân hệ tác chiến. Không cho phép bỏ qua.
-  - **Bảo Toàn Lựa Chọn & Xác Thực Chặt Chẽ**: Bảo toàn lựa chọn hiện tại khi hủy/bỏ qua bước tùy chọn; xử lý an toàn dữ liệu lưu trữ bị lỗi hoặc thiếu.
-  - **Giao Diện Rõ Ràng**: Phân biệt rành mạch giữa trạng thái Bắt Buộc (Mandatory) và Tùy Chọn (Optional) trên giao diện `character-gear-select.tsx` và `starfront-shell.tsx`.
+  - **Màn Hình Kết Quả Sau Nhiệm Vụ (Post-Mission Results Screen)**: Tính toán và hiển thị toàn diện kinh nghiệm nhận được (EXP), chiến lợi phẩm rơi (Credits, Alloy, Item) và điểm số Hiệu Suất Tác Chiến (Combat Efficiency).
+  - **Hệ Thống Đánh Giá Combat Efficiency (0 - 100 & 5 Cấp Hạng S+/S/A/B/C)**: Phân tích 5 khía cạnh cốt lõi: Sát Thương (25%), Sinh Tồn (25%), Tốc Độ/Vòng Đấu (20%), Chuẩn Xác/Chí Mạng (15%), và Kỹ Năng/Hiệp Đồng (15%).
+  - **Bộ 3 Biểu Đồ Trực Quan Hóa Bằng D3**:
+    * Mạng nhện D3 Radar Spider Chart 5 trục với vòng tham chiếu 20% - 100% và hover tooltip.
+    * Đồng hồ đo D3 Radial Gauge thể hiện điểm số và cấp hạng.
+    * Dòng thời gian D3 Turn Damage Timeline thể hiện sát thương gây ra và nhận vào qua từng vòng.
+  - **Tương Tác Nhanh Chiến Lợi Phẩm**: Hỗ trợ nút "Trang Bị Ngay" (Quick Equip) trực tiếp trên màn hình kết quả và chuỗi xuất kích tiếp theo liền mạch.
 
 
 ---

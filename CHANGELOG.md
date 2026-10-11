@@ -4,6 +4,43 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 5.12] — Màn Hình Kết Quả Sau Nhiệm Vụ & Trực Quan Hóa Điểm Hiệu Suất Tác Chiến (D3 Post-Mission Debriefing)
+
+*Đã hoàn thành toàn bộ màn hình kết quả sau nhiệm vụ (102/102 automated tests passed, build thành công)*
+
+### Tính năng đã hoàn thành:
+- **Màn Hình Kết Quả Sau Trận Đấu (Post-Mission Results Screen)**:
+  - Thiết kế giao diện debriefing quân sự khoa học viễn tưởng với tiêu đề chiến dịch, huân chương chiến thắng và thông báo qua màn lần đầu.
+  - Phân chia 3 tab chuyên sâu:
+    1. **Tổng Quan & Phần Thưởng**: Điểm hiệu suất tổng hợp, EXP đạt được, chiến lợi phẩm và nút hành động xuất kích tiếp theo.
+    2. **Biểu Đồ Hiệu Suất D3 (Radar 5 Trục)**: Mạng nhện D3 đa trục phân tích chi tiết từng khía cạnh tác chiến cùng thẻ dữ liệu thực chiến.
+    3. **Dòng Thời Gian Lượt Đấu D3**: Biểu đồ cột ghép đôi D3 thể hiện sát thương gây ra và nhận vào theo từng hiệp đấu.
+- **Tính Toán & Trình Diễn Kinh Nghiệm Đạt Được (Experience Gained)**:
+  - Hiển thị lượng EXP nhận được từ nhiệm vụ/trận đấu.
+  - Thanh tiến trình EXP Mech & Phi công với tỷ lệ hoàn thành phần trăm (%) và EXP cần cho cấp tiếp theo.
+  - Banner chúc mừng thăng cấp (Level Up) tự động phát hiệu ứng và làm nổi bật các chỉ số tăng vĩnh viễn (HP, SP, ATK, DEF, SPD).
+- **Chiến Lợi Phẩm Thu Được & Tương Tác Nhanh (Loot Acquired & Quick Equip)**:
+  - Hiển thị số tiền Credits và Hợp kim (Alloy) nhận được.
+  - Thẻ trang bị độc nhất rơi ra với viền phát sáng theo độ hiếm (Thường, Hiếm, Sử Thi, Huyền Thoại) cùng đầy đủ chỉ số cộng thêm.
+  - Nút **"Trang Bị Ngay" (Quick Equip)** cho phép người chơi gắn ngay vật phẩm mới rơi vào cơ giáp mà không cần phải rời khỏi đấu trường.
+- **Động Cơ Đánh Giá Điểm Hiệu Suất Tác Chiến (Combat Efficiency Rating Engine)**:
+  - Tính toán điểm tổng hợp (0 - 100) dựa trên 5 trục trọng số:
+    * **Sát Thương (25%)**: DPS trung bình và sát thương đỉnh điểm bùng nổ.
+    * **Sinh Tồn (25%)**: Tỷ lệ HP còn lại và khả năng giảm thiểu sát thương.
+    * **Tốc Độ (20%)**: Số vòng đấu hoàn thành so với mục tiêu chuẩn.
+    * **Chuẩn Xác (15%)**: Số đòn chí mạng, tỷ lệ chí mạng và né tránh hỏa lực.
+    * **Kỹ Năng (15%)**: Mức độ sử dụng kỹ năng và kích hoạt hiệp đồng pilot synergy.
+  - Hệ thống xếp hạng 5 cấp: **S+ (Apex Ace)**, **S (Elite Ace)**, **A (Veteran)**, **B (Operative)**, **C (Survivor)**.
+- **Bộ 3 Biểu Đồ Trực Quan Hóa Bằng D3 (D3 Performance Visualizations)**:
+  - **D3 Radar / Spider Chart**: Mạng nhện 5 trục với các vòng tham chiếu (20%, 40%, 60%, 80%, 100%), vùng đa giác phát sáng gradient neon, điểm nút tương tác và tooltip hiển thị số liệu khi rê chuột.
+  - **D3 Efficiency Radial Gauge**: Đồng hồ đo bán nguyệt với mút phát sáng, hiển thị điểm số và huy hiệu hạng tác chiến.
+  - **D3 Turn Damage Timeline**: Biểu đồ cột kép so sánh sát thương gây ra (cyan) và gánh chịu (rose) qua từng lượt kèm tooltip chi tiết từng hiệp.
+- **Bộ Kiểm Thử Tự Động Toàn Diện**:
+  - Bổ sung `tests/post-mission-results-efficiency.test.ts` kiểm thử đầy đủ các kịch bản tính điểm S+, S, B, C, tính toàn vẹn dữ liệu từng lượt cho D3 và xử lý an toàn dữ liệu rỗng.
+  - Toàn bộ 102/102 automated tests PASS 100%.
+
+---
+
 ## [Phase 5.11] — Pilot & Gear Selection Flow Enhancement (Optional vs Mandatory Gating)
 
 *Đã hoàn thành toàn bộ Phase 5.11 (98/98 automated tests passed, build thành công)*

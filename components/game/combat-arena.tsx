@@ -58,6 +58,7 @@ import type {
   StarfrontProgression,
   StatusEffect,
 } from "@/lib/game/types"
+import { PostMissionResults } from "@/components/game/post-mission-results"
 import { cn } from "@/lib/utils"
 import {
   AlertTriangle,
@@ -2250,290 +2251,127 @@ export function CombatArena({
             className={currentTheme.border}
           />
 
-          {/* 7. Hộp Thoại Kết Thúc Trận Đấu & Trao Thưởng Tiến Trình (Phase 2 Rewards Modal) */}
-          {(status === "victory" || status === "defeat") && (
-            <div className="rounded-sm border border-border bg-panel p-5 text-center shadow-2xl animate-in fade-in zoom-in-95">
-              <div className="mx-auto flex size-14 items-center justify-center rounded-full mb-3">
-                {status === "victory" ? (
-                  <Trophy className="size-10 text-emerald-400 animate-bounce" />
-                ) : (
-                  <AlertTriangle className="size-10 text-red-500 animate-pulse" />
-                )}
-              </div>
-
-              <h3
-                className={cn(
-                  "font-display text-xl font-black uppercase tracking-widest",
-                  status === "victory" ? "text-emerald-400" : "text-red-500",
-                )}
-              >
-                {status === "victory" ? "CHIẾN THẮNG VANG DỘI!" : "THẤT BẠI TÁC CHIẾN"}
-              </h3>
-
-              <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-                {status === "victory"
-                  ? `${player.name} đã tiêu diệt thành công ${enemy.name} sau ${turnNumber} vòng chiến đấu ác liệt.`
-                  : `Vỏ giáp ${player.name} bị đục thủng bởi hỏa lực của ${enemy.name}. Không nhận được phần thưởng chiến đấu.`}
-              </p>
-
-              {/* Bảng tổng kết phần thưởng chiến thắng Phase 2 & Phase 3 */}
-              {status === "victory" && lastVictoryReward && (
-                <div className="my-4 mx-auto max-w-lg rounded-sm border border-emerald-500/40 bg-emerald-950/20 p-3.5 text-left font-mono">
-                  {lastVictoryReward.missionTitle && (
-                    <div className="mb-3 rounded bg-cyan-500/20 border border-cyan-400/60 p-2 text-xs text-cyan-200 flex items-center gap-2">
-                      <Globe2 className="size-4 text-cyan-300 shrink-0" />
-                      <span>
-                        <strong>{lastVictoryReward.isFirstClear ? "🏆 QUA MÀN CHIẾN DỊCH LẦN ĐẦU:" : "✓ HOÀN THÀNH LẠI:"}</strong>{" "}
-                        {lastVictoryReward.missionTitle}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase text-emerald-300 border-b border-emerald-500/30 pb-2">
-                    <CheckCircle2 className="size-4 text-emerald-400" />
-                    <span>PHẦN THƯỞNG CHIẾN TÍCH (ĐÃ LƯU TỰ ĐỘNG)</span>
-                  </div>
-
-                  <div className="mt-2.5 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-                    <div className="flex items-center gap-1.5 text-cyan-300">
-                      <Sparkles className="size-4 text-cyan-400" />
-                      <span>EXP Nhận Được:</span>
-                      <strong className="text-white">+{lastVictoryReward.reward.expGained}</strong>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-amber-300">
-                      <Coins className="size-4 text-amber-400" />
-                      <span>Credits Nhận Được:</span>
-                      <strong className="text-white">+{lastVictoryReward.reward.creditsGained.toLocaleString("vi-VN")}</strong>
-                    </div>
-
-                    {lastVictoryReward.reward.alloyGained !== undefined && lastVictoryReward.reward.alloyGained > 0 && (
-                      <div className="flex items-center gap-1.5 text-purple-300">
-                        <Layers className="size-4 text-purple-400" />
-                        <span>Hợp Kim (Alloy):</span>
-                        <strong className="text-white">+{lastVictoryReward.reward.alloyGained}</strong>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Thông báo thăng cấp nếu có */}
-                  {lastVictoryReward.reward.leveledUp && (
-                    <div className="mt-3 rounded bg-amber-500/20 border border-amber-400/60 p-2 text-xs text-amber-200 flex items-center gap-2 animate-pulse">
-                      <Sparkles className="size-4 text-amber-300 shrink-0" />
-                      <span>
-                        <strong>🎉 CHÚC MỪNG THĂNG CẤP!</strong> {player.name} đã đạt <strong>Cấp {lastVictoryReward.reward.newLevel}</strong>. Toàn bộ chỉ số (HP, SP, ATK, DEF, SPD) được tăng vĩnh viễn!
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Thông báo rơi vật phẩm nếu có (Chi Tiết Trang Bị Phase 5.5) */}
-                  {lastVictoryReward.dropItem && (
-                    <div className="mt-3 rounded border border-cyan-500/40 bg-cyan-950/40 p-2.5 text-xs text-cyan-200">
-                      <div className="flex items-center justify-between gap-2 border-b border-cyan-500/30 pb-1.5 mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <Gift className="size-4 text-cyan-300" />
-                          <strong className="text-white uppercase tracking-wider">CHIẾN LỢI PHẨM RƠI // 1 TRANG BỊ DUY NHẤT:</strong>
-                        </div>
-                        <span className={cn(
-                          "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase border",
-                          lastVictoryReward.dropItem.rarity === "legendary"
-                            ? "bg-amber-950/80 text-amber-300 border-amber-400/70"
-                            : lastVictoryReward.dropItem.rarity === "epic"
-                              ? "bg-purple-950/80 text-purple-300 border-purple-400/70"
-                              : lastVictoryReward.dropItem.rarity === "rare"
-                                ? "bg-cyan-950/80 text-cyan-300 border-cyan-400/70"
-                                : "bg-slate-900/80 text-slate-300 border-slate-600/50"
-                        )}>
-                          {lastVictoryReward.dropItem.rarity === "legendary"
-                            ? "Huyền Thoại"
-                            : lastVictoryReward.dropItem.rarity === "epic"
-                              ? "Sử Thi"
-                              : lastVictoryReward.dropItem.rarity === "rare"
-                                ? "Hiếm"
-                                : "Thường"}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-bold text-white text-sm">
-                          {lastVictoryReward.dropItem.name}
-                        </span>
-                        <span className="rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-cyan-300 border border-cyan-500/30">
-                          Ô: {lastVictoryReward.dropItem.slot === "weapon" ? "Vũ Khí" : lastVictoryReward.dropItem.slot === "shield" ? "Khiên Giáp" : "Động Cơ"}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-mono">
-                        {lastVictoryReward.dropItem.attackBonus && (
-                          <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
-                            +{lastVictoryReward.dropItem.attackBonus} Tấn Công
-                          </span>
-                        )}
-                        {lastVictoryReward.dropItem.defenseBonus && (
-                          <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
-                            +{lastVictoryReward.dropItem.defenseBonus} Phòng Ngự
-                          </span>
-                        )}
-                        {lastVictoryReward.dropItem.speedBonus && (
-                          <span className="rounded bg-amber-950/60 px-1.5 py-0.5 text-amber-300 border border-amber-500/30">
-                            +{lastVictoryReward.dropItem.speedBonus} Tốc Độ
-                          </span>
-                        )}
-                        {lastVictoryReward.dropItem.hpBonus && (
-                          <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
-                            +{lastVictoryReward.dropItem.hpBonus} Giáp HP
-                          </span>
-                        )}
-                        {lastVictoryReward.dropItem.spBonus && (
-                          <span className="rounded bg-purple-950/60 px-1.5 py-0.5 text-purple-300 border border-purple-500/30">
-                            +{lastVictoryReward.dropItem.spBonus} SP
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Nút hành động sau trận */}
+          {/* 7. MÀN HÌNH KẾT QUẢ TÁC CHIẾN // POST-MISSION RESULTS (D3 PERFORMANCE METRICS, EXP & LOOT) */}
+          {status === "victory" && (
+            <div className="my-4 animate-in fade-in zoom-in-95 duration-300">
               {(() => {
                 const campaignCandidate = activeCampaignMission
                   ? getNextCampaignMission(activeCampaignMission.id, progression)
                   : getCurrentOrNextCampaignMission(progression, null)
 
                 return (
-                  <div className="mt-4 flex flex-col items-center justify-center gap-3">
-                    {/* Phase 5.11: Tùy chọn đổi Phi Công & Cơ Giáp sau khi hoàn thành 5/5 nhiệm vụ hoặc 5 trận thắng */}
-                    {status === "victory" && isSelectionOptional(progression) && (
-                      <div className="w-full max-w-lg mx-auto rounded-sm border border-cyan-500/50 bg-cyan-950/40 p-3 text-left font-mono text-xs text-cyan-200 flex flex-wrap items-center justify-between gap-2.5 shadow-sm">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="size-4 text-cyan-400 shrink-0 animate-pulse" />
-                          <div>
-                            <strong className="text-white uppercase">🎖️ TÙY CHỌN: ĐÃ HOÀN THÀNH CHỈ TIÊU CẶP ĐÔI</strong>
-                            <p className="text-[11px] text-cyan-300/80 mt-0.5">
-                              Tổ hợp đã hoàn tất 5 nhiệm vụ/trận thắng và đang mở khóa. Bạn có thể tùy chọn đổi Phi Công & Cơ Giáp mới hoặc tiếp tục xuất kích với tổ hợp này.
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            playClickSound()
-                            if (onNavigateSection) {
-                              onNavigateSection("character-gear")
-                            } else {
-                              setActiveSubView("hangar")
-                            }
-                          }}
-                          className="gap-1 border-cyan-400/80 text-cyan-200 hover:bg-cyan-900/50 text-xs font-mono cursor-pointer"
-                        >
-                          <RefreshCw className="size-3.5" />
-                          <span>Đổi Phi Công / Cơ Giáp (Tùy Chọn)</span>
-                        </Button>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap items-center justify-center gap-3">
-                    {/* 1. Nút Thách đấu mục tiêu tiếp theo khi đang làm Chiến Dịch (VD: Ải 1-1 -> Ải 1-2) */}
-                    {status === "victory" && campaignCandidate && (
-                      <Button
-                        onClick={() => {
-                          playClickSound()
-                          setActiveCampaignMission(campaignCandidate)
-                          onSelectCampaignMission?.(campaignCandidate)
-                          handleStartEncounter(campaignCandidate.encounterId, progression, campaignCandidate)
-                          setFloatingNotification({
-                            text: `ĐÃ XUẤT KÍCH: ${campaignCandidate.title.toUpperCase()} ⚡`,
-                            isCrit: false,
-                            isPlayer: true,
-                          })
-                          setTimeout(() => setFloatingNotification(null), 2500)
-                        }}
-                        className="gap-2 font-display uppercase tracking-wider bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer"
-                      >
-                        <Play className="size-4 fill-current" /> Thách đấu mục tiêu tiếp theo ({campaignCandidate.title.split(":")[0] || "Ải Tiếp Theo"}) ➔
-                      </Button>
-                    )}
-
-                    {/* 2. Thách đấu mục tiêu tiếp theo trong Đấu Trường Tự Do (Free Scrimmage - Chỉ khi người chơi chủ động chọn đấu tự do) */}
-                    {status === "victory" && !activeCampaignMission && selectedEncounter !== "siege-walker" && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          playClickSound()
-                          const nextTarget: EnemyEncounterType =
-                            selectedEncounter === "scout-drone" ? "raider-mech" : "siege-walker"
-                          handleStartEncounter(nextTarget)
-                        }}
-                        className="gap-2 border-cyan-400/60 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer text-xs font-mono"
-                      >
-                        <Play className="size-3.5" /> Đấu trường tự do ({selectedEncounter === "scout-drone" ? "Cơ Giáp Đột Kích" : "Pháo Đài"}) ➔
-                      </Button>
-                    )}
-
-                    {/* 3. Tái đấu mục tiêu hiện tại */}
-                    <Button
-                      variant={campaignCandidate ? "outline" : "default"}
-                      onClick={() => {
+                  <PostMissionResults
+                    combatState={combatState}
+                    progression={progression}
+                    rewardData={lastVictoryReward}
+                    activeCampaignMission={activeCampaignMission}
+                    nextCampaignMission={campaignCandidate}
+                    selectedEncounter={selectedEncounter}
+                    onNextMission={() => {
+                      if (campaignCandidate) {
                         playClickSound()
-                        handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
-                      }}
-                      className="gap-2 font-display uppercase tracking-wider cursor-pointer"
-                    >
-                      <RotateCcw className="size-4" /> Tái đấu mục tiêu này
-                    </Button>
-
-                    {/* 4. Tiếp tục Chiến Dịch (Quay lại Bản Đồ Chiến Dịch) */}
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        playClickSound()
-                        if (isEmbeddedInShell && onNavigateSection) {
-                          onNavigateSection("missions")
-                        } else {
-                          setActiveSubView("campaign")
-                        }
-                      }}
-                      className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer"
-                    >
-                      <Globe2 className="size-4" /> Tiếp tục Chiến Dịch (Bản Đồ) ➔
-                    </Button>
-
-                    {/* 5. Mở Kho Đồ & Hangar */}
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        playClickSound()
-                        if (isEmbeddedInShell && onNavigateSection) {
-                          onNavigateSection("hangar")
-                        } else {
-                          setActiveSubView("hangar")
-                        }
-                      }}
-                      className="gap-2 font-display uppercase tracking-wider border border-border cursor-pointer"
-                    >
-                      <Wrench className="size-4 text-cyan-400" /> Mở Kho Đồ & Hangar
-                    </Button>
-
-                    {/* 6. Chợ Quân Sự */}
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        playClickSound()
-                        if (isEmbeddedInShell && onNavigateSection) {
-                          onNavigateSection("shop")
-                        } else {
-                          setActiveSubView("shop")
-                        }
-                      }}
-                      className="gap-2 font-display uppercase tracking-wider border border-amber-500/40 text-amber-300 hover:bg-amber-950/50 cursor-pointer"
-                    >
-                      <ShoppingBag className="size-4 text-amber-400" /> Chợ Quân Sự
-                    </Button>
-                  </div>
-                  </div>
+                        setActiveCampaignMission(campaignCandidate)
+                        onSelectCampaignMission?.(campaignCandidate)
+                        handleStartEncounter(campaignCandidate.encounterId, progression, campaignCandidate)
+                        setFloatingNotification({
+                          text: `ĐÃ XUẤT KÍCH: ${campaignCandidate.title.toUpperCase()} ⚡`,
+                          isCrit: false,
+                          isPlayer: true,
+                        })
+                        setTimeout(() => setFloatingNotification(null), 2500)
+                      }
+                    }}
+                    onReplayMission={() => {
+                      playClickSound()
+                      handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+                    }}
+                    onNavigateSection={(sec) => {
+                      playClickSound()
+                      if (onNavigateSection) {
+                        onNavigateSection(sec)
+                      } else {
+                        setActiveSubView(sec === "shop" ? "shop" : sec === "missions" ? "campaign" : "hangar")
+                      }
+                    }}
+                    onEquipItem={handleEquipItem}
+                    onReturnToHangar={() => {
+                      playClickSound()
+                      if (isEmbeddedInShell && onNavigateSection) {
+                        onNavigateSection("hangar")
+                      } else {
+                        setActiveSubView("hangar")
+                      }
+                    }}
+                    onOpenShop={() => {
+                      playClickSound()
+                      if (isEmbeddedInShell && onNavigateSection) {
+                        onNavigateSection("shop")
+                      } else {
+                        setActiveSubView("shop")
+                      }
+                    }}
+                  />
                 )
               })()}
+            </div>
+          )}
+
+          {/* Hộp Thoại Thất Bại Tác Chiến (Defeat Modal) */}
+          {status === "defeat" && (
+            <div className="rounded-sm border border-red-500/50 bg-panel p-5 text-center shadow-2xl animate-in fade-in zoom-in-95">
+              <div className="mx-auto flex size-14 items-center justify-center rounded-full mb-3 bg-red-950/40 border border-red-500/40">
+                <AlertTriangle className="size-10 text-red-500 animate-pulse" />
+              </div>
+
+              <h3 className="font-display text-xl font-black uppercase tracking-widest text-red-500">
+                THẤT BẠI TÁC CHIẾN
+              </h3>
+
+              <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+                Vỏ giáp {player.name} bị đục thủng bởi hỏa lực của {enemy.name}. Không nhận được phần thưởng chiến đấu.
+              </p>
+
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                <Button
+                  onClick={() => {
+                    playClickSound()
+                    handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+                  }}
+                  className="gap-2 font-display uppercase tracking-wider cursor-pointer bg-red-600 hover:bg-red-500 text-white"
+                >
+                  <RotateCcw className="size-4" /> Tái Đấu Thử Thách Lại
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    playClickSound()
+                    if (isEmbeddedInShell && onNavigateSection) {
+                      onNavigateSection("hangar")
+                    } else {
+                      setActiveSubView("hangar")
+                    }
+                  }}
+                  className="gap-2 border-border cursor-pointer"
+                >
+                  <Wrench className="size-4 text-cyan-400" /> Nâng Cấp Trang Bị & Hangar
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    playClickSound()
+                    if (isEmbeddedInShell && onNavigateSection) {
+                      onNavigateSection("shop")
+                    } else {
+                      setActiveSubView("shop")
+                    }
+                  }}
+                  className="gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-950/50 cursor-pointer"
+                >
+                  <ShoppingBag className="size-4 text-amber-400" /> Vào Chợ Quân Sự
+                </Button>
+              </div>
             </div>
           )}
         </>

@@ -74,6 +74,7 @@ import {
   Layers,
   Lock,
   Play,
+  Radio,
   Recycle,
   RefreshCw,
   RotateCcw,
@@ -221,6 +222,7 @@ export function CombatArena({
     createInitialCombatState("scout-drone", buildPlayerCombatUnit(INITIAL_STARFRONT_PROGRESSION)),
   )
   const [isProcessingAI, setIsProcessingAI] = useState(false)
+  const [hoveredSkillId, setHoveredSkillId] = useState<string | null>(null)
   const [floatingNotification, setFloatingNotification] = useState<{
     text: string
     isCrit?: boolean
@@ -1101,6 +1103,28 @@ export function CombatArena({
   const enemyHpPct = Math.max(0, Math.min(100, (enemy.hp / enemy.maxHp) * 100))
   const enemySpPct = Math.max(0, Math.min(100, (enemy.sp / enemy.maxSp) * 100))
 
+  // Tính toán dự đoán sát thương khi di chuột / chọn kỹ năng (Damage Projection Preview)
+  const hoveredSkill = player.skills.find((s) => s.id === hoveredSkillId)
+  const isPilotSynergyPreview = hoveredSkillId === "pilot-synergy" && player.pilotSynergySkill && !player.pilotSynergySkill.isPassive
+  const previewDamageSkill = hoveredSkill && hoveredSkill.targetType !== "self"
+    ? hoveredSkill
+    : null
+
+  const projectedDamage = previewDamageSkill
+    ? Math.max(1, Math.round(
+        Math.round(getEffectiveAttack(player) * (previewDamageSkill.damageMultiplier || 1.0)) *
+        (100 / (100 + getEffectiveDefense(enemy)))
+      ))
+    : isPilotSynergyPreview
+      ? Math.max(1, Math.round(
+          Math.round(getEffectiveAttack(player) * 1.5) *
+          (100 / (100 + getEffectiveDefense(enemy)))
+        ))
+      : 0
+
+  const projectedEnemyHp = Math.max(0, enemy.hp - projectedDamage)
+  const projectedEnemyHpPct = Math.max(0, Math.min(100, (projectedEnemyHp / enemy.maxHp) * 100))
+
   const expRequired = getExpRequiredForLevel(progression.level)
   const expPct = Math.min(100, Math.round((progression.exp / expRequired) * 100))
 
@@ -1749,16 +1773,23 @@ export function CombatArena({
             )}
 
             {/* Cột 1: Người chơi (Vanguard / Falcon / Aegis) */}
-            <div className={cn("relative overflow-hidden rounded-sm border p-4 shadow-xl bg-gradient-to-b", currentTheme.border, currentTheme.bgGradient)}>
-              <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-3">
+            <div className={cn("relative overflow-hidden rounded-sm border p-3.5 shadow-xl bg-gradient-to-b", currentTheme.border, currentTheme.bgGradient)}>
+              <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-2.5">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className={cn("flex size-5 items-center justify-center rounded-xs font-mono text-xs font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                       {activeGearDef.name.charAt(0)}
                     </span>
                     <h3 className={cn("font-display text-base font-bold", currentTheme.textPrimary)}>
                       {player.name}
                     </h3>
+                    {/* BUỒNG LÁI TRỰC CHIẾN COMPACT PILL */}
+                    <div className={cn("flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-mono border", currentTheme.iconBg, currentTheme.iconBorder)}>
+                      <Radio className={cn("size-3 animate-pulse", currentTheme.iconColor)} />
+                      <span className={cn("font-bold tracking-wider uppercase", currentTheme.textPrimary)}>
+                        BUỒNG LÁI {activeGearDef.name.toUpperCase()} TRỰC CHIẾN
+                      </span>
+                    </div>
                   </div>
                   <p className={cn("font-mono text-xs", currentTheme.textAccent)}>
                     {activeGearDef.role} · Cấp {progression.level}
@@ -1775,7 +1806,7 @@ export function CombatArena({
               </div>
 
               {/* Huy hiệu Kỹ Năng Nội Tại Của Gear */}
-              <div className="mb-3 rounded border border-border/60 bg-black/40 p-2 text-[10px] font-mono">
+              <div className="mb-2.5 rounded border border-border/60 bg-black/40 p-2 text-[10px] font-mono">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-bold text-amber-300">
                     <Sparkles className="size-3 text-amber-400" />
@@ -1791,13 +1822,13 @@ export function CombatArena({
               </div>
 
               {/* Thanh HP & SP */}
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div>
                   <div className="mb-1 flex justify-between font-mono text-xs">
                     <span className="flex items-center gap-1 font-bold text-emerald-400">
                       <Shield className="size-3.5" /> ĐỘ BỀN VỎ GIÁP (HP)
                     </span>
-                    <span className="tabular-nums">
+                    <span className="tabular-nums font-bold">
                       {player.hp} / {player.maxHp} ({Math.round(playerHpPct)}%)
                     </span>
                   </div>
@@ -1814,7 +1845,7 @@ export function CombatArena({
                     <span className="flex items-center gap-1 font-bold text-cyan-400">
                       <Zap className="size-3.5" /> LÕI NĂNG LƯỢNG (SP)
                     </span>
-                    <span className="tabular-nums">
+                    <span className="tabular-nums font-bold">
                       {player.sp} / {player.maxSp} ({Math.round(playerSpPct)}%)
                     </span>
                   </div>
@@ -1828,7 +1859,7 @@ export function CombatArena({
               </div>
 
               {/* Chỉ số tác chiến thực tế (Hiển thị chỉ số hiệu dụng 4 cột) */}
-              <div className="mt-4 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-3 text-center font-mono text-xs">
+              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono text-xs">
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[9px] uppercase text-muted-foreground">Tấn Công</span>
                   <span className="font-bold text-cyan-300">{getEffectiveAttack(player)}</span>
@@ -1848,48 +1879,24 @@ export function CombatArena({
                   </span>
                 </div>
               </div>
-
-              {/* Buồng lái trực quan */}
-              <div className={cn("mt-4 flex h-32 items-center justify-center rounded border bg-black/50 p-2 relative overflow-hidden", currentTheme.border)}>
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: `radial-gradient(circle at center, ${activeGearDef.color}25 0%, transparent 70%)`,
-                  }}
-                />
-                <div className="relative text-center">
-                  <div className={cn("mx-auto flex size-12 items-center justify-center rounded-full border", currentTheme.iconBg, currentTheme.iconBorder)}>
-                    {activeGearId === "aegis" ? (
-                      <Shield className={cn("size-6", currentTheme.iconColor)} />
-                    ) : activeGearId === "falcon" ? (
-                      <Zap className={cn("size-6", currentTheme.iconColor)} />
-                    ) : (
-                      <Sword className={cn("size-6", currentTheme.iconColor)} />
-                    )}
-                  </div>
-                  <p className={cn("mt-2 font-display text-xs font-bold uppercase tracking-widest", currentTheme.textPrimary)}>
-                    BUỒNG LÁI {activeGearDef.name.toUpperCase()} TRỰC CHIẾN
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-mono">
-                    {status === "player-turn"
-                      ? "⚡ ĐẾN LƯỢT BẠN! Hãy chọn 1 trong các kỹ năng bên dưới để tấn công."
-                      : "⏳ Đang trong lượt của đối phương... Bạn có thể bấm nút trên để đi ngay."}
-                  </p>
-                </div>
-              </div>
             </div>
 
             {/* Cột 2: Kẻ Địch */}
-            <div className="relative overflow-hidden rounded-sm border border-red-500/40 bg-gradient-to-b from-red-950/20 via-panel/80 to-panel p-4 shadow-xl">
-              <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-3">
+            <div className="relative overflow-hidden rounded-sm border border-red-500/40 bg-gradient-to-b from-red-950/20 via-panel/80 to-panel p-3.5 shadow-xl">
+              <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-2.5">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="flex size-5 items-center justify-center rounded-xs bg-red-500/20 font-mono text-xs font-black text-red-400 border border-red-500/50">
                       E
                     </span>
                     <h3 className="font-display text-base font-bold text-red-200">
                       {enemy.name}
                     </h3>
+                    {/* MỤC TIÊU ĐANG KHÓA COMPACT PILL */}
+                    <div className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-mono border border-red-500/50 bg-red-950/60 text-red-300">
+                      <Target className="size-3 text-red-400 animate-spin" style={{ animationDuration: "10s" }} />
+                      <span className="font-bold tracking-wider uppercase">MỤC TIÊU ĐANG KHÓA</span>
+                    </div>
                     {enemy.bossPhase === 2 && (
                       <span className="rounded bg-red-500/30 border border-red-400 px-1.5 py-0.5 font-display text-[10px] font-bold text-red-300 animate-pulse">
                         PHA 2: OVERDRIVE 🔥
@@ -1908,20 +1915,37 @@ export function CombatArena({
               </div>
 
               {/* Thanh HP & SP Địch */}
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 <div>
                   <div className="mb-1 flex justify-between font-mono text-xs">
                     <span className="flex items-center gap-1 font-bold text-red-400">
                       <ShieldAlert className="size-3.5" /> ĐỘ BỀN VỎ GIÁP (HP)
                     </span>
-                    <span className="tabular-nums">
-                      {enemy.hp} / {enemy.maxHp} ({Math.round(enemyHpPct)}%)
-                    </span>
+                    <div className="flex items-center gap-1.5 tabular-nums">
+                      {projectedDamage > 0 && (
+                        <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-400/40 animate-pulse">
+                          -{projectedDamage} HP {projectedEnemyHp <= 0 ? "⚡ LETHAL" : ""}
+                        </span>
+                      )}
+                      <span className="font-bold text-red-200">
+                        {projectedDamage > 0 ? projectedEnemyHp : enemy.hp} / {enemy.maxHp} ({Math.round(projectedDamage > 0 ? projectedEnemyHpPct : enemyHpPct)}%)
+                      </span>
+                    </div>
                   </div>
-                  <div className="h-2.5 overflow-hidden rounded-xs bg-secondary/80">
+                  <div className="relative h-2.5 overflow-hidden rounded-xs bg-secondary/80">
+                    {/* Ghost Bar */}
+                    {projectedDamage > 0 && (
+                      <div
+                        className="absolute top-0 bottom-0 bg-red-300/40 animate-pulse transition-all duration-150"
+                        style={{
+                          left: `${projectedEnemyHpPct}%`,
+                          width: `${Math.min(100 - projectedEnemyHpPct, (projectedDamage / enemy.maxHp) * 100)}%`,
+                        }}
+                      />
+                    )}
                     <div
                       className="h-full bg-gradient-to-r from-red-500 to-amber-500 transition-all duration-300"
-                      style={{ width: `${enemyHpPct}%` }}
+                      style={{ width: `${projectedDamage > 0 ? projectedEnemyHpPct : enemyHpPct}%` }}
                     />
                   </div>
                 </div>
@@ -1931,7 +1955,7 @@ export function CombatArena({
                     <span className="flex items-center gap-1 font-bold text-amber-400">
                       <Zap className="size-3.5" /> NĂNG LƯỢNG KẺ ĐỊCH (SP)
                     </span>
-                    <span className="tabular-nums">
+                    <span className="tabular-nums font-bold">
                       {enemy.sp} / {enemy.maxSp} ({Math.round(enemySpPct)}%)
                     </span>
                   </div>
@@ -1945,7 +1969,7 @@ export function CombatArena({
               </div>
 
               {/* Chỉ số tác chiến Địch (Hiển thị chỉ số hiệu dụng 4 cột) */}
-              <div className="mt-4 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-3 text-center font-mono text-xs">
+              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono text-xs">
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[9px] uppercase text-muted-foreground">Tấn Công</span>
                   <span className="font-bold text-red-300">{getEffectiveAttack(enemy)}</span>
@@ -1961,25 +1985,6 @@ export function CombatArena({
                 <div className="rounded bg-black/30 p-1.5">
                   <span className="block text-[9px] uppercase text-muted-foreground">Né Tránh</span>
                   <span className="font-bold text-red-300">{getEffectiveEvasion(enemy)}%</span>
-                </div>
-              </div>
-
-              {/* Radar mục tiêu */}
-              <div className="mt-4 flex h-32 items-center justify-center rounded border border-red-500/20 bg-black/50 p-2 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(239,68,68,0.15)_0%,transparent_70%)]" />
-                <div className="relative text-center">
-                  <div className="mx-auto flex size-12 items-center justify-center rounded-full border border-red-500/60 bg-red-950/60 shadow-[0_0_20px_rgba(239,68,68,0.4)]">
-                    <Target
-                      className="size-6 text-red-300 animate-spin"
-                      style={{ animationDuration: "12s" }}
-                    />
-                  </div>
-                  <p className="mt-2 font-display text-xs font-bold text-red-200 uppercase tracking-widest">
-                    MỤC TIÊU ĐANG KHÓA: {enemy.name}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground font-mono">
-                    {enemy.hp <= 0 ? "Đã bị vô hiệu hóa" : "Trạng thái tác chiến tích cực"}
-                  </p>
                 </div>
               </div>
             </div>
@@ -2008,6 +2013,73 @@ export function CombatArena({
               </span>
             </div>
 
+            {/* 🎯 THANH GIÁM SÁT MỤC TIÊU & HP NỔI BẬT GẮN TRÊN ACTION DECK (DOCKED TARGET STATUS HUD) */}
+            <div className="mb-3 rounded border border-red-500/50 bg-gradient-to-r from-red-950/70 via-black/90 to-panel p-2.5 shadow-md flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+              {/* Thông tin định danh đối thủ */}
+              <div className="flex items-center gap-2.5">
+                <div className="flex size-7 items-center justify-center rounded-full border border-red-500/60 bg-red-950/80 shadow-[0_0_10px_rgba(239,68,68,0.4)] shrink-0">
+                  <Target className="size-4 text-red-400 animate-spin" style={{ animationDuration: "12s" }} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase text-red-400 font-bold tracking-wider">MỤC TIÊU ĐANG KHÓA:</span>
+                    <strong className="font-display text-sm text-white font-bold">{enemy.name}</strong>
+                    <span className="text-[10px] text-muted-foreground hidden sm:inline">({enemy.title})</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                    <span>ATK: <strong className="text-red-300">{getEffectiveAttack(enemy)}</strong></span>
+                    <span>DEF: <strong className="text-red-300">{getEffectiveDefense(enemy)}</strong></span>
+                    <span>SPD: <strong className="text-red-300">{getEffectiveSpeed(enemy)}</strong></span>
+                    <span>Né: <strong className="text-red-300">{getEffectiveEvasion(enemy)}%</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              {/* HP MỤC TIÊU & THANH SÁT THƯƠNG DỰ TÍNH (GHOST DAMAGE BAR) */}
+              <div className="flex-1 max-w-sm min-w-[220px]">
+                <div className="mb-1 flex items-center justify-between text-xs">
+                  <span className="flex items-center gap-1 font-bold text-red-400 text-[11px]">
+                    <ShieldAlert className="size-3 text-red-400" /> HP MỤC TIÊU:
+                  </span>
+                  <div className="flex items-center gap-1.5 tabular-nums">
+                    {projectedDamage > 0 && (
+                      <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-400/40 animate-pulse">
+                        -{projectedDamage} HP {projectedEnemyHp <= 0 ? "⚡ LETHAL" : ""}
+                      </span>
+                    )}
+                    <span className="font-bold text-white">
+                      {projectedDamage > 0 ? projectedEnemyHp : enemy.hp} / {enemy.maxHp} ({Math.round(projectedDamage > 0 ? projectedEnemyHpPct : enemyHpPct)}%)
+                    </span>
+                  </div>
+                </div>
+                <div className="relative h-2.5 overflow-hidden rounded-xs bg-black/80 border border-red-500/40">
+                  {/* Ghost Bar */}
+                  {projectedDamage > 0 && (
+                    <div
+                      className="absolute top-0 bottom-0 bg-red-300/40 animate-pulse transition-all duration-150"
+                      style={{
+                        left: `${projectedEnemyHpPct}%`,
+                        width: `${Math.min(100 - projectedEnemyHpPct, (projectedDamage / enemy.maxHp) * 100)}%`,
+                      }}
+                    />
+                  )}
+                  {/* Real Bar */}
+                  <div
+                    className="h-full bg-gradient-to-r from-red-500 via-amber-500 to-red-400 transition-all duration-300"
+                    style={{ width: `${projectedDamage > 0 ? projectedEnemyHpPct : enemyHpPct}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Debuffs trên người mục tiêu */}
+              <div className="flex flex-wrap items-center gap-1">
+                {enemy.statusEffects.map((eff) => renderStatusBadge(eff))}
+                {enemy.statusEffects.length === 0 && (
+                  <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng bất lợi</span>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
               {player.skills.map((skill) => {
                 const cooldown = player.skillCooldowns[skill.id] || 0
@@ -2022,6 +2094,8 @@ export function CombatArena({
                     key={skill.id}
                     disabled={disabled}
                     onClick={() => handleUseSkill(skill.id)}
+                    onMouseEnter={() => setHoveredSkillId(skill.id)}
+                    onMouseLeave={() => setHoveredSkillId(null)}
                     className={cn(
                       "group relative flex flex-col justify-between rounded-sm border p-3 text-left transition-all",
                       disabled
@@ -2114,6 +2188,8 @@ export function CombatArena({
                     <button
                       disabled={synDisabled}
                       onClick={() => handleUseSkill("pilot-synergy")}
+                      onMouseEnter={() => setHoveredSkillId("pilot-synergy")}
+                      onMouseLeave={() => setHoveredSkillId(null)}
                       className={cn(
                         "group relative flex flex-col justify-between rounded-sm border p-3 text-left transition-all",
                         synDisabled

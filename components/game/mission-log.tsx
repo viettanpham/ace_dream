@@ -123,8 +123,8 @@ export function MissionLog({
   useEffect(() => {
     if (!progression) return
 
-    const completed = progression.missionStats?.completedIds?.length ?? 0
-    const wonBattles = progression.combatStats?.battlesWon ?? 0
+    const completed = progression.completedMissions?.length ?? 0
+    const wonBattles = progression.battlesWon ?? 0
 
     // Construct live entries based on active state
     const dynamicEntries: MissionLogEntry[] = []

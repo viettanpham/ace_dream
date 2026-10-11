@@ -124,7 +124,7 @@ export function TacticalGridOverlay({
         </defs>
 
         {/* Render Pattern Layers */}
-        <g mask={`url(#grid-mask-${compId})`}>
+        <g mask={`url(#grid-mask-${compId})`} className={cn(animation !== "static" && "tactical-grid-scan")}>
           {/* Square Grid Layer */}
           {(pattern === "square" || pattern === "dual") && (
             <rect
@@ -145,13 +145,20 @@ export function TacticalGridOverlay({
               height="100%"
               fill={`url(#hex-grid-${compId})`}
               className={cn(
-                animation === "drift" && "opacity-60",
-                animation === "pulse" && "animate-pulse opacity-80",
+                animation === "drift" && "opacity-75",
+                animation === "pulse" && "animate-pulse opacity-90",
               )}
             />
           )}
         </g>
       </svg>
+
+      {/* Active Sensor Scanning Radar Wave (Expanding Scanning Pulse) */}
+      {animation !== "static" && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="size-48 sm:size-72 rounded-full border border-cyan-400/25 tactical-sensor-sweep bg-radial from-cyan-400/5 via-cyan-500/0 to-transparent" />
+        </div>
+      )}
 
       {/* Spatial Telemetry Coordinates & Axis Marks */}
       {showCoordinates && (
@@ -159,10 +166,10 @@ export function TacticalGridOverlay({
           {/* Top Axis Coordinates */}
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1">
-              <span className="inline-block size-1 bg-cyan-400/50" />
+              <span className="inline-block size-1 bg-cyan-400/50 animate-ping" />
               <span>SEC-ALPHA // [X: 04.22 AU]</span>
             </span>
-            <span className="hidden sm:inline">WARP VECTOR: 360° / GRID NOMINAL</span>
+            <span className="hidden sm:inline">WARP VECTOR: 360° / SENSOR: ACTIVE</span>
             <span className="flex items-center gap-1">
               <span>[Y: 88.40 AU]</span>
               <span className="inline-block size-1 bg-cyan-400/50" />
@@ -170,12 +177,12 @@ export function TacticalGridOverlay({
           </div>
 
           {/* Center Space Reticle / Crosshair */}
-          <div className="relative mx-auto flex items-center justify-center">
-            <div className="size-16 rounded-full border border-cyan-500/15 flex items-center justify-center">
-              <div className="size-1 rounded-full bg-cyan-400/40" />
+          <div className="relative mx-auto flex items-center justify-center tactical-sensor-sweep">
+            <div className="size-16 rounded-full border border-cyan-500/25 flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.15)]">
+              <div className="size-1 rounded-full bg-cyan-400/60 animate-ping" />
             </div>
-            <div className="absolute w-24 h-px bg-cyan-500/20" />
-            <div className="absolute h-24 w-px bg-cyan-500/20" />
+            <div className="absolute w-24 h-px bg-cyan-500/30" />
+            <div className="absolute h-24 w-px bg-cyan-500/30" />
           </div>
 
           {/* Bottom Axis Coordinates */}

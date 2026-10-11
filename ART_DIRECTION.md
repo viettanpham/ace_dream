@@ -1,6 +1,6 @@
 # STARFRONT — Official Art Direction & Visual Standards
 *Tài Liệu Tiêu Chuẩn Nghệ Thuật & Quy Chuẩn Đồ Họa Master — Dự Án STARFRONT*  
-*Document Version: 3.2 — Cập nhật: Tháng 10/2026*  
+*Document Version: 3.3 — Cập nhật: Tháng 10/2026*  
 *Status: Tiêu Chuẩn Nghệ Thuật Chính Thức Được Phê Duyệt Toàn Diện (Approved Official Standard)*
 
 ---
@@ -104,16 +104,18 @@ Mọi bộ quân phục phi công (flight suit), giáp ngoại khung (exosuit), 
 Mỗi phi công trong danh sách 8 nhân vật chính thức của STARFRONT **bắt buộc phải có đầy đủ 02 asset ảnh raster phân giải cao chuyên biệt**:
 
 1. **Ảnh Chân Dung (Portrait Asset — Tỉ lệ 1:1)**:
-   - **Kích thước**: `1024 × 1024 px`.
-   - **Góc chụp**: Cận cảnh từ ngực lên đến đỉnh đầu (bust shot / head & shoulders).
+   - **Target Resolution**: `512 × 512 px` (1:1) (Master source: `512 × 512 px` đến `1024 × 1024 px`).
+   - **Target File Size**: `≤ 500 KB per image`.
+   - **Bố cục khung hình**: Cận cảnh rõ nét từ gương mặt đến phần vai trên (frame the face and upper shoulders clearly).
    - **Mục đích sử dụng**: Avatar người chơi, thẻ bài đơn vị trên bản đồ chiến thuật, khung truyền tin đàm thoại (HUD comms), giao diện chọn lượt trong trận đấu.
-   - **Trọng tâm hình ảnh**: Gương mặt anime biểu cảm, đôi mắt sắc nét, kiểu tóc chi tiết, cổ áo giáp và tai nghe truyền tin tác chiến.
+   - **Trọng tâm hình ảnh**: Gương mặt anime biểu cảm, đôi mắt sắc nét, kiểu tóc chi tiết, thiết kế giáp cổ/vai và bảng màu chủ đạo (signature color palette).
 
 2. **Ảnh Toàn Thân (Full-Body Asset — Tỉ lệ 9:16)**:
-   - **Kích thước**: `900 × 1600 px` (hoặc `1080 × 1920 px`).
-   - **Góc chụp**: Toàn bộ vóc dáng đứng từ đầu đến chân (full figure from head to boots).
-   - **Mục đích sử dụng**: Hồ sơ phi công (Dossier / Pilot Profile), kiểm tra nâng cấp trong Hangar, màn hình tổng kết nhiệm vụ, bộ sưu tập Pilot Gallery.
-   - **Trọng tâm hình ảnh**: Trọn vẹn trang phục chiến đấu, giáp chân, thắt lưng phụ kiện, bao súng, vũ khí cầm tay và tư thế chiến đấu đặc trưng.
+   - **Target Resolution**: `900 × 1600 px` (9:16).
+   - **Target File Size**: `≤ 1200 KB per image`.
+   - **Bố cục khung hình**: Toàn bộ vóc dáng đứng từ đầu đến chân (full figure from head to boots), bảo toàn trọn vẹn đường nét dáng người (complete character silhouette) và các trang thiết bị quan trọng.
+   - **Mục đích sử dụng**: Hồ sơ phi công (Dossier / Pilot Profile), màn hình chọn phi công (character-selection), nâng cấp trong Hangar, tổng kết nhiệm vụ, bộ sưu tập Pilot Gallery.
+   - **Trọng tâm hình ảnh**: Trọn vẹn trang phục chiến đấu, giáp chân, thắt lưng phụ kiện, bao súng, vũ khí cầm tay và tư thế chiến đấu đặc trưng với độ chi tiết thị giác cao.
 
 ### 4.1. Bảng Phân Bổ 16 Image Assets Cho 8 Phi Công Canonical
 
@@ -140,13 +142,36 @@ Mỗi phi công trong danh sách 8 nhân vật chính thức của STARFRONT **b
 - **Quy tắc đặt tên file**:
   - Chân dung: `{mã-phi-công}-portrait.png` (Ví dụ: `marcus-portrait.png`)
   - Toàn thân: `{mã-phi-công}-fullbody.png` (Ví dụ: `marcus-fullbody.png`)
-- **Định dạng file**: 32-bit PNG (RGBA với kênh alpha trong suốt hoặc phông nền xưởng cơ khí/hangar sci-fi ánh sáng điện ảnh).
+- **Định dạng file gốc**: 32-bit PNG (RGBA với kênh alpha trong suốt hoặc phông nền xưởng cơ khí/hangar sci-fi ánh sáng điện ảnh).
 - **Mã hóa màu**: sRGB, 8-bit per channel color depth.
 
-### 5.2. Tích Hợp Giao Diện Trực Quan (UI Integration)
+### 5.2. Tiêu Chuẩn Phân Giải, Kích Thước Tệp & Tối Ưu Hóa (Image Asset Resolution & File Size Standards)
+
+#### A. Full-body Character Images
+- **Target Resolution**: **900 × 1600 px** (tỉ lệ 9:16).
+- **Target File Size**: **≤ 1200 KB per image**.
+- **Yêu cầu bảo toàn hình thể**: Giữ trọn vẹn đường nét dáng người nhân vật (complete character silhouette) và các vũ khí, trang thiết bị quan trọng.
+- **Chi tiết hiển thị**: Duy trì đầy đủ độ chi tiết thị giác sắc nét cho màn hình chọn phi công (character-selection) và màn hình hồ sơ phi công (character-profile screens).
+
+#### B. Character Portrait Images
+- **Target Resolution**: **512 × 512 px** (tỉ lệ 1:1).
+- **Target File Size**: **≤ 500 KB per image**.
+- **Khung hình**: Cận cảnh rõ nét khuôn mặt và phần vai trên (frame the face and upper shoulders clearly).
+- **Yêu cầu nhận diện**: Bảo toàn tuyệt đối danh tính nhân vật, kiểu tóc, thiết kế giáp và bảng màu đặc trưng (signature color palette).
+
+#### C. Định Dạng & Tối Ưu Hóa Phân Phối (Format and Optimization)
+- **Ưu tiên WebP**: Ưu tiên sử dụng định dạng WebP cho việc phân phối tối ưu (optimized delivery) khi ứng dụng và asset pipeline hiện tại hỗ trợ.
+- **Giữ nguyên PNG**: Giữ nguyên định dạng PNG khi quy trình hiện tại của dự án yêu cầu hoặc khi việc chuyển đổi sang WebP làm suy giảm chất lượng hình ảnh mong muốn.
+- **Bảo toàn tham chiếu & đuôi tệp**: Tuyệt đối không thay đổi phần mở rộng tệp (file extensions), tham chiếu code hoặc đường dẫn asset hiện có mà không kiểm tra và cập nhật rõ ràng toàn bộ các tham chiếu phụ thuộc trong toàn bộ dự án.
+- **Giới hạn dung lượng là mục tiêu tối ưu (Optimization Targets)**: Xem các mức giới hạn file-size (`≤ 1200 KB` cho Full-body, `≤ 500 KB` cho Portrait) là mục tiêu tối ưu hóa. Nếu một hình ảnh không thể đạt mục tiêu dung lượng mà không bị suy giảm chất lượng rõ rệt (noticeable quality loss), phải bảo toàn chất lượng thị giác và ghi nhận trường hợp ngoại lệ.
+- **Điều chỉnh kích thước đúng quy cách (Resize Oversized Images)**: Giảm kích thước các ảnh quá khổ về đúng độ phân giải mục tiêu (`900 × 1600 px` hoặc `512 × 512 px`), bảo toàn tỉ lệ khung hình (aspect ratio) và tránh phóng đại (upscaling) không cần thiết.
+- **Nén & Kiểm định trực quan trước khi thay thế**: Sử dụng thông số nén phù hợp và bắt buộc kiểm tra trực quan chất lượng kết quả tối ưu trước khi thay thế các asset hiện có.
+- **Cấm Upscale ảnh crop mờ**: Tuyệt đối không phóng to (upscale) ảnh cắt từ ảnh độ phân giải thấp rồi giả định rằng các chi tiết khuôn mặt bị thiếu đã được phục hồi.
+
+### 5.3. Tích Hợp Giao Diện Trực Quan (UI Integration)
 - Toàn bộ 16 asset ảnh phải được tham chiếu trực tiếp trong mã nguồn giao diện (Next.js `<Image>` hoặc `<img>`).
 - Module kiểm tra và xem trước chuyên dụng: **Pilot Art Gallery** (`components/game/pilot-gallery.tsx`), hỗ trợ:
-  - Xem ảnh phóng to độ nét cao với tỉ lệ gốc 1:1.
+  - Xem ảnh phóng to độ nét cao với tỉ lệ gốc.
   - Chuyển đổi linh hoạt giữa chế độ xem Chân dung (Portrait) và Toàn thân (Full-Body).
   - Lọc theo giới tính, vai trò chiến đấu, hệ GEAR liên kết.
   - Kiểm tra trạng thái tồn tại và tính hợp lệ của từng tệp hình ảnh.
@@ -206,12 +231,17 @@ Nhằm bảo toàn tính toàn vẹn của hệ thống đồ họa và ngăn ng
   - Không tự ý dùng các mô hình văn bản (LLM) để sinh mã code mô phỏng hình ảnh.
   - Nếu cần tạo ảnh ngoài môi trường bị giới hạn, chuẩn bị bộ prompt chuẩn hóa (như catalog `PIXAI_CHARACTER_PROMPTS.md`) để thực hiện qua pipeline chuyên biệt bên ngoài, sau đó nạp file ảnh thành phẩm đạt chuẩn vào dự án.
 
-### 7.5. Điều kiện tiên quyết để thay thế hoặc cập nhật Asset
-Chỉ được phép thay thế một file ảnh hiện có khi và chỉ khi thỏa mãn **toàn bộ 4 điều kiện** sau:
-1. **Tạo thành công thực tế**: Ảnh mới đã được tạo hoàn chỉnh thành công thông qua mô hình tạo ảnh chuyên dụng.
-2. **Định dạng chuẩn**: Là file raster thực thụ (`PNG` hoặc `JPEG`) với độ phân giải cao đúng quy cách (Portrait: `1024×1024`, Full-Body: `900×1600` hoặc tỉ lệ 9:16).
-3. **Chất lượng cao & Đúng phong cách**: Đạt tiêu chuẩn Premium Japanese Anime Sci-Fi Character Illustration, sắc nét, không pixel art, không biến dạng giải phẫu học, kế thừa chuẩn thẩm mỹ từ STARFRONT GEAR.
-4. **Kiểm tra trực quan (Verification)**: Đã được xác nhận hiển thị chính xác và toàn vẹn trên giao diện người dùng.
+### 7.5. Điều kiện tiên quyết & Quy tắc an toàn khi thay thế Asset (Asset Replacement Safety)
+Chỉ được phép thay thế một file ảnh hiện có khi và chỉ khi thỏa mãn đầy đủ các quy tắc kỷ luật sau:
+1. **Có ảnh thay thế hợp lệ trước khi thao tác**: Phải tạo thành công hoặc tiếp nhận được ảnh thay thế hợp lệ trước, sau đó xác minh đầy đủ về nội dung, kích thước phân giải, dung lượng tệp và chất lượng thị giác trước khi thay thế asset hiện có.
+2. **Tuyệt đối không thay thế bằng placeholder hoặc tác phẩm giả lập**: Không bao giờ thay thế một ảnh nhân vật hợp lệ bằng placeholder, hình vẽ vector SVG/CSS/canvas tự dựng hoặc ảnh không liên quan chỉ vì dịch vụ tạo ảnh không khả dụng hoặc bị giới hạn quota.
+3. **Định dạng & Tiêu chuẩn kỹ thuật**: Tệp thay thế phải là ảnh raster thực thụ (`PNG` hoặc `WebP`) đúng chuẩn kỹ thuật (Full-body: `900 × 1600 px`, `≤ 1200 KB`; Portrait: `512 × 512 px`, `≤ 500 KB`).
+4. **Chuẩn phong cách nghệ thuật**: Đạt tiêu chuẩn Premium Japanese Anime Sci-Fi Character Illustration, sắc nét, không pixel art, không biến dạng giải phẫu học, kế thừa chuẩn thẩm mỹ từ STARFRONT GEAR.
+5. **Bảo toàn tên tệp & Đường dẫn chuẩn**: Giữ nguyên tên tệp quy chuẩn (canonical filenames) và đường dẫn public (`/images/{mã-phi-công}-portrait.png`, `/images/{mã-phi-công}-fullbody.png`) trừ khi có yêu cầu di chuyển cấu trúc có chủ đích.
+6. **Kiểm tra tệp đích trước khi ghi**: Trước khi ghi bất kỳ tệp ảnh nào, phải kiểm tra xem tệp đích đã tồn tại hay chưa. Nếu đã tồn tại tệp hợp lệ, mặc định giữ nguyên (preserve existing).
+7. **Không đụng chạm asset không liên quan**: Tuyệt đối không tự ý tạo lại hoặc thay thế các asset không liên quan trong quá trình tối ưu hóa định kỳ (routine optimization).
+8. **Bảo tồn tài nguyên do người dùng cung cấp**: Khi người dùng cung cấp ảnh bên ngoài (ví dụ ảnh tạo bằng PixAI hoặc mô hình ngoài), bắt buộc phải giữ nguyên file đó và chỉ tích hợp theo yêu cầu; tuyệt đối không tự ý tạo lại ảnh bằng AI Studio.
+9. **Xử lý quy trình khi cạn kiệt Quota**: Nếu hết quota sinh ảnh, tiếp tục thực hiện các công việc kỹ thuật/logic không phụ thuộc vào ảnh nếu có thể; báo cáo rõ danh sách các ảnh còn thiếu cho người dùng và không tuyên bố đã hoàn thành phần hình ảnh khi asset chưa đạt chuẩn.
 
 ---
 
@@ -221,6 +251,7 @@ Chỉ được phép thay thế một file ảnh hiện có khi và chỉ khi th
 - **v2.0 (Cơ bản hóa)**: Tích hợp hình ảnh 3D GEAR và xác lập danh sách 8 phi công ban đầu.
 - **v3.0 (Đột phá)**: Chính thức xác lập **Tiêu Chuẩn Minh Họa Nhân Vật Anime Khoa Học Viễn Tưởng Cao Cấp**, ban hành **Quy định bắt buộc 16 Asset (8 Portrait + 8 Full-Body)**, liên kết trực tiếp hệ thống **Tham chiếu thiết kế GEAR hiện có**, và xuất bản danh mục prompt `PIXAI_CHARACTER_PROMPTS.md`.
 - **v3.1**: Bổ sung quy tắc bắt buộc bảo vệ Image Assets khi hết quota (HTTP 429 Protocol) — cấm hạ cấp bằng SVG/CSS/Canvas/Pixel art.
-- **v3.2 (Hiện tại - Hiệu lực tối cao)**: Tài liệu hóa song ngữ và chuẩn hóa toàn diện: Minh họa nhân vật anime sci-fi cao cấp, kim chỉ nam tham chiếu từ hình ảnh GEAR hiện có, và quy định bắt buộc 16 Image Assets (Portrait & Full-Body) cho toàn bộ phi công STARFRONT.
+- **v3.2**: Tài liệu hóa song ngữ và chuẩn hóa toàn diện: Minh họa nhân vật anime sci-fi cao cấp, kim chỉ nam tham chiếu từ hình ảnh GEAR hiện có, và quy định bắt buộc 16 Image Assets (Portrait & Full-Body) cho toàn bộ phi công STARFRONT.
+- **v3.3 (Hiện tại - Hiệu lực tối cao)**: Bổ sung **Image Asset Resolution & File Size Standards** (Full-body: `900 × 1600 px`, `≤ 1200 KB`; Portrait: `512 × 512 px`, `≤ 500 KB`), quy chuẩn tối ưu hóa phân phối (WebP / PNG), nguyên tắc điều chỉnh kích thước không suy hao chi tiết, và hoàn thiện bộ quy tắc an toàn thay thế tài nguyên (**Asset Replacement Safety**).
 
 *Tài liệu này là quy chuẩn nghệ thuật chính thức và luật bất biến áp dụng cho toàn bộ hoạt động thiết kế, lập trình và quản lý tài nguyên của STARFRONT.*

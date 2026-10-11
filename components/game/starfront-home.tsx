@@ -17,6 +17,7 @@ import type {
 } from "@/lib/game/types"
 import { cn } from "@/lib/utils"
 import {
+  Activity,
   AlertTriangle,
   Boxes,
   CheckCircle2,
@@ -41,7 +42,7 @@ import {
 
 interface StarfrontHomeProps {
   progression: StarfrontProgression
-  onNavigate: (section: "battlefield" | "missions" | "shop" | "hangar" | "character-gear") => void
+  onNavigate: (section: "battlefield" | "missions" | "shop" | "hangar" | "character-gear" | "pilot" | string) => void
   onSelectGear?: (gearId: StarfrontGearId) => void
 }
 
@@ -401,9 +402,21 @@ export function StarfrontHome({
 
             {/* Trạng thái khóa & hành động */}
             {isCharacterLocked ? (
-              <div className="rounded bg-amber-950/40 border border-amber-500/40 p-2 text-[10.5px] font-mono text-amber-300 flex items-center justify-between">
-                <span>Tiến độ mở khóa hoán đổi:</span>
-                <span className="font-bold text-white">{completedMissions}/5 Nhiệm Vụ · {wonBattles}/5 Trận Thắng</span>
+              <div className="space-y-2">
+                <div className="rounded bg-amber-950/40 border border-amber-500/40 p-2 text-[10.5px] font-mono text-amber-300 flex items-center justify-between">
+                  <span>Tiến độ mở khóa hoán đổi:</span>
+                  <span className="font-bold text-white">{completedMissions}/5 Nhiệm Vụ · {wonBattles}/5 Trận Thắng</span>
+                </div>
+                <button
+                  onClick={() => {
+                    playClickSound()
+                    onNavigate("pilot")
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 hover:bg-cyan-900/50 p-2 font-display text-xs font-bold text-cyan-300 uppercase tracking-wider cursor-pointer transition-colors shadow-sm"
+                >
+                  <Activity className="size-3.5" />
+                  <span>Xem Bảng Trạng Thái Phi Công (Pilot Status)</span>
+                </button>
               </div>
             ) : (
               <button
@@ -489,15 +502,25 @@ export function StarfrontHome({
             </div>
           </div>
 
-          <div className="mt-3 border-t border-border/40 pt-2 text-right">
+          <div className="mt-3 border-t border-border/40 pt-2 flex items-center justify-between text-xs font-mono">
+            <button
+              onClick={() => {
+                playClickSound()
+                onNavigate("pilot")
+              }}
+              className="text-cyan-400 hover:text-cyan-300 inline-flex items-center gap-1 cursor-pointer font-bold"
+            >
+              <Activity className="size-3" />
+              <span>Pilot Status Radar &raquo;</span>
+            </button>
             <button
               onClick={() => {
                 playClickSound()
                 onNavigate("hangar")
               }}
-              className="text-xs font-mono text-cyan-300 hover:text-cyan-200 inline-flex items-center gap-1 cursor-pointer"
+              className="text-muted-foreground hover:text-white inline-flex items-center gap-1 cursor-pointer"
             >
-              <span>Xem chi tiết trong Xưởng Hangar</span>
+              <span>Xem chi tiết Xưởng Hangar</span>
               <ChevronRight className="size-3" />
             </button>
           </div>

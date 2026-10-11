@@ -78,6 +78,7 @@ import { FleetPanel } from "./fleet-panel"
 import { BasePanel } from "./base-panel"
 import { WarRoom } from "./war-room"
 import { PilotPanel } from "./pilot-panel"
+import { PilotStatusDashboard } from "./pilot-status-dashboard"
 import { MapPanel } from "./map-panel"
 
 export type StarfrontSection =
@@ -186,10 +187,10 @@ const SECTIONS: SectionConfig[] = [
 
 // Nhóm tác chiến mở rộng (Fleet Operations)
 const OPERATION_SECTIONS: { id: StarfrontSection; label: string; icon: typeof Rocket }[] = [
+  { id: "pilot", label: "Pilot Status / Phi Công", icon: UserRound },
   { id: "fleet", label: "Hạm Đội Chiến Hạm", icon: Rocket },
   { id: "base", label: "Căn Cứ Hậu Cần", icon: Warehouse },
   { id: "war", label: "Phòng Tác Chiến", icon: Flag },
-  { id: "pilot", label: "Hồ Sơ Phi Công", icon: UserRound },
 ]
 
 const GEAR_THEME_COLORS: Record<
@@ -305,8 +306,8 @@ export function StarfrontShell() {
   const handleSwitchSection = (section: StarfrontSection, forceMission?: CampaignMission | null) => {
     playClickSound()
 
-    // Kiểm tra quy định: Bắt buộc khóa nhân vật trước khi làm nhiệm vụ hoặc tham chiến
-    const requiresLock = section !== "character-gear" && section !== "home"
+    // Kiểm tra quy định: Bắt buộc khóa nhân vật trước khi làm nhiệm vụ hoặc tham chiến (trừ home, character-gear và pilot)
+    const requiresLock = section !== "character-gear" && section !== "home" && section !== "pilot"
     if (!isCharacterLocked && requiresLock) {
       setLockNoticeToast({
         type: "warning",
@@ -778,13 +779,13 @@ export function StarfrontShell() {
             <div className="flex items-center gap-2 font-mono text-xs">
               {/* Huy hiệu Cặp Đôi Phi Công & Cơ Giáp */}
               <div
-                onClick={() => handleSwitchSection("character-gear")}
+                onClick={() => handleSwitchSection("pilot")}
                 className="hidden sm:flex items-center gap-1.5 rounded border px-2.5 py-1 cursor-pointer transition-colors hover:bg-black/40"
                 style={{
                   borderColor: `${activeGearDef.color}60`,
                   backgroundColor: `${activeGearDef.color}15`,
                 }}
-                title="Quản lý Nhân Vật & Cơ Giáp (Phase 5.8)"
+                title="Bảng Trạng Thái Phi Công (Pilot Status Dashboard)"
               >
                 <span
                   className="size-2 rounded-full"
@@ -882,7 +883,7 @@ export function StarfrontShell() {
             {activeSection === "home" && (
               <StarfrontHome
                 progression={progression}
-                onNavigate={(target) => handleSwitchSection(target)}
+                onNavigate={(target) => handleSwitchSection(target as StarfrontSection)}
                 onSelectGear={handleSelectGear}
               />
             )}
@@ -894,6 +895,7 @@ export function StarfrontShell() {
                 onUpdateProgression={handleUpdateProgression}
                 onNavigateToHangar={() => handleSwitchSection("hangar")}
                 onNavigateToCombat={() => handleSwitchSection("battlefield")}
+                onNavigateToPilotStatus={() => handleSwitchSection("pilot")}
                 onEquipItem={handleEquipItem}
                 onUnequipSlot={handleUnequipSlot}
               />
@@ -953,8 +955,16 @@ export function StarfrontShell() {
             {/* Phân hệ Mở Rộng: Phòng Tác Chiến */}
             {activeSection === "war" && <WarRoom />}
 
-            {/* Phân hệ Mở Rộng: Hồ Sơ Phi Công */}
-            {activeSection === "pilot" && <PilotPanel />}
+            {/* Phân hệ Mở Rộng: Bảng Trạng Thái & Hồ Sơ Phi Công (Pilot Status Dashboard) */}
+            {activeSection === "pilot" && (
+              <PilotStatusDashboard
+                progression={progression}
+                onUpdateProgression={handleUpdateProgression}
+                onEquipItem={handleEquipItem}
+                onUnequipSlot={handleUnequipSlot}
+                onNavigateSection={handleSwitchSection}
+              />
+            )}
           </main>
         </div>
       </div>

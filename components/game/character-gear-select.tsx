@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react"
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
@@ -93,6 +94,7 @@ interface CharacterGearSelectProps {
   onUpdateProgression: (updated: StarfrontProgression) => void
   onNavigateToHangar?: () => void
   onNavigateToCombat?: () => void
+  onNavigateToPilotStatus?: () => void
   onEquipItem?: (itemId: string, slot: StarfrontItemSlot) => void
   onUnequipSlot?: (slot: StarfrontItemSlot) => void
 }
@@ -105,6 +107,7 @@ export function CharacterGearSelect({
   onUpdateProgression,
   onNavigateToHangar,
   onNavigateToCombat,
+  onNavigateToPilotStatus,
   onEquipItem,
   onUnequipSlot,
 }: CharacterGearSelectProps) {
@@ -479,6 +482,17 @@ export function CharacterGearSelect({
                     <ChevronUp className="size-3.5" />
                   </>
                 )}
+              </button>
+            )}
+
+            {onNavigateToPilotStatus && (
+              <button
+                onClick={onNavigateToPilotStatus}
+                className="flex items-center gap-1.5 rounded border border-cyan-500/60 bg-cyan-950/40 px-2.5 py-1.5 text-xs text-cyan-300 hover:bg-cyan-900/50 hover:text-white transition-colors cursor-pointer"
+                title="Mở Bảng Trạng Thái Phi Công (Pilot Status Dashboard)"
+              >
+                <Activity className="size-3.5 text-cyan-400" />
+                <span>Pilot Status</span>
               </button>
             )}
 

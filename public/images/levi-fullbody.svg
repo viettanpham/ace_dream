@@ -1,3 +1,340 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 768 1024" width="100%" height="100%">
-  <image href="/images/alviss-portrait.jpg" width="100%" height="100%" preserveAspectRatio="xMidYMid slice"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 896 1200" width="896" height="1200">
+  <defs>
+    <!-- Background Space Gradients -->
+    <radialGradient id="spaceBg" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#1f1403" />
+      <stop offset="40%" stop-color="#0f0a02" />
+      <stop offset="100%" stop-color="#030201" />
+    </radialGradient>
+    <radialGradient id="amberNebula" cx="70%" cy="20%" r="60%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.38" />
+      <stop offset="45%" stop-color="#b45309" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="cyanNebula" cx="20%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.15" />
+      <stop offset="60%" stop-color="#083344" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Hair Shading -->
+    <linearGradient id="hairBase" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#18181b" />
+      <stop offset="40%" stop-color="#27272a" />
+      <stop offset="85%" stop-color="#3f3f46" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <linearGradient id="hairAmberStreak" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="35%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#92400e" />
+    </linearGradient>
+    <linearGradient id="hairGleam" x1="0%" y1="0%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6" />
+      <stop offset="40%" stop-color="#fbbf24" stop-opacity="0.5" />
+      <stop offset="100%" stop-color="#18181b" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Skin & Facial Tones -->
+    <linearGradient id="skinTone" x1="30%" y1="0%" x2="70%" y2="100%">
+      <stop offset="0%" stop-color="#fff5eb" />
+      <stop offset="30%" stop-color="#fee4d2" />
+      <stop offset="70%" stop-color="#fbcfae" />
+      <stop offset="100%" stop-color="#e2ab82" />
+    </linearGradient>
+    <linearGradient id="neckShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cf8f66" stop-opacity="0.65" />
+      <stop offset="100%" stop-color="#cf8f66" stop-opacity="0" />
+    </linearGradient>
+    <radialGradient id="cheekBlush" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f43f5e" stop-opacity="0.32" />
+      <stop offset="70%" stop-color="#fb7185" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#fb7185" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Eyes (Amber / Topaz Gemstone) -->
+    <radialGradient id="amberIris" cx="45%" cy="38%" r="62%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="15%" stop-color="#fef08a" />
+      <stop offset="45%" stop-color="#f59e0b" />
+      <stop offset="75%" stop-color="#b45309" />
+      <stop offset="100%" stop-color="#451a03" />
+    </radialGradient>
+
+    <!-- Glossy Lips -->
+    <linearGradient id="lipGloss" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fb7185" />
+      <stop offset="50%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#be123c" />
+    </linearGradient>
+
+    <!-- Flightsuit Textures -->
+    <linearGradient id="suitCharcoal" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#27272a" />
+      <stop offset="40%" stop-color="#18181b" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <linearGradient id="suitLatex" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#3f3f46" />
+      <stop offset="50%" stop-color="#27272a" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <linearGradient id="amberFiber" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="40%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+    <linearGradient id="goldTrim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" />
+      <stop offset="50%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#78350f" />
+    </linearGradient>
+
+    <!-- Glow & Shadow Filters -->
+    <filter id="intenseGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur1" />
+      <feGaussianBlur stdDeviation="3" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur1" />
+        <feMergeNode in="blur2" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- 1. Background Cockpit Environment -->
+  <rect width="896" height="1200" fill="url(#spaceBg)" />
+  <rect width="896" height="1200" fill="url(#amberNebula)" />
+  <rect width="896" height="1200" fill="url(#cyanNebula)" />
+
+  <!-- Distant Starlight & Cosmic Dust -->
+  <g opacity="0.5">
+    <circle cx="150" cy="120" r="1.5" fill="#fff" />
+    <circle cx="230" cy="70" r="1.2" fill="#fef08a" />
+    <circle cx="780" cy="140" r="2.2" fill="#fff" />
+    <circle cx="830" cy="260" r="1.5" fill="#f59e0b" />
+    <circle cx="690" cy="90" r="2.5" fill="#fff" />
+    <circle cx="160" cy="320" r="1.2" fill="#fff" />
+    <circle cx="850" cy="440" r="1.8" fill="#fde68a" />
+    <circle cx="90" cy="510" r="1.5" fill="#06b6d4" />
+    <circle cx="750" cy="520" r="1.2" fill="#fff" />
+  </g>
+
+  <!-- Cockpit Holographic Falcon Telemetry UI -->
+  <g opacity="0.4" stroke="#f59e0b" stroke-width="1.2" fill="none">
+    <!-- Orbital targeting ring -->
+    <circle cx="710" cy="310" r="130" stroke-dasharray="6 10" />
+    <circle cx="710" cy="310" r="85" stroke-dasharray="2 6" opacity="0.6" />
+    <line x1="570" y1="310" x2="850" y2="310" opacity="0.5" />
+    <line x1="710" y1="170" x2="710" y2="450" opacity="0.5" />
+
+    <!-- Corner reticle brackets -->
+    <path d="M 680 280 L 700 280 M 680 280 L 680 300" stroke="#fbbf24" stroke-width="2" />
+    <path d="M 740 280 L 720 280 M 740 280 L 740 300" stroke="#fbbf24" stroke-width="2" />
+    <path d="M 680 340 L 700 340 M 680 340 L 680 320" stroke="#fbbf24" stroke-width="2" />
+    <path d="M 740 340 L 720 340 M 740 340 L 740 320" stroke="#fbbf24" stroke-width="2" />
+
+    <!-- Pitch ladder & speed indicator -->
+    <path d="M 110 220 L 110 460" stroke="#f59e0b" stroke-width="1.5" />
+    <line x1="100" y1="240" x2="110" y2="240" stroke="#f59e0b" stroke-width="2" />
+    <line x1="104" y1="280" x2="110" y2="280" />
+    <line x1="95" y1="320" x2="110" y2="320" stroke="#fbbf24" stroke-width="3" />
+    <line x1="104" y1="360" x2="110" y2="360" />
+    <line x1="100" y1="400" x2="110" y2="400" stroke="#f59e0b" stroke-width="2" />
+    <line x1="104" y1="440" x2="110" y2="440" />
+  </g>
+
+  <!-- Flight Telemetry Data Text -->
+  <g font-family="monospace" font-size="11" fill="#f59e0b" opacity="0.8" letter-spacing="1">
+    <text x="650" y="470">FALCON-01 // SYNC: 99.8%</text>
+    <text x="650" y="488">BOOSTER: HYPER-WARP READY</text>
+    <text x="75" y="195">CALLSIGN: SHADOW FALCON</text>
+    <text x="75" y="485">PILOT: LEVI REED // ACE</text>
+  </g>
+
+  <!-- Cockpit Structural Frame Canopy -->
+  <polygon points="0,0 260,0 130,420 0,620" fill="#09090b" opacity="0.92" />
+  <polygon points="896,0 636,0 766,420 896,620" fill="#09090b" opacity="0.92" />
+  <line x1="260" y1="0" x2="130" y2="420" stroke="#f59e0b" stroke-width="1.5" opacity="0.4" />
+  <line x1="636" y1="0" x2="766" y2="420" stroke="#f59e0b" stroke-width="1.5" opacity="0.4" />
+
+  <!-- 2. Back Hair (Long, Flowing & Voluminous) -->
+  <g>
+    <path d="M 270 410 Q 200 560 190 770 Q 180 940 270 1080 L 626 1080 Q 716 940 706 770 Q 696 560 626 410 Z" fill="url(#hairBase)" />
+    <!-- Glowing amber wing tips on hair -->
+    <path d="M 190 770 Q 230 890 260 1020 Q 190 910 180 790 Z" fill="#d97706" opacity="0.75" filter="url(#subtleGlow)" />
+    <path d="M 706 770 Q 666 890 636 1020 Q 706 910 716 790 Z" fill="#d97706" opacity="0.75" filter="url(#subtleGlow)" />
+  </g>
+
+  <!-- 3. Slender Neck & Collarbone -->
+  <g>
+    <path d="M 388 505 L 388 625 Q 448 650 508 625 L 508 505 Z" fill="url(#skinTone)" />
+    <!-- Soft chin shadow on neck -->
+    <path d="M 388 505 Q 448 555 508 505 L 508 550 Q 448 590 388 550 Z" fill="url(#neckShadow)" />
+    <!-- Graceful collarbones -->
+    <path d="M 405 610 Q 448 624 491 610" stroke="#cf8f66" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.65" />
+    <circle cx="448" cy="620" r="3.5" fill="#cf8f66" opacity="0.45" />
+  </g>
+
+  <!-- 4. Upper Body / Sexy Aerodynamic Flightsuit -->
+  <g>
+    <!-- Base form-fitting pilot flightsuit -->
+    <path d="M 250 725 Q 295 640 368 618 L 392 624 Q 448 648 504 624 L 528 618 Q 601 640 646 725 L 690 930 Q 735 1100 745 1200 L 151 1200 Q 161 1100 206 930 Z" fill="url(#suitCharcoal)" />
+
+    <!-- Sleek curved chest plating -->
+    <path d="M 320 685 Q 448 662 576 685 Q 588 775 566 865 Q 448 895 330 865 Q 308 775 320 685 Z" fill="url(#suitLatex)" stroke="#27272a" stroke-width="2.5" />
+
+    <!-- Sexy Cleavage & Form-Fitting Center Panel -->
+    <path d="M 408 625 Q 448 644 488 625 L 476 715 Q 448 742 420 715 Z" fill="url(#skinTone)" />
+    <!-- Cleavage shadow curve -->
+    <path d="M 424 685 Q 448 725 472 685" stroke="#cf8f66" stroke-width="2.5" fill="none" opacity="0.55" />
+
+    <!-- Golden Falcon Aerodynamic Neon Seams -->
+    <g filter="url(#intenseGlow)">
+      <!-- Left contoured speedline -->
+      <path d="M 280 675 Q 355 658 406 685 L 412 825 Q 365 855 315 895" stroke="url(#amberFiber)" stroke-width="3.5" fill="none" />
+      <!-- Right contoured speedline -->
+      <path d="M 616 675 Q 541 658 490 685 L 484 825 Q 531 855 581 895" stroke="url(#amberFiber)" stroke-width="3.5" fill="none" />
+      <!-- High-tech glowing collar seams -->
+      <path d="M 368 620 L 408 627" stroke="#fbbf24" stroke-width="3.5" />
+      <path d="M 528 620 L 488 627" stroke="#fbbf24" stroke-width="3.5" />
+      <!-- Glowing Diamond Falcon Core Pendant -->
+      <polygon points="448,740 462,756 448,772 434,756" fill="#fbbf24" stroke="#ffffff" stroke-width="2" />
+      <circle cx="448" cy="756" r="3.5" fill="#ffffff" />
+    </g>
+
+    <!-- Shoulder Epaulets / Golden Pauldrons -->
+    <path d="M 250 705 Q 295 660 358 652 L 348 715 Q 285 735 240 725 Z" fill="url(#goldTrim)" opacity="0.9" />
+    <path d="M 646 705 Q 601 660 538 652 L 548 715 Q 611 735 656 725 Z" fill="url(#goldTrim)" opacity="0.9" />
+  </g>
+
+  <!-- 5. Head & Feminine Facial Structure -->
+  <g>
+    <!-- Ears -->
+    <path d="M 324 395 Q 308 430 328 465 Z" fill="#fee4d2" />
+    <path d="M 572 395 Q 588 430 568 465 Z" fill="#fee4d2" />
+
+    <!-- Slender, Elegant Anime Face (V-Line Jaw) -->
+    <path d="M 332 355 Q 328 450 364 492 Q 410 544 448 558 Q 486 544 532 492 Q 568 450 564 355 Q 558 245 448 240 Q 338 245 332 355 Z" fill="url(#skinTone)" />
+
+    <!-- Radiant Cheek Blush -->
+    <ellipse cx="378" cy="452" rx="38" ry="20" fill="url(#cheekBlush)" />
+    <ellipse cx="518" cy="452" rx="38" ry="20" fill="url(#cheekBlush)" />
+  </g>
+
+  <!-- 6. Expressive, Alluring Anime Face Details -->
+  <g>
+    <!-- Dainty Nose -->
+    <path d="M 446 425 L 445 458 L 452 461" stroke="#d5976e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.85" />
+    <ellipse cx="448" cy="463" rx="4.5" ry="2.2" fill="#d5976e" opacity="0.45" />
+
+    <!-- Charming Confident Smirk (Lips) -->
+    <path d="M 418 498 Q 448 504 482 494" stroke="#9f1239" stroke-width="2.8" stroke-linecap="round" fill="none" />
+    <!-- Upper lip tint -->
+    <path d="M 426 496 Q 448 490 474 494 Q 448 500 426 496 Z" fill="url(#lipGloss)" opacity="0.85" />
+    <!-- Lower plump lip -->
+    <path d="M 430 500 Q 448 518 470 500 Q 448 505 430 500 Z" fill="url(#lipGloss)" />
+    <!-- Lip highlight gleam -->
+    <ellipse cx="446" cy="506" rx="7" ry="2.5" fill="#ffffff" opacity="0.85" />
+
+    <!-- ================= LEFT EYE ================= -->
+    <g>
+      <!-- Sclera -->
+      <path d="M 356 392 Q 390 376 424 397 Q 390 420 356 392 Z" fill="#ffffff" />
+      <!-- Amber Iris -->
+      <circle cx="390" cy="395" r="17" fill="url(#amberIris)" />
+      <!-- Pupil -->
+      <circle cx="390" cy="395" r="7.5" fill="#18181b" />
+      <!-- Cybernetic Inner Light -->
+      <circle cx="390" cy="395" r="3" fill="#f59e0b" filter="url(#subtleGlow)" />
+      <!-- Sparkles & Highlights -->
+      <circle cx="383" cy="389" r="5" fill="#ffffff" />
+      <circle cx="397" cy="402" r="2.2" fill="#fef08a" />
+      <!-- Winged Eyeliner -->
+      <path d="M 346 392 Q 388 364 428 395" stroke="#18181b" stroke-width="5" stroke-linecap="round" fill="none" />
+      <path d="M 352 391 Q 340 385 336 378" stroke="#18181b" stroke-width="3.5" stroke-linecap="round" fill="none" />
+      <path d="M 364 406 Q 390 416 418 404" stroke="#27272a" stroke-width="2.2" stroke-linecap="round" fill="none" />
+      <!-- Arched Eyebrow -->
+      <path d="M 348 360 Q 385 342 426 362" stroke="#27272a" stroke-width="3.8" stroke-linecap="round" fill="none" />
+      <path d="M 348 360 Q 385 342 426 362" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7" />
+    </g>
+
+    <!-- ================= RIGHT EYE ================= -->
+    <g>
+      <!-- Sclera -->
+      <path d="M 472 397 Q 506 376 540 392 Q 506 420 472 397 Z" fill="#ffffff" />
+      <!-- Amber Iris -->
+      <circle cx="506" cy="395" r="17" fill="url(#amberIris)" />
+      <!-- Pupil -->
+      <circle cx="506" cy="395" r="7.5" fill="#18181b" />
+      <!-- Cybernetic Inner Light -->
+      <circle cx="506" cy="395" r="3" fill="#f59e0b" filter="url(#subtleGlow)" />
+      <!-- Sparkles & Highlights -->
+      <circle cx="499" cy="389" r="5" fill="#ffffff" />
+      <circle cx="513" cy="402" r="2.2" fill="#fef08a" />
+      <!-- Winged Eyeliner -->
+      <path d="M 468 395 Q 508 364 550 392" stroke="#18181b" stroke-width="5" stroke-linecap="round" fill="none" />
+      <path d="M 544 391 Q 556 385 560 378" stroke="#18181b" stroke-width="3.5" stroke-linecap="round" fill="none" />
+      <path d="M 478 404 Q 506 416 532 406" stroke="#27272a" stroke-width="2.2" stroke-linecap="round" fill="none" />
+      <!-- Arched Eyebrow (Playful smirk height) -->
+      <path d="M 470 362 Q 511 339 548 358" stroke="#27272a" stroke-width="3.8" stroke-linecap="round" fill="none" />
+      <path d="M 470 362 Q 511 339 548 358" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" fill="none" opacity="0.7" />
+    </g>
+  </g>
+
+  <!-- 7. Front Sleek Raven Hair & Amber Locks -->
+  <g>
+    <!-- Bangs -->
+    <path d="M 330 285 Q 370 305 392 375 Q 365 335 330 315 Z" fill="url(#hairBase)" />
+    <path d="M 438 245 Q 398 305 358 405 Q 378 335 428 285 Z" fill="url(#hairBase)" />
+    <path d="M 448 245 Q 478 315 438 425 Q 468 345 488 285 Z" fill="url(#hairBase)" />
+    <path d="M 468 255 Q 528 325 548 415 Q 528 345 488 295 Z" fill="url(#hairBase)" />
+
+    <!-- Elegant side strands hugging cheeks -->
+    <path d="M 324 335 Q 308 435 328 545 Q 336 575 346 645 Q 328 565 318 475 Q 313 385 324 335 Z" fill="url(#hairBase)" />
+    <path d="M 572 335 Q 588 435 568 545 Q 560 575 550 645 Q 568 565 578 475 Q 583 385 572 335 Z" fill="url(#hairBase)" />
+
+    <!-- Luminous Golden Streaks in Hair -->
+    <path d="M 434 255 Q 403 315 374 395" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" fill="none" filter="url(#intenseGlow)" />
+    <path d="M 454 255 Q 478 325 448 410" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" fill="none" filter="url(#intenseGlow)" />
+    <path d="M 322 415 Q 318 495 340 605" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.8" />
+    <path d="M 574 415 Q 578 495 556 605" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.8" />
+
+    <!-- Crown Volume Glow Arc -->
+    <path d="M 346 265 Q 448 228 550 265" stroke="url(#hairGleam)" stroke-width="4.5" stroke-linecap="round" fill="none" />
+  </g>
+
+  <!-- 8. Pilot Tactical Headset on Right Ear -->
+  <g filter="url(#intenseGlow)">
+    <path d="M 568 405 Q 588 410 592 432 Q 588 458 568 462 Z" fill="#27272a" stroke="#f59e0b" stroke-width="2.2" />
+    <circle cx="582" cy="432" r="5.5" fill="#fbbf24" />
+    <!-- Tactical boom mic -->
+    <path d="M 582 438 L 548 482" stroke="#f59e0b" stroke-width="2.8" stroke-linecap="round" fill="none" />
+    <circle cx="548" cy="482" r="3.5" fill="#ffffff" />
+  </g>
+
+  <!-- 9. Cockpit HUD Vignette & Amber Framing -->
+  <g stroke="#f59e0b" stroke-width="2" fill="none" opacity="0.85">
+    <path d="M 25 70 L 25 25 L 70 25" />
+    <path d="M 871 70 L 871 25 L 826 25" />
+    <path d="M 25 1130 L 25 1175 L 70 1175" />
+    <path d="M 871 1130 L 871 1175 L 826 1175" />
+  </g>
+
+  <!-- 10. Bottom Hero Identity Card -->
+  <g>
+    <rect x="160" y="1090" width="576" height="72" rx="6" fill="#09090b" fill-opacity="0.92" stroke="#f59e0b" stroke-width="1.8" />
+    <rect x="172" y="1102" width="10" height="48" fill="#f59e0b" />
+    <text x="200" y="1126" font-family="monospace" font-size="22" font-weight="bold" fill="#ffffff" letter-spacing="2">LEVI REED</text>
+    <text x="200" y="1146" font-family="monospace" font-size="12" fill="#fbbf24" letter-spacing="1">SUPERSONIC ACE // FALCON INTERCEPTOR</text>
+    <text x="615" y="1132" font-family="monospace" font-size="13" font-weight="bold" fill="#10b981">LV.24 // S-CLASS</text>
+    <text x="615" y="1148" font-family="monospace" font-size="11" fill="#06b6d4">SPEED: MACH 6.8</text>
+  </g>
 </svg>

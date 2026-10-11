@@ -43,6 +43,7 @@ import {
   HelpCircle,
   Layers,
   LayoutDashboard,
+  Lock,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
@@ -238,6 +239,10 @@ export function StarfrontShell() {
   const [activeSection, setActiveSection] = useState<StarfrontSection>("home")
   const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(null)
   const [audioMuted, setAudioMutedState] = useState(false)
+  const [lockNoticeToast, setLockNoticeToast] = useState<{ text: string; type: "warning" | "success" } | null>(null)
+
+  // Trạng thái khóa nhân vật & cơ giáp
+  const isCharacterLocked = Boolean(progression.activePairing?.isLocked)
 
   // Quản lý trạng thái thanh điều hướng bên trái (Left Sidebar)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -254,10 +259,24 @@ export function StarfrontShell() {
     setProgression(saved)
     setHasLoaded(true)
     setAudioMutedState(isAudioMuted())
+
+    // Nếu người chơi chưa khóa nhân vật & cơ giáp, mở ngay màn hình chọn nhân vật
+    if (!saved.activePairing?.isLocked) {
+      setActiveSection("character-gear")
+    }
   }, [])
 
   // Lưu tự động mỗi khi có thay đổi tiến trình
   const handleUpdateProgression = (updated: StarfrontProgression) => {
+    // Nếu vừa mới khóa nhân vật thành công, hiển thị thông báo chúc mừng
+    if (!progression.activePairing?.isLocked && updated.activePairing?.isLocked) {
+      setLockNoticeToast({
+        type: "success",
+        text: "🎉 ĐÃ KHÓA TỔ HỢP XUẤT KÍCH THÀNH CÔNG! Toàn bộ phân hệ Đấu Trường, Nhiệm Vụ, Hangar và Chợ Quân Sự đã được kích hoạt!",
+      })
+      setTimeout(() => setLockNoticeToast(null), 5000)
+    }
+
     setProgression(updated)
     saveStarfrontProgression(updated)
   }
@@ -285,6 +304,20 @@ export function StarfrontShell() {
   // Chuyển phân hệ chính
   const handleSwitchSection = (section: StarfrontSection, forceMission?: CampaignMission | null) => {
     playClickSound()
+
+    // Kiểm tra quy định: Bắt buộc khóa nhân vật trước khi làm nhiệm vụ hoặc tham chiến
+    const requiresLock = section !== "character-gear" && section !== "home"
+    if (!isCharacterLocked && requiresLock) {
+      setLockNoticeToast({
+        type: "warning",
+        text: "⚠️ BẮT BUỘC: Bạn cần chọn và KHÓA NHÂN VẬT & CƠ GIÁP trước khi vào phân hệ này!",
+      })
+      setActiveSection("character-gear")
+      setMobileMenuOpen(false)
+      setTimeout(() => setLockNoticeToast(null), 4000)
+      return
+    }
+
     if (section === "battlefield") {
       if (forceMission !== undefined) {
         setActiveCampaignMission(forceMission)
@@ -509,9 +542,11 @@ export function StarfrontShell() {
             {SECTIONS.map((sec) => {
               const Icon = sec.icon
               const isActive = activeSection === sec.id
-              const badgeText = sec.badge ? sec.badge(progression) : null
+              const requiresLock = sec.id !== "character-gear" && sec.id !== "home"
+              const isTabLocked = !isCharacterLocked && requiresLock
+              const badgeText = isTabLocked ? "Khóa" : sec.badge ? sec.badge(progression) : null
               const submenus = sec.submenus ? sec.submenus(progression) : []
-              const hasSubmenus = submenus.length > 0 && !isSidebarCollapsed
+              const hasSubmenus = !isTabLocked && submenus.length > 0 && !isSidebarCollapsed
               const isExpanded = expandedMenus[sec.id] || false
 
               return (
@@ -522,21 +557,34 @@ export function StarfrontShell() {
                       "group relative flex items-center justify-between rounded-sm px-2.5 py-2 font-display text-xs uppercase tracking-wider transition-all cursor-pointer",
                       isActive
                         ? "bg-cyan-500/15 text-cyan-300 border-l-2 border-cyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.15)]"
-                        : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
+                        : isTabLocked
+                          ? "text-muted-foreground/60 hover:text-amber-300 hover:bg-amber-950/20"
+                          : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
                     )}
-                    title={isSidebarCollapsed ? sec.label : undefined}
+                    title={isSidebarCollapsed ? (isTabLocked ? `[Khóa] Cần khóa NV trước: ${sec.label}` : sec.label) : undefined}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <Icon className={cn("size-4 shrink-0", isActive ? "text-cyan-400" : "text-muted-foreground group-hover:text-cyan-300")} />
+                      {isTabLocked ? (
+                        <Lock className="size-4 shrink-0 text-amber-400/80 group-hover:text-amber-300" />
+                      ) : (
+                        <Icon className={cn("size-4 shrink-0", isActive ? "text-cyan-400" : "text-muted-foreground group-hover:text-cyan-300")} />
+                      )}
                       {!isSidebarCollapsed && (
-                        <span className="truncate">{sec.shortLabel}</span>
+                        <span className={cn("truncate", isTabLocked && "text-muted-foreground/80")}>{sec.shortLabel}</span>
                       )}
                     </div>
 
                     {!isSidebarCollapsed && (
                       <div className="flex items-center gap-1.5 shrink-0">
                         {badgeText && (
-                          <span className="rounded bg-black/60 px-1.5 py-0.2 font-mono text-[9px] font-bold text-cyan-300 border border-border/50">
+                          <span
+                            className={cn(
+                              "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold border",
+                              isTabLocked
+                                ? "bg-amber-950/60 text-amber-300 border-amber-500/40"
+                                : "bg-black/60 text-cyan-300 border-border/50",
+                            )}
+                          >
                             {badgeText}
                           </span>
                         )}
@@ -628,11 +676,17 @@ export function StarfrontShell() {
                           "w-full flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 font-display text-[11px] uppercase tracking-wider transition-colors cursor-pointer",
                           isOpActive
                             ? "bg-purple-500/20 text-purple-300 border-l-2 border-purple-400 font-bold"
-                            : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
+                            : !isCharacterLocked
+                              ? "text-muted-foreground/60 hover:text-amber-300 hover:bg-amber-950/20"
+                              : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
                         )}
-                        title={isSidebarCollapsed ? op.label : undefined}
+                        title={isSidebarCollapsed ? (!isCharacterLocked ? `[Khóa] ${op.label}` : op.label) : undefined}
                       >
-                        <OpIcon className="size-3.5 shrink-0" />
+                        {!isCharacterLocked ? (
+                          <Lock className="size-3.5 shrink-0 text-amber-400/80" />
+                        ) : (
+                          <OpIcon className="size-3.5 shrink-0" />
+                        )}
                         {!isSidebarCollapsed && <span className="truncate">{op.label}</span>}
                       </button>
                     )
@@ -755,6 +809,34 @@ export function StarfrontShell() {
               </div>
             </div>
           </header>
+
+          {/* Banner thông báo trạng thái khóa / mở khóa hệ thống */}
+          {lockNoticeToast && (
+            <div
+              className={cn(
+                "mx-3 mt-3 sm:mx-5 rounded-sm p-3 shadow-lg flex items-center justify-between gap-3 font-mono text-xs animate-in slide-in-from-top duration-200 border",
+                lockNoticeToast.type === "warning"
+                  ? "border-amber-500/70 bg-gradient-to-r from-amber-950/90 via-black/80 to-amber-950/70 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                  : "border-emerald-500/70 bg-gradient-to-r from-emerald-950/90 via-black/80 to-emerald-950/70 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]",
+              )}
+            >
+              <div className="flex items-center gap-2.5">
+                {lockNoticeToast.type === "warning" ? (
+                  <AlertTriangle className="size-4 text-amber-400 shrink-0 animate-pulse" />
+                ) : (
+                  <Sparkles className="size-4 text-emerald-400 shrink-0 animate-pulse" />
+                )}
+                <span className="font-semibold text-white">{lockNoticeToast.text}</span>
+              </div>
+              <button
+                onClick={() => setLockNoticeToast(null)}
+                className="text-muted-foreground hover:text-white p-1 rounded hover:bg-white/10 transition-colors cursor-pointer"
+                title="Đóng thông báo"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* B. Banner Nhiệm Vụ Chiến Dịch Đang Chọn (Nếu Người Chơi Xuất Kích Từ Bản Đồ) */}
           {activeCampaignMission && (

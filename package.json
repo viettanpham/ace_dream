@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3000 -H 0.0.0.0",
-    "build": "next build",
+    "build": "NODE_ENV=production next build",
     "start": "next start -p 3000 -H 0.0.0.0",
     "lint": "tsc --noEmit",
-    "test": "npx tsx tests/passives.test.ts && npx tsx tests/economy-recycling.test.ts && npx tsx tests/storage-sync.test.ts && npx tsx tests/phase5-5-mission-scaling.test.ts && npx tsx tests/phase5-6-mission-progression-shop.test.ts && npx tsx tests/phase5-8-character-gear.test.ts && npx tsx tests/phase5-9-pilot-synergy-skills.test.ts && npx tsx tests/campaign-progression-flow.test.ts"
+    "test": "npx tsx tests/passives.test.ts && npx tsx tests/economy-recycling.test.ts && npx tsx tests/storage-sync.test.ts && npx tsx tests/phase5-5-mission-scaling.test.ts && npx tsx tests/phase5-6-mission-progression-shop.test.ts && npx tsx tests/phase5-8-character-gear.test.ts && npx tsx tests/phase5-9-pilot-synergy-skills.test.ts && npx tsx tests/campaign-progression-flow.test.ts && npx tsx tests/character-lock-gating.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { STARFRONT_GEAR_DEFS } from "@/lib/game/data"
+import { STARFRONT_GEAR_DEFS, STARFRONT_PILOT_MAP, STARFRONT_PILOTS } from "@/lib/game/data"
 import { playClickSound } from "@/lib/game/audio"
 import {
   calculateTotalGearStats,
@@ -17,6 +17,7 @@ import type {
 } from "@/lib/game/types"
 import { cn } from "@/lib/utils"
 import {
+  AlertTriangle,
   Boxes,
   CheckCircle2,
   ChevronRight,
@@ -25,6 +26,7 @@ import {
   Flame,
   Globe2,
   Layers,
+  Lock,
   Radio,
   Rocket,
   Shield,
@@ -33,13 +35,14 @@ import {
   Swords,
   Target,
   Trophy,
+  UserRound,
   Zap,
 } from "lucide-react"
 
 interface StarfrontHomeProps {
   progression: StarfrontProgression
-  onNavigate: (section: "battlefield" | "missions" | "shop" | "hangar") => void
-  onSelectGear: (gearId: StarfrontGearId) => void
+  onNavigate: (section: "battlefield" | "missions" | "shop" | "hangar" | "character-gear") => void
+  onSelectGear?: (gearId: StarfrontGearId) => void
 }
 
 const GEAR_THEMES: Record<
@@ -88,6 +91,13 @@ export function StarfrontHome({
   onNavigate,
   onSelectGear,
 }: StarfrontHomeProps) {
+  const isCharacterLocked = Boolean(progression.activePairing?.isLocked)
+  const activePairing = progression.activePairing
+  const pilotId = activePairing?.pilotId || "marcus"
+  const activePilotDef = STARFRONT_PILOT_MAP[pilotId] || STARFRONT_PILOTS[0]
+  const completedMissions = activePairing?.unlockProgress?.completedMissions || 0
+  const wonBattles = activePairing?.unlockProgress?.wonBattles || 0
+
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
   const activeGearDef = STARFRONT_GEAR_DEFS[activeGearId] || STARFRONT_GEAR_DEFS.vanguard
   const theme = GEAR_THEMES[activeGearId] || GEAR_THEMES.vanguard
@@ -134,6 +144,36 @@ export function StarfrontHome({
 
   return (
     <div className="flex flex-col gap-5">
+      {/* CẢNH BÁO: CHƯA KHÓA NHÂN VẬT & CƠ GIÁP */}
+      {!isCharacterLocked && (
+        <div className="rounded-sm border border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-panel to-amber-950/60 p-3.5 shadow-lg flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded border border-amber-500/60 bg-amber-950/80 text-amber-400">
+              <AlertTriangle className="size-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="font-bold text-amber-300 uppercase tracking-wide">
+                YÊU CẦU BẮT BUỘC: CHƯA KHÓA NHÂN VẬT & CƠ GIÁP XUẤT KÍCH
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                Chỉ huy cần vào phân hệ <strong>Nhân Vật & Cơ Giáp</strong> để chọn phi công, cơ giáp và bấm <strong>Khóa Xuất Kích</strong>. Sau khi khóa, toàn bộ Đấu Trường, Bản Đồ Nhiệm Vụ, Hangar và Chợ Quân Sự sẽ mở khóa!
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              playClickSound()
+              onNavigate("character-gear")
+            }}
+            className="flex items-center gap-1.5 rounded bg-cyan-600 hover:bg-cyan-500 px-3.5 py-1.5 font-display text-xs font-bold text-white uppercase tracking-wider cursor-pointer shadow-md transition-colors"
+          >
+            <Lock className="size-3.5" />
+            <span>Chọn & Khóa Nhân Vật</span>
+          </button>
+        </div>
+      )}
+
       {/* 1. Header Chào Mừng & Bảng Điều Khiển Lệnh (Command Bridge Hero) */}
       <div
         className={cn(
@@ -193,17 +233,31 @@ export function StarfrontHome({
               <strong className="text-purple-200">{alloyCount}</strong>
             </div>
 
-            <Button
-              onClick={() => {
-                playClickSound()
-                onNavigate("battlefield")
-              }}
-              size="sm"
-              className="gap-1.5 font-display text-xs font-bold uppercase tracking-wider bg-cyan-500 text-black hover:bg-cyan-400 cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.4)]"
-            >
-              <Swords className="size-3.5" />
-              <span>Xuất Kích Ngay</span>
-            </Button>
+            {isCharacterLocked ? (
+              <Button
+                onClick={() => {
+                  playClickSound()
+                  onNavigate("battlefield")
+                }}
+                size="sm"
+                className="gap-1.5 font-display text-xs font-bold uppercase tracking-wider bg-cyan-500 text-black hover:bg-cyan-400 cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+              >
+                <Swords className="size-3.5" />
+                <span>Xuất Kích Ngay</span>
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  playClickSound()
+                  onNavigate("character-gear")
+                }}
+                size="sm"
+                className="gap-1.5 font-display text-xs font-bold uppercase tracking-wider bg-amber-500 text-black hover:bg-amber-400 cursor-pointer shadow-[0_0_12px_rgba(245,158,11,0.4)]"
+              >
+                <Lock className="size-3.5" />
+                <span>Khóa Nhân Vật Ngay</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -293,38 +347,76 @@ export function StarfrontHome({
             </div>
           </div>
 
-          {/* Bộ chọn nhanh Gear ngay trên trang chủ */}
-          <div className="mt-4 border-t border-border/50 pt-3">
-            <span className="text-[11px] font-mono text-muted-foreground block mb-2 font-bold">
-              Chuyển đổi nhanh cơ giáp trực ban:
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              {(["vanguard", "falcon", "aegis"] as StarfrontGearId[]).map((gId) => {
-                const def = STARFRONT_GEAR_DEFS[gId]
-                const isSelected = activeGearId === gId
-                return (
-                  <button
-                    key={gId}
-                    onClick={() => {
-                      playClickSound()
-                      onSelectGear(gId)
-                    }}
-                    className={cn(
-                      "flex items-center justify-between rounded px-2.5 py-2 border text-left font-mono text-xs transition-all cursor-pointer",
-                      isSelected
-                        ? "border-cyan-400 bg-cyan-950/70 text-cyan-200 font-bold shadow-[0_0_10px_rgba(6,182,212,0.3)]"
-                        : "border-border/60 bg-black/40 text-muted-foreground hover:text-white hover:border-cyan-500/40",
-                    )}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full" style={{ backgroundColor: def.color }} />
-                      <span className="truncate">{def.name.split(" ")[0]}</span>
-                    </div>
-                    {isSelected && <CheckCircle2 className="size-3 text-cyan-400 shrink-0" />}
-                  </button>
-                )
-              })}
+          {/* Hồ sơ tổ hợp tác chiến hiện tại (Phi Công & Cơ Giáp đã khóa hoặc chưa khóa) */}
+          <div className="mt-4 border-t border-border/50 pt-3 space-y-2.5">
+            <div className="flex items-center justify-between text-[11px] font-mono">
+              <span className="text-muted-foreground font-bold">TỔ HỢP TÁC CHIẾN HIỆN TẠI:</span>
+              {isCharacterLocked ? (
+                <span className="flex items-center gap-1 font-bold text-amber-300">
+                  <Lock className="size-3 text-amber-400" /> ĐÃ KHÓA CHIẾN DỊCH
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 font-bold text-red-400">
+                  <AlertTriangle className="size-3 text-red-400" /> CHƯA KHÓA TỔ HỢP
+                </span>
+              )}
             </div>
+
+            <div className="flex items-center justify-between rounded bg-black/60 border border-border/60 p-2.5">
+              {/* Phi công */}
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="size-9 rounded overflow-hidden border border-cyan-500/40 shrink-0 bg-black/80">
+                  <img
+                    src={activePilotDef.avatar}
+                    alt={activePilotDef.name}
+                    className="size-full object-cover object-top"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-display text-xs font-bold text-white truncate">{activePilotDef.name}</div>
+                  <div className="text-[10px] text-cyan-400 font-mono truncate">{activePilotDef.callsign}</div>
+                </div>
+              </div>
+
+              <div className="text-muted-foreground font-mono text-xs px-2 shrink-0">+</div>
+
+              {/* Cơ giáp */}
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="size-9 rounded overflow-hidden border p-1 shrink-0 bg-black/80"
+                  style={{ borderColor: activeGearDef.color }}
+                >
+                  <img
+                    src={activeGearDef.illustration || `/images/${activeGearId}.svg`}
+                    alt={activeGearDef.name}
+                    className="size-full object-contain"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-display text-xs font-bold text-white truncate">{activeGearDef.name}</div>
+                  <div className="text-[10px] text-muted-foreground font-mono truncate">{activeGearDef.role.split(" ")[0]}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Trạng thái khóa & hành động */}
+            {isCharacterLocked ? (
+              <div className="rounded bg-amber-950/40 border border-amber-500/40 p-2 text-[10.5px] font-mono text-amber-300 flex items-center justify-between">
+                <span>Tiến độ mở khóa hoán đổi:</span>
+                <span className="font-bold text-white">{completedMissions}/5 Nhiệm Vụ · {wonBattles}/5 Trận Thắng</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  playClickSound()
+                  onNavigate("character-gear")
+                }}
+                className="w-full flex items-center justify-center gap-1.5 rounded bg-cyan-600 hover:bg-cyan-500 p-2 font-display text-xs font-bold text-white uppercase tracking-wider cursor-pointer shadow-md transition-colors"
+              >
+                <Lock className="size-3.5" />
+                <span>Đến Buồng Lái & Khóa Nhân Vật Ngay</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -431,18 +523,33 @@ export function StarfrontHome({
           <div
             onClick={() => {
               playClickSound()
-              onNavigate("battlefield")
+              if (!isCharacterLocked) {
+                onNavigate("character-gear")
+              } else {
+                onNavigate("battlefield")
+              }
             }}
-            className="group relative flex flex-col justify-between rounded-sm border border-cyan-500/30 bg-panel/80 p-4 transition-all hover:border-cyan-300 hover:bg-cyan-950/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
+            className={cn(
+              "group relative flex flex-col justify-between rounded-sm border p-4 transition-all cursor-pointer",
+              !isCharacterLocked
+                ? "border-amber-500/30 bg-panel/60 opacity-80 hover:opacity-100 hover:border-amber-400"
+                : "border-cyan-500/30 bg-panel/80 hover:border-cyan-300 hover:bg-cyan-950/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)]",
+            )}
           >
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex size-10 items-center justify-center rounded border border-cyan-500/50 bg-cyan-950/60 text-cyan-300 group-hover:scale-105 transition-transform">
                   <Swords className="size-5" />
                 </div>
-                <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-cyan-300 border border-cyan-500/40">
-                  CHIẾN TRƯỜNG
-                </span>
+                {!isCharacterLocked ? (
+                  <span className="flex items-center gap-1 rounded bg-amber-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-300 border border-amber-500/40">
+                    <Lock className="size-2.5" /> KHÓA NV
+                  </span>
+                ) : (
+                  <span className="rounded bg-cyan-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-cyan-300 border border-cyan-500/40">
+                    CHIẾN TRƯỜNG
+                  </span>
+                )}
               </div>
               <h3 className="mt-3 font-display text-sm font-bold text-white group-hover:text-cyan-200">
                 ĐẤU TRƯỜNG CƠ GIÁP
@@ -452,7 +559,7 @@ export function StarfrontHome({
               </p>
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-2 text-xs font-mono text-cyan-300">
-              <span>Vào Đấu Trường</span>
+              <span>{!isCharacterLocked ? "Cần Khóa NV Trước" : "Vào Đấu Trường"}</span>
               <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -461,18 +568,33 @@ export function StarfrontHome({
           <div
             onClick={() => {
               playClickSound()
-              onNavigate("missions")
+              if (!isCharacterLocked) {
+                onNavigate("character-gear")
+              } else {
+                onNavigate("missions")
+              }
             }}
-            className="group relative flex flex-col justify-between rounded-sm border border-purple-500/30 bg-panel/80 p-4 transition-all hover:border-purple-300 hover:bg-purple-950/30 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] cursor-pointer"
+            className={cn(
+              "group relative flex flex-col justify-between rounded-sm border p-4 transition-all cursor-pointer",
+              !isCharacterLocked
+                ? "border-amber-500/30 bg-panel/60 opacity-80 hover:opacity-100 hover:border-amber-400"
+                : "border-purple-500/30 bg-panel/80 hover:border-purple-300 hover:bg-purple-950/30 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]",
+            )}
           >
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex size-10 items-center justify-center rounded border border-purple-500/50 bg-purple-950/60 text-purple-300 group-hover:scale-105 transition-transform">
                   <Globe2 className="size-5" />
                 </div>
-                <span className="rounded bg-purple-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-purple-300 border border-purple-500/40">
-                  CHIẾN DỊCH
-                </span>
+                {!isCharacterLocked ? (
+                  <span className="flex items-center gap-1 rounded bg-amber-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-300 border border-amber-500/40">
+                    <Lock className="size-2.5" /> KHÓA NV
+                  </span>
+                ) : (
+                  <span className="rounded bg-purple-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-purple-300 border border-purple-500/40">
+                    CHIẾN DỊCH
+                  </span>
+                )}
               </div>
               <h3 className="mt-3 font-display text-sm font-bold text-white group-hover:text-purple-200">
                 BẢN ĐỒ NHIỆM VỤ
@@ -482,7 +604,7 @@ export function StarfrontHome({
               </p>
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-2 text-xs font-mono text-purple-300">
-              <span>{progression.completedMissions.length} Ải Đã Xong</span>
+              <span>{!isCharacterLocked ? "Cần Khóa NV Trước" : `${progression.completedMissions.length} Ải Đã Xong`}</span>
               <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -491,18 +613,33 @@ export function StarfrontHome({
           <div
             onClick={() => {
               playClickSound()
-              onNavigate("shop")
+              if (!isCharacterLocked) {
+                onNavigate("character-gear")
+              } else {
+                onNavigate("shop")
+              }
             }}
-            className="group relative flex flex-col justify-between rounded-sm border border-amber-500/30 bg-panel/80 p-4 transition-all hover:border-amber-300 hover:bg-amber-950/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer"
+            className={cn(
+              "group relative flex flex-col justify-between rounded-sm border p-4 transition-all cursor-pointer",
+              !isCharacterLocked
+                ? "border-amber-500/30 bg-panel/60 opacity-80 hover:opacity-100 hover:border-amber-400"
+                : "border-amber-500/30 bg-panel/80 hover:border-amber-300 hover:bg-amber-950/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.3)]",
+            )}
           >
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex size-10 items-center justify-center rounded border border-amber-500/50 bg-amber-950/60 text-amber-300 group-hover:scale-105 transition-transform">
                   <ShoppingBag className="size-5" />
                 </div>
-                <span className="rounded bg-amber-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-300 border border-amber-500/40">
-                  THƯƠNG MẠI
-                </span>
+                {!isCharacterLocked ? (
+                  <span className="flex items-center gap-1 rounded bg-amber-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-300 border border-amber-500/40">
+                    <Lock className="size-2.5" /> KHÓA NV
+                  </span>
+                ) : (
+                  <span className="rounded bg-amber-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-300 border border-amber-500/40">
+                    THƯƠNG MẠI
+                  </span>
+                )}
               </div>
               <h3 className="mt-3 font-display text-sm font-bold text-white group-hover:text-amber-200">
                 CHỢ QUÂN SỰ KHÔNG GIAN
@@ -512,7 +649,7 @@ export function StarfrontHome({
               </p>
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-2 text-xs font-mono text-amber-300">
-              <span>{progression.freeShopRefreshes ?? 0} Lượt Free</span>
+              <span>{!isCharacterLocked ? "Cần Khóa NV Trước" : `${progression.freeShopRefreshes ?? 0} Lượt Free`}</span>
               <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
@@ -521,18 +658,33 @@ export function StarfrontHome({
           <div
             onClick={() => {
               playClickSound()
-              onNavigate("hangar")
+              if (!isCharacterLocked) {
+                onNavigate("character-gear")
+              } else {
+                onNavigate("hangar")
+              }
             }}
-            className="group relative flex flex-col justify-between rounded-sm border border-emerald-500/30 bg-panel/80 p-4 transition-all hover:border-emerald-300 hover:bg-emerald-950/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)] cursor-pointer"
+            className={cn(
+              "group relative flex flex-col justify-between rounded-sm border p-4 transition-all cursor-pointer",
+              !isCharacterLocked
+                ? "border-amber-500/30 bg-panel/60 opacity-80 hover:opacity-100 hover:border-amber-400"
+                : "border-emerald-500/30 bg-panel/80 hover:border-emerald-300 hover:bg-emerald-950/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]",
+            )}
           >
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex size-10 items-center justify-center rounded border border-emerald-500/50 bg-emerald-950/60 text-emerald-300 group-hover:scale-105 transition-transform">
                   <Boxes className="size-5" />
                 </div>
-                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-emerald-300 border border-emerald-500/40">
-                  HANGAR
-                </span>
+                {!isCharacterLocked ? (
+                  <span className="flex items-center gap-1 rounded bg-amber-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-amber-300 border border-amber-500/40">
+                    <Lock className="size-2.5" /> KHÓA NV
+                  </span>
+                ) : (
+                  <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-emerald-300 border border-emerald-500/40">
+                    HANGAR
+                  </span>
+                )}
               </div>
               <h3 className="mt-3 font-display text-sm font-bold text-white group-hover:text-emerald-200">
                 HANGAR & KHO VẬT TƯ
@@ -542,7 +694,7 @@ export function StarfrontHome({
               </p>
             </div>
             <div className="mt-4 flex items-center justify-between border-t border-border/40 pt-2 text-xs font-mono text-emerald-300">
-              <span>{progression.inventory.length} Vật Phẩm Kho</span>
+              <span>{!isCharacterLocked ? "Cần Khóa NV Trước" : `${progression.inventory.length} Vật Phẩm Kho`}</span>
               <ChevronRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>

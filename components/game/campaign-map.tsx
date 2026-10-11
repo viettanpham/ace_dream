@@ -84,6 +84,10 @@ export function CampaignMap({
   }
 
   const handleDeploy = (m: CampaignMission) => {
+    if (!progression.activePairing?.isLocked) {
+      showNotification("Bắt buộc phải chọn và Khóa Nhân Vật & Cơ Giáp trước khi xuất kích chiến dịch!", true)
+      return
+    }
     playClickSound()
     onDeployMission(m)
   }
@@ -139,6 +143,10 @@ export function CampaignMap({
 
   // Nhận nhiệm vụ phụ và xuất kích vào đấu trường
   const handleDeploySideQuest = (sq: StarfrontQuest) => {
+    if (!progression.activePairing?.isLocked) {
+      showNotification("Bắt buộc phải chọn và Khóa Nhân Vật & Cơ Giáp trước khi xuất kích chiến dịch!", true)
+      return
+    }
     playClickSound()
     const missionPayload: CampaignMission = {
       id: sq.id,
@@ -170,6 +178,23 @@ export function CampaignMap({
 
   return (
     <div className="flex flex-col gap-4 animate-in fade-in">
+      {/* Cảnh báo chưa khóa cặp đôi xuất kích */}
+      {!progression.activePairing?.isLocked && (
+        <div className="rounded-sm border border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-panel to-amber-950/60 p-3 shadow-lg flex flex-wrap items-center justify-between gap-3 font-mono text-xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="size-4 text-amber-400 shrink-0 animate-pulse" />
+            <div>
+              <span className="font-bold text-amber-300 uppercase block">
+                CẢNH BÁO: CHƯA KHÓA NHÂN VẬT & CƠ GIÁP XUẤT KÍCH
+              </span>
+              <span className="text-[11px] text-slate-300">
+                Chỉ huy cần chọn và khóa cặp đôi trong phân hệ "Nhân Vật & Cơ Giáp" trước khi có thể xuất kích vào chiến dịch!
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 1. Header Chiến Dịch */}
       <div className="rounded-sm border border-cyan-500/40 bg-gradient-to-r from-panel/90 via-black/80 to-panel/90 p-4 shadow-xl backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-3">

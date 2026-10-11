@@ -273,11 +273,12 @@ export type CombatSkill = {
   damageReduction?: number
   effectDuration?: number
   armorPenetration?: number
+  armorPen?: number
   statusToApply?: Omit<StatusEffect, "id">
   icon?: string
 }
 
-export type EnemyArchetype = "aggressive" | "defensive" | "disruptor" | "adaptive-boss"
+export type EnemyArchetype = "aggressive" | "defensive" | "disruptor" | "adaptive-boss" | "boss" | "adaptive"
 
 export type CombatUnit = {
   id: string
@@ -309,6 +310,8 @@ export type CombatUnit = {
   signatureSynergyActive?: boolean
   archetype?: EnemyArchetype
   bossPhase?: 1 | 2
+  isBoss?: boolean
+  ultimateSkillId?: string
   isChargingUltimate?: boolean
   chargedSkillName?: string
 }
@@ -321,6 +324,9 @@ export type CombatLogType =
   | "status"
   | "crit"
   | "evade"
+  | "charge"
+  | "phase"
+  | "interrupt"
   | "boss-telegraph"
   | "victory"
   | "defeat"

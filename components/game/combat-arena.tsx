@@ -164,7 +164,7 @@ export interface CombatArenaProps {
   activeCampaignMission?: CampaignMission | null
   onClearCampaignMission?: () => void
   onSelectCampaignMission?: (mission: CampaignMission | null) => void
-  onNavigateSection?: (section: "home" | "battlefield" | "missions" | "shop" | "hangar") => void
+  onNavigateSection?: (section: "home" | "battlefield" | "missions" | "shop" | "hangar" | "character-gear") => void
   isEmbeddedInShell?: boolean
 }
 
@@ -861,6 +861,16 @@ export function CombatArena({
   const handleUseSkill = (skillId: string) => {
     if (combatState.status !== "player-turn" || isProcessingAI) return
 
+    if (!progression.activePairing?.isLocked) {
+      setFloatingNotification({
+        text: "⚠️ BẮT BUỘC KHÓA NHÂN VẬT & CƠ GIÁP TRƯỚC KHI THI ĐẤU!",
+        isCrit: false,
+        isPlayer: false,
+      })
+      setTimeout(() => setFloatingNotification(null), 2000)
+      return
+    }
+
     const skill = combatState.player.skills.find((s) => s.id === skillId)
     if (skill?.targetType === "self") {
       playShieldSound()
@@ -1196,6 +1206,37 @@ export function CombatArena({
 
       {(isEmbeddedInShell || activeSubView === "combat") && (
         <>
+          {/* Cảnh báo nếu chưa khóa nhân vật */}
+          {!progression.activePairing?.isLocked && (
+            <div className="rounded-sm border border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-panel to-amber-950/60 p-3 shadow-lg flex flex-wrap items-center justify-between gap-3 font-mono text-xs animate-in fade-in">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="size-4 text-amber-400 shrink-0 animate-pulse" />
+                <div>
+                  <span className="font-bold text-amber-300 uppercase block">
+                    CẢNH BÁO: CHƯA KHÓA NHÂN VẬT & CƠ GIÁP XUẤT KÍCH
+                  </span>
+                  <span className="text-[11px] text-slate-300">
+                    Vui lòng chọn và khóa cặp đôi trong phân hệ "Nhân Vật & Cơ Giáp" để chốt tổ hợp tham chiến chính thức!
+                  </span>
+                </div>
+              </div>
+
+              {onNavigateSection && (
+                <Button
+                  size="xs"
+                  onClick={() => {
+                    playClickSound()
+                    onNavigateSection("character-gear")
+                  }}
+                  className="gap-1 text-xs bg-amber-500 text-black hover:bg-amber-400 font-bold"
+                >
+                  <Lock className="size-3" />
+                  <span>Đến Khóa Nhân Vật</span>
+                </Button>
+              )}
+            </div>
+          )}
+
           {/* Banner thông báo khi đang thực hiện nhiệm vụ chiến dịch */}
           {activeCampaignMission && (
             <div className="rounded-sm border border-cyan-400/60 bg-gradient-to-r from-cyan-950/60 via-black/70 to-cyan-950/60 p-3 shadow-lg flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
@@ -1881,8 +1922,9 @@ export function CombatArena({
                 const cooldown = player.skillCooldowns[skill.id] || 0
                 const hasCooldown = cooldown > 0
                 const notEnoughSp = player.sp < skill.spCost
+                const isPairingUnlocked = !progression.activePairing?.isLocked
                 const disabled =
-                  status !== "player-turn" || hasCooldown || notEnoughSp || isProcessingAI
+                  status !== "player-turn" || hasCooldown || notEnoughSp || isProcessingAI || isPairingUnlocked
 
                 return (
                   <button
@@ -1923,11 +1965,13 @@ export function CombatArena({
                       <span className="text-muted-foreground/80">{skill.nameEn}</span>
                       <span className={cn("font-bold group-hover:underline", disabled ? "text-muted-foreground" : currentTheme.textAccent)}>
                         {disabled
-                          ? hasCooldown
-                            ? "Đang hồi"
-                            : notEnoughSp
-                              ? "Thiếu SP"
-                              : "Chờ lượt"
+                          ? isPairingUnlocked
+                            ? "Cần Khóa NV"
+                            : hasCooldown
+                              ? "Đang hồi"
+                              : notEnoughSp
+                                ? "Thiếu SP"
+                                : "Chờ lượt"
                           : "Kích hoạt ➔"}
                       </span>
                     </div>

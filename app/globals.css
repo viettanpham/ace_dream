@@ -176,4 +176,39 @@
       rgba(2, 6, 12, 0.6) 100%
     );
   }
+
+  /* Active Sensor Scanning & Tactical Grid Pulsing */
+  .tactical-grid-scan {
+    animation: tactical-grid-pulse 4.5s ease-in-out infinite;
+  }
+
+  .tactical-sensor-sweep {
+    animation: tactical-sensor-radar 6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+
+  @keyframes tactical-grid-pulse {
+    0%, 100% {
+      opacity: 0.55;
+      filter: drop-shadow(0 0 0px transparent);
+    }
+    50% {
+      opacity: 0.95;
+      filter: drop-shadow(0 0 4px oklch(0.75 0.15 205 / 28%));
+    }
+  }
+
+  @keyframes tactical-sensor-radar {
+    0% {
+      opacity: 0.3;
+      transform: scale(0.96);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.02);
+    }
+    100% {
+      opacity: 0.3;
+      transform: scale(0.96);
+    }
+  }
 }

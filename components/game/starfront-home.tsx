@@ -16,6 +16,7 @@ import type {
   StarfrontProgression,
 } from "@/lib/game/types"
 import { cn } from "@/lib/utils"
+import { ShipStatDisplay } from "./ship-stat-display"
 import {
   Activity,
   AlertTriangle,
@@ -568,6 +569,54 @@ export function StarfrontHome({
           </div>
         </div>
       </div>
+
+      {/* BẢNG DỮ LIỆU TÁC CHIẾN CƠ GIÁP (SHIP TACTICAL TELEMETRY GRID: SHIELD, ENGINE, WEAPON POWER) */}
+      <ShipStatDisplay
+        shipName={`${activeGearDef.name.toUpperCase()} MK-IV`}
+        shipClass={activeGearDef.role.toUpperCase()}
+        hullId={`SF-${activeGearId.toUpperCase()}-${progression.level.toString().padStart(3, "0")}`}
+        shield={{
+          current: Math.round(currentStats.total.defense * 2.8 + (equippedShield ? 350 : 150)),
+          max: 1200,
+          unit: "GJ",
+          status: "SHIELD MATRIX ONLINE",
+          delta: equippedShield ? "+24% Khiên Cường Hóa" : undefined,
+          subsystems: [
+            { name: "Khiên Trang Bị", value: equippedShield ? getItemDisplayName(equippedShield) : "Tiêu chuẩn", active: true },
+            { name: "Phục hồi pha", value: "+45/giây", active: true },
+            { name: "Chỉ số Thủ", value: `${currentStats.total.defense} DEF`, active: true },
+          ],
+        }}
+        engine={{
+          current: Math.round(currentStats.total.speed * 4.2 + (equippedEngine ? 280 : 100)),
+          max: 950,
+          unit: "kN",
+          status: "WARP PROPULSION NOMINAL",
+          delta: equippedEngine ? "+18% Động Cơ Gia Tốc" : undefined,
+          subsystems: [
+            { name: "Động Cơ Trang Bị", value: equippedEngine ? getItemDisplayName(equippedEngine) : "Tiêu chuẩn", active: true },
+            { name: "Tốc Độ Thực", value: `${currentStats.total.speed} SPD`, active: true },
+            { name: "Né Tránh", value: `${evasionVal}% EVA`, active: true },
+          ],
+        }}
+        weaponPower={{
+          current: Math.round(currentStats.total.attack * 3.6 + (equippedWeapon ? 420 : 180)),
+          max: 1400,
+          unit: "MW",
+          status: "ORDNANCE ARMED & READY",
+          delta: equippedWeapon ? "+32% Hỏa Lực Trang Bị" : undefined,
+          subsystems: [
+            { name: "Vũ Khí Trang Bị", value: equippedWeapon ? getItemDisplayName(equippedWeapon) : "Tiêu chuẩn", active: true },
+            { name: "Hỏa Lực Gốc", value: `${currentStats.total.attack} ATK`, active: true },
+            { name: "Nội Tại", value: activeGearDef.passive.name, active: true },
+          ],
+        }}
+        overallReadiness={Math.min(100, Math.round(75 + (progression.level * 2.5)))}
+        onSelectMetric={(metric) => {
+          playClickSound()
+          onNavigate("hangar")
+        }}
+      />
 
       {/* 3. Trung Tâm Xuất Kích & Điều Hướng Nhanh (Action Launchpad — 4 Cards) */}
       <div>

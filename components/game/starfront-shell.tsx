@@ -57,6 +57,7 @@ import {
   ShoppingBag,
   Sparkles,
   Swords,
+  Terminal,
   UserRound,
   Users,
   Volume2,
@@ -83,6 +84,9 @@ import { PilotPanel } from "./pilot-panel"
 import { PilotStatusDashboard } from "./pilot-status-dashboard"
 import { MapPanel } from "./map-panel"
 import { PilotGallery } from "./pilot-gallery"
+import { MissionLog } from "./mission-log"
+import { FullMissionLogView } from "./full-mission-log-view"
+import { TopShipIntegrityBar } from "./top-ship-integrity-bar"
 
 export type StarfrontSection =
   | "home"
@@ -90,6 +94,7 @@ export type StarfrontSection =
   | "gallery"
   | "battlefield"
   | "missions"
+  | "mission-logs"
   | "shop"
   | "hangar"
   | "fleet"
@@ -176,7 +181,15 @@ const SECTIONS: SectionConfig[] = [
     submenus: () => [
       { id: "sectors", label: "Bản Đồ 4 Sector Vũ Trụ" },
       { id: "side-quests", label: "Nhiệm Vụ Phụ Tuyến" },
+      { id: "full-logs", label: "Xem Full Logs (Tùy Chỉnh)", icon: Terminal, badge: "Full" },
     ],
+  },
+  {
+    id: "mission-logs",
+    label: "Nhật Ký Tác Chiến // Full Logs",
+    shortLabel: "Full Mission Logs",
+    icon: Terminal,
+    badge: () => "Logs",
   },
   {
     id: "shop",
@@ -391,6 +404,10 @@ export function StarfrontShell() {
     if (sectionId === "hangar") {
       const targetTab = (subId === "enhance" ? "enhancement" : subId) as HangarTab
       setActiveHangarTab(targetTab)
+    } else if (sectionId === "missions" && subId === "full-logs") {
+      handleSwitchSection("mission-logs")
+      setMobileMenuOpen(false)
+      return
     } else if (sectionId === "battlefield") {
       if (subId === "campaign") {
         const autoMission = getCurrentOrNextCampaignMission(progression, null)
@@ -790,8 +807,36 @@ export function StarfrontShell() {
             </div>
           </nav>
 
-          {/* E. Footer Sidebar: Âm Thanh, CRT Scanline, Cài Lại & Thông Tin */}
-          <div className="shrink-0 border-t border-border/60 p-2.5 bg-black/50 space-y-2">
+          {/* E. Bảng Nhật Ký Nhiệm Vụ (Mission Log Terminal - Nằm ở vị trí Bottom của Left Menu) */}
+          <div className="shrink-0 border-t border-cyan-500/30 p-2 bg-black/60">
+            {!isSidebarCollapsed ? (
+              <MissionLog
+                activeMission={activeCampaignMission}
+                progression={progression}
+                position="embedded"
+                onNavigateMission={(missionId) => {
+                  playClickSound()
+                  setActiveSection("battlefield")
+                }}
+                onOpenFullLogs={() => {
+                  playClickSound()
+                  handleSwitchSection("mission-logs")
+                }}
+              />
+            ) : (
+              <button
+                onClick={() => handleSwitchSection("mission-logs")}
+                className="w-full flex flex-col items-center justify-center p-1.5 rounded text-cyan-300 hover:bg-cyan-950/60 transition-colors"
+                title="Mở Nhật Ký Tác Chiến // Full Mission Logs"
+              >
+                <Terminal className="size-4 animate-pulse text-cyan-400" />
+                <span className="text-[8px] font-mono mt-0.5 font-bold">LOGS</span>
+              </button>
+            )}
+          </div>
+
+          {/* F. Footer Sidebar: Âm Thanh, CRT Scanline, Cài Lại & Thông Tin */}
+          <div className="shrink-0 border-t border-border/60 p-2 bg-black/70 space-y-2">
             <div className="flex items-center justify-between gap-1">
               <button
                 onClick={handleToggleAudio}
@@ -861,6 +906,12 @@ export function StarfrontShell() {
             isSidebarCollapsed ? "lg:pl-16" : "lg:pl-64 sm:lg:pl-72",
           )}
         >
+          {/* THANH TRẠNG THÁI TOÀN VẸN THÂN TÀU / GIÁP BỀN VỮNG TRÊN ĐẦU MÀN HÌNH (PERSISTENT TOP SHIP INTEGRITY BAR) */}
+          <TopShipIntegrityBar
+            progression={progression}
+            onInspectShip={() => handleSwitchSection("hangar")}
+          />
+
           {/* A. Compact Top Bar: Tiêu đề phân hệ & Nút Mobile Menu */}
           <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border/70 bg-panel/90 px-4 py-2 backdrop-blur-md">
             {/* Trái: Nút Hamburger Mobile & Breadcrumb Phân Hệ */}
@@ -1097,6 +1148,19 @@ export function StarfrontShell() {
                 onUpdateProgression={handleUpdateProgression}
                 onEquipItem={handleEquipItem}
                 onUnequipSlot={handleUnequipSlot}
+                onNavigateSection={handleSwitchSection}
+              />
+            )}
+
+            {/* Phân hệ: Nhật Ký Tác Chiến Toàn Diện (Full Mission Telemetry Logs) */}
+            {activeSection === "mission-logs" && (
+              <FullMissionLogView
+                activeMission={activeCampaignMission}
+                progression={progression}
+                onNavigateMission={(missionId) => {
+                  playClickSound()
+                  setActiveSection("battlefield")
+                }}
                 onNavigateSection={handleSwitchSection}
               />
             )}

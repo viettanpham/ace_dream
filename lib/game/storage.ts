@@ -1,4 +1,13 @@
 import { INITIAL_STARFRONT_PROGRESSION } from "./progression"
+import {
+  createInitialPilotSynergySkill,
+  DEFAULT_GLOBAL_ADMIN_CONFIG,
+  normalizePilotSynergySkill,
+} from "./pilot-skill-engine"
+import type {
+  GlobalAdminConfig,
+  PilotSynergySkillInstance,
+} from "./pilot-skill-types"
 import type {
   ActivePairingState,
   PilotProgressionData,
@@ -197,6 +206,30 @@ export function migrateProgressionToV4(parsed: any): StarfrontProgression {
     },
   }
 
+  // 3. Khởi tạo & Chuẩn hóa Skill Liên Hoàn độc lập theo từng phi công (Phase 5.9)
+  const globalAdminConfig: GlobalAdminConfig = parsed?.globalAdminConfig
+    ? {
+        globalMaxPilotLevel: Math.max(1, Number(parsed.globalAdminConfig.globalMaxPilotLevel) || 120),
+        globalMaxSkillLevel: Math.max(1, Number(parsed.globalAdminConfig.globalMaxSkillLevel) || 30),
+        priorityMode: parsed.globalAdminConfig.priorityMode === "GLOBAL_PRIORITY" ? "GLOBAL_PRIORITY" : "TEMPLATE_OVERRIDE",
+        lastModified: Number(parsed.globalAdminConfig.lastModified) || Date.now(),
+        templateOverrides: parsed.globalAdminConfig.templateOverrides || {},
+      }
+    : { ...DEFAULT_GLOBAL_ADMIN_CONFIG }
+
+  const pilotSkills: Record<string, PilotSynergySkillInstance> = {}
+  for (const pId of VALID_PILOT_IDS) {
+    const existingSkill = parsed?.pilotSkills?.[pId]
+    const pLvl = pilots[pId]?.level || 1
+    if (existingSkill && typeof existingSkill === "object" && existingSkill.templateId) {
+      pilotSkills[pId] = normalizePilotSynergySkill(existingSkill, globalAdminConfig)
+    } else {
+      pilotSkills[pId] = createInitialPilotSynergySkill(pId, pLvl, globalAdminConfig)
+    }
+  }
+
+  const rerollTokens = Math.max(0, Number(parsed?.rerollTokens !== undefined ? parsed.rerollTokens : 5))
+
   return {
     ...baseV3,
     version: 4,
@@ -204,6 +237,9 @@ export function migrateProgressionToV4(parsed: any): StarfrontProgression {
     activePairing,
     pilots,
     gearSlotLevels: parsed?.gearSlotLevels,
+    pilotSkills,
+    globalAdminConfig,
+    rerollTokens,
   }
 }
 

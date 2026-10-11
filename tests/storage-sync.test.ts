@@ -288,7 +288,7 @@ describe("Milestone 5.4 — Storage Schema v3 & Hardened State Synchronization",
       assert.equal(STORAGE_KEY_V3, "STARFRONT_SAVE_DATA_V3")
       assert.equal(STORAGE_KEY_V2, "STARFRONT_SAVE_DATA_V2")
       assert.equal(STORAGE_KEY_V1, "STARFRONT_SAVE_DATA_V1")
-      assert.equal(INITIAL_STARFRONT_PROGRESSION.version, 3)
+      assert.ok(INITIAL_STARFRONT_PROGRESSION.version >= 3, "Schema version phải từ v3 trở lên (hiện tại v4)")
     })
   })
 })

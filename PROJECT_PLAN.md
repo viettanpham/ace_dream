@@ -18,10 +18,10 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | Đã hoàn thành Phase 1 đến Phase 5.8 (75/75 tests PASS). Hệ thống Ghép Đôi Nhân Vật & Cơ Giáp đã vận hành đầy đủ. |
-| **Phase tiếp theo cần thực hiện?** | **Phase 5.9 / Phase 6**: Tích hợp Mô-đun kỹ năng rời, Specter Gear & Phân hệ Chiến tranh Mẹ hạm. |
-| **Tài liệu BẮT BUỘC đọc trước khi sửa code?** | 1. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md)<br>2. [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) |
-| **Các hệ thống liên quan trực tiếp?** | - `lib/game/types.ts` & `lib/game/storage.ts`: Save Schema v4 & migration.<br>- `lib/game/progression.ts`: Hàm tính toán chỉ số, EXP, và khóa cặp đôi.<br>- `components/game/character-gear-select.tsx`: Giao diện ghép đôi 3 bước.<br>- `components/game/starfront-shell.tsx`: Điều hướng menu độc lập Nhân Vật & Cơ Giáp. |
+| **Trạng thái hiện tại của dự án?** | Đã hoàn thành Phase 1 đến Phase 5.9 (93/93 tests PASS). Tuyệt Kỹ Liên Hoàn Phi Công, Reroll, Admin CP và Hệ Thống Ghép Đôi Nhân Vật & Cơ Giáp đã vận hành đầy đủ. |
+| **Phase tiếp theo cần thực hiện?** | **Phase 6.0**: Specter Gear, Phân hệ Chiến tranh Mẹ hạm & Mở rộng Thiên Hà. |
+| **Tài liệu BẮT BUỘC đọc trước khi sửa code?** | 1. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md)<br>2. [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md)<br>3. [`docs/systems/SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) |
+| **Các hệ thống liên quan trực tiếp?** | - `lib/game/pilot-skill-types.ts` & `pilot-skill-engine.ts`: Tuyệt kỹ liên hoàn, template, progression, reroll.<br>- `lib/game/types.ts` & `lib/game/storage.ts`: Save Schema v4 & migration.<br>- `lib/game/progression.ts` & `engine.ts`: Tính toán chỉ số, thực chiến, phản đòn, sát thương.<br>- `components/game/character-gear-select.tsx` & `pilot-skill-view.tsx`: Giao diện buồng lái, sub-tab kỹ năng phi công.<br>- `components/game/admin-cp-modal.tsx`: Bảng điều khiển quản trị toàn cục. |
 
 *Lưu ý: Không đọc tài liệu lịch sử cũ trừ khi cần đối chiếu tương thích ngược (Backward Compatibility).*
 

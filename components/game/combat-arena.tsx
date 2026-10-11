@@ -1867,7 +1867,7 @@ export function CombatArena({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
               {player.skills.map((skill) => {
                 const cooldown = player.skillCooldowns[skill.id] || 0
                 const hasCooldown = cooldown > 0
@@ -1925,6 +1925,97 @@ export function CombatArena({
                   </button>
                 )
               })}
+
+              {/* Ô Kỹ Năng / Nội Tại Liên Hoàn Phi Công (Slot 5) */}
+              {player.pilotSynergySkill && (
+                player.pilotSynergySkill.isPassive ? (
+                  <div className="group relative flex flex-col justify-between rounded-sm border border-purple-500/50 bg-purple-950/20 p-3 text-left">
+                    <div>
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="font-display text-xs font-bold text-purple-300 flex items-center gap-1 truncate">
+                          <Sparkles className="size-3 text-purple-400 shrink-0" />
+                          {player.pilotSynergySkill.name}
+                        </span>
+                        <span className="rounded bg-purple-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-purple-300 border border-purple-400/40 shrink-0">
+                          NỘI TẠI
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                        {player.pilotSynergySkill.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-2.5 flex items-center justify-between border-t border-purple-500/30 pt-1.5 text-[10px] font-mono">
+                      <span className="text-purple-300/80">
+                        {player.signatureSynergyActive ? "✨ ĐỒNG BỘ 100%" : "Hiệp Đồng Phi Công"}
+                      </span>
+                      <span className="font-bold text-emerald-400">
+                        Tự Kích Hoạt
+                      </span>
+                    </div>
+                  </div>
+                ) : (() => {
+                  const synSkill = player.pilotSynergySkill
+                  const synCd = player.skillCooldowns["pilot-synergy"] || 0
+                  const hasSynCd = synCd > 0
+                  let spReduction = 0
+                  for (const line of synSkill.secondaryLines) {
+                    if (line.statKey === "sp_cost_reduction_pct") spReduction += line.value / 100
+                  }
+                  const synSpCost = Math.max(0, Math.round(synSkill.spCost * (1 - spReduction)))
+                  const synNotEnoughSp = player.sp < synSpCost
+                  const synDisabled = status !== "player-turn" || hasSynCd || synNotEnoughSp || isProcessingAI
+
+                  return (
+                    <button
+                      disabled={synDisabled}
+                      onClick={() => handleUseSkill("pilot-synergy")}
+                      className={cn(
+                        "group relative flex flex-col justify-between rounded-sm border p-3 text-left transition-all",
+                        synDisabled
+                          ? "cursor-not-allowed border-purple-900/40 bg-purple-950/20 opacity-60 text-muted-foreground"
+                          : "cursor-pointer border-purple-500/60 bg-gradient-to-b from-purple-950/40 to-panel/80 hover:border-purple-400 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]",
+                      )}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-display text-xs font-bold text-purple-200 group-hover:text-purple-100 flex items-center gap-1 truncate">
+                            <Sparkles className="size-3 text-purple-400 shrink-0" />
+                            {synSkill.name}
+                          </span>
+                          {hasSynCd ? (
+                            <span className="rounded bg-red-950/80 px-1.5 py-0.5 font-mono text-[10px] font-bold text-red-400 border border-red-500/40 shrink-0">
+                              CD: {synCd}l
+                            </span>
+                          ) : (
+                            <span className="rounded bg-purple-500/20 px-1.5 py-0.5 font-mono text-[10px] text-purple-300 border border-purple-400/50 shrink-0">
+                              {synSpCost} SP
+                            </span>
+                          )}
+                        </div>
+                        <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                          {synSkill.description}
+                        </p>
+                      </div>
+
+                      <div className="mt-2.5 flex items-center justify-between border-t border-purple-500/30 pt-1.5 text-[10px] font-mono">
+                        <span className="text-purple-300/80">
+                          {player.signatureSynergyActive ? "✨ ĐỒNG BỘ 100%" : "Tuyệt Kỹ Phi Công"}
+                        </span>
+                        <span className={cn("font-bold group-hover:underline", synDisabled ? "text-muted-foreground" : "text-purple-400")}>
+                          {synDisabled
+                            ? hasSynCd
+                              ? "Đang hồi"
+                              : synNotEnoughSp
+                                ? "Thiếu SP"
+                                : "Chờ lượt"
+                            : "XUẤT KÍCH ⚡"}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })()
+              )}
             </div>
           </div>
 

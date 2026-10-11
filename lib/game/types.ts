@@ -305,6 +305,8 @@ export type CombatUnit = {
   pilotId?: string
   pilotName?: string
   pilotPassiveTriggered?: boolean
+  pilotSynergySkill?: import("./pilot-skill-types").PilotSynergySkillInstance
+  signatureSynergyActive?: boolean
   archetype?: EnemyArchetype
   bossPhase?: 1 | 2
   isChargingUltimate?: boolean
@@ -313,6 +315,7 @@ export type CombatUnit = {
 
 export type CombatLogType =
   | "player-action"
+  | "pilot-synergy"
   | "enemy-action"
   | "damage"
   | "status"
@@ -516,6 +519,9 @@ export type StarfrontProgression = {
   currentShopItems?: ArmoryShopItem[] // Danh sách hàng chợ quân sự hiện tại
   sideQuests?: StarfrontQuest[] // Danh sách nhiệm vụ phụ tuyến
   missionOverrides?: Record<string, { quality?: QuestQuality; variantId?: EnemyVariantId; previewReward?: QuestRewardPreview }>
+  pilotSkills?: Record<string, import("./pilot-skill-types").PilotSynergySkillInstance> // Phase 5.9: Skill Liên Hoàn độc lập theo từng phi công
+  globalAdminConfig?: import("./pilot-skill-types").GlobalAdminConfig // Phase 5.9: Cấu hình quản trị toàn cục & giới hạn cấp
+  rerollTokens?: number // Phase 5.9: Vé / Token Reroll Dòng Phụ
 }
 
 export type BattleRewardResult = {

@@ -930,6 +930,102 @@ export function executePlayerAction(
     }
   }
 
+  // Phase 5.9: Xử lý Kỹ Năng Liên Hoàn Phi Công (Active)
+  if (skillId === "pilot-synergy" && player.pilotSynergySkill && !player.pilotSynergySkill.isPassive) {
+    const pSkill = player.pilotSynergySkill
+    const currentCd = player.skillCooldowns["pilot-synergy"] || 0
+    if (currentCd > 0) return state
+
+    let spReduction = 0
+    for (const line of pSkill.secondaryLines) {
+      if (line.statKey === "sp_cost_reduction_pct") spReduction += line.value / 100
+    }
+    const finalSpCost = Math.max(0, Math.round(pSkill.spCost * (1 - spReduction)))
+    if (player.sp < finalSpCost) return state
+
+    player.sp = Math.max(0, player.sp - finalSpCost)
+    player.skillCooldowns["pilot-synergy"] = pSkill.cooldownTurns
+
+    const mult = pSkill.mainLine.currentValue / 100
+    const rawDmg = Math.round(player.attack * mult)
+    const defMultiplier = pSkill.skillType === "DEBUFF" ? 0.35 : 0.65
+    const mitigatedDmg = Math.max(25, Math.round(rawDmg - (enemy.defense * (1 - (player.armorPenetration || 0)) * defMultiplier)))
+
+    enemy.hp = Math.max(0, enemy.hp - mitigatedDmg)
+
+    let synergyLog = `[LIÊN HOÀN PHI CÔNG ⚡] ${player.pilotName || "Phi công"} xuất kích Tuyệt Kỹ Liên Hoàn [${pSkill.name}]! Gây ${mitigatedDmg} sát thương uy lực áp đảo lên ${enemy.name}!`
+    if (player.signatureSynergyActive) {
+      synergyLog += ` [HIỆP ĐỒNG ĐỒNG BỘ 100% ✨] Kích hoạt toàn phần uy lực của ${player.name}!`
+      if (player.pilotId === "marcus") {
+        const bonusDmg = Math.round(mitigatedDmg * 0.35)
+        enemy.hp = Math.max(0, enemy.hp - bonusDmg)
+        player.sp = Math.min(player.maxSp, player.sp + 15)
+        synergyLog += ` Khai hỏa loạt pháo bồi gây thêm ${bonusDmg} sát thương và nạp lại +15 SP!`
+      } else if (player.pilotId === "eric") {
+        applyStatusEffect(enemy, {
+          type: "armor-break",
+          name: "Vỡ Vỏ Giáp Hạt Nhân",
+          desc: "Đạn hạt nhân phá hủy kết cấu giáp, giảm 45% DEF trong 2 lượt",
+          duration: 2,
+          value: 0.45,
+          stackType: "refresh",
+          isDebuff: true,
+        })
+        synergyLog += ` Phá vỡ giáp đối thủ (-45% DEF)!`
+      }
+    }
+
+    newLogs.push({
+      id: `log-${Date.now()}-psyn`,
+      turn: state.turnNumber,
+      type: "pilot-synergy",
+      text: synergyLog,
+      actorName: player.pilotName || "Phi công",
+      targetName: enemy.name,
+      value: mitigatedDmg,
+      timestamp: now,
+    })
+
+    if (enemy.hp <= 0) {
+      newLogs.push({
+        id: `log-${Date.now()}-vic-syn`,
+        turn: state.turnNumber,
+        type: "victory",
+        text: `[CHIẾN THẮNG 🏆] Mục tiêu ${enemy.name} bị tiêu diệt bởi Tuyệt Kỹ Liên Hoàn của phi công! Toàn thắng trở về căn cứ!`,
+        actorName: "HỆ THỐNG",
+        timestamp: now,
+      })
+      return {
+        ...state,
+        player,
+        enemy,
+        status: "victory",
+        logs: newLogs,
+        lastAction: {
+          actorId: player.id,
+          skillName: pSkill.name,
+          damage: mitigatedDmg,
+        },
+      }
+    }
+
+    const updatedQueue = calculateTurnQueue(player, enemy)
+    return {
+      ...state,
+      player,
+      enemy,
+      turnQueue: updatedQueue,
+      status: "enemy-turn",
+      currentTurnActorId: enemy.id,
+      logs: newLogs,
+      lastAction: {
+        actorId: player.id,
+        skillName: pSkill.name,
+        damage: mitigatedDmg,
+      },
+    }
+  }
+
   const skill = player.skills.find((s) => s.id === skillId)
   if (!skill) return state
 
@@ -1032,13 +1128,16 @@ export function executePlayerAction(
       const shouldFalconFollowUp =
         options?.forceFalconFollowUp !== undefined ? options.forceFalconFollowUp : Math.random() < 0.50
       if (isCrit && player.gearType === "falcon" && shouldFalconFollowUp) {
-        falconFollowUpDmg = Math.max(25, Math.round(damage * 0.50))
+        const leviPct = player.pilotSynergySkill?.skillType === "FOLLOW_UP"
+          ? (player.pilotSynergySkill.mainLine.currentValue / 100)
+          : 0.50
+        falconFollowUpDmg = Math.max(25, Math.round(damage * leviPct))
         enemy.hp = Math.max(0, enemy.hp - falconFollowUpDmg)
         newLogs.push({
           id: `log-${Date.now()}-falcon-followup`,
           turn: state.turnNumber,
           type: "crit",
-          text: `[NỘI TẠI FALCON ⚡] Khí Động Học Mach kích hoạt! Đòn bạo kích khai hỏa tiếp một đòn bắn bồi không tốn SP, gây thêm ${falconFollowUpDmg} sát thương!`,
+          text: `[NỘI TẠI FALCON ⚡] Khí Động Học Mach${player.pilotSynergySkill?.skillType === "FOLLOW_UP" ? " & Tàn Ảnh Hư Không" : ""} kích hoạt! Đòn bạo kích khai hỏa tiếp một đòn bắn bồi không tốn SP, gây thêm ${falconFollowUpDmg} sát thương!`,
           actorName: player.name,
           targetName: enemy.name,
           value: falconFollowUpDmg,
@@ -1429,6 +1528,47 @@ export function executeEnemyAIAction(
         actorName: player.name,
         timestamp: now,
       })
+
+      // Alviss / Evasion Synergy: Phản kích né tránh chớp nhoáng
+      if (player.pilotId === "alviss") {
+        const counterDmg = Math.max(15, Math.round(player.attack * 0.45 * (player.signatureSynergyActive ? 1.4 : 1.0)))
+        enemy.hp = Math.max(0, enemy.hp - counterDmg)
+        newLogs.push({
+          id: `log-${Date.now()}-alviss-counter`,
+          turn: state.turnNumber,
+          type: "pilot-synergy",
+          text: `[LIÊN HOÀN ALVISS ⚡] Nhờ né tránh ngoạn mục, Alviss kích hoạt [Gia Tốc Lượng Tử] phóng đạn xung kích phản công ${enemy.name}! Gây ${counterDmg} sát thương chớp nhoáng!${player.signatureSynergyActive ? " [HIỆP ĐỒNG FALCON ✨]" : ""}`,
+          actorName: player.pilotName || player.name,
+          targetName: enemy.name,
+          value: counterDmg,
+          timestamp: now,
+        })
+
+        if (enemy.hp <= 0) {
+          newLogs.push({
+            id: `log-${Date.now()}-vic-counter`,
+            turn: state.turnNumber,
+            type: "victory",
+            text: `[CHIẾN THẮNG 🏆] Mục tiêu ${enemy.name} bị tiêu diệt bởi đòn phản kích né tránh của Alviss! Cơ giáp toàn thắng trở về căn cứ!`,
+            actorName: "HỆ THỐNG",
+            timestamp: now,
+          })
+          return {
+            ...state,
+            player,
+            enemy,
+            telegraphedAttack: null,
+            status: "victory",
+            logs: newLogs,
+            lastAction: {
+              actorId: player.id,
+              skillName: "Phản Kích Gia Tốc Lượng Tử",
+              damage: counterDmg,
+            },
+          }
+        }
+      }
+
       lastActionData = {
         actorId: enemy.id,
         skillName: selectedSkill.name,
@@ -1452,13 +1592,16 @@ export function executeEnemyAIAction(
         (player.shield === 0 || player.shield === undefined)
       ) {
         player.pilotPassiveTriggered = true
-        const restoredShield = Math.max(50, Math.round((player.maxShield || 300) * 0.30))
+        const synergyShieldBonus = player.pilotSynergySkill?.skillType === "SHIELD"
+          ? Math.round(player.pilotSynergySkill.mainLine.currentValue)
+          : 0
+        const restoredShield = Math.max(50, Math.round((player.maxShield || 300) * 0.30) + synergyShieldBonus)
         player.shield = restoredShield
         newLogs.push({
           id: `log-${Date.now()}-val-passive`,
           turn: state.turnNumber,
           type: "status",
-          text: `[NỘI TẠI VALENTINE 🛡️] Lá Chắn Cấp Cứu của Valentine kích hoạt khẩn cấp khi khiên bị vỡ! Tái tạo ${restoredShield} Khiên năng lượng (1 lần/trận)!`,
+          text: `[NỘI TẠI VALENTINE 🛡️] Lá Chắn Cấp Cứu của Valentine kích hoạt khẩn cấp khi khiên bị vỡ! Tái tạo ${restoredShield} Khiên năng lượng${synergyShieldBonus > 0 ? ` (kèm Thánh Vực Nano +${synergyShieldBonus})` : ""} (1 lần/trận)!`,
           actorName: player.name,
           timestamp: now,
         })

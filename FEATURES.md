@@ -12,8 +12,8 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 2** | Tiến Trình Nhân Vật & Kho Trang Bị (Progression & Loadout) | **Đã triển khai** | Đã có trong `progression.ts`, `storage.ts`, `starfront-hangar.tsx`. Level, EXP, Credits, 3 ô trang bị. |
 | **Phase 3** | Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ (Missions, Gears & Shop) | **Đã triển khai** | Đã có trong `campaign-map.tsx`, `starfront-shop.tsx`, `audio.ts`. 3 Sector (9 ải), Vanguard / Falcon / Aegis, Chợ vũ khí, Web Audio. |
 | **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Đã triển khai** | Hoàn thành Milestones 4.1 -> 4.4: Status Effects (DoT/Stun/Slow/ECM), 4 Archetype AI, Boss 2 Pha Overdrive, Telegraphed Attack, Dynamic Turn Queue & Evasion. Đã kiểm chứng 36/36 tests. |
-| **Phase 5** | Tiến Trình Cơ Giáp, Cường Hóa & Nhiệm Vụ Phân Tầng (Progression, Gear & Quests) | **Đang mở rộng** | Đã hoàn thành Milestones 5.1 -> 5.6 (60/60 tests PASS). Milestone 5.7 (Unified Equipment & Skill Module System) đang trong giai đoạn Lập Kế Hoạch (Planning — Chưa triển khai code gameplay). |
-| **Phase 6** | Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (World & War Expansion) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã 4 Milestone chi tiết trong roadmap. |
+| **Phase 5** | Tiến Trình Cơ Giáp, Cường Hóa, Ghép Đôi Pilot & Pilot Skill Liên Hoàn | **Đã triển khai** | Hoàn thành Milestones 5.1 -> 5.9 (93/93 tests PASS). Bao gồm Ghép đôi 3 bước, Khóa cặp đôi, Tiến trình 4 phi công, Tuyệt Kỹ Liên Hoàn, Reroll, Buồng lái PilotSkillView và Admin CP. |
+| **Phase 6** | Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (World & War Expansion) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã các Milestone chi tiết trong roadmap. |
 
 ---
 

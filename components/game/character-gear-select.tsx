@@ -27,6 +27,7 @@ import {
   RotateCcw,
   Shield,
   ShieldAlert,
+  Sliders,
   Sparkles,
   Sword,
   Swords,
@@ -81,6 +82,10 @@ import {
   SLOT_META,
   type SkillSlotDetail,
 } from "./starfront-hangar"
+import { PilotSkillView } from "./pilot-skill-view"
+import { AdminCpModal } from "./admin-cp-modal"
+import { createInitialPilotSynergySkill } from "@/lib/game/pilot-skill-engine"
+import type { PilotSynergySkillInstance } from "@/lib/game/pilot-skill-types"
 import { cn } from "@/lib/utils"
 
 interface CharacterGearSelectProps {
@@ -93,7 +98,7 @@ interface CharacterGearSelectProps {
 }
 
 type SelectionStep = 1 | 2 | 3
-type CockpitSubTab = "equipment" | "skills"
+type CockpitSubTab = "equipment" | "skills" | "pilot_synergy"
 
 export function CharacterGearSelect({
   progression,
@@ -136,6 +141,7 @@ export function CharacterGearSelect({
   const [inspectModalOpen, setInspectModalOpen] = useState(false)
   const [inspectPilotId, setInspectPilotId] = useState<string>(selectedPilotId)
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [isAdminCpOpen, setIsAdminCpOpen] = useState(false)
 
   // Phi công & Cơ giáp hiện đang được kích hoạt xuất kích (Active Pairing)
   const activePilotId = activePairing.pilotId || "marcus"
@@ -151,6 +157,39 @@ export function CharacterGearSelect({
     exp: 0,
     allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
     availablePoints: 0,
+  }
+
+  // Phase 5.9: Kỹ năng Liên Hoàn của phi công đang hoạt động
+  const activePilotSynergySkill = useMemo(() => {
+    return (
+      progression.pilotSkills?.[activePilotId] ||
+      createInitialPilotSynergySkill(
+        activePilotId,
+        activePilotProg.level,
+        progression.globalAdminConfig,
+      )
+    )
+  }, [progression.pilotSkills, activePilotId, activePilotProg.level, progression.globalAdminConfig])
+
+  const handleUpdatePilotSkill = (
+    updatedSkill: PilotSynergySkillInstance,
+    tokensUsed: number,
+    creditsUsed: number,
+  ) => {
+    const updatedSkills = {
+      ...(progression.pilotSkills || {}),
+      [activePilotId]: updatedSkill,
+    }
+    const nextTokens = Math.max(0, (progression.rerollTokens || 0) - tokensUsed)
+    const nextCredits = Math.max(0, progression.credits - creditsUsed)
+    const updatedProg: StarfrontProgression = {
+      ...progression,
+      pilotSkills: updatedSkills,
+      rerollTokens: nextTokens,
+      credits: nextCredits,
+    }
+    onUpdateProgression(updatedProg)
+    saveStarfrontProgression(updatedProg)
   }
 
   // Phi công & Cơ giáp được chọn trong luồng 3 bước (Flow Selection)
@@ -1107,19 +1146,49 @@ export function CharacterGearSelect({
                 )}
               >
                 <Flame className="size-3.5" />
-                <span>5 Mô-Đun Kỹ Năng Chiến Đấu</span>
+                <span>5 Mô-Đun Kỹ Năng Cơ Giáp</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  playClickSound()
+                  setCockpitTab("pilot_synergy")
+                }}
+                className={cn(
+                  "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
+                  cockpitTab === "pilot_synergy"
+                    ? "bg-purple-600 text-white font-bold shadow-[0_0_10px_rgba(168,85,247,0.4)]"
+                    : "text-muted-foreground hover:text-white",
+                )}
+              >
+                <Sparkles className="size-3.5 text-purple-400" />
+                <span>Tuyệt Kỹ Liên Hoàn Phi Công (⚡ Mới)</span>
               </button>
             </div>
 
-            {onNavigateToCombat && (
+            <div className="flex items-center gap-2">
               <button
-                onClick={onNavigateToCombat}
-                className="flex items-center gap-1.5 rounded bg-amber-500/20 border border-amber-400/60 px-3 py-1.5 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/30 transition-colors cursor-pointer"
+                onClick={() => {
+                  playClickSound()
+                  setIsAdminCpOpen(true)
+                }}
+                className="flex items-center gap-1.5 rounded bg-purple-500/20 border border-purple-400/60 px-3 py-1.5 text-xs font-mono font-bold text-purple-300 hover:bg-purple-500/30 transition-colors cursor-pointer"
+                title="Mở Bảng Điều Khiển Admin CP Quản Trị"
               >
-                <span>Vào Đấu Trường Ngay</span>
-                <ArrowRight className="size-3" />
+                <Sliders className="size-3 text-purple-400" />
+                <span>Admin CP</span>
               </button>
-            )}
+
+              {onNavigateToCombat && (
+                <button
+                  onClick={onNavigateToCombat}
+                  className="flex items-center gap-1.5 rounded bg-amber-500/20 border border-amber-400/60 px-3 py-1.5 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/30 transition-colors cursor-pointer"
+                >
+                  <span>Vào Đấu Trường Ngay</span>
+                  <ArrowRight className="size-3" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* ================================================================
@@ -1454,6 +1523,22 @@ export function CharacterGearSelect({
               )}
             </div>
           )}
+
+          {/* ================================================================
+              SUB-TAB 3: TUYỆT KỸ LIÊN HOÀN PHI CÔNG & HIỆP ĐỒNG (PHASE 5.9)
+              ================================================================ */}
+          {cockpitTab === "pilot_synergy" && (
+            <div className="space-y-4">
+              <PilotSkillView
+                skill={activePilotSynergySkill}
+                currentGearId={activeGearId}
+                rerollTokens={progression.rerollTokens || 0}
+                credits={progression.credits}
+                onUpdateSkill={handleUpdatePilotSkill}
+                onOpenAdminCP={() => setIsAdminCpOpen(true)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -1769,6 +1854,19 @@ export function CharacterGearSelect({
           </div>
         </div>
       )}
+
+      {/* ====================================================================
+          MODAL: ADMIN CONTROL PANEL (PHASE 5.9 QUẢN TRỊ TOÀN CỤC)
+          ==================================================================== */}
+      <AdminCpModal
+        progression={progression}
+        isOpen={isAdminCpOpen}
+        onClose={() => setIsAdminCpOpen(false)}
+        onUpdateProgression={(updated) => {
+          onUpdateProgression(updated)
+          saveStarfrontProgression(updated)
+        }}
+      />
     </div>
   )
 }

@@ -166,3 +166,19 @@ Mỗi phi công sở hữu một lộ trình tăng trưởng hoàn toàn độc 
 4. **Hệ Số Khuếch Đại Slot (Slot Multiplier)**: Cấp ô kỹ năng (+2.5% hiệu lực / cấp slot).
 5. **Chỉ Số Thực Tế Trước Trận (Effective Loadout Stats)**: Tổng hợp hiển thị trên giao diện buồng lái trước khi bấm xuất kích.
 6. **Hiệu Ứng Điều Kiện Trong Trận (In-Combat Conditional Effects)**: Các hiệu ứng như "Tăng 8% khi HP địch >70%" hoặc "Nội tại Vanguard hồi SP mỗi lượt" được dán nhãn riêng: `[Hiệu Ứng Kích Hoạt Trong Trận]`.
+
+---
+
+## 7. Tuyệt Kỹ Liên Hoàn & Hiệp Đồng Đồng Bộ (Phase 5.9 Synergy Skills)
+
+> **Trạng thái:** `[IMPLEMENTED]` (Milestone 5.9).
+
+1. **Buồng Lái 3 Phân Hệ (3 Cockpit Sub-Tabs)**:
+   - **Tab 1: Buồng Lái & Trang Bị (3 Ô)**: Lắp đặt Weapon, Shield, Engine với cấp cường hóa +1..+10.
+   - **Tab 2: 5 Mô-Đun Kỹ Năng Cơ Giáp**: 5 slot kỹ năng của cơ giáp (Basic, Active 1-3, Ultimate).
+   - **Tab 3: Tuyệt Kỹ Liên Hoàn Phi Công (⚡ Mới)**: Trực tiếp hiển thị thẻ kỹ năng liên hoàn độc lập của phi công, điểm sức mạnh Skill Power, mốc mở khóa milestone, và modal Reroll dòng phụ.
+2. **Hiệp Đồng Đặc Trưng 100% (Signature Synergy Match)**:
+   - Khi phi công điều khiển đúng **Signature Gear** của mình (Marcus + Vanguard, Valentine + Aegis, Alviss + Falcon, Eric + Aegis), hiệu ứng hiệp đồng đồng bộ 100% được kích hoạt tự động với hào quang đặc biệt trên UI và trong chiến đấu.
+3. **Bảng Điều Khiển Quản Trị Toàn Cục (Admin CP)**:
+   - Cho phép Quản trị viên điều chỉnh trần cấp độ phi công (`globalMaxPilotLevel`), trần cấp độ kỹ năng (`globalMaxSkillLevel`), chọn chế độ ưu tiên (`GLOBAL_PRIORITY` hoặc `TEMPLATE_OVERRIDE`), nạp thêm Vé Reroll và chuẩn hóa toàn bộ dữ liệu chỉ với 1 click.
+

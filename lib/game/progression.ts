@@ -5,6 +5,12 @@ import {
   VANGUARD_INITIAL_UNIT,
   VANGUARD_SKILLS,
 } from "./data"
+import {
+  advancePilotSynergySkill,
+  createInitialPilotSynergySkill,
+  DEFAULT_GLOBAL_ADMIN_CONFIG,
+} from "./pilot-skill-engine"
+import type { PilotSynergySkillInstance } from "./pilot-skill-types"
 import { buildQuestRewardPreview, findCampaignQuest } from "./scaling"
 import type {
   ActivePairingState,
@@ -537,24 +543,79 @@ export function buildPlayerCombatUnit(progression: StarfrontProgression): Combat
     tactical: 0,
   }
 
-  // Shield: Cơ bản theo Gear + 30 Khiên mỗi điểm Shield của phi công
-  const baseShield = activeGear === "aegis" ? 480 : activeGear === "vanguard" ? 300 : 180
-  const pilotShieldBonus = (allocated.shield || 0) * 30
-  const totalShield = baseShield + pilotShieldBonus
+  // Phase 5.9: Tích hợp Pilot Skill Liên Hoàn & Hiệp Đồng Cơ Giáp Đặc Trưng
+  const pilotSynergySkill = progression.pilotSkills?.[activePilotId]
+  const signatureSynergyActive = Boolean(
+    pilotSynergySkill && pilotSynergySkill.signatureGearId === activeGear,
+  )
 
-  // Evasion: Falcon (+15%) + Alviss nội tại (+8%) + 0.2% mỗi điểm Agility
+  let synergyAtkFlat = 0
+  let synergyAtkPct = 0
+  let synergyDefFlat = 0
+  let synergyDefPct = 0
+  let synergySpdFlat = 0
+  let synergyShieldFlat = 0
+  let synergyCritPct = 0
+  let synergyCritDmgPct = 0
+  let synergyEvaPct = 0
+  let synergyArmorPenPct = 0
+
+  if (pilotSynergySkill) {
+    for (const line of pilotSynergySkill.secondaryLines) {
+      if (line.statKey === "atk_flat") synergyAtkFlat += line.value
+      else if (line.statKey === "atk_pct") synergyAtkPct += line.value / 100
+      else if (line.statKey === "def_flat") synergyDefFlat += line.value
+      else if (line.statKey === "def_pct") synergyDefPct += line.value / 100
+      else if (line.statKey === "spd_flat") synergySpdFlat += line.value
+      else if (line.statKey === "shield_flat") synergyShieldFlat += line.value
+      else if (line.statKey === "crit_rate_pct") synergyCritPct += line.value / 100
+      else if (line.statKey === "crit_dmg_pct") synergyCritDmgPct += line.value / 100
+      else if (line.statKey === "evasion_pct") synergyEvaPct += line.value
+      else if (line.statKey === "armor_pen_pct") synergyArmorPenPct += line.value / 100
+    }
+  }
+
+  // Shield cơ bản theo Gear
+  const baseShield = activeGear === "aegis" ? 480 : activeGear === "vanguard" ? 300 : 180
+
+  // Thưởng Hiệp Đồng Đặc Trưng khi phi công lái đúng Signature Gear
+  if (signatureSynergyActive) {
+    if (activePilotId === "marcus") {
+      synergyAtkPct += 0.25
+    } else if (activePilotId === "valentine") {
+      synergyShieldFlat += Math.round(baseShield * 0.20)
+    } else if (activePilotId === "alviss") {
+      synergyEvaPct += 12
+      synergyArmorPenPct += 0.25
+    } else if (activePilotId === "eric") {
+      synergyArmorPenPct += 0.30
+    }
+  }
+
+  // Shield: Cơ bản theo Gear + 30 Khiên mỗi điểm Shield của phi công + Thưởng Skill Liên Hoàn
+  const pilotShieldBonus = (allocated.shield || 0) * 30
+  const totalShield = Math.round(baseShield + pilotShieldBonus + synergyShieldFlat)
+
+  // Evasion: Falcon (+15%) + Alviss nội tại (+8%) + 0.2% mỗi điểm Agility + Thưởng Skill Liên Hoàn
   const baseEvasion = activeGear === "falcon" ? 15 : 0
   const alvissEvasion = activePilotId === "alviss" ? 8 : 0
   const pilotAgilityEvasion = Math.round((allocated.agility || 0) * 0.2)
-  const totalEvasion = baseEvasion + alvissEvasion + pilotAgilityEvasion
+  const totalEvasion = Math.min(85, Math.round(baseEvasion + alvissEvasion + pilotAgilityEvasion + synergyEvaPct))
 
-  // Crit: Falcon (+25%) / Gear khác (+15%) + 0.4% mỗi điểm Tactical
+  // Crit: Falcon (+25%) / Gear khác (+15%) + 0.4% mỗi điểm Tactical + Thưởng Skill Liên Hoàn
   const baseCrit = activeGear === "falcon" ? 0.25 : 0.15
   const pilotTacticalCrit = (allocated.tactical || 0) * 0.004
-  const totalCritRate = Math.min(0.75, baseCrit + pilotTacticalCrit)
+  const totalCritRate = Math.min(0.75, Number((baseCrit + pilotTacticalCrit + synergyCritPct).toFixed(3)))
 
-  // Armor Penetration: Eric (+20% cố định)
-  const armorPenetration = activePilotId === "eric" ? 0.20 : 0
+  // Armor Penetration: Eric (+20% cố định) + Thưởng Skill Liên Hoàn
+  const baseArmorPen = activePilotId === "eric" ? 0.20 : 0
+  const totalArmorPen = Math.min(0.85, Number((baseArmorPen + synergyArmorPenPct).toFixed(3)))
+
+  const finalAttack = Math.round((total.attack + synergyAtkFlat) * (1 + synergyAtkPct))
+  const finalDefense = Math.round((total.defense + synergyDefFlat) * (1 + synergyDefPct))
+  const finalSpeed = Math.round(total.speed + synergySpdFlat)
+  const defaultCritMult = activeGear === "falcon" ? 1.75 : 1.5
+  const finalCritDmg = Number((defaultCritMult + synergyCritDmgPct).toFixed(2))
 
   return {
     id: `player-${activeGear}`,
@@ -570,20 +631,20 @@ export function buildPlayerCombatUnit(progression: StarfrontProgression): Combat
     maxSp: total.maxSp,
     shield: totalShield,
     maxShield: totalShield,
-    attack: Math.round(total.attack),
-    defense: Math.round(total.defense),
-    speed: Math.round(total.speed),
+    attack: Math.max(10, finalAttack),
+    defense: Math.max(0, finalDefense),
+    speed: Math.max(10, finalSpeed),
     evasion: totalEvasion,
-    critRate: Number(totalCritRate.toFixed(3)),
-    critDamage: activeGear === "falcon" ? 1.75 : 1.5,
-    armorPenetration,
+    critRate: totalCritRate,
+    critDamage: finalCritDmg,
+    armorPenetration: totalArmorPen,
     skills: gearDef.skills,
     statusEffects: [],
     skillCooldowns: {},
     avatar: pilotDef.avatar || gearDef.avatar,
-    pilotId: activePilotId,
-    pilotName: pilotDef.name,
     pilotPassiveTriggered: false,
+    pilotSynergySkill,
+    signatureSynergyActive,
   }
 }
 
@@ -682,7 +743,8 @@ export function processPairingProgressionAfterActivity(
   let pAvailable = currentPilot.availablePoints
   let pilotLeveledUp = false
 
-  while (pLevel < 30) {
+  const maxPilotLvl = progression.globalAdminConfig?.globalMaxPilotLevel || 120
+  while (pLevel < maxPilotLvl) {
     const req = getPilotExpRequiredForLevel(pLevel)
     if (pExp >= req) {
       pExp -= req
@@ -701,7 +763,19 @@ export function processPairingProgressionAfterActivity(
     availablePoints: pAvailable,
   }
 
-  // 2. Cập nhật tiến độ mở khóa nếu đang bị khóa
+  // 3. Tiến hóa Skill Liên Hoàn theo Pilot Level mới (Phase 5.9)
+  const pilotSkills: Record<string, PilotSynergySkillInstance> = {
+    ...(progression.pilotSkills || {}),
+  }
+  let currentSkill = pilotSkills[pilotId]
+  if (!currentSkill) {
+    currentSkill = createInitialPilotSynergySkill(pilotId, pLevel, progression.globalAdminConfig)
+    pilotSkills[pilotId] = currentSkill
+  } else if (pilotLeveledUp) {
+    pilotSkills[pilotId] = advancePilotSynergySkill(currentSkill, pLevel, progression.globalAdminConfig)
+  }
+
+  // 4. Cập nhật tiến độ mở khóa nếu đang bị khóa
   let isLocked = currentPairing.isLocked
   let completedMissions = currentPairing.unlockProgress?.completedMissions || 0
   let wonBattles = currentPairing.unlockProgress?.wonBattles || 0
@@ -733,6 +807,7 @@ export function processPairingProgressionAfterActivity(
   return {
     activePairing: updatedPairing,
     pilots,
+    pilotSkills,
     pilotLeveledUp,
     pilotNewLevel: pLevel,
     justUnlocked,
@@ -942,6 +1017,7 @@ export function applyVictoryReward(
     freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
     activePairing: pairingRes.activePairing,
     pilots: pairingRes.pilots,
+    pilotSkills: pairingRes.pilotSkills || current.pilotSkills,
   }
 
   const reward: BattleRewardResult = {
@@ -1041,6 +1117,7 @@ export function applyMissionClearReward(
     freeShopRefreshes: Math.min(5, (current.freeShopRefreshes ?? 0) + 1),
     activePairing: pairingRes.activePairing,
     pilots: pairingRes.pilots,
+    pilotSkills: pairingRes.pilotSkills || current.pilotSkills,
   }
 
   const reward: BattleRewardResult = {
@@ -1796,12 +1873,13 @@ export function resetSideQuests(
    ========================================================================== */
 
 export const INITIAL_STARFRONT_PROGRESSION: StarfrontProgression = {
-  version: 3,
+  version: 4,
   level: 1,
   exp: 0,
   credits: 500,
   alloy: 25,
   freeShopRefreshes: 1,
+  rerollTokens: 5,
   activeGearId: "vanguard",
   unlockedGears: ["vanguard", "falcon", "aegis"],
   activePairing: INITIAL_ACTIVE_PAIRING,

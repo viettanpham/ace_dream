@@ -4,6 +4,34 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 5.9] — Pilot Skill Liên Hoàn, Template Configuration & Combat Synergy
+
+*Đã hoàn thành toàn bộ Phase 5.9 (93/93 automated tests passed, build thành công)*
+
+### Tính năng đã hoàn thành:
+- **Hệ Thống Tuyệt Kỹ Liên Hoàn Phi Công (Pilot Skill Liên Hoàn)**:
+  - Tách rời hoàn toàn khỏi 5 slot kỹ năng của Cơ giáp; kỹ năng liên hoàn thuộc về phẩm chất và sự trưởng thành của từng phi công.
+  - Xây dựng 4 Template cấu hình chi tiết (`lib/game/pilot-skill-templates.ts`) cho Marcus (Bão Pháo Ion Càn Quét - Active), Valentine (Thánh Vực Nano Hộ Vệ - Passive), Levi Reed / Alviss (Gia Tốc Lượng Tử & Phản Kích Né Tránh - Passive), và Eric (Đạn Hạt Nhân Xuyên Giáp Tận Diệt - Active).
+- **Tăng Cấp Tuần Tự, Milestone & Khống Chế Ngân Sách**:
+  - Tăng cấp tuần tự đảm bảo không bỏ sót bất kỳ mốc Milestone nào (chia hết cho 5).
+  - Tự động mở khóa các dòng phụ tại các mốc Milestone từ kho ứng viên `candidatePool`, có cơ chế `fallbackCandidate` dự phòng khi cạn pool.
+  - Tính toán và chuẩn hóa Điểm Sức Mạnh Kỹ Năng (`skillPower`), đảm bảo luôn nằm trong trần ngân sách `maxSkillPowerBudget`.
+- **Cơ Chế Reroll Dòng Phụ (Reroll Sub-Stats)**:
+  - Hỗ trợ cả 2 chế độ: Reroll ngẫu nhiên (random) và Reroll có chọn mục tiêu (targeted).
+  - Chi phí: 1 Vé Reroll (Reroll Token) hoặc 150 Credits.
+  - Bảo vệ an toàn chống duplicate theo cấu hình `allowDuplicate` và `maxStacks`.
+- **Tích Hợp Thực Chiến & Hiệp Đồng Đồng Bộ 100%**:
+  - Slot 5 trên Action Deck tại `CombatArena` hiển thị thẻ Tuyệt Kỹ Phi Công (Nút xuất kích nếu là Active, thẻ tự động nếu là Passive).
+  - Marcus Active gây sát thương diện rộng và nạp +15 SP; Eric Active phá giáp -45% DEF đối phương.
+  - Alviss Passive kích hoạt phản kích chớp nhoáng khi né đòn thành công.
+  - Valentine Passive tái tạo khiên cấp cứu kèm khiên bonus của Thánh Vực Nano khi khiên bị vỡ.
+- **Giao Diện Buồng Lái & Bảng Điều Khiển Quản Trị (Admin CP)**:
+  - Component `PilotSkillView` tích hợp trực tiếp vào Sub-Tab thứ 3 của màn hình `CharacterGearSelect`.
+  - Modal Quản Trị `AdminCpModal` cho phép tùy biến trần cấp phi công, trần cấp kỹ năng, chuyển đổi thứ tự ưu tiên `GLOBAL_PRIORITY` / `TEMPLATE_OVERRIDE`, và chuẩn hóa toàn bộ dữ liệu chỉ với 1 click.
+- **Lưu Trữ Bền Vững & Bộ Kiểm Thử Tự Động**:
+  - Bổ sung `tests/phase5-9-pilot-synergy-skills.test.ts` với 18/18 unit tests PASS 100%.
+  - Toàn bộ 93/93 automated tests trong dự án PASS 100%.
+
 ## [Phase 5.8] — Hệ Thống Ghép Đôi Nhân Vật & Cơ Giáp (Character & Gear Selection System)
 
 *Đã hoàn thành toàn bộ Phase 5.8 (75/75 automated tests passed, build thành công)*

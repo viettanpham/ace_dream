@@ -124,11 +124,34 @@ Nhằm bảo đảm không tạo ra tình trạng mất cân bằng hoặc cộn
 
 ---
 
-## 7. Các Điểm Chưa Quyết Định Cần Xác Nhận (Undecided Points)
+## 8. Hệ Thống Tuyệt Kỹ Liên Hoàn Phi Công (Pilot Synergy Combo Skills — Phase 5.9)
 
-1. **Cấu trúc lưu trữ kho Mô-đun Kỹ Năng trong Save Schema**:
-   - Sử dụng một mảng riêng `skillInventory: SkillModuleItem[]` hay gộp chung vào `inventory` với cờ phân loại `itemCategory: "equipment" | "skill_module"`?
-   - *Khuyến nghị*: Dùng mảng riêng `skillInventory` để giữ `inventory` hoàn toàn tương thích và không làm đảo lộn logic hiện tại của Hangar và Shop.
-2. **Chi phí tháo/lắp Mô-đun Kỹ Năng**:
-   - Tháo lắp hoàn toàn miễn phí hay tiêu tốn một lượng nhỏ Credits?
-   - *Khuyến nghị*: Hoàn toàn miễn phí để khuyến khích người chơi thử nghiệm nhiều phối hợp chiến thuật (deck-building).
+> **Trạng thái:** `[IMPLEMENTED]` (Milestone 5.9 — Kiểm thử tự động PASS 100%).
+
+### 8.1. Nguyên Lý Tách Biệt Kiến Trúc
+- **5 Slot Mô-đun Cơ Giáp (Gear Skill Modules)**: Thuộc về khung máy bay và buồng lái (Slot 1–5), nâng cấp bằng Điểm Phi Thuyền (`AircraftSkillPoints`).
+- **Tuyệt Kỹ Liên Hoàn Phi Công (Pilot Skill Liên Hoàn)**: Thuộc về phẩm chất và tiến trình cá nhân của Phi công, không chiếm dụng 5 slot của cơ giáp. Trong Đấu Trường, kỹ năng này hiển thị ở vị trí chuyên biệt trên Action Deck.
+
+### 8.2. Danh Mục 4 Template Cấu Hình Chuẩn
+1. **Marcus Thorne — Bão Pháo Ion Càn Quét (Active)**:
+   - **Signature Gear**: `vanguard` (Thưởng +25% sát thương, bắn bồi 35% sát thương và hồi +15 SP).
+   - **Candidate Pool**: Tăng ATK Flat, ATK %, Tỷ lệ bạo kích, Giảm SP Cost, Sát thương bạo kích.
+2. **Valentine Reyes — Thánh Vực Nano Hộ Vệ (Passive)**:
+   - **Signature Gear**: `aegis` (Tái tạo khiên khẩn cấp khi bị vỡ kèm chỉ số khiên bonus).
+   - **Candidate Pool**: Hồi phục khiên, Tăng DEF Flat, DEF %, Tăng HP, Kháng hiệu ứng.
+3. **Levi Reed / Alviss — Gia Tốc Lượng Tử & Phản Kích Né Tránh (Passive)**:
+   - **Signature Gear**: `falcon` (+12% Né tránh, +25% Xuyên giáp, phản kích x1.4 sát thương).
+   - **Candidate Pool**: Tăng Né tránh %, Tăng SPD Flat, Tăng Xuyên giáp %, Tỷ lệ bạo kích.
+4. **Eric Vance — Đạn Hạt Nhân Xuyên Giáp Tận Diệt (Active)**:
+   - **Signature Gear**: `aegis` (+30% Xuyên giáp tuyệt đối, phá vỡ giáp đối phương -45% DEF trong 2 lượt).
+   - **Candidate Pool**: Xuyên giáp %, Sát thương bạo kích %, ATK Flat, Giảm Cooldown.
+
+### 8.3. Quy Tắc Tăng Cấp, Milestone & Reroll Dòng Phụ
+- **Tăng cấp tuần tự**: Mỗi khi cấp phi công tăng, dòng chính (`mainLine`) tăng trưởng ổn định theo công thức `growthPerLevel`.
+- **Mốc Milestone**: Tại các cấp chia hết cho 5 (cấp 5, 10, 15, 20...), mở thêm 1 dòng phụ (`secondaryLines`) từ danh sách ứng viên `candidatePool`. Nếu hết ứng viên, tự động kích hoạt `fallbackCandidate`.
+- **Giới hạn Ngân sách (Skill Power Budget)**: Tổng điểm `skillPower` của kỹ năng luôn được chuẩn hóa và giới hạn dưới trần `maxSkillPowerBudget`.
+- **Cơ chế Reroll Dòng Phụ**:
+  - Tiêu tốn 1 Vé Reroll (Reroll Token) hoặc 150 Credits.
+  - Hỗ trợ **Reroll ngẫu nhiên (random)** hoặc **Reroll có chọn mục tiêu (targeted)** để định hướng build chỉ số mong muốn.
+- **Admin Control Panel (Admin CP)**: Hỗ trợ chuyển đổi chế độ ưu tiên trần cấp độ `GLOBAL_PRIORITY` (áp đặt toàn cục) hoặc `TEMPLATE_OVERRIDE` (theo từng template), cùng nút chuẩn hóa toàn bộ dữ liệu.
+

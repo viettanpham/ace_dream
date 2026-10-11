@@ -58,6 +58,10 @@ import {
   getEnhancedItemStats,
   getItemDisplayName,
   getPilotExpRequiredForLevel,
+  hasCompletedAllPairingMissions,
+  isSelectionMandatory,
+  isSelectionOptional,
+  isValidPilotGearSelection,
   resetPilotPoints,
 } from "@/lib/game/progression"
 import {
@@ -96,6 +100,7 @@ interface CharacterGearSelectProps {
   onNavigateToHangar?: () => void
   onNavigateToCombat?: () => void
   onNavigateToPilotStatus?: () => void
+  onContinueWithCurrentSelection?: () => void
   onEquipItem?: (itemId: string, slot: StarfrontItemSlot) => void
   onUnequipSlot?: (slot: StarfrontItemSlot) => void
 }
@@ -109,10 +114,15 @@ export function CharacterGearSelect({
   onNavigateToHangar,
   onNavigateToCombat,
   onNavigateToPilotStatus,
+  onContinueWithCurrentSelection,
   onEquipItem,
   onUnequipSlot,
 }: CharacterGearSelectProps) {
-  // Cặp đôi hiện đang lưu trong tiến trình
+  const isMandatory = isSelectionMandatory(progression)
+  const isOptional = isSelectionOptional(progression)
+  const hasCompleted5Missions = hasCompletedAllPairingMissions(progression)
+
+  // Cặp đôi hiện đang lưu trong tiến trình (fallback an toàn chống crash nếu thiếu dữ liệu)
   const activePairing = progression.activePairing || {
     pilotId: "marcus",
     gearId: progression.activeGearId || "vanguard",
@@ -125,8 +135,22 @@ export function CharacterGearSelect({
   const wonBattles = activePairing.unlockProgress?.wonBattles || 0
   const completedMissions = activePairing.unlockProgress?.completedMissions || 0
 
-  // Thu nhỏ tùy chọn chọn cặp đôi mặc định khi đã khóa, mở rộng khi chưa khóa để người chơi chọn
-  const [isSelectionFlowCollapsed, setIsSelectionFlowCollapsed] = useState<boolean>(isLocked)
+  // Thu nhỏ tùy chọn chọn cặp đôi:
+  // - Nếu mandatory: LUÔN mở rộng (false) để người chơi bắt buộc chọn
+  // - Nếu đã khóa: thu nhỏ (true) vì không thể thay đổi
+  // - Nếu optional: mở rộng hoặc người chơi có thể thu nhỏ / bỏ qua
+  const [isSelectionFlowCollapsed, setIsSelectionFlowCollapsed] = useState<boolean>(isLocked && !isMandatory)
+
+  const handleSkipOptionalSelection = () => {
+    playClickSound()
+    if (onContinueWithCurrentSelection) {
+      onContinueWithCurrentSelection()
+    } else if (onNavigateToCombat) {
+      onNavigateToCombat()
+    } else if (onNavigateToHangar) {
+      onNavigateToHangar()
+    }
+  }
 
   // Trạng thái bước hiện tại trong quy trình 3 bước
   const [currentStep, setCurrentStep] = useState<SelectionStep>(1)
@@ -492,9 +516,14 @@ export function CharacterGearSelect({
             </div>
           </div>
 
-          {/* Giữa: Trạng Thái Khóa & Tiến Độ Mở Khóa */}
+          {/* Giữa: Trạng Thái Khóa & Tiến Độ Mở Khóa (Phân biệt Rõ Mandatory vs Optional) */}
           <div className="flex items-center gap-2 font-mono text-xs">
-            {isLocked ? (
+            {isMandatory ? (
+              <div className="flex items-center gap-2 rounded border border-amber-500/70 bg-amber-950/60 px-3 py-1 text-amber-300 shadow-sm animate-pulse">
+                <AlertTriangle className="size-3.5 text-amber-400 shrink-0" />
+                <span className="font-bold">BẮT BUỘC: CHƯA CÓ TỔ HỢP PHI CÔNG & CƠ GIÁP</span>
+              </div>
+            ) : isLocked ? (
               <div className="flex items-center gap-2 rounded border border-amber-500/60 bg-amber-950/40 px-3 py-1 text-amber-300 shadow-sm">
                 <Lock className="size-3.5 text-amber-400 shrink-0 animate-pulse" />
                 <div>
@@ -507,13 +536,25 @@ export function CharacterGearSelect({
             ) : (
               <div className="flex items-center gap-2 rounded border border-emerald-500/60 bg-emerald-950/40 px-3 py-1 text-emerald-300 shadow-sm">
                 <Unlock className="size-3.5 text-emerald-400 shrink-0" />
-                <span className="font-bold">ĐÃ MỞ KHÓA · SẴN SÀNG THAY ĐỔI CẶP ĐÔI</span>
+                <span className="font-bold">ĐÃ MỞ KHÓA · TÙY CHỌN ĐỔI HOẶC TIẾP TỤC</span>
               </div>
             )}
           </div>
 
-          {/* Phải: Nút Thu Nhỏ / Mở Rộng Quy Trình 3 Bước & Mở Hangar */}
+          {/* Phải: Nút Tiếp Tục (Nếu Optional), Nút Thu Nhỏ / Mở Rộng Quy Trình 3 Bước & Mở Hangar */}
           <div className="flex items-center gap-2">
+            {/* Phase 5.11: Nút bỏ qua / tiếp tục khi optional */}
+            {isOptional && (
+              <button
+                onClick={handleSkipOptionalSelection}
+                className="flex items-center gap-1.5 rounded border border-emerald-500/60 bg-emerald-950/70 hover:bg-emerald-900/80 px-3 py-1.5 font-display text-xs font-bold uppercase tracking-wider text-emerald-200 transition-all cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                title="Bỏ qua thay đổi và tiếp tục xuất kích với tổ hợp hiện tại"
+              >
+                <span>Tiếp Tục (Giữ Nguyên)</span>
+                <ArrowRight className="size-3.5" />
+              </button>
+            )}
+
             {isLocked ? (
               <div
                 className="flex items-center gap-1.5 rounded border border-amber-500/60 bg-amber-950/60 px-3 py-1.5 font-display text-xs font-bold text-amber-300 shadow-sm cursor-not-allowed select-none"
@@ -521,6 +562,13 @@ export function CharacterGearSelect({
               >
                 <Lock className="size-3.5 text-amber-400" />
                 <span>ĐÃ KHÓA CẶP ĐÔI (KHÔNG THỂ THAY ĐỔI)</span>
+              </div>
+            ) : isMandatory ? (
+              <div
+                className="flex items-center gap-1.5 rounded border border-amber-500/70 bg-amber-950/70 px-3 py-1.5 font-display text-xs font-bold text-amber-300 shadow-sm"
+              >
+                <AlertTriangle className="size-3.5 text-amber-400" />
+                <span>BẮT BUỘC CHỌN (BƯỚC 1 - 3)</span>
               </div>
             ) : (
               <button
@@ -537,7 +585,7 @@ export function CharacterGearSelect({
               >
                 {isSelectionFlowCollapsed ? (
                   <>
-                    <span>Chọn & Khóa Cặp Đôi</span>
+                    <span>Chọn & Khóa Cặp Đôi Mới</span>
                     <ChevronDown className="size-3.5" />
                   </>
                 ) : (
@@ -593,17 +641,41 @@ export function CharacterGearSelect({
         )}
 
         {/* ====================================================================
-            QUY TRÌNH CHỌN 3 BƯỚC (CHỈ HIỂN THỊ KHI CHƯA KHÓA & CHƯA THU NHỎ)
+            QUY TRÌNH CHỌN 3 BƯỚC (CHỈ HIỂN THỊ KHI CHƯA KHÓA & (CHƯA THU NHỎ HOẶC BẮT BUỘC))
             ==================================================================== */}
-        {!isSelectionFlowCollapsed && !isLocked && (
+        {(!isSelectionFlowCollapsed || isMandatory) && !isLocked && (
           <div className="mt-4 border-t border-border/50 pt-3.5 animate-in fade-in duration-200">
-            {/* Banner hướng dẫn bắt buộc khóa */}
-            <div className="mb-3 rounded border border-cyan-500/50 bg-cyan-950/60 p-2.5 text-xs font-mono text-cyan-200 flex items-center gap-2">
-              <AlertTriangle className="size-4 text-cyan-400 shrink-0" />
-              <span>
-                <strong>BƯỚC BẮT BUỘC ĐẦU TIÊN:</strong> Vui lòng chọn Phi Công (Bước 1), chọn Cơ Giáp (Bước 2), sau đó bấm <strong>"XÁC NHẬN GHÉP ĐÔI & KHÓA XUẤT KÍCH"</strong> ở Bước 3. Khi đã khóa, các phân hệ Chiến Trường, Nhiệm Vụ, Hangar và Chợ Quân Sự sẽ lập tức mở ra!
-              </span>
-            </div>
+            {/* Banner hướng dẫn: Phân biệt rõ Bắt Buộc vs Tùy Chọn */}
+            {isMandatory ? (
+              <div className="mb-3 rounded border border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-black/80 to-amber-950/70 p-3 text-xs font-mono text-amber-200 flex items-center gap-2.5 shadow-md">
+                <AlertTriangle className="size-4 text-amber-400 shrink-0 animate-pulse" />
+                <div>
+                  <strong className="text-white uppercase">YÊU CẦU BẮT BUỘC KHỞI ĐẦU:</strong>
+                  <p className="text-[11px] text-amber-200/90 mt-0.5">
+                    Hệ thống chưa có tổ hợp Phi Công & Cơ Giáp hợp lệ. Vui lòng hoàn tất Bước 1 (Chọn Phi Công), Bước 2 (Chọn Cơ Giáp) và bấm <strong>"XÁC NHẬN GHÉP ĐÔI & KHÓA XUẤT KÍCH"</strong> ở Bước 3 để kích hoạt toàn bộ hệ thống trò chơi.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="mb-3 rounded border border-cyan-500/60 bg-gradient-to-r from-cyan-950/80 via-black/80 to-cyan-950/70 p-3 text-xs font-mono text-cyan-200 flex flex-wrap items-center justify-between gap-3 shadow-md">
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="size-4 text-cyan-400 shrink-0 animate-pulse" />
+                  <div>
+                    <strong className="text-white uppercase">TÙY CHỌN THAY ĐỔI CẶP ĐÔI (OPTIONAL):</strong>
+                    <p className="text-[11px] text-cyan-200/90 mt-0.5">
+                      Tổ hợp hiện tại ({activePilotDef.name} + {activeGearDef.name}) đã hoàn tất chỉ tiêu ({completedMissions}/5 Q · {wonBattles}/5 B). Bạn có thể chọn tổ hợp mới để khóa 5 nhiệm vụ tiếp theo, HOẶC bấm nút bên phải để giữ nguyên tổ hợp này.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleSkipOptionalSelection}
+                  className="flex items-center gap-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white px-3.5 py-1.5 font-display text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.3)] border border-cyan-400/60"
+                >
+                  <span>Tiếp Tục (Giữ Nguyên)</span>
+                  <ArrowRight className="size-3.5" />
+                </button>
+              </div>
+            )}
             {/* Thanh chuyển bước 3 bước */}
             <div className="grid grid-cols-3 gap-2 mb-4">
               {[

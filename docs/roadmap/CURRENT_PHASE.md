@@ -1,21 +1,17 @@
 # STARFRONT — Kế Hoạch Triển Khai Giai Đoạn Hiện Tại (Current Phase Scope)
 
-## GIAI ĐOẠN HIỆN TẠI: PHASE 5.9 — PILOT SKILL LIÊN HOÀN, TEMPLATE CONFIGURATION & COMBAT SYNERGY
+## GIAI ĐOẠN HIỆN TẠI: PHASE 5.11 — PILOT/GEAR SELECTION FLOW ENHANCEMENT
 
 ---
 
 ## 1. Mục Tiêu & Trạng Thái Giai Đoạn (Phase Status)
-- **Trạng thái**: **HOÀN THÀNH PHẦN CODE & TÍNH NĂNG (Gameplay Done — 93/93 Tests PASS) · ASSET ẢNH MECHA & TOÀN THÂN: PENDING DO QUOTA AI STUDIO (429)**.
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 98/98 Tests PASS, Build Thành Công)**.
 - **Mục tiêu cốt lõi**:
-  - Xây dựng hệ thống **Tuyệt Kỹ Liên Hoàn Phi Công (Pilot Skill Liên Hoàn)** độc lập với 5 Slot Mô-đun Cơ Giáp trong Hangar.
-  - Cung cấp 4 Template cấu hình chi tiết cho Marcus, Valentine, Alviss (Levi Reed), và Eric.
-  - Tăng cấp tuần tự, mở khóa dòng phụ tại các mốc Milestone (chia hết cho 5: cấp 5, 10, 15, 20...).
-  - Cơ chế **Reroll Dòng Phụ** (Ngẫu nhiên hoặc Chọn mục tiêu có định hướng) bằng Vé Reroll (Reroll Tokens) hoặc Credits.
-  - Tính toán và khống chế Điểm Sức Mạnh Kỹ Năng (Skill Power) theo trần ngân sách (`maxSkillPowerBudget`).
-  - Giao diện người dùng buồng lái trực quan: Component `PilotSkillView`, Tab "Tuyệt Kỹ Liên Hoàn Phi Công" trong `CharacterGearSelect`.
-  - Bảng điều khiển quản trị toàn cục **Admin CP** (`AdminCpModal`) với quyền cấu hình giới hạn cấp độ, thứ tự ưu tiên (`GLOBAL_PRIORITY` vs `TEMPLATE_OVERRIDE`), và chuẩn hóa dữ liệu.
-  - Tích hợp thực chiến: Marcus Active phóng loạt pháo Ion bồi sát thương và nạp SP; Alviss phản kích né tránh chớp nhoáng; Valentine kích hoạt khiên cấp cứu; Eric phá vỡ giáp đối phương.
-  - Bảo toàn 100% dữ liệu Schema v4, an toàn nâng cấp từ v1, v2, v3.
+  - **Tùy Chọn Đổi Sau Khi Hoàn Thành 5/5 Nhiệm Vụ (Optional Selection)**: Cho phép người chơi tùy chọn thay đổi tổ hợp phi công & cơ giáp sau khi hoàn tất chỉ tiêu 5/5 nhiệm vụ hoặc 5 trận thắng. Không bắt buộc thay đổi nếu lựa chọn hiện tại đã hợp lệ; cho phép tiếp tục xuất kích ngay mà không thay đổi gì.
+  - **Bắt Buộc Chọn Khi Chưa Có Lựa Chọn Hợp Lệ (Mandatory Selection)**: Khi game vừa reset hoặc khởi tạo chưa có cặp đôi hợp lệ (`isValidPilotGearSelection === false`), kích hoạt hộp thoại bắt buộc và khóa các phân hệ tác chiến. Không cho phép bỏ qua.
+  - **Bảo Toàn Lựa Chọn & Xác Thực Chặt Chẽ**: Bảo toàn lựa chọn hiện tại khi hủy/bỏ qua bước tùy chọn; xử lý an toàn dữ liệu lưu trữ bị lỗi hoặc thiếu.
+  - **Giao Diện Rõ Ràng**: Phân biệt rành mạch giữa trạng thái Bắt Buộc (Mandatory) và Tùy Chọn (Optional) trên giao diện `character-gear-select.tsx` và `starfront-shell.tsx`.
+
 
 ---
 

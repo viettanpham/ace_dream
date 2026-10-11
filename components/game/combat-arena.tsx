@@ -30,6 +30,8 @@ import {
   enhanceItem,
   getExpRequiredForLevel,
   INITIAL_STARFRONT_PROGRESSION,
+  isSelectionOptional,
+  isValidPilotGearSelection,
 } from "@/lib/game/progression"
 import {
   createScaledEnemyUnit,
@@ -913,9 +915,9 @@ export function CombatArena({
   const handleUseSkill = (skillId: string) => {
     if (combatState.status !== "player-turn" || isProcessingAI) return
 
-    if (!progression.activePairing?.isLocked) {
+    if (!isValidPilotGearSelection(progression)) {
       setFloatingNotification({
-        text: "⚠️ BẮT BUỘC KHÓA NHÂN VẬT & CƠ GIÁP TRƯỚC KHI THI ĐẤU!",
+        text: "⚠️ BẮT BUỘC CHỌN NHÂN VẬT & CƠ GIÁP TRƯỚC KHI THI ĐẤU!",
         isCrit: false,
         isPlayer: false,
       })
@@ -2400,7 +2402,38 @@ export function CombatArena({
                   : getCurrentOrNextCampaignMission(progression, null)
 
                 return (
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                  <div className="mt-4 flex flex-col items-center justify-center gap-3">
+                    {/* Phase 5.11: Tùy chọn đổi Phi Công & Cơ Giáp sau khi hoàn thành 5/5 nhiệm vụ hoặc 5 trận thắng */}
+                    {status === "victory" && isSelectionOptional(progression) && (
+                      <div className="w-full max-w-lg mx-auto rounded-sm border border-cyan-500/50 bg-cyan-950/40 p-3 text-left font-mono text-xs text-cyan-200 flex flex-wrap items-center justify-between gap-2.5 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="size-4 text-cyan-400 shrink-0 animate-pulse" />
+                          <div>
+                            <strong className="text-white uppercase">🎖️ TÙY CHỌN: ĐÃ HOÀN THÀNH CHỈ TIÊU CẶP ĐÔI</strong>
+                            <p className="text-[11px] text-cyan-300/80 mt-0.5">
+                              Tổ hợp đã hoàn tất 5 nhiệm vụ/trận thắng và đang mở khóa. Bạn có thể tùy chọn đổi Phi Công & Cơ Giáp mới hoặc tiếp tục xuất kích với tổ hợp này.
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            playClickSound()
+                            if (onNavigateSection) {
+                              onNavigateSection("character-gear")
+                            } else {
+                              setActiveSubView("hangar")
+                            }
+                          }}
+                          className="gap-1 border-cyan-400/80 text-cyan-200 hover:bg-cyan-900/50 text-xs font-mono cursor-pointer"
+                        >
+                          <RefreshCw className="size-3.5" />
+                          <span>Đổi Phi Công / Cơ Giáp (Tùy Chọn)</span>
+                        </Button>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center justify-center gap-3">
                     {/* 1. Nút Thách đấu mục tiêu tiếp theo khi đang làm Chiến Dịch (VD: Ải 1-1 -> Ải 1-2) */}
                     {status === "victory" && campaignCandidate && (
                       <Button
@@ -2497,6 +2530,7 @@ export function CombatArena({
                     >
                       <ShoppingBag className="size-4 text-amber-400" /> Chợ Quân Sự
                     </Button>
+                  </div>
                   </div>
                 )
               })()}

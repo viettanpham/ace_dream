@@ -20,6 +20,8 @@ import {
   enhanceItem,
   getExpRequiredForLevel,
   INITIAL_STARFRONT_PROGRESSION,
+  isSelectionMandatory,
+  isValidPilotGearSelection,
 } from "@/lib/game/progression"
 import { getCurrentOrNextCampaignMission } from "@/lib/game/scaling"
 import type {
@@ -275,8 +277,11 @@ export function StarfrontShell() {
   const [scanlineEnabled, setScanlineEnabled] = useState(true)
   const [lockNoticeToast, setLockNoticeToast] = useState<{ text: string; type: "warning" | "success" } | null>(null)
 
-  // Trạng thái khóa nhân vật & cơ giáp
+  // Trạng thái ghép đôi và khóa nhân vật & cơ giáp (Phase 5.11)
+  const hasValidSelection = isValidPilotGearSelection(progression)
   const isCharacterLocked = Boolean(progression.activePairing?.isLocked)
+  const [pendingSectionAfterSelection, setPendingSectionAfterSelection] = useState<StarfrontSection | null>(null)
+  const [mandatoryModalOpen, setMandatoryModalOpen] = useState(false)
 
   // Quản lý trạng thái thanh điều hướng bên trái (Left Sidebar)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -304,9 +309,10 @@ export function StarfrontShell() {
       // ignore local storage errors
     }
 
-    // Nếu người chơi chưa khóa nhân vật & cơ giáp, mở ngay màn hình chọn nhân vật
-    if (!saved.activePairing?.isLocked) {
+    // Phase 5.11: Nếu chưa có lựa chọn Phi Công & Cơ Giáp hợp lệ, yêu cầu bắt buộc chọn
+    if (!isValidPilotGearSelection(saved)) {
       setActiveSection("character-gear")
+      setMandatoryModalOpen(true)
     }
   }, [])
 
@@ -337,6 +343,16 @@ export function StarfrontShell() {
 
     setProgression(updated)
     saveStarfrontProgression(updated)
+
+    // Nếu vừa hoàn thành lựa chọn hợp lệ từ flow bắt buộc, đóng modal và chuyển đến phân hệ dự định
+    if (isValidPilotGearSelection(updated)) {
+      setMandatoryModalOpen(false)
+      if (pendingSectionAfterSelection) {
+        const nextTarget = pendingSectionAfterSelection
+        setPendingSectionAfterSelection(null)
+        setTimeout(() => setActiveSection(nextTarget), 300)
+      }
+    }
   }
 
   // Chuyển đổi lớp Gear
@@ -363,15 +379,17 @@ export function StarfrontShell() {
   const handleSwitchSection = (section: StarfrontSection, forceMission?: CampaignMission | null) => {
     playClickSound()
 
-    // Kiểm tra quy định: Bắt buộc khóa nhân vật trước khi làm nhiệm vụ hoặc tham chiến (trừ home, character-gear và pilot)
-    const requiresLock = section !== "character-gear" && section !== "home" && section !== "pilot"
-    if (!isCharacterLocked && requiresLock) {
-      setLockNoticeToast({
-        type: "warning",
-        text: "⚠️ BẮT BUỘC: Bạn cần chọn và KHÓA NHÂN VẬT & CƠ GIÁP trước khi vào phân hệ này!",
-      })
+    // Phase 5.11: Bắt buộc chọn Phi Công & Cơ Giáp hợp lệ trước khi vào phân hệ tác chiến
+    const requiresSelection = section !== "character-gear" && section !== "home" && section !== "pilot"
+    if (!hasValidSelection && requiresSelection) {
+      setPendingSectionAfterSelection(section)
+      setMandatoryModalOpen(true)
       setActiveSection("character-gear")
       setMobileMenuOpen(false)
+      setLockNoticeToast({
+        type: "warning",
+        text: "⚠️ BẮT BUỘC: Bạn cần hoàn tất CHỌN PHI CÔNG & CƠ GIÁP trước khi vào phân hệ này!",
+      })
       setTimeout(() => setLockNoticeToast(null), 4000)
       return
     }
@@ -472,13 +490,15 @@ export function StarfrontShell() {
     return result
   }
 
-  // Reset tiến trình
+  // Reset tiến trình (Phase 5.11: Đưa về trạng thái chưa có ghép đôi và mở flow bắt buộc)
   const handleResetSave = () => {
     playClickSound()
     const fresh = resetStarfrontProgression()
     setProgression(fresh)
     setActiveCampaignMission(null)
-    setActiveSection("home")
+    setPendingSectionAfterSelection(null)
+    setActiveSection("character-gear")
+    setMandatoryModalOpen(true)
   }
 
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
@@ -622,8 +642,8 @@ export function StarfrontShell() {
             {SECTIONS.map((sec) => {
               const Icon = sec.icon
               const isActive = activeSection === sec.id
-              const requiresLock = sec.id !== "character-gear" && sec.id !== "home"
-              const isTabLocked = !isCharacterLocked && requiresLock
+              const requiresSelection = sec.id !== "character-gear" && sec.id !== "home" && sec.id !== "pilot"
+              const isTabLocked = !hasValidSelection && requiresSelection
               const badgeText = isTabLocked ? "Khóa" : sec.badge ? sec.badge(progression) : null
               const submenus = sec.submenus ? sec.submenus(progression) : []
               const hasSubmenus = !isTabLocked && submenus.length > 0 && !isSidebarCollapsed
@@ -641,7 +661,7 @@ export function StarfrontShell() {
                           ? "text-muted-foreground/60 hover:text-amber-300 hover:bg-amber-950/20"
                           : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
                     )}
-                    title={isSidebarCollapsed ? (isTabLocked ? `[Khóa] Cần khóa NV trước: ${sec.label}` : sec.label) : undefined}
+                    title={isSidebarCollapsed ? (isTabLocked ? `[Khóa] Cần chọn Phi Công & Cơ Giáp: ${sec.label}` : sec.label) : undefined}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       {isTabLocked ? (
@@ -1063,7 +1083,7 @@ export function StarfrontShell() {
               />
             )}
 
-            {/* Phân hệ: Nhân Vật & Cơ Giáp (Character & Gear - Phase 5.8) */}
+            {/* Phân hệ: Nhân Vật & Cơ Giáp (Character & Gear - Phase 5.8 & 5.11) */}
             {activeSection === "character-gear" && (
               <CharacterGearSelect
                 progression={progression}
@@ -1071,6 +1091,7 @@ export function StarfrontShell() {
                 onNavigateToHangar={() => handleSwitchSection("hangar")}
                 onNavigateToCombat={() => handleSwitchSection("battlefield")}
                 onNavigateToPilotStatus={() => handleSwitchSection("pilot")}
+                onContinueWithCurrentSelection={() => handleSwitchSection("battlefield")}
                 onEquipItem={handleEquipItem}
                 onUnequipSlot={handleUnequipSlot}
               />
@@ -1166,6 +1187,50 @@ export function StarfrontShell() {
             )}
           </main>
         </div>
+
+        {/* ====================================================================
+            HỘP THOẠI BẮT BUỘC CHỌN PHI CÔNG & CƠ GIÁP (PHASE 5.11 MANDATORY SELECTION MODAL)
+            ==================================================================== */}
+        {(!hasValidSelection || mandatoryModalOpen) && activeSection !== "character-gear" && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-sm border border-amber-500/70 bg-gradient-to-b from-panel via-black/95 to-panel p-5 shadow-2xl font-mono text-left">
+              <div className="flex items-center gap-3 border-b border-border/60 pb-3">
+                <div className="flex size-10 items-center justify-center rounded border border-amber-500/60 bg-amber-950/50 text-amber-300">
+                  <AlertTriangle className="size-5 animate-pulse" />
+                </div>
+                <div>
+                  <h2 className="font-display text-sm font-black uppercase tracking-wider text-white">
+                    YÊU CẦU BẮT BUỘC: CHỌN PHI CÔNG & CƠ GIÁP
+                  </h2>
+                  <span className="text-[10px] text-amber-300 font-bold uppercase">Hệ Thống Chưa Khởi Tạo Tổ Hợp</span>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                Chào mừng Chỉ Huy! Để có thể tham gia các phân hệ tác chiến (Đấu Trường, Bản Đồ Nhiệm Vụ, Hangar & Chợ Quân Sự), bạn bắt buộc phải hoàn tất lựa chọn ghép đôi Phi Công & Cơ Giáp khởi đầu.
+              </p>
+
+              <div className="mt-4 rounded bg-black/60 border border-amber-500/30 p-2.5 text-[11px] text-amber-200/90 flex items-center gap-2">
+                <AlertTriangle className="size-4 text-amber-400 shrink-0" />
+                <span>Không thể bỏ qua bước này khi chưa có tổ hợp hợp lệ.</span>
+              </div>
+
+              <div className="mt-5 flex justify-end">
+                <button
+                  onClick={() => {
+                    playClickSound()
+                    setMandatoryModalOpen(false)
+                    setActiveSection("character-gear")
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-black py-2.5 px-4 font-display text-xs uppercase tracking-wider border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer"
+                >
+                  <span>BẮT ĐẦU CHỌN PHI CÔNG & CƠ GIÁP</span>
+                  <ArrowRight className="size-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ==================================================================
             HIỆU ỨNG QUÉT MÀN HÌNH CRT TỔNG THỂ (FULL-SCREEN SCI-FI SCANLINE OVERLAY)

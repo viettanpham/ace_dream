@@ -4,6 +4,30 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 5.11] — Pilot & Gear Selection Flow Enhancement (Optional vs Mandatory Gating)
+
+*Đã hoàn thành toàn bộ Phase 5.11 (98/98 automated tests passed, build thành công)*
+
+### Tính năng đã hoàn thành:
+- **Tùy Chọn Đổi Cặp Đôi Khi Hoàn Thành Đủ 5/5 Nhiệm Vụ (Optional Selection)**:
+  - Khi hoàn thành đủ 5/5 nhiệm vụ hoặc 5 trận thắng, cặp đôi tự động mở khóa nhưng việc thay đổi cặp đôi là hoàn toàn tùy chọn (`isSelectionOptional = true`).
+  - Người chơi không bị bắt buộc phải đổi phi công/cơ giáp; có thể bấm "Tiếp Tục (Giữ Nguyên)" để tiếp tục xuất kích với tổ hợp hiện tại.
+  - Tổ hợp hiện tại được bảo toàn nguyên vẹn khi người chơi bỏ qua bước tùy chọn.
+  - Không ép buộc người chơi phải trải qua quy trình chọn cặp đôi mỗi lần hoàn thành nhiệm vụ.
+- **Bắt Buộc Chọn Khi Chưa Có Tổ Hợp Hợp Lệ (Mandatory Selection)**:
+  - Khi game vừa reset (`resetStarfrontProgression()`) hoặc dữ liệu ban đầu chưa có tổ hợp hợp lệ (`isValidPilotGearSelection() === false`), hệ thống kích hoạt chế độ bắt buộc (`isSelectionMandatory = true`).
+  - Hiển thị hộp thoại cảnh báo bắt buộc rõ ràng, chặn truy cập vào các phân hệ tác chiến phụ thuộc vào tổ hợp (Đấu trường, Bản đồ nhiệm vụ, Hangar, Chợ quân sự).
+  - Cung cấp nút hành động rõ ràng điều hướng đến màn hình chọn Phi Công & Cơ Giáp; không cung cấp tùy chọn bỏ qua/tiếp tục khi chưa hợp lệ.
+  - Sau khi hoàn tất xác nhận ở Bước 3, hệ thống tự động lưu trữ và mở khóa luồng tác chiến bình thường.
+- **Xác Thực Dữ Liệu & Lưu Trữ An Toàn (Validation & Safe Persistence)**:
+  - Tích hợp hàm kiểm tra `isValidPilotGearSelection(progression)` xác thực phi công hợp lệ, cơ giáp hợp lệ và đã được sở hữu trong `unlockedGears`.
+  - Hàm `migrateProgressionToV4` xử lý an toàn dữ liệu lưu bị thiếu, lỗi thời hoặc hư hỏng (corrupted) mà không crash hệ thống.
+- **Bộ Kiểm Thử Tự Động Toàn Diện**:
+  - Bổ sung `tests/phase5-11-pilot-gear-flow.test.ts` kiểm thử đầy đủ 5 kịch bản trọng tâm theo yêu cầu kỹ thuật.
+  - Toàn bộ 98/98 automated tests PASS 100%.
+
+---
+
 ## [Phase 5.9] — Pilot Skill Liên Hoàn, Template Configuration & Combat Synergy
 
 *Đã hoàn thành toàn bộ Phase 5.9 (93/93 automated tests passed, build thành công)*

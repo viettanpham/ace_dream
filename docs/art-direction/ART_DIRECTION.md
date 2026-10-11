@@ -1,7 +1,7 @@
 # STARFRONT — Official Art Direction & Visual Standards
 *Master Art Direction Specification & Asset Standards Manual*  
-*Document Version: 3.0 — Updated: October 2026*  
-*Status: Approved Official Standard for all STARFRONT character assets, mecha design, and UI artwork*
+*Document Version: 3.1 — Updated: October 2026*  
+*Status: Approved Official Standard for all STARFRONT character assets, mecha design, UI artwork, and asset lifecycle management*
 
 ---
 
@@ -152,10 +152,50 @@ retro sprites, chibi, voxel, low-poly, 3d render, deformed, disfigured, poorly d
 
 ---
 
-## 7. Version History & Enactment
+## 7. Quy Tắc Bắt Buộc: Bảo Vệ Image Assets Khi Hết Quota Tạo Ảnh (Asset Protection Protocol on Quota Exhaustion / HTTP 429)
+
+Nhằm bảo toàn tính toàn vẹn của hệ thống tài nguyên đồ họa và ngăn ngừa tình trạng suy giảm chất lượng hiển thị trong dự án STARFRONT, toàn bộ quy trình sinh ảnh và quản trị asset bắt buộc phải tuân thủ nghiêm ngặt các quy tắc sau:
+
+### 7.1. Đình chỉ ngay lập tức khi cạn kiệt tài nguyên / Quota Exhausted
+- Khi công cụ tạo ảnh (AI Studio Image Generation / Gemini API) gặp bất kỳ điều kiện nào sau đây:
+  - Hết quota (Quota Exceeded / Resource Exhausted).
+  - Hết băng thông hoặc giới hạn tốc độ (Rate Limit).
+  - Lỗi `429 RESOURCE_EXHAUSTED` hoặc `HTTP 429 Too Many Requests`.
+- **Hành động bắt buộc**: **DỪNG NGAY LẬP TỨC** toàn bộ tác vụ gọi sinh ảnh tiếp theo và **GIỮ NGUYÊN 100% CÁC ASSET HÌNH ẢNH HIỆN CÓ** trên hệ thống tệp (`/public/images/`). Không cố gắng retry liên tục gây lỗi luồng làm việc.
+
+### 7.2. Tuyệt đối không ghi đè, xóa hoặc chỉnh sửa asset hiện có
+- **CẤM TUYỆT ĐỐI**:
+  - Không được xóa bất kỳ tệp hình ảnh raster nào đã lưu (`.png`, `.jpg`, `.jpeg`).
+  - Không được ghi đè (overwrite) tệp ảnh hiện có bằng dữ liệu rỗng, dữ liệu lỗi, ảnh kích thước nhỏ hoặc ảnh chưa hoàn thiện chỉ vì hệ thống không thể tạo ảnh mới.
+  - Không được đổi tên, di chuyển hoặc làm xáo trộn đường dẫn file ảnh đang được giao diện người dùng tham chiếu.
+
+### 7.3. Cấm thay thế bằng Placeholder hoặc hình ảnh dựng bằng code
+- **CẤM TUYỆT ĐỐI** việc tự ý thay thế ảnh nhân vật/mecha bằng:
+  - Vector SVG giả lập minh họa hoặc code-drawn graphics.
+  - Khối màu CSS, hình vẽ canvas 2D, geometric placeholders.
+  - Icon, ký tự typography hoặc sprite đồ họa retro/pixel art mô phỏng.
+- Sự thiếu vắng tạm thời của ảnh mới do hết quota **KHÔNG PHẢI LÀ LÝ DO** để hạ cấp tiêu chuẩn đồ họa thành code art hay placeholder.
+
+### 7.4. Cấm tự tạo ảnh thay thế bằng phương pháp chưa được chỉ định
+- Khi chưa có yêu cầu rõ ràng từ người dùng:
+  - Không được tự ý chuyển đổi sang các phương pháp tạo ảnh tạm thời hoặc không đạt tiêu chuẩn nghệ thuật.
+  - Không tự ý dùng các mô hình văn bản (LLM) để sinh mã code mô phỏng hình ảnh.
+  - Nếu cần tạo ảnh ngoài môi trường bị giới hạn, chỉ chuẩn bị bộ prompt chuẩn hóa (như catalog `PIXAI_CHARACTER_PROMPTS.md`) để thực hiện qua pipeline chuyên biệt bên ngoài, sau đó nạp file ảnh thành phẩm đạt chuẩn vào dự án.
+
+### 7.5. Điều kiện tiên quyết để thay thế hoặc cập nhật Asset
+Chỉ được phép thay thế một file ảnh hiện có khi và chỉ khi thỏa mãn **toàn bộ 4 điều kiện** sau:
+1. **Tạo thành công thực tế**: Ảnh mới đã được tạo hoàn chỉnh thành công thông qua mô hình tạo ảnh chuyên dụng.
+2. **Định dạng chuẩn**: Là file raster thực thụ (`PNG` hoặc `JPEG`) với độ phân giải cao đúng quy cách (Portrait: `1024×1024`, Full-Body: `900×1600` hoặc tỉ lệ 9:16).
+3. **Chất lượng cao & Đúng phong cách**: Đạt tiêu chuẩn Premium Japanese Anime Sci-Fi Character Illustration, sắc nét, không pixel art, không biến dạng giải phẫu học, kế thừa chuẩn thẩm mỹ từ STARFRONT GEAR.
+4. **Kiểm tra trực quan (Verification)**: Đã được xác nhận hiển thị chính xác và toàn vẹn trên giao diện người dùng.
+
+---
+
+## 8. Version History & Enactment
 
 - **v1.0 (Initial)**: Tactical game mechanics and sprite asset drafting.
 - **v2.0 (Revision)**: GEAR artwork integration and 8-pilot roster stabilization.
-- **v3.0 (Current Standard)**: Official formalization of the **Premium Japanese Anime Sci-Fi Character Illustration Standard**, institutionalization of the **16-Asset Requirement (8 Portraits + 8 Full-Bodies)**, hard-linking of the **GEAR Artwork Sci-Fi Reference System**, and cross-referencing with **`PIXAI_CHARACTER_PROMPTS.md`**.
+- **v3.0**: Official formalization of the **Premium Japanese Anime Sci-Fi Character Illustration Standard**, institutionalization of the **16-Asset Requirement (8 Portraits + 8 Full-Bodies)**, hard-linking of the **GEAR Artwork Sci-Fi Reference System**, and cross-referencing with **`PIXAI_CHARACTER_PROMPTS.md`**.
+- **v3.1 (Current Enacted)**: Bổ sung chính thức **Mục 7: Quy Tắc Bắt Buộc Bảo Vệ Image Assets Khi Hết Quota Tạo Ảnh (HTTP 429 RESOURCE_EXHAUSTED Protocol)** — nghiêm cấm xóa/ghi đè/thay thế bằng SVG, CSS hay code-drawn graphics; bảo toàn tuyệt đối tài nguyên hiện hữu.
 
-*This document represents the mandatory artistic law for all current and future STARFRONT visual asset development.*
+*This document represents the mandatory artistic law and asset lifecycle governance for all current and future STARFRONT visual development.*

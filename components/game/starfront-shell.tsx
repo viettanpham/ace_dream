@@ -38,6 +38,7 @@ import {
   Coins,
   Cpu,
   Flag,
+  Flame,
   Globe2,
   Hammer,
   HelpCircle,
@@ -68,7 +69,7 @@ import { StarfrontHome } from "./starfront-home"
 import { CombatArena } from "./combat-arena"
 import { CampaignMap } from "./campaign-map"
 import { StarfrontShop } from "./starfront-shop"
-import { StarfrontHangar } from "./starfront-hangar"
+import { StarfrontHangar, type HangarTab } from "./starfront-hangar"
 import { CharacterGearSelect } from "./character-gear-select"
 import { STARFRONT_PILOT_MAP } from "@/lib/game/data"
 
@@ -96,6 +97,7 @@ export type StarfrontSection =
 interface SubMenuItem {
   id: string
   label: string
+  icon?: typeof Boxes
   action?: () => void
   badge?: string
 }
@@ -177,10 +179,11 @@ const SECTIONS: SectionConfig[] = [
     shortLabel: "Hangar & Kho",
     icon: Boxes,
     badge: (p) => `${p.inventory.length}`,
-    submenus: () => [
-      { id: "loadout", label: "Buồng Lái & 3 Trang Bị" },
-      { id: "inventory", label: "Kho Vật Phẩm & Tái Chế" },
-      { id: "enhance", label: "Xưởng Cường Hóa (+1..+10)" },
+    submenus: (p) => [
+      { id: "loadout", label: "Buồng Lái & Trang Bị", icon: Cpu },
+      { id: "skills", label: "Mô Đun Kỹ Năng", icon: Flame, badge: "5 Ô" },
+      { id: "inventory", label: "Kho Đồ & Tái Chế", icon: Boxes, badge: `${p.inventory.length}` },
+      { id: "enhancement", label: "Xưởng Cường Hóa", icon: Hammer, badge: "+1..+10" },
     ],
   },
 ]
@@ -248,6 +251,7 @@ export function StarfrontShell() {
   // Quản lý trạng thái thanh điều hướng bên trái (Left Sidebar)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [activeHangarTab, setActiveHangarTab] = useState<HangarTab>("loadout")
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     hangar: true,
     missions: true,
@@ -339,6 +343,24 @@ export function StarfrontShell() {
       ...prev,
       [sectionId]: !prev[sectionId],
     }))
+  }
+
+  // Chọn submenu để điều hướng chuyên sâu (bao gồm 4 phân hệ Hangar & Kho)
+  const handleSelectSubmenu = (sectionId: StarfrontSection, subId: string) => {
+    playClickSound()
+    if (sectionId === "hangar") {
+      const targetTab = (subId === "enhance" ? "enhancement" : subId) as HangarTab
+      setActiveHangarTab(targetTab)
+    } else if (sectionId === "battlefield") {
+      if (subId === "campaign") {
+        const autoMission = getCurrentOrNextCampaignMission(progression, null)
+        setActiveCampaignMission(autoMission)
+      } else if (subId === "arena") {
+        setActiveCampaignMission(null)
+      }
+    }
+    handleSwitchSection(sectionId)
+    setMobileMenuOpen(false)
   }
 
   // Xuất kích từ Bản đồ nhiệm vụ sang Đấu trường
@@ -610,37 +632,68 @@ export function StarfrontShell() {
                   {/* Cây Submenu Mở Rộng */}
                   {hasSubmenus && isExpanded && (
                     <div className="ml-5 pl-2 border-l border-border/50 space-y-0.5 py-0.5">
-                      {submenus.map((sub) => (
-                        <button
-                          key={sub.id}
-                          onClick={() => {
-                            playClickSound()
-                            if (sec.id === "battlefield") {
-                              if (sub.id === "campaign") {
-                                const autoMission = getCurrentOrNextCampaignMission(progression, null)
-                                setActiveCampaignMission(autoMission)
-                              } else if (sub.id === "arena") {
-                                setActiveCampaignMission(null)
-                              }
-                            }
-                            setActiveSection(sec.id)
-                            setMobileMenuOpen(false)
-                          }}
-                          className={cn(
-                            "w-full flex items-center justify-between rounded px-2 py-1 text-left font-mono text-[11px] transition-colors cursor-pointer",
-                            isActive
-                              ? "text-cyan-300 hover:text-white hover:bg-cyan-950/40"
-                              : "text-muted-foreground hover:text-white hover:bg-secondary/30",
-                          )}
-                        >
-                          <span className="truncate">{sub.label}</span>
-                          {sub.badge && (
-                            <span className="rounded bg-red-500/20 px-1 text-[8px] font-bold text-red-300 border border-red-500/40">
-                              {sub.badge}
-                            </span>
-                          )}
-                        </button>
-                      ))}
+                      {submenus.map((sub) => {
+                        const SubIcon = sub.icon
+                        const isSubActive =
+                          isActive &&
+                          (sec.id === "hangar"
+                            ? activeHangarTab === (sub.id === "enhance" ? "enhancement" : sub.id)
+                            : sec.id === "battlefield"
+                              ? (sub.id === "arena" && !activeCampaignMission) ||
+                                (sub.id === "active-quest" && !!activeCampaignMission)
+                              : false)
+
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => handleSelectSubmenu(sec.id, sub.id)}
+                            className={cn(
+                              "w-full flex items-center justify-between rounded px-2 py-1.5 text-left font-mono text-[11px] transition-all cursor-pointer",
+                              isSubActive
+                                ? sec.id === "hangar" && sub.id === "enhancement"
+                                  ? "bg-purple-500/25 text-purple-200 border-l-2 border-purple-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(168,85,247,0.25)]"
+                                  : "bg-cyan-500/20 text-cyan-300 border-l-2 border-cyan-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+                                : "text-muted-foreground hover:text-white hover:bg-secondary/30",
+                            )}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              {SubIcon ? (
+                                <SubIcon
+                                  className={cn(
+                                    "size-3 shrink-0",
+                                    isSubActive
+                                      ? sec.id === "hangar" && sub.id === "enhancement"
+                                        ? "text-purple-400"
+                                        : "text-cyan-400"
+                                      : "text-muted-foreground/80",
+                                  )}
+                                />
+                              ) : (
+                                <div
+                                  className={cn(
+                                    "size-1.5 rounded-full shrink-0",
+                                    isSubActive ? "bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]" : "bg-muted-foreground/40",
+                                  )}
+                                />
+                              )}
+                              <span className="truncate">{sub.label}</span>
+                            </div>
+
+                            {sub.badge && (
+                              <span
+                                className={cn(
+                                  "rounded px-1.5 py-0.2 font-mono text-[8px] font-bold border shrink-0",
+                                  isSubActive
+                                    ? "bg-cyan-400/20 text-cyan-200 border-cyan-400/40"
+                                    : "bg-black/60 text-muted-foreground border-border/40",
+                                )}
+                              >
+                                {sub.badge}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
                 </div>
@@ -935,6 +988,8 @@ export function StarfrontShell() {
             {activeSection === "hangar" && (
               <StarfrontHangar
                 progression={progression}
+                activeTab={activeHangarTab}
+                onTabChange={setActiveHangarTab}
                 onEquipItem={handleEquipItem}
                 onUnequipSlot={handleUnequipSlot}
                 onEnhanceItem={handleEnhanceItem}

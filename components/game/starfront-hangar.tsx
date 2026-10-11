@@ -196,6 +196,8 @@ interface StarfrontHangarProps {
   onEnhanceItem?: (itemId: string) => EnhancementResult
   onUpdateProgression?: (updated: StarfrontProgression) => void
   onNavigateToCharacterGear?: () => void
+  activeTab?: HangarTab
+  onTabChange?: (tab: HangarTab) => void
 }
 
 export function StarfrontHangar({
@@ -208,9 +210,20 @@ export function StarfrontHangar({
   onEnhanceItem,
   onUpdateProgression,
   onNavigateToCharacterGear,
+  activeTab: propActiveTab,
+  onTabChange,
 }: StarfrontHangarProps) {
   // Tabs: Buồng Lái & Trang Bị, Mô-Đun Kỹ Năng (5 Ô), Kho Đồ & Tái Chế, Xưởng Cường Hóa
-  const [activeTab, setActiveTab] = useState<HangarTab>("loadout")
+  const [internalTab, setInternalTab] = useState<HangarTab>("loadout")
+  const activeTab = propActiveTab !== undefined ? propActiveTab : internalTab
+
+  const handleTabSelect = (tab: HangarTab) => {
+    playClickSound()
+    setInternalTab(tab)
+    if (onTabChange) {
+      onTabChange(tab)
+    }
+  }
 
   // Bộ lọc & sắp xếp kho đồ
   const [slotFilter, setSlotFilter] = useState<StarfrontItemSlot | "all">("all")
@@ -358,14 +371,20 @@ export function StarfrontHangar({
 
   // Thực thi Cường Hóa
   const handleExecuteEnhance = () => {
-    if (!selectedEnhanceItemId || !onEnhanceItem || isEnhancing) return
+    const targetItemId = selectedEnhanceItemId || selectedEnhanceItem?.id
+    if (!targetItemId || !onEnhanceItem || isEnhancing) return
     setIsEnhancing(true)
     playClickSound()
 
     setTimeout(() => {
-      const res = onEnhanceItem(selectedEnhanceItemId)
+      const res = onEnhanceItem(targetItemId)
       setLastEnhanceResult(res)
       setIsEnhancing(false)
+      if (res.success) {
+        playLevelUpSound()
+      } else {
+        playShieldSound()
+      }
     }, 250)
   }
 
@@ -585,12 +604,9 @@ export function StarfrontHangar({
           3. THANH ĐIỀU HƯỚNG TAB PHÂN HỆ HANGAR (LOADOUT / SKILLS / INVENTORY / LAB)
           ==================================================================== */}
       <div className="flex items-center justify-between border-b border-border/60 pb-2">
-        <div className="flex items-center gap-1 p-1 bg-black/40 rounded-sm border border-border/50">
+        <div className="flex flex-wrap items-center gap-1 p-1 bg-black/40 rounded-sm border border-border/50">
           <button
-            onClick={() => {
-              playClickSound()
-              setActiveTab("loadout")
-            }}
+            onClick={() => handleTabSelect("loadout")}
             className={cn(
               "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "loadout"
@@ -603,10 +619,7 @@ export function StarfrontHangar({
           </button>
 
           <button
-            onClick={() => {
-              playClickSound()
-              setActiveTab("skills")
-            }}
+            onClick={() => handleTabSelect("skills")}
             className={cn(
               "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "skills"
@@ -619,10 +632,7 @@ export function StarfrontHangar({
           </button>
 
           <button
-            onClick={() => {
-              playClickSound()
-              setActiveTab("inventory")
-            }}
+            onClick={() => handleTabSelect("inventory")}
             className={cn(
               "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
               activeTab === "inventory"
@@ -635,11 +645,13 @@ export function StarfrontHangar({
           </button>
 
           <button
-            onClick={() => {
-              playClickSound()
-              handleOpenEnhance()
-            }}
-            className="px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs text-purple-300 hover:text-purple-200 hover:bg-purple-950/40 transition-all cursor-pointer flex items-center gap-1.5"
+            onClick={() => handleTabSelect("enhancement")}
+            className={cn(
+              "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
+              activeTab === "enhancement"
+                ? "bg-purple-600 text-white font-bold shadow-[0_0_14px_rgba(168,85,247,0.5)] border border-purple-400/80"
+                : "text-purple-300 hover:text-purple-200 hover:bg-purple-950/40",
+            )}
           >
             <Hammer className="size-3.5 text-purple-400" />
             <span>Xưởng Cường Hóa (+1..+10)</span>
@@ -706,7 +718,7 @@ export function StarfrontHangar({
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
                   <Button
                     size="xs"
-                    onClick={() => setActiveTab("skills")}
+                    onClick={() => handleTabSelect("skills")}
                     variant="outline"
                     className="font-display text-[11px] gap-1 text-amber-300 border-amber-500/40 hover:bg-amber-950/60 cursor-pointer"
                   >
@@ -716,7 +728,7 @@ export function StarfrontHangar({
 
                   <Button
                     size="xs"
-                    onClick={() => setActiveTab("inventory")}
+                    onClick={() => handleTabSelect("inventory")}
                     variant="outline"
                     className="font-display text-[11px] gap-1 text-cyan-300 border-cyan-500/40 hover:bg-cyan-950/60 cursor-pointer"
                   >
@@ -830,7 +842,7 @@ export function StarfrontHangar({
                           <div
                             onClick={() => {
                               setSlotFilter(slotKey)
-                              setActiveTab("inventory")
+                              handleTabSelect("inventory")
                             }}
                             className="my-5 flex flex-col items-center justify-center text-center text-muted-foreground cursor-pointer hover:text-cyan-300"
                           >
@@ -867,7 +879,7 @@ export function StarfrontHangar({
                             size="xs"
                             onClick={() => {
                               setSlotFilter(slotKey)
-                              setActiveTab("inventory")
+                              handleTabSelect("inventory")
                             }}
                             variant="outline"
                             className="w-full text-[10px] font-mono text-cyan-300 border-cyan-500/40 hover:bg-cyan-950/60 cursor-pointer"
@@ -1449,6 +1461,401 @@ export function StarfrontHangar({
                 })}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          TAB 4: XƯỞNG CƯỜNG HÓA TRANG BỊ (+1 ĐẾN +10) (DEDICATED ENHANCEMENT WORKSHOP)
+          ==================================================================== */}
+      {activeTab === "enhancement" && selectedEnhanceItem && (
+        <div className="space-y-4">
+          <div className="rounded-sm border border-purple-500/50 bg-panel/90 p-4 shadow-xl">
+            {/* Header Xưởng Cường Hóa */}
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded bg-purple-950/80 border border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+                  <Hammer className="size-5 text-purple-300" />
+                </div>
+                <div>
+                  <h3 className="font-display text-sm font-bold uppercase tracking-wider text-purple-200">
+                    TRUNG TÂM XƯỞNG CƯỜNG HÓA TRANG BỊ // ENHANCEMENT FORGE LAB
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground font-mono">
+                    Gia số chỉ số thuộc tính trang bị lên tới +10 Tối Thượng · 100% Bảo hiểm lõi không làm vỡ đồ hay tụt cấp
+                  </p>
+                </div>
+              </div>
+
+              {/* Ngân sách sẵn có */}
+              <div className="flex items-center gap-3 rounded bg-black/60 px-3.5 py-2 border border-purple-500/40 font-mono text-xs">
+                <div className="flex items-center gap-1.5 text-amber-300">
+                  <Coins className="size-4 text-amber-400" />
+                  <span>{progression.credits.toLocaleString("vi-VN")} Credits</span>
+                </div>
+                <span className="text-muted-foreground/60">|</span>
+                <div className="flex items-center gap-1.5 text-purple-300">
+                  <Layers className="size-4 text-purple-400" />
+                  <span>{alloyCount} Hợp Kim (Alloy)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Thanh Chọn Nhanh Trang Bị Trong Kho & Đang Lắp */}
+            <div className="mb-4 rounded bg-black/40 p-3 border border-border/50">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[11px] font-mono text-muted-foreground uppercase font-bold flex items-center gap-1.5">
+                  <Boxes className="size-3.5 text-purple-400" />
+                  Chọn trang bị để đưa vào bệ cường hóa:
+                </span>
+                <span className="text-[10px] font-mono text-muted-foreground">
+                  ({progression.inventory.length} món trong kho)
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1">
+                {progression.inventory.map((it) => {
+                  const isChosen = it.id === selectedEnhanceItem.id
+                  const isEquipped = progression.equipped[it.slot] === it.id
+                  const badge = getEnhancementBadgeMeta(it.enhancementLevel)
+                  const rarity = RARITY_CONFIG[it.rarity]
+                  const rating = calculateItemRating(it)
+
+                  return (
+                    <button
+                      key={it.id}
+                      onClick={() => {
+                        playClickSound()
+                        setSelectedEnhanceItemId(it.id)
+                        setLastEnhanceResult(null)
+                      }}
+                      className={cn(
+                        "flex items-center justify-between rounded-xs border p-2 text-left font-mono transition-all cursor-pointer text-xs",
+                        isChosen
+                          ? "border-purple-400 bg-purple-950/70 text-white shadow-[0_0_12px_rgba(168,85,247,0.35)]"
+                          : "border-border/60 bg-black/50 text-muted-foreground hover:text-white hover:border-purple-500/40 hover:bg-black/80",
+                      )}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className={cn("size-2 rounded-full shrink-0", rarity.bg, rarity.border, "border")} />
+                        <div className="truncate">
+                          <div className={cn("truncate font-bold font-display text-xs", isChosen ? "text-purple-200" : rarity.text)}>
+                            {it.name}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                            <span>{SLOT_META[it.slot].shortLabel}</span>
+                            <span>•</span>
+                            <span>Rating {rating}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
+                        {badge ? (
+                          <span className={cn("rounded px-1 text-[9px] font-bold border", badge.className)}>
+                            {badge.text}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] text-muted-foreground">+0</span>
+                        )}
+                        {isEquipped && (
+                          <span className="rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 px-1 text-[8px] font-bold">
+                            Đang Dùng
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Chi Tiết Bệ Cường Hóa (Forge Terminal) */}
+            {(() => {
+              const currentLvl = Math.max(0, Math.min(10, selectedEnhanceItem.enhancementLevel || 0))
+              const isMax = currentLvl >= 10
+              const targetLevel = currentLvl + 1
+              const config = ENHANCEMENT_TABLE[targetLevel]
+              const currentEnhanced = getEnhancedItemStats(selectedEnhanceItem)
+
+              const nextMockItem: StarfrontItem = {
+                ...selectedEnhanceItem,
+                enhancementLevel: targetLevel,
+              }
+              const nextEnhanced = getEnhancedItemStats(nextMockItem)
+
+              const hasEnoughCredits = config ? progression.credits >= config.creditsCost : false
+              const hasEnoughAlloy = config ? alloyCount >= config.alloyCost : false
+              const canEnhance = !isMax && hasEnoughCredits && hasEnoughAlloy && !isEnhancing
+
+              return (
+                <div className="space-y-4">
+                  {/* Bảng so sánh chỉ số Cấp Hiện Tại vs Mục Tiêu */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Cột Trái: Cấp Hiện Tại */}
+                    <div className="rounded border border-border/70 bg-black/60 p-4 relative overflow-hidden">
+                      <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                        <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold">
+                          CẤP ĐỘ HIỆN TẠI
+                        </span>
+                        <span className="font-mono text-xs font-bold text-purple-300">
+                          {currentLvl > 0 ? `+${currentLvl}` : "Gốc (+0)"}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div>
+                          <h4 className="font-display text-base font-bold text-white">
+                            {getItemDisplayName(selectedEnhanceItem)}
+                          </h4>
+                          <span className="text-xs font-mono text-muted-foreground">
+                            {SLOT_META[selectedEnhanceItem.slot].label} · Phẩm chất {RARITY_CONFIG[selectedEnhanceItem.rarity].label}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] font-mono text-muted-foreground block">LỰC CHIẾN</span>
+                          <span className="font-mono text-sm font-bold text-amber-300">
+                            {calculateItemRating(selectedEnhanceItem)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Danh sách thuộc tính hiện tại */}
+                      <div className="mt-4 grid grid-cols-2 gap-2 font-mono text-xs">
+                        <div className="rounded bg-black/40 p-2 border border-border/40">
+                          <span className="text-[10px] text-muted-foreground block">TẤN CÔNG (ATK)</span>
+                          <span className="font-bold text-red-300">+{currentEnhanced.attackBonus}</span>
+                        </div>
+                        <div className="rounded bg-black/40 p-2 border border-border/40">
+                          <span className="text-[10px] text-muted-foreground block">PHÒNG THỦ (DEF)</span>
+                          <span className="font-bold text-blue-300">+{currentEnhanced.defenseBonus}</span>
+                        </div>
+                        <div className="rounded bg-black/40 p-2 border border-border/40">
+                          <span className="text-[10px] text-muted-foreground block">TỐC ĐỘ (SPD)</span>
+                          <span className="font-bold text-emerald-300">+{currentEnhanced.speedBonus}</span>
+                        </div>
+                        <div className="rounded bg-black/40 p-2 border border-border/40">
+                          <span className="text-[10px] text-muted-foreground block">SINH LỰC (HP)</span>
+                          <span className="font-bold text-teal-300">+{currentEnhanced.hpBonus}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Cột Phải: Cấp Tiếp Theo */}
+                    <div className="rounded border border-purple-500/70 bg-purple-950/20 p-4 relative overflow-hidden">
+                      <div className="flex items-center justify-between border-b border-purple-500/30 pb-2">
+                        <span className="text-[10px] font-mono text-purple-300 uppercase font-bold flex items-center gap-1.5">
+                          <Sparkles className="size-3 text-purple-400" />
+                          {isMax ? "ĐÃ ĐẠT CẤP TỐI ĐA" : `MỤC TIÊU NÂNG CẤP: +${targetLevel}`}
+                        </span>
+                        {!isMax && config && (
+                          <span className="rounded bg-emerald-950/60 border border-emerald-500/50 px-2 py-0.5 font-mono text-xs font-bold text-emerald-400">
+                            Tỉ Lệ Thành Công: {Math.round(config.successRate * 100)}%
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div>
+                          <h4 className="font-display text-base font-bold text-purple-200">
+                            {getItemDisplayName(nextMockItem)}
+                          </h4>
+                          <span className="text-xs font-mono text-purple-300/80">
+                            {isMax ? "Hiệu suất tối đa 100%" : `Gia tăng mạnh mẽ các thuộc tính cốt lõi`}
+                          </span>
+                        </div>
+                        {!isMax && (
+                          <div className="text-right">
+                            <span className="text-[10px] font-mono text-muted-foreground block">LỰC CHIẾN SAU NÂNG</span>
+                            <span className="font-mono text-sm font-bold text-emerald-400">
+                              {calculateItemRating(nextMockItem)} (+{calculateItemRating(nextMockItem) - calculateItemRating(selectedEnhanceItem)})
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Danh sách thuộc tính sau nâng cấp */}
+                      {!isMax ? (
+                        <div className="mt-4 grid grid-cols-2 gap-2 font-mono text-xs">
+                          <div className="rounded bg-black/40 p-2 border border-purple-500/40">
+                            <span className="text-[10px] text-muted-foreground block">TẤN CÔNG (ATK)</span>
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-red-300">+{nextEnhanced.attackBonus}</span>
+                              {nextEnhanced.attackBonus > currentEnhanced.attackBonus && (
+                                <span className="text-[10px] text-emerald-400 font-bold">
+                                  (+{nextEnhanced.attackBonus - currentEnhanced.attackBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="rounded bg-black/40 p-2 border border-purple-500/40">
+                            <span className="text-[10px] text-muted-foreground block">PHÒNG THỦ (DEF)</span>
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-blue-300">+{nextEnhanced.defenseBonus}</span>
+                              {nextEnhanced.defenseBonus > currentEnhanced.defenseBonus && (
+                                <span className="text-[10px] text-emerald-400 font-bold">
+                                  (+{nextEnhanced.defenseBonus - currentEnhanced.defenseBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="rounded bg-black/40 p-2 border border-purple-500/40">
+                            <span className="text-[10px] text-muted-foreground block">TỐC ĐỘ (SPD)</span>
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-emerald-300">+{nextEnhanced.speedBonus}</span>
+                              {nextEnhanced.speedBonus > currentEnhanced.speedBonus && (
+                                <span className="text-[10px] text-emerald-400 font-bold">
+                                  (+{nextEnhanced.speedBonus - currentEnhanced.speedBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="rounded bg-black/40 p-2 border border-purple-500/40">
+                            <span className="text-[10px] text-muted-foreground block">SINH LỰC (HP)</span>
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-teal-300">+{nextEnhanced.hpBonus}</span>
+                              {nextEnhanced.hpBonus > currentEnhanced.hpBonus && (
+                                <span className="text-[10px] text-emerald-400 font-bold">
+                                  (+{nextEnhanced.hpBonus - currentEnhanced.hpBonus})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-4 rounded bg-amber-500/10 border border-amber-500/40 p-3 text-center font-mono text-xs text-amber-300">
+                          ⭐ Trang bị đã đạt cấp độ +10 Tối Thượng! Mở khóa hiệu ứng ánh sáng hoàng kim và thuộc tính cực hạn.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Chi phí Cường Hóa & Bảo hiểm */}
+                  {!isMax && config && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 font-mono text-xs">
+                      {/* Tiêu hao Credits */}
+                      <div className="rounded bg-black/50 p-3 border border-border/50 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-amber-300">
+                          <Coins className="size-4 text-amber-400" />
+                          <span>Chi phí Credits: <strong>{config.creditsCost.toLocaleString("vi-VN")}</strong></span>
+                        </div>
+                        <span className={cn("text-[11px] font-bold", hasEnoughCredits ? "text-emerald-400" : "text-red-400")}>
+                          Có: {progression.credits.toLocaleString("vi-VN")} {hasEnoughCredits ? "✓" : "✗ (Thiếu)"}
+                        </span>
+                      </div>
+
+                      {/* Tiêu hao Hợp Kim Alloy */}
+                      <div className="rounded bg-black/50 p-3 border border-border/50 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-purple-300">
+                          <Layers className="size-4 text-purple-400" />
+                          <span>Chi phí Hợp Kim: <strong>{config.alloyCost} Alloy</strong></span>
+                        </div>
+                        <span className={cn("text-[11px] font-bold", hasEnoughAlloy ? "text-emerald-400" : "text-red-400")}>
+                          Có: {alloyCount} {hasEnoughAlloy ? "✓" : "✗ (Thiếu)"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cam kết bảo toàn 100% */}
+                  <div className="rounded border border-emerald-500/40 bg-emerald-950/20 p-3 flex items-center gap-2.5 text-xs text-emerald-300 font-mono">
+                    <ShieldCheck className="size-5 shrink-0 text-emerald-400" />
+                    <div>
+                      <strong>CƠ CHẾ BẢO VỆ TUYỆT ĐỐI 100%:</strong> Khi cường hóa thất bại, trang bị <em>KHÔNG BAO GIỜ BỊ VỠ</em> và <em>KHÔNG BỊ TỤT CẤP</em>! Cấp độ và linh kiện được bảo toàn nguyên vẹn.
+                    </div>
+                  </div>
+
+                  {/* Kết quả lần cường hóa gần nhất */}
+                  {lastEnhanceResult && (
+                    <div
+                      className={cn(
+                        "rounded border p-3.5 font-mono text-xs animate-in fade-in flex items-center gap-3",
+                        lastEnhanceResult.success
+                          ? "border-emerald-400 bg-emerald-950/50 text-emerald-200 shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                          : "border-amber-400 bg-amber-950/50 text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.3)]",
+                      )}
+                    >
+                      {lastEnhanceResult.success ? (
+                        <Sparkles className="size-6 text-emerald-400 shrink-0 animate-bounce" />
+                      ) : (
+                        <AlertTriangle className="size-6 text-amber-400 shrink-0" />
+                      )}
+                      <div>
+                        <span className="font-bold text-sm block">
+                          {lastEnhanceResult.success ? "🎉 CƯỜNG HÓA THÀNH CÔNG!" : "⚡ CƯỜNG HÓA THẤT BẠI - BẢO LƯU CẤP ĐỘ"}
+                        </span>
+                        <span className="text-xs opacity-90">{lastEnhanceResult.message}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Nút Thực Hiện Cường Hóa */}
+                  {!isMax && (
+                    <div className="pt-2 flex justify-end">
+                      <Button
+                        size="lg"
+                        disabled={!canEnhance}
+                        onClick={handleExecuteEnhance}
+                        className={cn(
+                          "gap-2 font-display text-sm uppercase tracking-wider font-bold cursor-pointer px-6 py-3",
+                          canEnhance
+                            ? "bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-[0_0_20px_rgba(168,85,247,0.5)] border border-purple-400/50"
+                            : "bg-secondary text-muted-foreground cursor-not-allowed",
+                        )}
+                      >
+                        <Hammer className="size-4" />
+                        <span>
+                          {isEnhancing
+                            ? "Đang Cường Hóa Linh Kiện..."
+                            : !hasEnoughCredits
+                              ? "Không Đủ Credits Cần Thiết"
+                              : !hasEnoughAlloy
+                                ? "Không Đủ Hợp Kim (Alloy)"
+                                : `Tiến Hành Cường Hóa [+${targetLevel}] Ngay ⚡`}
+                        </span>
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Lộ Trình Cường Hóa (+1 đến +10) */}
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <span className="text-[10px] font-mono text-muted-foreground uppercase font-bold block mb-2">
+                      Lộ trình 5 Giai Đoạn Cường Hóa Vũ Trụ (+1 Đến +10):
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 font-mono text-xs">
+                      <div className="rounded bg-black/40 p-2 border border-cyan-500/30">
+                        <div className="text-cyan-300 font-bold">+1 .. +3</div>
+                        <div className="text-[10px] text-muted-foreground">Đồng Bộ Cơ Bản</div>
+                        <div className="text-[10px] text-emerald-400 font-bold mt-1">100% Thành Công</div>
+                      </div>
+                      <div className="rounded bg-black/40 p-2 border border-cyan-500/30">
+                        <div className="text-cyan-300 font-bold">+4 .. +5</div>
+                        <div className="text-[10px] text-muted-foreground">Tinh Chỉnh Năng Lượng</div>
+                        <div className="text-[10px] text-emerald-400 font-bold mt-1">85% Thành Công</div>
+                      </div>
+                      <div className="rounded bg-black/40 p-2 border border-purple-500/30">
+                        <div className="text-purple-300 font-bold">+6 .. +7</div>
+                        <div className="text-[10px] text-muted-foreground">Quá Tải Hợp Kim</div>
+                        <div className="text-[10px] text-amber-400 font-bold mt-1">60% Thành Công</div>
+                      </div>
+                      <div className="rounded bg-black/40 p-2 border border-orange-500/30">
+                        <div className="text-orange-300 font-bold">+8 .. +9</div>
+                        <div className="text-[10px] text-muted-foreground">Lõi Lượng Tử</div>
+                        <div className="text-[10px] text-orange-400 font-bold mt-1">40% Thành Công</div>
+                      </div>
+                      <div className="rounded bg-black/40 p-2 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                        <div className="text-amber-300 font-black">+10 TỐI THƯỢNG</div>
+                        <div className="text-[10px] text-amber-200/80">Hào Quang Hoàng Kim</div>
+                        <div className="text-[10px] text-purple-300 font-bold mt-1">25% Thành Công</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </div>
       )}

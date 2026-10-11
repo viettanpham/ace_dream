@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600" width="900" height="1600">
+  <defs>
+    <radialGradient id="bg_kaelen" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.32" />
+      <stop offset="50%" stop-color="#0a0a0f" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#020204" />
+    </radialGradient>
+    <linearGradient id="bodySuit_kaelen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="60%" stop-color="#c2410c" />
+      <stop offset="100%" stop-color="#09090b" />
+    </linearGradient>
+    <filter id="glow_kaelen" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Sci-Fi Hangar Deck -->
+  <rect width="900" height="1600" fill="url(#bg_kaelen)" />
+  
+  <!-- Hangar Deck Grid & Perspective Lines -->
+  <g opacity="0.25" stroke="#f97316" stroke-width="1.5">
+    <line x1="100" y1="1600" x2="350" y2="1100" />
+    <line x1="250" y1="1600" x2="400" y2="1100" />
+    <line x1="650" y1="1600" x2="500" y2="1100" />
+    <line x1="800" y1="1600" x2="550" y2="1100" />
+    <line x1="0" y1="1100" x2="900" y2="1100" stroke-dasharray="10 10" />
+    <line x1="0" y1="1250" x2="900" y2="1250" stroke-dasharray="14 10" />
+    <line x1="0" y1="1450" x2="900" y2="1450" stroke-dasharray="20 10" />
+  </g>
+
+  <!-- Full-Body Character Silhouette Head to Toe -->
+  <g id="character-fullbody" transform="translate(0, 100)">
+    <!-- Back Glow Aura -->
+    <ellipse cx="450" cy="700" rx="220" ry="500" fill="#f97316" opacity="0.18" filter="url(#glow_kaelen)" />
+
+    <!-- 1. Boots & Feet (Y: 1300 to 1420) -->
+    <path d="M 340 1260 L 310 1380 L 390 1390 L 400 1260 Z" fill="#18181b" stroke="#f97316" stroke-width="2" />
+    <path d="M 500 1260 L 510 1390 L 590 1380 L 560 1260 Z" fill="#18181b" stroke="#f97316" stroke-width="2" />
+    <rect x="290" y="1370" width="110" height="24" rx="6" fill="#27272a" stroke="#f97316" stroke-width="2" />
+    <rect x="500" y="1370" width="110" height="24" rx="6" fill="#27272a" stroke="#f97316" stroke-width="2" />
+
+    <!-- 2. Legs / Thighs / Kneepads (Y: 820 to 1260) -->
+    <path d="M 370 820 L 340 1060 L 350 1260 L 420 1260 L 430 1060 L 440 820 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="2" />
+    <path d="M 460 820 L 470 1060 L 480 1260 L 550 1260 L 560 1060 L 530 820 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="2" />
+    <!-- Kneepads -->
+    <rect x="330" y="1030" width="80" height="50" rx="8" fill="#3f3f46" stroke="#f97316" stroke-width="2" />
+    <rect x="490" y="1030" width="80" height="50" rx="8" fill="#3f3f46" stroke="#f97316" stroke-width="2" />
+
+    <!-- 3. Skirt / Utility Belt / Waist (Y: 760 to 860) -->
+    
+    <rect x="350" y="770" width="200" height="80" rx="10" fill="#27272a" stroke="#f97316" stroke-width="2" />
+    
+    <rect x="340" y="750" width="220" height="26" rx="6" fill="#3f3f46" stroke="#f97316" stroke-width="2" />
+
+    <!-- 4. Torso / Flightsuit Armor (Y: 480 to 760) -->
+    <path d="M 300 520 L 350 760 L 550 760 L 600 520 L 530 460 L 370 460 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="3" />
+    <!-- Chest Plate / Power Core -->
+    <polygon points="390,520 510,520 480,640 420,640" fill="#18181b" stroke="#f97316" stroke-width="2" />
+    <circle cx="450" cy="580" r="16" fill="#f97316" filter="url(#glow_kaelen)" />
+
+    <!-- 5. Arms & Hands (Head to toe complete) -->
+    <!-- Left Arm -->
+    <path d="M 320 500 L 250 700 L 240 880 L 280 890 L 300 720 L 360 520 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="2" />
+    <!-- Left Hand / Glove -->
+    <rect x="230" y="870" width="46" height="54" rx="8" fill="#27272a" stroke="#f97316" stroke-width="2" />
+    <!-- Right Arm -->
+    <path d="M 580 500 L 650 700 L 660 880 L 620 890 L 600 720 L 540 520 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="2" />
+    <!-- Right Hand / Glove -->
+    <rect x="624" y="870" width="46" height="54" rx="8" fill="#27272a" stroke="#f97316" stroke-width="2" />
+
+    <!-- 6. Neck & Head (Y: 260 to 460) -->
+    <rect x="420" y="440" width="60" height="50" rx="8" fill="#ffedd5" />
+    <ellipse cx="450" cy="380" rx="75" ry="90" fill="#fed7aa" stroke="#f97316" stroke-width="1.5" />
+    <!-- Hair -->
+    <path d="M 370 360 C 370 240, 530 240, 530 360 Q 560 480 500 500 Q 450 360 400 500 Z" fill="#ea580c" />
+    <!-- Visor / Eyes -->
+    <rect x="410" y="370" width="80" height="18" rx="8" fill="#f97316" filter="url(#glow_kaelen)" />
+  </g>
+
+  <!-- High-End Sci-Fi Card Framing & Telemetry -->
+  <rect x="20" y="20" width="860" height="1560" rx="16" fill="none" stroke="#f97316" stroke-width="2" opacity="0.6" />
+  <rect x="28" y="28" width="844" height="1544" rx="12" fill="none" stroke="#fff" stroke-width="0.8" opacity="0.2" />
+
+  <text x="60" y="100" font-family="monospace" font-size="34" font-weight="black" fill="#f97316" letter-spacing="4">KAELEN VOSS</text>
+  <text x="60" y="145" font-family="monospace" font-size="20" font-weight="bold" fill="#fff" letter-spacing="2">CALLSIGN: SOLAR FLARE // NAM · 23T</text>
+  <text x="60" y="180" font-family="monospace" font-size="16" fill="#f97316" opacity="0.8">GEAR SYNERGY: FALCON · SPECIALTY: Plasma Striker</text>
+  <line x1="60" y1="200" x2="400" y2="200" stroke="#f97316" stroke-width="3" />
+
+  <!-- Bottom Telemetry Specs -->
+  <g transform="translate(60, 1460)" font-family="monospace" font-size="14" fill="#a1a1aa">
+    <text x="0" y="0">TRAIL: <tspan fill="#fff" font-weight="bold">Vệt Sáng Sao Băng Rực Lửa</tspan></text>
+    <text x="0" y="26">PASSIVE: <tspan fill="#f97316" font-weight="bold">Quá Tải Nhiệt Hạch (+12% Crit, hồi SP & thiêu đốt)</tspan></text>
+    <text x="0" y="52">STATUS: COMBAT_READY · FULL_BODY_SILHOUETTE_VERIFIED</text>
+  </g>
+</svg>

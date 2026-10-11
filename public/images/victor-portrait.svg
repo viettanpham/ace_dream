@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 896 1200" width="896" height="1200">
+  <defs>
+    <radialGradient id="vSpaceBg" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#241708" />
+      <stop offset="50%" stop-color="#140c04" />
+      <stop offset="100%" stop-color="#050301" />
+    </radialGradient>
+    <radialGradient id="vAmberGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#78350f" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="vExoArmor" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#78350f" />
+      <stop offset="35%" stop-color="#b45309" />
+      <stop offset="70%" stop-color="#3f3f46" />
+      <stop offset="100%" stop-color="#18181b" />
+    </linearGradient>
+    <linearGradient id="vAmberCore" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="40%" stop-color="#f59e0b" />
+      <stop offset="100%" stop-color="#b45309" />
+    </linearGradient>
+    <filter id="vGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="896" height="1200" fill="url(#vSpaceBg)" />
+  <rect width="896" height="1200" fill="url(#vAmberGlow)" />
+  
+  <!-- Holographic Bastion Grid -->
+  <g opacity="0.3" stroke="#f59e0b" stroke-width="1.5" fill="none">
+    <circle cx="448" cy="400" r="280" stroke-dasharray="10 15" />
+    <circle cx="448" cy="400" r="180" stroke-dasharray="4 8" />
+    <line x1="168" y1="400" x2="728" y2="400" stroke-dasharray="8 8" />
+    <polygon points="448,150 648,500 248,500" stroke-width="1" opacity="0.4" />
+  </g>
+
+  <!-- Body / Armor Silhouette -->
+  <g id="victor-silhouette">
+    <!-- Heavy Shoulders & Chest -->
+    <path d="M 120 1200 L 220 780 L 330 680 L 448 720 L 566 680 L 676 780 L 776 1200 Z" fill="url(#vExoArmor)" stroke="#f59e0b" stroke-width="3" />
+    <!-- Armor Collars & Plates -->
+    <polygon points="280,720 380,750 448,730 516,750 616,720 560,860 336,860" fill="#27272a" stroke="#d97706" stroke-width="2" />
+    <!-- Glowing Power Nodes -->
+    <circle cx="330" cy="780" r="14" fill="url(#vAmberCore)" filter="url(#vGlow)" />
+    <circle cx="566" cy="780" r="14" fill="url(#vAmberCore)" filter="url(#vGlow)" />
+    <rect x="420" y="780" width="56" height="12" rx="6" fill="#fef08a" filter="url(#vGlow)" />
+
+    <!-- Neck & Face -->
+    <path d="M 380 660 L 448 720 L 516 660 L 500 500 L 396 500 Z" fill="#d4a373" />
+    <!-- Head & Beard -->
+    <path d="M 370 420 C 370 300, 526 300, 526 420 C 526 530, 490 570, 448 570 C 406 570, 370 530, 370 420 Z" fill="#e29578" />
+    <!-- Hair & Beard -->
+    <path d="M 350 400 C 350 260, 546 260, 546 400 L 530 420 C 530 330, 366 330, 366 420 Z" fill="#3f3f46" />
+    <path d="M 380 470 C 380 580, 516 580, 516 470 L 490 510 C 470 540, 426 540, 406 510 Z" fill="#27272a" />
+    <!-- Determined Eyes & Brow -->
+    <rect x="400" y="420" width="36" height="8" rx="4" fill="#18181b" />
+    <rect x="460" y="420" width="36" height="8" rx="4" fill="#18181b" />
+    <circle cx="418" cy="435" r="7" fill="#f59e0b" filter="url(#vGlow)" />
+    <circle cx="478" cy="435" r="7" fill="#f59e0b" filter="url(#vGlow)" />
+  </g>
+
+  <!-- Telemetry HUD Overlay -->
+  <text x="50" y="90" font-family="monospace" font-size="28" font-weight="bold" fill="#f59e0b" letter-spacing="4">VICTOR CROSS // IRON WALL</text>
+  <text x="50" y="130" font-family="monospace" font-size="16" fill="#fef08a" opacity="0.8">BASTION FLEET VETERAN · TACTICAL SHIELD PROTOCOL</text>
+  <rect x="50" y="150" width="160" height="4" fill="#f59e0b" />
+</svg>

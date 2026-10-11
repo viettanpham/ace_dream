@@ -136,7 +136,7 @@ const SECTIONS: SectionConfig[] = [
     },
     submenus: () => [
       { id: "pair-flow", label: "Ghép Đôi 3 Bước" },
-      { id: "pilot-list", label: "4 Hồ Sơ Phi Công" },
+      { id: "pilot-list", label: "8 Hồ Sơ Phi Công" },
       { id: "gear-list", label: "3 Lớp Cơ Giáp" },
     ],
   },

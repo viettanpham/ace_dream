@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 896 1200" width="896" height="1200">
+  <defs>
+    <radialGradient id="lSpaceBg" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#041824" />
+      <stop offset="50%" stop-color="#020d14" />
+      <stop offset="100%" stop-color="#010406" />
+    </radialGradient>
+    <radialGradient id="lCyanGlow" cx="50%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.38" />
+      <stop offset="50%" stop-color="#0891b2" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="lHairIce" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#cffafe" />
+      <stop offset="50%" stop-color="#67e8f9" />
+      <stop offset="100%" stop-color="#0891b2" />
+    </linearGradient>
+    <filter id="lGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="896" height="1200" fill="url(#lSpaceBg)" />
+  <rect width="896" height="1200" fill="url(#lCyanGlow)" />
+
+  <!-- Quantum Lattice Hologram -->
+  <g opacity="0.3" stroke="#22d3ee" stroke-width="1.2" fill="none">
+    <polygon points="448,220 598,340 598,520 448,640 298,520 298,340" stroke-dasharray="8 6" />
+    <circle cx="448" cy="430" r="190" stroke-dasharray="4 6" />
+  </g>
+
+  <g id="lyra-silhouette">
+    <!-- Slim Sleek Bodysuit -->
+    <path d="M 180 1200 L 260 800 L 350 680 L 448 710 L 546 680 L 636 800 L 716 1200 Z" fill="#090d16" stroke="#06b6d4" stroke-width="2.5" />
+    <!-- Cyan Energy Traces -->
+    <path d="M 330 840 Q 370 740 448 760 Q 526 740 566 840" stroke="#22d3ee" stroke-width="3" fill="none" filter="url(#lGlow)" />
+    
+    <!-- Neck & Face -->
+    <path d="M 400 640 L 448 690 L 496 640 L 484 500 L 412 500 Z" fill="#f0fdfa" />
+    <path d="M 386 430 C 386 320, 510 320, 510 430 C 510 535, 480 575, 448 575 C 416 575, 386 535, 386 430 Z" fill="#f8fafc" />
+
+    <!-- Ice-Blue Ponytail & Bangs -->
+    <path d="M 360 400 C 360 270, 536 270, 536 400 L 520 430 C 500 320, 396 320, 376 430 Z" fill="url(#lHairIce)" />
+    <!-- High Ponytail flowing to the right -->
+    <path d="M 520 310 Q 640 330 680 480 Q 690 620 660 720 Q 630 630 580 480 Z" fill="url(#lHairIce)" filter="url(#lGlow)" />
+    <circle cx="525" cy="310" r="16" fill="#0891b2" />
+
+    <!-- Silver Eyes & Sensor Headset -->
+    <rect x="408" y="426" width="30" height="5" rx="2.5" fill="#334155" />
+    <rect x="458" y="426" width="30" height="5" rx="2.5" fill="#334155" />
+    <circle cx="423" cy="438" r="6" fill="#67e8f9" filter="url(#lGlow)" />
+    <circle cx="473" cy="438" r="6" fill="#67e8f9" filter="url(#lGlow)" />
+    <!-- Audio sensor clip on ear -->
+    <polygon points="370,430 386,415 386,455" fill="#22d3ee" filter="url(#lGlow)" />
+  </g>
+
+  <text x="50" y="90" font-family="monospace" font-size="28" font-weight="bold" fill="#06b6d4" letter-spacing="4">LYRA STERLING // GHOST WEAVER</text>
+  <text x="50" y="130" font-family="monospace" font-size="16" fill="#cffafe" opacity="0.8">ELECTRONIC WARFARE · QUANTUM INFILTRATION ACE</text>
+  <rect x="50" y="150" width="160" height="4" fill="#06b6d4" />
+</svg>

@@ -1518,6 +1518,9 @@ export interface StarfrontPilotDef {
     desc: string
     shortDesc: string
     icon: string
+    triggerCondition?: string // Điều kiện kích hoạt thực tế (sự kiện trong gameplay)
+    actualEffect?: string // Hiệu ứng thực tế tác động chỉ số / trạng thái
+    details?: { label: string; value: string }[]
   }
   defaultStats: {
     attack: number
@@ -1563,9 +1566,17 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
       id: "pressing-firepower",
       name: "Hỏa Lực Dồn Ép",
       nameEn: "Pressing Firepower",
-      desc: "Tăng 8% tổng sát thương đòn đánh khi mục tiêu còn trên 70% HP.",
+      desc: "Tăng 8% tổng sát thương đòn đánh khi mục tiêu còn trên 70% HP. Khi lái Vanguard, kích hoạt hiệp đồng tăng thêm 10% sát thương kỹ năng và bắn bồi 35% sát thương.",
       shortDesc: "+8% Sát thương khi địch >70% HP",
       icon: "Crosshair",
+      triggerCondition: "Tự động kích hoạt trong mỗi đòn tấn công khi kẻ địch còn trên 70% HP",
+      actualEffect: "+8% Tổng sát thương gây ra (+18% khi lái đúng Vanguard; bồi thêm 35% sát thương & hồi 15 SP khi dùng Tuyệt Kỹ Liên Hoàn)",
+      details: [
+        { label: "Điều Kiện Kích Hoạt", value: "Mục tiêu đối phương có HP > 70%" },
+        { label: "Chỉ Số Tác Động", value: "Tổng sát thương đòn đánh (Total Damage)" },
+        { label: "Mức Tác Động Cụ Thể", value: "+8% Sát thương (+10% thêm khi lái Vanguard)" },
+        { label: "Giới Hạn & Hồi Chiêu", value: "Không giới hạn số lần, kích hoạt theo từng đòn đánh" },
+      ],
     },
     defaultStats: {
       attack: 10,
@@ -1609,9 +1620,17 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
       id: "emergency-overcharge",
       name: "Lá Chắn Cấp Cứu",
       nameEn: "Emergency Overcharge",
-      desc: "Khi Khiên cơ giáp lần đầu giảm về 0 trong trận đấu, lập tức tái tạo 30% Khiên tối đa (1 lần / trận).",
+      desc: "Khi Khiên cơ giáp lần đầu giảm về 0 trong trận đấu, lập tức tái tạo 30% Khiên tối đa (kèm khiên bonus từ Tuyệt Kỹ Liên Hoàn nếu có, 1 lần / trận).",
       shortDesc: "Tái tạo 30% Khiên khi vỡ khiên (1 lần/trận)",
       icon: "Shield",
+      triggerCondition: "Tự động kích hoạt khi Khiên năng lượng lần đầu tiên giảm về 0 trong trận",
+      actualEffect: "Lập tức hồi phục lại 30% Khiên tối đa (+20% dung lượng khiên cơ bản khi lái Aegis)",
+      details: [
+        { label: "Điều Kiện Kích Hoạt", value: "Khiên cơ giáp giảm về 0 sau khi nhận sát thương" },
+        { label: "Chỉ Số Tác Động", value: "Hồi phục Khiên năng lượng (Shield Pool)" },
+        { label: "Mức Tác Động Cụ Thể", value: "30% Max Shield (+ thêm khiên từ Tuyệt Kỹ Thánh Vực Nano)" },
+        { label: "Giới Hạn & Hồi Chiêu", value: "Kích hoạt tối đa 1 lần duy nhất trong mỗi trận đấu" },
+      ],
     },
     defaultStats: {
       attack: 3,
@@ -1655,9 +1674,17 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
       id: "falcon-reflexes",
       name: "Sáng Kiến Diều Hâu",
       nameEn: "Falcon Reflexes",
-      desc: "Nhận +15 SPD trong 3 lượt đầu tiên của trận chiến; tăng cố định +8% tỉ lệ né tránh.",
-      shortDesc: "+15 SPD 3 lượt đầu · +8% Né tránh",
+      desc: "Nhận +15 SPD trong 3 lượt đầu tiên của trận chiến; tăng cố định +8% tỉ lệ né tránh. Khi né tránh thành công trong combat, lập tức phản kích x1.4 sát thương lên kẻ tấn công.",
+      shortDesc: "+15 SPD 3 lượt đầu · +8% Né tránh · Phản kích khi Né",
       icon: "Zap",
+      triggerCondition: "Tự động kích hoạt khi bắt đầu trận đấu (3 lượt đầu) và mỗi khi né tránh thành công đòn đánh của địch",
+      actualEffect: "+15 Tốc độ hành động (3 lượt đầu); +8% Tỉ lệ Né tránh bẩm sinh; Phản kích gây 45% ATK (x1.4 khi lái Falcon)",
+      details: [
+        { label: "Điều Kiện Kích Hoạt", value: "3 lượt đầu trận & khi né tránh đòn đánh địch thành công" },
+        { label: "Chỉ Số Tác Động", value: "Tốc Độ (SPD), Né Tránh (EVA) & Đòn Phản Kích (Counter)" },
+        { label: "Mức Tác Động Cụ Thể", value: "+15 SPD (3 lượt); +8% Né tránh; Phản kích x1.4 sát thương" },
+        { label: "Giới Hạn & Hồi Chiêu", value: "Tốc độ kéo dài 3 lượt; Phản kích kích hoạt mỗi lần né tránh" },
+      ],
     },
     defaultStats: {
       attack: 11,
@@ -1701,9 +1728,17 @@ export const STARFRONT_PILOTS: StarfrontPilotDef[] = [
       id: "bunker-breaker",
       name: "Hạt Nhân Xuyên Giáp",
       nameEn: "Bunker Breaker",
-      desc: "Tất cả các đòn tấn công sở hữu cố định +20% Xuyên Giáp (Armor Penetration).",
+      desc: "Tất cả các đòn tấn công sở hữu cố định +20% Xuyên Giáp (Armor Penetration). Khi kết hợp Tuyệt Kỹ Liên Hoàn, phá hủy -45% Phòng ngự của đối phương.",
       shortDesc: "+20% Xuyên Giáp (Armor Penetration)",
       icon: "Flame",
+      triggerCondition: "Áp dụng vĩnh viễn và tự động trên mọi đòn đánh cơ bản và kỹ năng trong combat",
+      actualEffect: "Bỏ qua 20% Phòng ngự (DEF) của mục tiêu đối phương; tối đa 85% Xuyên Giáp",
+      details: [
+        { label: "Điều Kiện Kích Hoạt", value: "Tự động áp dụng trên mọi đòn đánh / kỹ năng" },
+        { label: "Chỉ Số Tác Động", value: "Chỉ số Xuyên Giáp (Armor Penetration)" },
+        { label: "Mức Tác Động Cụ Thể", value: "+20% Xuyên giáp cố định (Bỏ qua 20% DEF đối phương)" },
+        { label: "Giới Hạn & Hồi Chiêu", value: "Hiệu lực vĩnh viễn, không tiêu hao năng lượng hay hồi chiêu" },
+      ],
     },
     defaultStats: {
       attack: 15,

@@ -508,6 +508,7 @@ export type StarfrontProgression = {
   activePairing?: ActivePairingState
   pilots?: Record<string, PilotProgressionData>
   gearSlotLevels?: Record<StarfrontGearId, Record<1 | 2 | 3 | 4 | 5, number>>
+  gearSkillModules?: Record<StarfrontGearId, Record<1 | 2 | 3 | 4 | 5, string | null>> // Module kỹ năng gắn vào từng slot của Gear
   inventory: StarfrontItem[]
   equipped: Record<StarfrontItemSlot, string | null>
   completedMissions: string[]

@@ -13,7 +13,8 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 3** | Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ (Missions, Gears & Shop) | **Đã triển khai** | Đã có trong `campaign-map.tsx`, `starfront-shop.tsx`, `audio.ts`. 3 Sector (9 ải), Vanguard / Falcon / Aegis, Chợ vũ khí, Web Audio. |
 | **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Đã triển khai** | Hoàn thành Milestones 4.1 -> 4.4: Status Effects (DoT/Stun/Slow/ECM), 4 Archetype AI, Boss 2 Pha Overdrive, Telegraphed Attack, Dynamic Turn Queue & Evasion. Đã kiểm chứng 36/36 tests. |
 | **Phase 5** | Tiến Trình Cơ Giáp, Cường Hóa, Ghép Đôi Pilot, Tuyệt Kỹ & Màn Hình Kết Quả D3 | **Đã triển khai (Done)** | Hoàn thành Milestones 5.1 -> 5.12 (102/102 automated tests PASS). Bao gồm Ghép đôi 3 bước, Khóa 5 trận linh hoạt, 8 Phi công, Tuyệt Kỹ Liên Hoàn, Buồng lái, Admin CP, và Màn hình kết quả sau nhiệm vụ D3. |
-| **Phase 6** | STARFRONT WORLD — Trung Tâm Chỉ Huy Chiến Lược & Chiến Tranh Thiên Hà | **Đã hoàn tất thiết kế & kế hoạch (Design Done — Chưa Viết Code)** | **Chưa triển khai mã nguồn gameplay**. Hoàn thành 100% tài liệu thiết kế tổng thể [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) và lộ trình triển khai 9 sub-phases (6.1–6.9) tại [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md). |
+| **Phase 6.1** | STARFRONT WORLD — Nền Tảng Dữ Liệu & Hệ Thống Lưu Trữ Cách Ly | **Đã triển khai (Done)** | Hoàn thành Milestone 6.1 (`lib/game/world/types.ts`, `storage.ts`, `initial-state.ts`). Đã kiểm chứng cách ly 100% khỏi RPG save v4, sao lưu luân phiên Slot A/B, CRC32 checksum, tự phục hồi khi crash (114/114 automated tests PASS). |
+| **Phase 6.2–6.9** | STARFRONT WORLD — Các Phân Hệ Gameplay Chiến Lược Tiếp Theo | **Đã khóa thiết kế & kế hoạch (Planned)** | Chưa triển khai code. Bao gồm Bản đồ đồ thị, Tick engine, Kinh tế/Hậu cần, Quân sự, Combat adapter, Event engine, Operations Center UI. |
 
 ---
 

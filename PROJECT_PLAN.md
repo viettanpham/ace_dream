@@ -18,10 +18,10 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | Phase 5 hoàn thành 100% (bao gồm Phase 5.12 D3 Post-Mission Results Screen & Combat Efficiency Rating, 102/102 automated tests PASS, build thành công). Phase 6 WORLD đã hoàn tất 100% Tài Liệu Thiết Kế Tổng Thể (`WORLD_DESIGN.md`) và Kế Hoạch Triển Khai (`WORLD_IMPLEMENTATION_PLAN.md`). Mã nguồn gameplay được giữ nguyên vẹn an toàn tuyệt đối. |
+| **Trạng thái hiện tại của dự án?** | Phase 6.1: Nền tảng dữ liệu & Hệ thống lưu trữ cách ly STARFRONT WORLD đã hoàn thành 100% (114/114 automated tests PASS, build thành công). Khóa lưu trữ `STARFRONT_WORLD_SAVE_V1` cùng cơ chế sao lưu luân phiên Slot A/B, checksum CRC32 và auto-rescue đã hoạt động ổn định và cách ly 100% khỏi RPG save v4. |
 | **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô của toàn bộ sản phẩm, tích hợp vào thanh điều hướng cao nhất của Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
-| **Phase tiếp theo cần thực hiện?** | Chuẩn bị triển khai mã nguồn tuần tự theo kế hoạch: **Sub-Phase 6.1: Nền Tảng Dữ Liệu, Interfaces & Save Cách Ly (`STARFRONT_WORLD_SAVE_V1`)**. |
-| **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>2. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
+| **Phase tiếp theo cần thực hiện?** | Chuẩn bị triển khai **Sub-Phase 6.2: Mạng Lưới Đồ Thị World Map & Máy Trạng Thái Sector** (`lib/game/world/graph.ts`, `lib/game/world/sector-lifecycle.ts`). |
+| **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>2. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
 | **Phụ thuộc chính giữa WORLD và hệ thống hiện tại?** | - **Combat Integration**: Giao tiếp qua `WorldCombatAdapter`, sử dụng snapshot tại thời điểm khóa trận và Transaction ID chống double-apply.<br>- **Lưu trữ cách ly**: `STARFRONT_WORLD_SAVE_V1` độc lập hoàn toàn với `STARFRONT_SAVE_DATA_V4`, có sao lưu luân phiên A/B.<br>- **Navigation**: Tích hợp tab `world` vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`. |
 
 *Lưu ý: Không đọc tài liệu lịch sử cũ trừ khi cần đối chiếu tương thích ngược (Backward Compatibility).*
@@ -66,15 +66,16 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 5 (5.1–5.6)** | Cường hóa +10, Nội tại Gear, Rã đồ, Nhiệm vụ 1–15 & Biến thể quái | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
 | **Phase 5.7–5.9** | Khung Kỹ Năng, Ghép Đôi Nhân Vật/Gear, Tuyệt Kỹ Liên Hoàn & Admin CP | **Đã hoàn thành (Done)** | [`CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) |
 | **Phase 5.11–5.12** | Luồng Mở Khóa Ghép Đôi Linh Hoạt & Màn Hình Kết Quả Tác Chiến D3 | **Đã hoàn thành (Done)** | [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) |
-| **Phase 6.0 (Hiện tại)** | **STARFRONT WORLD — Thiết Kế Tổng Thể & Kế Hoạch Triển Khai Chiến Lược** | **HOÀN TẤT THIẾT KẾ & KẾ HOẠCH (DESIGN DONE)** | [`WORLD_DESIGN.md`](./WORLD_DESIGN.md), [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
-| **Phase 6.1–6.9** | Triển khai mã nguồn WORLD tuần tự (Save cách ly $\rightarrow$ Map $\rightarrow$ Tick $\rightarrow$ Economy $\rightarrow$ Military $\rightarrow$ Combat Adapter $\rightarrow$ Events $\rightarrow$ UI) | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
+| **Phase 6.0** | STARFRONT WORLD — Thiết Kế Tổng Thể & Kế Hoạch Triển Khai Chiến Lược | **Hoàn thành (Done)** | [`WORLD_DESIGN.md`](./WORLD_DESIGN.md), [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
+| **Phase 6.1 (Hiện tại)** | **WORLD Data Foundation & Isolated Save Resilience (`STARFRONT_WORLD_SAVE_V1`)** | **ĐÃ HOÀN THÀNH (DONE — 114/114 TESTS PASS)** | `lib/game/world/types.ts`, `lib/game/world/storage.ts` |
+| **Phase 6.2–6.9** | Triển khai mã nguồn WORLD tuần tự (Map Graph $\rightarrow$ Tick Engine $\rightarrow$ Economy $\rightarrow$ Military $\rightarrow$ Combat Adapter $\rightarrow$ Events $\rightarrow$ UI) | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Khi có hiệu lệnh chuyển từ giai đoạn Lập Kế Hoạch sang Triển Khai Mã Nguồn Phase 6.1:
-1. Đọc kỹ [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) (Mục E) và [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Phase 6.1).
-2. Xây dựng thư mục mới `lib/game/world/` và khai báo các interfaces cốt lõi tại `lib/game/world/types.ts`.
-3. Cài đặt hệ thống lưu trữ độc lập `STARFRONT_WORLD_SAVE_V1` với cơ chế sao lưu luân phiên A/B và checksum tại `lib/game/world/storage.ts`.
-4. Viết bộ kiểm thử tự động `tests/world/storage-resilience.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.
+Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.2:
+1. Đọc kỹ [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) (Mục B) và [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Phase 6.2).
+2. Xây dựng thuật toán đồ thị tuyến đường tại `lib/game/world/graph.ts` (Dijkstra tìm đường ngắn nhất, lọc tuyến phong tỏa).
+3. Hiện thực máy trạng thái 5 giai đoạn (`Normal` $\rightarrow$ `Threatened` $\rightarrow$ `Under Siege` $\rightarrow$ `Lost` $\rightarrow$ `Recovery`) và lan truyền Threat tại `lib/game/world/sector-lifecycle.ts`.
+4. Viết bộ kiểm thử tự động `tests/world/sector-lifecycle.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.

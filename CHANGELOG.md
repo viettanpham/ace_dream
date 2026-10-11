@@ -4,6 +4,36 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.1] — STARFRONT WORLD: Nền Tảng Dữ Liệu & Hệ Thống Lưu Trữ Cách Ly (World Data Foundation & Isolated Save Resilience)
+
+*Đã hoàn thành 100% Phase 6.1 (114/114 automated tests passed, build thành công, cách ly an toàn 100% khỏi RPG save v4)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.1:
+- **Khởi Tạo Data Model & Interfaces Chuẩn Hóa (`lib/game/world/types.ts`)**:
+  - Định nghĩa đầy đủ kiểu dữ liệu: `WorldSector`, `WorldRoute`, `WorldFaction`, `WorldResourceLedger`, `MilitaryForceLedger`, `StrategicCapacities`, `DemographicsState`, `WorldState`, và `WorldSaveEnvelope`.
+  - Schema version chính thức: `version: 1` cho World State.
+  - Phân tách rạch ròi 4 nhóm tài nguyên chiến lược kết hợp **Lương thực (Food) là tài nguyên riêng biệt** (không gộp vào vật tư hậu cần).
+  - Sổ cái quân sự bảo toàn quân số: $\text{Total} = \text{Deployed} + \text{Reserves} + \text{Wounded} + \text{Retreating} + \text{Casualties}$.
+- **Bộ Dữ Liệu Khởi Tạo Chuẩn Hóa (`lib/game/world/initial-state.ts`)**:
+  - 8 Sector thiên hà khởi đầu: Sol Command HQ, Helios, Mining Outpost K-7, Asteroid Delta, Nebula Bastion, Waypoint Orion, Shadow Reach, Tartarus Breach.
+  - 12 Tuyến siêu không gian kết nối mạng lưới với trạng thái `open`, `hazardous`, `blocked`.
+  - 2 Phe phái ban đầu: Chính phủ VSS và Đế Chế The Void.
+- **Hệ Thống Lưu Trữ Cách Ly Tuyệt Đối (`lib/game/world/storage.ts`)**:
+  - Khóa lưu trữ độc lập: `STARFRONT_WORLD_SAVE_V1`, `STARFRONT_WORLD_BACKUP_A`, `STARFRONT_WORLD_BACKUP_B`, `STARFRONT_WORLD_BACKUP_META`, `STARFRONT_WORLD_STAGING`.
+  - **Cách ly 100% khỏi RPG v4**: Tuyệt đối không đọc, ghi, sửa đổi hay làm rò rỉ dữ liệu `STARFRONT_SAVE_DATA_V4`.
+- **Cơ Chế Ghi Nguyên Tử & Sao Lưu Luân Phiên Slot A/B (Rotating Backups)**:
+  - Kiểm tra tính hợp lệ cấu trúc state $\rightarrow$ Đóng gói Envelope kèm timestamp đơn điệu $\rightarrow$ Tính mã băm CRC32 xác thực $\rightarrow$ Ghi thử nghiệm vào Staging $\rightarrow$ Xoay vòng bản lưu chính cũ sang Backup Slot A hoặc B $\rightarrow$ Commit khóa chính $\rightarrow$ Dọn dẹp Staging.
+- **Khả Năng Tự Phục Hồi Khi Save Hỏng (Auto-Rescue)**:
+  - Tự động phát hiện khi file chính bị hỏng cú pháp JSON, sai lệch cấu trúc hoặc không khớp checksum.
+  - Quét tìm và tự động phục hồi từ bản sao lưu Slot A/B hợp lệ mới nhất có dấu thời gian gần nhất.
+  - Trả về thông báo minh bạch trong `LoadWorldResult` và cờ `recoveredFromBackup: true`.
+  - Tự động tái lập trạng thái mặc định an toàn nếu cả bản chính và toàn bộ backup đều bị phá hủy.
+- **Bộ Kiểm Thử Tự Động Toàn Diện (`tests/world/storage-resilience.test.ts`)**:
+  - 12 bài kiểm thử tự động chuyên sâu kiểm chứng: Tính toàn vẹn của Data Model, xác thực mã băm CRC32, tính bất biến của `STARFRONT_SAVE_DATA_V4`, chu kỳ luân phiên A $\rightarrow$ B $\rightarrow$ A, tự phục hồi khi crash/tamper, và chẩn đoán kho lưu trữ.
+  - Toàn bộ 114/114 automated unit tests trong toàn bộ dự án PASS 100%.
+
+---
+
 ## [Phase 6.0] — STARFRONT WORLD: Thiết Kế Tổng Thể & Kế Hoạch Triển Khai Chiến Lược (World Architecture Design & Implementation Planning)
 
 *Đã hoàn thành 100% tài liệu thiết kế và kế hoạch hóa lộ trình triển khai kỹ thuật cho STARFRONT WORLD (Lập tài liệu và kế hoạch hóa 100% — KHÔNG thay đổi mã nguồn gameplay, không sửa đổi hành vi game, bảo toàn nguyên vẹn 102/102 automated tests PASS).*

@@ -261,8 +261,8 @@ Mọi thẻ hiển thị hình ảnh trong components **BẮT BUỘC** có thu�
 | Hạng mục Asset | Trạng thái hiện tại | Chuẩn mục tiêu | Kế hoạch nâng cấp tiếp theo |
 |---|---|---|---|
 | **3 Lớp Cơ Giáp Hiện Tại** (`vanguard`, `falcon`, `aegis`) | Đã có raster 16:9 (`vanguard-gear.jpg`, `falcon-gear.jpg`, `aegis-gear.jpg`) dung lượng 700–830KB | High-Detail 3D Mecha Concept Art | Tinh chỉnh ánh sáng buồng lái, giữ file hiện tại làm chuẩn |
-| **4 Chân Dung Phi Công** (`marcus`, `valentine`, `alviss`, `eric`) | Đã có raster 1024x1024 (`.jpg`, `.png`) chất lượng cao 648–936KB | Anime-Realistic Pilot Portraits | **Đạt chuẩn 100%**, duy trì tính nhất quán |
-| **4 Toàn Thân Phi Công** | Đang dùng SVG nhúng portrait fallback | Full-Body 9:16 Illustration độ phân giải cao | Sinh tranh toàn thân 9:16 khi quota khả dụng và nạp vào `/public/images/` |
+| **8 Chân Dung Phi Công** (`marcus`, `valentine`, `alviss`, `eric`, `lyra`, `kaelen`, `selena`, `victor`) | Đã có đầy đủ 8 file raster 1024x1024 PNG (`*-portrait.png`) chất lượng cao 520–650KB | Premium Semi-Realistic Anime Sci-Fi Portraits | **Đạt chuẩn 100%**, phân bổ cân bằng 4 Nam - 4 Nữ |
+| **8 Tranh Toàn Thân Phi Công** (`marcus`, `valentine`, `alviss`, `eric`, `lyra`, `kaelen`, `selena`, `victor`) | Đã có đầy đủ 8 file raster 900x1600 (9:16) PNG (`*-fullbody.png`) chất lượng cao 890–1080KB trong `/public/images/` | Full-Body 9:16 Character Concept Art | **Đạt chuẩn 100%**, mỗi pilot sở hữu silhouette, quân phục và vũ khí đặc trưng |
 | **Cơ Giáp Thứ 4: Specter** | Chưa khởi tạo (Phase 6) | 16:9 Stealth Electronic Warfare Mecha | Khởi tạo prompt và asset trong Phase 6 |
 | **3 Biến Thể Kẻ Địch** | Đang dùng SVG và icon HUD | 16:9 Enemy Vehicle Concept Art | Lập danh mục tranh minh họa Boss và Quái |
 

@@ -598,7 +598,7 @@ export function CharacterGearSelect({
                   <div className="flex items-center gap-2">
                     <UserRound className="size-4 text-cyan-400" />
                     <span className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
-                      CHỌN PHI CÔNG XUẤT KÍCH (4 CHIẾN BINH THIÊN HÀ)
+                      CHỌN PHI CÔNG XUẤT KÍCH (8 CHIẾN BINH THIÊN HÀ)
                     </span>
                   </div>
                   <span className="text-[11px] font-mono text-muted-foreground">

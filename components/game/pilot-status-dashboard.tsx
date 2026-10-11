@@ -607,9 +607,9 @@ export function PilotStatusDashboard({
           </div>
         </div>
 
-        {/* Thanh chọn 4 Phi Công (Quick Pilot Selector) */}
+        {/* Thanh chọn 8 Phi Công (Quick Pilot Selector) */}
         {!hidePilotSwitcher && (
-          <div className="mt-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="mt-3.5 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
             {STARFRONT_PILOTS.map((pilot) => {
               const isSelected = selectedPilotId === pilot.id
               const isActiveInPair = activePairing.pilotId === pilot.id

@@ -96,6 +96,8 @@ import { CombatLogPanel } from "./combat-log-panel"
 import { PlayerStatus } from "./player-status"
 import { StarfrontHangar } from "./starfront-hangar"
 import { StarfrontShop } from "./starfront-shop"
+import { CombatText, type CombatTextItem } from "./combat-text"
+import { TacticalGridOverlay } from "./tactical-grid-overlay"
 
 const GEAR_THEMES: Record<
   StarfrontGearId,
@@ -224,6 +226,18 @@ export function CombatArena({
     isCrit?: boolean
     isPlayer?: boolean
   } | null>(null)
+
+  // Hệ thống Floating Combat Text (Floating damage numbers & combat events)
+  const [combatTextEvents, setCombatTextEvents] = useState<CombatTextItem[]>([])
+
+  const spawnCombatText = (item: Omit<CombatTextItem, "id">) => {
+    const id = `ct-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
+    setCombatTextEvents((prev) => [...prev.slice(-12), { ...item, id }])
+  }
+
+  const handleRemoveCombatText = (id: string) => {
+    setCombatTextEvents((prev) => prev.filter((it) => it.id !== id))
+  }
 
   // 3. Quản lý nhận thưởng chính xác 1 lần duy nhất (Chống cộng lặp lại)
   const rewardClaimedRef = useRef(false)
@@ -696,6 +710,42 @@ export function CombatArena({
           isPlayer: false,
         })
         setTimeout(() => setFloatingNotification(null), 1600)
+
+        // Spawn energetic CombatText over player side
+        if (next.lastAction.isEvaded) {
+          spawnCombatText({
+            text: "MISS // NÉ TRÁNH",
+            type: "evade",
+            target: "left",
+            tag: "EVA 💨",
+            subtitle: "Hệ thống phản lực né đòn thành công",
+          })
+        } else if (next.lastAction.damage) {
+          spawnCombatText({
+            text: `-${next.lastAction.damage}`,
+            type: next.lastAction.isCrit ? "crit" : "damage-enemy",
+            target: "left",
+            tag: next.lastAction.isCrit ? "CRIT DAMAGE" : "HULL DAMAGE",
+            subtitle: hasAegisReflect ? `Aegis phản thương: -${reflectDamage} HP` : undefined,
+          })
+          if (hasAegisReflect && reflectDamage > 0) {
+            spawnCombatText({
+              text: `REFLECT -${reflectDamage}`,
+              type: "shield",
+              target: "right",
+              tag: "PHẢN ĐÒN 🛡️",
+              xOffset: 15,
+              yOffset: -20,
+            })
+          }
+        } else if (next.lastAction.effectApplied) {
+          spawnCombatText({
+            text: next.lastAction.effectApplied,
+            type: "status",
+            target: "left",
+            tag: "STATUS",
+          })
+        }
       }
       return next
     })
@@ -898,6 +948,32 @@ export function CombatArena({
         isPlayer: true,
       })
       setTimeout(() => setFloatingNotification(null), 1800)
+
+      // Spawn floating CombatText over enemy side
+      if (next.lastAction.isEvaded) {
+        spawnCombatText({
+          text: "EVADED // NÉ TRÁNH",
+          type: "evade",
+          target: "right",
+          tag: "MISS",
+          subtitle: "Mục tiêu cơ động thành công",
+        })
+      } else if (next.lastAction.damage) {
+        spawnCombatText({
+          text: `-${next.lastAction.damage}`,
+          type: next.lastAction.isCrit ? "crit" : "damage-player",
+          target: "right",
+          tag: next.lastAction.isCrit ? "CRIT DAMAGE 🔥" : "HIT",
+          subtitle: hasFalconFollowUp ? "Falcon Kích Hoạt Bắn Bồi ⚡" : undefined,
+        })
+      } else if (next.lastAction.effectApplied) {
+        spawnCombatText({
+          text: next.lastAction.effectApplied,
+          type: "status",
+          target: "right",
+          tag: "BUFF/DEBUFF",
+        })
+      }
     }
     setCombatState(next)
   }
@@ -1640,7 +1716,22 @@ export function CombatArena({
           )}
 
           {/* 4. Lưới Chiến Trường Chính (Người chơi vs Kẻ Địch) */}
-          <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <div className="relative grid grid-cols-1 gap-4 lg:grid-cols-2 overflow-hidden rounded-sm p-0.5">
+            {/* TACTICAL SPATIAL COORDINATE GRID OVERLAY (Hex & Square Spatial Grid with --color-grid-line) */}
+            <TacticalGridOverlay
+              pattern="dual"
+              animation="drift"
+              density="normal"
+              showCoordinates={true}
+              showReticles={true}
+            />
+
+            {/* FLOATING COMBAT TEXT COMPONENT (Animated floating damage numbers & combat events over play area) */}
+            <CombatText
+              items={combatTextEvents}
+              onItemComplete={handleRemoveCombatText}
+            />
+
             {/* Floating Combat Feedback */}
             {floatingNotification && (
               <div

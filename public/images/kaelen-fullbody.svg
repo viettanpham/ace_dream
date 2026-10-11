@@ -1,100 +1,193 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600" width="900" height="1600">
   <defs>
-    <radialGradient id="bg_kaelen" cx="50%" cy="35%" r="70%">
-      <stop offset="0%" stop-color="#f97316" stop-opacity="0.32" />
-      <stop offset="50%" stop-color="#0a0a0f" stop-opacity="0.8" />
+    <!-- Background Gradient -->
+    <radialGradient id="bg_kaelen" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.35" />
+      <stop offset="45%" stop-color="#042f2e" stop-opacity="0.65" />
       <stop offset="100%" stop-color="#020204" />
     </radialGradient>
-    <linearGradient id="bodySuit_kaelen" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#f8fafc" />
-      <stop offset="60%" stop-color="#c2410c" />
-      <stop offset="100%" stop-color="#09090b" />
+
+    <!-- Suit Gradient -->
+    <linearGradient id="suit_kaelen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#090d16" />
+      <stop offset="50%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#030712" />
     </linearGradient>
-    <filter id="glow_kaelen" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="8" result="blur" />
+
+    <!-- Glow Filter -->
+    <filter id="glow_kaelen" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="10" result="blur" />
       <feMerge>
         <feMergeNode in="blur" />
         <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
+
+    <!-- Soft Drop Shadow -->
+    <filter id="shadow_kaelen" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.8" />
+    </filter>
   </defs>
 
-  <!-- Background Sci-Fi Hangar Deck -->
+  <!-- 1. Background: Atmospheric Sci-Fi Aerospace Hangar -->
   <rect width="900" height="1600" fill="url(#bg_kaelen)" />
-  
-  <!-- Hangar Deck Grid & Perspective Lines -->
-  <g opacity="0.25" stroke="#f97316" stroke-width="1.5">
-    <line x1="100" y1="1600" x2="350" y2="1100" />
-    <line x1="250" y1="1600" x2="400" y2="1100" />
-    <line x1="650" y1="1600" x2="500" y2="1100" />
-    <line x1="800" y1="1600" x2="550" y2="1100" />
-    <line x1="0" y1="1100" x2="900" y2="1100" stroke-dasharray="10 10" />
-    <line x1="0" y1="1250" x2="900" y2="1250" stroke-dasharray="14 10" />
-    <line x1="0" y1="1450" x2="900" y2="1450" stroke-dasharray="20 10" />
+
+  <!-- Subtle Perspective Floor Grid -->
+  <g opacity="0.18" stroke="#14b8a6" stroke-width="1.5">
+    <line x1="150" y1="1600" x2="380" y2="1150" />
+    <line x1="300" y1="1600" x2="420" y2="1150" />
+    <line x1="600" y1="1600" x2="480" y2="1150" />
+    <line x1="750" y1="1600" x2="520" y2="1150" />
+    <line x1="50" y1="1150" x2="850" y2="1150" stroke-dasharray="12 12" />
+    <line x1="30" y1="1300" x2="870" y2="1300" stroke-dasharray="16 12" />
+    <line x1="0" y1="1480" x2="900" y2="1480" stroke-dasharray="24 16" />
   </g>
 
-  <!-- Full-Body Character Silhouette Head to Toe -->
-  <g id="character-fullbody" transform="translate(0, 100)">
-    <!-- Back Glow Aura -->
-    <ellipse cx="450" cy="700" rx="220" ry="500" fill="#f97316" opacity="0.18" filter="url(#glow_kaelen)" />
-
-    <!-- 1. Boots & Feet (Y: 1300 to 1420) -->
-    <path d="M 340 1260 L 310 1380 L 390 1390 L 400 1260 Z" fill="#18181b" stroke="#f97316" stroke-width="2" />
-    <path d="M 500 1260 L 510 1390 L 590 1380 L 560 1260 Z" fill="#18181b" stroke="#f97316" stroke-width="2" />
-    <rect x="290" y="1370" width="110" height="24" rx="6" fill="#27272a" stroke="#f97316" stroke-width="2" />
-    <rect x="500" y="1370" width="110" height="24" rx="6" fill="#27272a" stroke="#f97316" stroke-width="2" />
-
-    <!-- 2. Legs / Thighs / Kneepads (Y: 820 to 1260) -->
-    <path d="M 370 820 L 340 1060 L 350 1260 L 420 1260 L 430 1060 L 440 820 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="2" />
-    <path d="M 460 820 L 470 1060 L 480 1260 L 550 1260 L 560 1060 L 530 820 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="2" />
-    <!-- Kneepads -->
-    <rect x="330" y="1030" width="80" height="50" rx="8" fill="#3f3f46" stroke="#f97316" stroke-width="2" />
-    <rect x="490" y="1030" width="80" height="50" rx="8" fill="#3f3f46" stroke="#f97316" stroke-width="2" />
-
-    <!-- 3. Skirt / Utility Belt / Waist (Y: 760 to 860) -->
-    
-    <rect x="350" y="770" width="200" height="80" rx="10" fill="#27272a" stroke="#f97316" stroke-width="2" />
-    
-    <rect x="340" y="750" width="220" height="26" rx="6" fill="#3f3f46" stroke="#f97316" stroke-width="2" />
-
-    <!-- 4. Torso / Flightsuit Armor (Y: 480 to 760) -->
-    <path d="M 300 520 L 350 760 L 550 760 L 600 520 L 530 460 L 370 460 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="3" />
-    <!-- Chest Plate / Power Core -->
-    <polygon points="390,520 510,520 480,640 420,640" fill="#18181b" stroke="#f97316" stroke-width="2" />
-    <circle cx="450" cy="580" r="16" fill="#f97316" filter="url(#glow_kaelen)" />
-
-    <!-- 5. Arms & Hands (Head to toe complete) -->
-    <!-- Left Arm -->
-    <path d="M 320 500 L 250 700 L 240 880 L 280 890 L 300 720 L 360 520 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="2" />
-    <!-- Left Hand / Glove -->
-    <rect x="230" y="870" width="46" height="54" rx="8" fill="#27272a" stroke="#f97316" stroke-width="2" />
-    <!-- Right Arm -->
-    <path d="M 580 500 L 650 700 L 660 880 L 620 890 L 600 720 L 540 520 Z" fill="url(#bodySuit_kaelen)" stroke="#f97316" stroke-width="2" />
-    <!-- Right Hand / Glove -->
-    <rect x="624" y="870" width="46" height="54" rx="8" fill="#27272a" stroke="#f97316" stroke-width="2" />
-
-    <!-- 6. Neck & Head (Y: 260 to 460) -->
-    <rect x="420" y="440" width="60" height="50" rx="8" fill="#ffedd5" />
-    <ellipse cx="450" cy="380" rx="75" ry="90" fill="#fed7aa" stroke="#f97316" stroke-width="1.5" />
-    <!-- Hair -->
-    <path d="M 370 360 C 370 240, 530 240, 530 360 Q 560 480 500 500 Q 450 360 400 500 Z" fill="#ea580c" />
-    <!-- Visor / Eyes -->
-    <rect x="410" y="370" width="80" height="18" rx="8" fill="#f97316" filter="url(#glow_kaelen)" />
+  <!-- Volumetric Nebula Starfield & Energy Dust -->
+  <g opacity="0.4">
+    <circle cx="200" cy="300" r="3" fill="#ffffff" />
+    <circle cx="720" cy="240" r="2.5" fill="#ffffff" />
+    <circle cx="340" cy="180" r="2" fill="#14b8a6" />
+    <circle cx="600" cy="360" r="3" fill="#06b6d4" />
+    <circle cx="150" cy="550" r="2" fill="#ffffff" />
+    <circle cx="780" cy="620" r="2.5" fill="#14b8a6" />
+    <circle cx="280" cy="750" r="1.5" fill="#ffffff" />
+    <circle cx="680" cy="880" r="2" fill="#06b6d4" />
   </g>
 
-  <!-- High-End Sci-Fi Card Framing & Telemetry -->
-  <rect x="20" y="20" width="860" height="1560" rx="16" fill="none" stroke="#f97316" stroke-width="2" opacity="0.6" />
-  <rect x="28" y="28" width="844" height="1544" rx="12" fill="none" stroke="#fff" stroke-width="0.8" opacity="0.2" />
+  <!-- Silhouette Aura Behind Pilot -->
+  <ellipse cx="450" cy="800" rx="260" ry="580" fill="#14b8a6" opacity="0.14" filter="url(#glow_kaelen)" />
 
-  <text x="60" y="100" font-family="monospace" font-size="34" font-weight="black" fill="#f97316" letter-spacing="4">KAELEN VOSS</text>
-  <text x="60" y="145" font-family="monospace" font-size="20" font-weight="bold" fill="#fff" letter-spacing="2">CALLSIGN: SOLAR FLARE // NAM · 23T</text>
-  <text x="60" y="180" font-family="monospace" font-size="16" fill="#f97316" opacity="0.8">GEAR SYNERGY: FALCON · SPECIALTY: Plasma Striker</text>
-  <line x1="60" y1="200" x2="400" y2="200" stroke="#f97316" stroke-width="3" />
+  <!-- ==================================================================== -->
+  <!-- 2. CHARACTER MODEL: COMPLETE HEAD-TO-TOE ARTWORK                     -->
+  <!-- ==================================================================== -->
+  <g filter="url(#shadow_kaelen)">
+    <!-- FEMALE PILOT: ELEGANT & AGILE SILHOUETTE (HEAD TO TOE) -->
+    <!-- A. BOOTS & FEET (Y: 1260 to 1480) -->
+    <g id="boots">
+      <!-- Left Boot -->
+      <path d="M 330 1250 L 305 1410 Q 300 1445 345 1455 L 405 1455 Q 415 1435 410 1250 Z" fill="#020617" stroke="#14b8a6" stroke-width="2.5" />
+      <!-- Left Sole & Heel -->
+      <path d="M 295 1445 L 415 1445 L 420 1465 L 290 1465 Z" fill="#18181b" stroke="#14b8a6" stroke-width="2" />
+      <!-- Left Boot Glow Strap -->
+      <rect x="315" y="1320" width="85" height="10" rx="3" fill="#14b8a6" opacity="0.85" filter="url(#glow_kaelen)" />
 
-  <!-- Bottom Telemetry Specs -->
-  <g transform="translate(60, 1460)" font-family="monospace" font-size="14" fill="#a1a1aa">
-    <text x="0" y="0">TRAIL: <tspan fill="#fff" font-weight="bold">Vệt Sáng Sao Băng Rực Lửa</tspan></text>
-    <text x="0" y="26">PASSIVE: <tspan fill="#f97316" font-weight="bold">Quá Tải Nhiệt Hạch (+12% Crit, hồi SP & thiêu đốt)</tspan></text>
-    <text x="0" y="52">STATUS: COMBAT_READY · FULL_BODY_SILHOUETTE_VERIFIED</text>
+      <!-- Right Boot -->
+      <path d="M 490 1250 L 485 1435 Q 480 1455 550 1455 L 600 1445 Q 605 1410 570 1250 Z" fill="#020617" stroke="#14b8a6" stroke-width="2.5" />
+      <!-- Right Sole & Heel -->
+      <path d="M 480 1445 L 610 1445 L 610 1465 L 480 1465 Z" fill="#18181b" stroke="#14b8a6" stroke-width="2" />
+      <!-- Right Boot Glow Strap -->
+      <rect x="500" y="1320" width="85" height="10" rx="3" fill="#14b8a6" opacity="0.85" filter="url(#glow_kaelen)" />
+    </g>
+
+    <!-- B. LEGS & THIGHS IN NANO-SUIT (Y: 820 to 1250) -->
+    <g id="legs">
+      <!-- Left Thigh & Shin -->
+      <path d="M 365 830 Q 330 1020 345 1250 L 405 1250 Q 425 1020 425 830 Z" fill="url(#suit_kaelen)" stroke="#14b8a6" stroke-width="2" />
+      <!-- Right Thigh & Shin -->
+      <path d="M 475 830 Q 475 1020 495 1250 L 565 1250 Q 575 1020 535 830 Z" fill="url(#suit_kaelen)" stroke="#14b8a6" stroke-width="2" />
+
+      <!-- Kneepads with kinetic stabilizers -->
+      <path d="M 335 1060 L 415 1060 L 410 1120 L 340 1120 Z" fill="#27272a" stroke="#14b8a6" stroke-width="2" />
+      <circle cx="375" cy="1090" r="6" fill="#06b6d4" filter="url(#glow_kaelen)" />
+
+      <path d="M 490 1060 L 570 1060 L 565 1120 L 495 1120 Z" fill="#27272a" stroke="#14b8a6" stroke-width="2" />
+      <circle cx="530" cy="1090" r="6" fill="#06b6d4" filter="url(#glow_kaelen)" />
+
+      <!-- Tactical Holster / Thigh Strap -->
+      <rect x="330" y="930" width="88" height="16" rx="4" fill="#3f3f46" stroke="#14b8a6" stroke-width="1.5" />
+      <rect x="345" y="946" width="35" height="55" rx="5" fill="#18181b" stroke="#14b8a6" stroke-width="1.5" />
+    </g>
+
+    <!-- C. TACTICAL SHORT SKIRT / WAIST / UTILITY BELT (Y: 740 to 860) -->
+    <g id="skirt_and_waist">
+      <!-- Flared Tactical Short Skirt -->
+      <path d="M 360 750 Q 450 765 540 750 L 595 860 Q 450 885 305 860 Z" fill="#090d16" stroke="#14b8a6" stroke-width="3" />
+      <!-- Skirt Pleats / Armor Panels -->
+      <path d="M 390 755 L 370 865" stroke="#14b8a6" stroke-width="1.5" opacity="0.7" />
+      <path d="M 450 760 L 450 875" stroke="#14b8a6" stroke-width="2" opacity="0.9" />
+      <path d="M 510 755 L 530 865" stroke="#14b8a6" stroke-width="1.5" opacity="0.7" />
+
+      <!-- High-tech Utility Belt -->
+      <rect x="350" y="735" width="200" height="26" rx="6" fill="#18181b" stroke="#14b8a6" stroke-width="2" />
+      <!-- Belt Buckle Core -->
+      <rect x="430" y="730" width="40" height="36" rx="5" fill="#27272a" stroke="#06b6d4" stroke-width="2" />
+      <circle cx="450" cy="748" r="7" fill="#06b6d4" filter="url(#glow_kaelen)" />
+    </g>
+
+    <!-- D. TORSO, BODICE & ARMORED FLIGHT BOLERO (Y: 480 to 740) -->
+    <g id="torso">
+      <!-- Hourglass Bodice -->
+      <path d="M 370 510 Q 345 620 365 740 L 535 740 Q 555 620 530 510 Z" fill="url(#suit_kaelen)" stroke="#14b8a6" stroke-width="2.5" />
+
+      <!-- Chest Armor Cuirass / Tailored Bolero Jacket -->
+      <path d="M 350 490 Q 450 515 550 490 L 540 610 Q 450 645 360 610 Z" fill="#090d16" stroke="#14b8a6" stroke-width="2.5" />
+
+      <!-- Chest Accent Lines & Core Emitter -->
+      <path d="M 400 520 L 450 560 L 500 520" fill="none" stroke="#14b8a6" stroke-width="3" />
+      <circle cx="450" cy="575" r="9" fill="#06b6d4" filter="url(#glow_kaelen)" />
+      <circle cx="450" cy="575" r="4" fill="#ffffff" />
+
+      <!-- Collar & Neck -->
+      <path d="M 415 450 L 485 450 L 495 500 L 405 500 Z" fill="#fed7aa" stroke="#14b8a6" stroke-width="1.5" />
+      <path d="M 405 480 Q 450 495 495 480 L 485 510 Q 450 520 415 510 Z" fill="#18181b" stroke="#14b8a6" stroke-width="2" />
+    </g>
+
+    <!-- E. ARMS & HANDS (Y: 490 to 860) -->
+    <g id="arms">
+      <!-- Left Arm -->
+      <path d="M 350 490 Q 280 620 285 760 L 325 760 Q 330 630 380 500 Z" fill="url(#suit_kaelen)" stroke="#14b8a6" stroke-width="2" />
+      <!-- Left Pauldron Shoulder Armor -->
+      <path d="M 330 470 L 380 470 L 370 540 L 320 520 Z" fill="#27272a" stroke="#14b8a6" stroke-width="2" />
+      <!-- Left Forearm Gauntlet & Holographic Telemetry Screen -->
+      <rect x="275" y="680" width="45" height="70" rx="6" fill="#18181b" stroke="#14b8a6" stroke-width="2" />
+      <rect x="282" y="695" width="30" height="40" rx="3" fill="#14b8a6" opacity="0.9" filter="url(#glow_kaelen)" />
+      <!-- Left Hand -->
+      <path d="M 285 760 Q 280 810 305 825 L 325 810 L 320 760 Z" fill="#fed7aa" stroke="#14b8a6" stroke-width="1.5" />
+
+      <!-- Right Arm (Raised Gracefully / Tactically) -->
+      <path d="M 545 490 Q 610 600 620 730 L 580 740 Q 565 620 525 500 Z" fill="url(#suit_kaelen)" stroke="#14b8a6" stroke-width="2" />
+      <!-- Right Pauldron -->
+      <path d="M 520 470 L 570 470 L 580 520 L 530 540 Z" fill="#27272a" stroke="#14b8a6" stroke-width="2" />
+      <!-- Right Forearm Gauntlet -->
+      <rect x="580" y="660" width="45" height="70" rx="6" fill="#18181b" stroke="#14b8a6" stroke-width="2" />
+      <!-- Right Hand with Energy Shimmer -->
+      <path d="M 590 730 Q 625 770 635 790 L 615 805 L 580 740 Z" fill="#fed7aa" stroke="#14b8a6" stroke-width="1.5" />
+      <!-- Radiant Energy Hex Ring on Hand -->
+      <polygon points="620,775 640,765 650,785 640,805 620,805 610,785" fill="none" stroke="#06b6d4" stroke-width="2" filter="url(#glow_kaelen)" />
+    </g>
+
+    <!-- F. HEAD, FACE & ANIME-REALISTIC HAIR (Y: 230 to 460) -->
+    <g id="head">
+      <!-- Hair Back / Twin Tails / Flowing Waves -->
+      <path d="M 340 330 Q 230 460 250 680 Q 320 580 370 420 Z" fill="#0f172a" stroke="#14b8a6" stroke-width="1.5" />
+      <path d="M 560 330 Q 670 460 650 680 Q 580 580 530 420 Z" fill="#0f172a" stroke="#14b8a6" stroke-width="1.5" />
+
+      <!-- Face Contour -->
+      <path d="M 390 320 Q 380 410 450 465 Q 520 410 510 320 Z" fill="#ffedd5" stroke="#fed7aa" stroke-width="1.5" />
+
+      <!-- Eyes (Anime-Realistic Expressive) -->
+      <!-- Left Eye -->
+      <ellipse cx="420" cy="370" rx="15" ry="10" fill="#ffffff" />
+      <ellipse cx="422" cy="370" rx="9" ry="9" fill="#2dd4bf" />
+      <circle cx="425" cy="367" r="3.5" fill="#ffffff" />
+      <path d="M 405 362 Q 420 355 436 362" stroke="#18181b" stroke-width="2.5" fill="none" />
+
+      <!-- Right Eye -->
+      <ellipse cx="480" cy="370" rx="15" ry="10" fill="#ffffff" />
+      <ellipse cx="478" cy="370" rx="9" ry="9" fill="#2dd4bf" />
+      <circle cx="481" cy="367" r="3.5" fill="#ffffff" />
+      <path d="M 464 362 Q 480 355 495 362" stroke="#18181b" stroke-width="2.5" fill="none" />
+
+      <!-- Nose & Delicate Lips -->
+      <path d="M 450 385 L 447 398 L 452 399" stroke="#fdba74" stroke-width="1.5" fill="none" />
+      <path d="M 440 420 Q 450 428 460 420" stroke="#f43f5e" stroke-width="2.5" fill="none" />
+
+      <!-- Bangs / Front Hair Strands -->
+      <path d="M 360 320 Q 420 220 540 320 Q 520 380 470 340 Q 450 380 430 340 Q 390 380 360 320 Z" fill="#0f172a" stroke="#14b8a6" stroke-width="1.5" />
+      <!-- Communication Earpiece / Headset -->
+      <rect x="365" y="355" width="12" height="24" rx="4" fill="#18181b" stroke="#06b6d4" stroke-width="1.5" />
+      <circle cx="371" cy="367" r="3" fill="#06b6d4" filter="url(#glow_kaelen)" />
+    </g>
   </g>
 </svg>

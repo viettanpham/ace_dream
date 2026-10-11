@@ -686,6 +686,34 @@ export const INITIAL_PILOT_PROGRESSION: Record<string, PilotProgressionData> = {
     allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
     availablePoints: 0,
   },
+  lyra: {
+    id: "lyra",
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  },
+  kaelen: {
+    id: "kaelen",
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  },
+  selena: {
+    id: "selena",
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  },
+  victor: {
+    id: "victor",
+    level: 1,
+    exp: 0,
+    allocatedStats: { attack: 0, defense: 0, agility: 0, shield: 0, tactical: 0 },
+    availablePoints: 0,
+  },
 }
 
 export const INITIAL_ACTIVE_PAIRING: ActivePairingState = {

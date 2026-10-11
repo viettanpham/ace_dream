@@ -21,7 +21,16 @@ export const STORAGE_KEY_V3 = "STARFRONT_SAVE_DATA_V3"
 export const STORAGE_KEY_V2 = "STARFRONT_SAVE_DATA_V2"
 export const STORAGE_KEY_V1 = "STARFRONT_SAVE_DATA_V1"
 
-const VALID_PILOT_IDS = ["marcus", "valentine", "alviss", "eric"]
+const VALID_PILOT_IDS = [
+  "marcus",
+  "valentine",
+  "alviss",
+  "eric",
+  "lyra",
+  "kaelen",
+  "selena",
+  "victor",
+]
 const VALID_GEAR_IDS: StarfrontGearId[] = ["vanguard", "falcon", "aegis"]
 
 /**

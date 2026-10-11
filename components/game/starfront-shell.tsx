@@ -81,10 +81,12 @@ import { WarRoom } from "./war-room"
 import { PilotPanel } from "./pilot-panel"
 import { PilotStatusDashboard } from "./pilot-status-dashboard"
 import { MapPanel } from "./map-panel"
+import { PilotGallery } from "./pilot-gallery"
 
 export type StarfrontSection =
   | "home"
   | "character-gear"
+  | "gallery"
   | "battlefield"
   | "missions"
   | "shop"
@@ -138,6 +140,19 @@ const SECTIONS: SectionConfig[] = [
       { id: "pair-flow", label: "Ghép Đôi 3 Bước" },
       { id: "pilot-list", label: "8 Hồ Sơ Phi Công" },
       { id: "gear-list", label: "3 Lớp Cơ Giáp" },
+    ],
+  },
+  {
+    id: "gallery",
+    label: "Bộ Sưu Tập Phi Công // ART GALLERY",
+    shortLabel: "Pilot Art Gallery",
+    icon: Sparkles,
+    badge: () => "16 Art",
+    submenus: () => [
+      { id: "all-art", label: "8 Cặp Đôi (16 Tác Phẩm)" },
+      { id: "portraits", label: "8 Chân Dung 1:1" },
+      { id: "fullbody", label: "8 Toàn Thân 9:16" },
+      { id: "inspector", label: "Soi Chi Tiết Từng Phi Công" },
     ],
   },
   {
@@ -951,6 +966,15 @@ export function StarfrontShell() {
                 onNavigateToPilotStatus={() => handleSwitchSection("pilot")}
                 onEquipItem={handleEquipItem}
                 onUnequipSlot={handleUnequipSlot}
+              />
+            )}
+
+            {/* Phân hệ: Thư Viện Art Phi Công (Pilot Art Gallery) */}
+            {activeSection === "gallery" && (
+              <PilotGallery
+                progression={progression}
+                onUpdateProgression={handleUpdateProgression}
+                onNavigateSection={handleSwitchSection}
               />
             )}
 

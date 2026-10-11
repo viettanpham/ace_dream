@@ -281,6 +281,48 @@ export function StarfrontHome({
         </div>
       </div>
 
+      {/* BANNER SHOWCASE: PILOT ART GALLERY */}
+      <div className="relative overflow-hidden rounded-sm border border-cyan-500/50 bg-gradient-to-r from-panel via-cyan-950/30 to-panel p-4 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          {/* Stack of Pilot Avatars */}
+          <div className="flex -space-x-3 overflow-hidden p-1">
+            {["marcus", "valentine", "alviss", "lyra", "kaelen"].map((id) => (
+              <img
+                key={id}
+                src={`/images/${id}-portrait.png`}
+                alt={id}
+                className="inline-block size-10 rounded-full ring-2 ring-cyan-500/80 object-cover object-top shadow-md"
+              />
+            ))}
+          </div>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-display text-sm font-bold uppercase tracking-wider text-white">
+                BỘ SƯU TẬP 16 ARTWORK PHI CÔNG // PILOT ART GALLERY
+              </span>
+              <span className="rounded bg-cyan-950 px-1.5 py-0.2 text-[9px] font-mono font-bold text-cyan-300 border border-cyan-500/40">
+                16 REAL PNG ASSETS
+              </span>
+            </div>
+            <p className="text-[11px] font-mono text-slate-300 mt-0.5">
+              Khám phá chân dung 1:1 (1024×1024) và tranh toàn thân 9:16 (900×1600) của cả 8 phi công hạm đội Starfront.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            playClickSound()
+            onNavigate("gallery")
+          }}
+          className="flex items-center gap-1.5 rounded bg-cyan-600 hover:bg-cyan-500 px-3.5 py-1.5 font-display text-xs font-bold text-white uppercase tracking-wider cursor-pointer shadow-md transition-colors"
+        >
+          <Sparkles className="size-3.5" />
+          <span>Vào Phòng Trưng Bày →</span>
+        </button>
+      </div>
+
       {/* 2. Tổng Quan Cơ Giáp Hiện Tại & Chỉ Số Thực Chiến */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         {/* Cột Trái: Trưng bày Cơ Giáp & Bộ chọn nhanh (7 cột) */}

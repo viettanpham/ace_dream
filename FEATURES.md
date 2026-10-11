@@ -12,8 +12,8 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 2** | Tiến Trình Nhân Vật & Kho Trang Bị (Progression & Loadout) | **Đã triển khai** | Đã có trong `progression.ts`, `storage.ts`, `starfront-hangar.tsx`. Level, EXP, Credits, 3 ô trang bị. |
 | **Phase 3** | Bản Đồ Chiến Dịch, 3 Lớp Gear & Chợ (Missions, Gears & Shop) | **Đã triển khai** | Đã có trong `campaign-map.tsx`, `starfront-shop.tsx`, `audio.ts`. 3 Sector (9 ải), Vanguard / Falcon / Aegis, Chợ vũ khí, Web Audio. |
 | **Phase 4** | Độ Sâu Chiến Thuật & AI Kẻ Địch (Combat Depth & Enemy AI) | **Đã triển khai** | Hoàn thành Milestones 4.1 -> 4.4: Status Effects (DoT/Stun/Slow/ECM), 4 Archetype AI, Boss 2 Pha Overdrive, Telegraphed Attack, Dynamic Turn Queue & Evasion. Đã kiểm chứng 36/36 tests. |
-| **Phase 5** | Tiến Trình Cơ Giáp, Cường Hóa, Ghép Đôi Pilot & Pilot Skill Liên Hoàn | **Đã triển khai** | Hoàn thành Milestones 5.1 -> 5.9 (93/93 tests PASS). Bao gồm Ghép đôi 3 bước, Khóa cặp đôi, Tiến trình 4 phi công, Tuyệt Kỹ Liên Hoàn, Reroll, Buồng lái PilotSkillView và Admin CP. |
-| **Phase 6** | Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (World & War Expansion) | **Dự kiến (Planned)** | **Chưa triển khai**. Đã phân rã các Milestone chi tiết trong roadmap. |
+| **Phase 5** | Tiến Trình Cơ Giáp, Cường Hóa, Ghép Đôi Pilot, Tuyệt Kỹ & Màn Hình Kết Quả D3 | **Đã triển khai (Done)** | Hoàn thành Milestones 5.1 -> 5.12 (102/102 automated tests PASS). Bao gồm Ghép đôi 3 bước, Khóa 5 trận linh hoạt, 8 Phi công, Tuyệt Kỹ Liên Hoàn, Buồng lái, Admin CP, và Màn hình kết quả sau nhiệm vụ D3. |
+| **Phase 6** | STARFRONT WORLD — Trung Tâm Chỉ Huy Chiến Lược & Chiến Tranh Thiên Hà | **Đã hoàn tất thiết kế & kế hoạch (Design Done — Chưa Viết Code)** | **Chưa triển khai mã nguồn gameplay**. Hoàn thành 100% tài liệu thiết kế tổng thể [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) và lộ trình triển khai 9 sub-phases (6.1–6.9) tại [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md). |
 
 ---
 
@@ -102,20 +102,6 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
    - Tệp `tsconfig.json` đã được bổ sung `baseUrl: "."` và `"paths": { "@/*": ["./*"] }` để đảm bảo lệnh build Next.js / Turbopack luôn biên dịch thành công.
 
 ---
-
-## 4. Danh Mục Tính Năng Dự Kiến (Planned Features — Phase 6)
-
-### 4.1. Giai Đoạn 6: Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (Phase 6 — Planned)
-- **Mở rộng Sector 4 & 5 và Phe Phái Thiên Hà**:
-  - Sector 4 (Hạm Đội Bị Bỏ Rơi) và Sector 5 (Vành Đai Lỗ Đen).
-  - 2 Phe phái đối lập (BCU vs ANI) với điểm danh vọng (Reputation).
-- **Đại chiến Mẹ Hạm Không Gian (Mothership Raids)**:
-  - Trận chiến công thành nhiều bộ phận: Tháp pháo -> Động cơ -> Lõi trung tâm.
-- **Liên kết chiều sâu với Ace Manager**:
-  - Căn cứ Ace Manager sản xuất nguyên liệu cho xưởng STARFRONT Hangar.
-  - Phi công trong Ace Manager trực tiếp lái Gear trong STARFRONT để nhận thêm buff thuộc tính.
-- **Nghiên cứu đề xuất tính năng mạng (Multiplayer Proposal Only)**:
-  - Đánh giá kiến trúc bảng xếp hạng (Leaderboards) và PvP bất đồng bộ. Chỉ đưa ra bản đề xuất phân tích, không tự ý xây dựng máy chủ khi chưa phê duyệt.
 
 ### 2.5. Hệ Thống Cường Hóa Trang Bị +1 Đến +10 (Phase 5 — Milestone 5.1)
 - **Cường hóa trang bị từ +1 đến +10**:
@@ -267,16 +253,115 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-## 4. Danh Mục Tính Năng Dự Kiến (Planned Features — Phase 6)
+## 4. Danh Mục Tính Năng Dự Kiến (Planned Features — Phase 6: STARFRONT WORLD)
 
-### 4.1. Giai Đoạn 6: Mở Rộng Thế Giới & Chiến Tranh Thiên Hà (Phase 6 — Planned)
-- **Mở rộng Sector 4 & 5 và Phe Phái Thiên Hà**:
-  - Sector 4 (Hạm Đội Bị Bỏ Rơi) và Sector 5 (Vành Đai Lỗ Đen).
-  - 2 Phe phái đối lập (BCU vs ANI) với điểm danh vọng (Reputation).
-- **Đại chiến Mẹ Hạm Không Gian (Mothership Raids)**:
-  - Trận chiến công thành nhiều bộ phận: Tháp pháo -> Động cơ -> Lõi trung tâm.
-- **Liên kết chiều sâu với Ace Manager**:
-  - Căn cứ Ace Manager sản xuất nguyên liệu cho xưởng STARFRONT Hangar.
-  - Phi công trong Ace Manager trực tiếp lái Gear trong STARFRONT để nhận thêm buff thuộc tính.
-- **Nghiên cứu đề xuất tính năng mạng (Multiplayer Proposal Only)**:
-  - Đánh giá kiến trúc bảng xếp hạng (Leaderboards) và PvP bất đồng bộ. Chỉ đưa ra bản đề xuất phân tích, không tự ý xây dựng máy chủ khi chưa phê duyệt.
+> **LƯU Ý QUAN TRỌNG VỀ PHÂN ĐỊNH TRẠNG THÁI KỸ THUẬT**:  
+> Toàn bộ các tính năng thuộc phân hệ **STARFRONT WORLD** dưới đây đang ở trạng thái **ĐÃ XÁC NHẬN THIẾT KẾ (Design Confirmed) & ĐÃ LẬP KẾ HOẠCH (Planned)**.  
+> **CHƯA ĐƯỢC TRIỂN KHAI TRONG MÃ NGUỒN GAMEPLAY**. Tuyệt đối không đánh dấu là đã hoàn thành khi chưa có code và test kiểm chứng thực tế.  
+> Tài liệu đặc tả chi tiết tối cao: [`WORLD_DESIGN.md`](./WORLD_DESIGN.md). Kế hoạch phân kỳ kỹ thuật: [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md).
+
+### 4.1. Tổng Quan Kiến Trúc & Giao Diện Người Dùng (Overview & UI Architecture)
+- **Vị Trí Tích Hợp Shell Cao Nhất (Top-Level Navigation Tab)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - WORLD là trung tâm chỉ huy chiến lược vĩ mô của sản phẩm, không chỉ là danh sách nhiệm vụ tĩnh.
+  - Tích hợp vào thanh điều hướng cấp cao nhất (`StarfrontSection`) trong `starfront-shell.tsx` (`id: "world"`), hiển thị các phân khu tác chiến: Tổng quan chiến dịch, Bản đồ chiến lược, Lực lượng quân sự, Hậu cần & Kinh tế, Tình báo & Sự kiện.
+- **Bản Đồ Toàn Màn Hình Tùy Chọn (Optional Fullscreen World Map)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Nút chuyển đổi chế độ xem bản đồ 100vw x 100vh với HUD điều khiển tối giản, hỗ trợ pan/zoom và phím tắt `ESC`.
+- **Tổng Hành Dinh Operations Center** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Phân khu Situation Deck (Tình hình chiến lược thiên hà), Active Operations Board (Chiến dịch đang chạy), Dual Results Hub (Kết quả nhiệm vụ và sự kiện riêng biệt), và Quick Dispatch Dock (Bến điều động nhanh chi viện).
+
+### 4.2. Bản Đồ Thế Giới & Mạng Lưới Tuyến Đường (World Map & Sector Network)
+- **Cấu Trúc Đồ Thị Tuyến Siêu Không Gian (Hyperspace Lane Graph)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Mạng lưới đồ thị có trọng số: Tuyến đường là cạnh kết nối có ý nghĩa gameplay thực sự phục vụ điều quân, vận tải hàng hóa, di cư dân sự và lan truyền Threat.
+  - 4 Trạng thái tuyến: `Open` (An toàn), `Hazardous` (Nguy hiểm / Bị quấy rối), `Blocked` (Bị phong tỏa), `Offline` (Cắt đứt).
+- **Phân Biệt Rạch Ròi Giữa Quyền Kiểm Soát (Control) & Mức Độ Đe Dọa (Threat)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - *Sovereignty Control*: VSS, The Void, hoặc Tranh chấp/Trung lập (Quyết định quyền thu thuế và tuyển quân).
+  - *Threat Level [0..1000]*: Mật độ hoạt động của địch (Một sector do VSS kiểm soát vẫn có thể có Threat tối đa nếu bị vây hãm).
+- **Máy Trạng Thái 5 Giai Đoạn Của Sector (5-Stage Sector Lifecycle)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - `Normal` $\rightarrow$ `Threatened` $\rightarrow$ `Under Siege` $\rightarrow$ `Lost` $\rightarrow$ `Recovery`.
+- **Quy Mô Bản Đồ Khởi Đầu** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - 6 đến 10 sector kết nối mạng lưới (Căn cứ Sol Command, trạm khai mỏ, vành đai và tiền đồn biên giới). Thiết kế đồ thị mở sẵn sàng tiếp nhận thêm sector.
+
+### 4.3. Phe Phái, Sổ Cái Quân Sự & Tự Động Hóa Trận Đấu (Factions, Military & Auto-Resolve)
+- **Hai Phe Phái Khởi Đầu Bắt Buộc** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Chính phủ VSS (Vanguard Solar Syndicate) và Đế Chế The Void (The Void Incursion). Cho phép mở rộng thêm phe (BCU, ANI, Cướp biển) trong tương lai nhưng KHÔNG thêm phe mới vào phạm vi ban đầu.
+- **Sổ Cái Lực Lượng Có Thẩm Quyền (Authoritative Forces Ledger)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Lực lượng chiến lược được bảo toàn quân số: $\text{Total} = \text{Deployed} + \text{Reserves} + \text{Wounded/Repair} + \text{Retreating}$. Điều chuyển quân không bao giờ tự sinh thêm quân.
+  - Phân loại rõ ràng các trạng thái: Đang triển khai, Dự bị, Đang sửa chữa/viện binh, Rút lui, và Tổn thất vĩnh viễn (Casualties).
+- **Tự Động Hóa Trận Đấu & Can Thiệp Buồng Lái** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Trận phụ (Skirmishes/Patrols) tự giải quyết qua thuật toán Lanchester (Auto-Resolve).
+  - Trận chiến quyết định (Decisive Battles) yêu cầu người chơi trực tiếp can thiệp hoặc ủy quyền phó tư lệnh.
+  - Hậu quả thất bại theo ngữ cảnh (Contextual Defeat): Không mặc định mất sector ngay; tính toán thiệt hại công sự, sụt giảm Stability và tổn thất kho trước khi thất thủ hoàn toàn.
+
+### 4.4. Tích Hợp Chiến Đấu & Khế Ước Giao Dịch Lũy Đẳng (Combat Integration & Idempotency)
+- **Khế Ước Adapter Ổn Định (`WorldCombatAdapter`)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Tách rời hoàn toàn World State khỏi buồng lái `CombatArena`.
+  - Cấu hình phiên bản rõ ràng: `combatVersion: "v1" | "v2"`. Chỉ chuyển V1 sang V2 khi xác nhận tương thích hoàn toàn.
+  - Tạo `EncounterSnapshot` độc lập tại thời điểm khóa trận kèm `transactionId` duy nhất (UUID v4).
+- **Nhật Ký Giao Dịch Chống Áp Dụng Hai Lần (Idempotent Journal)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Mọi biên lai `CombatResultReceipt` được đối chiếu qua journal; từ chối thực thi nếu transactionId đã commit.
+- **Luồng Xử Lý Khi Combat Bị Lỗi (Suspended Recovery Flow)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Không tự ý tạo kết quả Thắng/Thua giả khi combat bị crash hoặc lỗi. Giữ trạng thái `PENDING_RECOVERY`, cho phép người chơi tiếp tục trận đấu hoặc hủy an toàn không bị phạt.
+
+### 4.5. Lưu Trữ Độc Lập & Cơ Chế Sao Lưu Luân Phiên (Storage & Disaster Recovery)
+- **Tách Rời Khóa Lưu Trữ** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Khóa riêng biệt: `STARFRONT_WORLD_SAVE_V1`, không đồng nhất với `STARFRONT_SAVE_DATA_V4`.
+- **Sao Lưu Luân Phiên Nguyên Tử (Rotating Backups A/B with Atomic Checksum)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Ghi vào staging $\rightarrow$ Đẩy save cũ sang Backup Slot A/B $\rightarrow$ Xác nhận commit khóa chính sau khi kiểm tra checksum hợp lệ.
+  - Tự động phục hồi từ backup gần nhất khi phát hiện file save chính bị lỗi cấu trúc hoặc sai mã băm.
+- **Điểm Kiểm Tra Checkpoint & Khôi Phục Thao Tác Dang Dở** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Checkpoint tự động sau các mốc sự kiện quan trọng; các tác vụ `PENDING` chưa hoàn tất khi reload sẽ được hoàn trả an toàn.
+
+### 4.6. Thời Gian Thực & Mô Phỏng Bắt Kịp Ngoại Tuyến (Time & Offline Simulation)
+- **Mốc Thời Gian Thực Tế (Unix Timestamp Anchor)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - WORLD tiếp tục vận hành ngầm khi người chơi đóng game dựa trên khoảng chênh lệch thời gian thực tế.
+- **Bắt Kịp Theo Từng Đợt Có Giới Hạn (Bounded Batch Catch-up)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Chia nhỏ quá trình mô phỏng thành các batch tối đa 50 ticks, kẹp chặn ở tối đa 360 ticks; nhường luồng UI hiển thị tiến trình, chống treo trình duyệt.
+- **Công Cụ Kiểm Thử Thời Gian (Time Travel Dev Controls)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Nút tua +1, +7, +30 ngày và tùy chỉnh. CHỈ tác động WORLD, không tua trận đấu đang mở trong buồng lái.
+  - Có bản xem trước tác động (Forecast Impact Preview) và hộp thoại xác nhận trước khi tua. Dùng chung 100% logic với engine thật.
+
+### 4.7. Chu Kỳ Tick 6 Phase & Thứ Tự Sự Kiện Tất Định (Deterministic Phased Tick)
+- **Thứ Tự 6 Phase Bất Biến Trong Mỗi Tick** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  1. *Phase 1: Phục hồi & Giao dịch* (Xử lý giao dịch treo, hồi phục lính thương vong, sửa chữa).
+  2. *Phase 2: Vận chuyển & Di cư* (Đoàn xe hàng di chuyển, dân sự sơ tán an toàn).
+  3. *Phase 3: Kinh tế & Dân số* (Sản xuất công nghiệp, tiêu thụ lương thực, tính Stability).
+  4. *Phase 4: Quân sự & Mức đe dọa* (Hạm đội hành quân, lan truyền Threat mạng lưới).
+  5. *Phase 5: Hạn chót & Kết quả* (Countdown sự kiện hết hạn, auto-resolve trận phụ).
+  6. *Phase 6: Kích hoạt mới* (Sinh sự kiện động, nhiệm vụ và tình báo mới).
+- **Phá Thế Hòa Ổn Định & Seeded PRNG** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Sắp xếp sự kiện đồng thời theo `(Priority DESC, ScheduledTime ASC, EntityId ASC)`.
+  - Mọi biến số ngẫu nhiên sử dụng thuật toán Seeded PRNG tái lập được 100%.
+
+### 4.8. Kinh Tế Chiến Lược, Hậu Cần Tự Động & Dân Cư Bảo Toàn (Economy, Logistics & Population)
+- **Bốn Nhóm Tài Nguyên & Lương Thực Thiết Yếu Riêng Biệt** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Vật liệu công nghiệp, Năng lượng, Vật tư hậu cần, và Dữ liệu tình báo.
+  - **LƯƠNG THỰC LÀ TÀI NGUYÊN THIẾT YẾU RIÊNG**, không gộp vào vật tư hậu cần.
+- **Ba Năng Lực Chiến Lược** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - *Industry*: Giới hạn sản xuất theo từng sector (`sectorIndustryCap`).
+  - *Logistics*: Tổng thông lượng vận tải toàn mạng lưới.
+  - *Stability [0..100]*: Mức độ ổn định xã hội, tác động trực tiếp đến năng suất và nguy cơ bạo loạn.
+- **Hỗ Trợ Hậu Cần Tự Động & Hàng Đang Vận Chuyển** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Tự động điều tiết tài nguyên với ngưỡng tồn kho an toàn 3 ngày (Safety Stock Reserves).
+  - Hàng hóa đang di chuyển (`In-Transit`) chưa được tính vào kho đích cho đến khi giao thành công.
+- **Dân Số & Quy Tắc Di Cư Bảo Toàn (Zero-Sum Conservation)** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Tách bạch `National Total Population` và `Controlled Territory Population`. Dân số không đổi phe tự động khi mất sector.
+  - Di cư bảo toàn tuyệt đối quân số, không sinh dân ảo, không cho phép di cư qua tuyến đường bị phong tỏa.
+
+### 4.9. Vòng Đời Sự Kiện 3 Pha & Trung Tâm Tác Chiến (Events & Operations Center)
+- **Vòng Đời Sự Kiện: INIT $\rightarrow$ PROCESSING $\rightarrow$ RESULT** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - `INIT`: Đếm ngược thời gian; khi hết hạn countdown tự động khóa phương án mặc định của template.
+  - `PROCESSING`: Lưu bền vững, không bị đặt lại khi reload.
+  - `RESULT`: Lưu vào kho lưu trữ bền vững; việc chưa đọc kết quả không chặn sự kiện mới.
+- **Sáu Hình Thái Chuỗi Nhiệm Vụ** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Tuyến tính, Phân nhánh, Theo ngưỡng, Phản ứng, Tuần hoàn, và Độc lập. Giới hạn trần toàn cục `MAX_ACTIVE_MISSION_CHAINS = 8`.
+- **Trung Tâm Kết Quả Kép Trong Operations Center** `[ĐÃ XÁC NHẬN THIẾT KẾ]`:
+  - Hai tab chuyên biệt: **Mission Results** và **Event Results**.
+  - Phân loại đã đọc / chưa đọc kèm bộ lọc mức độ nghiêm trọng.
+  - Cơ chế Xóa Lịch Sử An Toàn (Safe Pruning): Xóa log hiển thị mà không ảnh hưởng đến bất kỳ dữ liệu nào của World State.
+
+---
+
+### 4.10. Các Đề Xuất Kỹ Thuật Cần Xác Minh & Hạng Mục Tương Lai (Proposals & TBD)
+- **Viewport Bản Đồ Toàn Màn Hình Canvas vs SVG** `[ĐỀ XUẤT CẦN XÁC MINH]`: Cần benchmark hiệu năng render 60fps khi có nhiều hạt plasma và tuyến đường hoạt họa.
+- **Tốc Độ Suy Thoái Stability** `[ĐỀ XUẤT CẦN XÁC MINH]`: Cần cân bằng thông qua prototype để tránh hiệu ứng trừng phạt người chơi quá khắc nghiệt.
+- **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)** `[CHƯA XÁC ĐỊNH / TBD]`: Dành riêng cho các bản mở rộng tiếp theo sau khi Phase 6 hoàn thành trọn vẹn.

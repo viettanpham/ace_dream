@@ -4,6 +4,48 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.0] — STARFRONT WORLD: Thiết Kế Tổng Thể & Kế Hoạch Triển Khai Chiến Lược (World Architecture Design & Implementation Planning)
+
+*Đã hoàn thành 100% tài liệu thiết kế và kế hoạch hóa lộ trình triển khai kỹ thuật cho STARFRONT WORLD (Lập tài liệu và kế hoạch hóa 100% — KHÔNG thay đổi mã nguồn gameplay, không sửa đổi hành vi game, bảo toàn nguyên vẹn 102/102 automated tests PASS).*
+
+### Công việc đã hoàn thành trong Phase 6.0:
+- **Tạo Mới Tài Liệu Đặc Tả Thiết Kế Tổng Thể (`WORLD_DESIGN.md`)**:
+  - Xác lập 9 trụ cột thiết kế chiến lược hoàn chỉnh (Mục A đến Mục I):
+    * **A. Tổng quan & UI**: Định vị WORLD là trung tâm chỉ huy chiến lược vĩ mô của sản phẩm; tích hợp tab cấp cao nhất vào Shell; chế độ World Map toàn màn hình 100vw/vh; tổng hành dinh Operations Center.
+    * **B. World Map & Mạng Lưới Tuyến Đường**: Đồ thị tuyến siêu không gian (open, hazardous, blocked, offline); phân tách rạch ròi giữa Quyền kiểm soát phe phái và Mức độ đe dọa (Threat); vòng đời 5 giai đoạn của sector (`Normal` $\rightarrow$ `Threatened` $\rightarrow$ `Under Siege` $\rightarrow$ `Lost` $\rightarrow$ `Recovery`); quy mô 6–10 sector ban đầu.
+    * **C. Phe Phái, Lực Lượng & Quân Sự**: Hai phe ban đầu Chính phủ VSS vs Đế Chế The Void (không thêm phe mới vào phạm vi ban đầu); Sổ cái quân sự bảo toàn quân số (Deployed, Reserves, Wounded, Retreating, Casualties); thuật toán auto-resolve Lanchester cho trận phụ; can thiệp buồng lái trong trận quyết định; hậu quả thất bại theo ngữ cảnh (không mặc định mất sector ngay).
+    * **D. Tích Hợp Chiến Đấu & Khế Ước Giao Dịch**: Khế ước `WorldCombatAdapter`; cấu hình `combatVersion: "v1" | "v2"`; Encounter Snapshot độc lập tại thời điểm khóa trận; nhật ký giao dịch lũy đẳng (`worldTransactionJournal`) chống áp dụng hai lần; luồng xử lý an toàn khi combat bị lỗi (`PENDING_RECOVERY`), không tạo kết quả thắng/thua giả.
+    * **E. Lưu Trữ, Checkpoint & Phục Hồi Thảm Họa**: Lưu trữ cách ly `STARFRONT_WORLD_SAVE_V1` độc lập với tiến trình RPG v4; sao lưu luân phiên Slot A/B với kiểm tra checksum nguyên tử; tự động phục hồi từ backup khi save chính lỗi; checkpoint tự động và khôi phục giao dịch dang dở an toàn.
+    * **F. Thời Gian & Mô Phỏng Ngoại Tuyến**: Mốc thời gian thực tế Unix timestamp; cơ chế bắt kịp bounded batch (tối đa 50 ticks/batch, trần 360 ticks) chống đơ trình duyệt; công cụ Time Travel Dev Controls (+1, +7, +30 ngày) có bản xem trước tác động và hộp thoại xác nhận, dùng chung 100% logic với engine thật.
+    * **G. Chu Kỳ Tick & Thứ Tự Sự Kiện Tất Định**: Thứ tự 6 phase cố định trong từng tick (Phục hồi $\rightarrow$ Vận chuyển $\rightarrow$ Kinh tế $\rightarrow$ Quân sự $\rightarrow$ Hạn chót $\rightarrow$ Kích hoạt mới); phân tích phụ thuộc dữ liệu; phá thế hòa ổn định và Seeded PRNG.
+    * **H. Kinh Tế Chiến Lược & Nhân Khẩu Học**: 4 Nhóm tài nguyên + Lương thực thiết yếu riêng biệt; 3 năng lực Industry/Logistics/Stability; cơ chế suy thoái theo bậc khi cạn kiệt; hậu cần tự động với mức tồn kho an toàn 3 ngày (Safety Stock Buffer); di cư bảo toàn dân số zero-sum (không sinh dân ảo).
+    * **I. Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ**: Vòng đời 3 pha `INIT` $\rightarrow$ `PROCESSING` $\rightarrow$ `RESULT`; tự động khóa chiến lược mặc định khi hết hạn countdown; 6 hình thái chuỗi nhiệm vụ; giới hạn trần 8 chuỗi đồng thời; Trung tâm kết quả kép (Mission Results vs Event Results) kèm xóa log hiển thị an toàn.
+  - Bổ sung Ma trận đối chiếu thực tế kỹ thuật (4 nhóm: Đã có trong code, Đã xác nhận thiết kế, Đề xuất cần xác minh, Chưa xác định/TBD).
+- **Tạo Mới Kế Hoạch Triển Khai Kỹ Thuật Chi Tiết (`WORLD_IMPLEMENTATION_PLAN.md`)**:
+  - Phân kỳ toàn diện thành 9 giai đoạn nhỏ tuần tự (Phase 6.1 đến 6.9):
+    * **Phase 6.1**: Nền tảng dữ liệu, Interfaces & Save cách ly (`STARFRONT_WORLD_SAVE_V1`, Rotating Backups A/B).
+    * **Phase 6.2**: Mạng lưới đồ thị World Map & Máy trạng thái 5 giai đoạn Sector.
+    * **Phase 6.3**: Động cơ mô phỏng chuỗi Tick 6 phase & Bắt kịp ngoại tuyến theo batch.
+    * **Phase 6.4**: Kinh tế chiến lược, Mạng lưới hậu cần & Nhân khẩu học bảo toàn.
+    * **Phase 6.5**: Phe phái VSS vs The Void & Sổ cái điều phối quân sự có thẩm quyền.
+    * **Phase 6.6**: Khế ước Adapter tích hợp chiến đấu & Nhật ký giao dịch lũy đẳng.
+    * **Phase 6.7**: Động cơ vòng đời sự kiện & Chuỗi nhiệm vụ chiến lược.
+    * **Phase 6.8**: Giao diện Operations Center & Trung tâm kết quả kép (Dual Results Hub).
+    * **Phase 6.9**: Chế độ bản đồ toàn màn hình, Tinh chỉnh thị giác & Kiểm thử tích hợp E2E.
+  - Mỗi giai đoạn quy định đầy đủ: Mục tiêu, Tiền đề, Danh mục file/interfaces, Các bước thực hiện, Tiêu chí nghiệm thu (Exit Criteria), và Rủi ro kỹ thuật/Giải pháp dự phòng.
+- **Cập Nhật Đồng Bộ Kế Hoạch Tổng Thể (`PROJECT_PLAN.md`)**:
+  - Cập nhật bảng chỉ dẫn AI Agent Context, mục tiêu chiến lược của WORLD trong sản phẩm.
+  - Cập nhật Bản đồ tài liệu (Documentation Index) tham chiếu đến `WORLD_DESIGN.md` và `WORLD_IMPLEMENTATION_PLAN.md`.
+  - Cập nhật Ma trận trạng thái tổng quát (High-Level Phase Matrix).
+- **Cập Nhật Danh Mục Tính Năng (`FEATURES.md`)**:
+  - Bổ sung mục 4 chi tiết hóa 9 nhóm tính năng chiến lược của WORLD.
+  - Phân định minh bạch trạng thái kỹ thuật (Design Confirmed / Planned) và nhấn mạnh chưa triển khai code.
+- **Bảo Toàn Chất Lượng & Mã Nguồn**:
+  - Giữ nguyên vẹn 100% mã nguồn game hiện có.
+  - 102/102 automated tests tiếp tục PASS 100%.
+
+---
+
 ## [Phase 5.12] — Màn Hình Kết Quả Sau Nhiệm Vụ & Trực Quan Hóa Điểm Hiệu Suất Tác Chiến (D3 Post-Mission Debriefing)
 
 *Đã hoàn thành toàn bộ màn hình kết quả sau nhiệm vụ (102/102 automated tests passed, build thành công)*

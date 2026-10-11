@@ -52,31 +52,53 @@ export type StarfrontProgression = {
 
 ---
 
-## 3. Cấu Trúc Dữ Liệu Dự Kiến (Schema v4 Specification) `[PLANNED]`
+## 3. Cấu Trúc Dữ Liệu Hiện Hành (Schema v4 Specification) `[IMPLEMENTED]`
 
-Dành cho việc mở rộng Milestone 5.7 (Unified Equipment & Skill Module System):
+Kể từ Phase 5.8 và Phase 5.9, hệ thống lưu trữ chính thức hoạt động trên **Schema v4** với khóa `STARFRONT_SAVE_DATA_V4`:
 
 ```typescript
-export type StarfrontProgressionV4 = StarfrontProgression & {
-  version: 4 // Nâng cấp lên Schema version 4
-  skillPoints: number // Điểm kỹ năng phi thuyền khả dụng (chưa dùng)
-  slotLevels: Record<1 | 2 | 3 | 4 | 5, number> // Cấp nâng của 5 ô kỹ năng (1..20)
-  equippedSkills: Record<1 | 2 | 3 | 4 | 5, string | null> // Mã Module kỹ năng đang lắp vào ô 1..5
-  skillInventory: SkillModuleItem[] // Kho mô-đun kỹ năng người chơi đang sở hữu
+export type StarfrontProgression = {
+  version: 4 // Schema version 4
+  level: number // Cấp độ cơ giáp người chơi
+  exp: number // Điểm kinh nghiệm cơ giáp
+  credits: number // Tín dụng tiền tệ chính
+  alloy?: number // Hợp kim cường hóa trang bị
+  activeGearId: StarfrontGearId // "vanguard" | "falcon" | "aegis"
+  unlockedGears: StarfrontGearId[] // Danh sách cơ giáp đã mở khóa
+  inventory: StarfrontItem[] // Kho đồ trang bị
+  equipped: Record<StarfrontItemSlot, string | null> // weapon, shield, engine
+  completedMissions: string[] // Mã các ải đã hoàn thành
+  battlesWon: number // Tổng số trận thắng
+  battlesLost: number // Tổng số trận thua
+  freeShopRefreshes?: number // Lượt làm mới Chợ miễn phí
+  activeQuest?: StarfrontQuest | null // Nhiệm vụ chính tuyến đang nhận
+  completedQuestIds?: string[] // Danh sách nhiệm vụ đã hoàn thành
+  currentShopItems?: ArmoryShopItem[] // Danh mục hàng chợ quân sự hiện tại
+  sideQuests?: StarfrontQuest[] // Danh sách nhiệm vụ phụ tuyến
+  missionOverrides?: Record<string, { quality?: QuestQuality; variantId?: EnemyVariantId; previewReward?: QuestRewardPreview }>
+
+  // --- Mở Rộng Phase 5.8: Hệ Thống Ghép Đôi & Tiến Trình Phi Công ---
+  activePairing?: ActivePairingState // Cặp đôi đang chọn, trạng thái isLocked và unlockProgress (5 trận / 5 Q)
+  pilots?: Record<string, PilotProgressionData> // Tiến trình 4 phi công (Level, EXP, availablePoints, allocatedStats)
+
+  // --- Mở Rộng Phase 5.9: Tuyệt Kỹ Liên Hoàn & Quản Trị Toàn Cục ---
+  pilotSkills?: Record<string, PilotSynergySkillInstance> // Tuyệt kỹ liên hoàn riêng của từng phi công
+  globalAdminConfig?: GlobalAdminConfig // Cấu hình Admin CP: trần cấp độ, chế độ ưu tiên priorityMode
+  rerollTokens?: number // Số Vé / Token Reroll Dòng Phụ (khởi đầu cấp 5 vé)
 }
 ```
 
-### Quy Tắc Chuyển Đổi An Toàn (Migration v3 ➔ v4)
-Khi người chơi tải phiên bản mới có Schema v4:
-1. **Kiểm tra phiên bản**: Nếu `parsed.version < 4` hoặc chưa có trường `skillPoints`:
-2. **Khởi tạo Skill Points**: Tự động tính bù:
-   $$\text{skillPoints} = \max\left(0, (\text{level} - 1) \times 2\right)$$
-3. **Khởi tạo Cấp Ô (Slot Levels)**: Gán mặc định cấp 1 cho toàn bộ 5 ô:
-   $$\text{slotLevels} = \{1: 1, 2: 1, 3: 1, 4: 1, 5: 1\}$$
-4. **Cấp Bộ Kỹ Năng Mặc Định**:
-   Tự động đưa 4 kỹ năng cơ bản hiện tại của Gear đang chọn vào ô 1–4, tạo 1 Ultimate tương ứng vào ô 5.
-5. **Bảo toàn kho đồ**: Giữ nguyên 100% mảng `inventory` trang bị cũ, cấp cường hóa và tiền tệ.
-6. **Ghi đè khóa v4**: Lưu dữ liệu đã migrate vào `STARFRONT_SAVE_DATA_V4`.
+### Quy Tắc Chuyển Đổi An Toàn (Migration v1..v3 ➔ v4)
+Được triển khai trong `lib/game/storage.ts: migrateProgressionToV4`:
+1. **Khởi tạo hồ sơ 4 Phi công**: Nếu save cũ chưa có trường `pilots`, tự động sinh 4 hồ sơ (`marcus`, `valentine`, `alviss`, `eric`) ở Cấp 1, 0 EXP, 0 điểm phân bổ.
+2. **Khởi tạo cặp đôi `activePairing`**: Mặc định Marcus + `activeGearId`, trạng thái `isLocked = false` để người chơi không bị kẹt khi vừa cập nhật.
+3. **Khởi tạo & Chuẩn hóa Pilot Skills**:
+   - Nếu đã có dữ liệu kỹ năng: chạy qua `normalizePilotSynergySkill` để đối chiếu template.
+   - Nếu chưa có: gọi `createInitialPilotSynergySkill(pilotId, pilotLevel, globalAdminConfig)` tự động mở khóa các mốc milestone tương ứng với cấp độ hiện tại của phi công.
+4. **Cấp Vé Reroll Khởi Đầu**: Tự động tặng 5 Vé Reroll (`rerollTokens: 5`) cho người chơi cũ chuyển tiếp lên v4.
+5. **Cấu hình Quản trị Mặc định**: Nạp `DEFAULT_GLOBAL_ADMIN_CONFIG` (Max pilot 120, max skill 30, chế độ `TEMPLATE_OVERRIDE`).
+6. **Bảo toàn 100% tài nguyên**: Cấp độ, kinh nghiệm, Credits, Alloy, kho đồ và cấp cường hóa [0..10] được bảo toàn nguyên vẹn.
+7. **Lưu trữ độc lập**: Ghi dữ liệu vào khóa `STARFRONT_SAVE_DATA_V4`, không ghi đè xóa bỏ khóa cũ `STARFRONT_SAVE_DATA_V3`.
 
 ---
 

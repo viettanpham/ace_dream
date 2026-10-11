@@ -30,12 +30,12 @@ Trong toàn bộ tài liệu dự án, mọi cơ chế được phân loại the
 ## 3. Danh Mục Hệ Thống & Liên Kết Tài Liệu
 
 | Hệ thống | Mã tài liệu | Trạng thái tổng quan | Tài liệu chi tiết |
-| **Hệ Thống Nhân Vật & Cơ Giáp** | `SYS-CHR` | `[PLANNED]` (Phase 5.8: 3-step selection, 5-mission/battle lock, pilot progression) | [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./CHARACTER_GEAR_SYSTEM.md) |
+| **Hệ Thống Nhân Vật & Cơ Giáp** | `SYS-CHR` | `[IMPLEMENTED]` (Phase 5.8: 3-step selection, 5-mission/battle lock, pilot progression, large portraits) | [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./CHARACTER_GEAR_SYSTEM.md) |
 | **Hệ Thống Cân Bằng Vật Phẩm Dùng Chung** | `SYS-BAL` | `[PARTIAL]` (M5.5 Loot stats done; M5.7 Power Budget/Rating planned) | [`docs/systems/ITEM_BALANCE.md`](./ITEM_BALANCE.md) |
 | **Hệ Thống Trang Bị & Kho Đồ** | `SYS-EQP` | `[IMPLEMENTED]` (3 slots, enhance +10, salvage, shop refresh done; Gear-specific planned) | [`docs/systems/EQUIPMENT_SYSTEM.md`](./EQUIPMENT_SYSTEM.md) |
-| **Hệ Thống Mô-đun Kỹ Năng & 5 Slots** | `SYS-SKL` | `[PARTIAL]` (4 basic skills/gear done; 5 slots module deck & slot upgrade planned) | [`docs/systems/SKILL_SYSTEM.md`](./SKILL_SYSTEM.md) |
-| **Hệ Thống Chiến Đấu Theo Lượt** | `SYS-CMB` | `[IMPLEMENTED]` (Turn queue, status effects, damage, AI 4 archetypes, boss enrage) | [`docs/systems/COMBAT_SYSTEM.md`](./COMBAT_SYSTEM.md) |
-| **Hệ Thống Dữ Liệu Lưu Trữ & Di Chuyển Schema** | `SYS-SAV` | `[IMPLEMENTED]` (Schema v3 with fallback & auto-migration; Schema v4 planned) | [`docs/systems/SAVE_DATA.md`](./SAVE_DATA.md) |
+| **Hệ Thống Mô-đun Kỹ Năng & 5 Slots** | `SYS-SKL` | `[IMPLEMENTED]` (4 basic skills done; Phase 5.9 Pilot Synergy Skills & Reroll done; 5 gear module slots planned) | [`docs/systems/SKILL_SYSTEM.md`](./SKILL_SYSTEM.md) |
+| **Hệ Thống Chiến Đấu Theo Lượt** | `SYS-CMB` | `[IMPLEMENTED]` (Turn queue, status effects, damage, AI 4 archetypes, boss enrage, synergy counter & overcharge) | [`docs/systems/COMBAT_SYSTEM.md`](./COMBAT_SYSTEM.md) |
+| **Hệ Thống Dữ Liệu Lưu Trữ & Di Chuyển Schema** | `SYS-SAV` | `[IMPLEMENTED]` (Schema v4 with auto-migration from v1..v3, pilots, synergy skills, admin CP) | [`docs/systems/SAVE_DATA.md`](./SAVE_DATA.md) |
 
 ---
 

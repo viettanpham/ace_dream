@@ -1,70 +1,63 @@
-# STARFRONT — Báo Cáo & Danh Mục Quản Lý Tài Nguyên Hình Ảnh (Phase 5.9 Asset Manifest)
+# STARFRONT — Danh Mục Quản Lý & Đối Chiếu Tài Nguyên Hình Ảnh (Phase 5.9 Asset Manifest)
 
-*Ngày lập: Tháng 10/2026*  
-*Giai đoạn:* **Phase 5.9 — Visual Asset Management, Regeneration Status & UI Integration**
-
----
-
-## 1. Tổng Quan Trạng Thái Tài Nguyên Hình Ảnh (Asset Overview)
-
-Trong Phase 5.9, hệ thống tài nguyên hình ảnh được chuẩn hóa theo phong cách **Sci-Fi Anime Mecha Military RPG**. Toàn bộ tài nguyên được tích hợp trực tiếp vào codebase qua thư mục chuẩn `/public/images/` với định dạng vector SVG chất lượng cao và cơ chế fallback an toàn.
-
-> **Ghi Chú Kỹ Thuật (Quota & Fallback Report):**  
-> Khi gọi công cụ sinh ảnh bằng mô hình AI (`generate_image`), hệ thống thông báo *Quota Exceeded (429)* cho dự án này trên môi trường AI Studio. Theo đúng hướng dẫn dự phòng tại Mục 12 của tài liệu kỹ thuật, hệ thống duy trì toàn vẹn bộ vector SVG sci-fi sắc nét, độc lập theo từng nhân vật và cơ giáp, đảm bảo giao diện buồng lái, sàn đấu và danh sách nhân vật không bao giờ bị lỗi ảnh trống hoặc broken image.
+*Ngày cập nhật: 11/10/2026*  
+*Chế độ kiểm định:* **Đối chiếu thực tế Source Code & Trạng thái Quota Sinh Ảnh**
 
 ---
 
-## 2. Danh Mục Tài Nguyên Cơ Giáp (Gear Assets)
+## 1. Trạng Thái Tổng Quát Tài Nguyên Hình Ảnh (General Asset Status)
 
-| Gear ID | Tên Hiển Thị | Vai Trò (Role) | Đường Dẫn Asset | Định Dạng | Tỷ Lệ / Kích Thước | Trạng Thái Tích Hợp |
-|---|---|---|---|---|---|---|
-| `vanguard` | Vanguard Mk-I | Assault Striker (Cân Bằng) | `/images/vanguard.svg` | SVG Vector | 16:9 / Responsive | **Tích hợp 100%**: Buồng lái, Card chọn, Đấu trường, Icon |
-| `falcon` | Falcon Interceptor | Recon Interceptor (Tốc Độ / Né) | `/images/falcon.svg` | SVG Vector | 16:9 / Responsive | **Tích hợp 100%**: Buồng lái, Card chọn, Đấu trường, Icon |
-| `aegis` | Aegis Bastion | Heavy Siege Fortress (Pháo Đài) | `/images/aegis.svg` | SVG Vector | 16:9 / Responsive | **Tích hợp 100%**: Buồng lái, Card chọn, Đấu trường, Icon |
+- **Chỉ tiêu Phase 5.9**:
+  - Regenerate hình ảnh mecha sci-fi anime chất lượng cao, đủ chi tiết cho toàn bộ Gear Models (`Vanguard`, `Falcon`, `Aegis`).
+  - Regenerate hình ảnh nhân vật full-body kích thước lớn, chi tiết trang phục quân sự sci-fi cao cấp cho 4 phi công (`Marcus`, `Valentine`, `Levi Reed / Alviss`, `Eric`).
+- **Trạng thái thực tế từ AI Studio Image Generation Tool (`generate_image`)**:
+  - **Lỗi kỹ thuật**: `generic::resource_exhausted: You exceeded your current quota, please check your plan and billing details (HTTP 429)`.
+  - **Chính sách xử lý nghiêm ngặt**:
+    - **TUYỆT ĐỐI KHÔNG** đánh dấu các asset ảnh chất lượng cao là "Đã hoàn thành" khi chúng chỉ đang dùng SVG vector fallback hoặc wrapper nhúng portrait.
+    - **ĐÁNH DẤU CHÍNH THỨC**: Toàn bộ các ảnh mecha chất lượng cao và ảnh full-body nhân vật chất lượng cao ở trạng thái **`PENDING`** (Chờ hồi phục quota mô hình / Nạp ảnh từ bên ngoài).
+    - **Cơ chế Fallback bảo đảm Runtime**: Giữ nguyên bộ file SVG vector và wrapper nhúng portrait hiện hữu trong `/public/images/` để đảm bảo Next.js build không lỗi và giao diện người dùng không bị vỡ giao diện hay broken images.
 
 ---
 
-## 3. Danh Mục Tài Nguyên Phi Công (Pilot Character Assets)
+## 2. Bảng Đối Chiếu Chi Tiết Từng Asset (Asset Registry & Verification Table)
 
-| Pilot ID | Họ Tên | Callsign | Vai Trò Chuyên Môn | Avatar Chân Dung | Artwork Toàn Thân (Full-Body) | Tỷ Lệ | Trạng Thái Tích Hợp |
+### 2.1. Cơ Giáp (Gear Models)
+
+| Gear ID | Tên Cơ Giáp | Asset Target Yêu Cầu | Đường Dẫn Thực Tế | Định Dạng Thực Tế | Dung Lượng File | Trạng Thái Fallback UI | Trạng Thái Regeneration Target |
 |---|---|---|---|---|---|---|---|
-| `marcus` | Marcus Thorne | War Dog | Assault / Weapons Specialist | `/images/marcus-portrait.svg` | `/images/marcus-fullbody.svg` | 9:16 (Khổ Lớn) | **Tích hợp 100%**: Thẻ toàn thân khổ lớn, Header, Card |
-| `valentine` | Valentine Reyes | Aegis Shield | Defense / Support Specialist | `/images/valentine-portrait.svg` | `/images/valentine-fullbody.svg` | 9:16 (Khổ Lớn) | **Tích hợp 100%**: Thẻ toàn thân khổ lớn, Header, Card |
-| `alviss` | Levi Reed (Alviss) | Ghost Falcon | Interceptor / Evasion Specialist | `/images/alviss-portrait.svg` | `/images/levi-fullbody.svg` | 9:16 (Khổ Lớn) | **Tích hợp 100%**: Thẻ toàn thân khổ lớn, Header, Card |
-| `eric` | Eric Vance | Siege Breaker | Siege / Demolition Specialist | `/images/eric-portrait.svg` | `/images/eric-fullbody.svg` | 9:16 (Khổ Lớn) | **Tích hợp 100%**: Thẻ toàn thân khổ lớn, Header, Card |
+| `vanguard` | Vanguard Mk-I | Ảnh Mecha Assault 16:9 Chất Lượng Cao | `/public/images/vanguard.svg` | SVG Vector | 4.4 KB | `INTEGRATED & VERIFIED` (Hiển thị mượt mà trên UI) | **`PENDING`** *(Chờ Quota AI Studio)* |
+| `falcon` | Falcon Interceptor | Ảnh Mecha Speed Infiltrator 16:9 Cao Cấp | `/public/images/falcon.svg` | SVG Vector | 4.3 KB | `INTEGRATED & VERIFIED` (Hiển thị mượt mà trên UI) | **`PENDING`** *(Chờ Quota AI Studio)* |
+| `aegis` | Aegis Bastion | Ảnh Mecha Siege Walker 16:9 Cao Cấp | `/public/images/aegis.svg` | SVG Vector | 5.1 KB | `INTEGRATED & VERIFIED` (Hiển thị mượt mà trên UI) | **`PENDING`** *(Chờ Quota AI Studio)* |
+
+### 2.2. Phi Công (Pilots & Characters)
+
+| Pilot ID | Tên Phi Công | Hạng Mục Asset | Đường Dẫn File Thực Tế | Định Dạng & Kích Thước | Dung Lượng File | Trạng Thái Tích Hợp UI | Trạng Thái Regeneration Target |
+|---|---|---|---|---|---|---|---|
+| `marcus` | Marcus Thorne | Chân Dung (Portrait) | `/public/images/marcus-portrait.png` (`.jpg`) | Raster (1024x1024) | 769 KB | `INTEGRATED & VERIFIED` | `GENERATED & SAVED` (Đạt chuẩn) |
+| `marcus` | Marcus Thorne | Toàn Thân (Full-Body) | `/public/images/marcus-fullbody.svg` | SVG nhúng Portrait | 208 Bytes | `INTEGRATED & VERIFIED` (Fallback) | **`PENDING`** *(Chờ Quota AI Studio)* |
+| `valentine` | Valentine Reyes | Chân Dung (Portrait) | `/public/images/valentine-portrait.png` (`.jpg`) | Raster (1024x1024) | 648 KB | `INTEGRATED & VERIFIED` | `GENERATED & SAVED` (Đạt chuẩn) |
+| `valentine` | Valentine Reyes | Toàn Thân (Full-Body) | `/public/images/valentine-fullbody.svg` | SVG nhúng Portrait | 211 Bytes | `INTEGRATED & VERIFIED` (Fallback) | **`PENDING`** *(Chờ Quota AI Studio)* |
+| `alviss` | Levi Reed (Alviss) | Chân Dung (Portrait) | `/public/images/alviss-portrait.png` (`.jpg`) | Raster (1024x1024) | 936 KB | `INTEGRATED & VERIFIED` | `GENERATED & SAVED` (Đạt chuẩn) |
+| `alviss` | Levi Reed (Alviss) | Toàn Thân (Full-Body) | `/public/images/levi-fullbody.svg` | SVG nhúng Portrait | 208 Bytes | `INTEGRATED & VERIFIED` (Fallback) | **`PENDING`** *(Chờ Quota AI Studio)* |
+| `eric` | Eric Vance | Chân Dung (Portrait) | `/public/images/eric-portrait.png` (`.jpg`) | Raster (1024x1024) | 776 KB | `INTEGRATED & VERIFIED` | `GENERATED & SAVED` (Đạt chuẩn) |
+| `eric` | Eric Vance | Toàn Thân (Full-Body) | `/public/images/eric-fullbody.svg` | SVG nhúng Portrait | 206 Bytes | `INTEGRATED & VERIFIED` (Fallback) | **`PENDING`** *(Chờ Quota AI Studio)* |
 
 ---
 
-## 4. Đặc Điểm Thiết Kế & Visual Cues Từng Nhân Vật
+## 3. Tổng Hợp Số Lượng & Phân Loại Trạng Thái
 
-1. **Marcus Thorne (War Dog)**:
-   - *Bảng màu*: Đỏ sẫm (`#ef4444`), Than chì (`#18181b`), Kim loại bạc.
-   - *Phong cách*: Chỉ huy tác chiến cường tráng, giáp công nghệ cao vai vuông, biểu cảm quyết đoán tự tin.
-   - *Hiệp đồng trực quan*: Hào quang Neon Đỏ - Cyan khi ghép đôi cùng Vanguard.
-
-2. **Valentine Reyes (Aegis Shield)**:
-   - *Bảng màu*: Bạc (`#e2e8f0`), Xanh ngọc lạnh (`#38bdf8`), Lam thẫm (`#1e3a8a`).
-   - *Phong cách*: Nữ sĩ quan chỉ huy thông tuệ, giáp bảo hộ nano tinh tế, thiết bị chiếu khiên tích hợp trên vai.
-   - *Hiệp đồng trực quan*: Hào quang Neon Hoàng Kim khi ghép đôi cùng Aegis.
-
-3. **Levi Reed / Alviss (Ghost Falcon)**:
-   - *Bảng màu*: Xanh Cyan Neon (`#06b6d4`), Đen carbon (`#09090b`), Tím sẫm (`#7c3aed`).
-   - *Phong cách*: Phi công đột kích khí động học, vóc dáng linh hoạt, thiết bị cảm biến gia tốc và cánh tản nhiệt gọn nhẹ.
-   - *Hiệp đồng trực quan*: Hào quang Neon Tím - Cyan khi ghép đôi cùng Falcon.
-
-4. **Eric Vance (Siege Breaker)**:
-   - *Bảng màu*: Cam cháy (`#f97316`), Xám thép (`#475569`), Đen mờ.
-   - *Phong cách*: Chiến binh pháo binh dạn dày sương gió, kính ngắm laser quang học, giáp hạng nặng chống chịu sức ép hạt nhân.
-   - *Hiệp đồng trực quan*: Hào quang Neon Cam khi ghép đôi cùng Aegis.
+- **Tổng số Asset Mục Tiêu**: 11 items (3 Gear Models, 4 Pilot Portraits, 4 Pilot Full-Body Artworks).
+- **Trạng thái chi tiết**:
+  - `GENERATED / SAVED / VERIFIED` (Đạt chuẩn chất lượng cao): **4/11 items** (4 ảnh Portrait phi công chất lượng cao dạng raster 1024x1024: Marcus 769KB, Valentine 648KB, Levi/Alviss 936KB, Eric 776KB).
+  - `INTEGRATED AS FALLBACK` (Đang tích hợp trong UI dưới dạng vector SVG an toàn): **7/11 items** (3 Gear SVGs, 4 Full-body wrapper SVGs).
+  - `PENDING` (Đang chờ công cụ sinh ảnh hồi phục quota để sinh ảnh độ phân giải cao thay thế hoàn toàn fallback): **7/11 items** (3 Gear Mecha Artworks, 4 Full-Body Pilot Artworks).
 
 ---
 
-## 5. Quy Chuẩn Sử Dụng Asset Trong Codebase
+## 4. Kế Hoạch Thay Thế Khi Hồi Phục Quota
 
-1. **Next.js & Browser Rendering**:
-   - Khai báo đường dẫn bắt đầu từ `/images/...` trong các thẻ `<img>` và Next `<Image />`.
-   - Thuộc tính `objectFit="contain"` hoặc `object-contain object-top` để giữ trọn vẹn tỷ lệ giải phẫu học của nhân vật.
-   - Thuộc tính `referrerPolicy="no-referrer"` tuân thủ nghiêm ngặt môi trường AI Studio.
-2. **Kích Thước Render Tối Ưu**:
-   - Khung hình ảnh toàn thân (Full-body frame) tại Cột Trái màn hình `CharacterGearSelect`: Tối thiểu `min-h-[460px]`, hiển thị trọn vẹn chi tiết trang phục phi công.
-   - Vòng tròn Avatar Chân dung (Portrait): `size-12` đến `size-16` với viền màu phẩm chất và trạng thái tương tác.
+Ngay khi quota của công cụ `generate_image` được cấp lại:
+1. Sinh 3 ảnh Gear 16:9: `vanguard_gear.png`, `falcon_gear.png`, `aegis_gear.png` lưu vào `/public/images/`.
+2. Sinh 4 ảnh Full-Body 9:16: `marcus_fullbody.png`, `valentine_fullbody.png`, `levi_fullbody.png`, `eric_fullbody.png` lưu vào `/public/images/`.
+3. Cập nhật trường `illustration` trong `lib/game/data.ts: STARFRONT_GEAR_DEFS` và trường `fullBodyAvatar` trong `STARFRONT_PILOTS`.
+4. Chạy kiểm tra hiển thị trên `CharacterGearSelect` và `CombatArena`.

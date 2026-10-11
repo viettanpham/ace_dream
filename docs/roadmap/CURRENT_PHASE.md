@@ -5,7 +5,7 @@
 ---
 
 ## 1. Mục Tiêu & Trạng Thái Giai Đoạn (Phase Status)
-- **Trạng thái**: **HOÀN THÀNH (DONE) — Kiểm thử tự động PASS 100%**.
+- **Trạng thái**: **HOÀN THÀNH PHẦN CODE & TÍNH NĂNG (Gameplay Done — 93/93 Tests PASS) · ASSET ẢNH MECHA & TOÀN THÂN: PENDING DO QUOTA AI STUDIO (429)**.
 - **Mục tiêu cốt lõi**:
   - Xây dựng hệ thống **Tuyệt Kỹ Liên Hoàn Phi Công (Pilot Skill Liên Hoàn)** độc lập với 5 Slot Mô-đun Cơ Giáp trong Hangar.
   - Cung cấp 4 Template cấu hình chi tiết cho Marcus, Valentine, Alviss (Levi Reed), và Eric.
@@ -33,7 +33,8 @@
 | Tab Kỹ Năng Phi Công trong Character & Gear | **Đã hoàn thành (Done)** | `components/game/character-gear-select.tsx` |
 | Lưu Trữ Schema v4 & Migration Tự Động | **Đã hoàn thành (Done)** | `lib/game/storage.ts` |
 | Bộ Kiểm Thử Tự Động Toàn Diện Phase 5.9 | **Đã hoàn thành (Done)** | `tests/phase5-9-pilot-synergy-skills.test.ts` (18/18 PASS) |
-| Tài Liệu Kiến Trúc & Asset Manifest | **Đã hoàn thành (Done)** | `PHASE_5_9_ASSET_MANIFEST.md`, `PILOT_GEAR_DISCOVERY_REPORT.md` |
+| Tái Tạo Ảnh Mecha & Ảnh Phi Công Toàn Thân | **Đang chờ (Pending Quota)** | 4/4 Portrait raster hoàn tất; 4 Fullbody và 3 Mecha dùng SVG fallback an toàn. |
+| Báo Cáo Triển Khai & Asset Manifest | **Đã hoàn thành (Done)** | `PHASE_5_9_IMPLEMENTATION_REPORT.md`, `PHASE_5_9_ASSET_MANIFEST.md` |
 
 ---
 

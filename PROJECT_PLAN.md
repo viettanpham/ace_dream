@@ -18,8 +18,8 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | Đã hoàn thành Phase 1 đến Phase 5.9 (93/93 tests PASS). Tuyệt Kỹ Liên Hoàn Phi Công, Reroll, Admin CP và Hệ Thống Ghép Đôi Nhân Vật & Cơ Giáp đã vận hành đầy đủ. |
-| **Phase tiếp theo cần thực hiện?** | **Phase 6.0**: Specter Gear, Phân hệ Chiến tranh Mẹ hạm & Mở rộng Thiên Hà. |
+| **Trạng thái hiện tại của dự án?** | Phase 5.9: Hoàn thành 100% logic gameplay, Tuyệt Kỹ Liên Hoàn Phi Công, Reroll, Admin CP và Lưu trữ Schema v4 (93/93 tests PASS). Asset ảnh Mecha và Fullbody chất lượng cao ở trạng thái PENDING do quota AI Studio 429 (đang dùng fallback SVG). |
+| **Phase tiếp theo cần thực hiện?** | Bổ sung asset ảnh Mecha/Fullbody khi có quota; chuyển tiếp sang **Phase 6.0**: Specter Gear & Phân hệ Chiến tranh Mẹ hạm. |
 | **Tài liệu BẮT BUỘC đọc trước khi sửa code?** | 1. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md)<br>2. [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md)<br>3. [`docs/systems/SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) |
 | **Các hệ thống liên quan trực tiếp?** | - `lib/game/pilot-skill-types.ts` & `pilot-skill-engine.ts`: Tuyệt kỹ liên hoàn, template, progression, reroll.<br>- `lib/game/types.ts` & `lib/game/storage.ts`: Save Schema v4 & migration.<br>- `lib/game/progression.ts` & `engine.ts`: Tính toán chỉ số, thực chiến, phản đòn, sát thương.<br>- `components/game/character-gear-select.tsx` & `pilot-skill-view.tsx`: Giao diện buồng lái, sub-tab kỹ năng phi công.<br>- `components/game/admin-cp-modal.tsx`: Bảng điều khiển quản trị toàn cục. |
 

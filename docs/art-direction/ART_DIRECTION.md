@@ -1,141 +1,164 @@
 # STARFRONT — Official Art Direction & Visual Standards
-*Master Art Direction Specification & Asset Standards Manual*  
-*Document Version: 3.1 — Updated: October 2026*  
-*Status: Approved Official Standard for all STARFRONT character assets, mecha design, UI artwork, and asset lifecycle management*
+*Tài Liệu Tiêu Chuẩn Nghệ Thuật & Quy Chuẩn Đồ Họa Master — Dự Án STARFRONT*  
+*Document Version: 3.2 — Cập nhật: Tháng 10/2026*  
+*Status: Tiêu Chuẩn Nghệ Thuật Chính Thức Được Phê Duyệt Toàn Diện (Approved Official Standard)*
 
 ---
 
-## 1. Executive Summary & Core Art Direction Vision
+## 1. TỔNG QUAN & TẦM NHÌN NGHỆ THUẬT CỐT LÕI (CORE ART DIRECTION VISION)
 
-**STARFRONT** is a turn-based tactical aerospace & mecha combat RPG set in a futuristic galaxy. The visual identity of STARFRONT is defined by a strict dual-pillar aesthetic framework:
+**STARFRONT** là tựa game nhập vai chiến thuật theo lượt (Tactical Turn-Based Sci-Fi RPG) kết hợp tác chiến không gian và cơ giáp (Mecha). Bản sắc thị giác của STARFRONT được xây dựng trên **khung thẩm mỹ hai trụ cột (Dual-Pillar Aesthetic Framework)** bất biến:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                          STARFRONT MASTER ART DIRECTION PIPELINE                       │
+│                        STARFRONT MASTER ART DIRECTION FRAMEWORK                        │
 └───────────────────────────────────────────┬────────────────────────────────────────────┘
                                             │
                     ┌───────────────────────┴───────────────────────┐
                     ▼                                               ▼
-     [ PILLAR 1: GEAR ARTWORK FOUNDATION ]           [ PILLAR 2: PILOT CHARACTER ARTWORK ]
-     - High-tech 3D Aerospace Mecha Concept Art      - Premium Japanese Anime Character Art
-     - Defines sci-fi design language & materials    - Beautiful, expressive anime faces & eyes
-     - Hardware complexity, thrusters & plating      - Refined cel shading & clean line art
-     - Canonical color palettes & energy fx          - Highly detailed sci-fi pilot combat suits
-     - Visual reference for the entire game world    - Fully distinct silhouettes & personalities
+     [ TRỤ CỘT 1: THAM CHIẾU THIẾT KẾ GEAR ]         [ TRỤ CỘT 2: MINH HỌA NHÂN VẬT ANIME ]
+     - High-Tech 3D Aerospace Mecha Concept Art      - Premium Japanese Anime Character Art
+     - Định hình ngôn ngữ công nghệ & vật liệu       - Gương mặt anime tinh xảo, mắt có hồn
+     - Độ phức tạp cơ khí, ống đẩy & giáp mạ         - Nét vẽ sắc mảnh, đổ bóng cel-shading
+     - Bảng màu năng lượng & ánh sáng đặc trưng      - Quân phục phi công & giáp chiến sci-fi
+     - Kim chỉ nam thị giác cho toàn bộ thế giới     - Dáng đứng tự tin, bản sắc rõ rệt
 ```
 
----
-
-## 2. Pillar 1: GEAR Artwork as the Canonical Sci-Fi Design Reference
-
-The existing 3 STARFRONT GEAR artworks (`vanguard-gear.jpg`, `falcon-gear.jpg`, `aegis-gear.jpg`) are the **canonical visual anchor and source of truth** for STARFRONT's sci-fi aesthetic. 
-
-Every character armor design, pilot flight suit, cybernetic implant, sensory visor, and weapon system must inherit its materials, lighting language, and color harmony directly from the GEAR artwork:
-
-### 2.1. The Three Canonical GEAR Archetypes
-
-1. **Vanguard GEAR (`/public/images/vanguard-gear.jpg`) — Fleet Command & Balanced Superiority**:
-   - **Primary Palette**: Tactical Cyan (`#06b6d4`), Arctic Ice-Blue (`#38bdf8`), Deep Navy (`#0f172a`), Matte Titanium Grey (`#334155`).
-   - **Mechanical Language**: Aerodynamic multi-angled composite plating, twin photon pulse cannons, dual wing ion thrusters emitting blue plasma trails.
-   - **Pilot Affiliation**: **Marcus Thorne** (Commander / Vanguard Exo-Suit), **Eric Brandt** (Heavy Bombardment Artillery), **Selena Cross** (High-Energy Solaris Beam Specialist).
-
-2. **Falcon GEAR (`/public/images/falcon-gear.jpg`) — Supersonic Interceptor & Precision Strike**:
-   - **Primary Palette**: Cyber Violet / Neon Purple (`#a855f7`), Dark Amethyst (`#7e22ce`), Glossy Obsidian Carbon Fiber (`#09090b`), Vivid Magenta Tracers (`#d946ef`).
-   - **Mechanical Language**: Mach-speed swept delta wings, stealth radar-absorbent chiseled angles, twin proton afterburners, high-frequency plasma blades.
-   - **Pilot Affiliation**: **Alviss Drake** (Supersonic Speed Demon Ace), **Lyra Vance** (Agile Valkyrie Dual-Blade Duelist), **Kaelen Voss** (Cipher Electronic Warfare Infiltrator).
-
-3. **Aegis GEAR (`/public/images/aegis-gear.jpg`) — Fortified Heavy Armor & Kinetic Defense**:
-   - **Primary Palette**: Industrial Amber Gold (`#f59e0b`), Deep Bronze (`#b45309`), Heavy Blast-Resistant Charcoal Carbon (`#18181b`), Hazard Ochre (`#d97706`).
-   - **Mechanical Language**: Heavy multi-layered reactive armor slabs, twin heavy Gauss/railgun cannons, spherical magnetic barrier emitter arrays, reinforced hydraulic actuators.
-   - **Pilot Affiliation**: **Valentine Vance** (Aegis Angel Support & Nano-Barrier Specialist), **Victor Stone** (Bastion Heavy Bulwark Guardian).
-
-### 2.2. Visual Rule: Reference, Not Reproduction
-- The GEAR artwork provides the **design language, technology tier, material fidelity, and atmospheric lighting**.
-- The Pilot characters **must not** look like faceless robots or mechanical models. They are human pilots rendered in a **gorgeous Japanese anime illustration style** wearing equipment that visibly belongs inside or alongside these high-tech machines.
+### Tuyên Ngôn Nghệ Thuật (Artistic Mandate)
+1. **Phong cách nhân vật**: Toàn bộ phi công STARFRONT phải được thể hiện dưới phong cách **Minh Họa Anime Khoa Học Viễn Tưởng Cao Cấp (Premium Japanese Anime Sci-Fi Illustration)** tương đương key art của các game anime RPG đỉnh cao (*Honkai: Star Rail*, *Arknights*, *Genshin Impact*, *Gundam*).
+2. **Tham chiếu thiết kế**: Hình ảnh **GEAR hiện có** là kim chỉ nam duy nhất xác định cấp độ công nghệ, vật liệu giáp, màu sắc năng lượng và phong thái viễn tưởng.
+3. **Quy định số lượng Asset**: Mỗi phi công bắt buộc phải có đủ **02 định dạng ảnh raster chuẩn**: **Ảnh Chân Dung (Portrait 1:1)** và **Ảnh Toàn Thân (Full-Body 9:16)**. Với 8 phi công, hệ thống yêu cầu đúng **16 image assets** chuẩn.
+4. **Bảo toàn dữ liệu**: Tuyệt đối không thay thế ảnh bằng pixel art, retro sprite, hình vẽ SVG/CSS, canvas code hay placeholder dạng khối.
 
 ---
 
-## 3. Pillar 2: Premium Japanese Anime Sci-Fi Character Illustration Standard
+## 2. TRỤ CỘT 1: SỬ DỤNG HÌNH ẢNH GEAR HIỆN CÓ LÀM THAM CHIẾU THIẾT KẾ
 
-### 3.1. Mandatory Anime Character Aesthetic
-All STARFRONT Pilot character illustrations must strictly adhere to the following visual benchmarks:
+Ba tác phẩm nghệ thuật GEAR hiện có (`vanguard-gear.jpg`, `falcon-gear.jpg`, `aegis-gear.jpg`) là **nguồn tham chiếu thị giác tối cao và duy nhất (Canonical Source of Truth)** cho toàn bộ thiết kế cơ khí, giáp trụ và ánh sáng trong STARFRONT.
 
-1. **Facial Features & Expressions**:
-   - Modern, high-end Japanese anime character design (reminiscent of top-tier anime RPG key art such as *Honkai: Star Rail*, *Genshin Impact*, *Arknights*, and modern *Gundam* series).
-   - Exquisitely rendered anime eyes with intricate irises, multi-tone color gradients, luminous specular highlights, and expressive emotion matching the pilot's persona.
-   - Beautiful facial structures: slender anime jawlines, refined noses and lips, perfectly styled anime hair with soft lighting gradients and highlights.
+Mọi bộ quân phục phi công (flight suit), giáp ngoại khung (exosuit), vũ khí cầm tay, kính ngắm chiến thuật (HUD visor) hay thiết bị cấy ghép điều khiển học (cybernetics) đều phải kế thừa trực tiếp vật liệu, chi tiết cơ khí và tông màu năng lượng từ 3 dòng GEAR này.
 
-2. **Linework & Inking**:
-   - Clean, crisp, high-precision digital line art with subtle line-weight variation.
-   - Absolutely no pixelated outlines, messy rough sketches, or blurred vector strokes.
+### 2.1. Ba Dòng Cơ Giáp GEAR Tham Chiếu & Phân Bổ Phi Công
 
-3. **Coloring & Shading**:
-   - Multi-tone cel shading combined with smooth digital painterly blending for skin and hair.
-   - Distinct material rendering: matte synthetic pilot fabrics, glossy carbon-composite armor plates, brushed metallic accents, and emissive LED/plasma light strips.
-   - Volumetric rim lighting (edge highlights) matching the pilot's signature GEAR energy color.
+#### 1. Vanguard GEAR (`/public/images/vanguard-gear.jpg`) — Fleet Command & Balanced Superiority
+- **Bảng Màu Chủ Đạo**: Tactical Cyan (`#06b6d4`), Arctic Ice-Blue (`#38bdf8`), Deep Navy (`#0f172a`), Matte Titanium Grey (`#334155`).
+- **Ngôn Ngữ Cơ Khí**: Giáp phiến composite đa góc khí động học, pháo xung photon kép, ống xả ion phát vệt plasma xanh lam rực rỡ, đường dẫn năng lượng cyan chạy dọc thân.
+- **Tham Chiếu Phi Công**:
+  - **Marcus Thorne** (Chỉ huy trưởng): Giáp ngực titanium đen nhám viền cyan plasma, súng trường xung lực tích hợp hộp đạn năng lượng cyan.
+  - **Eric Brandt** (Pháo thủ công phá): Cánh tay cơ khí trợ lực Gauss, giáp vai hạng nặng chống giật, kính ngắm laser tầm xa màu cyan.
+  - **Selena Cross** (Sĩ quan chùm năng lượng): Quân phục chỉ huy cao cấp với cầu vai phát sáng cyan, pháo hội tụ photon cầm tay tinh gọn.
 
-4. **Composition & Poses**:
-   - Dynamic, confident anime character poses that convey combat readiness and personality.
-   - Strong silhouettes readable at both full-body scale and thumbnail avatar sizes.
+#### 2. Falcon GEAR (`/public/images/falcon-gear.jpg`) — Supersonic Interceptor & Precision Strike
+- **Bảng Màu Chủ Đạo**: Cyber Violet / Neon Purple (`#a855f7`), Dark Amethyst (`#7e22ce`), Obsidian Carbon Fiber bóng (`#09090b`), Vivid Magenta Tracers (`#d946ef`), Teal accents (`#14b8a6`).
+- **Ngôn Ngữ Cơ Khí**: Cánh tam giác quét ngược siêu thanh, góc cạnh tán xạ radar tàng hình chiseled sắc lẹm, buồng đốt proton kép, lưỡi dao năng lượng tần số cao.
+- **Tham Chiếu Phi Công**:
+  - **Alviss Drake** (Át chủ bài siêu thanh): Bộ đồ bay High-G ôm sát khí động học, giáp cổ carbon sợi tím neon, mũ bay tích hợp hiển thị gia tốc.
+  - **Lyra Vance** (Nữ kiếm sĩ cơ động): Bộ giáp linh hoạt trọng lượng nhẹ, ống đẩy mini ở lưng, cặp kiếm plasma tần số cao ánh tím neon.
+  - **Kaelen Voss** (Hacker chiến tranh điện tử): Bộ đồ tàng hình sợi nano tối màu, giao diện hologram đa lớp tím viền xanh ngọc bích, thiết bị quét tín hiệu cầm tay.
 
-### 3.2. Strict Anti-Slop Discipline (Zero Tolerance)
-The following are **strictly prohibited** in all STARFRONT character assets:
-- ❌ **No Pixel Art / Retro Sprites**: Zero 8-bit, 16-bit, pixelated sprites, retro low-res tiles, or chunky game graphics.
-- ❌ **No Code-Simulated Graphics**: No SVG vector drawings, HTML canvas strokes, or CSS-generated characters pretending to be art.
-- ❌ **No Low-Poly 3D / Chibi**: No distorted proportions, blocky voxel geometry, or oversized-head chibi avatars.
-- ❌ **No Placeholders or Watermarks**: No mockups, stock watermarks, fake UI borders, or AI generation artifacts.
+#### 3. Aegis GEAR (`/public/images/aegis-gear.jpg`) — Fortified Heavy Armor & Kinetic Defense
+- **Bảng Màu Chủ Đạo**: Industrial Amber Gold (`#f59e0b`), Deep Bronze (`#b45309`), Heavy Blast Charcoal Carbon (`#18181b`), Hazard Ochre (`#d97706`).
+- **Ngôn Ngữ Cơ Khí**: Tấm giáp phản ứng đa tầng dập khuôn thủy lực, pháo từ trường Gauss/Railgun hạng nặng, bộ phát màng chắn năng lượng hình cầu, piston thủy lực lộ cơ cấu.
+- **Tham Chiếu Phi Công**:
+  - **Valentine Vance** (Chuyên viên khiên chắn Nano): Giáp nhẹ bảo hộ màu hổ phách, găng tay kích hoạt lá chắn trường lực, kính bảo hộ y tế/hỗ trợ chiến thuật.
+  - **Victor Stone** (Vệ binh pháo đài thép): Giáp exoskeleton hạng nặng phủ màu vàng đồng công nghiệp, khiên chắn thủy lực chấn động, mắt điện tử cấy ghép phát quang hổ phách.
 
----
-
-## 4. The 16-Asset Requirement & Master Pilot Roster
-
-Every STARFRONT pilot requires **two dedicated high-resolution raster image assets**:
-1. **Portrait Asset** (Head and shoulders / Bust, 1:1 Square) for pilot avatars, dialogue portraits, tactical unit cards, and HUD comms.
-2. **Full-Body Asset** (Standing action / Poster stance, 9:16 Vertical) for pilot roster dossier, hangar inspection, promotion cards, and detail galleries.
-
-### 4.1. Official Roster of 8 STARFRONT Pilots (16 Total Image Assets)
-
-| Pilot ID | Full Name & Callsign | Gender & Age | Role & Weaponry | Associated GEAR | Portrait File (1024×1024) | Full-Body File (900×1600) |
-|---|---|---|---|---|---|---|
-| `marcus` | **Marcus Thorne**<br>`WAR DOG / IRONCLAD` | Male, 30 | Frontline Commander, Heavy Assault Rifle & Leader Exosuit | Vanguard (`#06b6d4`) | `/public/images/marcus-portrait.png` | `/public/images/marcus-fullbody.png` |
-| `valentine` | **Valentine Vance**<br>`AEGIS ANGEL` | Female, 22 | Nano-Shield Specialist, Forcefield Projector, Medical Visor | Aegis (`#f59e0b`) | `/public/images/valentine-portrait.png` | `/public/images/valentine-fullbody.png` |
-| `alviss` | **Alviss Drake**<br>`GHOSTFIRE` | Male, 26 | Supersonic Ace, 0.07s Reflexes, High-G Flight Suit | Falcon (`#a855f7`) | `/public/images/alviss-portrait.png` | `/public/images/alviss-fullbody.png` |
-| `eric` | **Eric Brandt**<br>`BUNKER BREAKER` | Male, 28 | Heavy Artillery Gunner, Gauss Siege Arm, Tactical Scope | Vanguard (`#06b6d4`) | `/public/images/eric-portrait.png` | `/public/images/eric-fullbody.png` |
-| `lyra` | **Lyra Vance**<br>`VALKYRIE` | Female, 24 | High-Mobility Duelist, Twin Plasma Blades, Sleek Exosuit | Falcon (`#a855f7`) | `/public/images/lyra-portrait.png` | `/public/images/lyra-fullbody.png` |
-| `kaelen` | **Kaelen Voss**<br>`CIPHER` | Female, 25 | Electronic Warfare Hacker, Holographic HUD, Tactical Stealth Suit | Falcon (`#a855f7`) | `/public/images/kaelen-portrait.png` | `/public/images/kaelen-fullbody.png` |
-| `selena` | **Selena Cross**<br>`SOLARIS` | Female, 27 | High-Energy Photon Officer, Directed Energy Cannon, Command Visor | Vanguard (`#06b6d4`) | `/public/images/selena-portrait.png` | `/public/images/selena-fullbody.png` |
-| `victor` | **Victor Stone**<br>`BASTION` | Male, 34 | Veteran Defense Guardian, Hydraulic Bulwark Shield, Cybernetic Eye | Aegis (`#f59e0b`) | `/public/images/victor-portrait.png` | `/public/images/victor-fullbody.png` |
-
-*Note on Canonical Lore: Alviss Drake is strictly Male (a cocky, charismatic supersonic ace pilot). Gender parity across the 8 pilots is strictly 4 Male : 4 Female.*
+### 2.2. Nguyên Tắc Cốt Lõi: "Tham Chiếu Bản Sắc — Không Sao Chép Máy Móc"
+- **GEAR định nghĩa thế giới**: Cung cấp ngôn ngữ công nghệ, vật liệu (kim loại, carbon, cao su tổng hợp, kính chống đạn) và ánh sáng năng lượng.
+- **Phi công là linh hồn**: Không vẽ phi công thành robot vô hồn hay người mặc giáp kín mít không thấy mặt. Phi công STARFRONT là những con người quyến rũ, biểu cảm, đầy cá tính được vẽ theo **phong cách anime Nhật Bản đỉnh cao**, mặc trang phục và trang bị ăn khớp hoàn hảo với cỗ máy họ điều khiển.
 
 ---
 
-## 5. Technical Asset Specifications & File Architecture
+## 3. TRỤ CỘT 2: TIÊU CHUẨN MINH HỌA NHÂN VẬT ANIME KHOA HỌC VIỄN TƯỞNG CAO CẤP
 
-### 5.1. File System Specifications
-- **Base Storage Path**: `/public/images/`
-- **Web Accessible URL**: `/images/{filename}`
-- **Naming Convention**:
-  - Portrait: `{pilotId}-portrait.png` (e.g., `marcus-portrait.png`)
-  - Full-Body: `{pilotId}-fullbody.png` (e.g., `marcus-fullbody.png`)
-- **Format**: 32-bit PNG (RGBA with alpha transparency or cinematic studio sci-fi backdrop), uncompressed 8-bit per channel color depth.
+### 3.1. Quy Chuẩn Thẩm Mỹ Anime Chi Tiết (Anime Illustration Benchmarks)
 
-### 5.2. Resolution and Aspect Ratios
-- **Portrait Dimension**: `1024 × 1024 px` (Aspect Ratio `1:1`). Focus: Upper torso, collar armor, expressive anime face, detailed eyes and hair.
-- **Full-Body Dimension**: `900 × 1600 px` (Aspect Ratio `9:16`). Focus: Complete standing figure from head to boots, showing flight suit mechanics, thruster packs, holster gear, and weapon.
+1. **Gương Mặt & Đôi Mắt (Facial Art & Emotion)**:
+   - Đường nét khuôn mặt chuẩn phong cách anime hiện đại cao cấp: cằm thon gọn, sống mũi và khuôn miệng thanh thoát, tỉ lệ giải phẫu học hài hòa và thu hút.
+   - **Đôi mắt anime có chiều sâu tuyệt mỹ**: Lớp tròng đen chuyển sắc đa tông (multi-tone iris gradient), đồng tử chi tiết, đốm sáng specular phản chiếu ánh sáng buồng lái/năng lượng, biểu cảm toát lên cá tính riêng biệt của từng phi công.
+   - **Mái tóc**: Từng lọn tóc được phân lớp rõ ràng (layered hair strands), có điểm nhấn sáng mềm mại (soft hair highlights) và hiệu ứng chuyển tông mượt mà.
 
-### 5.3. Frontend UI Integration
-- All character images are consumed directly by the client UI via standard Next.js image loading or `<img>` tags pointing to `/images/{filename}`.
-- Dedicated interactive preview and inspection tool: **Pilot Art Gallery** (`components/game/pilot-gallery.tsx`), allowing high-resolution inspection, portrait/full-body toggle, gender filtering, metadata review, and 1:1 image verification.
+2. **Nét Vẽ (Linework & Inking)**:
+   - Nét vẽ kỹ thuật số (digital line art) cực kỳ sắc sảo, sạch sẽ, tinh tế với sự biến thiên độ dày mỏng (line-weight) hợp lý.
+   - Tuyệt đối không có viền răng cưa, nét lem nhem, nét phác thảo thô hay viền vector mờ nhòe.
+
+3. **Tô Màu & Đổ Bóng (Coloring & Cel-Shading)**:
+   - Kết hợp giữa kỹ thuật đổ bóng cel-shading phân lớp sắc nét và chuyển màu mềm kỹ thuật số (soft digital painting) cho da và tóc.
+   - Thể hiện rõ sự khác biệt giữa các chất liệu: vải sợi tổng hợp mờ (matte flight suit fabric), tấm giáp carbon bóng bẩy (glossy carbon plates), kim loại phay xước (brushed titanium/steel) và dải đèn LED/plasma phát quang rực rỡ.
+   - **Ánh sáng ven điện ảnh (Volumetric Rim Lighting)**: Đổ sáng viền cơ thể bằng màu năng lượng đặc trưng của GEAR (cyan, violet hoặc hổ phách), tạo hiệu ứng tách biệt với nền và tăng chiều sâu không gian.
+
+4. **Dáng Đứng & Bố Cục (Pose & Silhouette)**:
+   - Dáng đứng tự tin, tư thế sẵn sàng chiến đấu (combat-ready stance), toát lên khí chất quân nhân hoặc chuyên gia không gian.
+   - Đường bao hình thể (silhouette) rõ ràng, dễ nhận diện ngay cả ở kích thước thu nhỏ.
+
+### 3.2. Quy Tắc Kỷ Luật "Anti-Slop" (Nghiêm Cấm Tuyệt Đối)
+- ❌ **CẤM Pixel Art / Retro Sprites**: Tuyệt đối không dùng phong cách 8-bit, 16-bit, sprite pixel, hình vẽ răng cưa pixelated hay texture phong cách retro.
+- ❌ **CẤM Code-Drawn Graphics / SVG**: Tuyệt đối không dùng file SVG lập trình bằng code, không vẽ canvas 2D hay tạo hình khối CSS để thay thế nhân vật.
+- ❌ **CẤM Chibi / Low-Poly 3D**: Không sử dụng tạo hình đầu to thân nhỏ (super-deformed), không dùng mô hình 3D thô sơ hay hình khối voxel.
+- ❌ **CẤM Placeholder & Watermark**: Không sử dụng hình ảnh tạm, hộp màu xám, watermark AI, viền UI giả lập hay chữ chèn đè lên hình ảnh.
 
 ---
 
-## 6. Prompt Engineering Architecture & PixAI Catalog
+## 4. QUY ĐỊNH YÊU CẦU BẮT BUỘC CHO MỖI PHI CÔNG: 16 ASSETS MASTER (PORTRAIT & FULL-BODY)
 
-For external image generation pipelines (such as PixAI, Stable Diffusion XL, Animagine XL, NovelAI), refer directly to the dedicated catalog:
+Mỗi phi công trong danh sách 8 nhân vật chính thức của STARFRONT **bắt buộc phải có đầy đủ 02 asset ảnh raster phân giải cao chuyên biệt**:
+
+1. **Ảnh Chân Dung (Portrait Asset — Tỉ lệ 1:1)**:
+   - **Kích thước**: `1024 × 1024 px`.
+   - **Góc chụp**: Cận cảnh từ ngực lên đến đỉnh đầu (bust shot / head & shoulders).
+   - **Mục đích sử dụng**: Avatar người chơi, thẻ bài đơn vị trên bản đồ chiến thuật, khung truyền tin đàm thoại (HUD comms), giao diện chọn lượt trong trận đấu.
+   - **Trọng tâm hình ảnh**: Gương mặt anime biểu cảm, đôi mắt sắc nét, kiểu tóc chi tiết, cổ áo giáp và tai nghe truyền tin tác chiến.
+
+2. **Ảnh Toàn Thân (Full-Body Asset — Tỉ lệ 9:16)**:
+   - **Kích thước**: `900 × 1600 px` (hoặc `1080 × 1920 px`).
+   - **Góc chụp**: Toàn bộ vóc dáng đứng từ đầu đến chân (full figure from head to boots).
+   - **Mục đích sử dụng**: Hồ sơ phi công (Dossier / Pilot Profile), kiểm tra nâng cấp trong Hangar, màn hình tổng kết nhiệm vụ, bộ sưu tập Pilot Gallery.
+   - **Trọng tâm hình ảnh**: Trọn vẹn trang phục chiến đấu, giáp chân, thắt lưng phụ kiện, bao súng, vũ khí cầm tay và tư thế chiến đấu đặc trưng.
+
+### 4.1. Bảng Phân Bổ 16 Image Assets Cho 8 Phi Công Canonical
+
+| STT | Mã Phi Công | Họ Tên & Biệt Danh | Giới Tính & Vai Trò | Hệ GEAR & Màu Năng Lượng | File Chân Dung (Portrait 1:1) | File Toàn Thân (Full-Body 9:16) |
+|:---:|---|---|---|---|---|---|
+| 1 | `marcus` | **Marcus Thorne**<br>`WAR DOG / IRONCLAD` | Nam (30 tuổi)<br>Chỉ Huy Tuyến Đầu | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/marcus-portrait.png` | `/public/images/marcus-fullbody.png` |
+| 2 | `valentine` | **Valentine Vance**<br>`AEGIS ANGEL` | Nữ (22 tuổi)<br>Chuyên Viên Khiên Nano | **Aegis GEAR**<br>Amber Gold (`#f59e0b`) | `/public/images/valentine-portrait.png` | `/public/images/valentine-fullbody.png` |
+| 3 | `alviss` | **Alviss Drake**<br>`GHOSTFIRE` | Nam (26 tuổi)<br>Phi Công Siêu Thanh | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/alviss-portrait.png` | `/public/images/alviss-fullbody.png` |
+| 4 | `eric` | **Eric Brandt**<br>`BUNKER BREAKER` | Nam (28 tuổi)<br>Pháo Thủ Hạng Nặng | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/eric-portrait.png` | `/public/images/eric-fullbody.png` |
+| 5 | `lyra` | **Lyra Vance**<br>`VALKYRIE` | Nữ (24 tuổi)<br>Nữ Kiếm Sĩ Cơ Động | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/lyra-portrait.png` | `/public/images/lyra-fullbody.png` |
+| 6 | `kaelen` | **Kaelen Voss**<br>`CIPHER` | Nữ (25 tuổi)<br>Hacker Tác Chiến Điện Tử | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/kaelen-portrait.png` | `/public/images/kaelen-fullbody.png` |
+| 7 | `selena` | **Selena Cross**<br>`SOLARIS` | Nữ (27 tuổi)<br>Sĩ Quan Chùm Năng Lượng | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/selena-portrait.png` | `/public/images/selena-fullbody.png` |
+| 8 | `victor` | **Victor Stone**<br>`BASTION` | Nam (34 tuổi)<br>Vệ Binh Pháo Đài Thép | **Aegis GEAR**<br>Amber Gold (`#f59e0b`) | `/public/images/victor-portrait.png` | `/public/images/victor-fullbody.png` |
+
+*Ghi chú về thiết lập nhân vật: Alviss Drake bắt buộc là NAM (phi công siêu thanh ngạo nghễ, tài hoa). Tỉ lệ giới tính 8 phi công cân bằng tuyệt đối: 4 Nam : 4 Nữ.*
+
+---
+
+## 5. THÔNG SỐ KỸ THUẬT & KIẾN TRÚC TỆP TIN (TECHNICAL SPECIFICATIONS)
+
+### 5.1. Quy Cách Lưu Trữ & Đường Dẫn
+- **Thư mục lưu trữ gốc**: `/public/images/`
+- **Đường dẫn truy cập Web/Client**: `/images/{tên-file}`
+- **Quy tắc đặt tên file**:
+  - Chân dung: `{mã-phi-công}-portrait.png` (Ví dụ: `marcus-portrait.png`)
+  - Toàn thân: `{mã-phi-công}-fullbody.png` (Ví dụ: `marcus-fullbody.png`)
+- **Định dạng file**: 32-bit PNG (RGBA với kênh alpha trong suốt hoặc phông nền xưởng cơ khí/hangar sci-fi ánh sáng điện ảnh).
+- **Mã hóa màu**: sRGB, 8-bit per channel color depth.
+
+### 5.2. Tích Hợp Giao Diện Trực Quan (UI Integration)
+- Toàn bộ 16 asset ảnh phải được tham chiếu trực tiếp trong mã nguồn giao diện (Next.js `<Image>` hoặc `<img>`).
+- Module kiểm tra và xem trước chuyên dụng: **Pilot Art Gallery** (`components/game/pilot-gallery.tsx`), hỗ trợ:
+  - Xem ảnh phóng to độ nét cao với tỉ lệ gốc 1:1.
+  - Chuyển đổi linh hoạt giữa chế độ xem Chân dung (Portrait) và Toàn thân (Full-Body).
+  - Lọc theo giới tính, vai trò chiến đấu, hệ GEAR liên kết.
+  - Kiểm tra trạng thái tồn tại và tính hợp lệ của từng tệp hình ảnh.
+
+---
+
+## 6. HỆ THỐNG PROMPT CHUẨN HÓA CHO PIPELINE NGOÀI (PIXAI & SDXL CATALOG)
+
+Khi triển khai tạo ảnh qua các mô hình chuyên biệt bên ngoài (PixAI Moonbeam, Animagine XL v3.1, NovelAI, SDXL Anime), tham khảo danh mục prompt chi tiết tại:  
 👉 **`PIXAI_CHARACTER_PROMPTS.md`**
 
-### 6.1. Universal Quality Prompt Header
+### 6.1. Khung Prompt Chất Lượng Phổ Quát (Universal Positive Prompt Header)
 ```text
 masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art,
 clean line art, extremely detailed anime face, expressive detailed eyes, beautifully rendered layered hair,
@@ -143,25 +166,26 @@ sophisticated cel shading with smooth digital painting gradients, cinematic ligh
 futuristic sci-fi military combat uniform, sci-fi exosuit plating inspired by STARFRONT GEAR artwork
 ```
 
-### 6.2. Universal Negative Prompt
+### 6.2. Khung Prompt Phủ Định Phổ Quát (Universal Negative Prompt)
 ```text
-lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality,
-low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, pixel art, 8-bit, 16-bit,
-retro sprites, chibi, voxel, low-poly, 3d render, deformed, disfigured, poorly drawn face, mutated limbs
+(worst quality, low quality, normal quality, lowres:1.4), (pixel art, retro pixel, 8-bit, 16-bit, sprite, pixelated, dithering:1.6),
+(low poly, blocky, voxel, 3d game render:1.3), (chibi, deformed, bad anatomy, bad hands, missing fingers, extra fingers, mutated hands:1.4),
+(poorly drawn face, bad eyes, crossed eyes:1.3), (blurry, fuzzy, jpeg artifacts, compression artifacts:1.3),
+watermark, signature, artist name, username, text, logo, border, frame, monochrome, sketch, draft, amateur drawing
 ```
 
 ---
 
-## 7. Quy Tắc Bắt Buộc: Bảo Vệ Image Assets Khi Hết Quota Tạo Ảnh (Asset Protection Protocol on Quota Exhaustion / HTTP 429)
+## 7. QUY TẮC BẮT BUỘC: BẢO VỆ IMAGE ASSETS KHI HẾT QUOTA TẠO ẢNH (ASSET PROTECTION PROTOCOL)
 
-Nhằm bảo toàn tính toàn vẹn của hệ thống tài nguyên đồ họa và ngăn ngừa tình trạng suy giảm chất lượng hiển thị trong dự án STARFRONT, toàn bộ quy trình sinh ảnh và quản trị asset bắt buộc phải tuân thủ nghiêm ngặt các quy tắc sau:
+Nhằm bảo toàn tính toàn vẹn của hệ thống đồ họa và ngăn ngừa tình trạng suy giảm chất lượng hiển thị trong dự án STARFRONT, toàn bộ quy trình sinh ảnh và quản trị asset bắt buộc phải tuân thủ nghiêm ngặt các quy tắc sau:
 
 ### 7.1. Đình chỉ ngay lập tức khi cạn kiệt tài nguyên / Quota Exhausted
 - Khi công cụ tạo ảnh (AI Studio Image Generation / Gemini API) gặp bất kỳ điều kiện nào sau đây:
   - Hết quota (Quota Exceeded / Resource Exhausted).
   - Hết băng thông hoặc giới hạn tốc độ (Rate Limit).
   - Lỗi `429 RESOURCE_EXHAUSTED` hoặc `HTTP 429 Too Many Requests`.
-- **Hành động bắt buộc**: **DỪNG NGAY LẬP TỨC** toàn bộ tác vụ gọi sinh ảnh tiếp theo và **GIỮ NGUYÊN 100% CÁC ASSET HÌNH ẢNH HIỆN CÓ** trên hệ thống tệp (`/public/images/`). Không cố gắng retry liên tục gây lỗi luồng làm việc.
+- **Hành động bắt buộc**: **DỪNG NGAY LẬP TỨC** toàn bộ tác vụ gọi sinh ảnh tiếp theo và **GIỮ NGUYÊN 100% CÁC ASSET HÌNH ẢNH HIỆN CÓ** trên hệ thống tệp (`/public/images/`). Tuyệt đối không retry liên tục gây tắc nghẽn luồng làm việc.
 
 ### 7.2. Tuyệt đối không ghi đè, xóa hoặc chỉnh sửa asset hiện có
 - **CẤM TUYỆT ĐỐI**:
@@ -180,7 +204,7 @@ Nhằm bảo toàn tính toàn vẹn của hệ thống tài nguyên đồ họa
 - Khi chưa có yêu cầu rõ ràng từ người dùng:
   - Không được tự ý chuyển đổi sang các phương pháp tạo ảnh tạm thời hoặc không đạt tiêu chuẩn nghệ thuật.
   - Không tự ý dùng các mô hình văn bản (LLM) để sinh mã code mô phỏng hình ảnh.
-  - Nếu cần tạo ảnh ngoài môi trường bị giới hạn, chỉ chuẩn bị bộ prompt chuẩn hóa (như catalog `PIXAI_CHARACTER_PROMPTS.md`) để thực hiện qua pipeline chuyên biệt bên ngoài, sau đó nạp file ảnh thành phẩm đạt chuẩn vào dự án.
+  - Nếu cần tạo ảnh ngoài môi trường bị giới hạn, chuẩn bị bộ prompt chuẩn hóa (như catalog `PIXAI_CHARACTER_PROMPTS.md`) để thực hiện qua pipeline chuyên biệt bên ngoài, sau đó nạp file ảnh thành phẩm đạt chuẩn vào dự án.
 
 ### 7.5. Điều kiện tiên quyết để thay thế hoặc cập nhật Asset
 Chỉ được phép thay thế một file ảnh hiện có khi và chỉ khi thỏa mãn **toàn bộ 4 điều kiện** sau:
@@ -191,11 +215,12 @@ Chỉ được phép thay thế một file ảnh hiện có khi và chỉ khi th
 
 ---
 
-## 8. Version History & Enactment
+## 8. LỊCH SỬ PHIÊN BẢN & HIỆU LỰC (VERSION HISTORY & ENACTMENT)
 
-- **v1.0 (Initial)**: Tactical game mechanics and sprite asset drafting.
-- **v2.0 (Revision)**: GEAR artwork integration and 8-pilot roster stabilization.
-- **v3.0**: Official formalization of the **Premium Japanese Anime Sci-Fi Character Illustration Standard**, institutionalization of the **16-Asset Requirement (8 Portraits + 8 Full-Bodies)**, hard-linking of the **GEAR Artwork Sci-Fi Reference System**, and cross-referencing with **`PIXAI_CHARACTER_PROMPTS.md`**.
-- **v3.1 (Current Enacted)**: Bổ sung chính thức **Mục 7: Quy Tắc Bắt Buộc Bảo Vệ Image Assets Khi Hết Quota Tạo Ảnh (HTTP 429 RESOURCE_EXHAUSTED Protocol)** — nghiêm cấm xóa/ghi đè/thay thế bằng SVG, CSS hay code-drawn graphics; bảo toàn tuyệt đối tài nguyên hiện hữu.
+- **v1.0 (Khởi tạo)**: Thiết lập cơ chế game chiến thuật và phác thảo tài nguyên pixel ban đầu.
+- **v2.0 (Cơ bản hóa)**: Tích hợp hình ảnh 3D GEAR và xác lập danh sách 8 phi công ban đầu.
+- **v3.0 (Đột phá)**: Chính thức xác lập **Tiêu Chuẩn Minh Họa Nhân Vật Anime Khoa Học Viễn Tưởng Cao Cấp**, ban hành **Quy định bắt buộc 16 Asset (8 Portrait + 8 Full-Body)**, liên kết trực tiếp hệ thống **Tham chiếu thiết kế GEAR hiện có**, và xuất bản danh mục prompt `PIXAI_CHARACTER_PROMPTS.md`.
+- **v3.1**: Bổ sung quy tắc bắt buộc bảo vệ Image Assets khi hết quota (HTTP 429 Protocol) — cấm hạ cấp bằng SVG/CSS/Canvas/Pixel art.
+- **v3.2 (Hiện tại - Hiệu lực tối cao)**: Tài liệu hóa song ngữ và chuẩn hóa toàn diện: Minh họa nhân vật anime sci-fi cao cấp, kim chỉ nam tham chiếu từ hình ảnh GEAR hiện có, và quy định bắt buộc 16 Image Assets (Portrait & Full-Body) cho toàn bộ phi công STARFRONT.
 
-*This document represents the mandatory artistic law and asset lifecycle governance for all current and future STARFRONT visual development.*
+*Tài liệu này là quy chuẩn nghệ thuật chính thức và luật bất biến áp dụng cho toàn bộ hoạt động thiết kế, lập trình và quản lý tài nguyên của STARFRONT.*

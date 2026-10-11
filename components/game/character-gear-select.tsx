@@ -9,6 +9,7 @@ import {
   Boxes,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ChevronUp,
   Cpu,
@@ -145,9 +146,14 @@ export function CharacterGearSelect({
   // Modal xem chi tiết kỹ năng
   const [inspectSkillSlot, setInspectSkillSlot] = useState<SkillSlotDetail | null>(null)
 
-  // Modal xem chi tiết & phân bổ điểm thuộc tính phi công từ danh sách
-  const [inspectModalOpen, setInspectModalOpen] = useState(false)
+  // Modal xem chi tiết & phân bổ điểm thuộc tính phi công nổi bật (Pilot Spotlight Dialog)
+  const [pilotDialogOpen, setPilotDialogOpen] = useState(false)
   const [inspectPilotId, setInspectPilotId] = useState<string>(selectedPilotId)
+
+  // Modal xem chi tiết cơ giáp / phi cơ nổi bật (Gear / Aircraft Spotlight Dialog)
+  const [gearDialogOpen, setGearDialogOpen] = useState(false)
+  const [inspectGearId, setInspectGearId] = useState<StarfrontGearId>(selectedGearId)
+
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [isAdminCpOpen, setIsAdminCpOpen] = useState(false)
 
@@ -292,11 +298,51 @@ export function CharacterGearSelect({
     setSelectedGearId(gearId)
   }
 
-  // Mở modal kiểm tra & phân bổ điểm phi công
-  const handleOpenInspect = (pilotId: string) => {
+  // Mở modal spotlight nổi bật phi công
+  const handleOpenPilotSpotlight = (pilotId: string) => {
     playClickSound()
     setInspectPilotId(pilotId)
-    setInspectModalOpen(true)
+    setPilotDialogOpen(true)
+  }
+
+  // Mở modal spotlight nổi bật cơ giáp
+  const handleOpenGearSpotlight = (gearId: StarfrontGearId) => {
+    playClickSound()
+    setInspectGearId(gearId)
+    setGearDialogOpen(true)
+  }
+
+  // Xác nhận chọn phi công từ modal spotlight và chuyển bước
+  const handleConfirmPilotFromSpotlight = (pilotId: string) => {
+    playEquipSound()
+    setSelectedPilotId(pilotId)
+    const pilotDef = STARFRONT_PILOT_MAP[pilotId]
+    if (pilotDef && pilotDef.recommendedGear) {
+      setSelectedGearId(pilotDef.recommendedGear)
+    }
+    setPilotDialogOpen(false)
+    if (currentStep === 1) {
+      setCurrentStep(2)
+    }
+    setFeedbackMessage({
+      type: "success",
+      text: `Đã chọn phi công [${pilotDef?.name || pilotId}]! Hãy chọn cơ giáp xuất kích phù hợp.`,
+    })
+  }
+
+  // Xác nhận chọn cơ giáp từ modal spotlight và chuyển bước
+  const handleConfirmGearFromSpotlight = (gearId: StarfrontGearId) => {
+    playEquipSound()
+    setSelectedGearId(gearId)
+    setGearDialogOpen(false)
+    if (currentStep === 2) {
+      setCurrentStep(3)
+    }
+    const gearDef = STARFRONT_GEAR_DEFS[gearId]
+    setFeedbackMessage({
+      type: "success",
+      text: `Đã chọn cơ giáp [${gearDef?.name || gearId}]! Tiến hành đánh giá & khóa xuất kích ở Bước 3.`,
+    })
   }
 
   // Phân bổ 1 điểm thuộc tính cho phi công
@@ -395,7 +441,11 @@ export function CharacterGearSelect({
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Trái: Tên Phân Hệ & Huy hiệu Cặp Đôi Đang Hoạt Động */}
           <div className="flex items-center gap-3">
-            <div className="relative size-10 shrink-0 overflow-hidden rounded-sm border border-cyan-400/60 bg-black/60 shadow-[0_0_12px_rgba(34,211,238,0.3)]">
+            <div
+              onClick={() => handleOpenPilotSpotlight(activePilotId)}
+              className="relative size-10 shrink-0 overflow-hidden rounded-sm border border-cyan-400/60 bg-black/60 shadow-[0_0_12px_rgba(34,211,238,0.3)] cursor-pointer hover:border-cyan-300 transition-colors"
+              title="Bấm để mở hồ sơ nổi bật phi công"
+            >
               <img
                 src={activePilotDef.avatar}
                 alt={activePilotDef.name}
@@ -416,13 +466,27 @@ export function CharacterGearSelect({
                 </span>
               </div>
               <div className="flex items-center gap-2 mt-0.5 text-xs font-mono">
-                <span className="font-bold text-cyan-300">{activePilotDef.name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleOpenPilotSpotlight(activePilotId)}
+                  className="font-bold text-cyan-300 hover:text-cyan-100 hover:underline cursor-pointer"
+                  title="Xem chi tiết phi công"
+                >
+                  {activePilotDef.name}
+                </button>
                 <span className="text-muted-foreground">·</span>
-                <span
-                  className="size-2 rounded-full"
-                  style={{ backgroundColor: activeGearDef.color }}
-                />
-                <span className="font-bold text-white">{activeGearDef.name}</span>
+                <button
+                  type="button"
+                  onClick={() => handleOpenGearSpotlight(activeGearId)}
+                  className="flex items-center gap-1 font-bold text-white hover:text-cyan-300 hover:underline cursor-pointer"
+                  title="Xem chi tiết cơ giáp"
+                >
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: activeGearDef.color }}
+                  />
+                  <span>{activeGearDef.name}</span>
+                </button>
                 <span className="text-[10px] text-muted-foreground">({activeGearDef.role})</span>
               </div>
             </div>
@@ -601,8 +665,8 @@ export function CharacterGearSelect({
                       CHỌN PHI CÔNG XUẤT KÍCH (8 CHIẾN BINH THIÊN HÀ)
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-muted-foreground">
-                    Bấm thẻ để chọn · Bấm "Chi Tiết" để phân bổ điểm & xem đặc trưng
+                  <span className="text-[11px] font-mono text-cyan-300/80">
+                    Bấm vào bất kỳ phi công nào để mở HỒ SƠ NỔI BẬT (Full-Body Art, Chỉ Số & Kỹ Năng) và xác nhận chọn
                   </span>
                 </div>
 
@@ -615,22 +679,22 @@ export function CharacterGearSelect({
                     return (
                       <div
                         key={pilot.id}
-                        onClick={() => handleSelectPilotInFlow(pilot.id)}
+                        onClick={() => handleOpenPilotSpotlight(pilot.id)}
                         className={cn(
                           "group relative flex flex-col justify-between rounded-sm border p-3 transition-all cursor-pointer",
                           isSelected
                             ? "border-cyan-400 bg-cyan-950/70 shadow-[0_0_15px_rgba(34,211,238,0.25)] ring-1 ring-cyan-400/50"
-                            : "border-border/60 bg-panel/50 opacity-85 hover:opacity-100 hover:border-cyan-500/40 hover:bg-panel/90",
+                            : "border-border/60 bg-panel/50 opacity-85 hover:opacity-100 hover:border-cyan-500/50 hover:bg-panel/90 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)]",
                         )}
                       >
                         <div>
                           {/* Header: Ảnh chân dung + Tên + Callsign */}
                           <div className="flex items-start gap-2.5">
-                            <div className="relative size-14 shrink-0 overflow-hidden rounded-sm border border-cyan-500/40 bg-black/60 shadow-sm">
+                            <div className="relative size-14 shrink-0 overflow-hidden rounded-sm border border-cyan-500/40 bg-black/60 shadow-sm group-hover:border-cyan-400 transition-colors">
                               <img
                                 src={pilot.avatar}
                                 alt={pilot.name}
-                                className="size-full object-cover object-top"
+                                className="size-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                               />
                               <span className="absolute bottom-0 right-0 bg-cyan-950/90 px-1 font-mono text-[8px] font-bold text-cyan-300">
                                 Cấp {pData.level}
@@ -688,12 +752,12 @@ export function CharacterGearSelect({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleOpenInspect(pilot.id)
+                              handleOpenPilotSpotlight(pilot.id)
                             }}
-                            className="text-cyan-400 hover:text-cyan-200 underline flex items-center gap-0.5 cursor-pointer"
+                            className="text-cyan-400 hover:text-cyan-200 underline flex items-center gap-0.5 cursor-pointer font-bold"
                           >
                             <Eye className="size-3" />
-                            <span>Chi Tiết</span>
+                            <span>Mở Hồ Sơ Nổi Bật</span>
                           </button>
 
                           <span className={cn(
@@ -730,8 +794,8 @@ export function CharacterGearSelect({
                       CHỌN CƠ GIÁP PHÙ HỢP // PHI CÔNG ĐANG CHỌN: {flowPilotDef.name.toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-muted-foreground">
-                    Cơ giáp có viền sáng là gợi ý hiệp đồng tốt nhất (Synergy Match)
+                  <span className="text-[11px] font-mono text-cyan-300/80">
+                    Bấm vào bất kỳ cơ giáp nào để mở HỒ SƠ NỔI BẬT (3D Concept Art, Thông Số & Hiệp Đồng) và xác nhận chọn
                   </span>
                 </div>
 
@@ -744,12 +808,12 @@ export function CharacterGearSelect({
                     return (
                       <div
                         key={gId}
-                        onClick={() => handleSelectGearInFlow(gId)}
+                        onClick={() => handleOpenGearSpotlight(gId)}
                         className={cn(
                           "group relative flex flex-col justify-between rounded-sm border p-3.5 transition-all cursor-pointer",
                           isSelected
                             ? "border-cyan-400 bg-cyan-950/70 shadow-[0_0_15px_rgba(34,211,238,0.25)] ring-1 ring-cyan-400/50"
-                            : "border-border/60 bg-panel/50 opacity-85 hover:opacity-100 hover:border-cyan-500/40 hover:bg-panel/90",
+                            : "border-border/60 bg-panel/50 opacity-85 hover:opacity-100 hover:border-cyan-500/50 hover:bg-panel/90 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)]",
                         )}
                       >
                         <div>
@@ -770,7 +834,7 @@ export function CharacterGearSelect({
                             </div>
 
                             <div
-                              className="w-16 h-12 shrink-0 rounded overflow-hidden border bg-black/60 shadow-sm"
+                              className="w-16 h-12 shrink-0 rounded overflow-hidden border bg-black/60 shadow-sm group-hover:scale-105 transition-transform"
                               style={{ borderColor: `${def.color}70` }}
                             >
                               <img
@@ -799,10 +863,18 @@ export function CharacterGearSelect({
                         </div>
 
                         <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono">
-                          <span className="text-muted-foreground">
-                            Gốc: <strong className="text-white">{def.baseStats.speed}</strong> SPD ·{" "}
-                            <strong className="text-white">{def.baseStats.attack}</strong> ATK
-                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleOpenGearSpotlight(gId)
+                            }}
+                            className="text-cyan-400 hover:text-cyan-200 underline flex items-center gap-0.5 cursor-pointer font-bold"
+                          >
+                            <Eye className="size-3" />
+                            <span>Mở Hồ Sơ Cơ Giáp</span>
+                          </button>
+
                           <span className={cn(
                             "font-bold",
                             isSelected ? "text-cyan-300" : "text-muted-foreground group-hover:text-cyan-300"
@@ -840,16 +912,23 @@ export function CharacterGearSelect({
                 <div className="rounded-sm border border-cyan-500/50 bg-black/60 p-4">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     {/* Phi công */}
-                    <div className="flex items-center gap-3">
-                      <div className="size-16 overflow-hidden rounded-sm border border-cyan-400 bg-black/60">
+                    <div
+                      onClick={() => handleOpenPilotSpotlight(flowPilotDef.id)}
+                      className="flex items-center gap-3 cursor-pointer group p-2 rounded border border-cyan-500/30 bg-black/40 hover:bg-cyan-950/60 hover:border-cyan-400 transition-colors"
+                      title="Bấm để mở hồ sơ nổi bật hoặc đổi phi công"
+                    >
+                      <div className="size-16 overflow-hidden rounded-sm border border-cyan-400 bg-black/60 shrink-0">
                         <img
                           src={flowPilotDef.avatar}
                           alt={flowPilotDef.name}
-                          className="size-full object-cover"
+                          className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       </div>
                       <div>
-                        <span className="font-display text-base font-bold text-white">{flowPilotDef.name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-display text-base font-bold text-white group-hover:text-cyan-300">{flowPilotDef.name}</span>
+                          <span className="text-[10px] text-cyan-400 font-mono">(Xem / Đổi)</span>
+                        </div>
                         <span className="block text-xs text-cyan-300 font-mono">{flowPilotDef.callsign} · Cấp {flowPilotProg.level}</span>
                         <span className="text-[10px] text-muted-foreground font-mono">{flowPilotDef.specialty}</span>
                       </div>
@@ -861,16 +940,23 @@ export function CharacterGearSelect({
                     </div>
 
                     {/* Cơ giáp */}
-                    <div className="flex items-center gap-3">
-                      <div className="size-16 p-1 rounded-sm border border-cyan-400 bg-black/60">
+                    <div
+                      onClick={() => handleOpenGearSpotlight(selectedGearId)}
+                      className="flex items-center gap-3 cursor-pointer group p-2 rounded border border-cyan-500/30 bg-black/40 hover:bg-cyan-950/60 hover:border-cyan-400 transition-colors"
+                      title="Bấm để mở hồ sơ nổi bật hoặc đổi cơ giáp"
+                    >
+                      <div className="size-16 p-1 rounded-sm border border-cyan-400 bg-black/60 shrink-0">
                         <img
                           src={flowGearDef.illustration || `/images/${selectedGearId}.svg`}
                           alt={flowGearDef.name}
-                          className="size-full object-contain"
+                          className="size-full object-contain transition-transform duration-300 group-hover:scale-105"
                         />
                       </div>
                       <div>
-                        <span className="font-display text-base font-bold text-white">{flowGearDef.name}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-display text-base font-bold text-white group-hover:text-cyan-300">{flowGearDef.name}</span>
+                          <span className="text-[10px] text-cyan-400 font-mono">(Xem / Đổi)</span>
+                        </div>
                         <span className="block text-xs text-cyan-300 font-mono">{flowGearDef.role} · Cấp {progression.level}</span>
                         <span className="text-[10px] text-muted-foreground font-mono">{flowGearDef.passive.name}</span>
                       </div>
@@ -1698,11 +1784,17 @@ export function CharacterGearSelect({
       )}
 
       {/* ====================================================================
-          MODAL: CHI TIẾT & PHÂN BỔ ĐIỂM THUỘC TÍNH PHI CÔNG (INSPECT MODAL)
+          MODAL 1: HỒ SƠ CHI TIẾT & NỔI BẬT PHI CÔNG (PILOT SPOTLIGHT DIALOG)
           ==================================================================== */}
-      {inspectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl rounded-sm border border-cyan-500/60 bg-panel p-5 shadow-2xl space-y-4">
+      {pilotDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-5 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setPilotDialogOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-sm border border-cyan-500/70 bg-panel/95 shadow-[0_0_50px_rgba(34,211,238,0.25)] overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             {(() => {
               const pDef = STARFRONT_PILOT_MAP[inspectPilotId] || STARFRONT_PILOTS[0]
               const pProg = pilotsData[inspectPilotId] || {
@@ -1714,134 +1806,648 @@ export function CharacterGearSelect({
               }
               const pExpReq = getPilotExpRequiredForLevel(pProg.level)
               const pExpPct = Math.min(100, Math.round((pProg.exp / pExpReq) * 100))
+              const pilotIdx = STARFRONT_PILOTS.findIndex((p) => p.id === inspectPilotId)
+              const prevPilot = STARFRONT_PILOTS[(pilotIdx - 1 + STARFRONT_PILOTS.length) % STARFRONT_PILOTS.length]
+              const nextPilot = STARFRONT_PILOTS[(pilotIdx + 1) % STARFRONT_PILOTS.length]
+              const recommendedGearDef = STARFRONT_GEAR_DEFS[pDef.recommendedGear]
+              const isCurrentlyActive = activePairing.pilotId === pDef.id
 
               return (
                 <>
-                  <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
-                    <div className="flex items-center gap-2">
-                      <UserCheck className="size-5 text-cyan-400" />
+                  {/* Top Header */}
+                  <div className="flex items-center justify-between border-b border-cyan-500/40 bg-black/60 px-4 py-3 shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="size-8 rounded-sm bg-cyan-950 border border-cyan-500/60 flex items-center justify-center text-cyan-300">
+                        <UserCheck className="size-4" />
+                      </div>
                       <div>
-                        <h3 className="font-display text-sm font-bold uppercase tracking-wider text-white">
-                          HỒ SƠ CHI TIẾT PHI CÔNG // {pDef.name.toUpperCase()}
-                        </h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-display text-sm sm:text-base font-bold uppercase tracking-wider text-white">
+                            HỒ SƠ CHI TIẾT & NỔI BẬT PHI CÔNG // {pDef.name.toUpperCase()}
+                          </h3>
+                          <span className={cn(
+                            "rounded px-1.5 py-0.5 text-[9px] font-mono font-bold border",
+                            pDef.gender === "Nữ" ? "bg-pink-950/80 text-pink-300 border-pink-500/50" : "bg-blue-950/80 text-blue-300 border-blue-500/50"
+                          )}>
+                            {pDef.gender} · {pDef.age}T
+                          </span>
+                          {isCurrentlyActive && (
+                            <span className="rounded bg-emerald-950/80 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-300 border border-emerald-500/40">
+                              ĐANG XUẤT KÍCH
+                            </span>
+                          )}
+                        </div>
                         <span className="font-mono text-xs text-cyan-400">
-                          {pDef.callsign} · {pDef.gender} · {pDef.age} Tuổi
+                          CALLSIGN: {pDef.callsign} · {pDef.title}
                         </span>
                       </div>
                     </div>
-                    <button
-                      onClick={() => setInspectModalOpen(false)}
-                      className="size-6 flex items-center justify-center rounded hover:bg-white/10 text-muted-foreground hover:text-white cursor-pointer"
-                    >
-                      <X className="size-4" />
-                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <span className="hidden sm:inline font-mono text-[11px] text-muted-foreground">
+                        Phi công {pilotIdx + 1}/{STARFRONT_PILOTS.length}
+                      </span>
+                      <button
+                        onClick={() => setPilotDialogOpen(false)}
+                        className="size-7 flex items-center justify-center rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                        title="Đóng (Esc)"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    {/* Ảnh lớn và Đặc trưng */}
-                    <div className="md:col-span-5 flex flex-col items-center">
-                      <div className="relative size-48 sm:size-56 overflow-hidden rounded-sm border border-cyan-500/50 bg-black/70 shadow-lg">
-                        <img
-                          src={pDef.fullBodyAvatar || pDef.avatar}
-                          alt={pDef.name}
-                          className="size-full object-cover object-top"
-                        />
+                  {/* Body Content (Scrollable) */}
+                  <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                      {/* Cột Trái: Trưng Bày Art Toàn Thân / Chân Dung Nổi Bật (5 cột) */}
+                      <div className="lg:col-span-5 flex flex-col items-center">
+                        <div className="relative w-full aspect-[9/14] sm:aspect-[9/13] max-h-[420px] rounded-sm border-2 border-cyan-400/70 bg-gradient-to-b from-cyan-950/40 via-black to-cyan-950/60 p-1 shadow-[0_0_25px_rgba(34,211,238,0.25)] overflow-hidden group">
+                          {/* Scanline & HUD Reticles */}
+                          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/5 to-cyan-500/10 pointer-events-none" />
+                          <div className="absolute top-2 left-2 font-mono text-[9px] text-cyan-400/80 bg-black/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                            STARFRONT PILOT // {pDef.id.toUpperCase()}
+                          </div>
+                          <div className="absolute top-2 right-2 font-mono text-[9px] text-amber-400 bg-black/60 px-1.5 py-0.5 rounded border border-amber-500/40 font-bold">
+                            CẤP {pProg.level}
+                          </div>
+
+                          <img
+                            src={pDef.fullBodyAvatar || pDef.avatar}
+                            alt={pDef.name}
+                            className="size-full object-cover object-top filter drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-transform duration-500 group-hover:scale-102"
+                          />
+
+                          {/* Gradient bóng chân */}
+                          <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black via-black/70 to-transparent pointer-events-none" />
+
+                          {/* Tên & Lời thoại dưới ảnh */}
+                          <div className="absolute bottom-2 inset-x-2 text-center">
+                            <span className="font-display text-sm font-black uppercase text-white tracking-wider block drop-shadow-md">
+                              {pDef.name}
+                            </span>
+                            <span className="text-[10px] font-mono text-cyan-300 block">
+                              "{pDef.specialty}"
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Quote danh ngôn */}
+                        {pDef.quote && (
+                          <div className="mt-3 rounded bg-black/60 border border-cyan-500/30 p-2.5 text-center w-full">
+                            <p className="text-[11px] italic text-cyan-200 font-mono leading-relaxed">
+                              "{pDef.quote}"
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Đặc Trưng / Traits Tags */}
+                        <div className="mt-2.5 flex flex-wrap gap-1.5 justify-center w-full">
+                          {pDef.traits.map((t, idx) => (
+                            <span
+                              key={idx}
+                              className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-mono text-cyan-200 border border-cyan-500/40"
+                            >
+                              ◆ {t}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Gợi Ý Hiệp Đồng Cơ Giáp Tốt Nhất */}
+                        {recommendedGearDef && (
+                          <div
+                            onClick={() => {
+                              setInspectGearId(pDef.recommendedGear)
+                              setGearDialogOpen(true)
+                            }}
+                            className="mt-3 w-full rounded border border-amber-500/50 bg-gradient-to-r from-amber-950/40 to-black/60 p-2.5 font-mono text-xs cursor-pointer hover:border-amber-400 transition-colors shadow-sm"
+                            title="Bấm để xem chi tiết cơ giáp này"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-amber-400 font-bold uppercase flex items-center gap-1">
+                                <Sparkles className="size-3 text-amber-400" /> CƠ GIÁP HIỆP ĐỒNG TỐI ƯU
+                              </span>
+                              <span className="text-[9px] text-cyan-400 underline">Xem Cơ Giáp ➔</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="size-2 rounded-full" style={{ backgroundColor: recommendedGearDef.color }} />
+                              <strong className="text-white font-display">{recommendedGearDef.name}</strong>
+                              <span className="text-muted-foreground text-[10px]">({recommendedGearDef.role.split(" ")[0]})</span>
+                            </div>
+                            <p className="text-[10px] text-amber-200/90 mt-1">
+                              {pDef.synergyBonus}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
-                      {pDef.quote && (
-                        <p className="mt-2 text-[10.5px] italic text-cyan-300 font-mono text-center">
-                          "{pDef.quote}"
-                        </p>
-                      )}
+                      {/* Cột Phải: Thuộc Tính, Phân Bổ Điểm & Kỹ Năng Tác Chiến (7 cột) */}
+                      <div className="lg:col-span-7 space-y-3.5">
+                        {/* Tiến trình cấp độ & EXP */}
+                        <div className="rounded bg-black/60 border border-border/60 p-3 space-y-1.5">
+                          <div className="flex items-center justify-between text-xs font-mono">
+                            <span className="text-muted-foreground">TIẾN TRÌNH KINH NGHIỆM CHIẾN ĐẤU</span>
+                            <span className="text-cyan-300 font-bold">
+                              {pProg.exp} / {pExpReq} EXP ({pExpPct}%)
+                            </span>
+                          </div>
+                          <div className="h-1.5 w-full overflow-hidden rounded bg-secondary">
+                            <div
+                              className="h-full bg-gradient-to-r from-cyan-500 to-emerald-400"
+                              style={{ width: `${pExpPct}%` }}
+                            />
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
+                            {pDef.description}
+                          </p>
+                        </div>
 
-                      {/* Đặc Trưng Tags */}
-                      <div className="mt-2 flex flex-wrap gap-1 justify-center">
-                        {pDef.traits.map((t, idx) => (
+                        {/* Điểm Tiềm Năng & Bảng 5 Thuộc Tính Cốt Lõi */}
+                        <div className="rounded border border-cyan-500/40 bg-black/50 p-3 space-y-2.5">
+                          <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                            <div className="flex items-center gap-1.5">
+                              <Gauge className="size-4 text-cyan-400" />
+                              <span className="font-display text-xs font-bold uppercase text-white tracking-wider">
+                                THUỘC TÍNH & PHÂN BỔ ĐIỂM TIỀM NĂNG
+                              </span>
+                            </div>
+                            <div className={cn(
+                              "rounded px-2 py-0.5 font-mono text-xs font-bold border",
+                              pProg.availablePoints > 0
+                                ? "bg-cyan-500/20 text-cyan-300 border-cyan-400 animate-pulse"
+                                : "bg-black/40 text-muted-foreground border-border/40"
+                            )}>
+                              Điểm khả dụng: <strong className="text-white">{pProg.availablePoints}</strong>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            {[
+                              { key: "attack" as PilotAttributeKey, label: "TẤN CÔNG (ATK)", effect: "+2.0 ATK / pt", icon: Crosshair, color: "text-red-400" },
+                              { key: "defense" as PilotAttributeKey, label: "PHÒNG NGỰ (DEF)", effect: "+1.5 DEF / pt", icon: Shield, color: "text-blue-400" },
+                              { key: "agility" as PilotAttributeKey, label: "CƠ ĐỘNG (SPD)", effect: "+1.0 SPD / pt", icon: Wind, color: "text-emerald-400" },
+                              { key: "shield" as PilotAttributeKey, label: "LÁ CHẮN (SHIELD)", effect: "+30 Shield / pt", icon: ShieldAlert, color: "text-cyan-400" },
+                              { key: "tactical" as PilotAttributeKey, label: "CHIẾN THUẬT (CRIT)", effect: "+0.4% Crit / pt", icon: Flame, color: "text-amber-400" },
+                            ].map(({ key, label, effect, icon: Icon, color }) => {
+                              const base = pDef.defaultStats[key] || 0
+                              const val = pProg.allocatedStats[key] || 0
+                              const canAdd = pProg.availablePoints > 0
+
+                              return (
+                                <div
+                                  key={key}
+                                  className="flex items-center justify-between rounded bg-black/60 px-3 py-1.5 border border-border/40 text-xs font-mono"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Icon className={cn("size-3.5", color)} />
+                                    <span className="font-bold text-slate-200">{label}:</span>
+                                    <span className="text-muted-foreground text-[10px]">gốc {base}</span>
+                                    <strong className="text-cyan-300">+{val}</strong>
+                                    <span className="text-[10px] text-muted-foreground ml-0.5">({effect})</span>
+                                  </div>
+
+                                  <button
+                                    disabled={!canAdd}
+                                    onClick={() => handleAllocatePoint(inspectPilotId, key)}
+                                    className={cn(
+                                      "size-6 rounded flex items-center justify-center font-bold text-xs transition-all cursor-pointer",
+                                      canAdd
+                                        ? "bg-cyan-500 text-black hover:bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                                        : "bg-black/60 text-muted-foreground border border-border/40 cursor-not-allowed opacity-40",
+                                    )}
+                                    title={canAdd ? `Cộng 1 điểm vào ${label}` : "Không còn điểm tiềm năng"}
+                                  >
+                                    <Plus className="size-3" />
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 text-[11px] font-mono">
+                            <button
+                              onClick={() => handleResetPoints(inspectPilotId)}
+                              className="flex items-center gap-1 text-amber-300 hover:text-amber-200 cursor-pointer"
+                              title="Cài lại toàn bộ điểm đã phân bổ (Phí 200 credits)"
+                            >
+                              <RotateCcw className="size-3" />
+                              <span>Tẩy điểm tiềm năng (200 Credits)</span>
+                            </button>
+
+                            <span className="text-muted-foreground text-[10px]">
+                              Tối đa +5 điểm mỗi lần lên cấp
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Kỹ Năng Nội Tại (Passive Skill) */}
+                        <div className="rounded border border-amber-500/50 bg-gradient-to-r from-amber-950/20 via-black to-panel p-3 space-y-1.5 font-mono">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-amber-300 font-bold">
+                              <Sparkles className="size-4 text-amber-400" />
+                              <span className="font-display text-xs uppercase">
+                                KỸ NĂNG NỘI TẠI: {pDef.passive.name} ({pDef.passive.nameEn})
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">
+                              NỘI TẠI VĨNH VIỄN
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-200 leading-relaxed">
+                            {pDef.passive.desc}
+                          </p>
+
+                          {pDef.passive.triggerCondition && (
+                            <div className="pt-1 text-[10px] text-muted-foreground">
+                              <strong>Điều kiện kích hoạt:</strong> {pDef.passive.triggerCondition}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Vệt Lửa / Trail Aura (Nếu có) */}
+                        {pDef.trail && (
+                          <div className="rounded border border-cyan-500/30 bg-black/40 p-2.5 space-y-1 font-mono text-[11px]">
+                            <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
+                              <Zap className="size-3.5 text-cyan-400" />
+                              <span>VỆT KHÍ TÁC CHIẾN: {pDef.trail.name}</span>
+                            </div>
+                            <p className="text-muted-foreground text-[10.5px]">
+                              {pDef.trail.bonusSummary}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Modal Footer: Quick Nav & Primary Confirm CTA */}
+                  <div className="border-t border-cyan-500/40 bg-black/70 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                    {/* Điều hướng chuyển phi công */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          playClickSound()
+                          setInspectPilotId(prevPilot.id)
+                        }}
+                        className="flex items-center gap-1 rounded border border-border/60 bg-black/60 px-2.5 py-1.5 font-mono text-xs text-muted-foreground hover:text-white hover:border-cyan-400 transition-colors cursor-pointer"
+                        title={`Xem ${prevPilot.name}`}
+                      >
+                        <ChevronLeft className="size-3.5" />
+                        <span className="hidden sm:inline">Trước: {prevPilot.name.split(" ")[0]}</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          playClickSound()
+                          setInspectPilotId(nextPilot.id)
+                        }}
+                        className="flex items-center gap-1 rounded border border-border/60 bg-black/60 px-2.5 py-1.5 font-mono text-xs text-muted-foreground hover:text-white hover:border-cyan-400 transition-colors cursor-pointer"
+                        title={`Xem ${nextPilot.name}`}
+                      >
+                        <span className="hidden sm:inline">Sau: {nextPilot.name.split(" ")[0]}</span>
+                        <ChevronRight className="size-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setPilotDialogOpen(false)}
+                        className="rounded border border-border/60 bg-black/40 px-3 py-2 font-display text-xs text-muted-foreground hover:text-white cursor-pointer transition-colors"
+                      >
+                        Đóng
+                      </button>
+
+                      <button
+                        onClick={() => handleConfirmPilotFromSpotlight(pDef.id)}
+                        className="flex items-center gap-1.5 rounded bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 px-4 sm:px-5 py-2 font-display text-xs font-bold text-white uppercase tracking-wider cursor-pointer shadow-[0_0_15px_rgba(34,211,238,0.4)] border border-cyan-400/60 transition-all"
+                      >
+                        <Check className="size-4" />
+                        <span>XÁC NHẬN CHỌN {pDef.name.toUpperCase()} {currentStep === 1 ? "➔ TIẾP TỤC BƯỚC 2" : ""}</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          MODAL 2: HỒ SƠ CHI TIẾT & NỔI BẬT CƠ GIÁP (AIRCRAFT SPOTLIGHT DIALOG)
+          ==================================================================== */}
+      {gearDialogOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-5 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setGearDialogOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-sm border bg-panel/95 shadow-2xl overflow-hidden"
+            style={{
+              borderColor: `${STARFRONT_GEAR_DEFS[inspectGearId]?.color || "#06b6d4"}90`,
+              boxShadow: `0 0 50px ${STARFRONT_GEAR_DEFS[inspectGearId]?.color || "#06b6d4"}30`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {(() => {
+              const gDef = STARFRONT_GEAR_DEFS[inspectGearId] || STARFRONT_GEAR_DEFS.vanguard
+              const GEAR_IDS: StarfrontGearId[] = ["vanguard", "falcon", "aegis"]
+              const gearIdx = GEAR_IDS.indexOf(inspectGearId)
+              const prevGearId = GEAR_IDS[(gearIdx - 1 + GEAR_IDS.length) % GEAR_IDS.length]
+              const nextGearId = GEAR_IDS[(gearIdx + 1) % GEAR_IDS.length]
+              const prevGear = STARFRONT_GEAR_DEFS[prevGearId]
+              const nextGear = STARFRONT_GEAR_DEFS[nextGearId]
+
+              // So sánh với phi công đang được chọn (flowPilotDef)
+              const isSynergyWithSelectedPilot = flowPilotDef.recommendedGear === inspectGearId
+              const isCurrentActive = activePairing.gearId === inspectGearId
+
+              return (
+                <>
+                  {/* Top Header */}
+                  <div className="flex items-center justify-between border-b bg-black/60 px-4 py-3 shrink-0" style={{ borderColor: `${gDef.color}50` }}>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="size-8 rounded-sm bg-black/80 border flex items-center justify-center"
+                        style={{ borderColor: gDef.color, color: gDef.color }}
+                      >
+                        <Cpu className="size-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-display text-sm sm:text-base font-bold uppercase tracking-wider text-white">
+                            HỒ SƠ CHI TIẾT & NỔI BẬT CƠ GIÁP // {gDef.name.toUpperCase()}
+                          </h3>
                           <span
-                            key={idx}
-                            className="rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-mono text-cyan-200 border border-cyan-500/30"
+                            className="rounded px-2 py-0.5 text-[9px] font-mono font-bold border"
+                            style={{
+                              backgroundColor: `${gDef.color}20`,
+                              color: gDef.color,
+                              borderColor: `${gDef.color}50`,
+                            }}
                           >
-                            {t}
+                            {gDef.role}
                           </span>
-                        ))}
+                          {isCurrentActive && (
+                            <span className="rounded bg-emerald-950/80 px-1.5 py-0.5 text-[9px] font-mono font-bold text-emerald-300 border border-emerald-500/40">
+                              ĐANG XUẤT KÍCH
+                            </span>
+                          )}
+                        </div>
+                        <span className="font-mono text-xs text-muted-foreground">
+                          TIÊU CHUẨN CHIẾN HẠM · CẤP ĐỘ CƠ GIÁP: CẤP {progression.level}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Thuộc tính & Phân bổ điểm */}
-                    <div className="md:col-span-7 space-y-3 font-mono text-xs">
-                      <div className="flex items-center justify-between bg-black/50 p-2 rounded border border-border/40">
-                        <span>CẤP ĐỘ PHI CÔNG: <strong className="text-white">CẤP {pProg.level}</strong></span>
-                        <span>ĐIỂM KHẢ DỤNG: <strong className="text-cyan-300">{pProg.availablePoints}</strong></span>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <span className="hidden sm:inline font-mono text-[11px] text-muted-foreground">
+                        Cơ giáp {gearIdx + 1}/3
+                      </span>
+                      <button
+                        onClick={() => setGearDialogOpen(false)}
+                        className="size-7 flex items-center justify-center rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                        title="Đóng (Esc)"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  </div>
 
-                      <div className="space-y-1.5">
-                        {[
-                          { key: "attack" as PilotAttributeKey, label: "TẤN CÔNG (ATK)", effect: "+2.0 ATK / pt" },
-                          { key: "defense" as PilotAttributeKey, label: "PHÒNG NGỰ (DEF)", effect: "+1.5 DEF / pt" },
-                          { key: "agility" as PilotAttributeKey, label: "CƠ ĐỘNG (SPD)", effect: "+1.0 SPD / pt" },
-                          { key: "shield" as PilotAttributeKey, label: "KHIÊN NĂNG LƯỢNG", effect: "+30 Shield / pt" },
-                          { key: "tactical" as PilotAttributeKey, label: "CHIẾN THUẬT (CRIT)", effect: "+0.4% Crit / pt" },
-                        ].map(({ key, label, effect }) => {
-                          const val = pProg.allocatedStats[key] || 0
-                          const canAdd = pProg.availablePoints > 0
-
-                          return (
-                            <div
-                              key={key}
-                              className="flex items-center justify-between rounded bg-black/40 px-2.5 py-1.5 border border-border/40"
-                            >
-                              <div>
-                                <span className="font-bold text-slate-200">{label}: </span>
-                                <strong className="text-cyan-300">+{val}</strong>
-                                <span className="text-[10px] text-muted-foreground ml-1">({effect})</span>
-                              </div>
-
-                              <button
-                                disabled={!canAdd}
-                                onClick={() => handleAllocatePoint(inspectPilotId, key)}
-                                className={cn(
-                                  "size-6 rounded flex items-center justify-center font-bold text-xs transition-all cursor-pointer",
-                                  canAdd
-                                    ? "bg-cyan-500 text-black hover:bg-cyan-400"
-                                    : "bg-black/60 text-muted-foreground border border-border/40 cursor-not-allowed opacity-50",
-                                )}
-                              >
-                                <Plus className="size-3" />
-                              </button>
-                            </div>
-                          )
-                        })}
-                      </div>
-
-                      {/* Thẻ Kỹ Năng Nội Tại */}
-                      <div className="rounded border border-amber-500/50 bg-amber-950/20 p-2.5">
-                        <span className="font-display text-[11px] font-bold text-amber-300 block">
-                          NỘI TẠI: {pDef.passive.name} ({pDef.passive.nameEn})
-                        </span>
-                        <p className="text-[10.5px] text-slate-200 mt-0.5 leading-relaxed">
-                          {pDef.passive.desc}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center justify-between pt-1">
-                        <button
-                          onClick={() => handleResetPoints(inspectPilotId)}
-                          className="flex items-center gap-1 text-[11px] text-amber-300 hover:text-amber-200 cursor-pointer"
-                        >
-                          <RotateCcw className="size-3" />
-                          <span>Tẩy điểm (200 Credits)</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            handleSelectPilotInFlow(inspectPilotId)
-                            setInspectModalOpen(false)
+                  {/* Body Content (Scrollable) */}
+                  <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                      {/* Cột Trái: Trưng Bày 3D Concept Art Cơ Giáp (5 cột) */}
+                      <div className="lg:col-span-5 flex flex-col items-center">
+                        <div
+                          className="relative w-full aspect-[4/3] sm:aspect-[16/11] rounded-sm border-2 bg-black/90 p-1 shadow-2xl overflow-hidden group"
+                          style={{
+                            borderColor: `${gDef.color}80`,
+                            boxShadow: `0 0 30px ${gDef.color}25`,
                           }}
-                          className="rounded bg-cyan-600 hover:bg-cyan-500 px-3 py-1 font-display text-xs font-bold text-white cursor-pointer"
                         >
-                          Chọn Phi Công Này ➔
-                        </button>
+                          <img
+                            src={gDef.illustration || `/images/${inspectGearId}-gear.jpg`}
+                            alt={gDef.name}
+                            className="size-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] transition-transform duration-500 group-hover:scale-105"
+                          />
+
+                          {/* Scanline & HUD Reticles */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
+                          <div
+                            className="absolute top-2 left-2 font-mono text-[9px] bg-black/70 px-2 py-0.5 rounded border backdrop-blur-xs font-bold"
+                            style={{ color: gDef.color, borderColor: `${gDef.color}50` }}
+                          >
+                            3D CONCEPT ART // CHASSIS {inspectGearId.toUpperCase()}
+                          </div>
+
+                          <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between font-mono text-[10px] text-white bg-black/75 px-2.5 py-1 rounded border border-white/20 backdrop-blur-xs">
+                            <span className="font-bold">{gDef.name.toUpperCase()}</span>
+                            <span style={{ color: gDef.color }}>{gDef.role.split(" ")[0]}</span>
+                          </div>
+                        </div>
+
+                        {/* Mô tả cơ giáp */}
+                        <div className="mt-3 rounded bg-black/60 border border-border/50 p-3 w-full">
+                          <p className="text-xs text-slate-200 leading-relaxed font-mono">
+                            "{gDef.desc}"
+                          </p>
+                        </div>
+
+                        {/* Phân Tích Hiệp Đồng với Phi Công Đang Chọn */}
+                        <div
+                          className={cn(
+                            "mt-3 w-full rounded border p-3 font-mono text-xs transition-all",
+                            isSynergyWithSelectedPilot
+                              ? "bg-amber-950/40 border-amber-500/60 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
+                              : "bg-black/50 border-border/50",
+                          )}
+                        >
+                          <div className="flex items-center gap-1.5 font-bold mb-1">
+                            <Sparkles className="size-3.5 text-amber-400" />
+                            <span className={isSynergyWithSelectedPilot ? "text-amber-300" : "text-muted-foreground"}>
+                              TƯƠNG THÍCH VỚI PHI CÔNG {flowPilotDef.name.toUpperCase()}
+                            </span>
+                          </div>
+
+                          {isSynergyWithSelectedPilot ? (
+                            <div className="space-y-1">
+                              <span className="text-xs text-white font-bold block">
+                                ⭐ HIỆP ĐỒNG HOÀN HẢO (100% SYNERGY MATCH)!
+                              </span>
+                              <p className="text-[11px] text-amber-200">
+                                {flowPilotDef.synergyBonus}
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-[11px] text-muted-foreground">
+                              Phi công tối ưu cho dòng máy này:{" "}
+                              <strong className="text-cyan-300">
+                                {STARFRONT_PILOTS.find((p) => p.recommendedGear === inspectGearId)?.name || "Chiến binh tinh nhuệ"}
+                              </strong>
+                              . Vẫn có thể xuất kích bình thường với toàn bộ chỉ số.
+                            </p>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Cột Phải: Thông Số Kỹ Thuật & Kỹ Năng Hệ Thống (7 cột) */}
+                      <div className="lg:col-span-7 space-y-3.5">
+                        {/* Bảng Chỉ Số Gốc & Tăng Trưởng */}
+                        <div className="rounded border border-border/60 bg-black/50 p-3 space-y-2.5">
+                          <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                            <div className="flex items-center gap-1.5">
+                              <Gauge className="size-4" style={{ color: gDef.color }} />
+                              <span className="font-display text-xs font-bold uppercase text-white tracking-wider">
+                                THÔNG SỐ KHUNG THÂN GỐC // BASE SPECIFICATIONS
+                              </span>
+                            </div>
+                            <span className="font-mono text-[10px] text-muted-foreground">
+                              CẤP HIỆN TẠI: {progression.level}
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 font-mono text-xs">
+                            {[
+                              { label: "Máu Khung Thân (HP)", base: gDef.baseStats.hp, growth: gDef.growth.hp, max: 2000, color: "bg-red-500", text: "text-red-400" },
+                              { label: "Năng Lượng Lõi (SP)", base: gDef.baseStats.sp, growth: gDef.growth.sp, max: 200, color: "bg-cyan-500", text: "text-cyan-400" },
+                              { label: "Hỏa Lực Gốc (ATK)", base: gDef.baseStats.attack, growth: gDef.growth.attack, max: 250, color: "bg-orange-500", text: "text-orange-400" },
+                              { label: "Giáp Phòng Thủ (DEF)", base: gDef.baseStats.defense, growth: gDef.growth.defense, max: 150, color: "bg-blue-500", text: "text-blue-400" },
+                              { label: "Tốc Độ Phản Ứng (SPD)", base: gDef.baseStats.speed, growth: gDef.growth.speed, max: 150, color: "bg-emerald-500", text: "text-emerald-400" },
+                            ].map((st, idx) => (
+                              <div key={idx} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-slate-300">{st.label}:</span>
+                                  <div className="flex items-center gap-2">
+                                    <strong className={cn("text-sm", st.text)}>{st.base}</strong>
+                                    <span className="text-[10px] text-muted-foreground">(+{st.growth}/cấp)</span>
+                                  </div>
+                                </div>
+                                <div className="h-1.5 w-full bg-secondary/80 rounded overflow-hidden">
+                                  <div
+                                    className={cn("h-full", st.color)}
+                                    style={{ width: `${Math.min(100, Math.round((st.base / st.max) * 100))}%` }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Hệ Thống Nội Tại (Passive Core System) */}
+                        <div className="rounded border border-amber-500/50 bg-gradient-to-r from-amber-950/20 via-black to-panel p-3 space-y-1.5 font-mono">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-amber-300 font-bold">
+                              <Sparkles className="size-4 text-amber-400" />
+                              <span className="font-display text-xs uppercase">
+                                HỆ THỐNG NỘI TẠI: {gDef.passive.name}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/40">
+                              LÕI NĂNG LƯỢNG
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-200 leading-relaxed">
+                            {gDef.passive.desc}
+                          </p>
+
+                          {gDef.passive.details && gDef.passive.details.length > 0 && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1">
+                              {gDef.passive.details.map((d, dIdx) => (
+                                <div key={dIdx} className="rounded bg-black/60 p-1.5 border border-border/40 text-[10px]">
+                                  <span className="text-muted-foreground block">{d.label}</span>
+                                  <strong className="text-amber-200">{d.value}</strong>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bộ Kỹ Năng Chiến Đấu của Gear */}
+                        <div className="rounded border border-border/60 bg-black/50 p-3 space-y-2 font-mono">
+                          <span className="font-display text-xs font-bold text-white uppercase tracking-wider block">
+                            MÔ-ĐUN KỸ NĂNG TÁC CHIẾN MẶC ĐỊNH ({gDef.skills.length} KỸ NĂNG)
+                          </span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {gDef.skills.map((sk) => (
+                              <div
+                                key={sk.id}
+                                className="rounded bg-black/60 p-2 border border-border/40 flex items-start gap-2"
+                              >
+                                <Zap className="size-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                                <div className="min-w-0">
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className="font-display text-xs font-bold text-white truncate">
+                                      {sk.name}
+                                    </span>
+                                    <span className="text-[9px] text-amber-300 shrink-0">{sk.spCost} SP</span>
+                                  </div>
+                                  <p className="text-[9.5px] text-muted-foreground line-clamp-1 mt-0.5">
+                                    {sk.desc}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Modal Footer: Quick Nav & Primary Confirm CTA */}
+                  <div className="border-t bg-black/70 px-4 py-3 flex flex-wrap items-center justify-between gap-3 shrink-0" style={{ borderColor: `${gDef.color}50` }}>
+                    {/* Điều hướng chuyển cơ giáp */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          playClickSound()
+                          setInspectGearId(prevGearId)
+                        }}
+                        className="flex items-center gap-1 rounded border border-border/60 bg-black/60 px-2.5 py-1.5 font-mono text-xs text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                        title={`Xem ${prevGear.name}`}
+                      >
+                        <ChevronLeft className="size-3.5" />
+                        <span className="hidden sm:inline">Trước: {prevGear.name.split(" ")[0]}</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          playClickSound()
+                          setInspectGearId(nextGearId)
+                        }}
+                        className="flex items-center gap-1 rounded border border-border/60 bg-black/60 px-2.5 py-1.5 font-mono text-xs text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                        title={`Xem ${nextGear.name}`}
+                      >
+                        <span className="hidden sm:inline">Sau: {nextGear.name.split(" ")[0]}</span>
+                        <ChevronRight className="size-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setGearDialogOpen(false)}
+                        className="rounded border border-border/60 bg-black/40 px-3 py-2 font-display text-xs text-muted-foreground hover:text-white cursor-pointer transition-colors"
+                      >
+                        Đóng
+                      </button>
+
+                      <button
+                        onClick={() => handleConfirmGearFromSpotlight(gDef.id)}
+                        className="flex items-center gap-1.5 rounded px-4 sm:px-5 py-2 font-display text-xs font-bold text-white uppercase tracking-wider cursor-pointer shadow-lg border transition-all"
+                        style={{
+                          backgroundColor: gDef.color,
+                          borderColor: "#ffffff80",
+                          color: "#000000",
+                          boxShadow: `0 0 20px ${gDef.color}60`,
+                        }}
+                      >
+                        <Check className="size-4" />
+                        <span>XÁC NHẬN CHỌN {gDef.name.toUpperCase()} {currentStep === 2 ? "➔ ĐÁNH GIÁ BƯỚC 3" : ""}</span>
+                      </button>
                     </div>
                   </div>
                 </>

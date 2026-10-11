@@ -52,6 +52,7 @@ import {
   Radio,
   Recycle,
   Rocket,
+  Scan,
   Shield,
   ShoppingBag,
   Sparkles,
@@ -258,6 +259,7 @@ export function StarfrontShell() {
   const [activeSection, setActiveSection] = useState<StarfrontSection>("home")
   const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(null)
   const [audioMuted, setAudioMutedState] = useState(false)
+  const [scanlineEnabled, setScanlineEnabled] = useState(true)
   const [lockNoticeToast, setLockNoticeToast] = useState<{ text: string; type: "warning" | "success" } | null>(null)
 
   // Trạng thái khóa nhân vật & cơ giáp
@@ -280,11 +282,34 @@ export function StarfrontShell() {
     setHasLoaded(true)
     setAudioMutedState(isAudioMuted())
 
+    try {
+      const savedScanline = localStorage.getItem("starfront_scanline_overlay")
+      if (savedScanline !== null) {
+        setScanlineEnabled(savedScanline === "true")
+      }
+    } catch {
+      // ignore local storage errors
+    }
+
     // Nếu người chơi chưa khóa nhân vật & cơ giáp, mở ngay màn hình chọn nhân vật
     if (!saved.activePairing?.isLocked) {
       setActiveSection("character-gear")
     }
   }, [])
+
+  // Chuyển đổi bật/tắt hiệu ứng quét màn hình (CRT Scanline)
+  const handleToggleScanline = () => {
+    playClickSound()
+    setScanlineEnabled((prev) => {
+      const next = !prev
+      try {
+        localStorage.setItem("starfront_scanline_overlay", String(next))
+      } catch {
+        // ignore
+      }
+      return next
+    })
+  }
 
   // Lưu tự động mỗi khi có thay đổi tiến trình
   const handleUpdateProgression = (updated: StarfrontProgression) => {
@@ -765,7 +790,7 @@ export function StarfrontShell() {
             </div>
           </nav>
 
-          {/* E. Footer Sidebar: Âm Thanh, Cài Lại & Thông Tin */}
+          {/* E. Footer Sidebar: Âm Thanh, CRT Scanline, Cài Lại & Thông Tin */}
           <div className="shrink-0 border-t border-border/60 p-2.5 bg-black/50 space-y-2">
             <div className="flex items-center justify-between gap-1">
               <button
@@ -784,13 +809,29 @@ export function StarfrontShell() {
                 )}
               </button>
 
+              <button
+                onClick={handleToggleScanline}
+                className={cn(
+                  "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-all cursor-pointer",
+                  !scanlineEnabled
+                    ? "border-border/60 text-muted-foreground bg-secondary/30"
+                    : "border-cyan-500/50 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 shadow-[0_0_8px_rgba(6,182,212,0.2)]",
+                )}
+                title={scanlineEnabled ? "Tắt hiệu ứng quét màn hình CRT (Scanline)" : "Bật hiệu ứng quét màn hình CRT (Scanline)"}
+              >
+                <Scan className="size-3.5 text-cyan-400" />
+                {!isSidebarCollapsed && (
+                  <span>{scanlineEnabled ? "CRT: Bật" : "CRT: Tắt"}</span>
+                )}
+              </button>
+
               {!isSidebarCollapsed && (
                 <button
                   onClick={handleResetSave}
                   className="rounded border border-border/60 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-red-400 hover:border-red-500/50 transition-colors cursor-pointer"
                   title="Cài lại tiến trình LocalStorage"
                 >
-                  Reset Save
+                  Reset
                 </button>
               )}
             </div>
@@ -876,6 +917,21 @@ export function StarfrontShell() {
                 <Layers className="size-3 text-purple-400" />
                 <span className="font-bold">{alloyCount} Alloy</span>
               </div>
+
+              {/* Nút bật/tắt nhanh hiệu ứng quét CRT Scanline */}
+              <button
+                onClick={handleToggleScanline}
+                className={cn(
+                  "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-all cursor-pointer",
+                  scanlineEnabled
+                    ? "border-cyan-500/50 bg-cyan-950/40 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
+                    : "border-border/60 bg-black/40 text-muted-foreground hover:text-white",
+                )}
+                title={scanlineEnabled ? "Tắt hiệu ứng quét màn hình (CRT Scanline Overlay)" : "Bật hiệu ứng quét màn hình (CRT Scanline Overlay)"}
+              >
+                <Scan className={cn("size-3", scanlineEnabled ? "text-cyan-400 animate-pulse" : "text-muted-foreground")} />
+                <span className="hidden sm:inline font-semibold">{scanlineEnabled ? "SCANLINE: ON" : "SCANLINE: OFF"}</span>
+              </button>
             </div>
           </header>
 
@@ -1046,6 +1102,31 @@ export function StarfrontShell() {
             )}
           </main>
         </div>
+
+        {/* ==================================================================
+            HIỆU ỨNG QUÉT MÀN HÌNH CRT TỔNG THỂ (FULL-SCREEN SCI-FI SCANLINE OVERLAY)
+            ================================================================== */}
+        {scanlineEnabled && (
+          <div
+            className="pointer-events-none fixed inset-0 z-50 overflow-hidden select-none"
+            aria-hidden="true"
+          >
+            {/* Lớp lưới quét sọc vi mạch CRT (Micro-Scanline CRT Grid) */}
+            <div className="absolute inset-0 crt-scanlines opacity-75 pointer-events-none" />
+
+            {/* Dải quét tia sáng radar chuyển động mượt mà từ trên xuống dưới (Animated Sweep Beam) */}
+            <div className="absolute inset-x-0 h-44 scanline-beam opacity-85 pointer-events-none" />
+
+            {/* Hiệu ứng viền tối cockpit chiến hạm sci-fi (Subtle Radial Vignette) */}
+            <div className="absolute inset-0 vignette-radial opacity-50 pointer-events-none" />
+
+            {/* Khung ngắm HUD 4 góc phong cách chiến thuật tương lai (Tactical Reticle Corners) */}
+            <div className="absolute top-2 left-2 size-4 border-t-2 border-l-2 border-cyan-500/40 pointer-events-none" />
+            <div className="absolute top-2 right-2 size-4 border-t-2 border-r-2 border-cyan-500/40 pointer-events-none" />
+            <div className="absolute bottom-2 left-2 size-4 border-b-2 border-l-2 border-cyan-500/40 pointer-events-none" />
+            <div className="absolute bottom-2 right-2 size-4 border-b-2 border-r-2 border-cyan-500/40 pointer-events-none" />
+          </div>
+        )}
       </div>
     </GameProvider>
   )

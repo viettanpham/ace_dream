@@ -1,395 +1,213 @@
-# STARFRONT — 8 Anime Sci-Fi Character Art Prompts for PixAI
-*Document Version: 1.0 — Generated: October 2026*  
-*Project Reference: STARFRONT (Turn-Based Sci-Fi Tactical RPG)*  
-*Target Generator: PixAI (Stable Diffusion / Animagine XL / Moonbeam / Whimsical / Anime V3)*
+# STARFRONT — PixAI Character Generation Prompts
+*Master Anime Sci-Fi Character Art Generation Catalog for PixAI & SDXL*  
+*Document Version: 1.0 — Approved Official Prompts Catalog*  
+*Target Engine: PixAI (Moonbeam / Anime XL / Anything V5 / Animagine XL 3.1 / SDXL)*
 
 ---
 
-## 1. Tổng Quan Kiến Trúc Mỹ Thuật (Art Direction Philosophy & GEAR Visual Bridge)
+## 1. Overview & Generation Directives
 
-### 1.1. Triết Lý Thiết Kế: Cầu Nối Giữa Cơ Giáp GEAR Và Nhân Vật Anime
-STARFRONT kết hợp thế giới quan cơ khí quân sự vũ trụ đỉnh cao với ngôn ngữ tạo hình nhân vật anime Nhật Bản cao cấp:
-- **Cơ sở tham chiếu GEAR (`vanguard-gear.jpg`, `falcon-gear.jpg`, `aegis-gear.jpg`)**: Cung cấp ngôn ngữ vật liệu (hợp kim titan đen mờ, sợi carbon composite nano-weave), các đường rãnh đèn LED vi mạch phát quang, ống xả phản lực hạt ion/plasma, và bảng màu phe phái chính thức.
-- **Phong cách nhân vật Pilot (Japanese Anime Sci-Fi Illustration)**: Nhân vật được vẽ theo phong cách tranh minh họa anime cao cấp (tương tự key visual của các tựa game RPG mecha anime hàng đầu). Khuôn mặt anime sắc sảo, mắt vẽ nhiều lớp chi tiết với điểm sáng linh hoạt, tóc xếp lớp tự nhiên, nét line art sạch sẽ và kỹ thuật cel shading kết hợp digital painting mềm mại.
-- **Tuyệt đối bài trừ (Anti-Slop / Zero-Pixel Policy)**: Không sử dụng pixel art, retro sprite, voxel, 3D thô sơ, vector phẳng, hay hình vẽ lập trình giả lập. Mọi tác phẩm đều hướng tới chất lượng concept art chính thức.
+This document provides **8 unique, production-grade image generation prompts** specifically tailored for **PixAI** (and compatible anime diffusion models like Animagine XL, SDXL, and NovelAI). Each prompt corresponds to one of the 8 canonical STARFRONT pilots and translates their rich in-game lore, mechanical equipment, and character aesthetic into vivid, premium anime sci-fi illustrations.
 
-### 1.2. Hướng Dẫn Sử Dụng Trên Nền Tảng PixAI
-Khi nhập dữ liệu vào công cụ sinh ảnh PixAI:
-1. **Lựa chọn Model đề xuất**:
-   - **Moonbeam** hoặc **Whimsical** (cho phong cách anime điện ảnh, màu sắc rực rỡ và ánh sáng mềm).
-   - **Animagine XL V3.1** hoặc **Anime V3** (cho độ bám sát tag trang phục sci-fi và nét vẽ anime chuẩn mực).
-   - **Neverland** (cho phong cách concept art huyền ảo, chi tiết vi mô sắc nét).
-2. **Kích thước đầu ra chuẩn (Aspect Ratio)**:
-   - **Ảnh Chân Dung (Portrait 1:1)**: `1024 × 1024` pixels.
-   - **Ảnh Toàn Thân (Full-Body 9:16)**: `896 × 1600` hoặc `900 × 1600` pixels.
-3. **Thông số kỹ thuật đề xuất (Generation Parameters)**:
-   - **Sampling Steps**: 28 – 34 steps.
-   - **CFG Scale**: 6.5 – 7.5.
-   - **Sampler**: `DPM++ 2M Karras` hoặc `DPM++ SDE Karras`.
-   - **Clip Skip**: 2.
-   - **VAE**: `vae-ft-mse-840000-ema-pruned` (hoặc VAE tích hợp sẵn của model).
+### Key Visual Pillars
+- **Aesthetic**: Premium modern Japanese anime RPG key art (reminiscent of *Honkai: Star Rail*, *Arknights*, *Genshin Impact*, and high-budget mecha anime).
+- **Facial Fidelity**: Expressive anime eyes with luminous gradients, detailed irises, polished anime jawlines, clean and delicate line art, and refined cel shading.
+- **Sci-Fi Equipment**: Heavy tactical exo-suits, sleek flightsuits with cybernetic accents, mechanical gauntlets, glowing LED conduits, and hard-surface armor plating directly referencing STARFRONT GEAR designs (Vanguard cyan `#06b6d4`, Falcon purple/teal `#a855f7`/`#14b8a6`, and Aegis amber `#f59e0b`).
+- **Strict Anti-Slop Discipline**: Absolutely NO pixel art, NO 8-bit/16-bit retro sprites, NO voxel graphics, NO low-poly renders, NO chibi/super-deformed characters, and NO canvas/SVG programmatic mockups.
 
 ---
 
-## 2. Chi Tiết 8 Prompt Nhân Vật Phi Công (Pilot Character Prompts)
+## 2. Universal Negative Prompts & Recommended PixAI Settings
+
+### Recommended PixAI Settings
+- **Recommended Models**: PixAI Moonbeam, Animagine XL v3.1, Realism/Anime Hybrid XL, or Counterfeit-V3.
+- **Sampling Method**: DPM++ 2M Karras or Euler a (28–35 steps).
+- **CFG Scale**: 7.0 – 8.5.
+- **Resolution**:
+  - **Portrait**: `1024 × 1024` (1:1 Square)
+  - **Full-Body**: `896 × 1536` or `900 × 1600` (9:16 Vertical)
+- **Clip Skip**: 2.
+
+### Master Negative Prompt (Apply to All Characters)
+```text
+(worst quality, low quality, normal quality, lowres:1.4), (pixel art, retro pixel, 8-bit, 16-bit, sprite, pixelated, dithering:1.6), (low poly, blocky, voxel, 3d game render:1.3), (chibi, deformed, bad anatomy, bad hands, missing fingers, extra fingers, mutated hands:1.4), (poorly drawn face, bad eyes, crossed eyes:1.3), (blurry, fuzzy, jpeg artifacts, compression artifacts:1.3), watermark, signature, artist name, username, text, logo, border, frame, monochrome, sketch, draft, amateur drawing
+```
 
 ---
 
-### PILOT 01: Marcus Thorne — WAR DOG
-
-#### A. Hồ Sơ Nhân Vật & Vai Trò Chiến Thuật
-- **Họ Tên**: Marcus Thorne
-- **Callsign**: WAR DOG *(biệt danh phụ: IRONCLAD)*
-- **Giới Tính / Tuổi**: Nam (Male) · 30 tuổi
-- **Vai Trò & Chuyên Môn**: Chỉ Huy Tiên Phong / Chuyên Gia Hỏa Lực Hạng Nặng (Vanguard Lead Commander / Weapons Specialist)
-- **Cơ Giáp Tham Chiếu (Signature GEAR)**: **Vanguard Gear** (`vanguard-gear.jpg`)
-- **Bảng Màu Chủ Đạo**: Xanh Cyan vũ trụ (`#06b6d4`), Đen titan nhám (`#1e293b`), Xanh băng tản nhiệt (`#38bdf8`)
-- **Tính Cách & Khí Chất**: Dày dạn trận mạc, điềm tĩnh, tự tin, bản lĩnh người chỉ huy tiền tuyến từng trải qua hàng trăm giờ không chiến tại Vành đai Asteroid.
-- **Trích Dẫn Biểu Tượng**: *"Khi đại pháo Vanguard gầm vang, không một chiến tuyến nào có thể đứng vững."*
-
-#### B. Bản Thiết Kế Tạo Hình Chi Tiết (Visual Concept)
-- **Khuôn Mặt & Ánh Mắt**: Nam tính, góc cạnh, cằm sắc nét; vết sẹo chiến binh mờ tinh tế trên gò má; ánh mắt màu hổ phách/nâu ấm đầy quyết đoán; nụ cười tự tin khẽ nhếch môi.
-- **Mái Tóc**: Tóc đen nhánh pha nâu sẫm tỉa layer ngắn, hơi vuốt dựng phong cách thể thao quân đội.
-- **Trang Phục & Giáp**: Ngoại giáp exo-suit bọc titan màu xám than/đen nhám ôm sát cơ thể vạm vỡ; giáp ngực dập nổi logo Vanguard; các rãnh dẫn năng lượng phát sáng màu cyan tươi; cổ áo giáp chiến thuật nâng cao bảo vệ gáy; găng tay cơ khí trợ lực.
-- **Trang Bị Kèm Theo**: Khớp gắn bệ pháo ion cá nhân bên vai hoặc súng xung kích plasma cầm tay; thiết bị liên lạc gắn bên tai trái.
-- **Ánh Sáng & Bối Cảnh**: Ánh sáng xanh cyan băng giá từ đèn giáp phản chiếu lên gương mặt; hậu cảnh boong tàu sân bay không gian mờ ảo.
-
-#### C. PixAI Positive Prompt (Tag & Descriptive Hybrid)
-```text
-(masterpiece, best quality, ultra-detailed:1.2), 1boy, solo, marcus thorne, 30 years old handsome rugged male space fighter commander, short spiky dark brown hair, sharp jawline, determined amber eyes, faint battle scar on cheek, confident smirk, athletic muscular build,
-futuristic military sci-fi pilot combat suit, titanium exo-suit chestplate, matte dark charcoal carbon-composite armor plating, glowing neon cyan energy circuits, tactical pilot collar, reinforced mechanical shoulder pauldrons, heavy armored pilot gauntlets,
-inspired by starfront vanguard gear aesthetic, high-tech aerospace machinery, cyan plasma thruster glow, clean detailed anime line art, refined cel shading with smooth digital painting highlights, cinematic volumetric lighting, dynamic 3/4 angle, official anime rpg concept art
-```
-
-#### D. PixAI Negative Prompt
-```text
-(worst quality, low quality:1.4), (deformed, distorted, disfigured:1.3), pixel art, retro sprite, 8-bit, 16-bit, blocky, chunky, voxel, 3d blender render, low poly, flat vector, svg illustration, chibi, cartoonish, feminine features, blurry, bad anatomy, bad hands, missing fingers, extra digits, cropped, signature, watermark, username, text, logo
-```
-
-#### E. Thiết Lập Đề Xuất PixAI
-- **Model**: Moonbeam hoặc Animagine XL V3.1
-- **Aspect Ratio**: 1:1 (1024×1024) cho Portrait / 9:16 (896×1600) cho Full-body
-- **Steps**: 30 | **CFG**: 7.0 | **Sampler**: DPM++ 2M Karras
-
-#### F. Cầu Nối Thẩm Mỹ Với GEAR
-- Kế thừa trực tiếp cấu trúc giáp góc cạnh và tông màu Cyan (`#06b6d4`) của **Vanguard Gear**, biến đổi thành dạng exo-suit phi công với đèn báo xả nhiệt ion xanh băng đối xứng.
+## 3. The 8 Tailored Pilot Prompts
 
 ---
 
-### PILOT 02: Valentine Vance — AEGIS ANGEL
+### Pilot 1: Marcus Thorne — WAR DOG
+*Frontline Commander & Heavy Assault Specialist*  
+- **Gender & Age**: Male, 30 years old  
+- **Associated GEAR**: Vanguard Mecha (`#06b6d4` Cyan Plasma)  
+- **Visual Identity**: Battle-hardened veteran commander, muscular athletic build, short textured dark brown hair, stern determined amber-brown eyes, faint tactical combat scar across cheek. Heavy military exosuit with reinforced chestplate, cyan glowing power conduits, and tactical assault carbine.
 
-#### A. Hồ Sơ Nhân Vật & Vai Trò Chiến Thuật
-- **Họ Tên**: Valentine Vance
-- **Callsign**: AEGIS ANGEL *(biệt danh phụ: ANGEL WING)*
-- **Giới Tính / Tuổi**: Nữ (Female) · 22 tuổi
-- **Vai Trò & Chuyên Môn**: Sĩ Quan Cứu Hộ & Điều Biến Lá Chắn (Rescue & Defense Specialist / Nanotech Shield Operator)
-- **Cơ Giáp Tham Chiếu (Signature GEAR)**: **Aegis Gear** (`aegis-gear.jpg`)
-- **Bảng Màu Chủ Đạo**: Vàng hổ phách (`#f59e0b`), Xanh ngọc bích nano (`#10b981`), Trắng ngọc trai (`#f8fafc`)
-- **Tính Cách & Khí Chất**: Thủ khoa học viện thiên hà, thông minh, nhân hậu, kiêu sa nhưng ấm áp; phong thái bảo bọc đồng đội trước mọi giông bão.
-- **Trích Dẫn Biểu Tượng**: *"Lá chắn của tôi sẽ bảo vệ bạn trước mọi hiểm nguy ngoài vũ trụ."*
-
-#### B. Bản Thiết Kế Tạo Hình Chi Tiết (Visual Concept)
-- **Khuôn Mặt & Ánh Mắt**: Gương mặt thanh tú, đôi mắt to tròn màu xanh ngọc biển biếc lấp lánh; hàng mi cong mềm mại; làn da trắng mịn với nét ửng hồng nhẹ nhàng; thần thái vừa thánh thiện vừa quyết tâm.
-- **Mái Tóc**: Mái tóc dài màu vàng bạch kim óng ả (platinum blonde) gợn sóng buông xõa qua vai, điểm xuyết một lọn tóc tết nhỏ công nghệ cao kẹp vi mạch ngọc bích.
-- **Trang Phục & Giáp**: Bộ quân phục phi công váy ngắn nano-weave thanh lịch màu trắng ngọc trai phối viền vàng kim vương giả; đai lưng corset công nghệ cao tôn vóc dáng đồng hồ cát; đôi bốt cao cổ bọc giáp trắng viền vàng; tai nghe truyền tín hiệu cứu hộ hình cánh thiên thần cách điệu.
-- **Trang Bị Kèm Theo**: Găng tay điều biến từ trường phát quang ngọc bích, xung quanh bàn tay lơ lửng các khối đa diện khiên năng lượng lục giác bán trong suốt.
-- **Ánh Sáng & Bối Cảnh**: Quầng sáng hào quang ngọc bích và hổ phách dịu êm tỏa ra từ trường lực bảo hộ.
-
-#### C. PixAI Positive Prompt (Tag & Descriptive Hybrid)
+#### 1A. Portrait Prompt (1:1 Ratio — Avatar / HUD Comms)
 ```text
-(masterpiece, best quality, ultra-detailed:1.2), 1girl, solo, valentine vance, 22 years old stunningly beautiful female anime pilot, long flowing platinum blonde wavy hair, soft bangs, expressive crystal cyan-blue eyes, gentle warm smile, elegant youthful face, alluring slender feminine proportions,
-futuristic elegant pilot uniform, high-tech white and gold nanofiber bodysuit with stylish pleated miniskirt, gold trim armor accents, glowing emerald green shield nodes, angel-wing shaped comms headset, white armored knee-high boots, floating translucent hexagonal holographic energy shields around hands,
-inspired by starfront aegis gear defense aesthetic, clean pristine anime line art, soft cel shading blended with digital painting, gentle luminous emerald rim lighting, warm golden highlights, pristine space station interior backdrop, professional anime key visual
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, 1boy, marcus thorne, 30 years old handsome rugged veteran commander, short dark brown military textured hair, intense determined amber eyes, sharp defined jawline, light tactical battle scar on cheek, confident stern expression, upper body portrait, heavy futuristic sci-fi military exosuit collar, matte charcoal carbon-fiber armor plates with glowing cyan LED conduits (#06b6d4), brushed steel neck gorget, holographic tactical comm earpiece, rim lighting, dramatic studio sci-fi hangar background, intricate mechanical textures, sharp clean digital line art, refined anime cel shading, cinematic lighting
 ```
 
-#### D. PixAI Negative Prompt
+#### 1B. Full-Body Prompt (9:16 Ratio — Dossier / Hangar Inspection)
 ```text
-(worst quality, low quality:1.4), (deformed, distorted, disfigured:1.3), pixel art, retro sprite, 8-bit, 16-bit, blocky, chunky, voxel, 3d render, flat vector, svg drawing, dark gritty mud, masculine traits, aggressive frown, blurry, bad anatomy, bad hands, extra fingers, missing fingers, cropped, watermark, text, signature
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, full body, 1boy, marcus thorne, 30 years old frontline commander, standing in combat-ready posture, powerful muscular athletic build, short dark brown textured hair, intense amber eyes, faint cheek scar, wearing full heavy vanguard tactical exosuit, matte dark titanium armor plating with glowing cyan energy lines, reinforced hydraulic knee and elbow servos, heavy tactical combat boots, holding a futuristic sci-fi heavy assault rifle with glowing cyan energy magazine, utility belts and ammunition canisters, cinematic rim lighting in cyan and deep blue, military starship hangar deck background, clean anime linework, volumetric atmospheric haze, masterpiece illustration
 ```
-
-#### E. Thiết Lập Đề Xuất PixAI
-- **Model**: Whimsical hoặc Moonbeam (tối ưu nét đẹp nữ tính và ánh sáng ngọc bích)
-- **Aspect Ratio**: 1:1 (1024×1024) cho Portrait / 9:16 (896×1600) cho Full-body
-- **Steps**: 32 | **CFG**: 6.8 | **Sampler**: DPM++ SDE Karras
-
-#### F. Cầu Nối Thẩm Mỹ Với GEAR
-- Kế thừa triết lý phòng thủ bất khả xâm phạm của **Aegis Gear**, chuyển hóa các khối giáp nặng nề thành các cụm module khiên nano thanh thoát, lấy ánh sáng ngọc bích (`#10b981`) làm sợi dây liên kết với Tuyệt kỹ Thánh Vực.
 
 ---
 
-### PILOT 03: Alviss Drake — GHOSTFIRE
+### Pilot 2: Valentine Vance — AEGIS ANGEL
+*Rescue Officer & Nano-Shield Barrier Prodigy*  
+- **Gender & Age**: Female, 22 years old  
+- **Associated GEAR**: Aegis Mecha (`#10b981` Emerald / `#f59e0b` Amber Gold)  
+- **Visual Identity**: Gorgeous academy valedictorian rescue prodigy, long golden-blonde flowing hair with soft bangs, gentle yet resolute emerald-green anime eyes. Elegant form-fitting military pilot uniform with high-tech pleated mini-skirt, thigh-high aerodynamic thruster boots, emerald nano-weave conductors, and floating crystalline holo-shield projector.
 
-#### A. Hồ Sơ Nhân Vật & Vai Trò Chiến Thuật
-- **Họ Tên**: Alviss Drake
-- **Callsign**: GHOSTFIRE
-- **Giới Tính / Tuổi**: Nam (Male) · 26 tuổi
-- **Vai Trò & Chuyên Môn**: Át Chủ Tiêm Kích Siêu Thanh / Tác Chiến Đánh Chặn (Supersonic Ace / Interceptor Specialist)
-- **Cơ Giáp Tham Chiếu (Signature GEAR)**: **Falcon Gear** (`falcon-gear.jpg`)
-- **Bảng Màu Chủ Đạo**: Tím neon huyền ảo (`#a855f7`), Tím đậm bóng đêm (`#1e1b4b`), Hổ phách sáng (`#f59e0b`)
-- **Tính Cách & Khí Chất**: Sắc lạnh, bí ẩn, phong thái lãng tử không gian với phản xạ thần kinh kinh ngạc 0.07 giây; sở trường nhử địch vào bẫy rồi bứt tốc phản công Mach cực hạn.
-- **Trích Dẫn Biểu Tượng**: *"Nhanh hơn ánh sáng, nguy hiểm hơn một tia chớp — bạn chỉ thấy tàn ảnh của tôi."*
-
-#### B. Bản Thiết Kế Tạo Hình Chi Tiết (Visual Concept)
-- **Khuôn Mặt & Ánh Mắt**: Đẹp trai sắc sảo kiểu anime bishounen; đôi mắt màu hổ phách rực lửa nhìn thấu chuyển động; sống mũi cao thanh tú; ánh nhìn điềm tĩnh lạnh lùng đầy nguy hiểm.
-- **Mái Tóc**: Mái tóc đen tuyền tỉa layer phong trần, vuốt lệch một bên với những lọn highlight màu tím violet phát quang tinh tế.
-- **Trang Phục & Giáp**: Bộ flightsuit khí động học ôm sát màu đen tím đêm sâu; cổ áo chịu áp suất cao chống trọng lực; cánh lướt tàn ảnh thu nhỏ tích hợp sau lưng; ống xả vi phản lực ở bắp chân và gót bốt.
-- **Trang Bị Kèm Theo**: Kính ngắm ngắm bắn holographic một bên mắt (HUD monocle) màu tím; găng tay cảm biến điều khiển phản xạ vi mô.
-- **Ánh Sáng & Bối Cảnh**: Các vệt tàn ảnh quang học (motion blur afterimages) màu tím neon tỏa ra xung quanh cơ thể như bóng ma siêu thanh.
-
-#### C. PixAI Positive Prompt (Tag & Descriptive Hybrid)
+#### 2A. Portrait Prompt (1:1 Ratio — Avatar / HUD Comms)
 ```text
-(masterpiece, best quality, ultra-detailed:1.2), 1boy, solo, alviss drake, 26 years old handsome bishounen male supersonic ace fighter pilot, messy layered jet-black hair with stylish violet purple highlights, sharp piercing amber eyes, cool calm intense expression, slender athletic aerodynamic build,
-aerodynamic supersonic pilot flightsuit, deep midnight violet and matte black carbon fiber fabric, glowing purple neon energy lines, sleek aerodynamic shoulder fins, high-G pressure collar, lightweight composite armor plates, holographic purple HUD monocle over one eye, supersonic afterburner micro-thrusters on calves,
-inspired by starfront falcon gear interceptor aesthetic, ethereal purple phantom trail, speed motion blur wisps, crisp anime line art, sharp cel shading with dramatic contrast, cinematic sci-fi neon lighting, deep space starfield background, official anime concept illustration
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, 1girl, valentine vance, 22 years old beautiful anime heroine, long flowing golden blonde hair with silky strands and soft side bangs, large luminous emerald green eyes with sparkling gradient highlights, gentle confident and compassionate expression, flawless anime face, soft blush, upper body, elegant high-tech white and gold pilot collar with emerald green glowing nano-fiber circuitry (#10b981), glossy white composite shoulder armor, floating holographic hexagonal shield interface near shoulder, crystalline energy shimmer, soft rim lighting, clean delicate digital line art, sophisticated anime cel shading, bright futuristic starbase interior
 ```
 
-#### D. PixAI Negative Prompt
+#### 2B. Full-Body Prompt (9:16 Ratio — Dossier / Hangar Inspection)
 ```text
-(worst quality, low quality:1.4), (deformed, distorted, disfigured:1.3), female, girl, pixel art, retro sprite, 8-bit, 16-bit, blocky, chunky, voxel, 3d render, flat vector, svg, blurry, dull colors, bad anatomy, bad hands, extra fingers, missing fingers, cropped, watermark, signature, text, logo
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, full body, 1girl, valentine vance, 22 years old rescue academy prodigy, graceful and heroic standing pose, slender and athletic figure, long golden blonde hair fluttering in zero-gravity breeze, bright emerald green eyes, wearing elegant futuristic pilot uniform with tailored white military tunic, high-tech nano-weave pleated skirt, sleek white-and-gold gauntlets, thigh-high armored flight boots with glowing emerald thruster nozzles, deploying a floating translucent green holographic hexagonal barrier shield in front of her hand, ambient glowing emerald particles, immaculate anime aesthetic, cinematic lighting, futuristic orbital medical bay background
 ```
-
-#### E. Thiết Lập Đề Xuất PixAI
-- **Model**: Moonbeam hoặc Neverland
-- **Aspect Ratio**: 1:1 (1024×1024) cho Portrait / 9:16 (896×1600) cho Full-body
-- **Steps**: 30 | **CFG**: 7.2 | **Sampler**: DPM++ 2M Karras
-
-#### F. Cầu Nối Thẩm Mỹ Với GEAR
-- Kế thừa cánh delta dẹp và động cơ Mach siêu thanh của **Falcon Gear**, tái hiện qua hệ thống cánh lướt lưng thu nhỏ và vệt xả proton tím neon (`#a855f7`).
 
 ---
 
-### PILOT 04: Eric Brandt — BUNKER BREAKER
+### Pilot 3: Alviss Drake — GHOSTFIRE
+*Supersonic Interceptor Ace & 0.07s Reflexes Pilot*  
+- **Gender & Age**: Male, 26 years old  
+- **Associated GEAR**: Falcon Interceptor (`#a855f7` Deep Violet / `#c084fc` Nebula Purple)  
+- **Visual Identity**: Charismatic, sharp-witted supersonic ace pilot, styled jet-black spiky hair with violet streaks, sharp piercing amber-gold eyes, confident smirk. High-G pressure flightsuit with sleek violet composite winglets, aerodynamic lightweight alloy pauldrons, glowing purple afterburner conduits, and quick-draw sidearm holster.
 
-#### A. Hồ Sơ Nhân Vật & Vai Trò Chiến Thuật
-- **Họ Tên**: Eric Brandt
-- **Callsign**: BUNKER BREAKER
-- **Giới Tính / Tuổi**: Nam (Male) · 28 tuổi
-- **Vai Trò & Chuyên Môn**: Bậc Thầy Pháo Kích / Phá Hủy Công Thành Xuyên Giáp (Demolition Ace / Heavy Siege Master)
-- **Cơ Giáp Tham Chiếu (Signature GEAR)**: **Vanguard / Siege Gear** (`vanguard-gear.jpg`)
-- **Bảng Màu Chủ Đạo**: Đỏ thẫm hạt nhân (`#ef4444`), Cam nhiệt nung chảy (`#f97316`), Đen súng kim loại (`#292524`)
-- **Tính Cách & Khí Chất**: Dũng mãnh, gan lì, tháo vát; cựu kỹ sư pháo binh dày dạn kinh nghiệm phòng thủ boong-ke Mặt Trăng Đỏ, thấu hiểu từng điểm hàn giáp thép.
-- **Trích Dẫn Biểu Tượng**: *"Giáp của đối phương chỉ là một trở ngại tạm thời trước mũi pháo của tôi."*
-
-#### B. Bản Thiết Kế Tạo Hình Chi Tiết (Visual Concept)
-- **Khuôn Mặt & Ánh Mắt**: Nam tính phong trần, đường nét rắn rỏi; râu quai nón cắt tỉa gọn gàng; đôi mắt màu xám khói ánh tia lửa nhiệt lượng; ánh nhìn tự tin của kẻ làm chủ bộc phá.
-- **Mái Tóc**: Tóc đen hoa than cắt ngắn gọn gàng chịu nhiệt.
-- **Trang Phục & Giáp**: Quân phục phi công pháo binh hạng nặng phối màu đen nhám và đỏ thẫm; giáp chống sốc chịu nhiệt dày dặn trước ngực và bắp tay; đai thắt lưng đạn dược chiến thuật tích hợp các thỏi tinh thể năng lượng; khe tản nhiệt phát sáng đỏ cam rực lửa.
-- **Trang Bị Kèm Theo**: Súng ngắn nhiệt hạch bẻ khóa boong-ke đeo ngang hông; găng tay chịu nhiệt cơ khí bọc thép gia cường.
-- **Ánh Sáng & Bối Cảnh**: Ánh lửa cam rực và tàn tro than hồng bay lơ lửng; ánh sáng đỏ thẫm ấm áp từ khe tản nhiệt phản quang lên gương mặt.
-
-#### C. PixAI Positive Prompt (Tag & Descriptive Hybrid)
+#### 3A. Portrait Prompt (1:1 Ratio — Avatar / HUD Comms)
 ```text
-(masterpiece, best quality, ultra-detailed:1.2), 1boy, solo, eric brandt, 28 years old rugged handsome male heavy artillery demolition pilot, short dark messy hair, neatly trimmed stubble beard, resolute steel-grey eyes, confident fearless grin, muscular stocky build,
-heavy demolition sci-fi pilot combat armor, crimson red and gunmetal black thermal-resistant plating, glowing orange-red heat-sink vents across chest, heavy blast-shield collar, tactical ammo harness with glowing thermal energy cells, reinforced hydraulic combat gauntlets,
-inspired by starfront heavy siege weaponry and vanguard reinforced engineering, glowing embers and fiery plasma sparks atmosphere, clean professional anime linework, rich cel shading, cinematic dramatic warm lighting, industrial hangar background, high-end anime concept art
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, 1boy, alviss drake, 26 years old handsome charismatic ace pilot, styled jet-black hair with vibrant violet highlights, piercing sharp amber-gold eyes, cocky confident smirk, refined angular anime facial structure, upper body portrait, aerodynamic high-G pilot flightsuit collar with matte black and purple carbon composites, glowing vibrant violet energy conduit lines (#a855f7), transparent holographic HUD eyepiece over left brow displaying Mach telemetry, dynamic rim lighting, speed blur particle trails, clean razor-sharp anime line art, high-end cel shading, cockpit canopy background with starfield
 ```
 
-#### D. PixAI Negative Prompt
+#### 3B. Full-Body Prompt (9:16 Ratio — Dossier / Hangar Inspection)
 ```text
-(worst quality, low quality:1.4), (deformed, distorted, disfigured:1.3), female, girl, pixel art, retro sprite, 8-bit, 16-bit, blocky, chunky, voxel, 3d render, flat vector, svg, chibi, weak build, clean shaven boy, blurry, bad anatomy, bad hands, extra digits, cropped, text, signature, watermark
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, full body, 1boy, alviss drake, 26 years old supersonic pilot ace, standing in dynamic relaxed cocky stance with one hand on hip, lean athletic build, styled black hair with violet fringe, piercing amber eyes, wearing high-altitude supersonic combat flightsuit in matte obsidian black with glossy purple accents and violet LED lines, lightweight articulated joint armor, aerodynamic thruster fins on calves, streamlined pilot boots, glowing afterburner energy aura surrounding feet, void falcon phantom trails, deep space nebula background with purple stellar dust, clean anime linework, professional game concept art
 ```
-
-#### E. Thiết Lập Đề Xuất PixAI
-- **Model**: Animagine XL V3.1 hoặc Moonbeam
-- **Aspect Ratio**: 1:1 (1024×1024) cho Portrait / 9:16 (896×1600) cho Full-body
-- **Steps**: 30 | **CFG**: 7.0 | **Sampler**: DPM++ 2M Karras
-
-#### F. Cầu Nối Thẩm Mỹ Với GEAR
-- Kế thừa sự đầm chắc, các khe thông gió tản nhiệt chịu nhiệt cực hạn và công nghệ bọc giáp titan của dòng chiến hạm Vanguard hạng nặng với sắc đỏ nhiệt hạch (`#ef4444`).
 
 ---
 
-### PILOT 05: Lyra Vance — VALKYRIE
+### Pilot 4: Eric Brandt — BUNKER BREAKER
+*Heavy Siege Gunner & Armor-Piercing Demolition Master*  
+- **Gender & Age**: Male, 28 years old  
+- **Associated GEAR**: Vanguard Heavy Siege (`#ef4444` Crimson / `#06b6d4` Cyan)  
+- **Visual Identity**: Steadfast, gritty heavy artillery engineer, unruly dark hair with undercut, focused crimson-brown eyes, tactical targeting ocular implant or monocle. Rugged crimson-and-black ballistic flightsuit, heavy reinforced hydraulic siege arm on right shoulder, heat-sink vents with orange-red thermal glow, and anti-materiel Gauss sidearm.
 
-#### A. Hồ Sơ Nhân Vật & Vai Trò Chiến Thuật
-- **Họ Tên**: Lyra Vance *(dữ liệu gốc: Lyra Song / Vance)*
-- **Callsign**: VALKYRIE
-- **Giới Tính / Tuổi**: Nữ (Female) · 24 tuổi
-- **Vai Trò & Chuyên Môn**: Đấu Sĩ Plasma Siêu Thanh / Sát Thủ Bạo Kích (Supersonic Plasma Duelist / Critical Striker)
-- **Cơ Giáp Tham Chiếu (Signature GEAR)**: **Falcon Gear** (`falcon-gear.jpg`)
-- **Bảng Màu Chủ Đạo**: Tím hoa cà sáng (`#c084fc`), Hồng cánh sen neon (`#e879f9`), Xanh tím thẫm (`#1e1b4b`)
-- **Tính Cách & Khí Chất**: Hoạt bát, tinh nghịch, đam mê tốc độ và nhào lộn nghệ thuật; quán quân đấu trường không chiến tự do Vành Đai Sao Băng.
-- **Trích Dẫn Biểu Tượng**: *"Chiến trường là sân khấu của tôi, và nhát chém plasma này là hồi kết dành cho bạn!"*
-
-#### B. Bản Thiết Kế Tạo Hình Chi Tiết (Visual Concept)
-- **Khuôn Mặt & Ánh Mắt**: Xinh đẹp, rạng rỡ và sắc sảo; đôi mắt màu thạch anh tím (amethyst) lấp lánh ánh cười thách thức; làn da trắng sáng; vẻ đẹp anime hiện đại tràn đầy năng lượng.
-- **Mái Tóc**: Mái tóc bạch kim ánh tím buộc hai bên (twin-tails) bồng bềnh chuyển sắc gradient tím hồng rực rỡ ở đuôi tóc, bay nhẹ theo quán tính chuyển động.
-- **Trang Phục & Giáp**: Bộ đồ phi công váy ngắn thể thao khí động học công nghệ cao ôm dáng; áo khoác lửng sci-fi phối viền neon hồng tím; cánh tản nhiệt mini hình cánh én sau vai; đôi bốt cao đùi phản lực chống trọng lực.
-- **Trang Bị Kèm Theo**: Thanh kiếm lưỡi chém plasma phát sáng ánh tím hồng rực rỡ trên tay; bộ điều khiển năng lượng vòng tay quang học.
-- **Ánh Sáng & Bối Cảnh**: Các dải sáng plasma tím uốn lượn hình đôi cánh Valkyrie bao bọc lấy cơ thể; ánh sáng lấp lánh từ bụi sao tinh vân.
-
-#### C. PixAI Positive Prompt (Tag & Descriptive Hybrid)
+#### 4A. Portrait Prompt (1:1 Ratio — Avatar / HUD Comms)
 ```text
-(masterpiece, best quality, ultra-detailed:1.2), 1girl, solo, lyra vance, 24 years old energetic gorgeous female anime fighter pilot, voluminous platinum hair with glowing violet-pink tips in dynamic twin tails, sparkling amethyst purple eyes, playful confident smile, athletic slender curves,
-futuristic acrobatic pilot suit, sporty high-tech pleated miniskirt, midnight indigo and lavender nanofiber bodysuit, glowing magenta and bright purple neon circuit trims, lightweight energy-winged shoulder stabilizers, thigh-high anti-gravity jet boots, holding an elegant glowing purple plasma energy blade,
-inspired by starfront falcon agile interceptor aesthetic, nebula valkyrie wings light trail, floating plasma embers, crisp clean anime line art, vibrant cel shading with smooth highlights, dynamic action stance, high-energy cinematic lighting, official anime rpg character artwork
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, 1boy, eric brandt, 28 years old rugged focused heavy demolition pilot, short dark messy hair with undercut, sharp calculating reddish-brown eyes, mechanical targeting monocle over left eye with glowing red holographic reticle, determined grim expression, upper body portrait, heavy thermal-resistant flightsuit in crimson red and industrial charcoal black (#ef4444), reinforced titanium neck collar with active radiator exhaust vents, subtle orange heat glow from cooling channels, metallic sheen, volumetric rim lighting, industrial blast-door bunker background, crisp digital line art, bold anime cel shading
 ```
 
-#### D. PixAI Negative Prompt
+#### 4B. Full-Body Prompt (9:16 Ratio — Dossier / Hangar Inspection)
 ```text
-(worst quality, low quality:1.4), (deformed, distorted, disfigured:1.3), pixel art, retro sprite, 8-bit, 16-bit, blocky, chunky, voxel, 3d render, flat vector, svg, masculine, gloomy, clumsy, bad anatomy, bad hands, extra digits, missing limbs, cropped, watermark, text, signature, logo
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, full body, 1boy, eric brandt, 28 years old siege gunner ace, wide confident combat stance, tall and sturdy athletic build, dark messy hair, wearing heavy-duty crimson and black anti-blast combat suit, reinforced hydraulic right arm brace with Gauss cannon recoil dampers, heavy magnetic holster carrying an oversized plasma breach carbine, armored knee guards and heavy magnetic anchoring boots, glowing heat dispersion vents on back, sparks and hot thermal vapor rising, asteroid fortress hangar background, dramatic high-contrast sci-fi lighting, masterpiece anime illustration
 ```
-
-#### E. Thiết Lập Đề Xuất PixAI
-- **Model**: Whimsical hoặc Animagine XL V3.1
-- **Aspect Ratio**: 1:1 (1024×1024) cho Portrait / 9:16 (896×1600) cho Full-body
-- **Steps**: 32 | **CFG**: 7.0 | **Sampler**: DPM++ SDE Karras
-
-#### F. Cầu Nối Thẩm Mỹ Với GEAR
-- Kế thừa hình thái cánh lướt và tốc độ Mach của **Falcon Gear**, hiện đại hóa thành đôi cánh năng lượng ánh sáng tím hồng (`#c084fc` / `#e879f9`) phản ánh kỹ năng "Điệu Vũ Valkyrie".
 
 ---
 
-### PILOT 06: Kaelen Voss — CIPHER
+### Pilot 5: Lyra Song — VALKYRIE
+*Supersonic Plasma Duelist & High-Mobility Blade Master*  
+- **Gender & Age**: Female, 24 years old  
+- **Associated GEAR**: Falcon Striker (`#c084fc` Lavender Purple / `#38bdf8` Sky Cyan)  
+- **Visual Identity**: Vivacious and stylish space arena duelist, long twin-tail platinum-silver hair with lavender gradient tips, energetic luminous violet eyes with starry highlights, confident playful smile. High-mobility aerodynamic flight uniform with sporty flared mini-skirt, dual hip holsters for high-frequency plasma daggers, and glowing neon purple wing-thrusters.
 
-#### A. Hồ Sơ Nhân Vật & Vai Trò Chiến Thuật
-- **Họ Tên**: Kaelen Voss *(dữ liệu gốc: Kaelen Quinn / Voss)*
-- **Callsign**: CIPHER *(biệt danh phụ: WRAITH)*
-- **Giới Tính / Tuổi**: Nữ (Female) · 25 tuổi
-- **Vai Trò & Chuyên Môn**: Chuyên Viên Tác Chiến Điện Tử & Ám Sát Lượng Tử (Quantum Infiltrator / Cyberwarfare Specialist)
-- **Cơ Giáp Tham Chiếu (Signature GEAR)**: **Falcon / Stealth Infiltrator Gear** (`falcon-gear.jpg`)
-- **Bảng Màu Chủ Đạo**: Xanh mòng két teal (`#14b8a6`), Lục bảo lượng tử (`#2dd4bf`), Đen bóng đêm vô ảnh (`#042f2e` / `#090d16`)
-- **Tính Cách & Khí Chất**: Lạnh lùng, bí ẩn, kiệm lời, bộ óc giải mã lượng tử thiên tài từng phục vụ trong cơ quan tình báo vũ trụ ngầm; biến mọi trận địa thành vùng mù radar.
-- **Trích Dẫn Biểu Tượng**: *"Kẻ thù nguy hiểm nhất là kẻ mà radar của bạn không bao giờ nhìn thấy."*
-
-#### B. Bản Thiết Kế Tạo Hình Chi Tiết (Visual Concept)
-- **Khuôn Mặt & Ánh Mắt**: Vẻ đẹp sắc sảo, lạnh lùng kiểu kuudere; đôi mắt màu xanh ngọc bích phát sáng vi mô với đồng tử hiển thị lưới tọa độ kỹ thuật số; nét mặt điềm tĩnh không dao động.
-- **Mái Tóc**: Tóc bob ngắn bất đối xứng (asymmetrical bob) màu xanh đen thẫm, lọn tóc dài rủ nhẹ che một phần gò má.
-- **Trang Phục & Giáp**: Bộ đồ tàng hình lượng tử ôm sát phối hợp váy xếp ly công nghệ cao dệt từ sợi quang học hấp thụ sóng radar; mảng vi mạch tản nhiệt xanh teal chạy dọc sườn; bốt tàng hình từ tính không tạo tiếng ồn.
-- **Trang Bị Kèm Theo**: Găng tay hack lượng tử hiển thị giao diện bàn phím holographic xanh lục bảo xung quanh ngón tay; súng lục xung điện từ vi mô (EMP) đeo kín đáo bên hông.
-- **Ánh Sáng & Bối Cảnh**: Sương mù vi ba lượng tử và các dải mã nhị phân/dữ liệu số bán trong suốt trôi nổi; ánh sáng huyền ảo sắc lạnh.
-
-#### C. PixAI Positive Prompt (Tag & Descriptive Hybrid)
+#### 5A. Portrait Prompt (1:1 Ratio — Avatar / HUD Comms)
 ```text
-(masterpiece, best quality, ultra-detailed:1.2), 1girl, solo, kaelen voss, 25 years old mysterious beautiful female cyberwarfare pilot, sleek asymmetrical dark teal-black bob haircut, sharp piercing luminous jade-teal eyes with subtle digital HUD reticle reflection, calm aloof kuudere expression, elegant slender figure,
-quantum stealth pilot suit, high-tech active-camouflage pleated techwear miniskirt, midnight black and deep teal matte composite fabrics, glowing holographic cyan-teal data conduits, cybernetic hacking gauntlet with floating green holographic decryption interfaces, silent magnetic boots,
-inspired by starfront stealth reconnaissance aesthetic, quantum mirage glitching digital haze particles, crisp clean anime line art, sophisticated cel shading, moody cool cinematic lighting, holographic data streams background, official anime concept art
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, 1girl, lyra song, 24 years old gorgeous anime duelist, twin-tails hairstyle with long flowing platinum-silver hair and pastel lavender gradient tips, large sparkling violet-purple eyes with intricate star highlights, playful confident smile, delicate anime facial features, upper body portrait, sleek aerodynamic pilot collar in pearlescent white and lilac purple (#c084fc), glowing cyan-blue nano-circuits, lightweight composite pauldron, holographic dual-lens visor tilted on hair, glowing plasma sparks drifting in air, soft glowing rim light, clean refined anime line art, smooth digital coloring, anime battle arena background
 ```
 
-#### D. PixAI Negative Prompt
+#### 5B. Full-Body Prompt (9:16 Ratio — Dossier / Hangar Inspection)
 ```text
-(worst quality, low quality:1.4), (deformed, distorted, disfigured:1.3), pixel art, retro sprite, 8-bit, 16-bit, blocky, chunky, voxel, 3d render, flat vector, svg, overly bright, noisy clutter, bad anatomy, bad hands, extra digits, missing fingers, cropped, watermark, text, signature, logo
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, full body, 1girl, lyra song, 24 years old plasma blade duelist, dynamic acrobatic airborne or landing pose, lithe and agile figure, flowing platinum-lavender twin-tails whipping through the air, sparkling violet eyes, wearing futuristic high-mobility duelist outfit, sleeveless white and purple pilot top, pleated aerodynamic mini-skirt with carbon lining, sleek thigh-high booster boots with glowing lavender ion thrusters, wielding twin high-frequency neon violet plasma energy blades with glowing light trails, holographic valkyrie wings made of plasma light behind back, neon-lit orbital colosseum background, masterpiece anime artwork
 ```
-
-#### E. Thiết Lập Đề Xuất PixAI
-- **Model**: Neverland hoặc Moonbeam
-- **Aspect Ratio**: 1:1 (1024×1024) cho Portrait / 9:16 (896×1600) cho Full-body
-- **Steps**: 30 | **CFG**: 7.0 | **Sampler**: DPM++ 2M Karras
-
-#### F. Cầu Nối Thẩm Mỹ Với GEAR
-- Kế thừa tính năng né tránh và tàng hình của khung thân Falcon, tái hiện qua cấu trúc sợi quang nano hấp thụ sóng và ánh sáng xanh mòng két (`#14b8a6`) của kỹ năng Nhiễu Loạn Lượng Tử.
 
 ---
 
-### PILOT 07: Selena Cross — SOLARIS
+### Pilot 6: Kaelen Quinn — WRAITH / CIPHER
+*Electronic Warfare Specialist & Quantum Infiltrator*  
+- **Gender & Age**: Female, 25 years old  
+- **Associated GEAR**: Falcon Stealth Variant (`#14b8a6` Teal / `#0f172a` Void Navy)  
+- **Visual Identity**: Cool, enigmatic intelligence operative, asymmetrical bob hairstyle in deep midnight-teal, sharp analytical teal-emerald eyes, calm unreadable expression. Optical stealth nanosuit with matte obsidian hexagonal stealth plates, high-tech pleated techwear skirt, floating holographic cipher cubes and frequency wave decoders.
 
-#### A. Hồ Sơ Nhân Vật & Vai Trò Chiến Thuật
-- **Họ Tên**: Selena Cross *(dữ liệu gốc: Selena Vega / Cross)*
-- **Callsign**: SOLARIS
-- **Giới Tính / Tuổi**: Nữ (Female) · 27 tuổi
-- **Vai Trò & Chuyên Môn**: Chuyên Gia Hỏa Lực Quang Năng / Sĩ Quan Chỉ Huy (Beam Specialist / High-Energy Optics Fleet Officer)
-- **Cơ Giáp Tham Chiếu (Signature GEAR)**: **Vanguard / Solar Heavy Gear** (`vanguard-gear.jpg`)
-- **Bảng Màu Chủ Đạo**: Cam thái dương (`#ea580c`), Vàng hoàng gia (`#fbbf24`), Đỏ thẫm vương giả (`#431407`)
-- **Tính Cách & Khí Chất**: Kiêu sa, quyền quý, thần thái nữ vương chỉ huy; xuất thân từ gia tộc sĩ quan danh tiếng, bậc thầy về hội tụ chùm photon mặt trời nung chảy phòng tuyến địch.
-- **Trích Dẫn Biểu Tượng**: *"Dưới ánh sáng thái dương của tôi, bóng tối của các người sẽ bị thiêu rụi hoàn toàn."*
-
-#### B. Bản Thiết Kế Tạo Hình Chi Tiết (Visual Concept)
-- **Khuôn Mặt & Ánh Mắt**: Tuyệt sắc giai nhân với khí chất quyền lực uy nghi; đôi mắt phượng màu hổ phách vàng rực như mặt trời; bờ môi gợi cảm tự tin; ánh nhìn kiêu hãnh của bậc chỉ huy tối cao.
-- **Mái Tóc**: Mái tóc đỏ rực bồng bềnh uốn lượn như ngọn lửa thái dương, buông xõa dài qua lưng với những vệt highlight vàng óng ả.
-- **Trang Phục & Giáp**: Bộ lễ phục sĩ quan phi công váy ngắn sang trọng màu đỏ thẫm viền chỉ vàng kim vương giả; cầu vai quân hàm sĩ quan đính biểu tượng mặt trời; áo choàng chỉ huy lửng tháo rời bay nhẹ trong gió; bốt da sĩ quan cao gót bọc giáp vàng.
-- **Trang Bị Kèm Theo**: Thước ngắm tiêu cự quang học cầm tay hoặc quyền trượng điều khiển chùm tia photon mặt trời; các lăng kính hội tụ hạt ánh sáng lơ lửng.
-- **Ánh Sáng & Bối Cảnh**: Ánh hào quang mặt trời rực rỡ (solar flare bloom), quầng sáng và tia nắng vàng cam ấm áp phản chiếu lộng lẫy lên trang phục.
-
-#### C. PixAI Positive Prompt (Tag & Descriptive Hybrid)
+#### 6A. Portrait Prompt (1:1 Ratio — Avatar / HUD Comms)
 ```text
-(masterpiece, best quality, ultra-detailed:1.2), 1girl, solo, selena cross, 27 years old gorgeous regal female fleet officer and solar beam ace pilot, voluminous flowing fiery crimson-red hair with golden sunlight highlights, commanding sharp amber-gold eyes, aristocratic haughty smirk, magnificent statuesque feminine figure,
-luxurious futuristic military officer uniform, royal crimson and gold trimmed pilot dress with pleated miniskirt, gold epaulets with solar insignia, detachable officer half-cape flowing in solar wind, gold-plated armor pauldrons, sleek armored officer boots, floating solar photon focus lenses around hand,
-inspired by starfront vanguard heavy beam weapon aesthetic, intense solar flare aura, golden sunlight lens flare, crisp clean anime line art, rich saturated cel shading, breathtaking cinematic high-contrast lighting, grand space fleet command bridge background, official anime key art
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, 1girl, kaelen quinn, 25 years old cool mysterious cyber specialist, sleek asymmetrical bob haircut in dark midnight-teal hair with sharp angled fringe, intense analytical emerald-teal eyes with glowing digital ring in pupil, cool and calm expression, pale flawless skin, upper body portrait, advanced electronic warfare stealth suit in matte dark navy and carbon gray, glowing luminescent teal data channels (#14b8a6), sleek high-collar jacket, translucent floating holographic holographic code streams and quantum cipher interface in foreground, cyan-teal backlight, pristine anime linework, smooth cel shading, dark stealth stealth ship bridge background
 ```
 
-#### D. PixAI Negative Prompt
+#### 6B. Full-Body Prompt (9:16 Ratio — Dossier / Hangar Inspection)
 ```text
-(worst quality, low quality:1.4), (deformed, distorted, disfigured:1.3), pixel art, retro sprite, 8-bit, 16-bit, blocky, chunky, voxel, 3d render, flat vector, svg, pale washed out colors, timid expression, bad anatomy, bad hands, extra digits, missing fingers, cropped, watermark, text, signature, logo
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, full body, 1girl, kaelen quinn, 25 years old quantum infiltrator, poised stealth standing pose, slender graceful silhouette, dark midnight-teal asymmetrical bob hair, glowing teal eyes, wearing specialized active-camouflage techwear suit, dark navy matte fabric with iridescent hexagonal stealth scales, high-tech pleated cyber skirt, lightweight silent sprint boots with teal micro-thrusters, right hand manipulating a floating 3D holographic quantum cryptographic cube, shimmering optical distortion cloaking effect around left arm, deep space surveillance array background, moody cinematic sci-fi lighting
 ```
-
-#### E. Thiết Lập Đề Xuất PixAI
-- **Model**: Whimsical hoặc Moonbeam (cho màu sắc rực rỡ và ánh sáng chói chang)
-- **Aspect Ratio**: 1:1 (1024×1024) cho Portrait / 9:16 (896×1600) cho Full-body
-- **Steps**: 32 | **CFG**: 7.5 | **Sampler**: DPM++ 2M Karras
-
-#### F. Cầu Nối Thẩm Mỹ Với GEAR
-- Kế thừa đại pháo quang năng hạng nặng của dòng Vanguard, kết hợp cùng năng lượng thái dương rực lửa (`#ea580c` / `#fbbf24`) của kỹ năng Thái Dương Bừng Sáng.
 
 ---
 
-### PILOT 08: Victor Stone — BASTION
+### Pilot 7: Selena Vega — SOLARIS
+*Fleet Flagship Commander & High-Energy Solar Photon Officer*  
+- **Gender & Age**: Female, 27 years old  
+- **Associated GEAR**: Vanguard Solar Variant (`#ea580c` Solar Orange / `#facc15` Radiant Gold)  
+- **Visual Identity**: Regal and imposing fleet artillery commander, voluminous wavy crimson-scarlet hair flowing down back, commanding fiery amber-gold eyes, aristocratic and dignified countenance. Royal military ceremonial officer coat draped over high-tech gold-trimmed pilot dress, solar photon focus gauntlets, and radiant corona energy halo.
 
-#### A. Hồ Sơ Nhân Vật & Vai Trò Chiến Thuật
-- **Họ Tên**: Victor Stone *(dữ liệu gốc: Victor Sterling / Stone)*
-- **Callsign**: BASTION *(biệt danh phụ: TITAN GAUSS)*
-- **Giới Tính / Tuổi**: Nam (Male) · 34 tuổi
-- **Vai Trò & Chuyên Môn**: Pháo Đài Thép / Chống Chịu Tối Thượng (Heavy Bastion / Fortress Wall Specialist)
-- **Cơ Giáp Tham Chiếu (Signature GEAR)**: **Aegis Gear** (`aegis-gear.jpg`)
-- **Bảng Màu Chủ Đạo**: Vàng đồng titan (`#d97706`), Vàng hổ phách công nghiệp (`#fbbf24`), Xám đen kim loại nặng (`#292524`)
-- **Tính Cách & Khí Chất**: Vững chãi như bàn thạch, giàu lòng hy sinh và bảo bọc; cựu binh 15 năm cống hiến bảo vệ đồng đội, là biểu tượng tinh thần thép của hạm đội.
-- **Trích Dẫn Biểu Tượng**: *"Chừng nào tôi còn đứng vững, phòng tuyến này sẽ không bao giờ sụp đổ."*
-
-#### B. Bản Thiết Kế Tạo Hình Chi Tiết (Visual Concept)
-- **Khuôn Mặt & Ánh Mắt**: Gương mặt từng trải dạn dày sương gió, xương hàm vuông vức kiên cố; mắt phải màu hổ phách ấm áp, mắt trái tích hợp cảm biến kính ngắm điều biến trọng lực phát sáng xanh băng; vẻ mặt điềm đạm, vững tâm.
-- **Mái Tóc**: Tóc húi cua quân đội cắt ngắn màu hoa râm (xám tro pha đen).
-- **Trang Phục & Giáp**: Ngoại giáp thủy lực hạng nặng (heavy hydraulic exosuit) bằng hợp kim titan vàng đồng đồ sộ; các thanh giảm chấn cơ học ở bắp tay và đùi; giáp ngực hình khiên kiên cố; găng tay trợ lực khổng lồ.
-- **Trang Bị Kèm Theo**: Khiên phản chấn từ trường titan gấp gọn gắn trên cẳng tay; đai thắt lưng neo trọng lực cố định buồng lái.
-- **Ánh Sáng & Bối Cảnh**: Khói bụi chiến trường mờ ảo; ánh đèn vàng hổ phách công nghiệp chiếu rọi qua khung giáp kiên cố, tạo nên bóng đổ uy nghi sừng sững như một ngọn núi.
-
-#### C. PixAI Positive Prompt (Tag & Descriptive Hybrid)
+#### 7A. Portrait Prompt (1:1 Ratio — Avatar / HUD Comms)
 ```text
-(masterpiece, best quality, ultra-detailed:1.2), 1boy, solo, victor stone, 34 years old veteran heavy armored male space pilot, short grizzled salt-and-pepper buzzcut hair, rugged square jawline, weathered calm handsome face, one determined eye and one glowing ice-blue cybernetic ocular sensor, colossal muscular broad-shouldered build,
-massive hydraulic titan exosuit armor, heavy bronze-gold and dark industrial iron plating, reinforced shock-absorbing pistons on arms, heavy blast-shield chestplate, colossal armored power gauntlets, integrated forearm magnetic barrier shield, heavy duty magnetic greaves,
-inspired by starfront aegis fortress impenetrable armor aesthetic, fortress bastion stance, industrial atmospheric smoke, crisp clean anime line art, heavy defined cel shading, dramatic low-angle cinematic lighting, damaged fortification background, official anime concept illustration
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, 1girl, selena vega, 27 years old regal stunning anime officer, luxurious long wavy crimson-scarlet red hair, commanding fiery amber-gold eyes with golden flecks, dignified confident aristocratic expression, perfectly contoured anime face, upper body portrait, royal naval officer flight uniform in deep crimson with polished gold filigree embroidery and solar insignias (#ea580c, #facc15), high standing collar, golden braided aiguillette on shoulder, radiant warm rim lighting casting fiery corona highlights on hair, warm lens flare, sharp digital line art, rich multi-tone anime cel shading, imperial star dreadnought bridge background
 ```
 
-#### D. PixAI Negative Prompt
+#### 7B. Full-Body Prompt (9:16 Ratio — Dossier / Hangar Inspection)
 ```text
-(worst quality, low quality:1.4), (deformed, distorted, disfigured:1.3), female, girl, pixel art, retro sprite, 8-bit, 16-bit, blocky, chunky, voxel, 3d render, flat vector, svg, thin fragile build, youthful boy, clumsy, bad anatomy, bad hands, extra digits, missing fingers, cropped, watermark, signature, text, logo
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, full body, 1girl, selena vega, 27 years old solar beam commander, commanding aristocratic stance with military baton or beam focal saber held elegantly, tall curvaceous and majestic figure, voluminous flowing red hair, fiery amber eyes, wearing majestic high-ranking officer flight uniform with gold-trimmed flared military coat, white and gold combat corset, pleated ceremonial skirt, polished white and gold high-heeled armored boots, radiant golden solar flare corona halo shimmering behind her shoulders, burning orange photon energy sparks, solar observation station viewing window background with blazing sun, masterpiece quality
 ```
 
-#### E. Thiết Lập Đề Xuất PixAI
-- **Model**: Moonbeam hoặc Animagine XL V3.1
-- **Aspect Ratio**: 1:1 (1024×1024) cho Portrait / 9:16 (896×1600) cho Full-body
-- **Steps**: 32 | **CFG**: 7.0 | **Sampler**: DPM++ 2M Karras
+---
 
-#### F. Cầu Nối Thẩm Mỹ Với GEAR
-- Kế thừa trực tiếp lớp giáp titan dày cộp và hệ thống khiên từ trường của **Aegis Gear**, nhân cách hóa thành một chiến binh thép sừng sững không thể bị lay chuyển với ánh vàng đồng (`#d97706`).
+### Pilot 8: Victor Sterling — BASTION / TITAN GAUSS
+*Veteran Vanguard Guardian & Hydraulic Bulwark Shieldmaster*  
+- **Gender & Age**: Male, 34 years old  
+- **Associated GEAR**: Aegis Heavy Fortress (`#d97706` Amber / `#78716c` Titan Bronze)  
+- **Visual Identity**: Immovable veteran protector, broad muscular frame, short cropped grizzled slate-gray hair with silver temples, calm stoic hazel eyes, heavy cybernetic reinforcement on neck and shoulder. Titan hydraulic exoskeleton armor, immense portable fold-out tower bulwark shield with amber energy emitters, and heavy shock-absorbing magnetic anchor boots.
+
+#### 8A. Portrait Prompt (1:1 Ratio — Avatar / HUD Comms)
+```text
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, 1boy, victor sterling, 34 years old stoic veteran guardian, short buzzcut slate-gray hair with silvering temples, calm steadfast hazel eyes with mature crow's feet, square resolute jawline, expression of unshakeable resolve, upper body portrait, ultra-heavy industrial hydraulic exoskeleton collar in dark gunmetal and bronze-amber (#d97706), heavy carbon neck gorget with pneumatic piston joints, glowing warm amber power conduits, scratched heavy armor battle-scars, dramatic hard-edge key lighting, industrial hangar gantry background, clean precise anime linework, mature anime veteran character design
+```
+
+#### 8B. Full-Body Prompt (9:16 Ratio — Dossier / Hangar Inspection)
+```text
+masterpiece, best quality, ultra-detailed, highres, anime concept art, official anime game key art, full body, 1boy, victor sterling, 34 years old bastion guardian, unyielding defensive stance with legs planted wide, massive muscular powerhouse physique, short grizzled hair, resolute gaze, wearing full-body industrial titan hydraulic exosuit, heavy layered steel and tungsten armor plates, left arm bearing a massive deployed mechanical tower bulwark shield with glowing amber barrier energy field (#d97706), heavy magnetic shock-absorbing fortress boots anchored to deck plating, steam releasing from hydraulic pressure valves, planetary defense perimeter background under orbital bombardment, dramatic cinematic anime concept art
+```
 
 ---
 
-## 3. Bảng Ma Trận So Sánh 8 Phi Công (Pilot Character Matrix)
+## 4. Prompt Engineering Reference Table
 
-Bảng tổng hợp nhanh phục vụ kiểm định tính cân bằng, bản sắc và định hướng hình ảnh:
-
-| STT | Phi Công & Callsign | Giới Tính | Tuổi | Vai Trò Tác Chiến | Cơ Giáp Kế Thừa | Màu Chủ Đạo | Điểm Nhấn Hình Ảnh Đặc Trưng |
-|:---:|---|:---:|:---:|---|---|:---:|---|
-| **01** | **Marcus Thorne**<br>*WAR DOG* | Nam | 30 | Tiên phong & Đại pháo | **Vanguard** | Cyan (`#06b6d4`) | Exo-suit titan, sẹo chiến binh, mắt hổ phách, đèn vi mạch cyan |
-| **02** | **Valentine Vance**<br>*AEGIS ANGEL* | Nữ | 22 | Cứu hộ & Khiên nano | **Aegis** | Vàng & Ngọc bích (`#f59e0b` / `#10b981`) | Tóc vàng bạch kim, váy ngắn nano trắng vàng, khiên lục giác |
-| **03** | **Alviss Drake**<br>*GHOSTFIRE* | Nam | 26 | Tiêm kích siêu thanh | **Falcon** | Tím neon (`#a855f7`) | Tóc đen vệt tím, mắt hổ phách, HUD monocle, tàn ảnh Mach |
-| **04** | **Eric Brandt**<br>*BUNKER BREAKER* | Nam | 28 | Pháo kích xuyên giáp | **Vanguard** | Đỏ thẫm (`#ef4444`) | Râu quai nón, giáp chống nhiệt đỏ đen, khe tản nhiệt cam |
-| **05** | **Lyra Vance**<br>*VALKYRIE* | Nữ | 24 | Kiếm sĩ bạo kích | **Falcon** | Tím hồng (`#c084fc` / `#e879f9`) | Tóc hai bên tím hồng, kiếm plasma, váy thể thao, cánh năng lượng |
-| **06** | **Kaelen Voss**<br>*CIPHER* | Nữ | 25 | Tác chiến điện tử | **Falcon** | Xanh teal (`#14b8a6`) | Tóc bob bất đối xứng, mắt ngọc bích, giao diện hack HUD, tàng hình |
-| **07** | **Selena Cross**<br>*SOLARIS* | Nữ | 27 | Chùm tia quang học | **Vanguard** | Cam thái dương (`#ea580c`) | Tóc đỏ lửa bồng bềnh, lễ phục sĩ quan hoàng gia, hào quang nắng |
-| **08** | **Victor Stone**<br>*BASTION* | Nam | 34 | Pháo đài thép titan | **Aegis** | Vàng đồng (`#d97706`) | Tóc húi cua muối tiêu, ngoại giáp thủy lực khổng lồ, khiên tay titan |
+| Pilot | Callsign | Gender / Age | Key Signature Color | Primary Weapon / Mech Motif | PixAI Key Trigger Tags |
+|---|---|---|---|---|---|
+| **Marcus Thorne** | `WAR DOG` | Male, 30 | `#06b6d4` Cyan | Vanguard Assault Rifle, Titan Exosuit | `veteran commander, cyan led conduits, heavy exosuit, assault rifle` |
+| **Valentine Vance** | `AEGIS ANGEL` | Female, 22 | `#10b981` Emerald / `#f59e0b` Gold | Aegis Hexagonal Nano-Barrier, Rescue Medic | `blonde hair, emerald eyes, pleated skirt, holographic shield barrier` |
+| **Alviss Drake** | `GHOSTFIRE` | Male, 26 | `#a855f7` Deep Violet | Falcon Supersonic Winglets, 0.07s Reflexes | `black hair violet highlights, amber eyes, smirk, high-g flightsuit, speed trails` |
+| **Eric Brandt** | `BUNKER BREAKER` | Male, 28 | `#ef4444` Crimson | Gauss Siege Arm, Thermal Armor-Piercer | `targeting monocle, crimson flightsuit, hydraulic arm brace, heavy artillery` |
+| **Lyra Song** | `VALKYRIE` | Female, 24 | `#c084fc` Lavender | Twin Plasma Blades, Nebula Afterburners | `platinum twin-tails, violet eyes, mini-skirt, dual plasma daggers, valkyrie wings` |
+| **Kaelen Quinn** | `WRAITH / CIPHER` | Female, 25 | `#14b8a6` Teal / `#0f172a` Navy | Quantum Jammer, Hexagonal Cloaking Nanosuit | `asymmetrical teal bob, cipher hologram cube, optical stealth techwear` |
+| **Selena Vega** | `SOLARIS` | Female, 27 | `#ea580c` Solar Orange / `#facc15` Gold | Solar Photon Cannon, Flagship Admiral | `wavy crimson hair, amber eyes, ceremonial officer coat, solar corona halo` |
+| **Victor Sterling** | `BASTION` | Male, 34 | `#d97706` Amber Bronze | Titan Hydraulic Bulwark Shield, Fortress Defense | `grizzled buzzcut, stoic guardian, massive tower shield, hydraulic exosuit` |
 
 ---
 
-## 4. Hướng Dẫn Tải Lại Ảnh Vào STARFRONT Sau Khi Render Trên PixAI
+## 5. Output Verification & Ingestion Checklist
 
-Sau khi hoàn tất sinh ảnh trên PixAI và lựa chọn tác phẩm ưng ý nhất cho từng phi công:
-1. **Lưu định dạng PNG chuẩn**:
-   - Ảnh Chân Dung (Portrait): Lưu thành file `1024 × 1024` PNG với tên `{pilotId}-portrait.png`.
-   - Ảnh Toàn Thân (Full-body): Lưu thành file `900 × 1600` PNG với tên `{pilotId}-fullbody.png`.
-2. **Sao chép vào thư mục tài nguyên của dự án**:
-   - Đường dẫn đích: `/public/images/{pilotId}-portrait.png` và `/public/images/{pilotId}-fullbody.png`.
-3. **Kiểm tra trên giao diện**:
-   - Truy cập tab **Pilot Art Gallery** (`components/game/pilot-gallery.tsx`) hoặc buồng lái **Character & Gear** (`components/game/character-gear-select.tsx`) để chiêm ngưỡng tác phẩm hiển thị trực tiếp trong game.
+When rendering prompts in PixAI or generating assets for the STARFRONT game build:
 
----
-*Tài liệu này được biên soạn chuẩn xác 100% dựa trên dữ liệu lore và hệ thống mỹ thuật gốc của dự án STARFRONT.*
+1. **Verify Asset Dimensions**:
+   - Portrait assets must be cropped or rendered at **1:1** (`1024 × 1024 px`).
+   - Full-body assets must be cropped or rendered at **9:16** (`900 × 1600 px` or `896 × 1536 px`).
+2. **Naming & Placement**:
+   - Save portraits as: `/public/images/{pilotId}-portrait.png`
+   - Save full-body as: `/public/images/{pilotId}-fullbody.png`
+3. **Inspect in STARFRONT UI**:
+   - Launch the **Pilot Art Gallery** (`components/game/pilot-gallery.tsx`) in the game client.
+   - Use the **Inspector Mode** and **Toggle Portrait/Full-body** buttons to inspect line quality, facial rendering, and GEAR synergy aura matching.

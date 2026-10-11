@@ -807,6 +807,7 @@ export function StarfrontShell() {
                 onUpdateProgression={handleUpdateProgression}
                 activeCampaignMission={activeCampaignMission}
                 onClearCampaignMission={handleClearMission}
+                onSelectCampaignMission={setActiveCampaignMission}
                 onNavigateSection={handleSwitchSection}
                 isEmbeddedInShell={true}
               />

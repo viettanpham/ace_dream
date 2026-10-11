@@ -1,5 +1,6 @@
-import { ENEMIES_DATA } from "./data"
+import { CAMPAIGN_SECTORS, ENEMIES_DATA } from "./data"
 import type {
+  CampaignMission,
   CombatSkill,
   CombatUnit,
   EnemyEncounterType,
@@ -9,6 +10,7 @@ import type {
   StarfrontItem,
   StarfrontItemRarity,
   StarfrontItemSlot,
+  StarfrontProgression,
   StarfrontQuest,
   StatusEffect,
 } from "./types"
@@ -842,3 +844,32 @@ export const ALL_CAMPAIGN_QUESTS: StarfrontQuest[] = [
 export function findCampaignQuest(id: string): StarfrontQuest | undefined {
   return ALL_CAMPAIGN_QUESTS.find((q) => q.id === id) || STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === id)
 }
+
+/** Lấy thông tin nhiệm vụ tiếp theo trong mạch chiến dịch */
+export function getNextCampaignMission(
+  currentMissionId: string,
+  progression: StarfrontProgression,
+): CampaignMission | null {
+  const allMissions = CAMPAIGN_SECTORS.flatMap((s) => s.missions)
+  const currentIndex = allMissions.findIndex((m) => m.id === currentMissionId)
+  if (currentIndex === -1 || currentIndex >= allMissions.length - 1) {
+    return null
+  }
+  const nextMissionDef = allMissions[currentIndex + 1]
+  const override = progression.missionOverrides?.[nextMissionDef.id]
+  const questData = findCampaignQuest(nextMissionDef.id) || STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === nextMissionDef.id)
+
+  const questLevel = nextMissionDef.level ?? questData?.level ?? nextMissionDef.recommendedLevel ?? 1
+  const questQuality = override?.quality ?? questData?.quality ?? "standard"
+  const variantId = override?.variantId ?? questData?.variantId ?? "recon"
+  const preview = override?.previewReward ?? questData?.previewReward
+
+  return {
+    ...nextMissionDef,
+    level: questLevel,
+    quality: questQuality,
+    variantId,
+    previewReward: preview,
+  }
+}
+

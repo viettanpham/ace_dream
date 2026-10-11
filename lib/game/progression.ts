@@ -714,6 +714,7 @@ export function processPairingProgressionAfterActivity(
 ): {
   activePairing: ActivePairingState
   pilots: Record<string, PilotProgressionData>
+  pilotSkills?: Record<string, import("./pilot-skill-types").PilotSynergySkillInstance>
   pilotLeveledUp: boolean
   pilotNewLevel: number
   justUnlocked: boolean

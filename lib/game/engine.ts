@@ -710,7 +710,7 @@ export function calculateCombatDamage(
   defender: CombatUnit,
   skill: CombatSkill,
   options?: CombatActionOptions,
-): { damage: number; isCrit: boolean; isEvaded: boolean; reducedByGuard: boolean } {
+): { damage: number; isCrit: boolean; isEvaded: boolean; reducedByGuard: boolean; marcusPassiveApplied?: boolean } {
   // 1. Kiểm tra Né Tránh (Evasion)
   if (options?.forceEvade) {
     return { damage: 0, isCrit: false, isEvaded: true, reducedByGuard: false }

@@ -88,6 +88,7 @@ export interface PilotSynergySkillInstance {
   templateId: string
   name: string
   nameEn: string
+  description?: string
   skillType: PilotSkillType
   isPassive: boolean
   triggerCondition?: "turn_start" | "on_crit" | "on_attack" | "on_shield_break" | "low_hp" | "manual_active"

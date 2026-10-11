@@ -35,6 +35,7 @@ import {
   createScaledEnemyUnit,
   findCampaignQuest,
   generateEquipmentReward,
+  getNextCampaignMission,
   STANDARD_CAMPAIGN_QUESTS,
 } from "@/lib/game/scaling"
 import {
@@ -161,6 +162,7 @@ export interface CombatArenaProps {
   onUpdateProgression?: (updated: StarfrontProgression) => void
   activeCampaignMission?: CampaignMission | null
   onClearCampaignMission?: () => void
+  onSelectCampaignMission?: (mission: CampaignMission | null) => void
   onNavigateSection?: (section: "home" | "battlefield" | "missions" | "shop" | "hangar") => void
   isEmbeddedInShell?: boolean
 }
@@ -170,6 +172,7 @@ export function CombatArena({
   onUpdateProgression,
   activeCampaignMission: parentMission,
   onClearCampaignMission,
+  onSelectCampaignMission,
   onNavigateSection,
   isEmbeddedInShell = false,
 }: CombatArenaProps = {}) {
@@ -195,9 +198,12 @@ export function CombatArena({
   // Đồng bộ activeCampaignMission từ parent shell
   useEffect(() => {
     if (parentMission !== undefined) {
-      setActiveCampaignMission(parentMission)
-      if (parentMission) {
-        handleStartEncounter(parentMission.encounterId, progression, parentMission)
+      const isDifferent = parentMission?.id !== activeCampaignMission?.id
+      if (isDifferent) {
+        setActiveCampaignMission(parentMission)
+        if (parentMission) {
+          handleStartEncounter(parentMission.encounterId, progression, parentMission)
+        }
       }
     }
   }, [parentMission])
@@ -1467,7 +1473,9 @@ export function CombatArena({
                   <button
                     onClick={() => {
                       playClickSound()
+                      onClearCampaignMission?.()
                       setActiveCampaignMission(null)
+                      onSelectCampaignMission?.(null)
                       handleStartEncounter("scout-drone", progression, null)
                     }}
                     className="flex items-center gap-1 rounded-xs border border-border/70 bg-secondary/40 px-2.5 py-1 text-[11px] font-mono text-muted-foreground hover:text-white hover:border-cyan-400 transition-colors cursor-pointer"
@@ -1941,7 +1949,7 @@ export function CombatArena({
                         </span>
                       </div>
                       <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
-                        {player.pilotSynergySkill.description}
+                        {player.pilotSynergySkill.description || player.pilotSynergySkill.mainLine?.description || ""}
                       </p>
                     </div>
 
@@ -1994,7 +2002,7 @@ export function CombatArena({
                           )}
                         </div>
                         <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
-                          {synSkill.description}
+                          {synSkill.description || synSkill.mainLine?.description || ""}
                         </p>
                       </div>
 
@@ -2174,68 +2182,114 @@ export function CombatArena({
               )}
 
               {/* Nút hành động sau trận */}
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                <Button
-                  onClick={() => {
-                    playClickSound()
-                    handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
-                  }}
-                  className="gap-2 font-display uppercase tracking-wider"
-                >
-                  <RotateCcw className="size-4" /> Tái đấu mục tiêu này
-                </Button>
+              {(() => {
+                const nextCampaignMission = activeCampaignMission
+                  ? getNextCampaignMission(activeCampaignMission.id, progression)
+                  : null
 
-                {activeCampaignMission && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      playClickSound()
-                      setActiveCampaignMission(null)
-                      setActiveSubView("campaign")
-                    }}
-                    className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50"
-                  >
-                    <Globe2 className="size-4" /> Tiếp tục Chiến Dịch ➔
-                  </Button>
-                )}
+                return (
+                  <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                    {/* 1. Nút Thách đấu mục tiêu tiếp theo khi đang làm Chiến Dịch (VD: Ải 1-1 -> Ải 1-2) */}
+                    {status === "victory" && activeCampaignMission && nextCampaignMission && (
+                      <Button
+                        onClick={() => {
+                          playClickSound()
+                          setActiveCampaignMission(nextCampaignMission)
+                          onSelectCampaignMission?.(nextCampaignMission)
+                          handleStartEncounter(nextCampaignMission.encounterId, progression, nextCampaignMission)
+                          setFloatingNotification({
+                            text: `ĐÃ XUẤT KÍCH: ${nextCampaignMission.title.toUpperCase()} ⚡`,
+                            isCrit: false,
+                            isPlayer: true,
+                          })
+                          setTimeout(() => setFloatingNotification(null), 2500)
+                        }}
+                        className="gap-2 font-display uppercase tracking-wider bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer"
+                      >
+                        <Play className="size-4 fill-current" /> Thách đấu mục tiêu tiếp theo ({nextCampaignMission.title.split(":")[0] || "Ải Tiếp Theo"}) ➔
+                      </Button>
+                    )}
 
-                {status === "victory" && !activeCampaignMission && selectedEncounter !== "siege-walker" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      playClickSound()
-                      const nextTarget: EnemyEncounterType =
-                        selectedEncounter === "scout-drone" ? "raider-mech" : "siege-walker"
-                      handleStartEncounter(nextTarget)
-                    }}
-                    className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50"
-                  >
-                    <Play className="size-4" /> Thách đấu mục tiêu tiếp theo ➔
-                  </Button>
-                )}
+                    {/* 2. Thách đấu mục tiêu tiếp theo trong Đấu Trường Tự Do (Free Scrimmage) */}
+                    {status === "victory" && !activeCampaignMission && selectedEncounter !== "siege-walker" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          playClickSound()
+                          const nextTarget: EnemyEncounterType =
+                            selectedEncounter === "scout-drone" ? "raider-mech" : "siege-walker"
+                          handleStartEncounter(nextTarget)
+                        }}
+                        className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer"
+                      >
+                        <Play className="size-4" /> Thách đấu mục tiêu tiếp theo ➔
+                      </Button>
+                    )}
 
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    playClickSound()
-                    setActiveSubView("hangar")
-                  }}
-                  className="gap-2 font-display uppercase tracking-wider border border-border"
-                >
-                  <Wrench className="size-4 text-cyan-400" /> Mở Kho Đồ & Hangar
-                </Button>
+                    {/* 3. Tái đấu mục tiêu hiện tại */}
+                    <Button
+                      variant={activeCampaignMission && nextCampaignMission ? "outline" : "default"}
+                      onClick={() => {
+                        playClickSound()
+                        handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+                      }}
+                      className="gap-2 font-display uppercase tracking-wider cursor-pointer"
+                    >
+                      <RotateCcw className="size-4" /> Tái đấu mục tiêu này
+                    </Button>
 
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    playClickSound()
-                    setActiveSubView("shop")
-                  }}
-                  className="gap-2 font-display uppercase tracking-wider border border-amber-500/40 text-amber-300 hover:bg-amber-950/50"
-                >
-                  <ShoppingBag className="size-4 text-amber-400" /> Chợ Quân Sự
-                </Button>
-              </div>
+                    {/* 4. Tiếp tục Chiến Dịch (Quay lại Bản Đồ Chiến Dịch) */}
+                    {activeCampaignMission && (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          playClickSound()
+                          if (isEmbeddedInShell && onNavigateSection) {
+                            onNavigateSection("missions")
+                          } else {
+                            setActiveSubView("campaign")
+                          }
+                        }}
+                        className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer"
+                      >
+                        <Globe2 className="size-4" /> Tiếp tục Chiến Dịch (Bản Đồ) ➔
+                      </Button>
+                    )}
+
+                    {/* 5. Mở Kho Đồ & Hangar */}
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        playClickSound()
+                        if (isEmbeddedInShell && onNavigateSection) {
+                          onNavigateSection("hangar")
+                        } else {
+                          setActiveSubView("hangar")
+                        }
+                      }}
+                      className="gap-2 font-display uppercase tracking-wider border border-border cursor-pointer"
+                    >
+                      <Wrench className="size-4 text-cyan-400" /> Mở Kho Đồ & Hangar
+                    </Button>
+
+                    {/* 6. Chợ Quân Sự */}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        playClickSound()
+                        if (isEmbeddedInShell && onNavigateSection) {
+                          onNavigateSection("shop")
+                        } else {
+                          setActiveSubView("shop")
+                        }
+                      }}
+                      className="gap-2 font-display uppercase tracking-wider border border-amber-500/40 text-amber-300 hover:bg-amber-950/50 cursor-pointer"
+                    >
+                      <ShoppingBag className="size-4 text-amber-400" /> Chợ Quân Sự
+                    </Button>
+                  </div>
+                )
+              })()}
             </div>
           )}
         </>

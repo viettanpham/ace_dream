@@ -45,6 +45,9 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa trong thư m�
 - **Lưu Trữ & Di Chuyển Schema**: [`docs/systems/SAVE_DATA.md`](./docs/systems/SAVE_DATA.md) — Quy tắc bảo toàn dữ liệu và di chuyển an toàn Schema v1 ➔ v2 ➔ v3 ➔ v4.
 - **Danh Mục Tổng Thể Hệ Thống**: [`docs/systems/GAME_SYSTEMS.md`](./docs/systems/GAME_SYSTEMS.md) — Phân loại trách nhiệm giữa buồng lái STARFRONT và phân hệ Ace Manager.
 
+### 🎨 Quy Chuẩn Mỹ Thuật & Hình Ảnh (`docs/art-direction/`)
+- **Quy Chuẩn Art Direction Toàn Cầu**: [`docs/art-direction/ART_DIRECTION.md`](./docs/art-direction/ART_DIRECTION.md) — Thẩm mỹ Hard Sci-Fi Aerospace, Concept Art Mecha 3D, Chân dung & Toàn thân Pilot anime-realistic, Prompt Engineering chuẩn, Kiến trúc Fallback 3 lớp và QA Checklist 10 điểm.
+
 ---
 
 ## 4. Ma Trận Trạng Thái Tổng Quát (High-Level Phase Matrix)

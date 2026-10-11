@@ -264,6 +264,20 @@ export function StarfrontHome({
               </div>
             </div>
 
+            {/* Ảnh Mecha Concept Art Hero Showcase */}
+            <div className="mt-3 relative w-full h-44 sm:h-52 overflow-hidden rounded-sm border border-cyan-500/30 bg-black/80 flex items-center justify-center group shadow-md">
+              <img
+                src={activeGearDef.illustration || `/images/${activeGearId}-gear.jpg`}
+                alt={activeGearDef.name}
+                className="w-full h-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+              <div className="absolute bottom-2 left-2.5 z-10 flex items-center gap-1.5 font-mono text-[10px] text-cyan-300 bg-black/70 px-2 py-0.5 rounded border border-cyan-500/30 backdrop-blur-xs">
+                <span className="size-1.5 rounded-full" style={{ backgroundColor: activeGearDef.color }} />
+                <span>{activeGearDef.name.toUpperCase()} // 3D CONCEPT ART</span>
+              </div>
+            </div>
+
             {/* Nội tại Gear */}
             <div className="mt-3 rounded border border-border/60 bg-black/50 p-2.5">
               <div className="flex items-center justify-between text-xs font-mono font-bold">

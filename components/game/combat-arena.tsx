@@ -36,6 +36,7 @@ import {
   findCampaignQuest,
   generateEquipmentReward,
   getNextCampaignMission,
+  getCurrentOrNextCampaignMission,
   STANDARD_CAMPAIGN_QUESTS,
 } from "@/lib/game/scaling"
 import {
@@ -206,7 +207,7 @@ export function CombatArena({
         }
       }
     }
-  }, [parentMission])
+  }, [parentMission, activeCampaignMission?.id])
 
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
   const activeGearDef = STARFRONT_GEAR_DEFS[activeGearId] || STARFRONT_GEAR_DEFS.vanguard
@@ -2183,22 +2184,22 @@ export function CombatArena({
 
               {/* Nút hành động sau trận */}
               {(() => {
-                const nextCampaignMission = activeCampaignMission
+                const campaignCandidate = activeCampaignMission
                   ? getNextCampaignMission(activeCampaignMission.id, progression)
-                  : null
+                  : getCurrentOrNextCampaignMission(progression, null)
 
                 return (
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
                     {/* 1. Nút Thách đấu mục tiêu tiếp theo khi đang làm Chiến Dịch (VD: Ải 1-1 -> Ải 1-2) */}
-                    {status === "victory" && activeCampaignMission && nextCampaignMission && (
+                    {status === "victory" && campaignCandidate && (
                       <Button
                         onClick={() => {
                           playClickSound()
-                          setActiveCampaignMission(nextCampaignMission)
-                          onSelectCampaignMission?.(nextCampaignMission)
-                          handleStartEncounter(nextCampaignMission.encounterId, progression, nextCampaignMission)
+                          setActiveCampaignMission(campaignCandidate)
+                          onSelectCampaignMission?.(campaignCandidate)
+                          handleStartEncounter(campaignCandidate.encounterId, progression, campaignCandidate)
                           setFloatingNotification({
-                            text: `ĐÃ XUẤT KÍCH: ${nextCampaignMission.title.toUpperCase()} ⚡`,
+                            text: `ĐÃ XUẤT KÍCH: ${campaignCandidate.title.toUpperCase()} ⚡`,
                             isCrit: false,
                             isPlayer: true,
                           })
@@ -2206,11 +2207,11 @@ export function CombatArena({
                         }}
                         className="gap-2 font-display uppercase tracking-wider bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer"
                       >
-                        <Play className="size-4 fill-current" /> Thách đấu mục tiêu tiếp theo ({nextCampaignMission.title.split(":")[0] || "Ải Tiếp Theo"}) ➔
+                        <Play className="size-4 fill-current" /> Thách đấu mục tiêu tiếp theo ({campaignCandidate.title.split(":")[0] || "Ải Tiếp Theo"}) ➔
                       </Button>
                     )}
 
-                    {/* 2. Thách đấu mục tiêu tiếp theo trong Đấu Trường Tự Do (Free Scrimmage) */}
+                    {/* 2. Thách đấu mục tiêu tiếp theo trong Đấu Trường Tự Do (Free Scrimmage - Chỉ khi người chơi chủ động chọn đấu tự do) */}
                     {status === "victory" && !activeCampaignMission && selectedEncounter !== "siege-walker" && (
                       <Button
                         variant="outline"
@@ -2220,15 +2221,15 @@ export function CombatArena({
                             selectedEncounter === "scout-drone" ? "raider-mech" : "siege-walker"
                           handleStartEncounter(nextTarget)
                         }}
-                        className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer"
+                        className="gap-2 border-cyan-400/60 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer text-xs font-mono"
                       >
-                        <Play className="size-4" /> Thách đấu mục tiêu tiếp theo ➔
+                        <Play className="size-3.5" /> Đấu trường tự do ({selectedEncounter === "scout-drone" ? "Cơ Giáp Đột Kích" : "Pháo Đài"}) ➔
                       </Button>
                     )}
 
                     {/* 3. Tái đấu mục tiêu hiện tại */}
                     <Button
-                      variant={activeCampaignMission && nextCampaignMission ? "outline" : "default"}
+                      variant={campaignCandidate ? "outline" : "default"}
                       onClick={() => {
                         playClickSound()
                         handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
@@ -2239,22 +2240,20 @@ export function CombatArena({
                     </Button>
 
                     {/* 4. Tiếp tục Chiến Dịch (Quay lại Bản Đồ Chiến Dịch) */}
-                    {activeCampaignMission && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          playClickSound()
-                          if (isEmbeddedInShell && onNavigateSection) {
-                            onNavigateSection("missions")
-                          } else {
-                            setActiveSubView("campaign")
-                          }
-                        }}
-                        className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer"
-                      >
-                        <Globe2 className="size-4" /> Tiếp tục Chiến Dịch (Bản Đồ) ➔
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        playClickSound()
+                        if (isEmbeddedInShell && onNavigateSection) {
+                          onNavigateSection("missions")
+                        } else {
+                          setActiveSubView("campaign")
+                        }
+                      }}
+                      className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer"
+                    >
+                      <Globe2 className="size-4" /> Tiếp tục Chiến Dịch (Bản Đồ) ➔
+                    </Button>
 
                     {/* 5. Mở Kho Đồ & Hangar */}
                     <Button

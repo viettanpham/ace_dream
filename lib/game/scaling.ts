@@ -873,3 +873,41 @@ export function getNextCampaignMission(
   }
 }
 
+/**
+ * Lấy nhiệm vụ chiến dịch hiện tại hoặc tiếp theo của người chơi.
+ * Nếu đã chỉ định currentMissionId, lấy ải kế tiếp.
+ * Nếu không chỉ định (hoặc là ải cuối), tự động tìm ải đầu tiên chưa hoàn thành (mặc định m1-1).
+ */
+export function getCurrentOrNextCampaignMission(
+  progression: StarfrontProgression,
+  currentMissionId?: string | null,
+): CampaignMission {
+  const allMissions = CAMPAIGN_SECTORS.flatMap((s) => s.missions)
+  
+  if (currentMissionId) {
+    const next = getNextCampaignMission(currentMissionId, progression)
+    if (next) return next
+  }
+
+  // Tìm ải đầu tiên chưa hoàn thành
+  const uncompleted = allMissions.find(
+    (m) => !progression.completedMissions.includes(m.id),
+  )
+  const targetMission = uncompleted || allMissions[0]
+
+  const override = progression.missionOverrides?.[targetMission.id]
+  const questData = findCampaignQuest(targetMission.id) || STANDARD_CAMPAIGN_QUESTS.find((q) => q.id === targetMission.id)
+  const questLevel = targetMission.level ?? questData?.level ?? targetMission.recommendedLevel ?? 1
+  const questQuality = override?.quality ?? questData?.quality ?? "standard"
+  const variantId = override?.variantId ?? questData?.variantId ?? "recon"
+  const preview = override?.previewReward ?? questData?.previewReward
+
+  return {
+    ...targetMission,
+    level: questLevel,
+    quality: questQuality,
+    variantId,
+    previewReward: preview,
+  }
+}
+

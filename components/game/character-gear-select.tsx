@@ -720,13 +720,13 @@ export function CharacterGearSelect({
                             </div>
 
                             <div
-                              className="size-11 shrink-0 rounded border p-0.5 bg-black/40"
-                              style={{ borderColor: `${def.color}60` }}
+                              className="w-16 h-12 shrink-0 rounded overflow-hidden border bg-black/60 shadow-sm"
+                              style={{ borderColor: `${def.color}70` }}
                             >
                               <img
-                                src={def.illustration || `/images/${gId}.svg`}
+                                src={def.illustration || `/images/${gId}-gear.jpg`}
                                 alt={def.name}
-                                className="size-full object-contain"
+                                className="size-full object-cover object-center"
                               />
                             </div>
                           </div>
@@ -1212,13 +1212,14 @@ export function CharacterGearSelect({
                   <div className="text-[9px] text-muted-foreground">PT POWER TOKENS</div>
                 </div>
 
-                {/* Hình SVG Cơ Giáp */}
-                <div className="relative my-2 size-48 sm:size-52 flex items-center justify-center">
+                {/* Ảnh 3D Concept Art Cơ Giáp Trung Tâm */}
+                <div className="relative my-2 w-full max-w-md h-44 sm:h-52 rounded-sm overflow-hidden border border-cyan-500/40 bg-black/70 shadow-lg flex items-center justify-center group">
                   <img
-                    src={activeGearDef.illustration || `/images/${activeGearId}.svg`}
+                    src={activeGearDef.illustration || `/images/${activeGearId}-gear.jpg`}
                     alt={activeGearDef.name}
-                    className="size-full object-contain filter drop-shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+                    className="size-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-transform duration-500 group-hover:scale-105"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
                 </div>
 
                 <div className="text-center">

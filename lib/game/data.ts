@@ -915,7 +915,7 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     desc: "Cơ giáp chiến đấu không gian đa dụng tiêu chuẩn. Cân bằng hoàn hảo giữa hỏa lực, khả năng bảo hộ và tốc độ cơ động.",
     color: "#06b6d4",
     avatar: "/images/marcus-portrait.jpg",
-    illustration: "/images/vanguard.svg",
+    illustration: "/images/vanguard-gear.jpg",
     passive: {
       id: "stable-core",
       name: "Lõi Năng Lượng Ổn Định",
@@ -951,7 +951,7 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     desc: "Chuyên cơ săn lùng tốc độ cao. Luôn giành quyền ra đòn trước tiên (Speed 125), hỏa lực sắc bén nhưng vỏ giáp nhẹ hơn.",
     color: "#a855f7",
     avatar: "/images/alviss-portrait.jpg",
-    illustration: "/images/falcon.svg",
+    illustration: "/images/falcon-gear.jpg",
     passive: {
       id: "mach-aero",
       name: "Khí Động Học Mach",
@@ -987,7 +987,7 @@ export const STARFRONT_GEAR_DEFS: Record<StarfrontGearId, StarfrontGearClassDef>
     desc: "Cỗ máy chiến tranh hạng nặng bọc giáp titan. Máu cực dày, phòng thủ kiên cố và hỏa lực pháo hạt nhân khủng khiếp.",
     color: "#f59e0b",
     avatar: "/images/valentine-portrait.jpg",
-    illustration: "/images/aegis.svg",
+    illustration: "/images/aegis-gear.jpg",
     passive: {
       id: "titan-reactive",
       name: "Giáp Phản Lực Titan",

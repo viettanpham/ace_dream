@@ -21,6 +21,7 @@ import {
   getExpRequiredForLevel,
   INITIAL_STARFRONT_PROGRESSION,
 } from "@/lib/game/progression"
+import { getCurrentOrNextCampaignMission } from "@/lib/game/scaling"
 import type {
   CampaignMission,
   StarfrontGearId,
@@ -282,8 +283,16 @@ export function StarfrontShell() {
   }
 
   // Chuyển phân hệ chính
-  const handleSwitchSection = (section: StarfrontSection) => {
+  const handleSwitchSection = (section: StarfrontSection, forceMission?: CampaignMission | null) => {
     playClickSound()
+    if (section === "battlefield") {
+      if (forceMission !== undefined) {
+        setActiveCampaignMission(forceMission)
+      } else if (!activeCampaignMission) {
+        const autoMission = getCurrentOrNextCampaignMission(progression, null)
+        setActiveCampaignMission(autoMission)
+      }
+    }
     setActiveSection(section)
     setMobileMenuOpen(false)
   }
@@ -557,6 +566,14 @@ export function StarfrontShell() {
                           key={sub.id}
                           onClick={() => {
                             playClickSound()
+                            if (sec.id === "battlefield") {
+                              if (sub.id === "campaign") {
+                                const autoMission = getCurrentOrNextCampaignMission(progression, null)
+                                setActiveCampaignMission(autoMission)
+                              } else if (sub.id === "arena") {
+                                setActiveCampaignMission(null)
+                              }
+                            }
                             setActiveSection(sec.id)
                             setMobileMenuOpen(false)
                           }}

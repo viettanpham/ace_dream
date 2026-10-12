@@ -39,26 +39,37 @@ export function ThreatVisualizer({
 }: ThreatVisualizerProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
-  // Đảm bảo dữ liệu được sắp xếp theo ngày tăng dần
-  const sortedHistory = useMemo(() => {
-    return [...history].sort((a, b) => a.day - b.day)
+  // Phase 6.27: Đảm bảo dữ liệu được làm sạch, loại bỏ trùng ngày, sắp xếp tăng dần và giới hạn tối đa 10 mốc
+  const sanitizedHistory = useMemo(() => {
+    if (!history || history.length === 0) return []
+    const map = new Map<number, ThreatHistoryDataPoint>()
+    for (const pt of history) {
+      if (typeof pt.day === "number" && typeof pt.threat === "number" && !isNaN(pt.day) && !isNaN(pt.threat)) {
+        map.set(pt.day, pt)
+      }
+    }
+    return Array.from(map.values())
+      .sort((a, b) => a.day - b.day)
+      .slice(-10)
   }, [history])
 
-  // Tính toán biến động (Delta) so với ngày trước đó
+  // Tính toán biến động (Delta) giữa hai mốc gần nhất với thông tin độ lệch chu kỳ (gap-aware)
   const trendMetrics = useMemo(() => {
-    if (sortedHistory.length < 2) {
+    if (sanitizedHistory.length < 2) {
       return null
     }
-    const latest = sortedHistory[sortedHistory.length - 1]
-    const previous = sortedHistory[sortedHistory.length - 2]
+    const latest = sanitizedHistory[sanitizedHistory.length - 1]
+    const previous = sanitizedHistory[sanitizedHistory.length - 2]
     const delta = latest.threat - previous.threat
+    const dayGap = latest.day - previous.day
     return {
       delta,
       previousDay: previous.day,
       latestDay: latest.day,
+      dayGap,
       direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
     }
-  }, [sortedHistory])
+  }, [sanitizedHistory])
 
   // Màu sắc theo mức Threat
   const threatTheme = useMemo(() => {
@@ -94,20 +105,20 @@ export function ThreatVisualizer({
 
   // Tính tọa độ SVG cho biểu đồ đường
   const chartGeometry = useMemo(() => {
-    if (sortedHistory.length < 2) return null
+    if (sanitizedHistory.length < 2) return null
 
     const width = 280
     const height = 52
     const padX = 14
     const padY = 8
 
-    const threats = sortedHistory.map((p) => p.threat)
+    const threats = sanitizedHistory.map((p) => p.threat)
     const minVal = Math.max(0, Math.min(...threats) - 30)
     const maxVal = Math.min(1000, Math.max(...threats) + 30)
     const range = Math.max(80, maxVal - minVal)
 
-    const points = sortedHistory.map((pt, i) => {
-      const x = padX + (i / (sortedHistory.length - 1)) * (width - 2 * padX)
+    const points = sanitizedHistory.map((pt, i) => {
+      const x = padX + (i / (sanitizedHistory.length - 1)) * (width - 2 * padX)
       const normalizedY = (pt.threat - minVal) / range
       // Y đảo ngược: giá trị cao hơn nằm ở trên (Y bé hơn)
       const y = height - padY - normalizedY * (height - 2 * padY)
@@ -128,7 +139,7 @@ export function ThreatVisualizer({
       minVal,
       maxVal,
     }
-  }, [sortedHistory])
+  }, [sanitizedHistory])
 
   const activePoint = hoveredIndex !== null && chartGeometry
     ? chartGeometry.points[hoveredIndex]
@@ -203,7 +214,11 @@ export function ThreatVisualizer({
                 ? "text-emerald-400"
                 : "text-zinc-400"
             )}
-            title={`Biến động từ Ngày #${trendMetrics.previousDay} sang Ngày #${trendMetrics.latestDay}`}
+            title={
+              trendMetrics.dayGap === 1
+                ? `Biến động từ Ngày #${trendMetrics.previousDay} sang Ngày #${trendMetrics.latestDay} (1 chu kỳ)`
+                : `Biến động từ Ngày #${trendMetrics.previousDay} sang Ngày #${trendMetrics.latestDay} (cách ${trendMetrics.dayGap} chu kỳ)`
+            }
           >
             {trendMetrics.direction === "up" && <ArrowUpRight className="size-3" />}
             {trendMetrics.direction === "down" && <ArrowDownRight className="size-3" />}
@@ -214,6 +229,11 @@ export function ThreatVisualizer({
             <span className="text-[9px] opacity-80 uppercase ml-0.5">
               ({trendMetrics.direction === "up" ? "Tăng" : trendMetrics.direction === "down" ? "Giảm" : "Ổn định"})
             </span>
+            {trendMetrics.dayGap > 1 && (
+              <span className="text-[8px] text-zinc-500 font-sans ml-0.5">
+                (N#{trendMetrics.previousDay}→N#{trendMetrics.latestDay})
+              </span>
+            )}
           </div>
         ) : (
           <span className="text-zinc-500 italic text-[9px]">Chưa đủ chu kỳ</span>
@@ -221,7 +241,7 @@ export function ThreatVisualizer({
       </div>
 
       {/* Vùng Vẽ Biểu Đồ SVG hoặc Fallback khi chưa đủ dữ liệu */}
-      {sortedHistory.length < 2 || !chartGeometry ? (
+      {sanitizedHistory.length < 2 || !chartGeometry ? (
         <div className="flex flex-col items-center justify-center p-3 rounded border border-dashed border-zinc-800 bg-zinc-950/40 text-center">
           <span className="text-[10px] font-medium text-zinc-400">Chưa đủ dữ liệu lịch sử</span>
           <span className="text-[9px] text-zinc-600 mt-0.5">
@@ -354,18 +374,18 @@ export function ThreatVisualizer({
 
           {/* Hàng nhãn mốc thời gian (Tối đa 10 chu kỳ gần nhất) */}
           <div className="flex items-center justify-between gap-1 text-[8px] font-mono text-zinc-500 pt-0.5">
-            {sortedHistory.slice(-10).map((pt, idx, arr) => {
+            {sanitizedHistory.map((pt, idx, arr) => {
               const isLatest = idx === arr.length - 1
               return (
                 <div
                   key={pt.day}
-                  onMouseEnter={() => setHoveredIndex(sortedHistory.indexOf(pt))}
+                  onMouseEnter={() => setHoveredIndex(idx)}
                   onMouseLeave={() => setHoveredIndex(null)}
                   className={cn(
                     "flex-1 flex flex-col items-center py-0.5 rounded cursor-pointer transition-colors",
                     isLatest
                       ? "bg-zinc-900 border border-cyan-500/30 text-cyan-300 font-bold"
-                      : hoveredIndex === sortedHistory.indexOf(pt)
+                      : hoveredIndex === idx
                       ? "bg-zinc-800 text-zinc-200"
                       : "text-zinc-500 hover:text-zinc-300"
                   )}

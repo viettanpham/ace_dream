@@ -34,9 +34,18 @@ export function ResourceSparkline({
 }: ResourceSparklineProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
-  // Sắp xếp lịch sử theo ngày
-  const sortedHistory = useMemo(() => {
-    return [...history].sort((a, b) => a.day - b.day)
+  // Phase 6.27: Làm sạch dữ liệu lịch sử, loại bỏ trùng ngày, sắp xếp tăng dần và giới hạn tối đa 10 mốc
+  const sanitizedHistory = useMemo(() => {
+    if (!history || history.length === 0) return []
+    const map = new Map<number, ResourceHistoryPoint>()
+    for (const pt of history) {
+      if (typeof pt.day === "number" && typeof pt.value === "number" && !isNaN(pt.day) && !isNaN(pt.value)) {
+        map.set(pt.day, pt)
+      }
+    }
+    return Array.from(map.values())
+      .sort((a, b) => a.day - b.day)
+      .slice(-10)
   }, [history])
 
   // Trạng thái mức độ đe dọa / cạn kiệt tài nguyên
@@ -71,36 +80,38 @@ export function ResourceSparkline({
     }
   }, [currentValue, criticalThreshold, warningThreshold, targetValue, unitLabel])
 
-  // Biến động Delta giữa 2 điểm gần nhất
+  // Biến động Delta giữa 2 điểm gần nhất với thông tin độ lệch chu kỳ (gap-aware)
   const trendMetrics = useMemo(() => {
-    if (sortedHistory.length < 2) return null
-    const latest = sortedHistory[sortedHistory.length - 1]
-    const previous = sortedHistory[sortedHistory.length - 2]
+    if (sanitizedHistory.length < 2) return null
+    const latest = sanitizedHistory[sanitizedHistory.length - 1]
+    const previous = sanitizedHistory[sanitizedHistory.length - 2]
     const delta = latest.value - previous.value
+    const dayGap = latest.day - previous.day
     return {
       delta,
       direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
       latestDay: latest.day,
       previousDay: previous.day,
+      dayGap,
     }
-  }, [sortedHistory])
+  }, [sanitizedHistory])
 
   // Tọa độ SVG cho micro-sparkline
   const sparklineGeometry = useMemo(() => {
-    if (sortedHistory.length < 2) return null
+    if (sanitizedHistory.length < 2) return null
 
     const width = 84
     const height = 24
     const padX = 6
     const padY = 4
 
-    const values = sortedHistory.map((p) => p.value)
+    const values = sanitizedHistory.map((p) => p.value)
     const minVal = Math.min(...values)
     const maxVal = Math.max(...values)
     const range = Math.max(10, maxVal - minVal)
 
-    const points = sortedHistory.map((pt, i) => {
-      const x = padX + (i / (sortedHistory.length - 1)) * (width - 2 * padX)
+    const points = sanitizedHistory.map((pt, i) => {
+      const x = padX + (i / (sanitizedHistory.length - 1)) * (width - 2 * padX)
       const normalizedY = (pt.value - minVal) / range
       const y = height - padY - normalizedY * (height - 2 * padY)
       return { x, y, day: pt.day, value: pt.value }
@@ -118,7 +129,7 @@ export function ResourceSparkline({
       lineString,
       areaString,
     }
-  }, [sortedHistory])
+  }, [sanitizedHistory])
 
   const activePoint = hoveredIndex !== null && sparklineGeometry
     ? sparklineGeometry.points[hoveredIndex]
@@ -145,7 +156,7 @@ export function ResourceSparkline({
 
       {/* Hàng 2: Micro Sparkline + Xu hướng hoặc Fallback */}
       <div className="flex items-center justify-between gap-2 pt-0.5 border-t border-zinc-800/40">
-        {sortedHistory.length < 2 || !sparklineGeometry ? (
+        {sanitizedHistory.length < 2 || !sparklineGeometry ? (
           <div className="flex items-center justify-between w-full text-[9px] text-zinc-500 font-mono">
             <span>Xu hướng:</span>
             <span className="italic text-zinc-500">Chưa đủ dữ liệu lịch sử</span>
@@ -249,7 +260,11 @@ export function ResourceSparkline({
                       ? "text-red-400"
                       : "text-zinc-400"
                   )}
-                  title={`Biến động từ Ngày #${trendMetrics.previousDay} sang Ngày #${trendMetrics.latestDay}`}
+                  title={
+                    trendMetrics.dayGap === 1
+                      ? `Biến động từ Ngày #${trendMetrics.previousDay} sang Ngày #${trendMetrics.latestDay} (1 chu kỳ)`
+                      : `Biến động từ Ngày #${trendMetrics.previousDay} sang Ngày #${trendMetrics.latestDay} (cách ${trendMetrics.dayGap} chu kỳ)`
+                  }
                 >
                   {trendMetrics.direction === "up" && <ArrowUpRight className="size-2.5" />}
                   {trendMetrics.direction === "down" && <ArrowDownRight className="size-2.5" />}
@@ -258,7 +273,7 @@ export function ResourceSparkline({
                     {trendMetrics.delta > 0 ? `+${trendMetrics.delta}` : trendMetrics.delta}
                   </span>
                   <span className="text-[8px] opacity-75 font-sans ml-0.5">
-                    /ngày
+                    {trendMetrics.dayGap === 1 ? "/ngày" : ` (N#${trendMetrics.previousDay}→N#${trendMetrics.latestDay})`}
                   </span>
                 </span>
               )}

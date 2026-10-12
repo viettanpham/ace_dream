@@ -4,6 +4,41 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.27] — STARFRONT WORLD: Bảo Toàn Tính Đúng Đắn Dữ Liệu & Tính Liên Tục Phiên (Strategic Overview Data Integrity & Session Continuity)
+
+*Đã hoàn thành 100% Phase 6.27 — Chuẩn hóa và bảo đảm tính toàn vẹn dữ liệu cho tab Strategic Overview, biểu đồ Threat Visualizer và Resource Sparklines sau mỗi tick, tua nhanh (fast-forward), bắt kịp ngoại tuyến (catch-up) và tải lại trang (reload); đồng bộ 100% điểm dữ liệu ngày hiện tại với số liệu thực tế trên thẻ Strategic Status; bảo đảm chế độ Critical Sector gắn chuẩn xác và tự động chuyển đổi khi sector nguy cấp nhất thay đổi; chế độ Galaxy Average Threat tính toán trung bình từ dữ liệu thực tế và không coi dữ liệu thiếu là Threat = 0; nâng cấp cơ chế tính Delta có khả năng nhận biết độ giãn cách chu kỳ (gap-aware) và loại bỏ trùng ngày (deduplication); chuẩn hóa Session Resource Tracker ghi nhận đúng mốc sau mỗi tick, tua nhanh và catch-up mà không sinh mốc trùng trên re-render/modal/tab switch; trung thực fallback "Chưa đủ dữ liệu lịch sử" khi reload thay vì giả định lưu trữ; bảo toàn tuyệt đối Save Schema V1, Checksum CRC32 và RPG Save V4 (7/7 Phase 6.27 tests PASS, 37/37 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Bảo Đảm Tính Đúng Đắn Của Lịch Sử Threat (Threat Data Integrity)**:
+  * Biểu đồ `ThreatVisualizer` chỉ lấy dữ liệu từ `threatHistory` thực tế, không nội suy, không sinh điểm giả hay tính ngược từ trạng thái hiện tại.
+  * Đồng bộ hóa 100% điểm ngày hiện tại trong lịch sử Điểm Nóng với `threatLevel` thực tế của sector, bảo đảm giá trị trên thẻ Strategic Status và điểm cuối trên biểu đồ luôn khớp tuyệt đối.
+  * Khi Sector nguy cấp nhất thay đổi (ví dụ: sector khác bị tấn công tăng vọt threat), chế độ Điểm Nóng lập tức phản ánh đúng sector mới và toàn bộ lịch sử độc lập của nó.
+  * Chế độ Galaxy Average Threat tính trung bình cộng chính xác cho từng ngày theo số lượng sector thực tế có báo cáo dữ liệu (`dayTotals[day].sum / dayTotals[day].count`), không coi sector thiếu dữ liệu là Threat = 0.
+  * Điểm ngày hiện tại của Galaxy Average Threat khớp chính xác với chỉ số `avgThreat` hiển thị trên thẻ Strategic Status.
+- **2. Tính Toán Delta Chuẩn Xác & Nhận Biết Độ Giãn Cách Chu Kỳ (Gap-Aware Delta)**:
+  * Cả `ThreatVisualizer` và `ResourceSparkline` đều được nâng cấp cơ chế `sanitizedHistory`: làm sạch dữ liệu, loại bỏ trùng ngày (deduplication), sắp xếp theo ngày tăng dần và giới hạn tối đa 10 mốc gần nhất.
+  * Tự động nhận diện khoảng cách chu kỳ (`dayGap = latestDay - previousDay`):
+    - Chu kỳ liên tiếp (`dayGap === 1`): Hiển thị `+X Threat` hoặc `+X /ngày` kèm tooltip 1 chu kỳ.
+    - Chu kỳ cách quãng (`dayGap > 1` do tua nhanh hoặc nhảy chu kỳ): Hiển thị rõ ràng khoảng cách mốc `(N#prev→N#latest)` kèm tooltip giải thích số chu kỳ cách nhau, ngăn chặn ngộ nhận là biến động 1 ngày.
+  * Cơ chế deduplication loại bỏ hoàn toàn rủi ro sinh Delta = 0 giả tạo từ các bản ghi trùng lặp trong cùng một ngày.
+- **3. Session Resource Tracker & Xử Lý Tiến Thời Gian Chuẩn Xác**:
+  * Mỗi ngày chiến lược chỉ ghi nhận duy nhất 1 mốc cho mỗi tài nguyên theo đúng thời điểm cập nhật World State.
+  * React re-renders, mở/đóng modal (`reviewingEvent`) hay chuyển đổi tab không làm tăng số lượng mốc hay nhân bản dữ liệu.
+  * Ghi nhận đầy đủ từng tick thực tế khi:
+    - Tiến 1 ngày (`handleAdvanceTick`): Ghi nhận 1 mốc tài nguyên mới.
+    - Tua nhanh nhiều ngày (`handleFastForwardDays`): Ghi nhận từng mốc tick thực tế ngay sau mỗi lần `executeWorldTick`, sắp xếp theo thời gian và giữ tối đa 10 mốc gần nhất.
+    - Bắt kịp ngoại tuyến (`processOfflineCatchup`): Ghi nhận các mốc tick thực tế phát sinh trong thời gian ngoại tuyến.
+- **4. Tính Trung Thực Khi Reload & Bảo Toàn 100% World Save Schema V1**:
+  * Khi người chơi tải lại trang (reload), lịch sử theo phiên trong bộ nhớ bắt đầu lại từ đầu; giao diện hiển thị trạng thái *"Chưa đủ dữ liệu lịch sử"* trung thực cho đến khi tích lũy đủ từ 2 mốc trở lên.
+  * Tuyệt đối không chèn trường dữ liệu tùy tiện vào `STARFRONT_WORLD_SAVE_V1` chỉ để giữ sparkline qua reload.
+  * Giữ nguyên vẹn toàn bộ cấu trúc Checksum CRC32, Atomic Storage, RPG Save V4 và các động cơ gameplay cốt lõi.
+- **5. Kiểm Thử Tự Động & Độ Tin Cậy Mã Nguồn**:
+  * Bổ sung bộ kiểm thử tự động `tests/world/phase6-27-data-integrity-session-continuity.test.ts` đạt 7/7 tests PASS.
+  * Toàn bộ 37/37 test suites của dự án vượt qua thành công (100% PASS).
+  * Build Next.js 16 và TypeScript linting thành công 100%.
+
+---
+
 ## [Phase 6.26] — STARFRONT WORLD: Trực Quan Hóa Xu Hướng Đe Dọa & Dự Trữ Tài Nguyên (Threat & Resource Trend Visualization)
 
 *Đã hoàn thành 100% Phase 6.26 — Nâng cấp toàn diện tab Tình Hình Toàn Cảnh (Overview) với hệ thống trực quan hóa trực quan bằng biểu đồ đường Threat Visualizer (SVG) và micro-sparklines cho tài nguyên thiết yếu (Lương thực dân sự & Vật tư tiếp tế); giúp người chỉ huy phát hiện sớm các nguy cơ leo thang đe dọa hoặc nguy cơ cạn kiệt tài nguyên trước khi khủng hoảng xảy ra; tích hợp 2 chế độ hiển thị Threat (Điểm Nóng Tác Chiến và Trung Bình Toàn Thiên Hà); hiển thị Delta biến động theo chu kỳ ngày thực tế kèm tooltip tương tác; trạng thái Fallback trung thực "Chưa đủ dữ liệu lịch sử" khi có dưới 2 điểm thay vì giả lập số liệu; bảo toàn 100% World Save Schema V1, RPG Save V4, Tick Engine và các ngưỡng cảnh báo hiện có (7/7 Phase 6.26 tests PASS, 36/36 Test Suites PASS, build & lint thành công).*

@@ -202,9 +202,18 @@ export function OperationsCenter({
         if (elapsed >= speedMs) {
           const pendingTicks = Math.min(360, Math.floor(elapsed / speedMs))
           if (pendingTicks > 0) {
+            const catchupResourcePoints: Array<{ day: number; food: number; logisticsSupplies: number }> = []
             for (let t = 0; t < pendingTicks; t++) {
               executeWorldTick(state)
               checkAndSpawnWorldEvents(state, cfg.generator, undefined, cfg.strategyPolicy)
+              catchupResourcePoints.push({
+                day: state.currentDay,
+                food: state.resources.food,
+                logisticsSupplies: state.resources.logisticsSupplies,
+              })
+            }
+            if (catchupResourcePoints.length > 0) {
+              setSessionResourceHistory(catchupResourcePoints.slice(-10))
             }
             saveWorldState(state)
             const rem = elapsed % speedMs
@@ -356,6 +365,7 @@ export function OperationsCenter({
     playClickSound()
     setIsTickAdvancing(true)
     try {
+      const fastForwardPoints: Array<{ day: number; food: number; logisticsSupplies: number }> = []
       for (let i = 0; i < days; i++) {
         executeWorldTick(worldState)
         checkAndSpawnWorldEvents(
@@ -364,6 +374,19 @@ export function OperationsCenter({
           undefined,
           simulatorConfig.strategyPolicy
         )
+        fastForwardPoints.push({
+          day: worldState.currentDay,
+          food: worldState.resources.food,
+          logisticsSupplies: worldState.resources.logisticsSupplies,
+        })
+      }
+      if (fastForwardPoints.length > 0) {
+        setSessionResourceHistory((prev) => {
+          const map = new Map<number, { day: number; food: number; logisticsSupplies: number }>()
+          for (const p of prev) map.set(p.day, p)
+          for (const pt of fastForwardPoints) map.set(pt.day, pt)
+          return Array.from(map.values()).sort((a, b) => a.day - b.day).slice(-10)
+        })
       }
       saveWorldState(worldState)
       setWorldState({ ...worldState })
@@ -537,6 +560,7 @@ export function OperationsCenter({
 
   const reloadState = () => {
     const loadRes = loadWorldState()
+    setSessionResourceHistory([])
     setWorldState({ ...loadRes.state })
   }
 
@@ -562,6 +586,15 @@ export function OperationsCenter({
         simulatorConfig.strategyPolicy
       )
       saveWorldState(worldState)
+      setSessionResourceHistory((prev) => {
+        const currentDay = worldState.currentDay
+        const food = worldState.resources.food
+        const logisticsSupplies = worldState.resources.logisticsSupplies
+        const map = new Map<number, { day: number; food: number; logisticsSupplies: number }>()
+        for (const p of prev) map.set(p.day, p)
+        map.set(currentDay, { day: currentDay, food, logisticsSupplies })
+        return Array.from(map.values()).sort((a, b) => a.day - b.day).slice(-10)
+      })
       setWorldState({ ...worldState })
       playShieldSound()
 
@@ -868,13 +901,21 @@ export function OperationsCenter({
     }
   }, [criticalSector])
 
-  // Phase 6.26: Lịch sử đe dọa của Điểm Nóng (Critical Sector)
+  // Phase 6.26 & 6.27: Lịch sử đe dọa của Điểm Nóng (Critical Sector)
   const criticalSectorThreatHistory = useMemo(() => {
     if (!criticalSector?.threatHistory) return []
-    return criticalSector.threatHistory
-  }, [criticalSector])
+    const history = [...criticalSector.threatHistory]
+    // Đồng bộ điểm ngày hiện tại với threatLevel thực tế của criticalSector để đảm bảo tính nhất quán 100%
+    if (history.length > 0 && worldState) {
+      const last = history[history.length - 1]
+      if (last.day === worldState.currentDay && last.threat !== criticalSector.threatLevel) {
+        history[history.length - 1] = { ...last, threat: criticalSector.threatLevel }
+      }
+    }
+    return history
+  }, [criticalSector, worldState?.currentDay])
 
-  // Phase 6.26: Lịch sử đe dọa trung bình toàn thiên hà (Galaxy Average Threat)
+  // Phase 6.26 & 6.27: Lịch sử đe dọa trung bình toàn thiên hà (Galaxy Average Threat)
   const galaxyAverageThreatHistory = useMemo(() => {
     if (!worldState?.sectors) return []
     const dayTotals: Record<number, { sum: number; count: number }> = {}
@@ -884,17 +925,19 @@ export function OperationsCenter({
           if (!dayTotals[pt.day]) {
             dayTotals[pt.day] = { sum: 0, count: 0 }
           }
-          dayTotals[pt.day].sum += pt.threat
+          // Với ngày hiện tại, dùng threatLevel thực tế hiện hành của sector
+          const threatVal = pt.day === worldState.currentDay ? sector.threatLevel : pt.threat
+          dayTotals[pt.day].sum += threatVal
           dayTotals[pt.day].count += 1
         }
       }
     }
     const days = Object.keys(dayTotals).map(Number).sort((a, b) => a - b)
-    return days.map((day) => ({
+    return days.slice(-10).map((day) => ({
       day,
       threat: Math.round(dayTotals[day].sum / dayTotals[day].count),
     }))
-  }, [worldState?.sectors])
+  }, [worldState?.sectors, worldState?.currentDay])
 
   // Phase 6.26: Lịch sử tài nguyên Lương thực và Vật tư tiếp tế
   const foodSparklineHistory = useMemo(() => {

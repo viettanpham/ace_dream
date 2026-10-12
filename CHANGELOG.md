@@ -4,6 +4,36 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.18] — STARFRONT WORLD: Slim Tactical HUD & Cách Ly ADMIN CP (Slim Tactical HUD & ADMIN CP Isolation)
+
+*Đã hoàn thành 100% Phase 6.18 — Triển khai P1 theo `WORLD_UI_UX_AUDIT.md`: Tinh giản header của Operations Center thành thanh Slim Tactical HUD tối ưu không gian cho War Room, cách ly hoàn toàn ADMIN CP khỏi 5 tab tác chiến thường ngày thành Modal Settings Overlay chuyên dụng (`components/game/world/admin-settings-modal.tsx`) mở qua nút bánh răng HUD, bảo toàn quy tắc an toàn đổi tốc độ và Danger Zone reset world (100% tests PASS, build thành công, 29/29 test suites PASS tuyệt đối).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Slim Tactical HUD (`components/game/world/operations-center.tsx`)**:
+  - **Tổ chức 3 Nhóm Chức Năng Rõ Ràng**:
+    * **Nhóm 1: Thời Gian Chiến Lược (Strategic Time)**: Ngày trong game (#N), Niên lịch thiên hà, chu kỳ nhật dạ (Sáng/Chiều/Tối/Đêm), trạng thái RUNNING/PAUSED, đếm ngược giây tick.
+    * **Nhóm 2: 5 Tài Nguyên Cốt Lõi (Core Resources)**: Vật Liệu Công Nghiệp, Năng Lượng Plasma, Vật Tư Hậu Cần, Dữ Liệu Tác Chiến, Lương Thực Dân Sinh; hiển thị trực quan, cảnh báo thiếu hụt nhấp nháy đỏ khi <= 20 (hoặc <= 50 với lương thực), tooltip chú thích đầy đủ.
+    * **Nhóm 3: Thao Tác Nhanh (Quick Actions)**: Thực thi ngày mới (+1 Ngày), Phóng to toàn màn hình (Fullscreen Map), Mở Báo cáo Kết quả (Results Hub), Bến điều quân nhanh (Quick Dispatch), Nút Bánh Răng (Cài Đặt / Settings Overlay), Nút Lưu thủ công an toàn (Storage V1).
+  - **Tối Ưu Chiều Cao Khung Nhìn**: Thu hẹp triệt để chiều cao và độ chiếm dụng của header so với bản cũ, ưu tiên bố cục 1 hàng trên desktop và tự động co giãn thích ứng khi thiếu chiều rộng.
+  - **Đồng Bộ Hoàn Hảo**: Giữ nguyên cơ chế tick và scheduler hiện có, không tạo timer trùng lặp hay làm trôi thời gian.
+- **2. Cách Ly ADMIN CP Thành Modal Settings Overlay (`components/game/world/admin-settings-modal.tsx`)**:
+  - **Khử bỏ Tab Admin Khỏi Thanh Điều Hướng**: Thanh nav Operations Center chỉ giữ đúng 5 tab tác chiến chuyên nghiệp (War Room Bản Đồ, Tình Hình Toàn Cảnh, Sự Kiện & Nhiệm Vụ, Quân Sự & Hậu Cần, Trung Tâm Kết Quả).
+  - **Settings Modal Chuyên Biệt**: Mở thông qua nút bánh răng Cài Đặt trên HUD, hỗ trợ đóng nhanh bằng phím `Escape`, nút `X` hoặc click ra ngoài backdrop.
+  - **Bảo Toàn Toàn Bộ Chức Năng Quản Trị**:
+    * **Tốc Độ Simulator**: Preset 15s/30s/60s/300s, Tùy chỉnh, Tạm dừng/Tiếp tục.
+    * **Quy Tắc Đổi Tốc Độ An Toàn**: Chỉ reset WORLD khi người dùng chủ động tích chọn; bấm Cancel không thay đổi tốc độ và giữ nguyên 100% dữ liệu thế giới.
+    * **Cấu Hình Event Generator 3 Tier**: Tùy biến chu kỳ sinh, thời gian tồn tại và trần active từng tier; hỗ trợ khôi phục mặc định.
+    * **Chính Sách Event Strategy Policy**: Thiết lập ưu tiên theo tier (System Auto / Default Fallback / Player Choice), lưu cấu hình và áp dụng hàng loạt (Batch Apply) cho sự kiện chờ.
+    * **Dev Triggers**: Force spawn 3 tier sự kiện, tua nhanh thời gian (+1, +5, +10, +30 ngày), thực thi từng tick, hiển thị slot lưu trữ Staging A/B và mã kiểm tra CRC32.
+    * **Danger Zone Phân Tách**: Đóng khung cảnh báo viền đỏ, thao tác Reset World độc lập yêu cầu xác nhận kép; reset dữ liệu thế giới về Ngày 1 nhưng bảo toàn 100% cấu hình tốc độ và generator.
+- **3. Kiểm Thử & Độc Lập Dữ Liệu Tuyệt Đối**:
+  - Viết bộ kiểm thử chuyên dụng `tests/world/phase6-18-slim-hud-admin-isolation.test.ts` (14/14 tests PASS).
+  - 29/29 test suites PASS 100% qua `npm test`.
+  - Next.js build và typecheck thành công hoàn toàn (`compile_applet`).
+  - Phân hệ RPG Save `STARFRONT_SAVE_DATA_V4`, World State `STARFRONT_WORLD_SAVE_V1` và Simulator Config `STARFRONT_WORLD_SIMULATOR_CONFIG` cách ly an toàn tuyệt đối.
+
+---
+
 ## [Phase 6.17] — STARFRONT WORLD: Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (Primary Navigation & War Room Foundation)
 
 *Đã hoàn thành 100% Phase 6.17 — Triển khai giai đoạn P0 từ Blueprint Phase 6.16: Tái cấu trúc menu Shell đưa STARFRONT WORLD thành mục chỉ huy chiến lược vĩ mô tối cao theo mô hình 3 tầng chỉ huy, hợp nhất hoàn toàn Galaxy Map và Sector Inspector thành War Room trung tâm với Sector Command Ribbon 8 sector, loại bỏ màn hình chữ trùng lặp (100% tests PASS, build thành công, 27/27 test suites PASS tuyệt đối).*

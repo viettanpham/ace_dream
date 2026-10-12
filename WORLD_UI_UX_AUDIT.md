@@ -241,10 +241,10 @@ flowchart TD
 ### Mức P0 — Cốt Lõi, Cần Ưu Tiên Trước
 1. **[Shell Navigation]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.17]` Tái cấu trúc menu `starfront-shell.tsx` đưa `WORLD` thành mục tiêu điểm chiến lược cấp cao nhất tại Khối 1 với huy hiệu Live Galaxy và viền chỉ huy nổi bật; gom nhóm các phân khu theo mô hình 3 tầng chỉ huy.
 2. **[Hợp nhất War Room & Sector Inspector]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.17]` Đưa Galaxy Map làm tâm điểm thị giác mặc định của WORLD (`initialTab="map"`), tích hợp thanh điều phối Sector Ribbon 8 sector, Inspector đầy đủ lệnh chiến lược và đồng bộ hai chiều tức thì, loại bỏ tab `sectors` danh sách chữ trùng lặp.
-3. **[Cách ly ADMIN CP]**: `[Dự kiến Phase 6.18]` Tách tab `admin` ra khỏi thanh nav chính của Operations Center, chuyển thành Modal/Drawer quản trị cài đặt mở qua nút bánh răng góc HUD.
+3. **[Cách ly ADMIN CP]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.18]` Tách tab `admin` ra khỏi thanh nav chính của Operations Center, chuyển thành Modal Settings Overlay chuyên dụng (`components/game/world/admin-settings-modal.tsx`) mở qua nút bánh răng Cài Đặt trên Slim HUD, cách ly vùng an toàn và Danger Zone có xác nhận kép.
 
 ### Mức P1 — Nâng Cao Trải Nghiệm & Tinh Gọn Thị Giác
-4. **[Thu gọn Top Header & HUD]**: Tinh giản header cồng kềnh của `operations-center.tsx` thành thanh Tactical HUD 1 hàng cao 48px, tối ưu không gian dọc cho bản đồ và bảng điều hành.
+4. **[Thu gọn Top Header & HUD]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.18]` Tinh giản header cồng kềnh của `operations-center.tsx` thành thanh Slim Tactical HUD tối ưu không gian dọc, phân 3 nhóm rõ ràng (Thời gian chiến lược, 5 tài nguyên cốt lõi, Thao tác nhanh), tối đa hóa diện tích khung nhìn War Room.
 5. **[Tái cấu trúc Events & Missions Board]**: Triển khai bố cục 2 cột (Danh sách khẩn cấp bên trái $\rightarrow$ Chi tiết đối chiếu phương án & điểm số bên phải), làm nổi bật nguồn gốc chiến lược (`System Auto`, `Default`, `Chờ Chỉ Huy`).
 6. **[Drawer Kết Quả Kép]**: Chuyển Dual Results Hub thành ngăn kéo báo cáo (Debriefing Drawer) trượt từ cạnh phải khi có sự kiện hoàn tất hoặc khi người chơi bấm nút trên Top HUD.
 

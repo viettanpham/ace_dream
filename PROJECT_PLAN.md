@@ -18,9 +18,9 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | **Phase 6.17: Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (P0 UI/UX Foundation) đã hoàn thành 100%** (100% tests PASS, build thành công, 27/27 test suites PASS tuyệt đối). Hệ thống STARFRONT WORLD được tôn vinh thành trung tâm chỉ huy chiến lược cấp cao nhất trong Shell với mô hình 3 tầng phân định rõ ràng. Hợp nhất hoàn toàn Galaxy Map và Sector Inspector thành War Room trung tâm với Sector Ribbon điều phối nhanh 8 sector, loại bỏ màn hình chữ trùng lặp. |
+| **Trạng thái hiện tại của dự án?** | **Phase 6.18: Slim Tactical HUD & ADMIN CP Isolation đã hoàn thành 100%** (100% tests PASS, build thành công, 29/29 test suites PASS tuyệt đối). Operations Center được trang bị thanh Slim Tactical HUD tinh gọn với 3 nhóm chức năng mạch lạc, tối ưu diện tích War Room. ADMIN CP được cách ly hoàn toàn khỏi 5 tab tác chiến thường ngày, chuyển thành Modal Settings chuyên dụng có phân vùng an toàn và Danger Zone xác nhận kép. |
 | **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô tối cao của toàn bộ sản phẩm, tích hợp ở vị trí nổi bật nhất tại Khối 1 Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
-| **Phase tiếp theo cần thực hiện?** | Sẵn sàng bước sang Phase 6.18 (Slim Tactical HUD, Tách ADMIN CP thành Modal, Debriefing Drawer cho Dual Results Hub) khi có yêu cầu. |
+| **Phase tiếp theo cần thực hiện?** | Sẵn sàng bước sang Phase 6.19 theo lộ trình kiểm toán giao diện `WORLD_UI_UX_AUDIT.md` khi có yêu cầu. |
 | **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>2. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
 | **Phụ thuộc chính giữa WORLD và hệ thống hiện tại?** | - **Combat Integration**: Giao tiếp qua `WorldCombatAdapter`, sử dụng snapshot tại thời điểm khóa trận và Transaction ID chống double-apply.<br>- **Lưu trữ cách ly**: `STARFRONT_WORLD_SAVE_V1` độc lập hoàn toàn với `STARFRONT_SAVE_DATA_V4`, có sao lưu luân phiên A/B.<br>- **Navigation**: Tích hợp tab `world` vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`. |
 
@@ -84,12 +84,13 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.15** | **Chính Sách Chiến Lược Sự Kiện & Tự Động Hóa Hệ Thống (Event Strategy Policy & System Auto)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/event-strategy-policy.ts`, `lib/game/world/event-engine.ts`, `tests/world/event-strategy-policy.test.ts` |
 | **Phase 6.16** | **Đánh Giá Toàn Diện UI/UX & Bản Thiết Kế Tái Cấu Trúc (UI/UX Audit & Redesign Blueprint)** | **ĐÃ HOÀN THÀNH (DONE — BLUEPRINT APPROVED)** | `WORLD_UI_UX_AUDIT.md` |
 | **Phase 6.17** | **Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (P0 UI/UX Foundation)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/starfront-shell.tsx`, `components/game/world/operations-center.tsx`, `components/game/world/world-map.tsx` |
+| **Phase 6.18** | **Slim Tactical HUD & ADMIN CP Isolation (P1 UI/UX Refinement)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/operations-center.tsx`, `components/game/world/admin-settings-modal.tsx`, `tests/world/phase6-18-slim-hud-admin-isolation.test.ts` |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-1. **Khối Điều Hướng Shell**: STARFRONT WORLD đứng đầu Khối 1 với huy hiệu Live Galaxy và viền chỉ huy nổi bật; 3 tầng chỉ huy phân định rõ ràng giữa chiến lược vĩ mô, buồng lái cơ giáp và hậu phương khí tài.
-2. **War Room Foundation**: Galaxy Map là trung tâm tác chiến với Sector Command Ribbon 8 sector, Sector Inspector tích hợp đầy đủ lệnh và cập nhật tức thì, loại bỏ tab duplicate.
-3. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 27/27 test suites PASS 100%.
-4. Sẵn sàng cho Phase 6.18 theo lộ trình thiết kế.
+1. **Slim Tactical HUD**: Operations Center header tinh gọn 3 nhóm rõ ràng (Thời gian chiến lược, 5 tài nguyên, Quick actions), tăng tối đa không gian hiển thị cho War Room.
+2. **ADMIN CP Isolation**: Tách biệt hoàn toàn công cụ quản trị khỏi 5 tab tác chiến thường ngày, chuyển thành Modal Settings chuyên dụng hỗ trợ ESC, bảo toàn các thiết lập an toàn và Danger Zone xác nhận kép.
+3. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 29/29 test suites PASS 100%.
+4. Sẵn sàng cho Phase 6.19 theo lộ trình thiết kế.

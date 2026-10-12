@@ -30,6 +30,7 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 6.15** | STARFRONT WORLD — Chính Sách Chiến Lược Sự Kiện & Tự Động Hóa Hệ Thống | **Đã triển khai (Done)** | Hoàn thành Phase 6.15 (`event-strategy-policy.ts`, `event-engine.ts`, `event-strategy-policy.test.ts`). Cơ chế lựa chọn chiến lược 3 cấp độ (System Auto -> Default Fallback -> Player Choice), chấm điểm tất định phá vỡ thế hòa, batch policy execution (27/27 test suites PASS). |
 | **Phase 6.16** | STARFRONT WORLD — Đánh Giá Toàn Diện UI/UX & Bản Thiết Kế Tái Cấu Trúc | **Đã triển khai (Done)** | Hoàn thành Phase 6.16 (`WORLD_UI_UX_AUDIT.md`). Audit toàn diện 7 phân khu WORLD, đề xuất mô hình 3 tầng chỉ huy Shell và nền tảng War Room, thiết lập danh mục ưu tiên P0/P1/P2. |
 | **Phase 6.17** | STARFRONT WORLD — Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (P0) | **Đã triển khai (Done)** | Hoàn thành Phase 6.17 (`starfront-shell.tsx`, `operations-center.tsx`, `world-map.tsx`). Đưa WORLD thành mục chỉ huy tối cao tại Khối 1 Shell, tái cấu trúc menu 3 tầng chỉ huy, hợp nhất Galaxy Map và Sector Inspector thành War Room trung tâm với Sector Command Ribbon 8 sector (100% tests PASS). |
+| **Phase 6.18** | STARFRONT WORLD — Slim Tactical HUD & Cách Ly ADMIN CP (P1) | **Đã triển khai (Done)** | Hoàn thành Phase 6.18 (`operations-center.tsx`, `admin-settings-modal.tsx`, `tests/world/phase6-18-slim-hud-admin-isolation.test.ts`). Tinh giản header thành thanh Slim Tactical HUD (Thời gian chiến lược, 5 tài nguyên, Quick actions), cách ly hoàn toàn ADMIN CP khỏi 5 tab tác chiến thành Modal Settings chuyên dụng hỗ trợ ESC, bảo toàn quy tắc an toàn đổi tốc độ và Danger Zone reset world (100% tests PASS). |
 
 ---
 
@@ -425,6 +426,24 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-### 4.15. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
+### 4.15. Slim Tactical HUD & Cách Ly ADMIN CP (Phase 6.18 P1) `[ĐÃ HOÀN THÀNH 100%]`
+- **Slim Tactical HUD (`operations-center.tsx`)**:
+  - *Nhóm 1: Thời Gian Chiến Lược*: Ngày trong game, niên lịch thiên hà, chu kỳ nhật dạ (Sáng/Chiều/Tối/Đêm), trạng thái chạy/tạm dừng (RUNNING/PAUSED) và đồng hồ đếm ngược chu kỳ tick.
+  - *Nhóm 2: 5 Tài Nguyên Cốt Lõi*: Vật Liệu Công Nghiệp, Năng Lượng Plasma, Vật Tư Hậu Cần, Dữ Liệu Tác Chiến, Lương Thực Dân Sinh; hiển thị trực quan, cảnh báo thiếu hụt nhấp nháy đỏ khi <= 20 (hoặc <= 50 với lương thực), tooltip chú thích đầy đủ.
+  - *Nhóm 3: Thao Tác Nhanh*: Nút thực thi ngày mới (+1 Ngày), Phóng to bản đồ toàn màn hình, Truy cập nhanh báo cáo kết quả, Điều quân nhanh, Nút Bánh Răng (Cài Đặt / Settings Overlay), Nút Lưu thủ công an toàn (Storage V1).
+  - Tối ưu hóa không gian dọc, ưu tiên 1 hàng trên màn hình lớn và tự động co giãn thích ứng khi thiếu chiều rộng.
+- **Cách Ly ADMIN CP Thành Settings Overlay (`admin-settings-modal.tsx`)**:
+  - *Loại Bỏ Tab Admin Khỏi Nav Chính*: Thanh điều hướng Operations Center giữ đúng 5 tab tác chiến chuyên nghiệp (War Room Bản Đồ, Tình Hình Toàn Cảnh, Sự Kiện & Nhiệm Vụ, Quân Sự & Hậu Cần, Trung Tâm Kết Quả).
+  - *Modal Cài Đặt Chuyên Dụng*: Mở qua icon bánh răng trên HUD, hỗ trợ đóng nhanh bằng phím Escape, nút X hoặc click ra ngoài backdrop.
+  - *Tốc Độ Mô Phỏng & An Toàn Dữ Liệu*: Đổi tốc độ với preset (15s/30s/60s/300s) hoặc tùy chỉnh; quy tắc xác nhận an toàn: Cancel không thay đổi tốc độ hay dữ liệu, Confirm chỉ reset world khi người dùng chủ động tích chọn.
+  - *Cấu Hình Event Generator 3 Tier*: Tùy biến chu kỳ sinh, thời gian tồn tại và giới hạn trần từng tier; hỗ trợ khôi phục mặc định.
+  - *Chính Sách Event Strategy Policy*: Thiết lập chính sách ưu tiên theo từng tier (System Auto / Default Fallback / Player Choice), lưu cấu hình và áp dụng hàng loạt (Batch Apply) cho sự kiện chờ.
+  - *Thao Tác Nâng Cao (Dev Triggers)*: Force spawn 3 tier sự kiện, tua nhanh thời gian (+1, +5, +10, +30 ngày), thực thi từng tick, hiển thị slot lưu trữ Staging A/B và mã kiểm tra CRC32.
+  - *Khu Vực Nguy Hiểm (Danger Zone)*: Đóng khung cảnh báo viền đỏ, thao tác Reset World độc lập yêu cầu xác nhận kép; reset dữ liệu thế giới về Ngày 1 nhưng bảo toàn 100% cấu hình tốc độ và generator.
+  - *Bảo Vệ Độc Lập Phân Hệ RPG Save V4*: Tuyệt đối không can thiệp hay làm ảnh hưởng dữ liệu phi công, cơ giáp, trang bị của RPG Save V4.
+
+---
+
+### 4.16. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
 - **Tốc Độ Suy Thoái Stability Nâng Cao**: Cân bằng mở rộng các biến số kinh tế vĩ mô phức tạp trong các bản cập nhật tiếp theo.
 - **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)**: Kế hoạch mở rộng đồ thị thiên hà cho các mùa giải chiến dịch trong tương lai.

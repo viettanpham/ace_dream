@@ -4,6 +4,36 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.8] — STARFRONT WORLD: Giao Diện Operations Center & Trung Tâm Kết Quả Kép (Operations Center UI & Dual Results Hub)
+
+*Đã hoàn thành 100% Phase 6.8 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.8 PASS, tích hợp trực tiếp vào thanh điều hướng của Shell)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.8:
+- **Giao Diện Tổng Hành Dinh Tác Chiến (`components/game/world/operations-center.tsx`)**:
+  - Tích hợp mục "Chỉ Huy Chiến Lược // WORLD" vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`, kết nối trực tiếp với tiến trình `WorldState` thực tế.
+  - Hỗ trợ 5 phân khu chức năng:
+    * **Tình Hình Chiến Lược (Situation Deck)**: Hiển thị ngày chiến lược, tỷ lệ kiểm soát thiên hà (VSS vs Contested vs The Void), Threat trung bình, tình trạng dân số, kho dự trữ 4 tài nguyên chiến lược và lương thực riêng. Bảng cảnh báo thời gian thực cảnh báo các sector nguy cấp (`under_siege`, `threatened`) và sự kiện sắp đến hạn chót.
+    * **Mạng Lưới Sector (Sector Operations)**: Danh sách thẻ trực quan và Inspector chi tiết từng sector. Cho phép đổi Lệnh Chiến Lược Đồn Trú (`normal`, `defend`, `reinforce`, `attack`, `recover`), nâng cấp công sự phòng thủ (0..5) và mở can thiệp buồng lái (`CombatArena`) khi sector bị đe dọa.
+    * **Sự Kiện & Nhiệm Vụ (Active Operations Board)**: Hiển thị các sự kiện thời gian thực đang diễn ra; hỗ trợ phê chuẩn các phương án phản ứng (Strategy) khi sự kiện ở trạng thái `INIT`; hiển thị tiến độ các chuỗi nhiệm vụ chiến lược.
+    * **Quân Sự & Hậu Cần (Military & Logistics)**: Trực quan hóa Sổ Cái Lực Lượng Quân Sự Bảo Toàn (5 trạng thái), các đạo quân đang hành quân `in_transit` và mạng lưới tuyến đường siêu không gian (`open`, `hazardous`, `blocked`).
+    * **Trung Tâm Kết Quả Kép (Dual Results Hub)**: Tích hợp phân khu báo cáo 2 luồng.
+  - Các nút hành động chiến lược: Tiến 1 Ngày (`handleAdvanceTick`), Điều Quân Nhanh (`QuickDispatchDock`), Lưu Trạng Thái An Toàn (`saveWorldState`).
+- **Trung Tâm Kết Quả Kép (`components/game/world/dual-results-hub.tsx`)**:
+  - Phân tách rạch ròi 2 luồng báo cáo:
+    * **Tab 1: Báo Cáo Sự Kiện (Event Results)**: Lấy từ `worldState.eventResultsArchive`, hiển thị danh mục, mức độ khẩn cấp, phương án đã chọn, biến động tài nguyên và tóm tắt kết quả.
+    * **Tab 2: Nhật Ký Chiến Đấu (Battle Results)**: Lấy từ `worldState.transactionJournal` (các giao dịch `combat` đã `committed`), hiển thị số hiệp, HP còn lại, xếp hạng chiến thuật và tóm tắt giao tranh.
+  - Huy hiệu thông báo chưa đọc (`Unread Count Badge`) và nút "Đọc Tất Cả".
+  - Bộ lọc theo trạng thái: Tất Cả, Chưa Đọc, Thắng/Tốt, Thua/Xấu.
+  - Cơ chế **Xóa Lịch Sử An Toàn (Safe Pruning)**: Cho phép dọn dẹp các log sự kiện đã đọc mà **tuyệt đối không làm thay đổi bất kỳ chỉ số tài nguyên, quân sự, dân số hay mức Threat nào của World State**.
+- **Bến Điều Động Chi Viện Nhanh (`components/game/world/quick-dispatch-dock.tsx`)**:
+  - Cho phép xuất quân chi viện tức thì từ Kho Dự Bị Trung Ương (Sol Command HQ) hoặc từ đồn trú một sector.
+  - Cơ chế phòng thủ: Chặn tuyệt đối việc điều động quân rời khỏi sector đang bị khóa trong combat (`isLockedForCombat`).
+  - Tự động tính toán lộ trình ngắn nhất qua mạng lưới tuyến đường siêu không gian.
+- **Kiểm Thử Tự Động Toàn Diện (`tests/world/operations-center-ui.test.ts`)**:
+  - 8/8 tests tự động PASS 100%: Situation Deck metrics, Quick Dispatch locking guard, Lệnh chiến lược & Nâng cấp công sự, Phân tách kết quả kép, Safe Pruning bảo toàn chỉ số 100%, Đánh dấu đã đọc/Đọc tất cả, Tiến ngày Tick Engine, Lưu & Nạp bền vững qua Storage V1.
+
+---
+
 ## [Phase 6.7] — STARFRONT WORLD: Động Cơ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược (Event Lifecycle Engine & Strategic Mission Chains)
 
 *Đã hoàn thành 100% Phase 6.7 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.7 PASS)*

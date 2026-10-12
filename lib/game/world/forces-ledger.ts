@@ -612,3 +612,42 @@ export function transferSectorControl(
     sector,
   }
 }
+
+/**
+ * Nâng cấp công sự phòng thủ cho Sector (Fortification Level 0..5)
+ * Tiêu hao 50 vật liệu công nghiệp (industrialMaterials)
+ */
+export function upgradeSectorFortification(
+  state: WorldState,
+  sectorId: string
+): { success: boolean; newLevel?: number; error?: string } {
+  const sector = state.sectors[sectorId]
+  if (!sector) {
+    return { success: false, error: `Không tìm thấy sector: ${sectorId}` }
+  }
+
+  if (sector.sovereignty !== "vss") {
+    return { success: false, error: `Chỉ có thể nâng cấp công sự cho các sector thuộc quyền kiểm soát của VSS.` }
+  }
+
+  const currentLevel = sector.fortificationLevel ?? (sector.stage === "normal" ? 2 : 1)
+  if (currentLevel >= 5) {
+    return { success: false, error: `Công sự tại ${sector.name} đã đạt cấp tối đa (Cấp 5).` }
+  }
+
+  const cost = 50
+  if (state.resources.industrialMaterials < cost) {
+    return {
+      success: false,
+      error: `Không đủ vật liệu công nghiệp để nâng cấp công sự (Cần: ${cost}, Hiện có: ${state.resources.industrialMaterials}).`,
+    }
+  }
+
+  state.resources.industrialMaterials -= cost
+  sector.fortificationLevel = currentLevel + 1
+
+  return {
+    success: true,
+    newLevel: sector.fortificationLevel,
+  }
+}

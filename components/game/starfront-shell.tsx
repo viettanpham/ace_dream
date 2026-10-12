@@ -48,6 +48,7 @@ import {
   LayoutDashboard,
   Lock,
   Menu,
+  Orbit,
   PanelLeftClose,
   PanelLeftOpen,
   Radar,
@@ -89,9 +90,11 @@ import { PilotGallery } from "./pilot-gallery"
 import { MissionLog } from "./mission-log"
 import { FullMissionLogView } from "./full-mission-log-view"
 import { TopShipIntegrityBar } from "./top-ship-integrity-bar"
+import { OperationsCenter } from "./world/operations-center"
 
 export type StarfrontSection =
   | "home"
+  | "world"
   | "character-gear"
   | "gallery"
   | "battlefield"
@@ -130,6 +133,20 @@ const SECTIONS: SectionConfig[] = [
     submenus: () => [
       { id: "overview", label: "Bảng Chỉ Huy Tác Chiến" },
       { id: "gears", label: "Hồ Sơ 3 Lớp Cơ Giáp" },
+    ],
+  },
+  {
+    id: "world",
+    label: "Chỉ Huy Chiến Lược // WORLD",
+    shortLabel: "WORLD Chiến Lược",
+    icon: Orbit,
+    badge: () => "Live",
+    submenus: () => [
+      { id: "overview", label: "Tình Hình Chiến Lược" },
+      { id: "sectors", label: "Mạng Lưới Sector" },
+      { id: "events", label: "Sự Kiện & Nhiệm Vụ" },
+      { id: "military", label: "Quân Sự & Hậu Cần" },
+      { id: "results", label: "Trung Tâm Kết Quả Kép" },
     ],
   },
   {
@@ -287,7 +304,9 @@ export function StarfrontShell() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeHangarTab, setActiveHangarTab] = useState<HangarTab>("loadout")
+  const [activeWorldTab, setActiveWorldTab] = useState<"overview" | "sectors" | "events" | "military" | "results">("overview")
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
+    world: true,
     hangar: true,
     missions: true,
   })
@@ -419,7 +438,9 @@ export function StarfrontShell() {
   // Chọn submenu để điều hướng chuyên sâu (bao gồm 4 phân hệ Hangar & Kho)
   const handleSelectSubmenu = (sectionId: StarfrontSection, subId: string) => {
     playClickSound()
-    if (sectionId === "hangar") {
+    if (sectionId === "world") {
+      setActiveWorldTab(subId as any)
+    } else if (sectionId === "hangar") {
       const targetTab = (subId === "enhance" ? "enhancement" : subId) as HangarTab
       setActiveHangarTab(targetTab)
     } else if (sectionId === "missions" && subId === "full-logs") {
@@ -713,12 +734,14 @@ export function StarfrontShell() {
                         const SubIcon = sub.icon
                         const isSubActive =
                           isActive &&
-                          (sec.id === "hangar"
-                            ? activeHangarTab === (sub.id === "enhance" ? "enhancement" : sub.id)
-                            : sec.id === "battlefield"
-                              ? (sub.id === "arena" && !activeCampaignMission) ||
-                                (sub.id === "active-quest" && !!activeCampaignMission)
-                              : false)
+                          (sec.id === "world"
+                            ? activeWorldTab === sub.id
+                            : sec.id === "hangar"
+                              ? activeHangarTab === (sub.id === "enhance" ? "enhancement" : sub.id)
+                              : sec.id === "battlefield"
+                                ? (sub.id === "arena" && !activeCampaignMission) ||
+                                  (sub.id === "active-quest" && !!activeCampaignMission)
+                                : false)
 
                         return (
                           <button
@@ -1080,6 +1103,17 @@ export function StarfrontShell() {
                 progression={progression}
                 onNavigate={(target) => handleSwitchSection(target as StarfrontSection)}
                 onSelectGear={handleSelectGear}
+              />
+            )}
+
+            {/* Phân hệ: Chỉ Huy Chiến Lược // STARFRONT WORLD Operations Center (Phase 6.8) */}
+            {activeSection === "world" && (
+              <OperationsCenter
+                initialTab={activeWorldTab}
+                onNavigateSection={handleSwitchSection}
+                onDeployEncounter={(sectorId) => {
+                  handleSwitchSection("battlefield")
+                }}
               />
             )}
 

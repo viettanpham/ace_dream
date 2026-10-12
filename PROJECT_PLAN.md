@@ -73,15 +73,16 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.4** | Kinh Tế Chiến Lược, Mạng Lưới Hậu Cần & Nhân Khẩu Học | **Đã hoàn thành (Done)** | `lib/game/world/economy.ts`, `lib/game/world/logistics.ts`, `lib/game/world/demographics.ts` |
 | **Phase 6.5** | Phe Phái VSS & The Void, Lực Lượng Quân Sự & Auto-Resolve | **Đã hoàn thành (Done)** | `lib/game/world/forces-ledger.ts`, `lib/game/world/auto-resolve.ts`, `lib/game/world/threat-ai.ts` |
 | **Phase 6.6** | Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng | **Đã hoàn thành (Done)** | `lib/game/world/combat-adapter.ts`, `lib/game/world/transaction-journal.ts` |
-| **Phase 6.7 (Hiện tại)** | **Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược (6 Hình Thái)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/event-engine.ts`, `lib/game/world/mission-chains.ts`, `lib/game/world/event-templates.ts` |
-| **Phase 6.8–6.9** | Triển khai mã nguồn WORLD tuần tự (Operations Center UI & Dual Results $\rightarrow$ Fullscreen Map) | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
+| **Phase 6.7** | Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược (6 Hình Thái) | **Đã hoàn thành (Done)** | `lib/game/world/event-engine.ts`, `lib/game/world/mission-chains.ts`, `lib/game/world/event-templates.ts` |
+| **Phase 6.8 (Hiện tại)** | **Operations Center UI & Trung Tâm Kết Quả Kép (Dual Results Hub)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/operations-center.tsx`, `components/game/world/dual-results-hub.tsx`, `components/game/world/quick-dispatch-dock.tsx` |
+| **Phase 6.9** | Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử E2E Toàn Diện | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.8:
-1. Đọc kỹ [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) (Mục I.3: Phân khu kết quả kép trong Operations Center) và [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Giai Đoạn 6.8: Operations Center UI & Dual Results Hub).
-2. Xây dựng `components/game/world/operations-center.tsx`, `components/game/world/dual-results-hub.tsx`, `components/game/world/quick-dispatch-dock.tsx`.
-3. Tích hợp Situation Deck, Active Operations Board và Safe Pruning của Dual Results Hub.
-4. Viết bộ kiểm thử tự động `tests/world/operations-center-ui.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.
+Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.9:
+1. Đọc kỹ [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Giai Đoạn 6.9: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp Toàn Diện) và [`WORLD_DESIGN.md`](./WORLD_DESIGN.md).
+2. Xây dựng `components/game/world/world-map.tsx` và `components/game/world/world-fullscreen-overlay.tsx`.
+3. Hoàn thiện hiệu ứng âm thanh Sci-Fi Web Audio và tích hợp hiển thị tuyến đường hạm đội di chuyển trên bản đồ.
+4. Viết bộ kiểm thử hồi quy tích hợp E2E `tests/world/e2e-world-integration.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.

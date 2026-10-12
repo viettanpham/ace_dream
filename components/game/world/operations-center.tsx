@@ -290,15 +290,6 @@ export function OperationsCenter({
     }
   }
 
-  // Yêu cầu đổi tốc độ ngày game (mở modal xác nhận)
-  const handleRequestSpeedChange = (newSpeed: number) => {
-    if (newSpeed === simulatorConfig.speedSeconds) return
-    playClickSound()
-    setPendingSpeed(newSpeed)
-    setResetWorldOnSpeedChange(false)
-    setIsSpeedConfirmOpen(true)
-  }
-
   // Xác nhận đổi tốc độ (bảo lưu tiến độ thế giới hoặc reset world tùy chọn)
   const handleConfirmSpeedChange = (newSpeed: number, resetWorld: boolean) => {
     playClickSound()
@@ -666,7 +657,16 @@ export function OperationsCenter({
     if (!worldState) return null
     const initEvents = activeEventsList.filter((e) => e.status === "INIT")
     if (!initEvents.length) return null
-    return [...initEvents].sort((a, b) => (b.urgencyScore || 0) - (a.urgencyScore || 0))[0]
+    const severityWeight: Record<string, number> = { critical: 3, warning: 2, info: 1 }
+    return [...initEvents].sort((a, b) => {
+      const aDeadline = Math.max(0, a.decisionDeadlineTick - worldState.currentDay)
+      const bDeadline = Math.max(0, b.decisionDeadlineTick - worldState.currentDay)
+      if (aDeadline !== bDeadline) return aDeadline - bDeadline
+      const aSev = severityWeight[a.severity] || 0
+      const bSev = severityWeight[b.severity] || 0
+      if (aSev !== bSev) return bSev - aSev
+      return (b.priority ?? 0) - (a.priority ?? 0)
+    })[0]
   }, [worldState, activeEventsList])
 
   const selectedSector = worldState?.sectors[selectedSectorId] || sectorsList[0]

@@ -4,6 +4,46 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.19] — STARFRONT WORLD: Ma Trận Ra Quyết Định Sự Kiện & Nhiệm Vụ (Events & Missions Decision Matrix)
+
+*Đã hoàn thành 100% Phase 6.19 — Triển khai hạng mục P1 theo `WORLD_UI_UX_AUDIT.md`: Tái cấu trúc `events-missions-board.tsx` thành Ma trận Ra quyết định 2 Cột (Decision Matrix) gồm Urgency Queue bên trái cuộn độc lập và Decision Panel bên phải đối chiếu chiến lược theo thời gian thực; hiển thị minh bạch nguồn phê chuẩn (`System Auto`, `Default Fallback`, `Chờ Chỉ Huy`), score giải thích được, chi phí xác thực và bảo vệ lũy đẳng (100% tests PASS, build thành công, 30/30 test suites PASS tuyệt đối).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Hàng Đợi Khẩn Cấp (Urgency Queue — Cột Trái `events-missions-board.tsx`)**:
+  - **Sắp Xếp 3 Tầng Ưu Tiên Chặt Chẽ**: Ưu tiên 1 theo hạn chót gần nhất (`decisionDeadlineTick - currentDay` ASC), Ưu tiên 2 theo mức độ nghiêm trọng đa tín hiệu (`critical` > `warning` > `info`), Ưu tiên 3 theo độ ưu tiên priority và ID tất định.
+  - **Giới Hạn Chiều Cao & Cuộn Độc Lập**: Khung danh sách có chiều cao giới hạn (`max-h-[680px]`) và thanh cuộn nội bộ độc lập (`overflow-y-auto`), khắc phục triệt để hiện tượng trang bị kéo dài hàng nghìn pixel khi có nhiều sự kiện.
+  - **Thẻ Sự Kiện Cô Đọng (Compact Interactive Cards)**:
+    * Vạch màu trạng thái dọc cạnh trái (đỏ/amber/xanh).
+    * Huy hiệu đếm ngược ngày khẩn cấp (nhấp nháy đỏ khi còn <= 1 ngày hoặc tối nguy).
+    * Phân loại sự kiện (Crisis, Military, Diplomacy, Civil, Anomaly, Logistics, Intel).
+    * Sector / Toàn vũ trụ và nhãn nguồn phê chuẩn (`Chờ Chỉ Huy`, `System Auto`, `PROCESSING`).
+    * Chỉ báo thẻ đang chọn trực quan với viền sáng cyan, ring phát sáng và nhãn "ĐANG XEM".
+  - **Thanh Công Cụ Lọc & Tìm Kiếm Tức Thì**: Bộ lọc 5 chế độ (`Tất Cả`, `Cần Phê Chuẩn [INIT]`, `Đang Triển Khai [PROCESSING]`, `Cây Chuỗi Nhiệm Vụ`, `Báo Cáo Gần Đây`) kèm thanh tìm kiếm theo tên sự kiện và sector.
+- **2. Bảng Phân Tích & Phê Chuẩn Chiến Lược (Decision Panel — Cột Phải `events-missions-board.tsx`)**:
+  - **Tình Báo Tác Chiến & Bối Cảnh Sector**: Hiển thị mô tả đầy đủ, phân cấp quy mô Tier (Small, Medium, Large), hạn chót và thông tin sector (ổn định %, đe dọa, chủ quyền, quân đồn trú, nút tắt xem trên War Room Map).
+  - **So Sánh Đối Chiếu Các Phương Án Đa Chiều**:
+    * Hiển thị song song từng phương án với tỷ lệ thành công (`successChance%`), thời gian thực thi (`processingTicks`), biến động ổn định (`stabilityDelta`) và đe dọa (`threatDelta`).
+    * Thẩm định chi phí thực tế (`validateStrategyExecution`): Kiểm tra từng tài nguyên trong 5 loại và quân dự bị, hiển thị nhãn màu xanh/đỏ tức thì và lý do chi tiết khi thiếu hụt.
+    * Hệ thống chấm điểm minh bạch (`scoreEventStrategy`): Điểm số chiến lược tổng hợp (+/- điểm) kèm nút bật/tắt giải thích chi tiết các hệ số đánh giá (Explainable Scoring).
+    * Nổi bật phương án được System Auto đề xuất (`★ ĐỀ XUẤT SYSTEM AUTO`) và phương án mặc định tự động khóa.
+    * Nút Phê chuẩn thủ công có kiểm tra chi phí và nút Phê chuẩn nhanh 1-click theo System Auto (`⚡ System Auto Phê Chuẩn Ngay`).
+  - **Empty State Trung Thực**: Khi chưa có sự kiện nào được chọn, hiển thị màn hình hướng dẫn thao tác sạch sẽ với biểu tượng Crosshair quân sự, tuyệt đối không tạo dữ liệu giả.
+  - **Bảo Vệ Tính Lũy Đẳng & Phân Định Nguồn Quyết Định**:
+    * Phân biệt rõ các nguồn: `player_choice`, `system_auto`, `default_fallback`, `processing`.
+    * Hiển thị minh bạch nguyên nhân chuyển giao quyền quyết định (`autoSelectionFailureReason`).
+    * Khóa không cho phép phê chuẩn lại hoặc ghi đè phương án khi sự kiện đã bước vào trạng thái `PROCESSING`.
+- **3. Bảo Toàn Chuỗi Nhiệm Vụ & Phân Hệ Kết Quả**:
+  - Giữ nguyên vẹn 100% cấu trúc cây đồ thị chuỗi nhiệm vụ chiến lược (`activeMissionChains`), các trạng thái nút `completed`, `active`, `locked`.
+  - Duy trì cơ chế hoãn điều động `isPendingDispatch` với huy hiệu "Đang chờ điều kiện sector" và đếm số ngày đã hoãn (`dispatchDeferredTicks` / `MAX_DISPATCH_DEFER_TICKS`).
+  - Duy trì bảng tin kết quả gần đây (Recent Results Feed) và liên kết nhanh đến Dual Results Hub.
+- **4. Kiểm Thử Toàn Diện & Tương Thích Tuyệt Đối**:
+  - Viết bộ kiểm thử chuyên dụng `tests/world/phase6-19-decision-matrix.test.ts` (6/6 tests PASS).
+  - 30/30 test suites PASS 100% qua `npm test`.
+  - Next.js build và typecheck thành công hoàn toàn (`compile_applet`, `lint_applet`).
+  - Bảo toàn tuyệt đối `STARFRONT_WORLD_SAVE_V1`, `STARFRONT_WORLD_SIMULATOR_CONFIG` và `STARFRONT_SAVE_DATA_V4`.
+
+---
+
 ## [Phase 6.18] — STARFRONT WORLD: Slim Tactical HUD & Cách Ly ADMIN CP (Slim Tactical HUD & ADMIN CP Isolation)
 
 *Đã hoàn thành 100% Phase 6.18 — Triển khai P1 theo `WORLD_UI_UX_AUDIT.md`: Tinh giản header của Operations Center thành thanh Slim Tactical HUD tối ưu không gian cho War Room, cách ly hoàn toàn ADMIN CP khỏi 5 tab tác chiến thường ngày thành Modal Settings Overlay chuyên dụng (`components/game/world/admin-settings-modal.tsx`) mở qua nút bánh răng HUD, bảo toàn quy tắc an toàn đổi tốc độ và Danger Zone reset world (100% tests PASS, build thành công, 29/29 test suites PASS tuyệt đối).*

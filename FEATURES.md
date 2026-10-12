@@ -444,6 +444,33 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-### 4.16. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
+### 4.16. Ma Trận Ra Quyết Định Sự Kiện & Nhiệm Vụ (Events & Missions Decision Matrix — Phase 6.19 P1) `[ĐÃ HOÀN THÀNH 100%]`
+- **Tái Cấu Trúc Bố Cục 2 Cột Chuyên Biệt (`events-missions-board.tsx`)**:
+  - *Cột Trái — Hàng Đợi Khẩn Cấp (Urgency Queue)*:
+    * Tự động sắp xếp các sự kiện cần xử lý theo 3 tầng ưu tiên chặt chẽ: Hạn chót cấp bách nhất (`decisionDeadlineTick - currentDay` ASC), Mức độ nghiêm trọng đa tín hiệu (`critical` > `warning` > `info`), và ID tất định.
+    * Chiều cao giới hạn độc lập (`max-h-[680px]`) với thanh cuộn chuyên dụng, không kéo dài layout trang.
+    * Thẻ sự kiện cô đọng (Compact Cards): Hiển thị vạch màu chỉ báo trạng thái ở cạnh trái (đỏ/amber/xanh), huy hiệu đếm ngược ngày, phân loại sự kiện (Crisis, Military, Diplomacy, Civil, Anomaly, Logistics, Intel), vị trí sector/toàn thiên hà và nguồn quyết định.
+    * Tích hợp thanh tìm kiếm và bộ lọc nhanh: `Tất Cả`, `Cần Phê Chuẩn [INIT]`, `Đang Triển Khai [PROCESSING]`, `Cây Chuỗi Nhiệm Vụ`, `Báo Cáo Gần Đây`.
+  - *Cột Phải — Bảng Phân Tích & Phê Chuẩn Chiến Lược (Decision Panel)*:
+    * Hiển thị chi tiết tình báo sự kiện đang được chọn, bối cảnh an ninh sector (ổn định, đe dọa, chủ quyền, quân đồn trú).
+    * So sánh trực quan các phương án chiến lược: Tỷ lệ thành công (`successChance%`), thời gian thực thi (`processingTicks`), biến động ổn định (`stabilityDelta`) và đe dọa (`threatDelta`).
+    * Thẩm định khả năng chi trả thực tế (`validateStrategyExecution`): Kiểm tra từng loại tài nguyên trong 5 loại và quân dự bị, đổi màu cảnh báo đỏ/xanh tức thì, hiển thị thông báo chi tiết khi không đủ điều kiện.
+    * Hệ thống chấm điểm minh bạch (`scoreEventStrategy`): Điểm số chiến lược tổng hợp (+/- điểm) đi kèm tính năng bật/tắt giải thích chi tiết các hệ số đánh giá (Explainable Scoring).
+    * Làm rõ phương án được đề xuất bởi System Auto (`★ ĐỀ XUẤT SYSTEM AUTO`) và phương án mặc định tự động khóa.
+    * Thao tác phê chuẩn tức thì (`Phê Chuẩn Phương Án`) và nút Phê chuẩn nhanh 1-click theo System Auto (`⚡ System Auto Phê Chuẩn Ngay`).
+  - *Empty State Trung Thực Tuyệt Đối*:
+    * Khi chưa chọn sự kiện nào trong hàng đợi, hiển thị giao diện hướng dẫn chọn sự kiện rõ ràng, sạch sẽ, không tạo dữ liệu giả mạo.
+  - *Phân Định Rõ Ràng Nguồn Gốc & Khóa Lũy Đẳng*:
+    * Phân biệt rõ các nguồn phê chuẩn: `Chờ Chỉ Huy`, `System Auto`, `Default Fallback`, `Processing`.
+    * Hiển thị minh bạch nguyên nhân chuyển giao quyết định (`autoSelectionFailureReason`) nếu việc tự động hóa gặp thất bại.
+    * Khóa không cho phép phê chuẩn lại hoặc ghi đè sự kiện đã bước vào trạng thái `PROCESSING`.
+  - *Bảo Toàn Toàn Vẹn Cây Chuỗi Nhiệm Vụ (Mission Chains)*:
+    * Giữ nguyên vẹn 100% đồ thị các bước nhiệm vụ phân nhánh: các trạng thái `completed`, `active`, `locked`.
+    * Duy trì cơ chế hoãn điều động `isPendingDispatch` kèm cảnh báo "Đang chờ điều kiện sector" và đếm số ngày đã hoãn (`dispatchDeferredTicks` / `MAX_DISPATCH_DEFER_TICKS`).
+  - *Bảo Toàn Lưu Trữ*: 100% tương thích ngược với `STARFRONT_WORLD_SAVE_V1` và độc lập tuyệt đối với `STARFRONT_SAVE_DATA_V4`.
+
+---
+
+### 4.17. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
 - **Tốc Độ Suy Thoái Stability Nâng Cao**: Cân bằng mở rộng các biến số kinh tế vĩ mô phức tạp trong các bản cập nhật tiếp theo.
 - **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)**: Kế hoạch mở rộng đồ thị thiên hà cho các mùa giải chiến dịch trong tương lai.

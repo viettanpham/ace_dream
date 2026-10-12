@@ -18,9 +18,9 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | **Phase 6.18: Slim Tactical HUD & ADMIN CP Isolation đã hoàn thành 100%** (100% tests PASS, build thành công, 29/29 test suites PASS tuyệt đối). Operations Center được trang bị thanh Slim Tactical HUD tinh gọn với 3 nhóm chức năng mạch lạc, tối ưu diện tích War Room. ADMIN CP được cách ly hoàn toàn khỏi 5 tab tác chiến thường ngày, chuyển thành Modal Settings chuyên dụng có phân vùng an toàn và Danger Zone xác nhận kép. |
+| **Trạng thái hiện tại của dự án?** | **Phase 6.19: Events & Missions Decision Matrix đã hoàn thành 100%** (100% tests PASS, build thành công, 30/30 test suites PASS tuyệt đối). `events-missions-board.tsx` đã được tái cấu trúc thành Ma trận Ra quyết định 2 Cột (Decision Matrix): Cột trái là Hàng đợi khẩn cấp (Urgency Queue) sắp xếp theo deadline và mức độ nghiêm trọng với cuộn độc lập; Cột phải là Bảng phân tích & phê chuẩn chiến lược (Decision Panel) đối chiếu phương án, tỷ lệ thành công, chi phí thực, score minh bạch, làm rõ nguồn phê chuẩn và ngăn chặn double-commit. |
 | **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô tối cao của toàn bộ sản phẩm, tích hợp ở vị trí nổi bật nhất tại Khối 1 Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
-| **Phase tiếp theo cần thực hiện?** | Sẵn sàng bước sang Phase 6.19 theo lộ trình kiểm toán giao diện `WORLD_UI_UX_AUDIT.md` khi có yêu cầu. |
+| **Phase tiếp theo cần thực hiện?** | Sẵn sàng bước sang Phase 6.20 theo lộ trình kiểm toán giao diện `WORLD_UI_UX_AUDIT.md` khi có yêu cầu. |
 | **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>2. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
 | **Phụ thuộc chính giữa WORLD và hệ thống hiện tại?** | - **Combat Integration**: Giao tiếp qua `WorldCombatAdapter`, sử dụng snapshot tại thời điểm khóa trận và Transaction ID chống double-apply.<br>- **Lưu trữ cách ly**: `STARFRONT_WORLD_SAVE_V1` độc lập hoàn toàn với `STARFRONT_SAVE_DATA_V4`, có sao lưu luân phiên A/B.<br>- **Navigation**: Tích hợp tab `world` vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`. |
 
@@ -85,12 +85,12 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.16** | **Đánh Giá Toàn Diện UI/UX & Bản Thiết Kế Tái Cấu Trúc (UI/UX Audit & Redesign Blueprint)** | **ĐÃ HOÀN THÀNH (DONE — BLUEPRINT APPROVED)** | `WORLD_UI_UX_AUDIT.md` |
 | **Phase 6.17** | **Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (P0 UI/UX Foundation)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/starfront-shell.tsx`, `components/game/world/operations-center.tsx`, `components/game/world/world-map.tsx` |
 | **Phase 6.18** | **Slim Tactical HUD & ADMIN CP Isolation (P1 UI/UX Refinement)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/operations-center.tsx`, `components/game/world/admin-settings-modal.tsx`, `tests/world/phase6-18-slim-hud-admin-isolation.test.ts` |
+| **Phase 6.19** | **Ma Trận Ra Quyết Định Sự Kiện & Nhiệm Vụ (Events & Missions Decision Matrix)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/events-missions-board.tsx`, `tests/world/phase6-19-decision-matrix.test.ts` |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-1. **Slim Tactical HUD**: Operations Center header tinh gọn 3 nhóm rõ ràng (Thời gian chiến lược, 5 tài nguyên, Quick actions), tăng tối đa không gian hiển thị cho War Room.
-2. **ADMIN CP Isolation**: Tách biệt hoàn toàn công cụ quản trị khỏi 5 tab tác chiến thường ngày, chuyển thành Modal Settings chuyên dụng hỗ trợ ESC, bảo toàn các thiết lập an toàn và Danger Zone xác nhận kép.
-3. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 29/29 test suites PASS 100%.
-4. Sẵn sàng cho Phase 6.19 theo lộ trình thiết kế.
+1. **Events & Missions Decision Matrix**: Bố cục hai cột (Urgency Queue cuộn độc lập bên trái + Decision Panel đối chiếu chiến lược bên phải), hiển thị nguồn phê chuẩn, điểm số và chi phí minh bạch.
+2. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 30/30 test suites PASS 100%.
+3. Sẵn sàng cho Phase 6.20 theo lộ trình thiết kế.

@@ -28,6 +28,11 @@ import { registerWorldEvent, ensureWorldEventState } from "./event-engine"
 export const MAX_ACTIVE_MISSION_CHAINS = 8
 
 /**
+ * Số ngày (ticks) tối đa một bước nhiệm vụ chờ giải phóng sector trước khi kích hoạt giải tỏa an toàn
+ */
+export const MAX_DISPATCH_DEFER_TICKS = 4
+
+/**
  * Định nghĩa mẫu chuỗi nhiệm vụ (Mission Chain Template)
  */
 export interface MissionChainTemplate {
@@ -224,7 +229,13 @@ export function startMissionChain(
     customChainId?: string
     targetSectorId?: string
   }
-): { success: boolean; chain?: MissionChain; event?: any; error?: string } {
+): {
+  success: boolean
+  chain?: MissionChain
+  event?: any
+  isDeferred?: boolean
+  error?: string
+} {
   ensureWorldEventState(state)
 
   // 1. Kiểm tra giới hạn trần MAX_ACTIVE_MISSION_CHAINS = 8
@@ -294,8 +305,19 @@ export function startMissionChain(
     nodeId: initialNode.id,
   })
 
+  let isDeferred = false
   if (event) {
-    registerWorldEvent(state, event)
+    const regRes = registerWorldEvent(state, event)
+    if (!regRes.success) {
+      initialNode.isPendingDispatch = true
+      initialNode.pendingEvent = event
+      initialNode.deferredSinceTick = state.currentDay
+      initialNode.dispatchDeferredTicks = 0
+      isDeferred = true
+    } else {
+      initialNode.isPendingDispatch = false
+      delete initialNode.pendingEvent
+    }
   }
 
   state.missionChains![chainId] = newChain
@@ -303,7 +325,7 @@ export function startMissionChain(
     state.activeMissionChains.push(chainId)
   }
 
-  return { success: true, chain: newChain, event }
+  return { success: true, chain: newChain, event, isDeferred }
 }
 
 /**
@@ -319,6 +341,7 @@ export function advanceMissionChainNode(
   isChainCompleted: boolean
   nextNode?: MissionChainNode
   spawnedEvent?: any
+  isDeferred?: boolean
   message: string
 } {
   ensureWorldEventState(state)
@@ -383,8 +406,19 @@ export function advanceMissionChainNode(
     nodeId: nextNode.id,
   })
 
+  let isDeferred = false
   if (nextEvent) {
-    registerWorldEvent(state, nextEvent)
+    const regRes = registerWorldEvent(state, nextEvent)
+    if (!regRes.success) {
+      nextNode.isPendingDispatch = true
+      nextNode.pendingEvent = nextEvent
+      nextNode.deferredSinceTick = state.currentDay
+      nextNode.dispatchDeferredTicks = 0
+      isDeferred = true
+    } else {
+      nextNode.isPendingDispatch = false
+      delete nextNode.pendingEvent
+    }
   }
 
   return {
@@ -392,8 +426,69 @@ export function advanceMissionChainNode(
     isChainCompleted: false,
     nextNode,
     spawnedEvent: nextEvent,
-    message: `Chuỗi nhiệm vụ "${chain.title}" chuyển tiếp sang bước tiếp theo: "${nextNode.title}".`,
+    isDeferred,
+    message: isDeferred
+      ? `Chuỗi nhiệm vụ "${chain.title}" chuyển tiếp sang bước: "${nextNode.title}" (Tạm hoãn kích hoạt do sector đang bận; sẽ tự động tái thử nghiệm trong chu kỳ tick).`
+      : `Chuỗi nhiệm vụ "${chain.title}" chuyển tiếp sang bước tiếp theo: "${nextNode.title}".`,
   }
+}
+
+/**
+ * Thử kích hoạt lại các sự kiện chuỗi nhiệm vụ đang bị hoãn (Pending Dispatches)
+ * Được gọi ở đầu Phase 6 của Tick Engine sau khi Phase 5 đã giải phóng các sự kiện cũ.
+ * Nếu một bước bị hoãn quá MAX_DISPATCH_DEFER_TICKS (4 ticks), kích hoạt giải tỏa an toàn để chuỗi không kẹt.
+ */
+export function retryPendingMissionChainDispatches(
+  state: WorldState,
+  prng?: WorldPRNG
+): {
+  retriedSuccessCount: number
+  fallbackCount: number
+  logs: string[]
+} {
+  ensureWorldEventState(state)
+
+  let retriedSuccessCount = 0
+  let fallbackCount = 0
+  const logs: string[] = []
+
+  const activeChainIds = Object.values(state.missionChains || {})
+    .filter((c) => c.status === "active")
+    .map((c) => c.id)
+
+  for (const chainId of activeChainIds) {
+    const chain = state.missionChains?.[chainId]
+    if (!chain || chain.status !== "active") continue
+
+    const currentNode = chain.nodes[chain.currentNodeId]
+    if (!currentNode || !currentNode.isPendingDispatch || !currentNode.pendingEvent) continue
+
+    // Tăng số tick đã chờ
+    currentNode.dispatchDeferredTicks = (currentNode.dispatchDeferredTicks || 0) + 1
+
+    // Thử đăng ký lại
+    const regRes = registerWorldEvent(state, currentNode.pendingEvent)
+    if (regRes.success) {
+      currentNode.isPendingDispatch = false
+      delete currentNode.pendingEvent
+      retriedSuccessCount++
+      logs.push(
+        `[MISSION DISPATCH RESUMED] Chuỗi "${chain.title}" đã kích hoạt thành công sự kiện cho bước "${currentNode.title}" sau khi điều kiện thông suốt.`
+      )
+    } else if (currentNode.dispatchDeferredTicks >= MAX_DISPATCH_DEFER_TICKS) {
+      // Vượt quá thời hạn chờ tối đa -> Kích hoạt giải tỏa có kiểm soát (Controlled Skip/Fallback)
+      currentNode.isPendingDispatch = false
+      delete currentNode.pendingEvent
+      fallbackCount++
+      logs.push(
+        `[MISSION CONTROLLED FALLBACK] Bước "${currentNode.title}" trong chuỗi "${chain.title}" tự động giải tỏa an toàn sau ${MAX_DISPATCH_DEFER_TICKS} ngày bị phong tỏa.`
+      )
+      // Tiến hành chuyển sang bước tiếp theo
+      advanceMissionChainNode(state, chain.id, currentNode.id)
+    }
+  }
+
+  return { retriedSuccessCount, fallbackCount, logs }
 }
 
 /**

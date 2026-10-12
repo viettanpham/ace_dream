@@ -27,10 +27,12 @@ import { reconcileCombatTransactionsInTick } from "./transaction-journal"
 import {
   advanceEventLifecyclesAndDeadlines,
   ensureWorldEventState,
+  type EventLifecycleSummary,
 } from "./event-engine"
 import {
   advanceMissionChainNode,
   evaluateMissionChainUnlocks,
+  retryPendingMissionChainDispatches,
 } from "./mission-chains"
 import { createEventFromTemplate } from "./event-templates"
 import type {
@@ -84,6 +86,8 @@ export interface TickExecutionResult {
     newStage: string
     threatDelta: number
   }>
+  /** Tóm tắt các sự kiện vừa hết hạn/hoàn tất trong chu kỳ tick */
+  eventsSummary?: EventLifecycleSummary
 }
 
 /**
@@ -368,7 +372,7 @@ function executePhase5DeadlinesAndResolutions(
   state: WorldState,
   prng: WorldPRNG,
   log: TickPhaseLog
-): void {
+): EventLifecycleSummary {
   ensureWorldEventState(state)
 
   // 5.1. Xử lý vòng đời sự kiện (INIT -> PROCESSING -> RESULT)
@@ -395,10 +399,13 @@ function executePhase5DeadlinesAndResolutions(
   log.changesApplied.push(
     `Deadlines evaluated: ${eventCycleResult.autoLockedEvents.length} event(s) auto-locked, ${eventCycleResult.resolvedEvents.length} resolved`
   )
+
+  return eventCycleResult.summary
 }
 
 /**
  * Phase 6: Kích Hoạt Mới (New Activations)
+ * - Thử kích hoạt lại các bước chuỗi nhiệm vụ đang bị hoãn (Pending Dispatches)
  * - Kích hoạt các chuỗi nhiệm vụ theo ngưỡng (Threat >= 600)
  * - Kích hoạt nhiệm vụ phản ứng khi sector bị vây hãm (Under Siege)
  * - Khởi tạo tuần tra định kỳ (Periodic Patrol) theo chu kỳ tuần hoàn
@@ -411,6 +418,13 @@ function executePhase6NewActivations(
 ): void {
   ensureWorldEventState(state)
 
+  // 6.0. Thử dispatch lại các chuỗi nhiệm vụ bị hoãn trước đó
+  const retryResult = retryPendingMissionChainDispatches(state, prng)
+  for (const rLog of retryResult.logs) {
+    log.changesApplied.push(rLog)
+  }
+
+  // 6.1. Đánh giá mở khóa chuỗi nhiệm vụ mới
   const missionUnlockResult = evaluateMissionChainUnlocks(state, prng)
   for (const l of missionUnlockResult.logs) {
     log.changesApplied.push(l)
@@ -420,7 +434,7 @@ function executePhase6NewActivations(
     log.changesApplied.push(
       `Strategic activations: ${missionUnlockResult.activatedChains.length} new mission chain(s) opened`
     )
-  } else {
+  } else if (retryResult.retriedSuccessCount === 0 && retryResult.fallbackCount === 0) {
     log.changesApplied.push("Strategic intel scanned; no anomalous triggers")
   }
 }
@@ -487,7 +501,7 @@ export function executeWorldTick(
     phaseName: "Hạn Chót & Kết Quả",
     changesApplied: [],
   }
-  executePhase5DeadlinesAndResolutions(state, prng, logP5)
+  const eventsSummary = executePhase5DeadlinesAndResolutions(state, prng, logP5)
   phaseLogs.push(logP5)
 
   // Phase 6
@@ -523,5 +537,6 @@ export function executeWorldTick(
     resourceDelta,
     militaryDelta: {},
     sectorStateChanges: sectorChanges,
+    eventsSummary,
   }
 }

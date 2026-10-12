@@ -4,6 +4,36 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.8+ / Đợt 1] — STARFRONT WORLD: Event Concurrency Guard & Deadline Resolution
+
+*Đã hoàn thành 100% Đợt 1 — Xử lý xung đột sự kiện trên cùng sector và hoàn thiện cơ chế giải quyết deadline đồng thời (100% tests PASS, zero-regression toàn bộ 21 test suites)*
+
+### Các cơ chế & quy tắc đã triển khai:
+- **Event Concurrency Guard (`canRegisterWorldEvent` trong `lib/game/world/event-engine.ts`)**:
+  - *Chống trùng lặp template trên cùng sector*: Ngăn chặn việc cùng một template sự kiện (ví dụ `evt_void_skirmish_raid`) bị kích hoạt lặp lại nhiều lần trên một sector khi sự kiện trước chưa kết thúc (`INIT` hoặc `PROCESSING`). Tránh hiện tượng dồn ép trừ Stability đột ngột.
+  - *Cho phép sự kiện khác loại cùng tồn tại hợp lý*: Các sự kiện khác `templateId` (ví dụ: Bão Plasma thiên văn `anomaly` + Đình công công nhân `civil` + Đột kích Void `military`) hoàn toàn được phép diễn ra đồng thời trên cùng một sector, không áp đặt giới hạn cơ học cứng nhắc.
+  - *Chống trùng lặp quy mô thiên hà*: Chỉ cho phép tối đa 1 sự kiện `scope: "galaxy"` cùng `templateId` hoạt động đồng thời.
+  - *Chống trùng sự kiện từ cùng mission chain*: Mỗi chuỗi nhiệm vụ chỉ được mở tối đa 1 sự kiện active trên cùng một sector tại một thời điểm.
+- **Cơ Chế Trì Hoãn Có Kiểm Soát & Chống Kẹt Chuỗi Nhiệm Vụ (`isPendingDispatch` & `MAX_DISPATCH_DEFER_TICKS`)**:
+  - Khi một bước trong chuỗi nhiệm vụ (`MissionChainNode`) không thể kích hoạt sự kiện do sector đang bận hoặc đầy trần, node được đánh dấu `isPendingDispatch: true` kèm `pendingEvent` lưu trữ an toàn thay vì bị từ chối làm mồ côi bước.
+  - Tích hợp hàm `retryPendingMissionChainDispatches` vào đầu Phase 6 của Tick Engine: tự động thử kích hoạt lại ngay khi Phase 5 đã giải phóng các sự kiện cũ trên sector.
+  - Cơ chế giải tỏa có kiểm soát (Controlled Fallback): Nếu bước bị hoãn quá `MAX_DISPATCH_DEFER_TICKS = 4` ticks (4 ngày chiến lược), hệ thống tự động giải tỏa bước đó an toàn và chuyển tiếp chuỗi sang bước tiếp theo, bảo đảm chuỗi nhiệm vụ **tuyệt đối không bao giờ bị mắc kẹt vô hạn**.
+- **Giải Quyết Nhiều Deadline Đồng Thời Tất Định (Deterministic Tie-Breaking & Rich Summary)**:
+  - Tinh chỉnh trật tự tie-breaking trong `advanceEventLifecyclesAndDeadlines`: `(priority DESC -> deadline ASC -> createdAtTick ASC -> id ASC)`.
+  - Bổ sung cấu trúc dữ liệu `EventLifecycleSummary` trả về từ Phase 5 chuyển tiếp vào `TickExecutionResult` (`eventsSummary`), cung cấp đầy đủ thông tin phân loại theo category, severity, danh sách sự kiện auto-locked và resolved để phục vụ UI tổng hợp biến động ngày.
+- **Bảo Vệ Tính Lũy Đẳng Tuyệt Đối (Idempotency Guard)**:
+  - Bảo đảm cờ `event.consequencesApplied = true` được kiểm tra chặt chẽ, ngăn chặn áp dụng hậu quả hai lần ngay cả sau khi reload `localStorage` hoặc gọi lặp lại.
+- **Bộ Kiểm Thử Tập Trung (`tests/world/event-concurrency-guard.test.ts`)**:
+  - 6/6 test cases chuyên sâu kiểm chứng đầy đủ các kịch bản:
+    1. Hai sự kiện trùng loại trên cùng sector bị chặn an toàn.
+    2. Hai sự kiện khác loại cùng tồn tại hợp lý đồng thời.
+    3. Sự kiện bị chặn không làm kẹt mission chain (Retry & Controlled Fallback).
+    4. Nhiều deadline trùng nhau xử lý tất định theo tie-breaking.
+    5. Hậu quả không bị áp dụng 2 lần sau reload.
+    6. Sự kiện mới sinh ra từ mission chain không bị resolve nhầm trong cùng tick.
+
+---
+
 ## [Phase 6.9] — STARFRONT WORLD: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp Toàn Diện (Fullscreen Map, Polish & E2E Verification)
 
 *Đã hoàn thành 100% Phase 6.9 — Phase cuối cùng trong lộ trình STARFRONT WORLD (100% automated tests PASS, build thành công, 9/9 tests E2E Phase 6.9 PASS, bảo toàn zero-regression toàn bộ hệ thống)*

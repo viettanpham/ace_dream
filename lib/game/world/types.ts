@@ -272,6 +272,25 @@ export interface InFlightTransaction {
 }
 
 /**
+ * Lý do từ chối đăng ký sự kiện chiến lược
+ */
+export type EventRegistrationDenialReason =
+  | "max_active_events_reached"
+  | "duplicate_template_in_sector"
+  | "duplicate_id"
+  | "duplicate_galaxy_event"
+  | "chain_already_has_active_event"
+
+/**
+ * Kết quả kiểm tra điều kiện đăng ký sự kiện (Concurrency Guard)
+ */
+export interface EventRegistrationCheckResult {
+  allowed: boolean
+  reason?: EventRegistrationDenialReason
+  message?: string
+}
+
+/**
  * Trạng thái của sự kiện chiến lược theo vòng đời 3 pha
  */
 export type EventStatus = "INIT" | "PROCESSING" | "RESULT" | "EXPIRED"
@@ -425,6 +444,10 @@ export interface MissionChainNode {
   }
   nextBranchMap?: Record<string, string>
   rewardSummary?: string
+  isPendingDispatch?: boolean
+  pendingEvent?: WorldEvent
+  deferredSinceTick?: number
+  dispatchDeferredTicks?: number
 }
 
 /**

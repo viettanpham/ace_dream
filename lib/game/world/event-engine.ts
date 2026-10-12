@@ -19,6 +19,8 @@ import type {
   EventStrategy,
   EventConsequence,
   WorldEventResult,
+  EventRegistrationCheckResult,
+  EventRegistrationDenialReason,
 } from "./types"
 import { WorldPRNG } from "./random"
 import { EVENT_TEMPLATES, createEventFromTemplate } from "./event-templates"
@@ -80,30 +82,110 @@ export function getEventById(state: WorldState, eventId: string): WorldEvent | n
 }
 
 /**
- * Thêm một sự kiện mới vào WorldState với kiểm tra giới hạn trần
+ * Kiểm tra tính hợp lệ và xung đột đồng thời trước khi đăng ký sự kiện (Event Concurrency Guard)
+ * Quy tắc:
+ * 1. Chống trùng ID đã tồn tại
+ * 2. Giữ nguyên trần toàn cục MAX_ACTIVE_EVENTS = 12
+ * 3. Chống trùng sự kiện Galaxy-wide cùng templateId
+ * 4. Chống trùng sự kiện cùng templateId trên cùng sectorId (tránh chồng chéo lặp lại không cần thiết)
+ * 5. Chống trùng sự kiện từ cùng một mission chain đang hoạt động trên cùng sector
+ * Lưu ý: Các sự kiện KHÁC templateId/category (ví dụ bão plasma Anomaly + hạm đội đột kích Military)
+ *        HOÀN TOÀN ĐƯỢC PHÉP cùng tồn tại trên một sector.
  */
-export function registerWorldEvent(
+export function canRegisterWorldEvent(
   state: WorldState,
   event: WorldEvent
-): { success: boolean; event?: WorldEvent; error?: string } {
+): EventRegistrationCheckResult {
   ensureWorldEventState(state)
 
-  const activeCount = Object.values(state.events!).filter(
-    (e) => e.status === "INIT" || e.status === "PROCESSING"
-  ).length
-
-  if (activeCount >= MAX_ACTIVE_EVENTS) {
+  // 1. Kiểm tra ID đã tồn tại
+  if (state.events![event.id]) {
     return {
-      success: false,
-      error: `Đã chạm trần số sự kiện hoạt động đồng thời (${MAX_ACTIVE_EVENTS}). Tạm hoãn sinh sự kiện mới.`,
+      allowed: false,
+      reason: "duplicate_id",
+      message: `Sự kiện có ID ${event.id} đã tồn tại trong World State.`,
     }
   }
 
-  // Đảm bảo không ghi đè sự kiện đã tồn tại
-  if (state.events![event.id]) {
+  // 2. Kiểm tra trần toàn cục
+  const activeEvents = Object.values(state.events!).filter(
+    (e) => e.status === "INIT" || e.status === "PROCESSING"
+  )
+  if (activeEvents.length >= MAX_ACTIVE_EVENTS) {
+    return {
+      allowed: false,
+      reason: "max_active_events_reached",
+      message: `Đã chạm trần số sự kiện hoạt động đồng thời (${MAX_ACTIVE_EVENTS}). Tạm hoãn sinh sự kiện mới.`,
+    }
+  }
+
+  // 3. Kiểm tra Scope Galaxy
+  if (event.scope === "galaxy") {
+    const existingGalaxy = activeEvents.find(
+      (e) => e.scope === "galaxy" && e.templateId === event.templateId
+    )
+    if (existingGalaxy) {
+      return {
+        allowed: false,
+        reason: "duplicate_galaxy_event",
+        message: `Đã có sự kiện quy mô thiên hà cùng loại (${event.templateId}) đang diễn ra.`,
+      }
+    }
+  }
+
+  // 4. Kiểm tra Scope Sector
+  if (event.sectorId) {
+    // 4.1. Chống trùng lặp template trên cùng sector
+    const sameTemplateInSector = activeEvents.find(
+      (e) => e.sectorId === event.sectorId && e.templateId === event.templateId
+    )
+    if (sameTemplateInSector) {
+      return {
+        allowed: false,
+        reason: "duplicate_template_in_sector",
+        message: `Sector ${event.sectorId} đã có sự kiện cùng loại (${event.templateId}) đang hoạt động (ID: ${sameTemplateInSector.id}). Tạm hoãn để tránh xung đột lặp lại.`,
+      }
+    }
+
+    // 4.2. Chống trùng cùng mission chain trên cùng sector
+    if (event.missionChainId) {
+      const sameChainInSector = activeEvents.find(
+        (e) => e.missionChainId === event.missionChainId && e.sectorId === event.sectorId
+      )
+      if (sameChainInSector) {
+        return {
+          allowed: false,
+          reason: "chain_already_has_active_event",
+          message: `Chuỗi nhiệm vụ ${event.missionChainId} đã có sự kiện đang diễn ra tại sector ${event.sectorId}.`,
+        }
+      }
+    }
+  }
+
+  return { allowed: true }
+}
+
+/**
+ * Thêm một sự kiện mới vào WorldState với kiểm tra Event Concurrency Guard
+ */
+export function registerWorldEvent(
+  state: WorldState,
+  event: WorldEvent,
+  options?: { force?: boolean }
+): {
+  success: boolean
+  event?: WorldEvent
+  error?: string
+  reason?: EventRegistrationDenialReason
+} {
+  ensureWorldEventState(state)
+
+  const check = canRegisterWorldEvent(state, event)
+  if (!check.allowed && !options?.force) {
     return {
       success: false,
-      error: `Sự kiện có ID ${event.id} đã tồn tại trong World State.`,
+      error: check.message,
+      reason: check.reason,
     }
   }
 
@@ -418,9 +500,36 @@ export function resolveProcessingEvent(
 }
 
 /**
+ * Tóm tắt kết quả xử lý vòng đời sự kiện trong tick (phục vụ UI & phân tích)
+ */
+export interface EventLifecycleSummary {
+  autoLockedCount: number
+  resolvedCount: number
+  byCategory: Record<string, number>
+  bySeverity: Record<string, number>
+  autoLockedEvents: Array<{
+    id: string
+    title: string
+    sectorId?: string
+    strategyId: string
+  }>
+  resolvedEvents: Array<{
+    id: string
+    title: string
+    category: string
+    severity: string
+    sectorId?: string
+    status: "success" | "failure" | "expired_default" | "aborted"
+  }>
+}
+
+/**
  * Xử lý chu kỳ tiến trình sự kiện trong Tick (được gọi ở Phase 5 của Tick Engine)
  *   1. Kiểm tra hạn chót INIT: nếu currentDay >= decisionDeadlineTick -> autoLockDefaultStrategy
  *   2. Kiểm tra tiến trình PROCESSING: nếu currentDay >= processingCompletesTick -> resolveProcessingEvent
+ *
+ * Tiêu chí sắp xếp phá vỡ thế hòa tất định (Deterministic Tie-Breaking):
+ *   (priority DESC -> deadline ASC -> createdAtTick ASC -> id ASC)
  */
 export function advanceEventLifecyclesAndDeadlines(
   state: WorldState,
@@ -429,6 +538,7 @@ export function advanceEventLifecyclesAndDeadlines(
   autoLockedEvents: string[]
   resolvedEvents: string[]
   logs: string[]
+  summary: EventLifecycleSummary
 } {
   ensureWorldEventState(state)
 
@@ -436,10 +546,32 @@ export function advanceEventLifecyclesAndDeadlines(
   const resolvedEvents: string[] = []
   const logs: string[] = []
 
-  // Sắp xếp các sự kiện theo tiêu chí ổn định
+  const summary: EventLifecycleSummary = {
+    autoLockedCount: 0,
+    resolvedCount: 0,
+    byCategory: {},
+    bySeverity: {},
+    autoLockedEvents: [],
+    resolvedEvents: [],
+  }
+
+  // Sắp xếp các sự kiện theo tiêu chí ổn định tất định tuyệt đối
   const allEvents = Object.values(state.events!).sort((a, b) => {
+    // 1. Độ ưu tiên cao hơn xử lý trước (priority DESC)
     if (b.priority !== a.priority) return b.priority - a.priority
+    // 2. Deadline sớm hơn xử lý trước (deadline ASC)
+    const deadlineA =
+      a.status === "INIT"
+        ? a.decisionDeadlineTick
+        : (a.processingCompletesTick ?? a.decisionDeadlineTick)
+    const deadlineB =
+      b.status === "INIT"
+        ? b.decisionDeadlineTick
+        : (b.processingCompletesTick ?? b.decisionDeadlineTick)
+    if (deadlineA !== deadlineB) return deadlineA - deadlineB
+    // 3. Thời điểm tạo sớm hơn (createdAtTick ASC)
     if (a.createdAtTick !== b.createdAtTick) return a.createdAtTick - b.createdAtTick
+    // 4. ID từ điển ổn định
     return a.id.localeCompare(b.id)
   })
 
@@ -450,6 +582,16 @@ export function advanceEventLifecyclesAndDeadlines(
       if (lockRes.success) {
         autoLockedEvents.push(event.id)
         logs.push(lockRes.log)
+
+        summary.autoLockedCount++
+        summary.byCategory[event.category] = (summary.byCategory[event.category] || 0) + 1
+        summary.bySeverity[event.severity] = (summary.bySeverity[event.severity] || 0) + 1
+        summary.autoLockedEvents.push({
+          id: event.id,
+          title: event.title,
+          sectorId: event.sectorId,
+          strategyId: lockRes.strategyId,
+        })
       }
     }
 
@@ -463,6 +605,18 @@ export function advanceEventLifecyclesAndDeadlines(
       if (resolveRes.success) {
         resolvedEvents.push(event.id)
         logs.push(resolveRes.log)
+
+        summary.resolvedCount++
+        summary.byCategory[event.category] = (summary.byCategory[event.category] || 0) + 1
+        summary.bySeverity[event.severity] = (summary.bySeverity[event.severity] || 0) + 1
+        summary.resolvedEvents.push({
+          id: event.id,
+          title: event.title,
+          category: event.category,
+          severity: event.severity,
+          sectorId: event.sectorId,
+          status: resolveRes.result?.status || "success",
+        })
       }
     }
   }
@@ -471,6 +625,7 @@ export function advanceEventLifecyclesAndDeadlines(
     autoLockedEvents,
     resolvedEvents,
     logs,
+    summary,
   }
 }
 

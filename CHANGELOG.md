@@ -4,6 +4,51 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.10 / Đợt 2] — STARFRONT WORLD: Tái Thiết Kế Trực Quan Giao Diện Sự Kiện & Chuỗi Nhiệm Vụ (Events & Missions UI Redesign)
+
+*Đã hoàn thành 100% Đợt 2 (Phase 6.10) — Nâng cấp toàn diện mục Sự kiện & Nhiệm vụ trong Operations Center, đạt khả năng đọc nhanh, phân biệt rõ các pha vòng đời, trực quan hóa cây nhiệm vụ và tổng hợp biến động chu kỳ tick (100% tests PASS, zero-regression toàn bộ 22 test suites)*
+
+### Các tính năng & nâng cấp giao diện đã triển khai:
+- **Thành Phần Giao Diện Chuyên Biệt (`components/game/world/events-missions-board.tsx`)**:
+  - Tách và module hóa bảng điều phối Sự kiện & Nhiệm vụ thành component độc lập, kết nối mượt mà với `OperationsCenter` và bảo toàn 100% logic gameplay và lưu trữ của Phase 6.7/6.8/Đợt 1.
+  - Tích hợp thanh công cụ Quick Counters: Cần Quyết Định (INIT), Đang Xử Lý (PROCESSING), Chuỗi Nhiệm Vụ Đang Chạy, kèm nút liên kết nhanh sang *Dual Results Hub*.
+  - Bộ lọc danh mục 5 chế độ: `Tất Cả Tổng Hợp`, `Cần Phê Chuẩn [INIT]`, `Đang Triển Khai [PROCESSING]`, `Cây Chuỗi Nhiệm Vụ`, `Báo Cáo Gần Đây`.
+- **A. Sự Kiện Cần Xử Lý (Actionable Events — INIT)**:
+  - *Ưu tiên thị giác cao nhất*: Đặt ở vị trí đầu tiên kèm đếm ngược và phân cấp khẩn cấp đa tín hiệu (không phụ thuộc màu sắc đơn thuần):
+    * Cấp bách (Hết hạn trong 1 ngày / hôm nay hoặc Severity `critical`): Viền nổi bật, hiệu ứng nhịp tim, icon `AlertOctagon`, nhãn "CẤP BÁCH: HẾT HẠN TRONG 1 NGÀY".
+    * Nghiêm trọng (Severity `warning` hoặc còn 2 ngày): Icon `AlertTriangle`, nhãn cảnh báo.
+    * Tiêu chuẩn (Severity `info`): Icon `Clock`.
+  - Hiển thị đầy đủ: Tên sự kiện, Phân loại (`crisis`, `military`, `economic`, `diplomatic`, `anomaly`), Địa bàn Sector hoặc Toàn Cầu, Hạn chót, Diễn biến chi tiết.
+  - Cảnh báo phương án mặc định: Nêu rõ chiến lược sẽ tự động kích hoạt nếu người chơi không can thiệp kịp trước hạn.
+  - Lưới lựa chọn phương án đối ứng: Thẻ chi tiết từng phương án kèm chi phí tài nguyên, thời gian xử lý, tỷ lệ thành công, huy hiệu "Mặc Định", kiểm tra điều kiện chi trả và nút "Phê Chuẩn Phương Án".
+- **B. Sự Kiện Đang Diễn Ra (In-Progress Events — PROCESSING)**:
+  - Phân tách rõ ràng với sự kiện INIT; hiển thị chiến lược đang được thực thi và mô tả chi tiết.
+  - Thanh tiến độ trực quan (Progress Bar): Thể hiện tỷ lệ hoàn thành theo thời gian thực (%), ngày đích đến và số ngày còn lại.
+  - Huy hiệu liên kết Buồng Lái: Nhận diện và hiển thị nếu sự kiện đang chờ kết quả trận đấu can thiệp buồng lái (`encounterTransactionId`).
+- **C. Đồ Thị Cây Chuỗi Nhiệm Vụ (Mission Chain Tree Flow)**:
+  - Thay thế danh sách thẻ phẳng bằng cấu trúc lộ trình trực quan: Thể hiện hình thái nhiệm vụ (`linear`, `branching`, `threshold`, `reactive`, `periodic`, `standalone`), ngày bắt đầu và tỷ lệ bước hoàn thành.
+  - Thẻ các bước (Nodes) phân cấp rõ 4 trạng thái:
+    * **Hoàn Tất (Completed)**: Viền ngọc bích, icon `CheckCircle2`, tóm tắt phần thưởng nhận được.
+    * **Đang Tác Chiến (Active)**: Viền lục lam rực rỡ, vòng quét radar, thông tin sector mục tiêu.
+    * **Chưa Mở Khóa (Locked)**: Gam màu tối giản, icon `Lock`, nêu rõ bước tiên quyết cần hoàn thành.
+    * **Đang Chờ Điều Kiện Sector (Pending Dispatch)**: Huy hiệu cảnh báo màu hổ phách dành riêng cho các node có `isPendingDispatch: true`, nêu rõ nguyên nhân sector đang bận/trùng sự kiện và số ngày đã hoãn/hạn tối đa trước khi tự động giải tỏa.
+- **D. Tổng Hợp Kết Quả Chu Kỳ & Nhật Ký Gần Đây (Events Summary & Recent Feed)**:
+  - Tận dụng `eventsSummary` từ `executeWorldTick`: Hiển thị banner tổng hợp biến động ngày gọn gàng ngay đầu trang, phân tách minh bạch:
+    * *Sự kiện Tự Động Khóa Phương Án Mặc Định*: Danh sách các sự kiện quá hạn tự động chuyển sang PROCESSING theo phương án mặc định.
+    * *Sự kiện Đã Hoàn Tất*: Danh sách sự kiện hoàn tất và áp dụng hậu quả thành công.
+  - Hợp nhất thông báo Toast thành một thông điệp duy nhất có tính bao quát, loại bỏ hiện tượng spam nhiều toast độc lập.
+  - Dải kết quả gần đây (Recent Results Feed): Hiển thị 5 kết quả mới nhất từ Archive kèm trạng thái Thành Công / Mặc Định / Thất Bại, biến động tài nguyên, nút đánh dấu đã đọc và liên kết chuyển đến *Dual Results Hub* để xem toàn bộ lịch sử chi tiết.
+- **Bộ Kiểm Thử Toàn Diện (`tests/world/events-missions-ui.test.ts`)**:
+  - 6/6 test cases kiểm thử tự động toàn diện:
+    1. Phân loại và sắp xếp ưu tiên sự kiện INIT theo hạn chót và mức độ khẩn cấp.
+    2. Chuyển đổi trạng thái sang PROCESSING và tính toán tỷ lệ tiến độ chính xác.
+    3. Nhận diện cờ `isPendingDispatch` và thông số hoãn bước nhiệm vụ.
+    4. Cây nhiệm vụ phân cấp đúng các trạng thái Completed, Active, Locked.
+    5. `executeWorldTick` trả về `eventsSummary` phân tách minh bạch Auto-Locked vs Resolved.
+    6. Lưu và nạp lại bảo toàn nguyên vẹn WorldState, Event Archive và đánh dấu đã đọc.
+
+---
+
 ## [Phase 6.8+ / Đợt 1] — STARFRONT WORLD: Event Concurrency Guard & Deadline Resolution
 
 *Đã hoàn thành 100% Đợt 1 — Xử lý xung đột sự kiện trên cùng sector và hoàn thiện cơ chế giải quyết deadline đồng thời (100% tests PASS, zero-regression toàn bộ 21 test suites)*

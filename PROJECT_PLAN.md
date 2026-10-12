@@ -75,14 +75,15 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.6** | Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng | **Đã hoàn thành (Done)** | `lib/game/world/combat-adapter.ts`, `lib/game/world/transaction-journal.ts` |
 | **Phase 6.7** | Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược (6 Hình Thái) | **Đã hoàn thành (Done)** | `lib/game/world/event-engine.ts`, `lib/game/world/mission-chains.ts`, `lib/game/world/event-templates.ts` |
 | **Phase 6.8** | Operations Center UI & Trung Tâm Kết Quả Kép (Dual Results Hub) | **Đã hoàn thành (Done)** | `components/game/world/operations-center.tsx`, `components/game/world/dual-results-hub.tsx`, `components/game/world/quick-dispatch-dock.tsx` |
-| **Phase 6.9** | **Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử E2E Toàn Diện** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/world-map.tsx`, `components/game/world/world-fullscreen-overlay.tsx`, `tests/world/e2e-world-integration.test.ts` |
+| **Phase 6.9** | **Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử E2E Toàn Diện** | **Đã hoàn thành (Done)** | `components/game/world/world-map.tsx`, `components/game/world/world-fullscreen-overlay.tsx`, `tests/world/e2e-world-integration.test.ts` |
+| **Phase 6.10** | **Tái Thiết Kế Trực Quan Sự Kiện & Cây Chuỗi Nhiệm Vụ (Events & Missions UI Redesign)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/events-missions-board.tsx`, `components/game/world/operations-center.tsx`, `tests/world/events-missions-ui.test.ts` |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.9) đã hoàn tất 100%:
+Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.10) đã hoàn tất 100%:
 1. Toàn bộ 8 sector và 12 tuyến đường hoạt động trên bản đồ chiến lược toàn màn hình với pan/zoom/reticle, tích hợp sâu vào Operations Center và Starfront Shell.
-2. Vòng đời sector, tick engine, kinh tế dân số, quân sự auto-resolve, khế ước combat adapter và sự kiện chiến lược hoạt động trơn tru.
-3. 100% tests đạt chuẩn (bao gồm 9/9 E2E integration tests) và zero-regression được bảo đảm.
+2. Hệ thống Sự kiện & Nhiệm vụ được tái thiết kế trực quan chuyên sâu: phân cấp khẩn cấp đa tín hiệu cho sự kiện INIT, thanh tiến trình PROCESSING, đồ thị cây nhiệm vụ phân nhánh, huy hiệu "Đang chờ điều kiện sector" cho deferred dispatches, và tổng hợp biến động chu kỳ tick gọn gàng.
+3. 100% tests đạt chuẩn (bao gồm toàn bộ 22 test suites) và zero-regression được bảo đảm.
 4. Sẵn sàng tiếp nhận các giai đoạn mở rộng tính năng mới theo chỉ huy của dự án.

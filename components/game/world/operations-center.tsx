@@ -52,6 +52,7 @@ import {
   chooseEventStrategy,
   autoLockDefaultStrategy,
   resolveProcessingEvent,
+  type EventLifecycleSummary,
 } from "@/lib/game/world/event-engine"
 import {
   setSectorStrategicOrder,
@@ -62,6 +63,7 @@ import { DualResultsHub } from "./dual-results-hub"
 import { QuickDispatchDock } from "./quick-dispatch-dock"
 import { WorldMap } from "./world-map"
 import { WorldFullscreenOverlay } from "./world-fullscreen-overlay"
+import { EventsMissionsBoard } from "./events-missions-board"
 import type {
   WorldState,
   WorldSector,
@@ -97,6 +99,7 @@ export function OperationsCenter({
   const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null)
   const [isTickAdvancing, setIsTickAdvancing] = useState(false)
   const [lastTickLogs, setLastTickLogs] = useState<string[]>([])
+  const [lastEventsSummary, setLastEventsSummary] = useState<EventLifecycleSummary | null>(null)
 
   // Nạp WorldState từ Storage khi mount
   useEffect(() => {
@@ -135,9 +138,25 @@ export function OperationsCenter({
       setWorldState({ ...worldState })
       playShieldSound()
 
+      if (tickRes.eventsSummary) {
+        setLastEventsSummary(tickRes.eventsSummary)
+      }
+
       const summaryLogs = tickRes.phaseLogs.flatMap((p) => p.changesApplied)
       setLastTickLogs(summaryLogs.slice(0, 8))
-      showToast(`Chiến lược đã bước sang Ngày ${worldState.currentDay}! (${summaryLogs.length} biến động được ghi nhận)`, "success")
+
+      const autoLocked = tickRes.eventsSummary?.autoLockedCount || 0
+      const resolved = tickRes.eventsSummary?.resolvedCount || 0
+      let eventNote = ""
+      if (autoLocked > 0 && resolved > 0) {
+        eventNote = ` · ${resolved} sự kiện hoàn tất, ${autoLocked} sự kiện tự động khóa`
+      } else if (resolved > 0) {
+        eventNote = ` · ${resolved} sự kiện hoàn tất`
+      } else if (autoLocked > 0) {
+        eventNote = ` · ${autoLocked} sự kiện tự động khóa phương án mặc định`
+      }
+
+      showToast(`Chiến lược đã bước sang Ngày ${worldState.currentDay}! (${summaryLogs.length} biến động${eventNote})`, "success")
     } catch (err: any) {
       showToast(`Lỗi khi thực thi Tick: ${err?.message || "Không xác định"}`, "error")
     } finally {
@@ -942,196 +961,26 @@ export function OperationsCenter({
       )}
 
       {/* ====================================================================
-          TAB 3: CHIẾN DỊCH & SỰ KIỆN (ACTIVE OPERATIONS BOARD)
+          TAB 3: SỰ KIỆN & NHIỆM VỤ (PHASE 6.10 REDESIGNED EVENTS & MISSIONS BOARD)
           ==================================================================== */}
       {activeTab === "events" && (
-        <div className="space-y-4">
-          {/* Phân mục 1: Sự kiện đang hoạt động */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-zinc-400 text-[11px]">
-              <span className="font-bold uppercase tracking-wide flex items-center gap-1.5">
-                <Flame className="size-3.5 text-amber-400" />
-                SỰ KIỆN THỜI GIAN THỰC & ĐẾM NGƯỢC ({activeEventsList.length})
-              </span>
-              <span>Hết hạn đếm ngược sẽ tự động khóa phương án mặc định</span>
-            </div>
-
-            {activeEventsList.length === 0 ? (
-              <div className="rounded border border-dashed border-zinc-800 p-8 text-center text-zinc-500">
-                Không có sự kiện khẩn cấp nào đang diễn ra trong thiên hà.
-              </div>
-            ) : (
-              activeEventsList.map((event) => {
-                const isInit = event.status === "INIT"
-                const daysRemaining = Math.max(0, event.decisionDeadlineTick - worldState.currentDay)
-                const targetSector = event.sectorId ? worldState.sectors[event.sectorId] : null
-
-                return (
-                  <div
-                    key={event.id}
-                    className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3 shadow-md"
-                  >
-                    {/* Header event */}
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={cn(
-                            "px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border",
-                            isInit
-                              ? "border-amber-500/50 bg-amber-950/50 text-amber-300 animate-pulse"
-                              : "border-cyan-500/50 bg-cyan-950/50 text-cyan-300"
-                          )}
-                        >
-                          {event.status}
-                        </span>
-                        <span className="font-bold text-zinc-100 text-xs">{event.title}</span>
-                        {targetSector && (
-                          <span className="text-zinc-400 text-[10px]">· Sector: {targetSector.name}</span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-[11px]">
-                        <Clock className="size-3.5 text-zinc-400" />
-                        <span className={cn(daysRemaining <= 1 ? "text-red-400 font-bold" : "text-zinc-400")}>
-                          {isInit ? `Hạn chót: Còn ${daysRemaining} ngày` : `Hoàn tất tại ngày #${event.processingCompletesTick}`}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="text-[11px] text-zinc-300 leading-relaxed bg-zinc-900/40 p-2.5 rounded border border-zinc-800/60">
-                      {event.description}
-                    </p>
-
-                    {/* Danh sách các chiến lược có thể chọn nếu ở INIT */}
-                    {isInit && (
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-cyan-400 uppercase tracking-wide">
-                          Lựa Chọn Phương Án Đối Ứng (Phê Chuẩn Chiến Lược):
-                        </label>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                          {event.availableStrategies.map((strat) => {
-                            const isDefault = strat.id === event.defaultStrategyId
-                            return (
-                              <div
-                                key={strat.id}
-                                className={cn(
-                                  "rounded border p-2.5 flex flex-col justify-between space-y-2 transition-all",
-                                  isDefault
-                                    ? "border-amber-500/40 bg-amber-950/20"
-                                    : "border-zinc-800 bg-zinc-900/40"
-                                )}
-                              >
-                                <div>
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-bold text-zinc-200 text-[11px]">{strat.name}</span>
-                                    {isDefault && (
-                                      <span className="text-[9px] text-amber-300 uppercase font-bold">Mặc Định</span>
-                                    )}
-                                  </div>
-                                  <p className="mt-1 text-[10px] text-zinc-400">{strat.description}</p>
-                                </div>
-
-                                <div className="border-t border-zinc-800/80 pt-2 space-y-1.5 text-[10px]">
-                                  {strat.cost && Object.keys(strat.cost).length > 0 && (
-                                    <div className="text-zinc-400">
-                                      Chi phí:{" "}
-                                      {Object.entries(strat.cost).map(([k, v]) => (
-                                        <span key={k} className="text-amber-300 font-bold mr-1">
-                                          {k}: {v}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  )}
-                                  <div className="text-zinc-400">
-                                    Thời gian xử lý: <strong className="text-cyan-300">{strat.processingTicks} ngày</strong>
-                                  </div>
-
-                                  <button
-                                    type="button"
-                                    onClick={() => handleChooseStrategy(event.id, strat.id)}
-                                    className="w-full mt-1.5 rounded border border-cyan-500/50 bg-cyan-950/60 p-1.5 text-[11px] font-bold text-cyan-300 hover:bg-cyan-900 transition-colors cursor-pointer text-center"
-                                  >
-                                    Phê Chuẩn Phương Án
-                                  </button>
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Nếu đang PROCESSING */}
-                    {event.status === "PROCESSING" && (
-                      <div className="rounded bg-cyan-950/30 border border-cyan-500/30 p-2.5 text-[11px] text-cyan-200">
-                        <span className="font-bold text-cyan-400">Đang triển khai phương án:</span>{" "}
-                        {event.availableStrategies.find((s) => s.id === event.chosenStrategyId)?.name || event.chosenStrategyId}
-                        <div className="mt-1 text-[10px] text-zinc-400">
-                          Sẽ tự động hoàn tất và kết xuất kết quả khi đến ngày chiến lược #{event.processingCompletesTick}.
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-
-          {/* Phân mục 2: Chuỗi nhiệm vụ chiến lược */}
-          <div className="space-y-3 border-t border-zinc-800 pt-4">
-            <div className="flex items-center justify-between text-zinc-400 text-[11px]">
-              <span className="font-bold uppercase tracking-wide flex items-center gap-1.5">
-                <Compass className="size-3.5 text-cyan-400" />
-                CHUỖI NHIỆM VỤ CHIẾN LƯỢC ĐANG CHẠY ({activeMissionChainsList.length} / 8 MAX)
-              </span>
-            </div>
-
-            {activeMissionChainsList.length === 0 ? (
-              <div className="rounded border border-dashed border-zinc-800 p-6 text-center text-zinc-500">
-                Không có chuỗi nhiệm vụ nào đang hoạt động.
-              </div>
-            ) : (
-              activeMissionChainsList.map((chain) => (
-                <div
-                  key={chain.id}
-                  className="rounded border border-zinc-800 bg-zinc-950/60 p-3.5 space-y-2"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded bg-indigo-950/60 px-1.5 py-0.2 text-[10px] text-indigo-300 border border-indigo-500/40 uppercase font-bold">
-                        {chain.topology}
-                      </span>
-                      <span className="font-bold text-zinc-100">{chain.title}</span>
-                    </div>
-                    <span className="text-[10px] text-zinc-400">Bắt đầu ngày #{chain.startedAtTick}</span>
-                  </div>
-
-                  <p className="text-[11px] text-zinc-400">{chain.description}</p>
-
-                  {/* Tiến trình các nút trong chuỗi */}
-                  <div className="flex flex-wrap items-center gap-2 border-t border-zinc-800/80 pt-2 text-[10px]">
-                    {Object.values(chain.nodes).map((node, nIdx) => (
-                      <div
-                        key={node.id}
-                        className={cn(
-                          "flex items-center gap-1.5 px-2 py-1 rounded border",
-                          node.status === "completed"
-                            ? "border-emerald-500/40 bg-emerald-950/30 text-emerald-300"
-                            : node.status === "active"
-                            ? "border-cyan-500/50 bg-cyan-950/40 text-cyan-200 font-bold"
-                            : "border-zinc-800 bg-zinc-900/40 text-zinc-500"
-                        )}
-                      >
-                        <span>{nIdx + 1}. {node.title}</span>
-                        {node.status === "completed" && <CheckCircle2 className="size-3 text-emerald-400" />}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+        <EventsMissionsBoard
+          worldState={worldState}
+          activeEvents={activeEventsList}
+          activeMissionChains={activeMissionChainsList}
+          lastEventsSummary={lastEventsSummary}
+          onChooseStrategy={handleChooseStrategy}
+          onNavigateToResults={() => {
+            playClickSound()
+            setActiveTab("results")
+          }}
+          onNavigateToSector={(sectorId) => {
+            playClickSound()
+            setSelectedSectorId(sectorId)
+            setActiveTab("sectors")
+          }}
+          onStateUpdated={reloadState}
+        />
       )}
 
       {/* ====================================================================

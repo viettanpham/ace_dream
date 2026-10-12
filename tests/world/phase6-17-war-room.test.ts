@@ -54,9 +54,9 @@ describe("STARFRONT WORLD — Phase 6.17: Primary Navigation & War Room Foundati
   })
 
   describe("1. Đồng Bộ Hóa Lựa Chọn Sector & Dữ Liệu Inspector", () => {
-    it("toàn bộ 8 sector đều có tọa độ, chủ quyền và dữ liệu hiển thị hợp lệ cho War Room", () => {
+    it("toàn bộ 10 sector đều có tọa độ, chủ quyền và dữ liệu hiển thị hợp lệ cho War Room (Phase 6.28)", () => {
       const sectorIds = Object.keys(state.sectors)
-      assert.equal(sectorIds.length, 8)
+      assert.equal(sectorIds.length, 10)
 
       for (const id of sectorIds) {
         const sector = state.sectors[id]

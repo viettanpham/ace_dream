@@ -60,12 +60,12 @@ describe("STARFRONT WORLD — Phase 6.11: Galaxy Map & HUD Refinement", () => {
   // ==========================================================================
   // Test 1: Canonical Sectors & Routes Count Verification
   // ==========================================================================
-  it("1. Bản đồ thiên hà khởi đầu có đúng 8 sector và 12 tuyến đường canonical", () => {
+  it("1. Bản đồ thiên hà khởi đầu có đúng 10 sector và 16 tuyến đường canonical (Phase 6.28)", () => {
     const state = createInitialWorldState()
 
     const sectorIds = Object.keys(state.sectors)
-    assert.equal(sectorIds.length, 8, "Phải có đúng 8 sector chuẩn")
-    assert.equal(state.routes.length, 12, "Phải có đúng 12 tuyến đường siêu không gian")
+    assert.equal(sectorIds.length, 10, "Phải có đúng 10 sector chuẩn")
+    assert.equal(state.routes.length, 16, "Phải có đúng 16 tuyến đường siêu không gian")
 
     // Xác nhận các sector chủ chốt
     assert.ok(state.sectors.sol_command_hq, "Sol Command HQ phải tồn tại")
@@ -76,6 +76,8 @@ describe("STARFRONT WORLD — Phase 6.11: Galaxy Map & HUD Refinement", () => {
     assert.ok(state.sectors.waypoint_orion, "Waypoint Orion phải tồn tại")
     assert.ok(state.sectors.shadow_reach, "Shadow Reach phải tồn tại")
     assert.ok(state.sectors.tartarus_breach, "Tartarus Breach phải tồn tại")
+    assert.ok(state.sectors.elysium_sanctuary, "Elysium Sanctuary phải tồn tại")
+    assert.ok(state.sectors.abyssal_rift, "Abyssal Rift phải tồn tại")
   })
 
   // ==========================================================================
@@ -191,12 +193,12 @@ describe("STARFRONT WORLD — Phase 6.11: Galaxy Map & HUD Refinement", () => {
     const voidPct = Math.round((voidCount / total) * 100)
     const avgThreat = Math.round(totalThreat / total)
 
-    assert.equal(vssCount, 5, "Khởi đầu VSS kiểm soát 5/8 sector")
-    assert.equal(contestedCount, 2, "Khởi đầu có 2 sector tranh chấp")
+    assert.equal(vssCount, 6, "Khởi đầu VSS kiểm soát 6/10 sector")
+    assert.equal(contestedCount, 3, "Khởi đầu có 3 sector tranh chấp")
     assert.equal(voidCount, 1, "Khởi đầu Void kiểm soát 1 sector")
-    assert.equal(vssPct, 63, "VSS chiếm 63%")
-    assert.equal(contestedPct, 25, "Tranh chấp chiếm 25%")
-    assert.equal(voidPct, 13, "Void chiếm 13%")
+    assert.equal(vssPct, 60, "VSS chiếm 60%")
+    assert.equal(contestedPct, 30, "Tranh chấp chiếm 30%")
+    assert.equal(voidPct, 10, "Void chiếm 10%")
     assert.ok(avgThreat > 0 && avgThreat < 1000, "Threat trung bình nằm trong khoảng hợp lệ")
   })
 

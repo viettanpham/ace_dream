@@ -63,14 +63,16 @@ describe("Phase 6.1 — WORLD Data Foundation & Isolated Save Resilience", () =>
       assert.equal(state.currentDay, 1, "Bắt đầu từ Ngày 1")
       assert.ok(state.realTimeAnchor > 0, "Dấu thời gian Unix thực tế phải hợp lệ")
 
-      // Kiểm tra 8 sector khởi đầu
+      // Kiểm tra 10 sector khởi đầu (Phase 6.28)
       const sectorIds = Object.keys(state.sectors)
-      assert.equal(sectorIds.length, 8, "Khởi tạo đủ 8 sector ban đầu")
+      assert.equal(sectorIds.length, 10, "Khởi tạo đủ 10 sector ban đầu")
       assert.ok(sectorIds.includes("sol_command_hq"), "Phải có Sol Command HQ")
       assert.ok(sectorIds.includes("tartarus_breach"), "Phải có Tartarus Breach")
+      assert.ok(sectorIds.includes("elysium_sanctuary"), "Phải có Elysium Sanctuary")
+      assert.ok(sectorIds.includes("abyssal_rift"), "Phải có Abyssal Rift")
 
-      // Kiểm tra 12 tuyến đường
-      assert.equal(state.routes.length, 12, "Khởi tạo đủ 12 tuyến siêu không gian")
+      // Kiểm tra 16 tuyến đường (Phase 6.28)
+      assert.equal(state.routes.length, 16, "Khởi tạo đủ 16 tuyến siêu không gian")
 
       // Kiểm tra 4 nhóm tài nguyên + LƯƠNG THỰC (Food) bắt buộc
       assert.ok(state.resources.food > 0, "Lương thực phải là tài nguyên riêng biệt (>0)")

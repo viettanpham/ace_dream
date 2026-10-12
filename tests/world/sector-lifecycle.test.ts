@@ -72,12 +72,12 @@ describe("Phase 6.2 — World Map Graph Network & Sector State Machine", () => {
   })
 
   describe("A. World Map Graph & Route Network", () => {
-    it("1. Khởi tạo đồ thị chuẩn xác từ 8 sectors và 12 routes khởi đầu (Không nhân bản dữ liệu)", () => {
+    it("1. Khởi tạo đồ thị chuẩn xác từ 10 sectors và 16 routes khởi đầu (Phase 6.28)", () => {
       const sectors = getInitialSectorsList()
       const routes = getInitialRoutesList()
 
-      assert.equal(sectors.length, 8, "Phải có đúng 8 sector mẫu")
-      assert.equal(routes.length, 12, "Phải có đúng 12 tuyến siêu không gian")
+      assert.equal(sectors.length, 10, "Phải có đúng 10 sector mẫu")
+      assert.equal(routes.length, 16, "Phải có đúng 16 tuyến siêu không gian")
 
       // Kiểm tra sector cốt lõi
       const sol = getInitialSectorById("sol_command_hq")

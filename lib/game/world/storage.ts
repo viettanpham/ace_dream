@@ -1,4 +1,8 @@
-import { createInitialWorldState } from "./initial-state"
+import {
+  INITIAL_WORLD_ROUTES,
+  INITIAL_WORLD_SECTORS,
+  createInitialWorldState,
+} from "./initial-state"
 import type {
   BackupMetadata,
   BackupSlot,
@@ -300,6 +304,55 @@ export function saveWorldState(state: WorldState): SaveWorldResult {
 }
 
 /**
+ * Phase 6.28: Tự động nâng cấp bản lưu cũ (8 sector) lên mạng lưới 10 sector & 16 routes
+ * - Bổ sung 2 sector mới nếu còn thiếu mà KHÔNG làm thay đổi bất kỳ trạng thái nào của 8 sector cũ.
+ * - Bổ sung các tuyến đường mới kết nối tới 2 sector mới nếu chưa có.
+ * - Cập nhật danh sách controlledSectorIds của phe VSS nếu sector thuộc VSS.
+ */
+export function migrateWorldStateTo10Sectors(state: WorldState): { state: WorldState; migrated: boolean } {
+  if (!state || !state.sectors) return { state, migrated: false }
+  let migrated = false
+
+  // 1. Kiểm tra và bổ sung sector mới
+  for (const [id, defSector] of Object.entries(INITIAL_WORLD_SECTORS)) {
+    if (!state.sectors[id]) {
+      migrated = true
+      state.sectors[id] = {
+        ...defSector,
+        resources: { ...defSector.resources },
+        threatHistory: [
+          {
+            day: state.currentDay || 1,
+            threat: defSector.threatLevel,
+          },
+        ],
+      }
+      // Cập nhật phe kiểm soát nếu là VSS
+      if (defSector.sovereignty === "vss" && state.factions?.vss) {
+        if (!state.factions.vss.controlledSectorIds.includes(id)) {
+          state.factions.vss.controlledSectorIds.push(id)
+        }
+      }
+    }
+  }
+
+  // 2. Kiểm tra và bổ sung các tuyến đường mới
+  if (!Array.isArray(state.routes)) {
+    state.routes = []
+  }
+  const existingRouteIds = new Set(state.routes.map((r) => r.id))
+  for (const defRoute of INITIAL_WORLD_ROUTES) {
+    if (!existingRouteIds.has(defRoute.id)) {
+      migrated = true
+      state.routes.push({ ...defRoute })
+      existingRouteIds.add(defRoute.id)
+    }
+  }
+
+  return { state, migrated }
+}
+
+/**
  * Nạp trạng thái World State với cơ chế tự động phục hồi khi file chính bị hỏng (Auto-Rescue)
  */
 export function loadWorldState(): LoadWorldResult {
@@ -327,8 +380,14 @@ export function loadWorldState(): LoadWorldResult {
     if (!loadedData.activeMissionChains) loadedData.activeMissionChains = []
     if (!loadedData.completedMissionChainIds) loadedData.completedMissionChainIds = []
 
+    // Phase 6.28: Tự động di chuyển lên 10 Sector & 16 Tuyến đường nếu là save cũ
+    const migration = migrateWorldStateTo10Sectors(loadedData)
+    if (migration.migrated) {
+      saveWorldState(migration.state)
+    }
+
     return {
-      state: loadedData,
+      state: migration.state,
       status: "loaded_primary",
       recoveredFromBackup: false,
       message: `Nạp thành công bản lưu World chính (Checksum: ${primaryValidation.envelope.checksum})`,
@@ -392,8 +451,9 @@ export function loadWorldState(): LoadWorldResult {
     const msg = `Phát hiện lỗi bản lưu chính (${primaryValidation.error || "Hư hại dữ liệu"}); đã tự động phục hồi từ Backup Slot ${chosenBackup.slot} (Lưu lúc ${dateStr})`
     console.warn(`[STARFRONT WORLD] ${msg}`)
 
+    const migration = migrateWorldStateTo10Sectors(chosenBackup.envelope.data)
     return {
-      state: chosenBackup.envelope.data,
+      state: migration.state,
       status: chosenBackup.slot === "A" ? "recovered_backup_a" : "recovered_backup_b",
       recoveredFromBackup: true,
       message: msg,

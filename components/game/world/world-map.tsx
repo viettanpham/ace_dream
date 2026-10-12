@@ -28,6 +28,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Plus,
+  Radio,
   RotateCcw,
   Route,
   Shield,
@@ -50,6 +51,7 @@ import {
 } from "@/lib/game/world/forces-ledger"
 import { getActiveEvents } from "@/lib/game/world/event-engine"
 import { saveWorldState } from "@/lib/game/world/storage"
+import { SectorIntelModal } from "./sector-intel-modal"
 import type {
   WorldState,
   WorldSector,
@@ -258,6 +260,7 @@ export function WorldMap({
   const [showLegend, setShowLegend] = useState<boolean>(true)
   const [showDeployments, setShowDeployments] = useState<boolean>(true)
   const [showInspector, setShowInspector] = useState<boolean>(true)
+  const [isSectorIntelOpen, setIsSectorIntelOpen] = useState<boolean>(false)
   const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null)
 
@@ -915,7 +918,7 @@ export function WorldMap({
             </g>
           )}
 
-          {/* C. VẼ 8 ĐỈNH SECTOR THIÊN HÀ (SECTOR NODES LAYER) */}
+          {/* C. VẼ 10 ĐỈNH SECTOR THIÊN HÀ (SECTOR NODES LAYER - PHASE 6.28) */}
           <g id="sectors-layer">
             {sectors.map((sector) => {
               const cx = (sector.x / 100) * 1000
@@ -942,194 +945,200 @@ export function WorldMap({
                       handleSectorClick(sector.id)
                     }
                   }}
-                  className="cursor-pointer group"
+                  className="cursor-pointer group select-none"
                   data-sector-node={sector.id}
                 >
-                  {/* 0. HIT AREA TRONG SUỐT RIÊNG BIỆT (DEDICATED HITBOX LAYER)
-                      Bao phủ cả node tròn (cx, cy) và nhãn tên (cy+30), loại bỏ hoàn toàn deadzone.
-                      Đủ rộng (140x88px) để click cực nhạy khi zoom nhỏ (scale 0.7x), nhưng không lấn sang sector lân cận. */}
+                  {/* 0. HIT AREA TRONG SUỐT ĐỘC LẬP (DEDICATED HITBOX LAYER - PHASE 6.28)
+                      Tách biệt 100% khỏi hiệu ứng quay/pulse và chữ nhãn để không bao giờ bị lệch tâm.
+                      Bao phủ cả node tròn (cx, cy) và nhãn tên (cy+30), pointerEvents="all" bắt trọn click. */}
                   <rect
-                    x={cx - 70}
-                    y={cy - 35}
-                    width="140"
-                    height="88"
-                    rx="16"
-                    fill="transparent"
+                    x={cx - 60}
+                    y={cy - 30}
+                    width="120"
+                    height="82"
+                    rx="14"
+                    fill="#000000"
+                    fillOpacity={0.001}
+                    style={{ pointerEvents: "all" }}
                     className="cursor-pointer"
                   />
-                  {/* 1. Vòng định vị khi được chọn (Tactical Targeting Reticle) */}
-                  {isSelected && (
-                    <g transform={`translate(${cx}, ${cy})`}>
+
+                  {/* TOÀN BỘ ĐỒ HỌA TRANG TRÍ (POINTER-EVENTS-NONE ĐẢM BẢO KHÔNG NUỐT EVENT HAY LỆCH VỊ TRÍ) */}
+                  <g className="pointer-events-none">
+                    {/* 1. Vòng định vị khi được chọn (Tactical Targeting Reticle) */}
+                    {isSelected && (
+                      <g transform={`translate(${cx}, ${cy})`}>
+                        <circle
+                          r="34"
+                          fill="none"
+                          stroke="#06b6d4"
+                          strokeWidth="1.5"
+                          strokeDasharray="8 6"
+                          className="animate-spin-slow"
+                        />
+                        <circle r="42" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.4" />
+                        {/* 4 dấu ngắm góc chữ thập */}
+                        <line x1="-38" y1="0" x2="-32" y2="0" stroke="#06b6d4" strokeWidth="2" />
+                        <line x1="32" y1="0" x2="38" y2="0" stroke="#06b6d4" strokeWidth="2" />
+                        <line x1="0" y1="-38" x2="0" y2="-32" stroke="#06b6d4" strokeWidth="2" />
+                        <line x1="0" y1="32" x2="0" y2="38" stroke="#06b6d4" strokeWidth="2" />
+                      </g>
+                    )}
+
+                    {/* 2. Vòng hiển thị trạng thái Stage (Chỉ pulse có chọn lọc ở under_siege) */}
+                    {sector.stage === "under_siege" && (
                       <circle
-                        r="34"
+                        cx={cx}
+                        cy={cy}
+                        r="28"
+                        fill="none"
+                        stroke="#ef4444"
+                        strokeWidth="2"
+                        strokeDasharray="4 4"
+                        className="animate-pulse"
+                      />
+                    )}
+
+                    {sector.stage === "threatened" && (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r="26"
+                        fill="none"
+                        stroke="#f59e0b"
+                        strokeWidth="1.5"
+                        strokeDasharray="6 4"
+                        opacity="0.85"
+                      />
+                    )}
+
+                    {sector.stage === "lost" && (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r="26"
+                        fill="none"
+                        stroke="#a855f7"
+                        strokeWidth="1.5"
+                        strokeDasharray="2 3"
+                        opacity="0.85"
+                      />
+                    )}
+
+                    {sector.stage === "recovery" && (
+                      <circle
+                        cx={cx}
+                        cy={cy}
+                        r="26"
                         fill="none"
                         stroke="#06b6d4"
                         strokeWidth="1.5"
-                        strokeDasharray="8 6"
-                        className="animate-spin-slow"
+                        strokeDasharray="4 2"
+                        opacity="0.8"
                       />
-                      <circle r="42" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.4" />
-                      {/* 4 dấu ngắm góc chữ thập */}
-                      <line x1="-38" y1="0" x2="-32" y2="0" stroke="#06b6d4" strokeWidth="2" />
-                      <line x1="32" y1="0" x2="38" y2="0" stroke="#06b6d4" strokeWidth="2" />
-                      <line x1="0" y1="-38" x2="0" y2="-32" stroke="#06b6d4" strokeWidth="2" />
-                      <line x1="0" y1="32" x2="0" y2="38" stroke="#06b6d4" strokeWidth="2" />
-                    </g>
-                  )}
+                    )}
 
-                  {/* 2. Vòng hiển thị trạng thái Stage (Chỉ pulse có chọn lọc ở under_siege) */}
-                  {sector.stage === "under_siege" && (
+                    {/* 3. Vòng nền Sector mang màu sắc phe phái */}
                     <circle
                       cx={cx}
                       cy={cy}
-                      r="28"
-                      fill="none"
-                      stroke="#ef4444"
-                      strokeWidth="2"
-                      strokeDasharray="4 4"
-                      className="animate-pulse"
+                      r={isSelected ? "22" : "19"}
+                      fill={sovCfg.bg}
+                      stroke={sovCfg.border}
+                      strokeWidth={isSelected ? "2.5" : "1.8"}
+                      className="transition-all duration-200 group-hover:scale-110"
+                      style={{ filter: isSelected ? `drop-shadow(${sovCfg.glow})` : undefined }}
                     />
-                  )}
 
-                  {sector.stage === "threatened" && (
+                    {/* 4. Lõi trung tâm */}
                     <circle
                       cx={cx}
                       cy={cy}
-                      r="26"
-                      fill="none"
-                      stroke="#f59e0b"
-                      strokeWidth="1.5"
-                      strokeDasharray="6 4"
-                      opacity="0.85"
+                      r="8"
+                      fill={sovCfg.color}
+                      opacity="0.95"
                     />
-                  )}
 
-                  {sector.stage === "lost" && (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r="26"
-                      fill="none"
-                      stroke="#a855f7"
-                      strokeWidth="1.5"
-                      strokeDasharray="2 3"
-                      opacity="0.85"
-                    />
-                  )}
+                    {/* 5. Huy hiệu đích đến điều quân (Incoming Reinforcements Badge) */}
+                    {isDeploymentTarget && (
+                      <g transform={`translate(${cx - 38}, ${cy - 22})`}>
+                        <rect
+                          width="36"
+                          height="14"
+                          rx="2"
+                          fill="#083344"
+                          stroke="#06b6d4"
+                          strokeWidth="1"
+                        />
+                        <text
+                          x="18"
+                          y="7"
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fill="#38bdf8"
+                          fontSize="7.5"
+                          fontFamily="monospace"
+                          fontWeight="bold"
+                        >
+                          +{incomingTroops}Q
+                        </text>
+                      </g>
+                    )}
 
-                  {sector.stage === "recovery" && (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r="26"
-                      fill="none"
-                      stroke="#06b6d4"
-                      strokeWidth="1.5"
-                      strokeDasharray="4 2"
-                      opacity="0.8"
-                    />
-                  )}
+                    {/* 6. Huy hiệu khóa Combat (Combat Lock Badge) */}
+                    {isLocked && (
+                      <g transform={`translate(${cx + 10}, ${cy - 16})`}>
+                        <rect width="20" height="15" rx="2" fill="#7f1d1d" stroke="#ef4444" strokeWidth="1" />
+                        <text
+                          x="10"
+                          y="8"
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fill="#fee2e2"
+                          fontSize="8.5"
+                          fontWeight="bold"
+                          fontFamily="monospace"
+                        >
+                          🔒
+                        </text>
+                      </g>
+                    )}
 
-                  {/* 3. Vòng nền Sector mang màu sắc phe phái */}
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r={isSelected ? "22" : "19"}
-                    fill={sovCfg.bg}
-                    stroke={sovCfg.border}
-                    strokeWidth={isSelected ? "2.5" : "1.8"}
-                    className="transition-all duration-200 group-hover:scale-110"
-                    style={{ filter: isSelected ? `drop-shadow(${sovCfg.glow})` : undefined }}
-                  />
-
-                  {/* 4. Lõi trung tâm */}
-                  <circle
-                    cx={cx}
-                    cy={cy}
-                    r="8"
-                    fill={sovCfg.color}
-                    opacity="0.95"
-                  />
-
-                  {/* 5. Huy hiệu đích đến điều quân (Incoming Reinforcements Badge) */}
-                  {isDeploymentTarget && (
-                    <g transform={`translate(${cx - 38}, ${cy - 22})`}>
+                    {/* 7. Nhãn tên Sector */}
+                    <g transform={`translate(${cx}, ${cy + (isSelected ? 34 : 30)})`}>
                       <rect
-                        width="36"
-                        height="14"
-                        rx="2"
-                        fill="#083344"
-                        stroke="#06b6d4"
-                        strokeWidth="1"
+                        x="-65"
+                        y="-10"
+                        width="130"
+                        height="20"
+                        rx="3"
+                        fill="#020617"
+                        fillOpacity="0.88"
+                        stroke={isSelected ? "#06b6d4" : "rgba(255,255,255,0.18)"}
+                        strokeWidth={isSelected ? "1.5" : "0.8"}
                       />
                       <text
-                        x="18"
-                        y="7"
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fill="#38bdf8"
-                        fontSize="7.5"
-                        fontFamily="monospace"
-                        fontWeight="bold"
+                        fill={isSelected ? "#38bdf8" : "#f1f5f9"}
+                        fontSize="9.5"
+                        fontWeight={isSelected ? "bold" : "600"}
+                        fontFamily="sans-serif"
                       >
-                        +{incomingTroops}Q
+                        {sector.name}
                       </text>
                     </g>
-                  )}
 
-                  {/* 6. Huy hiệu khóa Combat (Combat Lock Badge) */}
-                  {isLocked && (
-                    <g transform={`translate(${cx + 10}, ${cy - 16})`}>
-                      <rect width="20" height="15" rx="2" fill="#7f1d1d" stroke="#ef4444" strokeWidth="1" />
-                      <text
-                        x="10"
-                        y="8"
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fill="#fee2e2"
-                        fontSize="8.5"
-                        fontWeight="bold"
-                        fontFamily="monospace"
-                      >
-                        🔒
-                      </text>
+                    {/* 8. Thanh đo Threat & Chỉ số số học rõ ràng dưới tên */}
+                    <g transform={`translate(${cx - 40}, ${cy + (isSelected ? 46 : 42)})`}>
+                      <rect width="80" height="4" rx="1" fill="#18181b" />
+                      <rect
+                        width={Math.min(80, (sector.threatLevel / 1000) * 80)}
+                        height="4"
+                        rx="1"
+                        fill={threatInfo.color}
+                      />
                     </g>
-                  )}
-
-                  {/* 7. Nhãn tên Sector */}
-                  <g transform={`translate(${cx}, ${cy + (isSelected ? 34 : 30)})`}>
-                    <rect
-                      x="-65"
-                      y="-10"
-                      width="130"
-                      height="20"
-                      rx="3"
-                      fill="#020617"
-                      fillOpacity="0.88"
-                      stroke={isSelected ? "#06b6d4" : "rgba(255,255,255,0.18)"}
-                      strokeWidth={isSelected ? "1.5" : "0.8"}
-                    />
-                    <text
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fill={isSelected ? "#38bdf8" : "#f1f5f9"}
-                      fontSize="9.5"
-                      fontWeight={isSelected ? "bold" : "600"}
-                      fontFamily="sans-serif"
-                    >
-                      {sector.name}
-                    </text>
-                  </g>
-
-                  {/* 8. Thanh đo Threat & Chỉ số số học rõ ràng dưới tên */}
-                  <g transform={`translate(${cx - 40}, ${cy + (isSelected ? 46 : 42)})`}>
-                    <rect width="80" height="4" rx="1" fill="#18181b" />
-                    <rect
-                      width={Math.min(80, (sector.threatLevel / 1000) * 80)}
-                      height="4"
-                      rx="1"
-                      fill={threatInfo.color}
-                    />
                   </g>
                 </g>
               )
@@ -1330,6 +1339,19 @@ export function WorldMap({
                   </div>
                   <div className="text-[10px] text-zinc-400 mt-0.5 truncate">{selectedSector.subtitle}</div>
                 </div>
+
+                {/* Nút mở nhanh Sector Intel Modal */}
+                <button
+                  onClick={() => {
+                    playClickSound()
+                    setIsSectorIntelOpen(true)
+                  }}
+                  className="px-2 py-1 flex items-center gap-1 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 text-[10px] font-bold uppercase transition-colors cursor-pointer shrink-0 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
+                  title="Mở hồ sơ tình báo chi tiết Sector Intel"
+                >
+                  <Radio className="size-3 text-cyan-400" />
+                  <span className="hidden sm:inline">Intel</span>
+                </button>
 
                 {/* Nút đóng Inspector */}
                 <button
@@ -1776,10 +1798,47 @@ export function WorldMap({
                   <ArrowRight className="size-3 text-zinc-400" />
                 </button>
               )}
+
+              {/* Nhóm 5: Mở Hồ Sơ Tình Báo Sector Intel Toàn Diện (Phase 6.28) */}
+              <button
+                onClick={() => {
+                  playClickSound()
+                  setIsSectorIntelOpen(true)
+                }}
+                className="w-full flex items-center justify-center gap-2 rounded bg-gradient-to-r from-cyan-950/80 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 border border-cyan-400/60 text-cyan-200 py-2 px-3 text-xs uppercase tracking-wider font-bold transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.25)]"
+              >
+                <Radio className="size-3.5 text-cyan-400" />
+                <span>Xem Hồ Sơ Tình Báo (Sector Intel)</span>
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* MODAL HỒ SƠ TÌNH BÁO SECTOR INTEL (PHASE 6.28) */}
+      {selectedSector && (
+        <SectorIntelModal
+          isOpen={isSectorIntelOpen}
+          onClose={() => setIsSectorIntelOpen(false)}
+          sectorId={selectedSector.id}
+          worldState={worldState}
+          onSelectSector={(secId) => {
+            handleSectorClick(secId)
+          }}
+          onNavigateToWarRoom={(secId) => {
+            setIsSectorIntelOpen(false)
+            onNavigateToSectorOperations?.(secId)
+          }}
+          onCenterOnMap={(secId) => {
+            handleCenterSelected()
+          }}
+          onOpenQuickDispatch={onOpenQuickDispatch}
+          onDeployCombat={onDeployCombat}
+          onUpdateStrategicOrder={(secId, order) => {
+            handleChangeOrder(order)
+          }}
+        />
+      )}
     </div>
   )
 }

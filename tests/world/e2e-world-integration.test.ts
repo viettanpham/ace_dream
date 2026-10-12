@@ -93,15 +93,15 @@ describe("STARFRONT WORLD — Phase 6.9: Fullscreen Map & E2E Integration", () =
   // ==========================================================================
   // Luồng 1: Mở WORLD và nạp Bản Đồ Toàn Màn Hình
   // ==========================================================================
-  it("1. Mở WORLD và nạp Bản Đồ Toàn Màn Hình: Đúng 8 sector và 12 tuyến đường", () => {
+  it("1. Mở WORLD và nạp Bản Đồ Toàn Màn Hình: Đúng 10 sector và 16 tuyến đường (Phase 6.28)", () => {
     const state = createInitialWorldState()
 
     const sectors = Object.values(state.sectors)
     const routes = state.routes
 
     // Kiểm tra số lượng thực tế lấy từ WorldState
-    assert.equal(sectors.length, 8, "Bản đồ phải có đúng 8 sector khởi đầu")
-    assert.equal(routes.length, 12, "Mạng lưới phải có đúng 12 tuyến hyperlane")
+    assert.equal(sectors.length, 10, "Bản đồ phải có đúng 10 sector khởi đầu")
+    assert.equal(routes.length, 16, "Mạng lưới phải có đúng 16 tuyến hyperlane")
 
     // Kiểm tra các thuộc tính trực quan phục vụ render bản đồ
     for (const s of sectors) {
@@ -368,8 +368,8 @@ describe("STARFRONT WORLD — Phase 6.9: Fullscreen Map & E2E Integration", () =
     assert.equal(loadRes.state.currentDay, 24)
     assert.equal(loadRes.state.sectors["sol_command_hq"].strategicOrder, "defend")
     assert.equal(loadRes.state.sectors["mining_outpost_k7"].fortificationLevel, 3)
-    assert.equal(Object.keys(loadRes.state.sectors).length, 8)
-    assert.equal(loadRes.state.routes.length, 12)
+    assert.equal(Object.keys(loadRes.state.sectors).length, 10)
+    assert.equal(loadRes.state.routes.length, 16)
   })
 
   // ==========================================================================

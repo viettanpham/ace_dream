@@ -292,13 +292,13 @@ describe("STARFRONT WORLD — Phase 6.13: Real-time Simulator, Event Generator &
     // Nạp lại WorldState: dữ liệu thế giới không bị xóa hay thay đổi
     const loadedWorld = loadWorldState().state
     assert.strictEqual(loadedWorld.currentDay, 4, "WorldState vẫn ở Ngày 4 nguyên vẹn sau khi đổi tốc độ")
-    assert.strictEqual(Object.keys(loadedWorld.sectors).length, 8, "Vẫn đủ 8 sector")
+    assert.strictEqual(Object.keys(loadedWorld.sectors).length, 10, "Vẫn đủ 10 sector")
 
     // 5.2 Thực hiện Reset World độc lập
     const freshState = resetWorldState()
     assert.strictEqual(freshState.currentDay, 1, "Sau Reset, currentDay trở về 1")
     assert.strictEqual(freshState.totalDaysElapsed, 0, "totalDaysElapsed trở về 0")
-    assert.strictEqual(Object.keys(freshState.sectors).length, 8, "Khôi phục đầy đủ 8 sector ban đầu")
+    assert.strictEqual(Object.keys(freshState.sectors).length, 10, "Khôi phục đầy đủ 10 sector ban đầu")
 
     // Tốc độ simulator đã lưu vẫn giữ nguyên 15s
     const configAfterReset = loadSimulatorConfig()

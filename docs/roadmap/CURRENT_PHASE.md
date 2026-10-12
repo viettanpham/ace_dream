@@ -1,52 +1,44 @@
 # STARFRONT — Kế Hoạch Triển Khai Giai Đoạn Hiện Tại (Current Phase Scope)
 
-## GIAI ĐOẠN HIỆN TẠI: PHASE 6.27 — STRATEGIC OVERVIEW DATA INTEGRITY & SESSION CONTINUITY (HOÀN THÀNH TOÀN DIỆN)
+## GIAI ĐOẠN HIỆN TẠI: PHASE 6.28 — GALAXY EXPANSION TO 10 SECTORS & SECTOR INTEL (HOÀN THÀNH TOÀN DIỆN)
 
 ---
 
 ## 1. Mục Tiêu & Trạng Thái Giai Đoạn (Phase Status)
-- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 100% Tests PASS, 37/37 Test Suites PASS, 7/7 Phase 6.27 Tests PASS, Build Succeeded)**.
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 100% Tests PASS, 37/37 Test Suites PASS, 7/7 Phase 6.28 Tests PASS, Build & Lint Succeeded)**.
 - **Mục tiêu cốt lõi**:
-  - Bảo đảm các chỉ số chiến lược, biểu đồ Threat Visualizer và Resource Sparklines phản ánh chuẩn xác 100% trạng thái WORLD sau mỗi tick, tua nhanh (fast-forward), bắt kịp ngoại tuyến (catch-up) và tải lại trang (reload).
-  - Khắc phục triệt để các rủi ro sai lệch dữ liệu:
-    1. **Tính Đúng Đắn Của Lịch Sử Threat (Threat Data Integrity)**:
-       * Dữ liệu biểu đồ lấy từ Threat History thực tế, không tạo điểm giả định hoặc tính ngược lịch sử từ trạng thái hiện tại.
-       * Chế độ Điểm Nóng (Critical Sector) gắn chuẩn xác với sector nguy cấp nhất; khi sector nguy cấp thay đổi, biểu đồ lập tức phản ánh đúng sector mới và lịch sử thực tế của nó.
-       * Điểm mốc ngày hiện tại trên biểu đồ luôn đồng bộ 100% với `threatLevel` thực tế của sector hiển thị trên thẻ Strategic Status.
-       * Chế độ Trung Bình Thiên Hà (Galaxy Average Threat) tính trung bình cộng chính xác từ các sector thực tế có dữ liệu báo cáo cho từng ngày, không coi dữ liệu thiếu là Threat = 0.
-       * Điểm mốc ngày hiện tại của Galaxy Average Threat khớp tuyệt đối với chỉ số `avgThreat` trên thẻ Strategic Status.
-    2. **Tính Toán Delta Chuẩn Xác & Nhận Biết Khoảng Cách Chu Kỳ (Gap-Aware Delta)**:
-       * Delta tính toán đúng giữa hai mốc hợp lệ liên tiếp trong chuỗi thời gian đã làm sạch.
-       * Tự động nhận biết khoảng cách chu kỳ (`dayGap`): nếu hai mốc là ngày liên tiếp (`dayGap === 1`), hiển thị `+X Threat` hoặc `+X /ngày`; nếu có khoảng cách do tua nhanh/nhảy chu kỳ (`dayGap > 1`), hiển thị rõ nhãn khoảng cách chu kỳ `(N#prev→N#latest)` và tooltip chi tiết, không đánh lừa người dùng rằng đó là biến động 1 ngày.
-       * Cơ chế Deduplication theo ngày loại bỏ hoàn toàn khả năng sinh delta = 0 giả tạo từ các mẫu trùng cùng ngày.
-       * Giới hạn tối đa 10 mốc thời gian gần nhất và trạng thái fallback *"Chưa đủ dữ liệu lịch sử"* khi `< 2` điểm.
-    3. **Session Resource Tracker & Session Continuity**:
-       * Mỗi ngày chiến lược chỉ ghi nhận 1 mốc cho mỗi tài nguyên theo đúng thời điểm cập nhật World State.
-       * Chống duplicate triệt để: React re-renders, mở/đóng modal (`reviewingEvent`), chuyển tab không tự sinh thêm mốc lịch sử.
-       * Hỗ trợ đầy đủ các phương thức tiến thời gian:
-         - Tiến 1 ngày (`handleAdvanceTick`): ghi nhận chính xác 1 mốc mới.
-         - Tua nhanh nhiều ngày (`handleFastForwardDays`): ghi nhận từng mốc tick thực tế theo đúng thứ tự thời gian.
-         - Bắt kịp ngoại tuyến (`processOfflineCatchup`): ghi nhận các mốc tick thực tế khi nạp lại.
-       * Tính trung thực khi Reload: lịch sử tài nguyên theo phiên được thiết kế thuần túy trong bộ nhớ phiên, khi reload sẽ reset và trở về trạng thái *"Chưa đủ dữ liệu lịch sử"* cho đến khi có đủ mốc mới. Tuyệt đối không tuyên bố lưu trữ bền vững khi chưa có backend schema tương ứng.
-       * Bảo toàn 100% `STARFRONT_WORLD_SAVE_V1` schema và `STARFRONT_SAVE_DATA_V4`, không sửa đổi tùy tiện schema lưu trữ.
+  1. **Mở rộng Galaxy Map từ 8 lên 10 sector với topology tối ưu**:
+     - Bổ sung 2 sector chiến lược hoàn toàn mới: `elysium_sanctuary` (Thánh Địa Elysium, VSS, vựa nông nghiệp và an dưỡng phi công) và `abyssal_rift` (Khe Nứt Vô Tận, The Void, pháo đài tiền tiêu hắc ám).
+     - Thiết lập mạng lưới 16 tuyến đường siêu không gian (routes) bảo đảm đồ thị liên thông hoàn hảo, thuật toán tìm đường ngắn nhất Dijkstra hoạt động thông suốt trên cả 10 sector.
+     - Bảo toàn 100% ID, thuộc tính, tài nguyên và cấu trúc của 8 sector nguyên bản.
+  2. **Khắc phục triệt để tương tác chọn Node trên Galaxy Map**:
+     - Hitbox chuyên dụng độc lập (`rect` kích thước 120x82 px) nằm ngay trên tọa độ node chuẩn `(cx, cy)`, bao trùm cả hình cầu node và nhãn tên.
+     - Tách biệt 100% vùng tương tác khỏi hiệu ứng quay (reticle spinner), pulse nhấp nháy, text nhãn (`pointer-events-none`) để không bao giờ bị lệch tâm hay nuốt event.
+     - Tách biệt lớp tuyến đường (routes-layer) phía dưới, ngăn chặn đường nối cắt ngang che mất node click.
+     - Ngưỡng phân biệt thao tác rõ ràng (`DRAG_THRESHOLD = 5px`): di chuyển chuột dưới 5px được tính là click chọn sector, từ 5px trở lên kích hoạt camera panning, loại bỏ hoàn toàn micro-jitter và lỗi nhầm lẫn giữa kéo bản đồ và chọn sector.
+  3. **Hồ sơ tình báo chuyên sâu Sector Intel (`SectorIntelModal`)**:
+     - Bối cảnh thị giác đặc trưng (visual characteristic backdrop) với gradient, tone màu và hiệu ứng ánh sáng riêng biệt cho từng sector trong số 10 sector.
+     - Thông tin chiến lược toàn diện: Phe kiểm soát, cấp độ đe dọa (Threat Level), độ ổn định (Stability), công sự (Fortifications), dân số, tài nguyên và kho lương thực.
+     - Hoạt động tại địa điểm: Danh sách các sự kiện đang diễn ra, chiến dịch hành quân (deployments) đến/đi, tình trạng khóa giao tranh (Combat Lock).
+     - Thanh công cụ tác chiến tức thì: Nút mở nhanh trong War Room (`onNavigateToSectorOperations`), điều hướng/focus trên bản đồ, điều quân hỏa tốc (Quick Dispatch), và bộ chuyển sector kế tiếp/trước đó.
+  4. **Tương thích ngược & bảo toàn dữ liệu save (Backward Compatibility)**:
+     - Tự động di chuyển (migration) các file save cũ từ mạng lưới 8 sector lên 10 sector mà không làm mất bất kỳ dữ liệu nào của người chơi.
+     - Bảo toàn cấu trúc `STARFRONT_WORLD_SAVE_V1` và phân hệ `STARFRONT_SAVE_DATA_V4` (RPG Pilot/Gear).
 
 ---
 
-## 2. Bảng Đối Chiếu Tính Năng Triển Khai Phase 6.27
+## 2. Bảng Đối Chiếu Tính Năng Triển Khai Phase 6.28
 
 | Hạng mục tính năng | Trạng thái kỹ thuật | Đối chiếu mã nguồn thực tế |
 |---|---|---|
-| Đồng bộ 100% mốc hiện tại với Strategic Status | **Đã hoàn thành (Done)** | `operations-center.tsx` (`criticalSectorThreatHistory`, `galaxyAverageThreatHistory`) |
-| Gắn đúng Critical Sector và chuyển đổi độc lập | **Đã hoàn thành (Done)** | `operations-center.tsx` (`criticalSector`, `viewMode`) |
-| Galaxy Average không coi dữ liệu thiếu là 0 | **Đã hoàn thành (Done)** | `operations-center.tsx` (`dayTotals[pt.day].count`) |
-| Gap-Aware Delta cho Threat Visualizer | **Đã hoàn thành (Done)** | `threat-visualizer.tsx` (`trendMetrics.dayGap`, title & label) |
-| Gap-Aware Delta cho Resource Sparklines | **Đã hoàn thành (Done)** | `resource-sparkline.tsx` (`trendMetrics.dayGap`, `/ngày` vs `(N#A→N#B)`) |
-| Deduplication mốc ngày & giới hạn tối đa 10 mốc | **Đã hoàn thành (Done)** | `threat-visualizer.tsx`, `resource-sparkline.tsx` (`sanitizedHistory`) |
-| Session Resource Tracker ghi nhận đúng sau World Tick | **Đã hoàn thành (Done)** | `operations-center.tsx` (`handleAdvanceTick`) |
-| Ghi nhận từng tick thực tế khi Tua Nhanh (Fast-Forward) | **Đã hoàn thành (Done)** | `operations-center.tsx` (`handleFastForwardDays`) |
-| Ghi nhận từng tick thực tế khi Bắt Kịp (Offline Catch-Up) | **Đã hoàn thành (Done)** | `operations-center.tsx` (onMount offline catch-up) |
-| Chống duplicate mốc trên Re-render / Modal / Tab switch | **Đã hoàn thành (Done)** | `operations-center.tsx` (useEffect findIndex & deduplication) |
-| Trung thực fallback khi Reload, bảo toàn Save V1 Schema | **Đã hoàn thành (Done)** | `operations-center.tsx` (`reloadState`, `handleConfirmResetWorld`) |
-| Bộ kiểm thử tự động Phase 6.27 (7/7 tests PASS) | **Đã hoàn thành (Done)** | `tests/world/phase6-27-data-integrity-session-continuity.test.ts` |
-| Toàn bộ 37 Test Suites của dự án vượt qua thành công (100% PASS) | **Đã hoàn thành (Done)** | `package.json` (`npm test`) |
-| Trình biên dịch Next.js 16 và TypeScript Linting 100% thành công | **Đã hoàn thành (Done)** | `compile_applet`, `tsc --noEmit` |
+| Mở rộng 10 sector và 16 tuyến đường chuẩn hóa | **Đã hoàn thành (Done)** | `initial-state.ts`, `initial-map.ts` (`INITIAL_WORLD_SECTORS`, `INITIAL_WORLD_ROUTES`) |
+| Kết nối đồ thị & Dijkstra trên 10 sector | **Đã hoàn thành (Done)** | `graph.ts` (`findShortestPath`, `getAdjacentSectors`, `findConnectingRoute`) |
+| Hitbox độc lập 120x82 & pointer-events tách bạch | **Đã hoàn thành (Done)** | `world-map.tsx` (dedicated hit area, pointer-events: none trên đồ họa) |
+| Ngưỡng phân biệt Click vs Pan (DRAG_THRESHOLD = 5px) | **Đã hoàn thành (Done)** | `world-map.tsx` (`handlePointerDown`, `handlePointerMove`, `DRAG_THRESHOLD`) |
+| Giao diện Sector Intel toàn diện 10 sector | **Đã hoàn thành (Done)** | `sector-intel-modal.tsx` (`SectorIntelModal`, `SECTOR_INTEL_THEMES`) |
+| Tích hợp nút xem Intel trên Inspector & War Room | **Đã hoàn thành (Done)** | `world-map.tsx` (Inspector header & button), `operations-center.tsx` |
+| Tự động migration save 8 sector lên 10 sector | **Đã hoàn thành (Done)** | `storage.ts` (`migrateWorldStateTo10Sectors`, `loadWorldState`) |
+| Bảo toàn tuyệt đối RPG Save V4 và Checksum CRC32 | **Đã hoàn thành (Done)** | `storage.ts`, `tests/world/phase6-28-galaxy-expansion-sector-intel.test.ts` |
+| Bộ kiểm thử tự động Phase 6.28 (7/7 tests PASS) | **Đã hoàn thành (Done)** | `tests/world/phase6-28-galaxy-expansion-sector-intel.test.ts` |
+| Toàn bộ 37 Test Suites của dự án (100% PASS) | **Đã hoàn thành (Done)** | `package.json` (`npm test`) |
+| Biên dịch Next.js 16 và TypeScript Linting hoàn hảo | **Đã hoàn thành (Done)** | `compile_applet`, `tsc --noEmit` |

@@ -105,6 +105,7 @@ import { AdminSettingsModal } from "./admin-settings-modal"
 import { DebriefingDrawer } from "./debriefing-drawer"
 import { ThreatVisualizer } from "./threat-visualizer"
 import { ResourceSparkline } from "./resource-sparkline"
+import { SectorIntelModal } from "./sector-intel-modal"
 import {
   lockEncounterAndCreateSnapshot,
   abortSuspendedCombat,
@@ -167,6 +168,9 @@ export function OperationsCenter({
 
   // Phase 6.24: Quick approval review modal state from Strategic Overview
   const [reviewingEvent, setReviewingEvent] = useState<WorldEvent | null>(null)
+
+  // Phase 6.28: Sector Intel modal state
+  const [isSectorIntelOpen, setIsSectorIntelOpen] = useState(false)
 
   // Phase 6.26: Threat Visualizer mode & Session Resource History (Không thay đổi Schema V1)
   const [threatVisualizerMode, setThreatVisualizerMode] = useState<"critical" | "average">("critical")
@@ -2071,14 +2075,28 @@ export function OperationsCenter({
             <div className="flex items-center justify-between text-[11px] pb-1.5 mb-1.5 border-b border-zinc-800/80">
               <div className="flex items-center gap-1.5 text-zinc-300 font-bold uppercase tracking-wide">
                 <Compass className="size-3.5 text-cyan-400" />
-                <span>Mạng Lưới 8 Sector Thiên Hà — Điều Phối & Soi Tức Thì</span>
+                <span>Mạng Lưới 10 Sector Thiên Hà — Điều Phối & Soi Tức Thì</span>
               </div>
-              <span className="text-[10px] text-zinc-400 hidden sm:inline">
-                Đồng bộ tự động giữa Bản Đồ và Inspector bên phải
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound()
+                    setIsSectorIntelOpen(true)
+                  }}
+                  className="px-2 py-0.5 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 text-[10px] font-bold uppercase transition-colors cursor-pointer flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
+                  title="Mở hồ sơ chi tiết Sector Intel"
+                >
+                  <Radio className="size-3 text-cyan-400" />
+                  <span>Hồ Sơ Intel</span>
+                </button>
+                <span className="text-[10px] text-zinc-400 hidden sm:inline">
+                  Đồng bộ tự động giữa Bản Đồ và Inspector bên phải
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">
               {sectorsList.map((sector) => {
                 const isSelected = selectedSectorId === sector.id
                 const isLocked = !!sector.isLockedForCombat
@@ -2596,6 +2614,41 @@ export function OperationsCenter({
           </div>
         )
       })()}
+
+      {/* SECTOR INTEL MODAL (PHASE 6.28) */}
+      {worldState && selectedSectorId && (
+        <SectorIntelModal
+          isOpen={isSectorIntelOpen}
+          onClose={() => setIsSectorIntelOpen(false)}
+          sectorId={selectedSectorId}
+          worldState={worldState}
+          onSelectSector={(secId) => {
+            setSelectedSectorId(secId)
+          }}
+          onNavigateToWarRoom={(secId) => {
+            setIsSectorIntelOpen(false)
+            setSelectedSectorId(secId)
+            setActiveTab("map")
+          }}
+          onCenterOnMap={(secId) => {
+            setIsSectorIntelOpen(false)
+            setSelectedSectorId(secId)
+            setActiveTab("map")
+          }}
+          onOpenQuickDispatch={(secId) => {
+            setIsSectorIntelOpen(false)
+            setSelectedSectorId(secId)
+            setIsQuickDispatchOpen(true)
+          }}
+          onDeployCombat={(secId) => {
+            setIsSectorIntelOpen(false)
+            handleDeployCombat(secId)
+          }}
+          onUpdateStrategicOrder={(secId, order) => {
+            handleSetStrategicOrder(secId, order)
+          }}
+        />
+      )}
     </div>
   )
 }

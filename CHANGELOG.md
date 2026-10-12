@@ -4,6 +4,40 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.28] — STARFRONT WORLD: Mở Rộng 10 Sector Thiên Hà & Hồ Sơ Tình Báo Sector Intel (Galaxy Expansion to 10 Sectors & Sector Intel)
+
+*Đã hoàn thành 100% Phase 6.28 — Mở rộng mạng lưới Galaxy Map từ 8 lên 10 sector với topology tối ưu và 16 tuyến đường siêu không gian chuẩn hóa; bổ sung 2 sector chiến lược mới là Thánh Địa Elysium (VSS) và Khe Nứt Vô Tận (The Void); giải quyết triệt để lỗi click lệch vị trí trên Galaxy Map bằng Dedicated Hitbox độc lập 120x82 px và phân tách pointer-events đồ họa; chuẩn hóa cơ chế Drag Threshold (5px) phân biệt rõ ràng giữa Panning camera và Click chọn Sector; xây dựng modal hồ sơ tình báo Sector Intel toàn diện với visual backdrop đặc trưng cho 10 sector, báo cáo hoạt động tác chiến và các thao tác điều hướng nhanh; tự động di chuyển (migration) các file save 8 sector lên 10 sector mà không mất dữ liệu; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (7/7 Phase 6.28 tests PASS, 37/37 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Mở Rộng Galaxy Map từ 8 Lên 10 Sector & Topology 16 Tuyến Đường**:
+  * Bổ sung 2 sector mới:
+    - `elysium_sanctuary` (Thánh Địa Elysium, x=26, y=28): Khu vực trù phú của VSS, trữ lượng lương thực dồi dàu (1,000 Food), căn cứ phục hồi tâm lý phi công và dự trữ hậu cần chiến lược.
+    - `abyssal_rift` (Khe Nứt Vô Tận, x=82, y=60): Cửa ngõ hư không u tối do The Void chiếm đóng (Threat 88, Stage threatened), pháo đài tiền tiêu hắc ám uy hiếp khu vực khai thác titan và lối vào Tartarus.
+  * Mở rộng mạng lưới từ 12 lên 16 tuyến đường siêu không gian: `r_helios_elysium`, `r_elysium_delta`, `r_orion_abyssal`, `r_abyssal_tartarus`, liên kết chặt chẽ và không có tuyến đường cắt chéo gây xung đột trực quan.
+  * Thuật toán tìm đường Dijkstra (`findShortestPath`) và các hàm đồ thị (`getAdjacentSectors`, `findConnectingRoute`) hoạt động chuẩn xác trên toàn bộ 10 sector.
+- **2. Khắc Phục Triệt Để Tương Tác Node Trên Galaxy Map**:
+  * Tách biệt hoàn toàn vùng tương tác (hitbox) khỏi các thành phần đồ họa trang trí (vòng ngắm xoay, pulse, huy hiệu).
+  * Đặt một hình chữ nhật hitbox trong suốt chuyên dụng (`rect` 120x82 px) căn ngay tâm node `(cx, cy)`, phủ kín cả vòng cầu node và nhãn tên.
+  * Toàn bộ hiệu ứng hình ảnh trang trí được đặt trong `<g className="pointer-events-none">` giúp sự kiện click luôn đi thẳng vào hitbox.
+  * Tuyến đường (routes-layer) được vẽ ở lớp dưới của đồ thị SVG, không chặn thao tác click của các sector liền kề.
+  * Ngưỡng phân tách Pan và Click chuẩn hóa (`DRAG_THRESHOLD = 5px`): di chuyển chuột dưới 5px xem là click chọn sector; di chuyển chuột từ 5px trở lên kích hoạt panning camera, ngăn chặn triệt để micro-jitter và click nhầm khi kéo bản đồ.
+- **3. Hồ Sơ Tình Báo Toàn Diện Sector Intel (`SectorIntelModal`)**:
+  * Giao diện modal trực quan, thiết kế backdrop động với gradient màu sắc, họa tiết hạt lượng tử và ánh sáng viền riêng biệt cho từng sector trong số 10 sector.
+  * Hiển thị đầy đủ báo cáo tình báo chiến lược: Tình trạng chủ quyền, cấp độ đe dọa (Threat), độ ổn định (Stability), công sự phòng thủ (Fortifications), dân số, dữ liệu viễn thông chiến thuật, cùng 4 loại tài nguyên kinh tế.
+  * Danh mục hoạt động tại địa phương: Theo dõi sự kiện khẩn cấp đang diễn ra, chiến dịch hành quân (deployments) đến/đi, tình trạng khóa giao tranh (Combat Lock).
+  * Thanh công cụ tác chiến tức thì: Nút mở nhanh trong War Room (`onNavigateToSectorOperations`), điều hướng/focus trên bản đồ, điều quân hỏa tốc (Quick Dispatch), và bộ chuyển sector kế tiếp/trước đó.
+  * Nút mở Sector Intel được tích hợp trực tiếp trên Header của Inspector bản đồ và thẻ danh mục Sector trong War Room.
+- **4. Tự Động Di Chuyển Save Cũ (Migration) & Tương Thích Ngược Tuyệt Đối**:
+  * Tích hợp hàm `migrateWorldStateTo10Sectors` trong `storage.ts` tự động phát hiện các file save cũ 8 sector, bổ sung 2 sector mới và 4 tuyến đường mới mà không làm thay đổi hay ghi đè dữ liệu của 8 sector hiện có.
+  * Cập nhật danh sách kiểm soát phe VSS (`controlledSectorIds`) bao gồm cả `elysium_sanctuary`.
+  * Bảo toàn 100% định dạng `STARFRONT_WORLD_SAVE_V1`, thuật toán Checksum CRC32 và phân hệ RPG Save V4.
+- **5. Kiểm Thử Tự Động & Độ Tin Cậy Mã Nguồn**:
+  * Bộ kiểm thử chuyên biệt `tests/world/phase6-28-galaxy-expansion-sector-intel.test.ts` đạt 7/7 tests PASS.
+  * Toàn bộ 37/37 test suites của dự án vượt qua thành công (100% PASS).
+  * Build Next.js 16 và TypeScript linting thành công 100%.
+
+---
+
 ## [Phase 6.27] — STARFRONT WORLD: Bảo Toàn Tính Đúng Đắn Dữ Liệu & Tính Liên Tục Phiên (Strategic Overview Data Integrity & Session Continuity)
 
 *Đã hoàn thành 100% Phase 6.27 — Chuẩn hóa và bảo đảm tính toàn vẹn dữ liệu cho tab Strategic Overview, biểu đồ Threat Visualizer và Resource Sparklines sau mỗi tick, tua nhanh (fast-forward), bắt kịp ngoại tuyến (catch-up) và tải lại trang (reload); đồng bộ 100% điểm dữ liệu ngày hiện tại với số liệu thực tế trên thẻ Strategic Status; bảo đảm chế độ Critical Sector gắn chuẩn xác và tự động chuyển đổi khi sector nguy cấp nhất thay đổi; chế độ Galaxy Average Threat tính toán trung bình từ dữ liệu thực tế và không coi dữ liệu thiếu là Threat = 0; nâng cấp cơ chế tính Delta có khả năng nhận biết độ giãn cách chu kỳ (gap-aware) và loại bỏ trùng ngày (deduplication); chuẩn hóa Session Resource Tracker ghi nhận đúng mốc sau mỗi tick, tua nhanh và catch-up mà không sinh mốc trùng trên re-render/modal/tab switch; trung thực fallback "Chưa đủ dữ liệu lịch sử" khi reload thay vì giả định lưu trữ; bảo toàn tuyệt đối Save Schema V1, Checksum CRC32 và RPG Save V4 (7/7 Phase 6.27 tests PASS, 37/37 Test Suites PASS, build & lint thành công).*

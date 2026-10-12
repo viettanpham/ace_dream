@@ -88,7 +88,7 @@ describe("STARFRONT WORLD — Phase 6.24: Strategic Overview Redesign & Actionab
     const contestedCount = sectors.filter((s) => s.sovereignty === "contested").length
     const vssPct = Math.round((vssCount / sectors.length) * 100)
 
-    assert.equal(sectors.length, 8, "Thiên hà chuẩn gồm 8 sectors")
+    assert.equal(sectors.length, 10, "Thiên hà chuẩn gồm 10 sectors (Phase 6.28)")
     assert.ok(vssCount > 0, "Phải có ít nhất 1 sector VSS")
     assert.equal(vssCount + voidCount + contestedCount, sectors.length, "Tổng chủ quyền phải khớp số sector")
     assert.ok(vssPct >= 0 && vssPct <= 100, "Tỷ lệ VSS phải nằm trong khoảng [0..100]")

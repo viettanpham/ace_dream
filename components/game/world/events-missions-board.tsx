@@ -66,6 +66,8 @@ interface EventsMissionsBoardProps {
   onNavigateToResults?: () => void
   onNavigateToSector?: (sectorId: string) => void
   onStateUpdated?: () => void
+  selectedEventId?: string | null
+  onSelectEvent?: (eventId: string | null) => void
 }
 
 type BoardFilterMode = "all" | "init" | "processing" | "chains" | "results"
@@ -79,13 +81,30 @@ export function EventsMissionsBoard({
   onNavigateToResults,
   onNavigateToSector,
   onStateUpdated,
+  selectedEventId: propSelectedEventId,
+  onSelectEvent,
 }: EventsMissionsBoardProps) {
   const [filterMode, setFilterMode] = useState<BoardFilterMode>("all")
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(propSelectedEventId || null)
   const [searchQuery, setSearchQuery] = useState("")
   const [dismissedTickSummary, setDismissedTickSummary] = useState<number | null>(null)
   const [expandedReasonKeys, setExpandedReasonKeys] = useState<Record<string, boolean>>({})
   const [isChainsSectionExpanded, setIsChainsSectionExpanded] = useState(true)
+
+  // Đồng bộ sự kiện được chọn từ prop ngoài (ví dụ điều hướng từ Strategic Overview)
+  useEffect(() => {
+    if (propSelectedEventId) {
+      setSelectedEventId(propSelectedEventId)
+      const ev = activeEvents.find((e) => e.id === propSelectedEventId)
+      if (ev) {
+        if (ev.status === "INIT") {
+          setFilterMode("init")
+        } else if (ev.status === "PROCESSING") {
+          setFilterMode("processing")
+        }
+      }
+    }
+  }, [propSelectedEventId, activeEvents])
 
   // 1. Phân loại sự kiện INIT (Cần ra quyết định) - Sắp xếp theo Deadline -> Severity -> ID
   const initEvents = useMemo(() => {
@@ -487,6 +506,7 @@ export function EventsMissionsBoard({
                       onClick={() => {
                         playClickSound()
                         setSelectedEventId(event.id)
+                        onSelectEvent?.(event.id)
                       }}
                       className={cn(
                         "rounded border p-2.5 transition-all cursor-pointer relative text-left group",

@@ -4,6 +4,40 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.24] — STARFRONT WORLD: Tái Thiết Kế Tình Hình Toàn Cảnh & Điểm Nóng Tác Chiến (Strategic Overview Redesign & Actionable Triage)
+
+*Đã hoàn thành 100% Phase 6.24 — Tái thiết kế toàn diện tab Tình hình toàn cảnh (Overview) trong Operations Center dựa trên kiểm toán UX; thay thế bố cục chiếm dụng diện tích bằng 3 tầng giao diện chuẩn mực: Strategic Status (Chủ quyền VSS, Threat trung bình/điểm nóng, Quân dự bị & Cảnh báo hậu cần), Actionable Situation Triage (Danh sách điểm nóng ưu tiên P0/P1/P2 kèm điều hướng trực tiếp War Room, Quick Dispatch, Events & Missions, Suspended Combat), Operational Pulse (Niên lịch thu gọn & Khay báo cáo tình báo Debriefing Drawer), Modal Xem Đề Xuất & Phê Chuẩn An Toàn có xác nhận từ người chơi; sửa dứt điểm lỗi đồng bộ cờ Tactical Retreat trong Combat Arena (7/7 Phase 6.24 tests PASS, 34/34 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Tầng Đầu — Strategic Status (`operations-center.tsx`)**:
+  - *Chủ quyền & tình trạng thiên hà*: Hiển thị tỷ lệ kiểm soát VSS (`vssRatio%`), phân nhóm chủ quyền (VSS, The Void, Contested, Neutral); số lượng sector Ổn định, Đang bị đe dọa (`threatened`), Đang bị vây hãm (`under_siege`); thống kê số tuyến Hyperlane Bị phong tỏa (`blocked`) và Nguy hiểm (`hazardous`).
+  - *Threat & điểm nóng*: Hiển thị mức Threat trung bình toàn cầu; chỉ rõ Sector nguy cấp nhất (Threat cao nhất) kèm nút điều hướng nhanh sang War Room; tính toán xu hướng Threat tăng/giảm chỉ khi có $\ge 2$ điểm dữ liệu lịch sử thực tế (`threatHistory`), hiển thị trung thực *"Chưa có dữ liệu xu hướng"* nếu thiếu lịch sử.
+  - *Quân sự & hậu cần*: Thống kê quân số dự bị sẵn sàng (`military.reserves`) và lực lượng đang hành quân (`military.deployments` + `activeDeployments.inTransit`); cảnh báo thiếu hụt Lương thực dân sự (Civilian Food) và Quân nhu hậu cần (Supplies) theo đúng ngưỡng quy định của nền kinh tế (`SHORTAGE_THRESHOLD` 50 và `CRITICAL_FOOD_THRESHOLD` 100); cảnh báo rõ ràng khi tài nguyên ở mức nguy cấp.
+- **2. Tầng Hai — Actionable Situation Triage (`operations-center.tsx`)**:
+  - Tổng hợp danh sách điểm nóng sắp xếp theo độ ưu tiên (`P0` Khẩn cấp, `P1` Cảnh báo, `P2` Lưu ý).
+  - Phân loại rõ ràng: Sector bị đe dọa / vây hãm, Trận chiến dở dang (`isSuspendedCombat`), Sự kiện `INIT` sắp hết hạn countdown, Khủng hoảng hậu cần / lương thực.
+  - Nối toàn bộ hành động điều hướng với state thực:
+    * **Xem Tại War Room**: chuyển sang tab `map` và chọn đúng `selectedSectorId`.
+    * **Xuất Kích Nhanh**: mở modal `QuickDispatchDock` với sector được chọn sẵn.
+    * **Xem Sự Kiện / Chi Tiết & Phê Chuẩn**: chuyển sang tab `events` và chọn đúng `selectedEventIdForBoard`.
+    * **Xử Lý Trận Chiến Dở**: kích hoạt `handleDeployCombat` đưa người chơi vào luồng tiếp tục tác chiến hoặc rút lui an toàn.
+- **3. Phê Chuẩn Nhanh Sự Kiện (Quick Review Modal)**:
+  - Cho phép người chơi bấm *"⚡ Xem Đề Xuất"* từ thẻ sự kiện sắp hết hạn trên Overview.
+  - Sử dụng `selectBestStrategyForEvent` và `validateStrategyExecution` từ `event-strategy-policy.ts` để trình bày phương án tối ưu, điểm số, lý do và chi phí tài nguyên/quân sự.
+  - Người chơi phải chủ động bấm *"Xác Nhận Phê Chuẩn"*; hệ thống tuyệt đối không tự động duyệt chỉ vì deadline sắp hết hạn.
+  - Cung cấp liên kết *"Mở Bảng Quyết Định Đầy Đủ"* sang Events & Missions nếu người chơi muốn tùy chỉnh sâu.
+- **4. Tầng Ba — Operational Pulse (`operations-center.tsx`)**:
+  - Thu nhỏ niên lịch thành dải trạng thái gọn: ngày game, chu kỳ mùa/buổi, trạng thái mô phỏng (Đang chạy / Tạm dừng), đếm ngược giây đến tick tiếp theo.
+  - Nhật ký biến động gần nhất: hiển thị log từ tick gần nhất hoặc tóm tắt vòng đời sự kiện; nút mở nhanh **Khay Báo Cáo Tình Báo** (`isDebriefingDrawerOpen = true`) khi có kết quả mới chưa đọc.
+- **5. Khắc Phục Đồng Bộ Cờ Tactical Retreat Trong Combat Arena (`combat-arena.tsx`)**:
+  - Gán `worldCommittedRef.current = true` ngay sau khi commit kết quả rút lui thành công trong `handleConfirmTacticalRetreat`, ngăn chặn việc gọi commit lần thứ hai khi combat state chuyển sang `defeat`.
+- **6. Bộ Kiểm Thử Chuyên Sâu & Độ Tin Cậy Toàn Cục**:
+  - Bổ sung `tests/world/phase6-24-strategic-overview-redesign.test.ts` gồm 7 test cases chuyên sâu (100% PASS).
+  - Toàn bộ 34 test suites trong `package.json` (`npm test`) vượt qua thành công.
+  - Next.js build và typecheck thành công tuyệt đối.
+
+---
+
 ## [Phase 6.23] — STARFRONT WORLD: Tích Hợp Ngữ Cảnh Tác Chiến Thực Địa & Kết Nối Combat Arena (WORLD Combat Context & Arena Integration)
 
 *Đã hoàn thành 100% Phase 6.23 — Kết nối toàn diện luồng xuất kích tác chiến từ STARFRONT WORLD sang Combat Arena dựa trên kiến trúc Encounter Snapshot và Transaction Journal hiện có; khóa sector và lưu trạng thái suspended combat trước khi chuyển cảnh; chuyển đổi chính xác thông số địch từ snapshot sang CombatUnit đối thủ thay vì mở scout-drone mặc định; áp dụng chỉ số công sự & sĩ khí lên người chơi; hỗ trợ 2 chế độ rút lui (Hủy Bỏ An Toàn & Rút Lui Thất Bại); commit biên lai kết quả vào World State qua Adapter; hiển thị bảng tổng kết thực địa WorldCombatPostMissionResults và bảo vệ cách ly tuyệt đối 100% RPG Save V4 (8/8 Phase 6.23 tests PASS, 33/33 Test Suites PASS, build & lint thành công).*

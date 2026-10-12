@@ -756,6 +756,9 @@ export function CombatArena({
       const resolution = commitCombatResultReceipt(wState, receipt)
       saveWorldState(wState)
       setWorldResolutionResult(resolution)
+      // Đồng bộ cờ đã commit thành công ngay trong handler trước khi chuyển sang status defeat
+      // ngăn chặn useEffect lắng nghe defeat bị kích hoạt double-invocation
+      worldCommittedRef.current = true
       setIsRetreatModalOpen(false)
       setCombatState((prev) => ({ ...prev, status: "defeat" }))
     } catch (err: any) {

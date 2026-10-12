@@ -89,6 +89,14 @@ export interface TroopDeployment {
 }
 
 /**
+ * Điểm dữ liệu lịch sử mức đe dọa (Threat) theo ngày chiến lược
+ */
+export interface SectorThreatHistoryPoint {
+  day: number
+  threat: number
+}
+
+/**
  * Dữ liệu Sector chiến lược trên bản đồ
  */
 export interface WorldSector {
@@ -112,6 +120,8 @@ export interface WorldSector {
   fortificationLevel?: number
   isLockedForCombat?: boolean
   lockedGarrisonPower?: number
+  /** Lịch sử Threat tối đa 5 ngày gần nhất (Phase 6.12) */
+  threatHistory?: SectorThreatHistoryPoint[]
 }
 
 /**

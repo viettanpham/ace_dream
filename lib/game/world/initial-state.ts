@@ -330,6 +330,12 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     sectors[id] = {
       ...sector,
       resources: { ...sector.resources },
+      threatHistory: [
+        {
+          day: 1,
+          threat: sector.threatLevel,
+        },
+      ],
     }
   }
 

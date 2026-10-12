@@ -13,7 +13,7 @@
  */
 
 import { WorldPRNG } from "./random"
-import { evaluateSectorStage } from "./sector-lifecycle"
+import { evaluateSectorStage, recordSectorThreatHistoryPoint } from "./sector-lifecycle"
 import { processStrategicEconomyCycle } from "./economy"
 import { processLogisticsCycle } from "./logistics"
 import { processDemographicsCycle } from "./demographics"
@@ -520,6 +520,16 @@ export function executeWorldTick(
   // 4. Cập nhật ngày và mốc thời gian
   state.currentDay += 1
   state.totalDaysElapsed += 1
+
+  // 5. Ghi nhận lịch sử Threat cho ngày chiến lược mới (Phase 6.12: tối đa 5 ngày gần nhất)
+  for (const sector of Object.values(state.sectors)) {
+    if (!sector.threatHistory || sector.threatHistory.length === 0) {
+      if (previousDay >= 1) {
+        recordSectorThreatHistoryPoint(sector, previousDay)
+      }
+    }
+    recordSectorThreatHistoryPoint(sector, state.currentDay)
+  }
 
   const now = options?.anchorTimestamp ?? Date.now()
   state.lastTickTimestamp = now

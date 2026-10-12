@@ -320,6 +320,30 @@ export function setSectorThreat(
 }
 
 /**
+ * Ghi nhận hoặc cập nhật điểm lịch sử Threat cho sector theo ngày chiến lược (Phase 6.12)
+ * Giữ tối đa 5 ngày gần nhất, không sinh dữ liệu giả
+ */
+export function recordSectorThreatHistoryPoint(
+  sector: WorldSector,
+  day: number,
+  threat?: number
+): void {
+  const currentThreat = threat !== undefined ? threat : sector.threatLevel
+  if (!sector.threatHistory) {
+    sector.threatHistory = []
+  }
+  const last = sector.threatHistory[sector.threatHistory.length - 1]
+  if (last && last.day === day) {
+    last.threat = currentThreat
+  } else {
+    sector.threatHistory.push({ day, threat: currentThreat })
+  }
+  if (sector.threatHistory.length > 5) {
+    sector.threatHistory = sector.threatHistory.slice(-5)
+  }
+}
+
+/**
  * Giải phóng một sector đã thất thủ (Lost) sang trạng thái Tái thiết (Recovery)
  * Thiết lập quyền kiểm soát thuộc về VSS, giảm nhẹ threat level
  */

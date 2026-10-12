@@ -34,6 +34,8 @@ import {
   ShieldAlert,
   Sparkles,
   Swords,
+  TrendingDown,
+  TrendingUp,
   Truck,
   Users,
   Wheat,
@@ -302,6 +304,63 @@ export function WorldMap({
       (e) => e.sectorId === selectedSectorId && (e.status === "INIT" || e.status === "PROCESSING")
     )
   }, [worldState, selectedSectorId])
+
+  // Phase 6.12: Dữ liệu Sparkline Threat 5 ngày gần nhất cho Sector đang chọn
+  const sparklineData = useMemo(() => {
+    if (!selectedSector?.threatHistory || selectedSector.threatHistory.length === 0) {
+      return {
+        history: [],
+        points: [] as Array<{ day: number; threat: number; x: number; y: number }>,
+        lineString: "",
+        areaString: "",
+        delta: null as number | null,
+      }
+    }
+
+    const history = selectedSector.threatHistory.slice(-5)
+    const threats = history.map((p) => p.threat)
+    const minT = Math.min(...threats)
+    const maxT = Math.max(...threats)
+    const range = maxT - minT
+
+    const width = 240
+    const height = 40
+    const padX = 14
+    const padY = 6
+    const usableW = width - padX * 2
+    const usableH = height - padY * 2
+
+    const points = history.map((pt, idx) => {
+      const x =
+        history.length === 1
+          ? width / 2
+          : padX + (idx / (history.length - 1)) * usableW
+      const y =
+        range === 0
+          ? height / 2
+          : (height - padY) - ((pt.threat - minT) / range) * usableH
+      return { ...pt, x, y }
+    })
+
+    const lineString = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ")
+    const areaString =
+      points.length >= 2
+        ? `${points[0].x.toFixed(1)},${height - 4} ${lineString} ${points[points.length - 1].x.toFixed(1)},${height - 4}`
+        : ""
+
+    const delta =
+      history.length >= 2
+        ? history[history.length - 1].threat - history[0].threat
+        : null
+
+    return {
+      history,
+      points,
+      lineString,
+      areaString,
+      delta,
+    }
+  }, [selectedSector])
 
   // Thống kê chủ quyền & Threat toàn thiên hà
   const galaxyMetrics = useMemo(() => {
@@ -1281,6 +1340,207 @@ export function WorldMap({
                   {selectedSector.population.toLocaleString()} dân
                 </div>
               </div>
+            </div>
+
+            {/* THREAT TRENDLINE SPARKLINE (PHASE 6.12) */}
+            <div className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800 space-y-2">
+              <div className="flex items-center justify-between text-[10px]">
+                <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-zinc-300">
+                  <Activity
+                    className="size-3.5"
+                    style={{ color: getThreatTier(selectedSector.threatLevel).color }}
+                  />
+                  <span>Xu Hướng Threat (5 Ngày)</span>
+                </div>
+
+                {/* Delta Badge so với điểm đầu chuỗi */}
+                {sparklineData.delta !== null ? (
+                  <div
+                    className={cn(
+                      "flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] font-mono font-bold",
+                      sparklineData.delta > 0
+                        ? "text-rose-400 bg-rose-950/60 border-rose-500/40"
+                        : sparklineData.delta < 0
+                        ? "text-emerald-400 bg-emerald-950/60 border-emerald-500/40"
+                        : "text-zinc-300 bg-zinc-800/80 border-zinc-700"
+                    )}
+                    title={`Biến động so với điểm đầu chuỗi (N.${sparklineData.history[0]?.day} → N.${sparklineData.history[sparklineData.history.length - 1]?.day})`}
+                  >
+                    {sparklineData.delta > 0 ? (
+                      <TrendingUp className="size-3 text-rose-400" />
+                    ) : sparklineData.delta < 0 ? (
+                      <TrendingDown className="size-3 text-emerald-400" />
+                    ) : (
+                      <Minus className="size-3 text-zinc-400" />
+                    )}
+                    <span>
+                      {sparklineData.delta > 0
+                        ? `+${sparklineData.delta}`
+                        : sparklineData.delta === 0
+                        ? "0"
+                        : `${sparklineData.delta}`}
+                    </span>
+                    <span className="text-[8px] opacity-80 font-sans uppercase">
+                      {sparklineData.delta > 0
+                        ? "Tăng"
+                        : sparklineData.delta < 0
+                        ? "Giảm"
+                        : "Ổn định"}
+                    </span>
+                  </div>
+                ) : sparklineData.history.length === 1 ? (
+                  <span className="text-[9px] font-mono text-zinc-400 px-1.5 py-0.5 rounded bg-zinc-950/60 border border-zinc-800">
+                    N.{sparklineData.history[0].day} (Khởi đầu)
+                  </span>
+                ) : (
+                  <span className="text-[9px] text-zinc-500 px-1.5 py-0.5 rounded bg-zinc-950/60 border border-zinc-800">
+                    Chờ chu kỳ tick
+                  </span>
+                )}
+              </div>
+
+              {/* Threat Hiện Tại & Tóm tắt */}
+              <div className="flex items-center justify-between text-[10px] text-zinc-400 px-0.5">
+                <span>
+                  Hiện tại:{" "}
+                  <strong
+                    className="font-mono text-xs"
+                    style={{ color: getThreatTier(selectedSector.threatLevel).color }}
+                  >
+                    {selectedSector.threatLevel}/1000
+                  </strong>
+                </span>
+                <span
+                  className="text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase"
+                  style={{
+                    color: getThreatTier(selectedSector.threatLevel).color,
+                    backgroundColor: `${getThreatTier(selectedSector.threatLevel).color}15`,
+                    borderColor: `${getThreatTier(selectedSector.threatLevel).color}30`,
+                    borderWidth: 1,
+                  }}
+                >
+                  {getThreatTier(selectedSector.threatLevel).label}
+                </span>
+              </div>
+
+              {/* Sparkline Canvas Area */}
+              {sparklineData.history.length === 0 ? (
+                <div className="py-2.5 px-2 flex flex-col items-center justify-center text-center rounded border border-dashed border-zinc-800 bg-zinc-950/40">
+                  <span className="text-[10px] text-zinc-400">Chưa có lịch sử chu kỳ Threat</span>
+                  <span className="text-[8px] text-zinc-600 mt-0.5">
+                    Dữ liệu sẽ được ghi nhận sau tick ngày chiến lược
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="relative w-full h-11 bg-zinc-950/80 rounded border border-zinc-800/80 p-1 flex items-center justify-center overflow-hidden">
+                    <svg
+                      viewBox="0 0 240 40"
+                      className="w-full h-full overflow-visible"
+                      preserveAspectRatio="none"
+                    >
+                      <defs>
+                        <linearGradient
+                          id={`threat-grad-${selectedSector.id}`}
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor={getThreatTier(selectedSector.threatLevel).color}
+                            stopOpacity="0.35"
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor={getThreatTier(selectedSector.threatLevel).color}
+                            stopOpacity="0.0"
+                          />
+                        </linearGradient>
+                      </defs>
+
+                      {/* Trục nền đứt đoạn */}
+                      <line
+                        x1="12"
+                        y1="34"
+                        x2="228"
+                        y2="34"
+                        stroke="#27272a"
+                        strokeDasharray="2,2"
+                        strokeWidth="1"
+                      />
+
+                      {/* Vùng Polyline + Area Fill Gradient */}
+                      {sparklineData.history.length >= 2 && (
+                        <>
+                          <polygon
+                            points={sparklineData.areaString}
+                            fill={`url(#threat-grad-${selectedSector.id})`}
+                          />
+                          <polyline
+                            points={sparklineData.lineString}
+                            fill="none"
+                            stroke={getThreatTier(selectedSector.threatLevel).color}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </>
+                      )}
+
+                      {/* Các điểm dữ liệu ngày */}
+                      {sparklineData.points.map((pt, idx) => {
+                        const isLatest = idx === sparklineData.points.length - 1
+                        return (
+                          <g key={pt.day}>
+                            {isLatest && (
+                              <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r="6"
+                                fill={getThreatTier(selectedSector.threatLevel).color}
+                                fillOpacity="0.3"
+                                className="animate-ping"
+                              />
+                            )}
+                            <circle
+                              cx={pt.x}
+                              cy={pt.y}
+                              r={isLatest ? "4" : "3"}
+                              fill={getThreatTier(selectedSector.threatLevel).color}
+                              stroke="#09090b"
+                              strokeWidth="1.5"
+                            />
+                          </g>
+                        )
+                      })}
+                    </svg>
+                  </div>
+
+                  {/* Lịch trình các mốc ngày bên dưới */}
+                  <div className="flex items-center justify-between gap-1 text-[9px] pt-0.5">
+                    {sparklineData.history.map((pt, idx) => {
+                      const isLatest = idx === sparklineData.history.length - 1
+                      return (
+                        <div
+                          key={pt.day}
+                          className={cn(
+                            "flex-1 flex flex-col items-center py-0.5 rounded border transition-colors",
+                            isLatest
+                              ? "bg-zinc-800/80 border-cyan-500/50 text-cyan-200"
+                              : "bg-zinc-950/60 border-zinc-800/80 text-zinc-400"
+                          )}
+                          title={`Ngày ${pt.day}: Mức đe dọa ${pt.threat}/1000`}
+                        >
+                          <span className="text-[8px] opacity-75 font-mono">N.{pt.day}</span>
+                          <span className="font-bold text-[9px]">{pt.threat}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Kho tài nguyên địa phương */}

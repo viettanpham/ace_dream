@@ -21,7 +21,10 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 6.6** | STARFRONT WORLD — Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng | **Đã triển khai (Done)** | Hoàn thành Milestone 6.6 (`lib/game/world/combat-adapter.ts`, `transaction-journal.ts`). Tầng Adapter trung gian kết nối giữa WORLD và buồng lái Combat Arena, khóa Encounter Snapshot bất biến, đóng băng và mở khóa quân đồn trú, bộ lọc chống replay kết quả 10 lần liên tiếp (Idempotency Filter), xử lý trận treo (Suspended Recovery Flow) và hủy an toàn (Safe Abort) không phạt oan (8/8 automated tests PASS). |
 | **Phase 6.7** | STARFRONT WORLD — Động Cơ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược | **Đã triển khai (Done)** | Hoàn thành Milestone 6.7 (`lib/game/world/event-engine.ts`, `mission-chains.ts`, `event-templates.ts`). Vòng đời sự kiện 3 pha (`INIT` $\rightarrow$ `PROCESSING` $\rightarrow$ `RESULT`), tự động khóa chiến lược mặc định khi hết hạn countdown, hậu quả áp dụng lũy đẳng 1 lần, đồ thị chuỗi nhiệm vụ 6 hình thái (Linear, Branching, Threshold, Reactive, Periodic, Standalone) và khống chế trần `MAX_ACTIVE_MISSION_CHAINS = 8` (8/8 automated tests PASS). |
 | **Phase 6.8** | STARFRONT WORLD — Giao Diện Operations Center & Trung Tâm Kết Quả Kép | **Đã triển khai (Done)** | Hoàn thành Milestone 6.8 (`components/game/world/operations-center.tsx`, `dual-results-hub.tsx`, `quick-dispatch-dock.tsx`). Tích hợp mục "Chỉ Huy Chiến Lược // WORLD" vào Shell, 5 phân khu chức năng (Situation Deck, Sector Operations, Active Operations Board, Military & Logistics, Dual Results Hub), phân tách rạch ròi Event Results vs Battle Results, cơ chế Safe Pruning bảo toàn chỉ số 100%, Quick Dispatch chặn xuất quân khỏi sector bị khóa combat (8/8 automated tests PASS). |
-| **Phase 6.9** | STARFRONT WORLD — Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử E2E Toàn Diện | **Đã khóa thiết kế & kế hoạch (Planned)** | Sẵn sàng triển khai: Fullscreen Map (100vw/100vh), Web Audio Sci-Fi, tuyến đường hạm đội và kiểm thử hồi quy E2E toàn diện. |
+| **Phase 6.9** | STARFRONT WORLD — Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử E2E Toàn Diện | **Đã triển khai (Done)** | Hoàn thành Phase 6.9 (`world-fullscreen-overlay.tsx`, `e2e-world-integration.test.ts`). Chế độ Fullscreen Map, điều hướng camera, audio phản hồi, bảo đảm không hồi quy RPG Save V4 (9/9 subtests PASS). |
+| **Phase 6.10** | STARFRONT WORLD — Tái Thiết Kế Giao Diện Sự Kiện & Nhiệm Vụ (Tab 4 Redesign) | **Đã triển khai (Done)** | Hoàn thành Phase 6.10 (`events-missions-tab.tsx`, `events-missions-ui.test.ts`). Phân tách rõ ràng Active Incidents vs Mission Chains, bộ lọc 7 danh mục, đồ thị cây nhiệm vụ, hộp thư Event Results Archive. |
+| **Phase 6.11** | STARFRONT WORLD — Tinh Chỉnh Bản Đồ Thiên Hà & Hệ Thống HUD | **Đã triển khai (Done)** | Hoàn thành Phase 6.11 (`world-map.tsx`, `galaxy-map-hud-ui.test.ts`). Phân cấp đa tín hiệu 8 sector, thang Threat 3 dải, 12 tuyến hyperlane phân biệt rõ ràng, Legend 5 nhóm thống nhất, Sector Inspector linh hoạt. |
+| **Phase 6.12** | STARFRONT WORLD — Biểu Đồ Xu Hướng Đe Dọa (Galaxy Map Threat Trendline) | **Đã triển khai (Done)** | Hoàn thành Phase 6.12 (`types.ts`, `sector-lifecycle.ts`, `tick-engine.ts`, `world-map.tsx`, `threat-trendline.test.ts`). Sparkline Threat 5 ngày gần nhất theo ngày chiến lược, Delta Badge biến động so với đầu chuỗi (+/- / 0), mốc thời gian N.day, tương thích 100% trong cả bản đồ nhúng và toàn màn hình (7/7 tests PASS). |
 
 ---
 
@@ -381,6 +384,26 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-### 4.11. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
+### 4.11. Tinh Chỉnh Bản Đồ Thiên Hà & HUD Toàn Cảnh (Phase 6.11) `[ĐÃ HOÀN THÀNH 100%]`
+- **Phân Cấp Thông Tin Đa Tín Hiệu & Legend Thống Nhất (`world-map.tsx`, `galaxy-map-hud-ui.test.ts`)**:
+  - Phân cấp 8 sector với hệ thống màu, icon, viền orbital và thang đo Threat 3 dải (0-299 Thấp, 300-699 Cảnh Báo, 700+ Nguy Hiểm).
+  - Phân biệt rõ 4 trạng thái tuyến đường (Open, Hazardous, Blocked, Offline) kèm thông số thời gian hành quân và tỷ lệ rủi ro.
+  - Legend 5 nhóm hoàn chỉnh, có thể thu gọn linh hoạt.
+  - Header HUD hiển thị chỉ số toàn thiên hà, tỷ lệ kiểm soát các phe và đồn trú.
+
+---
+
+### 4.12. Biểu Đồ Xu Hướng Đe Dọa (Galaxy Map Threat Trendline — Phase 6.12) `[ĐÃ HOÀN THÀNH 100%]`
+- **Lịch Sử Mức Đe Dọa & Sparkline Vector Trong Sector Inspector (`world-map.tsx`, `tick-engine.ts`, `threat-trendline.test.ts`)**:
+  - Lưu trữ dữ liệu Threat thực tế theo từng ngày chiến lược (`threatHistory?: SectorThreatHistoryPoint[]`), tối đa 5 ngày gần nhất.
+  - Tự động ghi nhận mốc Threat sau mỗi tick thông qua `recordSectorThreatHistoryPoint`, bảo đảm 100% tính tất định.
+  - Vector SVG Sparkline: Polyline mượt mà, diện tích gradient bóng mờ, điểm dữ liệu radar ping tại ngày hiện tại.
+  - Huy Hiệu Biến Động (Delta Badge): Tính toán mức độ chênh lệch so với ngày đầu chuỗi (`Tăng +X`, `Giảm -X`, `Ổn định 0`).
+  - Xử lý an toàn các trạng thái: 0 ngày (chờ dữ liệu), 1 ngày (khởi đầu), 2–4 ngày, và đủ 5 ngày; tuyệt đối không sinh dữ liệu giả.
+  - Bảo toàn 100% qua hệ thống lưu trữ Atomic Checkpoint Save/Load (CRC32 Checksum Verified).
+
+---
+
+### 4.13. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
 - **Tốc Độ Suy Thoái Stability Nâng Cao**: Cân bằng mở rộng các biến số kinh tế vĩ mô phức tạp trong các bản cập nhật tiếp theo.
 - **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)**: Kế hoạch mở rộng đồ thị thiên hà cho các mùa giải chiến dịch trong tương lai.

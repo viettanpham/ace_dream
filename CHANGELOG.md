@@ -4,6 +4,48 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.12] — STARFRONT WORLD: Biểu Đồ Xu Hướng Đe Dọa (Galaxy Map Threat Trendline)
+
+*Đã hoàn thành 100% Phase 6.12 — Bổ sung Sparkline thể hiện lịch sử Threat 5 ngày gần nhất trên Galaxy Map, giúp người chỉ huy nhận diện xu hướng nguy hiểm theo từng sector trong cả chế độ nhúng lẫn toàn màn hình (100% tests PASS, 23/23 test suites)*
+
+### Các tính năng & nâng cấp dữ liệu/giao diện đã triển khai:
+- **A. Cấu Trúc Dữ Liệu & Bảo Toàn Lịch Sử Chiến Lược (`lib/game/world/types.ts`)**:
+  - Bổ sung cấu trúc `SectorThreatHistoryPoint { day: number; threat: number }`.
+  - Mở rộng trường tùy chọn `threatHistory?: SectorThreatHistoryPoint[]` trên thực thể `WorldSector`.
+  - Khởi tạo mốc Ngày 1 trong `createInitialWorldState` với điểm thực tế ban đầu (`{ day: 1, threat: sector.threatLevel }`).
+  - Thiết kế hoàn toàn tương thích ngược với schema `WorldState v1` và hệ thống Save/Load Atomic Envelope; không yêu cầu migration và cách ly 100% khỏi RPG Save V4.
+- **B. Tự Động Thu Thập Qua Chu Kỳ Tick (`lib/game/world/tick-engine.ts`, `lib/game/world/sector-lifecycle.ts`)**:
+  - Xây dựng hàm trợ năng `recordSectorThreatHistoryPoint(sector, day, threat)`.
+  - Tích hợp tại bước kết thúc chu kỳ `executeWorldTick`: tự động ghi nhận mức Threat cuối ngày sau khi áp dụng toàn bộ 6 phase (kinh tế, di dân, tuần tra, ý đồ của Void, hạn chót sự kiện và nhiệm vụ).
+  - Tự động duy trì cơ chế Rolling Window lưu tối đa 5 ngày gần nhất (ngày hiện tại và tối đa 4 ngày trước đó), đẩy các ngày cũ ra ngoài nhằm giữ kích thước lưu trữ siêu gọn nhẹ.
+  - Bảo đảm tính tất định 100%: 2 mô phỏng cùng seed và trạng thái ban đầu sinh chuỗi lịch sử Threat trùng khớp hoàn toàn.
+- **C. Giao Diện Sparkline Trực Quan Trong Sector Inspector (`components/game/world/world-map.tsx`)**:
+  - Tích hợp card "Xu Hướng Threat (5 Ngày)" nằm gọn gàng ngay dưới lưới 6 chỉ số vĩ mô trong Sector Inspector.
+  - **Mức Threat Hiện Tại & Phân Cấp Màu Sắc**: Nhất quán tuyệt đối với thang đo Threat 3 dải trên bản đồ (0-299 Thấp/Emerald, 300-699 Trung bình/Amber, 700+ Cao/Rose).
+  - **Huy Hiệu Biến Động (Delta Badge)**:
+    * Khi đủ từ 2 điểm trở lên: tính toán `delta = điểm_cuối - điểm_đầu`.
+    * Tăng: `+X` màu đỏ/rose kèm icon `TrendingUp` và tag `TĂNG`.
+    * Giảm: `-X` màu xanh/emerald kèm icon `TrendingDown` và tag `GIẢM`.
+    * Giữ nguyên: `0` màu trung tính kèm icon `Minus` và tag `ỔN ĐỊNH`.
+    * Hiển thị tooltip chi tiết lộ trình biến động ngày.
+  - **Đồ Thị Vector SVG Sparkline**:
+    * Đường đa tuyến polyline sắc nét cùng vùng phủ gradient màu bóng mờ (`opacity: 0.35 -> 0.0`).
+    * Điểm nút tròn tại từng mốc ngày; điểm ngày hiện tại có hiệu ứng vòng sáng radar ping nổi bật.
+    * Khi chỉ có 1 ngày: hiển thị node đơn nổi bật kèm nhãn "N.X (Khởi đầu)".
+    * Khi chưa có dữ liệu lịch sử (0 ngày): hiển thị rãnh đứt đoạn sci-fi cùng thông báo "Chờ chu kỳ tick", không sinh dữ liệu giả mạo.
+  - **Dòng Mốc Thời Gian (Timeline Axis)**: Thanh nhãn bên dưới hiển thị rõ từng mốc `N.day: threat_value`, làm nổi bật ngày hiện tại.
+  - **Hoạt Động Toàn Diện**: Tương thích hoàn hảo trong cả giao diện nhúng (Operations Center Tab 2) và chế độ Bản Đồ Toàn Màn Hình (`world-fullscreen-overlay.tsx`), không che khuất HUD hay các nút lệnh tác chiến.
+- **D. Bộ Kiểm Thử Chất Lượng Toàn Diện (`tests/world/threat-trendline.test.ts`)**:
+  - 1. Sector chưa có lịch sử (0 ngày) an toàn, delta = null.
+  - 2. Sector mới có 1–4 ngày lịch sử, không tạo dữ liệu giả.
+  - 3. Sector có đủ 5 ngày lịch sử và cơ chế rolling window cắt tỉa chính xác.
+  - 4. Xu hướng Threat: Tăng, Giảm, Giữ nguyên tính toán chính xác 100%.
+  - 5. Bảo toàn qua Save/Load: phục hồi 100% dữ liệu lịch sử với Checksum CRC32 verified.
+  - 6. Tích hợp Tick Engine xác định chuỗi tiến hóa tất định.
+  - 7. Tính độc lập giữa các sector khi chuyển đổi mục tiêu trên bản đồ.
+
+---
+
 ## [Phase 6.11] — STARFRONT WORLD: Tinh Chỉnh Bản Đồ Thiên Hà & Hệ Thống HUD (Galaxy Map & HUD Refinement)
 
 *Đã hoàn thành 100% Phase 6.11 — Nâng cao khả năng quan sát và đọc hiểu Bản đồ Thiên hà, phân cấp thông tin trực quan đa tín hiệu, tinh chỉnh tuyến đường, tối ưu hóa Legend 5 nhóm, HUD toàn cảnh và Sector Inspector (100% tests PASS, 23/23 test suites)*

@@ -148,6 +148,7 @@ const SECTIONS: SectionConfig[] = [
       { id: "events", label: "Sự Kiện & Nhiệm Vụ" },
       { id: "military", label: "Quân Sự & Hậu Cần" },
       { id: "results", label: "Trung Tâm Kết Quả Kép" },
+      { id: "admin", label: "ADMIN CP" },
     ],
   },
   {

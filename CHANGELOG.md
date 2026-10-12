@@ -4,6 +4,48 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.13] — STARFRONT WORLD: Động Cơ Thời Gian Thực, Tự Động Sinh Sự Kiện/Nhiệm Vụ & ADMIN CP (Real-time Simulator, Event/Quest Generator & ADMIN CP)
+
+*Đã hoàn thành 100% Phase 6.13 — Khởi động hệ thống mô phỏng thời gian thực cho STARFRONT WORLD: ngày game tự vận hành trôi qua, niên lịch thiên hà 4 buổi (Sáng/Chiều/Tối/Đêm), bộ sinh Event/Quest 3 tier chuẩn hóa theo Ngày Game, trung tâm quản trị ADMIN CP toàn diện cho phép cấu hình tốc độ, tạm dừng/tiếp tục, dev triggers và reset thế giới an toàn (100% tests PASS, 25/25 test suites)*
+
+### Các tính năng & nâng cấp kỹ thuật đã triển khai:
+- **A. Động Cơ Mô Phỏng Thời Gian Thực Tự Vận Hành (`lib/game/world/simulator-config.ts`, `components/game/world/operations-center.tsx`)**:
+  - Tích hợp một scheduler duy nhất cho STARFRONT WORLD, ngày game tự động tăng theo thời gian thực mà không bắt người chơi nhấn `+1 Ngày`.
+  - **Cấu hình tốc độ chuẩn hóa**:
+    * Mặc định: 1 Ngày Game = 300 giây thực (5 phút).
+    * Hỗ trợ các preset: 15 giây (Chế độ test nhanh), 30 giây (Nhanh), 60 giây (1 phút), 300 giây (Chuẩn), cùng tùy chọn số giây bất kỳ hợp lệ (1 – 86,400 giây).
+    * Tốc độ và trạng thái Pause được lưu trữ cách ly trong khóa `STARFRONT_WORLD_SIMULATOR_CONFIG` và tự động khôi phục sau reload.
+  - **Quy tắc chạy an toàn & chống trùng tick**:
+    * Tái sử dụng trọn vẹn `executeWorldTick` và thứ tự 6 phase chuẩn; mỗi ngày game chỉ commit đúng một lần.
+    * Cơ chế Pause / Resume bảo toàn chính xác tiến độ phân đoạn trong ngày. Thay đổi tốc độ điều chỉnh mượt mà nhịp countdown, không gây chạy bù ngoài dự kiến và không làm mất dữ liệu.
+    * Xử lý thời gian ngoại tuyến hoặc tab background bằng Bounded Batch Catch-up có trần an toàn (`OFFLINE_CATCHUP_CAP = 360 ticks`), tự động phát hiện và ngăn chặn gian lận lùi giờ hệ thống.
+- **B. Niên Lịch Thiên Hà & Chu Kỳ Nhật Dạ Trong Ngày (`lib/game/world/calendar.ts`)**:
+  - Xây dựng hệ thống niên lịch nhất quán, tất định 100%:
+    * 1 Ngày Chiến Lược = 24 Giờ trong game (1440 phút).
+    * Chu kỳ 4 buổi: Buổi Sáng (05:00–11:59), Buổi Chiều (12:00–17:59), Buổi Tối (18:00–21:59), Ban Đêm (22:00–04:59).
+    * Niên lịch: 1 Tháng = 30 Ngày, 1 Mùa = 3 Tháng = 90 Ngày, 1 Năm = 4 Mùa = 360 Ngày.
+    * 4 Mùa Thiên Hà: Mùa Khởi Nguyên (🌱), Mùa Bão Lửa (⚡), Mùa Thu Hoạch (🌾), Mùa Băng Tối (❄️).
+  - Trực quan hóa sinh động trên Overview Deck: hiển thị giờ:phút, buổi, icon mùa, thanh tiến trình ngày và đếm ngược thời gian thực tới ngày tiếp theo.
+- **C. Bộ Sinh Sự Kiện & Nhiệm Vụ Tự Động Theo Ngày Game (`lib/game/world/event-generator.ts`)**:
+  - Toàn bộ chu kỳ sinh (interval) và thời gian tồn tại (lifetime) sử dụng **NGÀY GAME (Game Days)** làm đơn vị chuẩn, không dùng giây thực. Khi đổi tốc độ ngày game, nhịp độ gameplay trong vũ trụ vẫn giữ nguyên.
+  - Phân loại chuẩn 20 templates vào 3 Tiers:
+    * **Nhỏ (Small)**: Chu kỳ 0.1–3 ngày, thời gian tồn tại 0.5–15 ngày, max 30 active (8 templates).
+    * **Trung bình (Medium)**: Chu kỳ 1–10 ngày, thời gian tồn tại 5–45 ngày, max 20 active (7 templates).
+    * **Lớn (Large)**: Chu kỳ 10–60 ngày, thời gian tồn tại 15–180 ngày, max 10 active (5 templates).
+    * Trần sự kiện toàn cầu: Mặc định `maxGlobalActive = 100`.
+  - Tích hợp Concurrency Guard: kiểm tra chống trùng templateId trên cùng sector và toàn thiên hà; hỗ trợ hàm kích hoạt tức thời `forceSpawnEventByTier` phục vụ test và ADMIN CP.
+- **D. Bảng Điều Khiển Quản Trị Viên — ADMIN CP (`components/game/world/operations-center.tsx`)**:
+  - Tích hợp tab điều hướng thứ 7 chuyên biệt `ADMIN CP` trên thanh điều hướng Operations Center và Starfront Shell.
+  - **Khối 1 — Tốc Độ & Mô Phỏng**: Lựa chọn 4 preset, nhập số giây tùy chỉnh, nút Pause/Resume, hiển thị đếm ngược kế tiếp.
+  - **Khối 2 — Cấu Hình Generator**: Chỉnh sửa linh hoạt chu kỳ, lifetime, maxActive của từng tier, điều chỉnh trần toàn cầu, kèm tính năng kiểm tra validation (chống số âm, min > max, NaN) và nút khôi phục mặc định.
+  - **Khối 3 — Kích Hoạt Nhanh & Lệnh Phát Triển**: Nút sinh ngay sự kiện Small / Medium / Large; nút điều khiển thời gian +1 ngày, tua nhanh +5 ngày, +10 ngày, +30 ngày (1 tháng).
+  - **Khối 4 — Quản Trị Lưu Trữ & Reset Thế Giới**: Thông tin khóa lưu trữ cách ly Slot A/B, CRC32 Checksum, nút lưu ngay lập tức và Vùng Nguy Hiểm (Danger Zone) với nút Reset Toàn Bộ World về Ngày 1.
+  - **Hộp thoại xác nhận an toàn**: Modal xác nhận đổi tốc độ và Danger Dialog cảnh báo nguy hiểm khi Reset World, khẳng định bảo toàn 100% dữ liệu RPG Save V4.
+- **E. Bộ Kiểm Thử Chất Lượng Toàn Diện (`tests/world/realtime-simulator-admin.test.ts`)**:
+  - 6/6 test cases chuyên sâu kiểm định đầy đủ: Cấu hình simulator & validation, Niên lịch 4 buổi & chu kỳ mùa, Bộ sinh 3 tier theo ngày game, Động cơ step & bounded catch-up 360 ticks, ADMIN CP speed switch & reset world, và Zero-Regression tuyệt đối cho RPG Save V4.
+
+---
+
 ## [Phase 6.12] — STARFRONT WORLD: Biểu Đồ Xu Hướng Đe Dọa (Galaxy Map Threat Trendline)
 
 *Đã hoàn thành 100% Phase 6.12 — Bổ sung Sparkline thể hiện lịch sử Threat 5 ngày gần nhất trên Galaxy Map, giúp người chỉ huy nhận diện xu hướng nguy hiểm theo từng sector trong cả chế độ nhúng lẫn toàn màn hình (100% tests PASS, 23/23 test suites)*

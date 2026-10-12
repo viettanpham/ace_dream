@@ -94,7 +94,8 @@ export function getEventById(state: WorldState, eventId: string): WorldEvent | n
  */
 export function canRegisterWorldEvent(
   state: WorldState,
-  event: WorldEvent
+  event: WorldEvent,
+  options?: { maxActiveEvents?: number }
 ): EventRegistrationCheckResult {
   ensureWorldEventState(state)
 
@@ -107,15 +108,16 @@ export function canRegisterWorldEvent(
     }
   }
 
-  // 2. Kiểm tra trần toàn cục
+  // 2. Kiểm tra trần toàn cục (Hỗ trợ cấu hình động từ ADMIN CP hoặc fallback MAX_ACTIVE_EVENTS)
+  const cap = options?.maxActiveEvents ?? MAX_ACTIVE_EVENTS
   const activeEvents = Object.values(state.events!).filter(
     (e) => e.status === "INIT" || e.status === "PROCESSING"
   )
-  if (activeEvents.length >= MAX_ACTIVE_EVENTS) {
+  if (activeEvents.length >= cap) {
     return {
       allowed: false,
       reason: "max_active_events_reached",
-      message: `Đã chạm trần số sự kiện hoạt động đồng thời (${MAX_ACTIVE_EVENTS}). Tạm hoãn sinh sự kiện mới.`,
+      message: `Đã chạm trần số sự kiện hoạt động đồng thời (${cap}). Tạm hoãn sinh sự kiện mới.`,
     }
   }
 
@@ -171,7 +173,7 @@ export function canRegisterWorldEvent(
 export function registerWorldEvent(
   state: WorldState,
   event: WorldEvent,
-  options?: { force?: boolean }
+  options?: { force?: boolean; maxActiveEvents?: number }
 ): {
   success: boolean
   event?: WorldEvent
@@ -180,7 +182,7 @@ export function registerWorldEvent(
 } {
   ensureWorldEventState(state)
 
-  const check = canRegisterWorldEvent(state, event)
+  const check = canRegisterWorldEvent(state, event, { maxActiveEvents: options?.maxActiveEvents })
   if (!check.allowed && !options?.force) {
     return {
       success: false,

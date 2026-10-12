@@ -417,6 +417,8 @@ export interface WorldEvent {
   nodeId?: string
   encounterTransactionId?: string
   result?: WorldEventResult
+  /** Phân loại quy mô sự kiện (Phase 6.13) */
+  tier?: "small" | "medium" | "large"
 }
 
 /**
@@ -509,6 +511,12 @@ export interface WorldState {
   events?: Record<string, WorldEvent>
   missionChains?: Record<string, MissionChain>
   eventResultsArchive?: WorldEventResult[]
+  // Phase 6.13: Lịch sinh sự kiện tiếp theo theo ngày game
+  nextEventSpawnDay?: {
+    small: number
+    medium: number
+    large: number
+  }
 }
 
 /**

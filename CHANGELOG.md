@@ -4,7 +4,46 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
-## [Phase 6.10 / Đợt 2] — STARFRONT WORLD: Tái Thiết Kế Trực Quan Giao Diện Sự Kiện & Chuỗi Nhiệm Vụ (Events & Missions UI Redesign)
+## [Phase 6.11] — STARFRONT WORLD: Tinh Chỉnh Bản Đồ Thiên Hà & Hệ Thống HUD (Galaxy Map & HUD Refinement)
+
+*Đã hoàn thành 100% Phase 6.11 — Nâng cao khả năng quan sát và đọc hiểu Bản đồ Thiên hà, phân cấp thông tin trực quan đa tín hiệu, tinh chỉnh tuyến đường, tối ưu hóa Legend 5 nhóm, HUD toàn cảnh và Sector Inspector (100% tests PASS, 23/23 test suites)*
+
+### Các tính năng & nâng cấp giao diện đã triển khai:
+- **A. Phân Cấp Thông Tin 8 Sector Thiên Hà (`components/game/world/world-map.tsx`)**:
+  - Bảo tồn nguyên vẹn 8 sector và tọa độ canonical chuẩn: Sol Command HQ, Helios Perimeter, Mining Outpost K-7, Asteroid Delta, Nebula Bastion, Waypoint Orion, Shadow Reach, Tartarus Breach.
+  - Phân cấp đa tín hiệu (Multi-Signal Accessibility, không dùng màu sắc làm tín hiệu duy nhất):
+    * **Chủ quyền (Sovereignty)**: Nhận diện rõ 4 phe: Liên Minh VSS (Cyan), Đế Chế The Void (Red), Tranh Chấp (Amber), Trung Lập (Slate) bằng màu sắc kết hợp viền và nhãn hiển thị.
+    * **Thang đo Threat 3 Dải**: Phân loại theo 3 dải nguy cơ rõ rệt: 0–299 (Thấp / An Toàn - Xanh lục), 300–699 (Trung Bình / Cảnh Báo - Vàng), 700–1000 (Cao / Nguy Hiểm - Đỏ), hiển thị bằng thanh đo tỷ lệ trực quan dưới tên sector.
+    * **Giai đoạn vòng đời (Stage Lifecycle)**: Thể hiện bằng các vòng orbital riêng biệt: Bình thường (Normal), Bị đe dọa (Threatened - Vòng đứt vàng), Vây hãm (Under Siege - Vòng đứt đỏ nhấp nháy pulse), Thất thủ (Lost - Vòng tím), Phục hồi (Recovery - Vòng cyan).
+    * **Khóa Giao Tranh (Combat Lock)**: Huy hiệu ổ khóa đỏ nổi bật `🔒` góc trên sector, cảnh báo rõ đồn trú bị đóng băng và ngăn chặn xuất quân trái phép.
+    * **Đích Đến Nhận Chi Viện (Deployment Target)**: Khi có đoàn quân đang hành quân tới sector, xuất hiện huy hiệu chỉ báo đích đến `+NQ` màu cyan góc trên bên trái sector.
+    * **Tâm Ngắm Định Vị (Tactical Reticle)**: Sector được chọn hiển thị tâm ngắm quay chậm kèm 4 vạch ngắm góc chữ thập chính xác.
+- **B. Tinh Chỉnh 12 Tuyến Siêu Không Gian (Hyperlane Routes)**:
+  - Tái sử dụng trọn vẹn 12 tuyến canonical và trạng thái: Thông suốt (Open - Nét liền Cyan), Nguy hiểm (Hazardous - Nét đứt Vàng kèm icon !), Phong tỏa (Blocked - Nét đứt Đỏ kèm icon ✕), Ngoại tuyến (Offline - Nét đứt xám).
+  - Làm sáng rực rỡ và phóng to nét vẽ các tuyến liên kết trực tiếp với sector đang chọn hoặc khi di chuột (hover).
+  - Hiển thị tag thông số thời gian hành quân và mức độ rủi ro (`Xd · Rủi ro Y%`) với nền tối tương phản cao, tránh bị che khuất hoặc chồng lấn.
+- **C. Chú Giải Bản Đồ Thống Nhất 5 Nhóm (Unified Map Legend)**:
+  - Tinh chỉnh legend trực tiếp trong `world-map.tsx` thành bảng điều khiển sci-fi có thể đóng/mở linh hoạt:
+    1. *Chủ Quyền (Sovereignty)*: VSS Coalition, The Void, Tranh Chấp, Trung Lập.
+    2. *Mức Đe Dọa (Threat Level)*: 0–299 Thấp, 300–699 Vừa, 700+ Cao.
+    3. *Tuyến Hyperlane*: Thông suốt, Nguy hiểm (!), Phong tỏa (×), Ngoại tuyến.
+    4. *Giai Đoạn & Khóa Trận*: Bình thường, Bị đe dọa, Vây hãm (Pulse), Khóa combat (🔒).
+    5. *Lực Lượng Hành Quân*: Hạm đội di chuyển (🚚) và Sector nhận chi viện (+NQ).
+- **D. Nâng Cấp HUD & Bộ Điều Khiển Viewport (Map HUD & Controls)**:
+  - Header HUD gọn gàng: Tiêu đề `STARFRONT GALAXY NETWORK`, Ngày chiến lược, số sector & tuyến, tỷ lệ kiểm soát 3 phe, Threat trung bình thiên hà kèm nhãn cấp độ, số lượng đạo quân đang hành quân.
+  - Tích hợp nút bật/tắt hiển thị bảng chi tiết `Chi Tiết` để người chơi có thể quan sát toàn cảnh thiên hà không bị che khuất.
+  - Bộ điều khiển 4 nút tiện ích: Phóng to (+), Thu nhỏ (-), Đặt lại góc nhìn chuẩn (RotateCcw), Căn giữa sector đang chọn (Crosshair).
+- **E. Tinh Chỉnh Sector Inspector Drawer**:
+  - Tích hợp nút đóng `[X]` và nút nổi mở lại thuận tiện khi cần quan sát toàn cảnh.
+  - Hiển thị ngay ở đầu trang: Tên, Phụ đề, Huy hiệu giai đoạn, Banner khóa combat (nếu có), Banner thông báo đạo quân chi viện đang trên đường tới (nếu có).
+  - Lưới 6 chỉ số: Chủ quyền, Công sự phòng thủ, Threat (kèm nhãn mức độ), Stability, Đồn trú, Dân số.
+  - Phân nhóm nút hành động hợp lý theo thứ tự ưu tiên: Xuất Kích Chiến Đấu (nếu khẩn cấp) -> Điều Quân Chi Viện (Quick Dispatch) -> Nâng Cấp Công Sự -> Chi Tiết Tại Sector Operations.
+- **F. Đồng Bộ Chế Độ Toàn Màn Hình (`world-fullscreen-overlay.tsx`)**:
+  - Hoạt động mượt mà ở cả chế độ nhúng (640px) và toàn màn hình (100vw x 100vh).
+  - Phím tắt `ESC` và nút đóng góc trên bên phải được căn chỉnh lề chống đè lấn với thanh HUD.
+- **Bộ Kiểm Thử Mới (`tests/world/galaxy-map-hud-ui.test.ts`)**:
+  - 7/7 test cases chuyên sâu kiểm định đầy đủ: 8 sector & 12 routes canonical, phân cấp Threat 3 dải, trạng thái 4 loại tuyến đường, giai đoạn vòng đời & combat lock, đạo quân hành quân & gán đích đến, tính toán đồng bộ chỉ số HUD, và tính toàn vẹn khi thao tác lệnh/công sự.
+
 
 *Đã hoàn thành 100% Đợt 2 (Phase 6.10) — Nâng cấp toàn diện mục Sự kiện & Nhiệm vụ trong Operations Center, đạt khả năng đọc nhanh, phân biệt rõ các pha vòng đời, trực quan hóa cây nhiệm vụ và tổng hợp biến động chu kỳ tick (100% tests PASS, zero-regression toàn bộ 22 test suites)*
 

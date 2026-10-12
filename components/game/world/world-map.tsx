@@ -12,11 +12,12 @@ import {
   Compass,
   Crosshair,
   Eye,
-  FileText,
+  EyeOff,
   Flame,
   Globe2,
   Hammer,
   HelpCircle,
+  Info,
   Layers,
   Lock,
   Maximize2,
@@ -24,10 +25,9 @@ import {
   Minus,
   Navigation,
   Orbit,
-  Play,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
-  RefreshCw,
-  Rocket,
   RotateCcw,
   Route,
   Shield,
@@ -72,33 +72,40 @@ interface WorldMapProps {
   className?: string
 }
 
+/**
+ * Cấu hình hiển thị theo quyền kiểm soát (Sovereignty)
+ */
 const SOVEREIGNTY_CONFIG: Record<
   SectorSovereignty,
-  { label: string; color: string; bg: string; border: string; glow: string }
+  { label: string; shortLabel: string; color: string; bg: string; border: string; glow: string }
 > = {
   vss: {
     label: "Liên Minh VSS",
+    shortLabel: "VSS",
     color: "#06b6d4",
-    bg: "rgba(6, 182, 212, 0.15)",
+    bg: "rgba(6, 182, 212, 0.18)",
     border: "#06b6d4",
     glow: "0 0 16px rgba(6, 182, 212, 0.5)",
   },
   void: {
     label: "Đế Chế The Void",
+    shortLabel: "Void",
     color: "#ef4444",
-    bg: "rgba(239, 68, 68, 0.15)",
+    bg: "rgba(239, 68, 68, 0.18)",
     border: "#ef4444",
     glow: "0 0 16px rgba(239, 68, 68, 0.5)",
   },
   contested: {
     label: "Tranh Chấp",
+    shortLabel: "Tranh Chấp",
     color: "#f59e0b",
-    bg: "rgba(245, 158, 11, 0.15)",
+    bg: "rgba(245, 158, 11, 0.18)",
     border: "#f59e0b",
     glow: "0 0 16px rgba(245, 158, 11, 0.5)",
   },
   neutral: {
     label: "Trung Lập",
+    shortLabel: "Trung Lập",
     color: "#94a3b8",
     bg: "rgba(148, 163, 184, 0.15)",
     border: "#94a3b8",
@@ -106,69 +113,125 @@ const SOVEREIGNTY_CONFIG: Record<
   },
 }
 
+/**
+ * Cấu hình giai đoạn vòng đời Sector (Stage Lifecycle)
+ */
 const STAGE_CONFIG: Record<
   SectorStage,
-  { label: string; badgeBg: string; text: string; badgeBorder: string }
+  { label: string; badgeBg: string; text: string; badgeBorder: string; ringColor: string }
 > = {
   normal: {
     label: "Bình Thường",
     badgeBg: "bg-emerald-950/60",
     text: "text-emerald-300",
     badgeBorder: "border-emerald-500/40",
+    ringColor: "#10b981",
   },
   threatened: {
     label: "Bị Đe Dọa",
     badgeBg: "bg-amber-950/60",
     text: "text-amber-300",
     badgeBorder: "border-amber-500/50",
+    ringColor: "#f59e0b",
   },
   under_siege: {
     label: "Bị Vây Hãm",
     badgeBg: "bg-red-950/70",
     text: "text-red-300",
     badgeBorder: "border-red-500/60",
+    ringColor: "#ef4444",
   },
   lost: {
     label: "Thất Thủ",
     badgeBg: "bg-purple-950/80",
     text: "text-purple-300",
     badgeBorder: "border-purple-500/60",
+    ringColor: "#a855f7",
   },
   recovery: {
     label: "Đang Phục Hồi",
     badgeBg: "bg-cyan-950/60",
     text: "text-cyan-300",
     badgeBorder: "border-cyan-500/40",
+    ringColor: "#06b6d4",
   },
 }
 
+/**
+ * Cấu hình tuyến đường siêu không gian (Route State)
+ */
 const ROUTE_CONFIG: Record<
   RouteState,
-  { label: string; stroke: string; strokeDasharray?: string; opacity: number }
+  { label: string; stroke: string; strokeDasharray?: string; opacity: number; badgeColor: string; badgeBg: string }
 > = {
   open: {
-    label: "Thông Suốt (Open)",
+    label: "Thông Suốt",
     stroke: "#06b6d4",
     opacity: 0.85,
+    badgeColor: "#06b6d4",
+    badgeBg: "#083344",
   },
   hazardous: {
-    label: "Nguy Hiểm (Hazardous)",
+    label: "Nguy Hiểm",
     stroke: "#f59e0b",
     strokeDasharray: "6 4",
     opacity: 0.9,
+    badgeColor: "#f59e0b",
+    badgeBg: "#451a03",
   },
   blocked: {
-    label: "Phong Tỏa (Blocked)",
+    label: "Phong Tỏa",
     stroke: "#ef4444",
     strokeDasharray: "4 4",
-    opacity: 0.8,
+    opacity: 0.85,
+    badgeColor: "#ef4444",
+    badgeBg: "#450a0a",
   },
   offline: {
-    label: "Ngoại Tuyến (Offline)",
+    label: "Ngoại Tuyến",
     stroke: "#52525b",
     strokeDasharray: "2 4",
     opacity: 0.45,
+    badgeColor: "#71717a",
+    badgeBg: "#18181b",
   },
+}
+
+/**
+ * Hàm phân loại Threat Level (0..1000)
+ */
+function getThreatTier(threat: number): {
+  tier: "low" | "medium" | "high"
+  label: string
+  color: string
+  bg: string
+  border: string
+} {
+  if (threat >= 700) {
+    return {
+      tier: "high",
+      label: "NGUY HIỂM",
+      color: "#ef4444",
+      bg: "rgba(239, 68, 68, 0.15)",
+      border: "rgba(239, 68, 68, 0.6)",
+    }
+  }
+  if (threat >= 300) {
+    return {
+      tier: "medium",
+      label: "CẢNH BÁO",
+      color: "#f59e0b",
+      bg: "rgba(245, 158, 11, 0.15)",
+      border: "rgba(245, 158, 11, 0.6)",
+    }
+  }
+  return {
+    tier: "low",
+    label: "AN TOÀN",
+    color: "#10b981",
+    bg: "rgba(16, 185, 129, 0.15)",
+    border: "rgba(16, 185, 129, 0.6)",
+  }
 }
 
 export function WorldMap({
@@ -192,6 +255,8 @@ export function WorldMap({
   const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [showLegend, setShowLegend] = useState<boolean>(true)
   const [showDeployments, setShowDeployments] = useState<boolean>(true)
+  const [showInspector, setShowInspector] = useState<boolean>(true)
+  const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null)
 
   const mapContainerRef = useRef<HTMLDivElement>(null)
@@ -209,6 +274,27 @@ export function WorldMap({
     [worldState.sectors, selectedSectorId]
   )
 
+  // Bản đồ tra cứu các đạo quân đang hướng tới từng sector (Destination lookup)
+  const incomingDeploymentsBySector = useMemo(() => {
+    const map = new Map<string, TroopDeployment[]>()
+    for (const dep of activeDeployments) {
+      const list = map.get(dep.toSectorId) || []
+      list.push(dep)
+      map.set(dep.toSectorId, list)
+    }
+    return map
+  }, [activeDeployments])
+
+  // Lực lượng đang hướng đến sector đang chọn
+  const incomingToSelected = useMemo(() => {
+    if (!selectedSectorId) return []
+    return incomingDeploymentsBySector.get(selectedSectorId) || []
+  }, [incomingDeploymentsBySector, selectedSectorId])
+
+  const totalIncomingTroopsToSelected = useMemo(() => {
+    return incomingToSelected.reduce((acc, d) => acc + d.troopCount, 0)
+  }, [incomingToSelected])
+
   // Tìm các sự kiện liên quan đến sector đang chọn
   const sectorEvents = useMemo(() => {
     if (!selectedSectorId) return []
@@ -217,9 +303,9 @@ export function WorldMap({
     )
   }, [worldState, selectedSectorId])
 
-  // Thống kê chủ quyền toàn thiên hà
+  // Thống kê chủ quyền & Threat toàn thiên hà
   const galaxyMetrics = useMemo(() => {
-    if (!sectors.length) return { vssPct: 0, voidPct: 0, contestedPct: 0, avgThreat: 0 }
+    if (!sectors.length) return { vssPct: 0, voidPct: 0, contestedPct: 0, avgThreat: 0, threatTier: getThreatTier(0) }
     let vssCount = 0
     let voidCount = 0
     let contestedCount = 0
@@ -233,11 +319,13 @@ export function WorldMap({
     }
 
     const total = sectors.length
+    const avgThreat = Math.round(totalThreat / total)
     return {
       vssPct: Math.round((vssCount / total) * 100),
       voidPct: Math.round((voidCount / total) * 100),
       contestedPct: Math.round((contestedCount / total) * 100),
-      avgThreat: Math.round(totalThreat / total),
+      avgThreat,
+      threatTier: getThreatTier(avgThreat),
     }
   }, [sectors])
 
@@ -249,6 +337,7 @@ export function WorldMap({
   const handleSectorClick = (sectorId: string) => {
     playClickSound()
     setInternalSelectedId(sectorId)
+    setShowInspector(true)
     onSelectSector?.(sectorId)
   }
 
@@ -342,30 +431,36 @@ export function WorldMap({
         className
       )}
     >
-      {/* 1. TOP STRATEGIC HUD BAR */}
-      <div className="shrink-0 flex flex-wrap items-center justify-between border-b border-cyan-500/30 bg-zinc-950/90 px-3 py-2 backdrop-blur-md z-20 gap-2">
+      {/* 1. TOP STRATEGIC HUD BAR (TINH CHỈNH & GỌN GÀNG) */}
+      <header
+        className={cn(
+          "shrink-0 flex flex-wrap items-center justify-between border-b border-cyan-500/30 bg-zinc-950/95 px-3 py-2 backdrop-blur-md z-20 gap-2",
+          isFullscreen && "pr-32"
+        )}
+      >
         {/* Tiêu đề & Thông tin thiên hà */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5">
             <Orbit className="size-4 text-cyan-400 animate-spin-slow" />
             <span className="font-display text-xs font-black tracking-wider text-cyan-300 uppercase">
               STARFRONT GALAXY NETWORK
             </span>
           </div>
-          <span className="text-zinc-600 font-mono">|</span>
+          <span className="text-zinc-600 font-mono hidden sm:inline">|</span>
           <div className="flex items-center gap-2 font-mono text-xs">
-            <span className="rounded bg-cyan-950/60 border border-cyan-500/40 px-2 py-0.5 font-bold text-cyan-300">
-              NGÀY {worldState.currentDay}
+            <span className="rounded bg-cyan-950/70 border border-cyan-500/50 px-2 py-0.5 font-bold text-cyan-300">
+              NGÀY #{worldState.currentDay}
             </span>
-            <span className="hidden sm:inline text-zinc-400 text-[11px]">
+            <span className="text-zinc-400 text-[11px] hidden md:inline">
               {sectors.length} Sectors · {routes.length} Tuyến Hyperlane
             </span>
           </div>
         </div>
 
-        {/* Tỷ lệ kiểm soát & Threat trung bình */}
-        <div className="flex items-center gap-3 font-mono text-[11px]">
-          <div className="hidden md:flex items-center gap-2 bg-zinc-900/60 border border-zinc-800 rounded px-2.5 py-1">
+        {/* Tỷ lệ kiểm soát & Threat trung bình & Hành quân */}
+        <div className="flex items-center gap-2.5 font-mono text-[11px]">
+          {/* Tỷ lệ kiểm soát */}
+          <div className="hidden lg:flex items-center gap-2 bg-zinc-900/70 border border-zinc-800 rounded px-2.5 py-1">
             <div className="flex items-center gap-1 text-cyan-300" title="VSS Coalition">
               <span className="size-2 rounded-full bg-cyan-400" />
               <span>VSS: {galaxyMetrics.vssPct}%</span>
@@ -382,29 +477,70 @@ export function WorldMap({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 rounded bg-amber-950/40 border border-amber-500/40 px-2 py-1 text-amber-300">
-            <Flame className="size-3 text-amber-400" />
-            <span>Threat TB: {galaxyMetrics.avgThreat}/1000</span>
+          {/* Threat trung bình */}
+          <div
+            className="flex items-center gap-1.5 rounded px-2 py-1 border"
+            style={{
+              backgroundColor: galaxyMetrics.threatTier.bg,
+              borderColor: galaxyMetrics.threatTier.border,
+              color: galaxyMetrics.threatTier.color,
+            }}
+            title={`Threat trung bình: ${galaxyMetrics.avgThreat}/1000 (${galaxyMetrics.threatTier.label})`}
+          >
+            <Flame className="size-3" />
+            <span className="font-bold">Threat TB: {galaxyMetrics.avgThreat}</span>
+            <span className="hidden sm:inline text-[9px] uppercase opacity-90">({galaxyMetrics.threatTier.label})</span>
           </div>
+
+          {/* Hạm đội hành quân */}
+          <button
+            onClick={() => setShowDeployments(!showDeployments)}
+            className={cn(
+              "flex items-center gap-1 rounded border px-2 py-1 text-xs transition-colors cursor-pointer",
+              activeDeployments.length > 0
+                ? "border-cyan-500/50 bg-cyan-950/50 text-cyan-200 hover:border-cyan-400"
+                : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200"
+            )}
+            title={showDeployments ? "Ẩn hạm đội hành quân" : "Hiện hạm đội hành quân"}
+          >
+            <Truck className="size-3 text-cyan-400" />
+            <span className="hidden sm:inline">Hành Quân:</span>
+            <span className="font-bold">{activeDeployments.length}</span>
+          </button>
+
+          {/* Nút bật/tắt Inspector Drawer */}
+          <button
+            onClick={() => setShowInspector(!showInspector)}
+            className={cn(
+              "flex items-center gap-1 rounded border px-2 py-1 text-xs transition-colors cursor-pointer",
+              showInspector
+                ? "border-cyan-500/40 bg-zinc-900 text-cyan-300"
+                : "border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:text-white"
+            )}
+            title={showInspector ? "Đóng bảng chi tiết Sector" : "Mở bảng chi tiết Sector"}
+          >
+            {showInspector ? <PanelRightClose className="size-3.5" /> : <PanelRightOpen className="size-3.5" />}
+            <span className="hidden sm:inline">Chi Tiết</span>
+          </button>
 
           {/* Nút Fullscreen Toggle */}
           {onToggleFullscreen && (
             <button
               onClick={onToggleFullscreen}
               className={cn(
-                "flex items-center gap-1 rounded border px-2 py-1 text-xs font-mono transition-colors cursor-pointer",
+                "flex items-center gap-1 rounded border px-2 py-1 text-xs transition-colors cursor-pointer",
                 isFullscreen
-                  ? "border-cyan-400 bg-cyan-950/60 text-cyan-200"
-                  : "border-zinc-700 bg-zinc-900/60 text-zinc-300 hover:text-white hover:border-cyan-500"
+                  ? "border-cyan-400 bg-cyan-950/70 text-cyan-200"
+                  : "border-zinc-700 bg-zinc-900/70 text-zinc-300 hover:text-white hover:border-cyan-500"
               )}
               title={isFullscreen ? "Thoát toàn màn hình (ESC)" : "Xem toàn màn hình (100vw/100vh)"}
             >
               {isFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
-              <span className="hidden sm:inline">{isFullscreen ? "Thu Nhỏ" : "Toàn Màn Hình"}</span>
+              <span className="hidden md:inline">{isFullscreen ? "Thu Nhỏ" : "Toàn Màn Hình"}</span>
             </button>
           )}
         </div>
-      </div>
+      </header>
 
       {/* Thông báo feedback toast */}
       {feedback && (
@@ -412,10 +548,10 @@ export function WorldMap({
           className={cn(
             "absolute top-14 left-1/2 -translate-x-1/2 z-40 rounded px-4 py-1.5 font-mono text-xs shadow-lg border animate-in fade-in duration-200 flex items-center gap-2",
             feedback.type === "success"
-              ? "border-cyan-500/60 bg-cyan-950/90 text-cyan-300"
+              ? "border-cyan-500/60 bg-cyan-950/95 text-cyan-300"
               : feedback.type === "error"
-              ? "border-red-500/60 bg-red-950/90 text-red-300"
-              : "border-amber-500/60 bg-amber-950/90 text-amber-300"
+              ? "border-red-500/60 bg-red-950/95 text-red-300"
+              : "border-amber-500/60 bg-amber-950/95 text-amber-300"
           )}
         >
           {feedback.type === "success" ? (
@@ -468,24 +604,22 @@ export function WorldMap({
           }}
         >
           <defs>
-            {/* Filter Glow Cyan */}
+            {/* Glow filters */}
             <filter id="glow-cyan" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
-            {/* Filter Glow Red */}
             <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
-            {/* Filter Glow Amber */}
             <filter id="glow-amber" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur stdDeviation="3" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
           </defs>
 
-          {/* A. VẼ CÁC TUYẾN ĐƯỜNG SIÊU KHÔNG GIAN (ROUTES) */}
+          {/* A. VẼ CÁC TUYẾN ĐƯỜNG SIÊU KHÔNG GIAN (12 HYPERLANE ROUTES LAYER) */}
           <g id="routes-layer">
             {routes.map((route) => {
               const fromSector = worldState.sectors[route.fromSectorId]
@@ -500,18 +634,27 @@ export function WorldMap({
               const routeCfg = ROUTE_CONFIG[route.state] || ROUTE_CONFIG.open
               const isSelectedAdjacent =
                 selectedSectorId === route.fromSectorId || selectedSectorId === route.toSectorId
+              const isHovered = hoveredRouteId === route.id
+
+              const midX = (x1 + x2) / 2
+              const midY = (y1 + y2) / 2
 
               return (
-                <g key={route.id} className="transition-opacity">
-                  {/* Đường phụ tạo hiệu ứng glow khi được chọn */}
-                  {isSelectedAdjacent && (
+                <g
+                  key={route.id}
+                  className="transition-opacity cursor-pointer"
+                  onMouseEnter={() => setHoveredRouteId(route.id)}
+                  onMouseLeave={() => setHoveredRouteId(null)}
+                >
+                  {/* Đường phụ tạo hiệu ứng glow khi được chọn hoặc hover */}
+                  {(isSelectedAdjacent || isHovered) && (
                     <line
                       x1={x1}
                       y1={y1}
                       x2={x2}
                       y2={y2}
                       stroke={routeCfg.stroke}
-                      strokeWidth="5"
+                      strokeWidth="6"
                       strokeOpacity="0.25"
                     />
                   )}
@@ -523,20 +666,20 @@ export function WorldMap({
                     x2={x2}
                     y2={y2}
                     stroke={routeCfg.stroke}
-                    strokeWidth={isSelectedAdjacent ? "2.5" : "1.8"}
+                    strokeWidth={isSelectedAdjacent ? "2.6" : isHovered ? "2.2" : "1.8"}
                     strokeDasharray={routeCfg.strokeDasharray}
-                    strokeOpacity={isSelectedAdjacent ? 1 : routeCfg.opacity}
+                    strokeOpacity={isSelectedAdjacent ? 1 : isHovered ? 0.95 : routeCfg.opacity}
                   />
 
-                  {/* Huy hiệu nhỏ hiển thị thông tin tuyến ở điểm giữa */}
+                  {/* Huy hiệu trạng thái và nhãn tuyến ở trung điểm */}
                   {route.state === "hazardous" && (
-                    <g transform={`translate(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`}>
-                      <circle r="6" fill="#78350f" stroke="#f59e0b" strokeWidth="1" />
+                    <g transform={`translate(${midX}, ${midY})`}>
+                      <circle r="7" fill="#451a03" stroke="#f59e0b" strokeWidth="1.2" />
                       <text
                         textAnchor="middle"
                         dominantBaseline="central"
                         fill="#f59e0b"
-                        fontSize="7"
+                        fontSize="8"
                         fontFamily="monospace"
                         fontWeight="bold"
                       >
@@ -546,17 +689,44 @@ export function WorldMap({
                   )}
 
                   {route.state === "blocked" && (
-                    <g transform={`translate(${(x1 + x2) / 2}, ${(y1 + y2) / 2})`}>
-                      <circle r="7" fill="#450a0a" stroke="#ef4444" strokeWidth="1" />
+                    <g transform={`translate(${midX}, ${midY})`}>
+                      <circle r="7" fill="#450a0a" stroke="#ef4444" strokeWidth="1.2" />
                       <text
                         textAnchor="middle"
                         dominantBaseline="central"
                         fill="#ef4444"
-                        fontSize="8"
+                        fontSize="8.5"
                         fontFamily="monospace"
                         fontWeight="bold"
                       >
                         ×
+                      </text>
+                    </g>
+                  )}
+
+                  {/* Nếu route đang kết nối với sector đang chọn hoặc hover, hiển thị tag cự ly và rủi ro */}
+                  {(isSelectedAdjacent || isHovered) && (
+                    <g transform={`translate(${midX}, ${midY - (route.state !== "open" ? 14 : 0)})`}>
+                      <rect
+                        x="-38"
+                        y="-8"
+                        width="76"
+                        height="16"
+                        rx="3"
+                        fill="#09090b"
+                        fillOpacity="0.9"
+                        stroke={routeCfg.stroke}
+                        strokeWidth="0.8"
+                      />
+                      <text
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fill={routeCfg.stroke}
+                        fontSize="8"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                      >
+                        {route.distance}d · Rủi ro {route.dangerLevel}%
                       </text>
                     </g>
                   )}
@@ -565,7 +735,7 @@ export function WorldMap({
             })}
           </g>
 
-          {/* B. VẼ CÁC ĐOÀN QUÂN ĐANG HÀNH QUÂN (IN-TRANSIT FLEETS) */}
+          {/* B. VẼ CÁC ĐOÀN QUÂN ĐANG HÀNH QUÂN (IN-TRANSIT FLEETS LAYER) */}
           {showDeployments && (
             <g id="deployments-layer">
               {activeDeployments.map((dep) => {
@@ -592,38 +762,43 @@ export function WorldMap({
 
                 return (
                   <g key={dep.deploymentId} transform={`translate(${curX}, ${curY})`}>
-                    <circle r="10" fill="rgba(6, 182, 212, 0.2)" stroke="#06b6d4" strokeWidth="1.5" />
+                    {/* Vòng beacon quét radar */}
+                    <circle r="12" fill="rgba(6, 182, 212, 0.2)" stroke="#06b6d4" strokeWidth="1.5" />
                     <circle r="4" fill="#06b6d4" />
-                    {/* Tag hiển thị số quân */}
-                    <rect
-                      x="12"
-                      y="-8"
-                      width="50"
-                      height="16"
-                      rx="3"
-                      fill="#020617"
-                      stroke="#06b6d4"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x="37"
-                      y="1"
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fill="#06b6d4"
-                      fontSize="9"
-                      fontFamily="monospace"
-                      fontWeight="bold"
-                    >
-                      {dep.troopCount} Q
-                    </text>
+
+                    {/* Tag hiển thị số quân và hướng đích */}
+                    <g transform="translate(14, -8)">
+                      <rect
+                        x="0"
+                        y="0"
+                        width="58"
+                        height="16"
+                        rx="3"
+                        fill="#020617"
+                        fillOpacity="0.95"
+                        stroke="#06b6d4"
+                        strokeWidth="1"
+                      />
+                      <text
+                        x="29"
+                        y="8"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fill="#06b6d4"
+                        fontSize="8.5"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                      >
+                        🚚 {dep.troopCount} Q
+                      </text>
+                    </g>
                   </g>
                 )
               })}
             </g>
           )}
 
-          {/* C. VẼ CÁC ĐỈNH SECTOR (SECTOR NODES) */}
+          {/* C. VẼ 8 ĐỈNH SECTOR THIÊN HÀ (SECTOR NODES LAYER) */}
           <g id="sectors-layer">
             {sectors.map((sector) => {
               const cx = (sector.x / 100) * 1000
@@ -631,7 +806,13 @@ export function WorldMap({
               const isSelected = sector.id === selectedSectorId
               const sovCfg = SOVEREIGNTY_CONFIG[sector.sovereignty] || SOVEREIGNTY_CONFIG.neutral
               const stageCfg = STAGE_CONFIG[sector.stage] || STAGE_CONFIG.normal
+              const threatInfo = getThreatTier(sector.threatLevel)
               const isLocked = Boolean(sector.isLockedForCombat)
+
+              // Kiểm tra xem sector có đang là đích đến của đoàn quân nào không
+              const incomingDeployments = incomingDeploymentsBySector.get(sector.id) || []
+              const incomingTroops = incomingDeployments.reduce((sum, d) => sum + d.troopCount, 0)
+              const isDeploymentTarget = incomingDeployments.length > 0
 
               return (
                 <g
@@ -642,7 +823,7 @@ export function WorldMap({
                   }}
                   className="cursor-pointer group"
                 >
-                  {/* Vòng định vị khi được chọn (Tactical Targeting Reticle) */}
+                  {/* 1. Vòng định vị khi được chọn (Tactical Targeting Reticle) */}
                   {isSelected && (
                     <g transform={`translate(${cx}, ${cy})`}>
                       <circle
@@ -654,7 +835,7 @@ export function WorldMap({
                         className="animate-spin-slow"
                       />
                       <circle r="42" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.4" />
-                      {/* 4 dấu ngắm góc */}
+                      {/* 4 dấu ngắm góc chữ thập */}
                       <line x1="-38" y1="0" x2="-32" y2="0" stroke="#06b6d4" strokeWidth="2" />
                       <line x1="32" y1="0" x2="38" y2="0" stroke="#06b6d4" strokeWidth="2" />
                       <line x1="0" y1="-38" x2="0" y2="-32" stroke="#06b6d4" strokeWidth="2" />
@@ -662,7 +843,7 @@ export function WorldMap({
                     </g>
                   )}
 
-                  {/* Vòng hiển thị trạng thái Stage (Under Siege / Threatened / Lost) */}
+                  {/* 2. Vòng hiển thị trạng thái Stage (Chỉ pulse có chọn lọc ở under_siege) */}
                   {sector.stage === "under_siege" && (
                     <circle
                       cx={cx}
@@ -684,11 +865,38 @@ export function WorldMap({
                       fill="none"
                       stroke="#f59e0b"
                       strokeWidth="1.5"
+                      strokeDasharray="6 4"
+                      opacity="0.85"
+                    />
+                  )}
+
+                  {sector.stage === "lost" && (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r="26"
+                      fill="none"
+                      stroke="#a855f7"
+                      strokeWidth="1.5"
+                      strokeDasharray="2 3"
+                      opacity="0.85"
+                    />
+                  )}
+
+                  {sector.stage === "recovery" && (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r="26"
+                      fill="none"
+                      stroke="#06b6d4"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 2"
                       opacity="0.8"
                     />
                   )}
 
-                  {/* Vòng nền Sector */}
+                  {/* 3. Vòng nền Sector mang màu sắc phe phái */}
                   <circle
                     cx={cx}
                     cy={cy}
@@ -700,26 +908,52 @@ export function WorldMap({
                     style={{ filter: isSelected ? `drop-shadow(${sovCfg.glow})` : undefined }}
                   />
 
-                  {/* Biểu tượng trung tâm hoặc Huy hiệu Phe Phái */}
+                  {/* 4. Lõi trung tâm */}
                   <circle
                     cx={cx}
                     cy={cy}
                     r="8"
                     fill={sovCfg.color}
-                    opacity="0.9"
+                    opacity="0.95"
                   />
 
-                  {/* Huy hiệu khóa Combat nếu sector đang khóa giao tranh */}
-                  {isLocked && (
-                    <g transform={`translate(${cx + 10}, ${cy - 14})`}>
-                      <rect width="18" height="14" rx="2" fill="#7f1d1d" stroke="#ef4444" strokeWidth="1" />
+                  {/* 5. Huy hiệu đích đến điều quân (Incoming Reinforcements Badge) */}
+                  {isDeploymentTarget && (
+                    <g transform={`translate(${cx - 38}, ${cy - 22})`}>
+                      <rect
+                        width="36"
+                        height="14"
+                        rx="2"
+                        fill="#083344"
+                        stroke="#06b6d4"
+                        strokeWidth="1"
+                      />
                       <text
-                        x="9"
+                        x="18"
+                        y="7"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        fill="#38bdf8"
+                        fontSize="7.5"
+                        fontFamily="monospace"
+                        fontWeight="bold"
+                      >
+                        +{incomingTroops}Q
+                      </text>
+                    </g>
+                  )}
+
+                  {/* 6. Huy hiệu khóa Combat (Combat Lock Badge) */}
+                  {isLocked && (
+                    <g transform={`translate(${cx + 10}, ${cy - 16})`}>
+                      <rect width="20" height="15" rx="2" fill="#7f1d1d" stroke="#ef4444" strokeWidth="1" />
+                      <text
+                        x="10"
                         y="8"
                         textAnchor="middle"
                         dominantBaseline="central"
                         fill="#fee2e2"
-                        fontSize="8"
+                        fontSize="8.5"
                         fontWeight="bold"
                         fontFamily="monospace"
                       >
@@ -728,7 +962,7 @@ export function WorldMap({
                     </g>
                   )}
 
-                  {/* Nhãn tên Sector */}
+                  {/* 7. Nhãn tên Sector */}
                   <g transform={`translate(${cx}, ${cy + (isSelected ? 34 : 30)})`}>
                     <rect
                       x="-65"
@@ -737,8 +971,8 @@ export function WorldMap({
                       height="20"
                       rx="3"
                       fill="#020617"
-                      fillOpacity="0.85"
-                      stroke={isSelected ? "#06b6d4" : "rgba(255,255,255,0.15)"}
+                      fillOpacity="0.88"
+                      stroke={isSelected ? "#06b6d4" : "rgba(255,255,255,0.18)"}
                       strokeWidth={isSelected ? "1.5" : "0.8"}
                     />
                     <text
@@ -753,20 +987,14 @@ export function WorldMap({
                     </text>
                   </g>
 
-                  {/* Thanh Gauge Threat nhỏ dưới tên */}
+                  {/* 8. Thanh đo Threat & Chỉ số số học rõ ràng dưới tên */}
                   <g transform={`translate(${cx - 40}, ${cy + (isSelected ? 46 : 42)})`}>
-                    <rect width="80" height="3" rx="1" fill="#18181b" />
+                    <rect width="80" height="4" rx="1" fill="#18181b" />
                     <rect
                       width={Math.min(80, (sector.threatLevel / 1000) * 80)}
-                      height="3"
+                      height="4"
                       rx="1"
-                      fill={
-                        sector.threatLevel >= 700
-                          ? "#ef4444"
-                          : sector.threatLevel >= 300
-                          ? "#f59e0b"
-                          : "#10b981"
-                      }
+                      fill={threatInfo.color}
                     />
                   </g>
                 </g>
@@ -807,50 +1035,122 @@ export function WorldMap({
           </button>
         </div>
 
-        {/* 4. CHÚ GIẢI BẢN ĐỒ (MAP LEGEND) */}
+        {/* 4. CHÚ GIẢI BẢN ĐỒ THỐNG NHẤT 5 NHÓM (MAP LEGEND FLOATING PANEL) */}
         <div className="absolute top-3 left-3 z-20 max-w-xs font-mono text-[10px]">
-          <div className="rounded border border-zinc-800/80 bg-zinc-950/85 p-2 backdrop-blur-md space-y-1.5 shadow-lg">
+          <div className="rounded border border-zinc-800/90 bg-zinc-950/90 p-2.5 backdrop-blur-md space-y-2 shadow-2xl">
             <div className="flex items-center justify-between text-zinc-400 border-b border-zinc-800 pb-1">
-              <span className="font-bold text-cyan-400">CHÚ GIẢI BẢN ĐỒ</span>
+              <span className="font-bold text-cyan-400 flex items-center gap-1.5">
+                <Compass className="size-3 text-cyan-400" />
+                CHÚ GIẢI BẢN ĐỒ
+              </span>
               <button
                 onClick={() => setShowLegend(!showLegend)}
-                className="text-zinc-500 hover:text-zinc-300 cursor-pointer"
+                className="text-zinc-500 hover:text-cyan-300 transition-colors cursor-pointer text-[10px]"
               >
                 {showLegend ? "Thu gọn" : "Mở rộng"}
               </button>
             </div>
 
             {showLegend && (
-              <div className="space-y-1 pt-0.5">
-                {/* Chủ quyền */}
-                <div className="grid grid-cols-2 gap-1 text-[9px]">
-                  <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-cyan-400" />
-                    <span>VSS Coalition</span>
+              <div className="space-y-2 pt-0.5 max-h-[460px] overflow-y-auto pr-1">
+                {/* Nhóm 1: Chủ quyền (Sovereignty) */}
+                <div>
+                  <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                    1. Chủ Quyền (Sovereignty)
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-red-400" />
-                    <span>The Void</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-amber-400" />
-                    <span>Tranh Chấp</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-slate-400" />
-                    <span>Trung Lập</span>
+                  <div className="grid grid-cols-2 gap-1 text-[9px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-cyan-400 shadow-[0_0_6px_#06b6d4]" />
+                      <span>VSS Coalition</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-red-400 shadow-[0_0_6px_#ef4444]" />
+                      <span>The Void</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]" />
+                      <span>Tranh Chấp</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="size-2 rounded-full bg-slate-400" />
+                      <span>Trung Lập</span>
+                    </div>
                   </div>
                 </div>
 
-                {/* Tuyến đường */}
-                <div className="border-t border-zinc-800/60 pt-1 space-y-0.5 text-[9px] text-zinc-400">
-                  <div className="flex items-center justify-between">
-                    <span className="text-cyan-400">─── Thông suốt</span>
-                    <span className="text-amber-400">- - - Nguy hiểm</span>
+                {/* Nhóm 2: Mức độ đe dọa (Threat Level 0-1000) */}
+                <div className="border-t border-zinc-800/70 pt-1.5">
+                  <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                    2. Mức Đe Dọa (Threat Level)
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-red-400">··· Phong tỏa</span>
-                    <span className="text-zinc-500">··· Ngoại tuyến</span>
+                  <div className="grid grid-cols-3 gap-1 text-[9px]">
+                    <div className="flex items-center gap-1 text-emerald-400">
+                      <span className="size-2 rounded-full bg-emerald-400" />
+                      <span>0-299 Thấp</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-amber-400">
+                      <span className="size-2 rounded-full bg-amber-400" />
+                      <span>300-699 Vừa</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-red-400">
+                      <span className="size-2 rounded-full bg-red-400" />
+                      <span>700+ Cao</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nhóm 3: Tuyến Hyperlane (Route Status) */}
+                <div className="border-t border-zinc-800/70 pt-1.5">
+                  <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                    3. Tuyến Hyperlane
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-[9px]">
+                    <div className="text-cyan-400">─── Thông suốt</div>
+                    <div className="text-amber-400">- - - Nguy hiểm (!)</div>
+                    <div className="text-red-400">··· Phong tỏa (×)</div>
+                    <div className="text-zinc-500">··· Ngoại tuyến</div>
+                  </div>
+                </div>
+
+                {/* Nhóm 4: Giai đoạn & Khóa trận (Sector Stage & Combat Lock) */}
+                <div className="border-t border-zinc-800/70 pt-1.5">
+                  <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                    4. Giai Đoạn & Khóa Trận
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-[9px]">
+                    <div className="flex items-center gap-1 text-zinc-300">
+                      <span className="size-1.5 rounded-full bg-emerald-400" />
+                      <span>Bình thường</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-amber-300">
+                      <span className="size-1.5 rounded-full bg-amber-400" />
+                      <span>Bị đe dọa</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-red-300">
+                      <span className="size-1.5 rounded-full bg-red-400" />
+                      <span>Vây hãm (Pulse)</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-red-400 font-bold">
+                      <span>🔒</span>
+                      <span>Khóa combat</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nhóm 5: Lực lượng hành quân (Deployments & Targets) */}
+                <div className="border-t border-zinc-800/70 pt-1.5">
+                  <div className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider mb-1">
+                    5. Lực Lượng Hành Quân
+                  </div>
+                  <div className="space-y-0.5 text-[9px]">
+                    <div className="flex items-center gap-1.5 text-cyan-300">
+                      <span>🚚</span>
+                      <span>Hạm đội di chuyển (Convoy vị trí nội suy)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-cyan-400">
+                      <span className="font-bold">+NQ</span>
+                      <span>Sector đang nhận quân chi viện</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -858,20 +1158,34 @@ export function WorldMap({
           </div>
         </div>
 
+        {/* Nút nổi mở lại Inspector nếu Inspector đang đóng và có sector được chọn */}
+        {!showInspector && selectedSector && (
+          <button
+            onClick={() => {
+              playClickSound()
+              setShowInspector(true)
+            }}
+            className="absolute top-3 right-3 z-20 flex items-center gap-1.5 rounded bg-zinc-900/90 border border-cyan-500/60 hover:border-cyan-400 px-3 py-1.5 text-xs font-mono text-cyan-300 shadow-xl backdrop-blur-md cursor-pointer transition-all hover:bg-zinc-850"
+          >
+            <PanelRightOpen className="size-3.5 text-cyan-400" />
+            <span>Mở Bảng: {selectedSector.name}</span>
+          </button>
+        )}
+
         {/* 5. PANEL CHI TIẾT SECTOR (SECTOR INSPECTOR DRAWER) */}
-        {selectedSector && (
-          <div className="absolute top-3 right-3 bottom-3 w-80 sm:w-96 z-30 flex flex-col rounded-sm border border-cyan-500/50 bg-zinc-950/95 backdrop-blur-md p-4 shadow-2xl font-mono text-xs overflow-y-auto space-y-3.5">
-            {/* Header Inspector */}
+        {showInspector && selectedSector && (
+          <div className="absolute top-3 right-3 bottom-3 w-80 sm:w-96 z-30 flex flex-col rounded-sm border border-cyan-500/50 bg-zinc-950/95 backdrop-blur-md p-4 shadow-2xl font-mono text-xs overflow-y-auto space-y-3.5 animate-in fade-in slide-in-from-right-4 duration-150">
+            {/* Header Inspector kèm nút đóng */}
             <div className="border-b border-zinc-800 pb-2.5">
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-display text-sm font-black uppercase text-cyan-300">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-display text-sm font-black uppercase text-cyan-300 truncate">
                       {selectedSector.name}
                     </span>
                     <span
                       className={cn(
-                        "rounded px-1.5 py-0.2 text-[9px] font-bold uppercase border",
+                        "rounded px-1.5 py-0.2 text-[9px] font-bold uppercase border shrink-0",
                         STAGE_CONFIG[selectedSector.stage]?.badgeBg,
                         STAGE_CONFIG[selectedSector.stage]?.text,
                         STAGE_CONFIG[selectedSector.stage]?.badgeBorder
@@ -880,62 +1194,90 @@ export function WorldMap({
                       {STAGE_CONFIG[selectedSector.stage]?.label}
                     </span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 mt-0.5">{selectedSector.subtitle}</div>
+                  <div className="text-[10px] text-zinc-400 mt-0.5 truncate">{selectedSector.subtitle}</div>
                 </div>
+
+                {/* Nút đóng Inspector */}
+                <button
+                  onClick={() => setShowInspector(false)}
+                  className="size-6 flex items-center justify-center rounded border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                  title="Đóng bảng chi tiết"
+                >
+                  <X className="size-3.5" />
+                </button>
               </div>
               <p className="mt-2 text-[11px] text-zinc-400/90 leading-relaxed font-sans">
                 {selectedSector.desc}
               </p>
             </div>
 
-            {/* Cảnh báo khóa giao tranh nếu có */}
+            {/* Banner Cảnh Báo Khóa Giao Tranh nếu có */}
             {selectedSector.isLockedForCombat && (
-              <div className="rounded border border-red-500/60 bg-red-950/40 p-2 text-[11px] text-red-300 space-y-1">
+              <div className="rounded border border-red-500/60 bg-red-950/40 p-2.5 text-[11px] text-red-300 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
                   <Lock className="size-3.5 text-red-400" />
                   <span>ĐANG KHÓA GIAO TRANH (COMBAT LOCKED)</span>
                 </div>
-                <p className="text-[10px] text-red-300/80 leading-normal">
+                <p className="text-[10px] text-red-300/80 leading-normal font-sans">
                   Sector này đang tham chiến với buồng lái. Lực lượng đồn trú bị đóng băng để bảo toàn dữ liệu. Không thể xuất quân rời khỏi.
                 </p>
               </div>
             )}
 
-            {/* Lưới chỉ số vĩ mô của Sector */}
+            {/* Banner Thông Báo Đang Có Đạo Quân Tiến Tới (Deployment Target) */}
+            {incomingToSelected.length > 0 && (
+              <div className="rounded border border-cyan-500/50 bg-cyan-950/40 p-2 text-[11px] text-cyan-300 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <Truck className="size-3.5 text-cyan-400" />
+                  <span>ĐANG NHẬN CHI VIỆN (+{totalIncomingTroopsToSelected} QUÂN)</span>
+                </div>
+                <div className="text-[10px] text-cyan-200/80 space-y-0.5 font-sans">
+                  {incomingToSelected.map((d) => (
+                    <div key={d.deploymentId}>
+                      · {d.troopCount} quân từ {worldState.sectors[d.fromSectorId]?.name || d.fromSectorId} (Còn {d.remainingDays} ngày)
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Lưới 6 Chỉ Số Vĩ Mô Của Sector */}
             <div className="grid grid-cols-2 gap-2 text-[11px] bg-zinc-900/50 p-2.5 rounded border border-zinc-800">
               <div>
                 <span className="text-zinc-400 text-[10px]">Chủ quyền:</span>
-                <div className="font-bold text-zinc-100 uppercase">
+                <div className="font-bold uppercase flex items-center gap-1 mt-0.5" style={{ color: SOVEREIGNTY_CONFIG[selectedSector.sovereignty]?.color }}>
+                  <span className="size-1.5 rounded-full" style={{ backgroundColor: SOVEREIGNTY_CONFIG[selectedSector.sovereignty]?.color }} />
                   {SOVEREIGNTY_CONFIG[selectedSector.sovereignty]?.label}
                 </div>
               </div>
               <div>
                 <span className="text-zinc-400 text-[10px]">Công sự phòng thủ:</span>
-                <div className="font-bold text-amber-400">
+                <div className="font-bold text-amber-400 mt-0.5">
                   Cấp {selectedSector.fortificationLevel ?? 1}/5
                 </div>
               </div>
               <div>
                 <span className="text-zinc-400 text-[10px]">Mức Đe Dọa (Threat):</span>
-                <div className="font-bold text-amber-300">
-                  {selectedSector.threatLevel}/1000
+                <div className="font-bold mt-0.5 flex items-center gap-1" style={{ color: getThreatTier(selectedSector.threatLevel).color }}>
+                  <span>{selectedSector.threatLevel}/1000</span>
+                  <span className="text-[9px] opacity-80">({getThreatTier(selectedSector.threatLevel).label})</span>
                 </div>
               </div>
               <div>
                 <span className="text-zinc-400 text-[10px]">Độ Ổn Định (Stability):</span>
-                <div className="font-bold text-emerald-400">
+                <div className="font-bold text-emerald-400 mt-0.5">
                   {selectedSector.stability}/100
                 </div>
               </div>
               <div>
                 <span className="text-zinc-400 text-[10px]">Lực lượng Đồn Trú:</span>
-                <div className="font-bold text-cyan-300">
+                <div className="font-bold text-cyan-300 mt-0.5">
                   {selectedSector.garrisonPower} quân
                 </div>
               </div>
               <div>
                 <span className="text-zinc-400 text-[10px]">Dân số khu vực:</span>
-                <div className="font-bold text-zinc-200">
+                <div className="font-bold text-zinc-200 mt-0.5">
                   {selectedSector.population.toLocaleString()} dân
                 </div>
               </div>
@@ -1010,24 +1352,26 @@ export function WorldMap({
               </div>
             )}
 
-            {/* CÁC THAO TÁC LIÊN KẾT ĐẾN OPERATIONS CENTER */}
+            {/* CÁC THAO TÁC HÀNH ĐỘNG CHIẾN THUẬT (SẮP XẾP HỢP LÝ THEO MỨC ƯU TIÊN) */}
             <div className="space-y-2 pt-2 border-t border-zinc-800">
-              {/* Nút 1: Chuyển đến Sector Operations trong Operations Center */}
-              {onNavigateToSectorOperations && (
-                <button
-                  onClick={() => {
-                    playClickSound()
-                    onNavigateToSectorOperations(selectedSector.id)
-                  }}
-                  className="w-full flex items-center justify-center gap-2 rounded bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 py-2 px-3 font-display text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer shadow-[0_0_10px_rgba(6,182,212,0.15)]"
-                >
-                  <Eye className="size-3.5" />
-                  <span>Chi Tiết Tại Sector Operations</span>
-                  <ArrowRight className="size-3.5" />
-                </button>
-              )}
+              {/* Nhóm 1: Xuất Kích Chiến Đấu khẩn cấp (Nếu có) */}
+              {onDeployCombat &&
+                (selectedSector.stage === "threatened" ||
+                  selectedSector.stage === "under_siege" ||
+                  selectedSector.isLockedForCombat) && (
+                  <button
+                    onClick={() => {
+                      playClickSound()
+                      onDeployCombat(selectedSector.id)
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded bg-red-950/50 hover:bg-red-900/60 border border-red-500/70 hover:border-red-400 text-red-200 py-2 px-3 font-display text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.25)]"
+                  >
+                    <Swords className="size-3.5 text-red-400" />
+                    <span>Xuất Kích Tác Chiến Tại Sector</span>
+                  </button>
+                )}
 
-              {/* Nút 2: Mở Dock Điều Quân Nhanh */}
+              {/* Nhóm 2: Điều Quân Chi Viện */}
               {onOpenQuickDispatch && (
                 <button
                   onClick={() => {
@@ -1040,7 +1384,7 @@ export function WorldMap({
                   }}
                   disabled={selectedSector.isLockedForCombat}
                   className={cn(
-                    "w-full flex items-center justify-center gap-2 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-500 text-zinc-200 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer",
+                    "w-full flex items-center justify-center gap-2 rounded bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer",
                     selectedSector.isLockedForCombat && "opacity-50 cursor-not-allowed"
                   )}
                 >
@@ -1049,7 +1393,7 @@ export function WorldMap({
                 </button>
               )}
 
-              {/* Nút 3: Nâng Cấp Công Sự */}
+              {/* Nhóm 3: Nâng Cấp Công Sự */}
               <button
                 onClick={handleUpgradeFort}
                 disabled={
@@ -1069,22 +1413,20 @@ export function WorldMap({
                 <span>Nâng Cấp Công Sự (+100 Vật Liệu)</span>
               </button>
 
-              {/* Nút 4: Can Thiệp Buồng Lái / Combat */}
-              {onDeployCombat &&
-                (selectedSector.stage === "threatened" ||
-                  selectedSector.stage === "under_siege" ||
-                  selectedSector.isLockedForCombat) && (
-                  <button
-                    onClick={() => {
-                      playClickSound()
-                      onDeployCombat(selectedSector.id)
-                    }}
-                    className="w-full flex items-center justify-center gap-2 rounded bg-red-950/40 hover:bg-red-900/50 border border-red-500/60 hover:border-red-400 text-red-200 py-2 px-3 font-display text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.2)]"
-                  >
-                    <Swords className="size-3.5 text-red-400" />
-                    <span>Xuất Kích Tác Chiến Tại Sector</span>
-                  </button>
-                )}
+              {/* Nhóm 4: Điều Hướng Chi Tiết Sang Tab Sector Operations */}
+              {onNavigateToSectorOperations && (
+                <button
+                  onClick={() => {
+                    playClickSound()
+                    onNavigateToSectorOperations(selectedSector.id)
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-500 text-zinc-300 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer"
+                >
+                  <Eye className="size-3.5 text-zinc-400" />
+                  <span>Xem Chi Tiết Tại Sector Operations</span>
+                  <ArrowRight className="size-3 text-zinc-400" />
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -17,6 +17,12 @@ import { evaluateSectorStage } from "./sector-lifecycle"
 import { processStrategicEconomyCycle } from "./economy"
 import { processLogisticsCycle } from "./logistics"
 import { processDemographicsCycle } from "./demographics"
+import {
+  advanceTroopDeployments,
+  rallyRetreatingForces,
+  recoverWoundedTroops,
+} from "./forces-ledger"
+import { evaluateVoidStrategicBehavior } from "./threat-ai"
 import type {
   InFlightTransaction,
   MilitaryForceLedger,
@@ -124,19 +130,14 @@ function executePhase1RecoveryAndTransactions(
     }
   }
 
-  // 1.2. Phục hồi thương binh & sửa chữa cơ giáp:
-  // Mỗi tick phục hồi 5% số quân woundedOrRepair (tối thiểu 10 đơn vị nếu > 0)
+  // 1.2. Phục hồi thương binh & sửa chữa cơ giáp qua Authoritative Forces Ledger
   if (state.military.woundedOrRepair > 0) {
-    const recoveryRate = 0.05
-    const recovered = Math.min(
-      state.military.woundedOrRepair,
-      Math.max(10, Math.floor(state.military.woundedOrRepair * recoveryRate))
-    )
-    state.military.woundedOrRepair -= recovered
-    state.military.reserves += recovered
-    log.changesApplied.push(
-      `Military hospital recovered ${recovered} units from woundedOrRepair to reserves`
-    )
+    const { recovered } = recoverWoundedTroops(state.military)
+    if (recovered > 0) {
+      log.changesApplied.push(
+        `Military hospital recovered ${recovered} units from woundedOrRepair to reserves`
+      )
+    }
   }
 
   // 1.3. Phục hồi hạ tầng cơ sở tại các sector đang Recovery
@@ -229,8 +230,11 @@ function executePhase3EconomyAndDemographics(
 
 /**
  * Phase 4: Quân Sự & Mức Đe Dọa (Military & Threat Dynamics)
- * - Lan truyền Threat có hệ số suy giảm (Damping factor) và trần tăng trưởng tối đa (+50/ngày)
- * - Điểm kết nối tự động điều phối cho Phase 6.5
+ * - Tiến trình hành quân của các đạo quân in-transit
+ * - Tập hợp quân rút lui (Rally retreating forces)
+ * - Đánh giá ý đồ chiến lược của The Void
+ * - Lan truyền Threat có hệ số suy giảm và trần tăng trưởng (+50/ngày)
+ * - Lệnh chiến lược ảnh hưởng tới biến động Threat và Stability
  */
 function executePhase4MilitaryAndThreat(
   state: WorldState,
@@ -243,6 +247,24 @@ function executePhase4MilitaryAndThreat(
     newStage: string
     threatDelta: number
   }> = []
+
+  // 4.0. Cập nhật tiến trình hành quân của các đạo quân (Phase 6.5)
+  const depReport = advanceTroopDeployments(state)
+  for (const depLog of depReport.logs) {
+    log.changesApplied.push(depLog)
+  }
+
+  // Tập hợp quân rút lui (Rally retreating forces)
+  const rallyReport = rallyRetreatingForces(state)
+  for (const rallyLog of rallyReport.logs) {
+    log.changesApplied.push(rallyLog)
+  }
+
+  // Đánh giá ý đồ chiến lược của The Void
+  const voidReport = evaluateVoidStrategicBehavior(state, prng)
+  for (const voidLog of voidReport.logs) {
+    log.changesApplied.push(voidLog)
+  }
 
   // Giới hạn trần tăng trưởng đe dọa tối đa theo thiết kế (+50 Threat/ngày)
   const MAX_THREAT_GROWTH_PER_DAY = 50
@@ -271,6 +293,14 @@ function executePhase4MilitaryAndThreat(
         // Trạng thái normal: dao động bình yên
         threatDelta = prng.nextInt(-5, 5)
       }
+    }
+
+    // Tác động của lệnh chiến lược nếu có
+    if (sector.strategicOrder === "defend") {
+      threatDelta -= 8
+    } else if (sector.strategicOrder === "recover") {
+      threatDelta -= 5
+      sector.stability = Math.min(100, sector.stability + 2)
     }
 
     // Kẹp chặt threatDelta trong [-50, +50]

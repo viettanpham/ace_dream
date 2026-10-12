@@ -55,6 +55,40 @@ export interface DemographicsState {
 }
 
 /**
+ * Lệnh chiến lược được giao cho đồn trú hoặc đạo quân
+ */
+export type StrategicOrder = "normal" | "defend" | "reinforce" | "attack" | "recover"
+
+/**
+ * Trạng thái quân lực theo sổ cái Authoritative Military Ledger
+ */
+export type ForceStatus =
+  | "deployed"
+  | "reserves"
+  | "woundedOrRepair"
+  | "retreating"
+  | "casualties"
+  | "in_transit"
+
+/**
+ * Đoàn quân đang điều chuyển hoặc hành quân trên tuyến đường
+ */
+export interface TroopDeployment {
+  deploymentId: string
+  transactionId: string
+  factionId: FactionId
+  fromSectorId: string
+  toSectorId: string
+  troopCount: number
+  order: StrategicOrder
+  path: string[]
+  totalDistance: number
+  remainingDays: number
+  status: "in_transit" | "arrived" | "intercepted" | "cancelled"
+  createdAt: number
+}
+
+/**
  * Dữ liệu Sector chiến lược trên bản đồ
  */
 export interface WorldSector {
@@ -74,6 +108,8 @@ export interface WorldSector {
   stability: number        // Chỉ số ổn định riêng của sector [0..100]
   lastSiegeDay?: number
   foodShortageDays?: number
+  strategicOrder?: StrategicOrder
+  fortificationLevel?: number
 }
 
 /**
@@ -133,6 +169,7 @@ export interface WorldState {
   completedMissionChainIds: string[]
   committedTransactionIds: string[]
   inFlightTransactions: Record<string, InFlightTransaction>
+  activeDeployments?: TroopDeployment[]
   isSuspendedCombat: boolean
   suspendedEncounterId?: string
 }

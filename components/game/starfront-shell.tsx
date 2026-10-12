@@ -91,6 +91,8 @@ import { MissionLog } from "./mission-log"
 import { FullMissionLogView } from "./full-mission-log-view"
 import { TopShipIntegrityBar } from "./top-ship-integrity-bar"
 import { OperationsCenter } from "./world/operations-center"
+import type { WorldBattleContext } from "@/lib/game/world/types"
+import { loadWorldState } from "@/lib/game/world/storage"
 
 export type StarfrontSection =
   | "home"
@@ -336,6 +338,7 @@ export function StarfrontShell() {
   const [hasLoaded, setHasLoaded] = useState(false)
   const [activeSection, setActiveSection] = useState<StarfrontSection>("home")
   const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(null)
+  const [activeWorldBattle, setActiveWorldBattle] = useState<WorldBattleContext | null>(null)
   const [audioMuted, setAudioMutedState] = useState(false)
   const [scanlineEnabled, setScanlineEnabled] = useState(true)
   const [lockNoticeToast, setLockNoticeToast] = useState<{ text: string; type: "warning" | "success" } | null>(null)
@@ -372,6 +375,25 @@ export function StarfrontShell() {
       }
     } catch {
       // ignore local storage errors
+    }
+
+    // Phase 6.23: Kiểm tra trận chiến treo từ STARFRONT WORLD
+    try {
+      const worldRes = loadWorldState()
+      if (worldRes.state.isSuspendedCombat && worldRes.state.suspendedSnapshot) {
+        const snap = worldRes.state.suspendedSnapshot
+        setActiveWorldBattle({
+          source: "WORLD",
+          transactionId: snap.transactionId,
+          encounterId: snap.encounterId,
+          sectorId: snap.sectorId,
+          sectorName: snap.sectorName,
+          snapshot: snap,
+          resumedFromSuspended: true,
+        })
+      }
+    } catch {
+      // ignore
     }
 
     // Phase 5.11: Nếu chưa có lựa chọn Phi Công & Cơ Giáp hợp lệ, yêu cầu bắt buộc chọn
@@ -1180,12 +1202,15 @@ export function StarfrontShell() {
               />
             )}
 
-            {/* Phân hệ: Chỉ Huy Chiến Lược // STARFRONT WORLD Operations Center (Phase 6.8) */}
+            {/* Phân hệ: Chỉ Huy Chiến Lược // STARFRONT WORLD Operations Center (Phase 6.8 & 6.23) */}
             {activeSection === "world" && (
               <OperationsCenter
                 initialTab={activeWorldTab}
                 onNavigateSection={handleSwitchSection}
-                onDeployEncounter={(sectorId) => {
+                onDeployEncounter={(sectorId, battleContext) => {
+                  if (battleContext) {
+                    setActiveWorldBattle(battleContext)
+                  }
                   handleSwitchSection("battlefield")
                 }}
               />
@@ -1214,16 +1239,25 @@ export function StarfrontShell() {
               />
             )}
 
-            {/* Phân hệ 2: Đấu Trường (Battlefield) */}
+            {/* Phân hệ 2: Đấu Trường (Battlefield - Phase 6.23 WORLD Combat Integration) */}
             {activeSection === "battlefield" && (
               <CombatArena
                 progression={progression}
                 onUpdateProgression={handleUpdateProgression}
-                activeCampaignMission={activeCampaignMission}
+                activeCampaignMission={activeWorldBattle ? null : activeCampaignMission}
                 onClearCampaignMission={handleClearMission}
                 onSelectCampaignMission={setActiveCampaignMission}
                 onNavigateSection={handleSwitchSection}
                 isEmbeddedInShell={true}
+                worldBattleContext={activeWorldBattle}
+                onWorldCombatComplete={(result) => {
+                  setActiveWorldBattle(null)
+                  handleSwitchSection("world")
+                }}
+                onWorldCombatAborted={() => {
+                  setActiveWorldBattle(null)
+                  handleSwitchSection("world")
+                }}
               />
             )}
 

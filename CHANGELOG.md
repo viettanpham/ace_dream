@@ -4,6 +4,42 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.23] — STARFRONT WORLD: Tích Hợp Ngữ Cảnh Tác Chiến Thực Địa & Kết Nối Combat Arena (WORLD Combat Context & Arena Integration)
+
+*Đã hoàn thành 100% Phase 6.23 — Kết nối toàn diện luồng xuất kích tác chiến từ STARFRONT WORLD sang Combat Arena dựa trên kiến trúc Encounter Snapshot và Transaction Journal hiện có; khóa sector và lưu trạng thái suspended combat trước khi chuyển cảnh; chuyển đổi chính xác thông số địch từ snapshot sang CombatUnit đối thủ thay vì mở scout-drone mặc định; áp dụng chỉ số công sự & sĩ khí lên người chơi; hỗ trợ 2 chế độ rút lui (Hủy Bỏ An Toàn & Rút Lui Thất Bại); commit biên lai kết quả vào World State qua Adapter; hiển thị bảng tổng kết thực địa WorldCombatPostMissionResults và bảo vệ cách ly tuyệt đối 100% RPG Save V4 (8/8 Phase 6.23 tests PASS, 33/33 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Chuẩn Hóa Khóa Sector & Tạo Encounter Snapshot Bất Biến (`operations-center.tsx`, `combat-adapter.ts`)**:
+  - Khi người chơi bấm **Xuất Kích Tác Chiến** tại sector đủ điều kiện:
+    * Kiểm tra an toàn: ngăn chặn xuất kích trùng lặp nếu sector đã bị khóa hoặc đang có trận chiến chưa hoàn tất tại sector khác.
+    * Gọi `lockEncounterAndCreateSnapshot(worldState, { sectorId })`: đóng băng toàn bộ quân đồn trú (`lockedGarrisonPower`), gán mã giao dịch duy nhất `tx-cbt-...` và lưu vào `transactionJournal` với trạng thái `pending`.
+    * Thiết lập `state.isSuspendedCombat = true`, `suspendedEncounterId`, `suspendedSnapshot`.
+    * Lưu nguyên tử vào WORLD save (`STARFRONT_WORLD_SAVE_V1`) qua `saveWorldState` trước khi kích hoạt chuyển đổi giao diện buồng lái.
+- **2. Đóng Gói Ngữ Cảnh Tác Chiến WorldBattleContext (`lib/game/world/types.ts`)**:
+  - Khai báo interface `WorldBattleContext`: `source: "WORLD"`, `transactionId`, `encounterId`, `sectorId`, `sectorName`, `snapshot`, `resumedFromSuspended`.
+  - Truyền context đồng bộ qua `onDeployEncounter` trong `operations-center.tsx`, cập nhật `activeWorldBattle` trong `starfront-shell.tsx` và cấp phát vào `CombatArena`.
+- **3. Chuyển Đổi Dữ Liệu Đối Thủ & Bổ Trợ Người Chơi Thực Thụ (`lib/game/world/combat-adapter.ts`)**:
+  - `buildCombatUnitFromSnapshot(snapshot)`: Chuyển đổi chính xác kẻ thù từ snapshot thành `CombatUnit` đối thủ đầy đủ (HP, Attack, Defense, Speed, Skills, Boss flag) tương ứng với Sector và mức độ đe dọa Void, xóa bỏ hoàn toàn hiện tượng tự động mở `scout-drone` hoặc mission RPG mặc định.
+  - `applyWorldSnapshotPlayerModifiers(playerUnit, snapshot)`: Áp dụng hệ số phòng thủ từ cấp công sự (`defenseMultiplier`) và hệ số tấn công từ sĩ khí (`moraleMultiplier`) lên phi thuyền người chơi.
+  - `buildCombatReceiptFromCombatState(combatState, snapshot, isVictory)`: Trích xuất biên lai `CombatResultReceipt` chuẩn hóa với xếp hạng chiến thuật (S+, S, A, B, C) dựa trên tỷ lệ HP và số lượt giao tranh.
+- **4. Đấu Trường Combat Arena Hỗ Trợ Hai Chế Độ Độc Lập (`components/game/combat-arena.tsx`)**:
+  - **Banner Chiến Sự Thực Địa STARFRONT WORLD**: Hiển thị tên Sector, mã giao dịch, số quân đồn trú đóng băng, cấp công sự (Thủ +X%), sĩ khí (+Y%) và mục tiêu tác chiến.
+  - **Chế Độ Rút Lui Chiến Lược Đa Lựa Chọn (Strategic Retreat Modal)**:
+    * **Hủy Bỏ An Toàn (Safe Abort)**: Mở khóa Sector ngay lập tức, hoàn trả 100% quân đồn trú nguyên vẹn, hủy transaction mà không áp dụng hình phạt.
+    * **Rút Lui Thất Bại (Tactical Retreat)**: Chấp nhận thất bại, trừ ổn định và đồn trú theo quy tắc, mở khóa an toàn và cập nhật kết quả vào World State.
+  - **Màn Hình Kết Quả Thực Địa `WorldCombatPostMissionResults` (`components/game/world-combat-results.tsx`)**:
+    * Hiển thị báo cáo kết quả thực địa với đầy đủ biến động chỉ số: Threat giảm/tăng, Stability phục hồi/suy giảm, tài nguyên thu hồi (Data, Materials, Energy) và tổn thất đồn trú.
+    * Nút *"HOÀN TẤT & TRỞ VỀ SỞ CHỈ HUY"* gọi `onWorldCombatComplete`, xóa `activeWorldBattle` và đưa người chơi trở về War Room.
+- **5. Cách Ly Dữ Liệu Tuyệt Đối & Khôi Phục Sau Reload**:
+  - Khi `worldBattleContext` kích hoạt, toàn bộ logic cộng thưởng (EXP, Credits, Drop Item, Level Up) và trừ phạt của RPG Save V4 bị vô hiệu hóa hoàn toàn, đảm bảo độc lập tuyệt đối 100%.
+  - Hỗ trợ `resumeSuspendedCombat`: Khi người chơi reload trang hoặc mở lại game khi có trận dở dang, hệ thống tự động nhận diện và cho phép tiếp tục trận chiến từ snapshot đã lưu.
+- **6. Bộ Kiểm Thử Chuyên Sâu & Độ Tin Cậy Hệ Thống**:
+  - Bổ sung `tests/world/phase6-23-world-combat-arena-integration.test.ts` gồm 8 test cases chuyên sâu (100% PASS).
+  - Toàn bộ 33 test suites trong `package.json` (`npm test`) vượt qua thành công.
+  - Next.js build và typecheck không phát sinh bất kỳ lỗi nào.
+
+---
+
 ## [Phase 6.22] — STARFRONT WORLD: Khắc Phục Hitbox Galaxy Map & Tương Tác Viewport (Galaxy Map Hitbox & Viewport Interaction Fix)
 
 *Đã hoàn thành 100% Phase 6.22 — Khắc phục việc chọn sector khó trên Galaxy Map khi zoom nhỏ hoặc click gần node; phân biệt chính xác click chọn sector với thao tác kéo bản đồ (Pan) bằng movement threshold; bảo đảm trải nghiệm mượt mà, zero micro-jitter và nhất quán hoàn toàn giữa Embedded War Room Map và Fullscreen Overlay (5/5 Phase 6.22 tests PASS, 32/32 Test Suites PASS, build & typecheck thành công).*

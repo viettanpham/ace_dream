@@ -95,12 +95,17 @@ import { WorldFullscreenOverlay } from "./world-fullscreen-overlay"
 import { EventsMissionsBoard } from "./events-missions-board"
 import { AdminSettingsModal } from "./admin-settings-modal"
 import { DebriefingDrawer } from "./debriefing-drawer"
+import {
+  lockEncounterAndCreateSnapshot,
+  abortSuspendedCombat,
+} from "@/lib/game/world/combat-adapter"
 import type {
   WorldState,
   WorldSector,
   StrategicOrder,
   WorldEvent,
   EventStrategy,
+  WorldBattleContext,
 } from "@/lib/game/world/types"
 
 export type OperationsTab =
@@ -115,7 +120,7 @@ export type OperationsTab =
 interface OperationsCenterProps {
   initialTab?: OperationsTab
   onNavigateSection?: (section: any) => void
-  onDeployEncounter?: (sectorId: string) => void
+  onDeployEncounter?: (sectorId: string, battleContext?: WorldBattleContext) => void
 }
 
 export function OperationsCenter({
@@ -600,6 +605,77 @@ export function OperationsCenter({
     }
   }
 
+  // 5. Thao tác Xuất Kích Tác Chiến Chiến Lược (Phase 6.23)
+  const handleDeployCombat = (sectorId: string) => {
+    if (!worldState) {
+      showToast("Không tìm thấy dữ liệu World State để xuất kích.", "error")
+      return
+    }
+
+    const sector = worldState.sectors[sectorId]
+    if (!sector) {
+      showToast(`Sector không tồn tại trên bản đồ: ${sectorId}`, "error")
+      return
+    }
+
+    // A. Kiểm tra trận chiến treo
+    if (worldState.isSuspendedCombat && worldState.suspendedSnapshot) {
+      if (worldState.suspendedSnapshot.sectorId === sectorId) {
+        const snapshot = worldState.suspendedSnapshot
+        const battleContext: WorldBattleContext = {
+          source: "WORLD",
+          transactionId: snapshot.transactionId,
+          encounterId: snapshot.encounterId,
+          sectorId: snapshot.sectorId,
+          sectorName: snapshot.sectorName,
+          snapshot,
+          resumedFromSuspended: true,
+        }
+        showToast(`Tiếp tục trận chiến dở dang tại Sector ${sector.name}!`, "info")
+        onDeployEncounter?.(sectorId, battleContext)
+        return
+      } else {
+        showToast(
+          `Đang có trận chiến chưa hoàn tất tại Sector ${worldState.suspendedSnapshot.sectorName}. Hãy hoàn tất hoặc hủy bỏ trước khi mở trận mới.`,
+          "error",
+        )
+        return
+      }
+    }
+
+    // B. Kiểm tra trạng thái khóa của sector
+    if (sector.isLockedForCombat) {
+      showToast(`Sector ${sector.name} hiện đang bị khóa tác chiến. Không thể mở trận mới.`, "error")
+      return
+    }
+
+    // C. Khóa Sector và tạo Encounter Snapshot bất biến qua Adapter
+    try {
+      const snapshot = lockEncounterAndCreateSnapshot(worldState, {
+        sectorId,
+      })
+
+      // Lưu ngay vào WORLD storage (STARFRONT_WORLD_SAVE_V1) trước khi chuyển cảnh
+      saveWorldState(worldState)
+      setWorldState({ ...worldState })
+
+      const battleContext: WorldBattleContext = {
+        source: "WORLD",
+        transactionId: snapshot.transactionId,
+        encounterId: snapshot.encounterId,
+        sectorId: snapshot.sectorId,
+        sectorName: snapshot.sectorName,
+        snapshot,
+      }
+
+      showToast(`Đã khóa mục tiêu và xuất kích tác chiến tại Sector ${sector.name}!`, "success")
+      onDeployEncounter?.(sectorId, battleContext)
+    } catch (err: any) {
+      console.error("Lỗi khi khóa trận chiến:", err)
+      showToast(err?.message || "Không thể khởi tạo trận chiến chiến lược.", "error")
+    }
+  }
+
   // Dữ liệu tính toán vĩ mô
   const sectorsList = useMemo(() => {
     if (!worldState) return []
@@ -1008,6 +1084,51 @@ export function OperationsCenter({
           </div>
         )}
       </header>
+
+      {/* Cảnh Báo Trận Chiến Dở Dang Cần Khôi Phục (Phase 6.23) */}
+      {worldState?.isSuspendedCombat && worldState?.suspendedSnapshot && (
+        <div className="rounded border border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-black to-zinc-950 p-3 shadow-lg flex flex-wrap items-center justify-between gap-3 text-xs font-mono animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="size-5 text-amber-400 animate-pulse shrink-0" />
+            <div>
+              <div className="font-bold text-amber-300 uppercase flex items-center gap-2">
+                <span>PHÁT HIỆN TRẬN CHIẾN DỞ DANG CHƯA HOÀN TẤT</span>
+                <span className="rounded bg-black/50 px-1.5 py-0.2 text-[9px] text-amber-400 border border-amber-500/40">
+                  {worldState.suspendedSnapshot.sectorName}
+                </span>
+              </div>
+              <div className="text-[11px] text-zinc-300 mt-0.5">
+                Mã giao dịch: <span className="text-cyan-300 font-bold">{worldState.suspendedSnapshot.transactionId}</span> · Lực lượng đồn trú: {worldState.suspendedSnapshot.lockedGarrison.toLocaleString()} quân đang đóng băng.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleDeployCombat(worldState.suspendedSnapshot!.sectorId)}
+              className="rounded bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 font-bold cursor-pointer transition-colors"
+            >
+              Tiếp Tục Tác Chiến &rarr;
+            </button>
+            <button
+              onClick={() => {
+                if (!worldState.suspendedSnapshot) return
+                const res = abortSuspendedCombat(
+                  worldState,
+                  worldState.suspendedSnapshot.transactionId,
+                  "Hủy bỏ an toàn từ War Room",
+                )
+                saveWorldState(worldState)
+                setWorldState({ ...worldState })
+                showToast(res.message, "info")
+              }}
+              className="rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 px-3 py-1.5 cursor-pointer transition-colors"
+            >
+              Hủy Bỏ An Toàn (Safe Abort)
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ====================================================================
           B. NAVIGATION TABS (5 PHÂN KHU TÁC CHIẾN — ĐÃ CÁCH LY ADMIN CP)
@@ -1544,7 +1665,7 @@ export function OperationsCenter({
                 setIsQuickDispatchOpen(true)
               }}
               onDeployCombat={(secId) => {
-                onDeployEncounter?.(secId)
+                handleDeployCombat(secId)
               }}
               onUpdateWorldState={(newState) => {
                 setWorldState({ ...newState })
@@ -1755,7 +1876,7 @@ export function OperationsCenter({
           setActiveTab("sectors")
         }}
         onDeployCombat={(secId) => {
-          onDeployEncounter?.(secId)
+          handleDeployCombat(secId)
         }}
         onUpdateWorldState={(newState) => {
           setWorldState({ ...newState })

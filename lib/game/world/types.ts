@@ -200,6 +200,19 @@ export interface EncounterSnapshot {
 }
 
 /**
+ * Ngữ cảnh trận chiến chuyển giao giữa STARFRONT WORLD và Đấu Trường (Combat Arena - Phase 6.23)
+ */
+export interface WorldBattleContext {
+  source: "WORLD"
+  transactionId: string
+  encounterId: string
+  sectorId: string
+  sectorName: string
+  snapshot: EncounterSnapshot
+  resumedFromSuspended?: boolean
+}
+
+/**
  * Biên lai kết quả trận đấu do buồng lái hoặc Adapter xuất ra (Combat Result Receipt)
  */
 export interface CombatResultReceipt {

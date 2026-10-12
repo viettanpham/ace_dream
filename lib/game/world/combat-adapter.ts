@@ -24,10 +24,14 @@ import type {
   CombatVersion,
   EncounterSnapshot,
   StrategicOrder,
+  WorldBattleContext,
   WorldSector,
   WorldState,
 } from "./types"
-import type { BattleResult } from "../types"
+import type { BattleResult, CombatState, CombatUnit, EnemyEncounterType } from "../types"
+import { ENEMIES_DATA } from "../data"
+
+export type { WorldBattleContext }
 
 export const DEFAULT_COMBAT_VERSION: CombatVersion = "v1"
 
@@ -530,3 +534,91 @@ export function convertBattleResultToReceipt(
     completedAtTimestamp: Date.now(),
   }
 }
+
+/**
+ * Chuyển đổi EncounterSnapshot thành một CombatUnit đối thủ hoàn chỉnh cho Combat Arena (Phase 6.23)
+ */
+export function buildCombatUnitFromSnapshot(snapshot: EncounterSnapshot): CombatUnit {
+  const encType = (snapshot.enemyEncounterType || "void-vanguard") as EnemyEncounterType
+  const basePrototype = ENEMIES_DATA[encType] || ENEMIES_DATA["raider-mech"] || ENEMIES_DATA["scout-drone"]
+
+  return {
+    id: `enemy-${snapshot.encounterId}`,
+    name: snapshot.enemyUnit.name,
+    title: `Quân Xâm Lăng The Void // Sector ${snapshot.sectorName}`,
+    gearType: basePrototype.gearType,
+    archetype: basePrototype.archetype || "aggressive",
+    isPlayer: false,
+    hp: snapshot.enemyUnit.hp,
+    maxHp: snapshot.enemyUnit.maxHp,
+    sp: 100,
+    maxSp: 100,
+    attack: snapshot.enemyUnit.attack,
+    defense: snapshot.enemyUnit.defense,
+    speed: snapshot.enemyUnit.speed,
+    evasion: basePrototype.evasion ?? 10,
+    critRate: basePrototype.critRate ?? 0.12,
+    statusEffects: [],
+    skills: basePrototype.skills,
+    skillCooldowns: {},
+    avatar: basePrototype.avatar,
+    isBoss: snapshot.enemyUnit.hp >= 1000,
+  }
+}
+
+/**
+ * Áp dụng các chỉ số bổ trợ thân thiện (Modifiers) từ Snapshot lên phi thuyền của người chơi (Phase 6.23)
+ */
+export function applyWorldSnapshotPlayerModifiers(
+  playerUnit: CombatUnit,
+  snapshot: EncounterSnapshot,
+): CombatUnit {
+  const cloned = { ...playerUnit }
+  const defMult = snapshot.friendlyModifiers.defenseMultiplier || 1.0
+  const morMult = snapshot.friendlyModifiers.moraleMultiplier || 1.0
+  cloned.defense = Math.round(cloned.defense * defMult)
+  cloned.attack = Math.round(cloned.attack * morMult)
+  return cloned
+}
+
+/**
+ * Trích xuất biên lai kết quả chiến đấu CombatResultReceipt từ CombatState (dành riêng cho trận WORLD - Phase 6.23)
+ */
+export function buildCombatReceiptFromCombatState(
+  combatState: CombatState,
+  snapshot: EncounterSnapshot,
+  isVictory: boolean,
+): CombatResultReceipt {
+  const playerHpPct = Math.max(
+    0,
+    Math.min(100, Math.round((combatState.player.hp / Math.max(1, combatState.player.maxHp)) * 100)),
+  )
+  const enemyHpPct = Math.max(
+    0,
+    Math.min(100, Math.round((combatState.enemy.hp / Math.max(1, combatState.enemy.maxHp)) * 100)),
+  )
+
+  let tacticalRating: "S+" | "S" | "A" | "B" | "C" = "B"
+  if (isVictory) {
+    if (playerHpPct >= 90 && combatState.turnNumber <= 5) tacticalRating = "S+"
+    else if (playerHpPct >= 75 && combatState.turnNumber <= 8) tacticalRating = "S"
+    else if (playerHpPct >= 50) tacticalRating = "A"
+    else tacticalRating = "B"
+  } else {
+    tacticalRating = "C"
+  }
+
+  return {
+    transactionId: snapshot.transactionId,
+    encounterId: snapshot.encounterId,
+    combatVersion: snapshot.combatVersion || "v1",
+    sectorId: snapshot.sectorId,
+    victory: isVictory,
+    rounds: combatState.turnNumber,
+    playerRemainingHpPercent: playerHpPct,
+    enemyRemainingHpPercent: enemyHpPct,
+    tacticalRating,
+    completedAtTimestamp: Date.now(),
+  }
+}
+

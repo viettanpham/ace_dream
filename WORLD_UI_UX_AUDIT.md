@@ -246,7 +246,7 @@ flowchart TD
 ### Mức P1 — Nâng Cao Trải Nghiệm & Tinh Gọn Thị Giác
 4. **[Thu gọn Top Header & HUD]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.18]` Tinh giản header cồng kềnh của `operations-center.tsx` thành thanh Slim Tactical HUD tối ưu không gian dọc, phân 3 nhóm rõ ràng (Thời gian chiến lược, 5 tài nguyên cốt lõi, Thao tác nhanh), tối đa hóa diện tích khung nhìn War Room.
 5. **[Tái cấu trúc Events & Missions Board]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.19]` Tái cấu trúc `events-missions-board.tsx` thành Ma trận Ra quyết định 2 Cột (Decision Matrix): Cột trái là Hàng đợi khẩn cấp (Urgency Queue) sắp xếp theo deadline và mức độ nghiêm trọng, cuộn độc lập; Cột phải là Bảng phân tích & phê chuẩn chiến lược (Decision Panel) đối chiếu phương án, tỷ lệ thành công, chi phí thực, score minh bạch, và làm rõ nguồn phê chuẩn (`System Auto`, `Default Fallback`, `Chờ Chỉ Huy`).
-6. **[Drawer Kết Quả Kép]**: Chuyển Dual Results Hub thành ngăn kéo báo cáo (Debriefing Drawer) trượt từ cạnh phải khi có sự kiện hoàn tất hoặc khi người chơi bấm nút trên Top HUD.
+6. **[Drawer Kết Quả Kép]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.20]` Chuyển Dual Results Hub thành ngăn kéo báo cáo (Debriefing Drawer) trượt từ cạnh phải khi có sự kiện hoàn tất hoặc khi người chơi bấm nút trên Top HUD, tích hợp badge số lượng chưa đọc, hỗ trợ cuộn độc lập, phím Escape, điều hướng trực tiếp sang Sector trên Galaxy Map và dọn dẹp log an toàn mà không làm mất trạng thái War Room.
 
 ### Mức P2 — Hoàn Thiện Thẩm Mỹ Sci-Fi & Vi Tương Tác
 7. **[Trực quan hóa Tuyến Đường & Quân Sự]**: Tích hợp thanh tỷ lệ bảo toàn quân lực trực quan; liên kết các đạo quân in-transit trực tiếp với tuyến đường trên bản đồ.

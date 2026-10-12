@@ -86,11 +86,12 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.17** | **Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (P0 UI/UX Foundation)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/starfront-shell.tsx`, `components/game/world/operations-center.tsx`, `components/game/world/world-map.tsx` |
 | **Phase 6.18** | **Slim Tactical HUD & ADMIN CP Isolation (P1 UI/UX Refinement)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/operations-center.tsx`, `components/game/world/admin-settings-modal.tsx`, `tests/world/phase6-18-slim-hud-admin-isolation.test.ts` |
 | **Phase 6.19** | **Ma Trận Ra Quyết Định Sự Kiện & Nhiệm Vụ (Events & Missions Decision Matrix)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/events-missions-board.tsx`, `tests/world/phase6-19-decision-matrix.test.ts` |
+| **Phase 6.20** | **Khay Báo Cáo Tình Báo & Truy Cập Kết Quả (Debriefing Drawer & Results Access)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/debriefing-drawer.tsx`, `components/game/world/dual-results-hub.tsx`, `components/game/world/operations-center.tsx`, `tests/world/phase6-20-debriefing-drawer.test.ts` |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-1. **Events & Missions Decision Matrix**: Bố cục hai cột (Urgency Queue cuộn độc lập bên trái + Decision Panel đối chiếu chiến lược bên phải), hiển thị nguồn phê chuẩn, điểm số và chi phí minh bạch.
-2. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 30/30 test suites PASS 100%.
-3. Sẵn sàng cho Phase 6.20 theo lộ trình thiết kế.
+1. **Debriefing Drawer & Results Access (Phase 6.20)**: Chuyển Dual Results Hub thành Khay Báo Cáo Debriefing Drawer mở nhanh từ Tactical HUD với badge số lượng chưa đọc, hỗ trợ phím Escape, liên kết Sector trực tiếp sang Galaxy Map và Safe Pruning an toàn.
+2. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 31/31 test suites PASS 100%.
+3. Chuẩn bị cho các hạng mục P2 (Phase 6.21) theo lộ trình thiết kế.

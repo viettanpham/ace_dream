@@ -1,57 +1,51 @@
 # STARFRONT — Kế Hoạch Triển Khai Giai Đoạn Hiện Tại (Current Phase Scope)
 
-## GIAI ĐOẠN HIỆN TẠI: PHASE 6.19 — EVENTS & MISSIONS DECISION MATRIX (HOÀN THÀNH TOÀN DIỆN)
+## GIAI ĐOẠN HIỆN TẠI: PHASE 6.20 — DEBRIEFING DRAWER & RESULTS ACCESS (HOÀN THÀNH TOÀN DIỆN)
 
 ---
 
 ## 1. Mục Tiêu & Trạng Thái Giai Đoạn (Phase Status)
-- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 100% Tests PASS, 30/30 Test Suites PASS, 6/6 Phase 6.19 Tests PASS, Build Succeeded)**.
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 100% Tests PASS, 31/31 Test Suites PASS, 10/10 Phase 6.20 Tests PASS, Build Succeeded)**.
 - **Mục tiêu cốt lõi**:
   - Triển khai hạng mục P1 từ `WORLD_UI_UX_AUDIT.md`:
-    1. **Tái Cấu Trúc Bố Cục 2 Cột Ma Trận Quyết Định (`components/game/world/events-missions-board.tsx`)**:
-       * **Cột Trái — Hàng Đợi Khẩn Cấp (Urgency Queue)**:
-         - Sắp xếp sự kiện theo 3 tầng ưu tiên chặt chẽ: Hạn chót gần nhất (`decisionDeadlineTick - currentDay` ASC) -> Mức độ nghiêm trọng (`critical` > `warning` > `info`) -> ID tất định.
-         - Chiều cao giới hạn có thanh cuộn nội bộ độc lập (`max-h-[680px] overflow-y-auto`), không kéo dài trang khi có nhiều sự kiện.
-         - Thẻ sự kiện cô đọng (Compact Cards): Vạch màu trạng thái dọc cạnh trái, huy hiệu đếm ngược ngày, phân loại (Crisis, Military, Diplomacy, Civil, Anomaly, Logistics, Intel), vị trí sector/toàn thiên hà và nguồn quyết định.
-         - Thanh tìm kiếm và bộ lọc nhanh 5 chế độ: `Tất Cả`, `Cần Phê Chuẩn [INIT]`, `Đang Triển Khai [PROCESSING]`, `Cây Chuỗi Nhiệm Vụ`, `Báo Cáo Gần Đây`.
-       * **Cột Phải — Bảng Phân Tích & Phê Chuẩn Chiến Lược (Decision Panel)**:
-         - Hiển thị chi tiết tình báo sự kiện đang được chọn, bối cảnh sector (ổn định %, đe dọa, chủ quyền, quân đồn trú).
-         - So sánh trực quan các phương án chiến lược: Tỷ lệ thành công (`successChance%`), thời gian thực thi (`processingTicks`), biến động ổn định (`stabilityDelta`) và đe dọa (`threatDelta`).
-         - Thẩm định chi phí thực tế (`validateStrategyExecution`): Kiểm tra từng tài nguyên trong 5 loại và quân dự bị, đổi màu cảnh báo đỏ/xanh tức thì, hiển thị lý do chi tiết khi thiếu hụt.
-         - Hệ thống chấm điểm minh bạch (`scoreEventStrategy`): Điểm số chiến lược tổng hợp (+/- điểm) kèm nút bật/tắt giải thích chi tiết các hệ số đánh giá (Explainable Scoring).
-         - Làm rõ phương án được đề xuất bởi System Auto (`★ ĐỀ XUẤT SYSTEM AUTO`) và phương án mặc định tự động khóa.
-         - Nút Phê chuẩn thủ công có kiểm tra chi phí và nút Phê chuẩn nhanh 1-click theo System Auto (`⚡ System Auto Phê Chuẩn Ngay`).
-       * **Empty State Trung Thực**:
-         - Khi chưa có sự kiện nào được chọn, hiển thị màn hình hướng dẫn thao tác sạch sẽ với biểu tượng Crosshair quân sự, tuyệt đối không tạo dữ liệu giả.
-       * **Bảo Vệ Tính Lũy Đẳng & Phân Định Nguồn Quyết Định**:
-         - Phân biệt rõ các nguồn: `Chờ Chỉ Huy` (`player_choice`), `System Auto` (`system_auto`), `Default Fallback` (`default_fallback`), `Processing` (`PROCESSING`).
-         - Hiển thị minh bạch nguyên nhân chuyển giao quyền quyết định (`autoSelectionFailureReason`).
-         - Khóa không cho phép phê chuẩn lại hoặc ghi đè phương án khi sự kiện đã bước vào trạng thái `PROCESSING`.
-    2. **Bảo Toàn Toàn Vẹn Cây Chuỗi Nhiệm Vụ (Mission Chains)**:
-       * Giữ nguyên vẹn 100% đồ thị các bước nhiệm vụ phân nhánh: các trạng thái `completed`, `active`, `locked`.
-       * Duy trì cơ chế hoãn điều động `isPendingDispatch` với huy hiệu "Đang chờ điều kiện sector" và đếm số ngày đã hoãn (`dispatchDeferredTicks` / `MAX_DISPATCH_DEFER_TICKS`).
-    3. **Bảo Toàn Hệ Thống & Lưu Trữ**:
-       * Zero-regression: Không thay đổi Event Engine, simulator, tick engine hay save schema.
-       * Lưu trữ `STARFRONT_WORLD_SAVE_V1` và cấu hình `STARFRONT_WORLD_SIMULATOR_CONFIG` được bảo vệ độc lập, phân hệ RPG Save `STARFRONT_SAVE_DATA_V4` cách ly hoàn toàn.
+    1. **Khay Báo Cáo Tình Báo Trượt Cạnh Phải (`components/game/world/debriefing-drawer.tsx`)**:
+       * Mở nhanh trực tiếp từ nút "Báo Cáo" trên Slim Tactical HUD của War Room.
+       * Không làm gián đoạn hay mất trạng thái War Room: giữ nguyên vẹn 100% `activeTab` và `selectedSectorId` khi đóng Drawer.
+       * Hỗ trợ phím tắt `Escape` toàn cục, nút đóng rõ ràng `[ESC]`, nhấp vào backdrop mờ hoặc liên kết "Quay lại War Room &rarr;".
+       * Thiết kế đáp ứng linh hoạt: rộng cố định trên desktop (`560px` - `720px`) và tự động chuyển sang chế độ Overlay toàn màn hình (`w-screen`) trên thiết bị di động/màn hình hẹp.
+       * Cho phép cuộn nội bộ độc lập (`overflow-y-auto`) với thanh cuộn tối ưu, không ảnh hưởng đến bản đồ nền.
+    2. **Huy Hiệu Kết Quả Chưa Đọc (Unread Badge)**:
+       * Tính toán chính xác số lượng báo cáo chưa đọc (`unreadResultsCount`) từ `eventResultsArchive`.
+       * Tự động cập nhật badge khi sự kiện hoàn tất chu trình `PROCESSING`, không tạo thông báo lặp hay tăng số ảo qua các tick mô phỏng.
+    3. **Tích Hợp & Nâng Cấp Dual Results Hub (`components/game/world/dual-results-hub.tsx`)**:
+       * Phân tách rõ ràng 2 luồng báo cáo có thẩm quyền: Báo Cáo Sự Kiện & Khủng Hoảng (Event Results) và Nhật Ký Trận Đánh Buồng Lái (Battle Results).
+       * Liên kết nhảy trực tiếp sang Sector (`onNavigateToSector`): Tên Sector trên thẻ kết quả trở thành nút liên kết có thể nhấp, tự động chuyển camera Galaxy Map đến Sector đó, mở Sector Inspector và đóng Drawer mượt mà.
+       * Xem chi tiết mở rộng: Nút bật/tắt "Chi Tiết" / "Biên Lai" cho từng kết quả, mở rộng ID sự kiện, tick hoàn tất, lý do lựa chọn chiến lược và mã giao dịch TxID.
+       * Bộ lọc 4 chế độ: `Tất Cả`, `Chưa Đọc`, `Thắng / Tốt`, `Thua / Xấu`.
+       * Đánh dấu một kết quả đã đọc, đánh dấu tất cả đã đọc, và dọn dẹp an toàn (`pruneReadEventResultsSafe`) bảo toàn 100% World State.
+    4. **Bảo Toàn Hệ Thống & Lưu Trữ Độc Lập**:
+       * Tái sử dụng 100% dữ liệu gốc từ `eventResultsArchive` và `transactionJournal`, tuyệt đối không tạo thêm cơ chế lưu trữ thứ hai.
+       * Giữ nguyên tab 5 "Trung Tâm Kết Quả" để bảo đảm tính tương thích ngược hoàn toàn.
+       * Không can thiệp đến Event Engine, simulator, tick engine, hay save schemas (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`).
 
 ---
 
-## 2. Bảng Đối Chiếu Tính Năng Triển Khai Phase 6.19
+## 2. Bảng Đối Chiếu Tính Năng Triển Khai Phase 6.20
 
 | Hạng mục tính năng | Trạng thái kỹ thuật | Đối chiếu mã nguồn thực tế |
 |---|---|---|
-| Bố cục 2 cột Decision Matrix (Urgency Queue + Decision Panel) | **Đã hoàn thành (Done)** | `components/game/world/events-missions-board.tsx` |
-| Hàng đợi khẩn cấp sắp xếp theo Deadline -> Severity -> ID | **Đã hoàn thành (Done)** | `events-missions-board.tsx` |
-| Cuộn độc lập & giới hạn chiều cao khung nhìn (`max-h-[680px]`) | **Đã hoàn thành (Done)** | `events-missions-board.tsx` |
-| Bộ lọc 5 chế độ & Thanh tìm kiếm theo tên, sector, category | **Đã hoàn thành (Done)** | `events-missions-board.tsx` |
-| Decision Panel hiển thị tình báo, sector và đối chiếu chiến lược | **Đã hoàn thành (Done)** | `events-missions-board.tsx` |
-| Thẩm định chi phí thực tế (`validateStrategyExecution`) | **Đã hoàn thành (Done)** | `events-missions-board.tsx`, `event-strategy-policy.ts` |
-| Chấm điểm minh bạch & Giải thích điểm số (`scoreEventStrategy`) | **Đã hoàn thành (Done)** | `events-missions-board.tsx`, `event-strategy-policy.ts` |
-| Làm rõ đề xuất System Auto & Nút phê chuẩn nhanh 1-click | **Đã hoàn thành (Done)** | `events-missions-board.tsx` |
-| Empty State trung thực khi chưa chọn sự kiện (không dữ liệu giả) | **Đã hoàn thành (Done)** | `events-missions-board.tsx` |
-| Phân định nguồn quyết định & nguyên nhân auto thất bại | **Đã hoàn thành (Done)** | `events-missions-board.tsx` |
-| Khóa lũy đẳng chống double-commit sự kiện PROCESSING | **Đã hoàn thành (Done)** | `events-missions-board.tsx`, `event-engine.ts` |
-| Bảo toàn Mission Chains & cơ chế hoãn `isPendingDispatch` | **Đã hoàn thành (Done)** | `events-missions-board.tsx`, `mission-chains.ts` |
-| Bộ kiểm thử Phase 6.19 Decision Matrix (6/6 tests PASS) | **Đã hoàn thành (Done)** | `tests/world/phase6-19-decision-matrix.test.ts` |
-| Toàn bộ 30 Test Suites vượt qua thành công (100% PASS) | **Đã hoàn thành (Done)** | `package.json` (`npm test`) |
+| Khay Báo Cáo Debriefing Drawer trượt từ cạnh phải | **Đã hoàn thành (Done)** | `components/game/world/debriefing-drawer.tsx` |
+| Kết nối nút Báo Cáo trên Slim Tactical HUD | **Đã hoàn thành (Done)** | `components/game/world/operations-center.tsx` |
+| Bảo toàn tab và sector đang chọn khi đóng/mở Drawer | **Đã hoàn thành (Done)** | `operations-center.tsx`, `debriefing-drawer.tsx` |
+| Nút đóng [ESC], phím tắt Escape toàn cục và backdrop | **Đã hoàn thành (Done)** | `debriefing-drawer.tsx` |
+| Cuộn nội bộ độc lập và hỗ trợ viewport hẹp (w-screen) | **Đã hoàn thành (Done)** | `debriefing-drawer.tsx` |
+| Badge số lượng chưa đọc không tăng lặp do tick | **Đã hoàn thành (Done)** | `operations-center.tsx`, `debriefing-drawer.tsx` |
+| Phân biệt Event Results và Combat Results | **Đã hoàn thành (Done)** | `components/game/world/dual-results-hub.tsx` |
+| Liên kết điều hướng Sector trực tiếp sang Galaxy Map | **Đã hoàn thành (Done)** | `dual-results-hub.tsx`, `operations-center.tsx` |
+| Bảng xem chi tiết kết quả mở rộng (Expandable Details) | **Đã hoàn thành (Done)** | `dual-results-hub.tsx` |
+| Đánh dấu đã đọc, đánh dấu tất cả và bộ lọc 4 chế độ | **Đã hoàn thành (Done)** | `dual-results-hub.tsx` |
+| Safe Pruning bảo toàn 100% World State và tài nguyên | **Đã hoàn thành (Done)** | `dual-results-hub.tsx`, `event-engine.ts` |
+| Dữ liệu lấy trực tiếp từ archive/journal, không tạo store thứ 2 | **Đã hoàn thành (Done)** | `dual-results-hub.tsx`, `storage.ts` |
+| Bộ kiểm thử Phase 6.20 Debriefing Drawer (10/10 tests PASS) | **Đã hoàn thành (Done)** | `tests/world/phase6-20-debriefing-drawer.test.ts` |
+| Toàn bộ 31 Test Suites vượt qua thành công (100% PASS) | **Đã hoàn thành (Done)** | `package.json` (`npm test`) |
 | Next.js Build & Typecheck thành công hoàn toàn | **Đã hoàn thành (Done)** | `compile_applet`, `lint_applet` |

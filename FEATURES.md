@@ -471,6 +471,31 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-### 4.17. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
+### 4.17. Khay Báo Cáo Tình Báo & Truy Cập Kết Quả (Debriefing Drawer & Results Access — Phase 6.20 P1) `[ĐÃ HOÀN THÀNH 100%]`
+- **Khay Báo Cáo Trượt Cạnh Phải Chuyên Dụng (`debriefing-drawer.tsx`)**:
+  - *Truy Cập Nhanh Không Gián Đoạn War Room*:
+    * Nút "Báo Cáo" đặt tại vị trí trung tâm thao tác nhanh trên Slim Tactical HUD, mở khay trượt từ cạnh phải mà không làm thay đổi hay mất màn hình, tab tác chiến hoặc sector đang chọn trên Galaxy Map.
+    * Huy hiệu đếm số lượng kết quả chưa đọc (`unreadResultsCount`) hiển thị trực quan và cập nhật tự động khi sự kiện kết thúc chu trình PROCESSING; không tạo thông báo lặp hay tăng số ảo qua các tick mô phỏng.
+    * Đóng mở an toàn: Hỗ trợ nút Đóng `[ESC]`, phím tắt Escape toàn cục, nhấp vào Backdrop mờ hoặc liên kết "Quay lại War Room".
+    * Thiết kế đáp ứng linh hoạt: Chiều rộng cố định chuẩn Desktop (`560px` - `720px`) và tự động chuyển sang chế độ Overlay toàn màn hình (`w-screen`) trên thiết bị di động/màn hình hẹp, đảm bảo khả năng đọc hoàn hảo.
+- **Tích Hợp Toàn Diện Dual Results Hub (`dual-results-hub.tsx`)**:
+  - *Phân Tách 2 Luồng Báo Cáo Có Thẩm Quyền*:
+    * **Báo Cáo Sự Kiện & Khủng Hoảng (Event Results)**: Lưu trữ minh bạch từ `eventResultsArchive`, phân định rõ trạng thái `THÀNH CÔNG`, `THẤT BẠI`, `HẾT HẠN (MẶC ĐỊNH)`, nguồn chiến lược (`SYSTEM AUTO`, `DEFAULT FALLBACK`, `CHỈ HUY PHÊ CHUẨN`), biến động Stability, Threat, thương vong và tài nguyên.
+    * **Nhật Ký Trận Đánh Buồng Lái (Battle Results)**: Truy xuất có thẩm quyền từ `transactionJournal` (chỉ các giao dịch combat đã `committed`), hiển thị chiến thắng/thất bại, hạng chiến thuật (S/A/B), số hiệp, tỷ lệ HP người chơi/kẻ địch và tóm tắt diễn biến.
+  - *Khả Năng Tương Tác & Điều Hướng Trực Tiếp Sang Sector*:
+    * Tên Sector trên cả 2 luồng báo cáo trở thành nút liên kết có thể nhấp (`onNavigateToSector`), khi bấm sẽ đưa camera Galaxy Map trực tiếp đến Sector đó, mở Sector Inspector và đóng Drawer mượt mà.
+  - *Xem Chi Tiết Mở Rộng (Expandable Intelligence Panel)*:
+    * Nút bật/tắt "Chi Tiết" / "Biên Lai" cho từng thẻ kết quả, mở rộng thông tin ID sự kiện, tick hoàn tất, giải trình lựa chọn chiến lược và mã giao dịch TxID.
+  - *Bộ Lọc 4 Chế Độ & Thao Tác Hàng Loạt*:
+    * Lọc theo `Tất Cả`, `Chưa Đọc`, `Thắng / Tốt`, `Thua / Xấu`.
+    * Đánh dấu từng báo cáo đã đọc hoặc đánh dấu toàn bộ với 1 cú nhấp.
+    * Dọn dẹp an toàn (`pruneReadEventResultsSafe`): Xóa các bản ghi đã đọc khỏi danh sách hiển thị, bảo toàn 100% các chỉ số World State và không ảnh hưởng tài nguyên thiên hà.
+- **Bảo Toàn Hệ Thống & Lưu Trữ Độc Lập**:
+  - Tái sử dụng 100% dữ liệu gốc từ `eventResultsArchive` và `transactionJournal`, tuyệt đối không tạo thêm cơ chế lưu trữ thứ hai.
+  - 100% tương thích ngược với `STARFRONT_WORLD_SAVE_V1` và phân hệ RPG Save V4 (`STARFRONT_SAVE_DATA_V4`).
+
+---
+
+### 4.18. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
 - **Tốc Độ Suy Thoái Stability Nâng Cao**: Cân bằng mở rộng các biến số kinh tế vĩ mô phức tạp trong các bản cập nhật tiếp theo.
 - **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)**: Kế hoạch mở rộng đồ thị thiên hà cho các mùa giải chiến dịch trong tương lai.

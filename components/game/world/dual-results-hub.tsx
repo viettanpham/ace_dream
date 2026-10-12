@@ -38,18 +38,28 @@ import type {
   JournalEntry,
 } from "@/lib/game/world/types"
 
-interface DualResultsHubProps {
+import {
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react"
+
+export interface DualResultsHubProps {
   worldState: WorldState
   onStateUpdated?: () => void
+  onNavigateToSector?: (sectorId: string) => void
+  isDrawer?: boolean
 }
 
 export function DualResultsHub({
   worldState,
   onStateUpdated,
+  onNavigateToSector,
+  isDrawer = false,
 }: DualResultsHubProps) {
   const [activeTab, setActiveTab] = useState<"events" | "battles">("events")
   const [filterMode, setFilterMode] = useState<"all" | "unread" | "success" | "failure">("all")
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
+  const [expandedResultId, setExpandedResultId] = useState<string | null>(null)
 
   // 1. Dữ liệu Event / Mission Results từ Archive
   const eventArchive: WorldEventResult[] = worldState.eventResultsArchive || []
@@ -105,21 +115,30 @@ export function DualResultsHub({
 
   return (
     <div className="space-y-4 font-mono text-xs">
-      {/* Top Banner: Giới thiệu & Phân Tách Kép */}
-      <div className="rounded border border-border/80 bg-zinc-950/80 p-3.5 backdrop-blur-md">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 text-cyan-400 font-bold uppercase tracking-wider text-sm">
-              <Layers className="size-4" />
-              <span>TRUNG TÂM KẾT QUẢ KÉP // DUAL RESULTS HUB</span>
+      {/* Top Banner / Actions Bar */}
+      <div className="rounded border border-border/80 bg-zinc-950/80 p-2.5 sm:p-3 backdrop-blur-md">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          {!isDrawer ? (
+            <div>
+              <div className="flex items-center gap-2 text-cyan-400 font-bold uppercase tracking-wider text-sm">
+                <Layers className="size-4" />
+                <span>TRUNG TÂM KẾT QUẢ KÉP // DUAL RESULTS HUB</span>
+              </div>
+              <p className="mt-0.5 text-zinc-400 text-[11px] leading-relaxed">
+                Lưu trữ minh bạch 2 luồng báo cáo có thẩm quyền: Báo Cáo Sự Kiện & Khủng Hoảng (Event Results) và Nhật Ký Trận Đánh Buồng Lái (Battle Results).
+              </p>
             </div>
-            <p className="mt-1 text-zinc-400 text-[11px] leading-relaxed">
-              Lưu trữ minh bạch 2 luồng báo cáo có thẩm quyền: Báo Cáo Sự Kiện & Khủng Hoảng (Event Results) và Nhật Ký Trận Đánh Buồng Lái (Battle Results).
-            </p>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2 text-zinc-400 text-[11px]">
+              <Layers className="size-3.5 text-cyan-400" />
+              <span className="font-bold text-zinc-200 uppercase">Hồ Sơ Debriefing</span>
+              <span className="text-zinc-600">·</span>
+              <span>{eventArchive.length} sự kiện · {journalEntries.length} trận đấu</span>
+            </div>
+          )}
 
           {/* Nút tác vụ hàng loạt */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 ml-auto">
             {activeTab === "events" && unreadEventCount > 0 && (
               <button
                 type="button"
@@ -128,7 +147,7 @@ export function DualResultsHub({
                 title="Đánh dấu tất cả thông báo sự kiện là đã đọc"
               >
                 <CheckCheck className="size-3.5 text-cyan-400" />
-                <span>Đọc Tất Cả</span>
+                <span>Đọc Tất Cả ({unreadEventCount})</span>
               </button>
             )}
 
@@ -303,7 +322,20 @@ export function DualResultsHub({
 
                     <div className="flex items-center gap-2 text-[11px] text-zinc-400">
                       <span>Ngày {result.resolvedAtTick}</span>
-                      {sector && <span>· {sector.name}</span>}
+                      {sector && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound()
+                            onNavigateToSector?.(result.sectorId!)
+                          }}
+                          className="flex items-center gap-1 text-cyan-400 hover:text-cyan-200 hover:underline cursor-pointer transition-colors"
+                          title={`Xem Sector ${sector.name} trên bản đồ chiến lược`}
+                        >
+                          <MapPin className="size-3 text-cyan-400 shrink-0" />
+                          <span>{sector.name}</span>
+                        </button>
+                      )}
                       {!result.isRead && (
                         <button
                           type="button"
@@ -314,6 +346,22 @@ export function DualResultsHub({
                           <span>Đánh dấu đọc</span>
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound()
+                          setExpandedResultId((prev) => (prev === result.id ? null : result.id))
+                        }}
+                        className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 cursor-pointer transition-colors border border-zinc-800 rounded px-1.5 py-0.5"
+                        title="Xem chi tiết tình báo và tham số tác chiến"
+                      >
+                        <span>{expandedResultId === result.id ? "Thu Gọn" : "Chi Tiết"}</span>
+                        {expandedResultId === result.id ? (
+                          <ChevronUp className="size-3" />
+                        ) : (
+                          <ChevronDown className="size-3" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
@@ -390,6 +438,62 @@ export function DualResultsHub({
                       </div>
                     )}
                   </div>
+
+                  {/* Chi Tiết Mở Rộng Khi Bấm "Chi Tiết" */}
+                  {expandedResultId === result.id && (
+                    <div className="mt-3 rounded border border-cyan-500/30 bg-cyan-950/20 p-2.5 text-[11px] space-y-2 animate-fadeIn">
+                      <div className="flex items-center justify-between text-zinc-400 border-b border-zinc-800/80 pb-1.5">
+                        <span className="font-bold text-cyan-300">THÔNG TIN TÌNH BÁO CHI TIẾT</span>
+                        <span className="text-[10px] text-zinc-500">Mã Báo Cáo: {result.id}</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
+                        <div>
+                          <span className="text-zinc-400">Thời điểm hoàn tất:</span>{" "}
+                          <span className="text-zinc-200 font-bold">Ngày #{result.resolvedAtTick}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-400">Nguồn thẩm quyền:</span>{" "}
+                          <span className="text-zinc-200 font-bold uppercase">
+                            {result.strategySource || "player_choice"}
+                          </span>
+                        </div>
+                        {result.sectorId && (
+                          <div>
+                            <span className="text-zinc-400">Sector liên quan:</span>{" "}
+                            <span className="text-cyan-300 font-bold">
+                              {sector?.name || result.sectorId}
+                            </span>
+                          </div>
+                        )}
+                        <div>
+                          <span className="text-zinc-400">Trạng thái đọc:</span>{" "}
+                          <span className={result.isRead ? "text-zinc-400" : "text-amber-300 font-bold"}>
+                            {result.isRead ? "Đã đọc" : "Chưa đọc"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {sector && onNavigateToSector && (
+                        <div className="pt-1 border-t border-zinc-800/60 flex items-center justify-between">
+                          <span className="text-[10px] text-zinc-400">
+                            Quan sát vị trí tác động trên Galaxy Map:
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              playClickSound()
+                              onNavigateToSector(result.sectorId!)
+                            }}
+                            className="flex items-center gap-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-200 underline cursor-pointer"
+                          >
+                            <MapPin className="size-3" />
+                            <span>Mở Inspector {sector.name} &rarr;</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )
             })
@@ -434,9 +538,24 @@ export function DualResultsHub({
                         {isVictory ? "CHIẾN THẮNG" : "THẤT BẠI"}
                       </span>
 
-                      <span className="font-bold text-zinc-200">
-                        {sector ? `Giao Tranh Tại ${sector.name}` : `Sector: ${entry.sectorId}`}
-                      </span>
+                      {sector ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound()
+                            onNavigateToSector?.(entry.sectorId!)
+                          }}
+                          className="flex items-center gap-1 font-bold text-cyan-400 hover:text-cyan-200 hover:underline cursor-pointer transition-colors"
+                          title={`Xem Sector ${sector.name} trên bản đồ chiến lược`}
+                        >
+                          <MapPin className="size-3 text-cyan-400 shrink-0" />
+                          <span>Giao Tranh Tại {sector.name}</span>
+                        </button>
+                      ) : (
+                        <span className="font-bold text-zinc-200">
+                          {entry.sectorId ? `Sector: ${entry.sectorId}` : "Không Gian Mở"}
+                        </span>
+                      )}
 
                       {receipt?.tacticalRating && (
                         <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-500/40">
@@ -445,8 +564,26 @@ export function DualResultsHub({
                       )}
                     </div>
 
-                    <div className="text-[10px] text-zinc-400">
-                      TxID: {entry.transactionId.substring(0, 18)}...
+                    <div className="flex items-center gap-2 text-[10px] text-zinc-400">
+                      <span className="hidden sm:inline font-mono">
+                        TxID: {entry.transactionId.substring(0, 14)}...
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound()
+                          setExpandedResultId((prev) => (prev === entry.transactionId ? null : entry.transactionId))
+                        }}
+                        className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 cursor-pointer transition-colors border border-zinc-800 rounded px-1.5 py-0.5"
+                        title="Xem chi tiết biên lai tác chiến"
+                      >
+                        <span>{expandedResultId === entry.transactionId ? "Thu Gọn" : "Biên Lai"}</span>
+                        {expandedResultId === entry.transactionId ? (
+                          <ChevronUp className="size-3" />
+                        ) : (
+                          <ChevronDown className="size-3" />
+                        )}
+                      </button>
                     </div>
                   </div>
 
@@ -474,6 +611,38 @@ export function DualResultsHub({
                   {receipt?.logSummary && (
                     <div className="text-[11px] text-zinc-400 bg-black/40 p-2 rounded border border-zinc-900">
                       {receipt.logSummary}
+                    </div>
+                  )}
+
+                  {expandedResultId === entry.transactionId && (
+                    <div className="rounded border border-indigo-500/30 bg-indigo-950/20 p-2.5 text-[10px] font-mono space-y-1.5 animate-fadeIn">
+                      <div className="flex items-center justify-between text-zinc-400 border-b border-zinc-800/80 pb-1">
+                        <span className="font-bold text-indigo-300">BIÊN LAI ĐỒNG BỘ COMBAT ADAPTER</span>
+                        <span className="text-emerald-400 font-bold uppercase">Idempotent Committed</span>
+                      </div>
+                      <div className="text-zinc-400 break-all">
+                        <span className="text-zinc-500">Transaction ID:</span> {entry.transactionId}
+                      </div>
+                      {entry.sectorId && (
+                        <div className="text-zinc-400">
+                          <span className="text-zinc-500">Mã Sector:</span> {entry.sectorId}
+                        </div>
+                      )}
+                      {sector && onNavigateToSector && (
+                        <div className="pt-1 border-t border-zinc-800/60">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              playClickSound()
+                              onNavigateToSector(entry.sectorId!)
+                            }}
+                            className="flex items-center gap-1 text-[10px] font-bold text-cyan-400 hover:text-cyan-200 underline cursor-pointer"
+                          >
+                            <MapPin className="size-3" />
+                            <span>Xem Sector {sector.name} trên Galaxy Map &rarr;</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

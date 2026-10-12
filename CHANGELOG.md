@@ -4,6 +4,43 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.20] — STARFRONT WORLD: Khay Báo Cáo Tình Báo & Truy Cập Kết Quả (Debriefing Drawer & Results Access)
+
+*Đã hoàn thành 100% Phase 6.20 — Triển khai hạng mục P1 theo `WORLD_UI_UX_AUDIT.md`: Chuyển Dual Results Hub thành Khay Báo Cáo Debriefing Drawer mở nhanh từ Tactical HUD với huy hiệu đếm số lượng chưa đọc, trượt mượt mà từ cạnh phải màn hình mà không làm gián đoạn hoặc mất trạng thái War Room; tích hợp xem chi tiết kết quả, liên kết nhảy trực tiếp sang Sector trên Galaxy Map, dọn dẹp log an toàn (Safe Pruning) và bảo toàn 100% World Save V1 (10/10 Phase 6.20 tests PASS, 31/31 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Khay Báo Cáo Debriefing Drawer (`components/game/world/debriefing-drawer.tsx`)**:
+  - **Mở Nhanh Không Gián Đoạn War Room**:
+    * Nút "Báo Cáo" trên Slim Tactical HUD kết nối trực tiếp với drawer state, mở flyout panel trượt từ cạnh phải mà không thay đổi `activeTab` hay `selectedSectorId`.
+    * Phím tắt `Escape` toàn cục và nút "Đóng [ESC]" cho phép thoát nhanh, hỗ trợ đóng khi nhấp vào backdrop mờ hoặc nút "Quay lại War Room &rarr;".
+    * Thiết kế đáp ứng (Responsive Layout): Rộng cố định trên desktop (`560px` - `720px`) và tự động mở rộng toàn màn hình (`w-screen`) trên thiết bị di động/màn hình hẹp.
+    * Cuộn độc lập nội bộ (`overflow-y-auto`) với scrollbar tối ưu, không ảnh hưởng đến bản đồ nền.
+  - **Huy Hiệu Kết Quả Chưa Đọc (Unread Badge)**:
+    * Tính toán chính xác số lượng báo cáo chưa đọc (`unreadResultsCount`) từ `eventResultsArchive`.
+    * Tự động cập nhật badge khi sự kiện hoàn tất chu trình `PROCESSING`, không tạo thông báo lặp hay tăng số ảo qua các tick mô phỏng.
+- **2. Tích Hợp & Nâng Cấp Dual Results Hub (`components/game/world/dual-results-hub.tsx`)**:
+  - **Phân Tách Rõ Ràng 2 Luồng Báo Cáo**:
+    * **Báo Cáo Sự Kiện & Khủng Hoảng (Event Results)**: Trích xuất từ `eventResultsArchive`, phân định rõ trạng thái `THÀNH CÔNG`, `THẤT BẠI`, `HẾT HẠN (MẶC ĐỊNH)`, nguồn chiến lược (`SYSTEM AUTO`, `DEFAULT FALLBACK`, `CHỈ HUY PHÊ CHUẨN`), biến động Stability, Threat, thương vong và tài nguyên.
+    * **Nhật Ký Trận Đánh Buồng Lái (Battle Results)**: Trích xuất có thẩm quyền từ `transactionJournal` (chỉ các giao dịch combat đã `committed`), hiển thị kết quả, hạng chiến thuật (S/A/B), số hiệp, tỷ lệ HP người chơi/kẻ địch và tóm tắt diễn biến.
+  - **Liên Kết Nhảy Trực Tiếp Sang Sector (Interactive Sector Navigation)**:
+    * Tên Sector trên cả 2 luồng báo cáo trở thành nút liên kết có thể nhấp (`onNavigateToSector`), khi bấm sẽ đưa camera Galaxy Map trực tiếp đến Sector đó, mở Sector Inspector và đóng Drawer mượt mà.
+  - **Bảng Tình Báo Chi Tiết Mở Rộng (Expandable Details Panel)**:
+    * Nút bật/tắt "Chi Tiết" / "Biên Lai" cho từng thẻ kết quả, mở rộng thông tin ID sự kiện, tick hoàn tất, giải trình lựa chọn chiến lược và mã giao dịch TxID.
+  - **Bộ Lọc 4 Chế Độ & Thao Tác Hàng Loạt**:
+    * Lọc theo `Tất Cả`, `Chưa Đọc`, `Thắng / Tốt`, `Thua / Xấu`.
+    * Đánh dấu từng báo cáo đã đọc hoặc đánh dấu toàn bộ với 1 cú nhấp.
+    * Dọn dẹp an toàn (`pruneReadEventResultsSafe`): Xóa các bản ghi đã đọc khỏi danh sách hiển thị, bảo toàn 100% các chỉ số World State và không ảnh hưởng tài nguyên thiên hà.
+- **3. Tích Hợp Vào Operations Center (`components/game/world/operations-center.tsx`)**:
+  - Kết nối nút "Báo Cáo" trên Tactical HUD với drawer toggle.
+  - Cập nhật nút "Dual Results Hub" trong `EventsMissionsBoard` mở trực tiếp Drawer.
+  - Giữ nguyên tab 5 "Trung Tâm Kết Quả" để tương thích ngược 100% với các test suite hiện có.
+- **4. Kiểm Thử Toàn Diện & Tương Thích Tuyệt Đối**:
+  - Viết bộ kiểm thử chuyên dụng `tests/world/phase6-20-debriefing-drawer.test.ts` (10/10 tests PASS).
+  - Toàn bộ 31 test suites của dự án vượt qua thành công (100% PASS).
+  - Next.js build & TypeScript typecheck không có lỗi.
+
+---
+
 ## [Phase 6.19] — STARFRONT WORLD: Ma Trận Ra Quyết Định Sự Kiện & Nhiệm Vụ (Events & Missions Decision Matrix)
 
 *Đã hoàn thành 100% Phase 6.19 — Triển khai hạng mục P1 theo `WORLD_UI_UX_AUDIT.md`: Tái cấu trúc `events-missions-board.tsx` thành Ma trận Ra quyết định 2 Cột (Decision Matrix) gồm Urgency Queue bên trái cuộn độc lập và Decision Panel bên phải đối chiếu chiến lược theo thời gian thực; hiển thị minh bạch nguồn phê chuẩn (`System Auto`, `Default Fallback`, `Chờ Chỉ Huy`), score giải thích được, chi phí xác thực và bảo vệ lũy đẳng (100% tests PASS, build thành công, 30/30 test suites PASS tuyệt đối).*

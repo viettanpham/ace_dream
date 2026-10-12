@@ -94,6 +94,7 @@ import { WorldMap } from "./world-map"
 import { WorldFullscreenOverlay } from "./world-fullscreen-overlay"
 import { EventsMissionsBoard } from "./events-missions-board"
 import { AdminSettingsModal } from "./admin-settings-modal"
+import { DebriefingDrawer } from "./debriefing-drawer"
 import type {
   WorldState,
   WorldSector,
@@ -142,6 +143,9 @@ export function OperationsCenter({
 
   // Phase 6.18: Settings / ADMIN CP Overlay State
   const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(initialTab === "admin")
+
+  // Phase 6.20: Debriefing Drawer State
+  const [isDebriefingDrawerOpen, setIsDebriefingDrawerOpen] = useState(false)
 
   // Nạp WorldState & Simulator Config từ Storage khi mount + Offline Catch-up
   useEffect(() => {
@@ -462,10 +466,13 @@ export function OperationsCenter({
     )
   }
 
-  // Báo cáo có chưa đọc hay không
-  const hasUnreadResults = useMemo(() => {
-    return Boolean(worldState?.eventResultsArchive?.some((r) => !r.isRead))
+  // Báo cáo có chưa đọc hay không và số lượng chưa đọc (Phase 6.20)
+  const unreadResultsCount = useMemo(() => {
+    if (!worldState?.eventResultsArchive) return 0
+    return worldState.eventResultsArchive.filter((r) => !r.isRead).length
   }, [worldState?.eventResultsArchive])
+
+  const hasUnreadResults = unreadResultsCount > 0
 
   // Đồng bộ activeTab khi nhận prop initialTab từ Navigation ngoài
   useEffect(() => {
@@ -670,6 +677,14 @@ export function OperationsCenter({
   }, [worldState, activeEventsList])
 
   const selectedSector = worldState?.sectors[selectedSectorId] || sectorsList[0]
+
+  // Điều hướng nhanh đến sector từ kết quả báo cáo
+  const handleNavigateToSectorFromResults = (sectorId: string) => {
+    playClickSound()
+    setSelectedSectorId(sectorId)
+    setActiveTab("map")
+    setIsDebriefingDrawerOpen(false)
+  }
 
   if (!worldState) {
     return (
@@ -898,25 +913,27 @@ export function OperationsCenter({
               <span className="hidden sm:inline">Bản Đồ</span>
             </button>
 
-            {/* Báo cáo / Kết quả */}
+            {/* Báo cáo / Khay Debriefing Drawer */}
             <button
               type="button"
               onClick={() => {
                 playClickSound()
-                setActiveTab("results")
+                setIsDebriefingDrawerOpen((prev) => !prev)
               }}
               className={cn(
-                "flex items-center gap-1 rounded border px-2 py-1 text-xs font-bold transition-all cursor-pointer",
-                activeTab === "results"
-                  ? "border-indigo-400 bg-indigo-950/70 text-indigo-200"
+                "flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-bold font-mono transition-all cursor-pointer relative",
+                isDebriefingDrawerOpen
+                  ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 shadow-md shadow-cyan-950/60"
                   : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500 hover:text-white"
               )}
-              title="Mở Trung Tâm Báo Cáo & Kết Quả Sự Kiện"
+              title="Mở Khay Báo Cáo Tình Báo (Debriefing Drawer)"
             >
-              <FileText className="size-3 text-indigo-400" />
+              <FileText className="size-3 text-cyan-400 shrink-0" />
               <span className="hidden sm:inline">Báo Cáo</span>
-              {hasUnreadResults && (
-                <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+              {unreadResultsCount > 0 && (
+                <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-500/40 animate-pulse">
+                  {unreadResultsCount}
+                </span>
               )}
             </button>
 
@@ -1015,7 +1032,7 @@ export function OperationsCenter({
             id: "results",
             label: "Trung Tâm Kết Quả",
             icon: Layers,
-            badge: worldState.eventResultsArchive?.some((r) => !r.isRead) ? "Mới" : null,
+            badge: unreadResultsCount > 0 ? `${unreadResultsCount} Mới` : null,
           },
         ].map((tab) => {
           const Icon = tab.icon
@@ -1551,7 +1568,7 @@ export function OperationsCenter({
           onChooseStrategy={handleChooseStrategy}
           onNavigateToResults={() => {
             playClickSound()
-            setActiveTab("results")
+            setIsDebriefingDrawerOpen(true)
           }}
           onNavigateToSector={(sectorId) => {
             playClickSound()
@@ -1680,7 +1697,11 @@ export function OperationsCenter({
           TAB 5: TRUNG TÂM KẾT QUẢ KÉP (DUAL RESULTS HUB)
           ==================================================================== */}
       {activeTab === "results" && (
-        <DualResultsHub worldState={worldState} onStateUpdated={reloadState} />
+        <DualResultsHub
+          worldState={worldState}
+          onStateUpdated={reloadState}
+          onNavigateToSector={handleNavigateToSectorFromResults}
+        />
       )}
 
       {/* ====================================================================
@@ -1739,6 +1760,17 @@ export function OperationsCenter({
         onUpdateWorldState={(newState) => {
           setWorldState({ ...newState })
         }}
+      />
+
+      {/* ====================================================================
+          DEBRIEFING DRAWER (PHASE 6.20: SLIDE-OVER RESULTS & DEBRIEFING ACCESS)
+          ==================================================================== */}
+      <DebriefingDrawer
+        isOpen={isDebriefingDrawerOpen}
+        onClose={() => setIsDebriefingDrawerOpen(false)}
+        worldState={worldState}
+        onStateUpdated={reloadState}
+        onNavigateToSector={handleNavigateToSectorFromResults}
       />
     </div>
   )

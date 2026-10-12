@@ -4,7 +4,51 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
-## [Phase 6.4] — STARFRONT WORLD: Kinh Tế Chiến Lược, Mạng Lưới Hậu Cần & Nhân Khẩu Học (Strategic Economy, Logistics Network & Demographics)
+## [Phase 6.6] — STARFRONT WORLD: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng (Combat Integration Adapter & Idempotent Journal)
+
+*Đã hoàn thành 100% Phase 6.6 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.6 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.6:
+- **Tầng Adapter Khế Ước Chiến Đấu (`lib/game/world/combat-adapter.ts`)**:
+  - Tầng trung gian duy nhất kết nối giữa WORLD và buồng lái Đấu Trường (`CombatArena`, `engine.ts`).
+  - Hàm `lockEncounterAndCreateSnapshot`: Khóa sector và đóng băng quân đồn trú (`isLockedForCombat = true`, `lockedGarrisonPower`), ngăn chặn mọi điều động quân và chỉnh sửa trong khi trận diễn ra; tạo bản chụp `EncounterSnapshot` bất biến với chỉ số kẻ địch tính toán theo Threat của sector và các hệ số chiến lược VSS (`friendlyModifiers`).
+  - Cấp phát `transactionId` và `encounterId` duy nhất, ổn định.
+  - Hàm `commitCombatResultReceipt`: Tiếp nhận biên lai `CombatResultReceipt`, chuyển đổi thành hậu quả chiến lược có thẩm quyền trên World State (giảm Threat, tăng Stability, thưởng tài nguyên, hạch toán thương vong bảo toàn quân số).
+  - Hậu quả thất bại theo ngữ cảnh (Contextual Defeat Penalties): Thất bại không mất trắng sector ngay; trừ công sự phòng thủ, sector chuyển sang `under_siege`, bảo toàn quân số qua thương vong và thương binh. Chỉ chuyển giao quyền kiểm soát (`lost` -> `void`) khi phòng tuyến và đồn trú sụp đổ hoàn toàn.
+  - Tự động mở khóa an toàn cho sector sau khi trận chiến hoàn tất (`isLockedForCombat = false`).
+  - Hàm `convertBattleResultToReceipt`: Cầu nối chuyển đổi dữ liệu kết quả trực tiếp từ Combat Engine hiện có thành `CombatResultReceipt` chuẩn hóa.
+- **Sổ Nhật Ký Giao Dịch Lũy Đẳng (`lib/game/world/transaction-journal.ts`)**:
+  - Bộ lọc lũy đẳng (Idempotency Filter): Kiểm tra `isTransactionCommitted` trước khi xử lý biên lai. Gửi liên tục 10 lần cùng một biên lai chiến thắng chỉ áp dụng đúng 1 lần duy nhất, các lần sau từ chối an toàn và giữ nguyên trạng thái.
+  - Quản lý vòng đời giao dịch với 5 trạng thái minh bạch: `pending` -> `awaiting_commit` -> `committed` / `needs_recovery` / `aborted`.
+  - Hàm `reconcileCombatTransactionsInTick`: Tích hợp vào Phase 1 của Tick Engine để tự động đối soát, phát hiện và chuyển các trận chiến bị ngắt quãng/treo sang trạng thái `needs_recovery`.
+  - Cơ chế dọn dẹp an toàn (`pruneJournal`): Cho phép cắt giảm các bản ghi giao dịch đã xong nhưng luôn bảo toàn danh sách `committedTransactionIds` để bộ lọc lũy đẳng hoạt động vĩnh viễn.
+- **Luồng Phục Hồi Treo & Hủy Bỏ An Toàn (Suspended Recovery & Safe Abort)**:
+  - Hàm `resumeSuspendedCombat`: Cho phép buồng lái khôi phục nguyên vẹn trận chiến từ bản chụp bất biến sau khi người chơi reload ứng dụng.
+  - Hàm `abortSuspendedCombat`: Cho phép hủy bỏ trận đấu treo một cách an toàn mà không bị phạt thua oan; hoàn trả đồn trú về trạng thái trước khi khóa trận và mở khóa sector. Chặn hoàn toàn việc commit kết quả sau khi đã abort.
+- **Bảo Vệ Tính Toàn Vẹn Lưu Trữ & Đồng Bộ Save V1**:
+  - Lưu trữ và phục hồi hoàn hảo qua `STARFRONT_WORLD_SAVE_V1` với xác thực Checksum 100%.
+- **Kiểm Thử Đơn Vị Đầy Đủ (`tests/world/combat-adapter-idempotency.test.ts`)**:
+  - 8/8 bài kiểm thử chuyên sâu bao phủ trọn vẹn các kịch bản khóa trận, chống double-application 10 lần, kết quả không hợp lệ, contextual defeat, suspended recovery, safe abort và lưu trữ.
+
+---
+
+## [Phase 6.5] — STARFRONT WORLD: Phe Phái VSS & The Void, Lực Lượng Quân Sự & Auto-Resolve (Factions, Authoritative Military Ledger & Auto-Resolve)
+
+*Đã hoàn thành 100% Phase 6.5 (100% automated tests PASS, 22/22 tests Phase 6.5 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.5:
+- **Sổ Cái Quân Lực Có Thẩm Quyền (`lib/game/world/forces-ledger.ts`)**:
+  - Quản lý 5 trạng thái quân đội theo định luật bảo toàn tuyệt đối: `Total Force = Deployed + Reserves + Wounded + Retreating + InTransit + Casualties`.
+  - Kiểm soát điều động quân sự (`dispatchTroopDeployment`, `advanceTroopDeployments`) tôn trọng trạng thái tuyến đường (Dijkstra shortest path).
+  - Chuyển giao quyền kiểm soát sector an toàn (`transferSectorControl`) bảo toàn dân số và tài sản.
+- **Thuật Toán Lanchester Auto-Resolve Cải Tiến (`lib/game/world/auto-resolve.ts`)**:
+  - Tự động hóa các trận chạm trán phụ với tính tất định 100% qua Seeded PRNG.
+  - Phân bổ tổn thất minh bạch: 50% thương vong vĩnh viễn (Casualties) và 50% thương binh điều trị (WoundedOrRepair).
+- **Hành Vi Chiến Lược The Void & Quy Tắc Sol HQ (`lib/game/world/threat-ai.ts`)**:
+  - AI The Void đánh giá điểm yếu phòng tuyến VSS, tổ chức vây hãm và tập kích có thứ tự.
+  - Quy tắc bảo vệ căn cứ Sol Command HQ bất khả xâm phạm khi các chốt chặn tiền tiêu còn đứng vững.
+
+---
 
 *Đã hoàn thành 100% Phase 6.4 (170/170 automated tests passed, build thành công, 21/21 tests Phase 6.4 PASS)*
 

@@ -178,25 +178,26 @@ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ       Operations Center & Dual R
 
 ---
 
-### Giai Đoạn 6.6: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng (Combat Integration Adapter & Idempotent Journal)
+### Giai Đoạn 6.6: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng (Combat Integration Adapter & Idempotent Journal) — [ĐÃ HOÀN THÀNH 100%]
 
 - **Mục tiêu**: Xây dựng tầng Adapter trung gian kết nối giữa WORLD và buồng lái Đấu Trường (`CombatArena`), tạo Encounter Snapshot khi khóa trận, cấp phát Transaction ID, ghi nhận nhật ký giao dịch lũy đẳng (chống áp dụng kết quả 2 lần) và luồng xử lý an toàn khi combat bị treo/lỗi.
+- **Trạng thái**: **ĐÃ HOÀN THÀNH (DONE — 100% Exit Criteria Passed, 8/8 Subtests PASS)**.
 - **Phụ thuộc (Prerequisites)**:
   - Hoàn thành Phase 6.1 đến 6.5.
   - Mã nguồn buồng lái `components/game/combat-arena.tsx` hiện có.
-- **Tập tin dự kiến tạo mới / mở rộng**:
-  - `lib/game/world/combat-adapter.ts`: Định nghĩa khế ước, hàm `lockEncounterAndCreateSnapshot`, `commitCombatResultReceipt`, `abortSuspendedCombat`.
-  - `lib/game/world/transaction-journal.ts`: Quản lý danh sách giao dịch đã commit, kiểm tra tính lũy đẳng.
-  - `tests/world/combat-adapter-idempotency.test.ts`: Kiểm thử chống double-application và phục hồi giao dịch treo.
+- **Tập tin đã triển khai**:
+  - `lib/game/world/combat-adapter.ts`: Khế ước `EncounterSnapshot`, `lockEncounterAndCreateSnapshot`, `commitCombatResultReceipt`, `abortSuspendedCombat`, `resumeSuspendedCombat`, `convertBattleResultToReceipt`.
+  - `lib/game/world/transaction-journal.ts`: Quản lý danh sách giao dịch, lọc lũy đẳng `isTransactionCommitted`, đối soát `reconcileCombatTransactionsInTick`, dọn dẹp an toàn `pruneJournal`.
+  - `tests/world/combat-adapter-idempotency.test.ts`: Bộ 8 bài test chuyên sâu kiểm chứng khóa trận, chống double-application 10 lần liên tiếp, phục hồi treo và safe abort.
 - **Các bước triển khai (Implementation Tasks)**:
-  1. Thiết kế khế ước dữ liệu `EncounterSnapshot` và `CombatResultReceipt` tương thích với cấu hình `combatVersion: "v1"`.
-  2. Viết hàm khóa trận: Đóng băng tạm thời lực lượng đồn trú tại sector liên quan để tránh bị sửa đổi trong lúc trận đấu diễn ra.
-  3. Xây dựng bộ lọc giao dịch (Transaction Filter): Tra cứu `transactionId` trong journal; chặn ngay lập tức nếu biên lai kết quả đã từng được áp dụng.
-  4. Thiết lập luồng khôi phục treo (Suspended Recovery): Cho phép người chơi phục hồi lại trận đấu hoặc hủy bỏ mà không bị xử thua oan.
-- **Tiêu chí hoàn thành (Exit Criteria)**:
-  - Gửi liên tục 10 lần cùng 1 biên lai chiến thắng: World State chỉ ghi nhận tăng tài nguyên và giảm Threat đúng 1 lần duy nhất.
-  - Giả lập ngắt kết nối giữa chừng: Trạng thái trận đấu được giữ nguyên ở chế độ `PENDING_RECOVERY` và phục hồi chuẩn xác sau khi mở lại.
-  - 100% Tests Adapter đạt PASS.
+  1. [x] Thiết kế khế ước dữ liệu `EncounterSnapshot` và `CombatResultReceipt` tương thích với cấu hình `combatVersion: "v1"`.
+  2. [x] Viết hàm khóa trận: Đóng băng tạm thời lực lượng đồn trú tại sector liên quan để tránh bị sửa đổi trong lúc trận đấu diễn ra.
+  3. [x] Xây dựng bộ lọc giao dịch (Transaction Filter): Tra cứu `transactionId` trong journal; chặn ngay lập tức nếu biên lai kết quả đã từng được áp dụng.
+  4. [x] Thiết lập luồng khôi phục treo (Suspended Recovery): Cho phép người chơi phục hồi lại trận đấu hoặc hủy bỏ mà không bị xử thua oan.
+- **Tiêu chí hoàn thành (Exit Criteria - Đạt 100%)**:
+  - [x] Gửi liên tục 10 lần cùng 1 biên lai chiến thắng: World State chỉ ghi nhận tăng tài nguyên và giảm Threat đúng 1 lần duy nhất (Idempotency Filter).
+  - [x] Giả lập ngắt kết nối giữa chừng: Trạng thái trận đấu được giữ nguyên ở chế độ `NEEDS_RECOVERY` và phục hồi chuẩn xác sau khi mở lại.
+  - [x] 100% Tests Adapter đạt PASS (8/8 subtests trong `combat-adapter-idempotency.test.ts` PASS tuyệt đối).
 - **Rủi ro kỹ thuật & Giải pháp phòng ngừa**:
   - *Rủi ro*: Thay đổi nhỏ trong định dạng log chiến đấu của Đấu trường làm hỏng adapter.
   - *Giải pháp*: Chỉ truyền các chỉ số kết quả tổng hợp trong `CombatResultReceipt` (HP còn lại, thắng/thua, số hiệp đấu, ID đối thủ), không phụ thuộc vào chi tiết log chuỗi hành động.

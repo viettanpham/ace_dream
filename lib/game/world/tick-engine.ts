@@ -23,6 +23,7 @@ import {
   recoverWoundedTroops,
 } from "./forces-ledger"
 import { evaluateVoidStrategicBehavior } from "./threat-ai"
+import { reconcileCombatTransactionsInTick } from "./transaction-journal"
 import type {
   InFlightTransaction,
   MilitaryForceLedger,
@@ -120,6 +121,10 @@ function executePhase1RecoveryAndTransactions(
     pendingTxIds.sort()
     for (const txId of pendingTxIds) {
       const tx = state.inFlightTransactions[txId]
+      // Nếu là trận chiến đang treo: KHÔNG tự ý phán quyết thắng/thua hay commit bừa bãi
+      if (tx.type === "combat" && state.isSuspendedCombat) {
+        continue
+      }
       if (tx.status === "pending") {
         tx.status = "committed"
         if (!state.committedTransactionIds.includes(txId)) {
@@ -128,6 +133,12 @@ function executePhase1RecoveryAndTransactions(
         log.changesApplied.push(`Committed pending in-flight transaction: ${txId}`)
       }
     }
+  }
+
+  // 1.1b. Đối soát giao dịch combat đang treo
+  const combatReconcile = reconcileCombatTransactionsInTick(state)
+  for (const cLog of combatReconcile.logs) {
+    log.changesApplied.push(cLog)
   }
 
   // 1.2. Phục hồi thương binh & sửa chữa cơ giáp qua Authoritative Forces Ledger

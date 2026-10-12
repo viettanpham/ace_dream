@@ -110,6 +110,8 @@ export interface WorldSector {
   foodShortageDays?: number
   strategicOrder?: StrategicOrder
   fortificationLevel?: number
+  isLockedForCombat?: boolean
+  lockedGarrisonPower?: number
 }
 
 /**
@@ -135,6 +137,126 @@ export interface WorldFaction {
   controlledSectorIds: string[]
   reputation?: number
   isAggressor?: boolean
+}
+
+/**
+ * Phiên bản cấu hình tích hợp chiến đấu
+ * v1: Đấu trường 1v1 hiện tại (Người chơi vs Đơn vị tinh anh đại diện / Boss)
+ * v2: Hỗ trợ nhiều làn tác chiến / hạm đội mở rộng
+ */
+export type CombatVersion = "v1" | "v2"
+
+/**
+ * Trạng thái của một giao dịch chiến lược trong Transaction Journal
+ */
+export type TransactionStatus =
+  | "pending"          // Đang thực thi / chưa kết thúc
+  | "awaiting_commit"  // Đã có kết quả, đang chờ xác nhận vào World State
+  | "committed"        // Đã áp dụng thành công và vĩnh viễn vào World State
+  | "needs_recovery"   // Bị ngắt quãng do reload/crash, cần khôi phục an toàn
+  | "aborted"          // Đã hủy bỏ an toàn, không có hình phạt
+
+/**
+ * Bản chụp chiến thuật bất biến tại thời điểm khóa trận (Encounter Snapshot)
+ */
+export interface EncounterSnapshot {
+  transactionId: string
+  encounterId: string
+  combatVersion: CombatVersion
+  sectorId: string
+  sectorName: string
+  enemyEncounterType: string
+  enemyUnit: {
+    name: string
+    hp: number
+    maxHp: number
+    attack: number
+    defense: number
+    speed: number
+  }
+  friendlyModifiers: {
+    fortificationLevel: number
+    defenseMultiplier: number
+    moraleMultiplier: number
+    strategicOrder?: StrategicOrder
+  }
+  lockedGarrison: number
+  winConditions: {
+    objective: "eliminate_enemy" | "survive_rounds" | "defend_garrison"
+    maxRounds?: number
+  }
+  lockedAtTimestamp: number
+  status: "locked" | "in_combat" | "resolved" | "aborted"
+}
+
+/**
+ * Biên lai kết quả trận đấu do buồng lái hoặc Adapter xuất ra (Combat Result Receipt)
+ */
+export interface CombatResultReceipt {
+  transactionId: string
+  encounterId: string
+  combatVersion: CombatVersion
+  sectorId: string
+  victory: boolean
+  rounds: number
+  playerRemainingHpPercent: number
+  enemyRemainingHpPercent: number
+  tacticalRating?: "S+" | "S" | "A" | "B" | "C"
+  logSummary?: string
+  completedAtTimestamp: number
+}
+
+/**
+ * Kết quả áp dụng biên lai trận đấu vào World State
+ */
+export interface CombatResolutionResult {
+  applied: boolean
+  alreadyCommitted?: boolean
+  transactionId: string
+  encounterId?: string
+  sectorId?: string
+  victory?: boolean
+  strategicConsequences?: {
+    threatChange: number
+    stabilityChange: number
+    garrisonCasualties: number
+    garrisonWounded: number
+    resourceRewards?: Partial<WorldResourceLedger>
+    newSectorStage?: SectorStage
+    sovereigntyTransferred?: boolean
+  }
+  message: string
+  error?: string
+}
+
+/**
+ * Kết quả hủy bỏ an toàn trận đấu dở dang
+ */
+export interface AbortCombatResult {
+  success: boolean
+  transactionId: string
+  sectorId?: string
+  restoredGarrison: number
+  message: string
+  error?: string
+}
+
+/**
+ * Bản ghi giao dịch trong sổ nhật ký giao dịch lũy đẳng (Transaction Journal Entry)
+ */
+export interface JournalEntry {
+  transactionId: string
+  type: "combat" | "logistics_transfer" | "force_deployment" | "event_resolution"
+  status: TransactionStatus
+  sectorId?: string
+  snapshot?: EncounterSnapshot
+  receipt?: CombatResultReceipt
+  createdAt: number
+  updatedAt: number
+  committedAt?: number
+  abortedAt?: number
+  retryCount?: number
+  error?: string
 }
 
 /**
@@ -169,9 +291,11 @@ export interface WorldState {
   completedMissionChainIds: string[]
   committedTransactionIds: string[]
   inFlightTransactions: Record<string, InFlightTransaction>
+  transactionJournal?: Record<string, JournalEntry>
   activeDeployments?: TroopDeployment[]
   isSuspendedCombat: boolean
   suspendedEncounterId?: string
+  suspendedSnapshot?: EncounterSnapshot
 }
 
 /**

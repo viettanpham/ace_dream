@@ -324,6 +324,12 @@ export function dispatchTroopDeployment(
       }
     }
   } else {
+    if (fromSector.isLockedForCombat) {
+      return {
+        success: false,
+        error: `Sector ${fromSector.name} đang bị khóa trong trận chiến, không thể điều động quân`,
+      }
+    }
     if (fromSector.garrisonPower < troopCount) {
       return {
         success: false,

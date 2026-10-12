@@ -377,6 +377,7 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     completedMissionChainIds: [],
     committedTransactionIds: [],
     inFlightTransactions: {},
+    transactionJournal: {},
     isSuspendedCombat: false,
   }
 }

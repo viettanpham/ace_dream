@@ -1,11 +1,18 @@
 # STARFRONT — Kế Hoạch Triển Khai Giai Đoạn Hiện Tại (Current Phase Scope)
 
-## GIAI ĐOẠN HIỆN TẠI: PHASE 6.9 — FULLSCREEN MAP & E2E INTEGRATION (HOÀN THÀNH TOÀN DIỆN LỘ TRÌNH WORLD)
+## GIAI ĐOẠN HIỆN TẠI: PHASE 6.15 — EVENT STRATEGY POLICY & SYSTEM AUTO STRATEGY (HOÀN THÀNH TOÀN DIỆN)
 
 ---
 
 ## 1. Mục Tiêu & Trạng Thái Giai Đoạn (Phase Status)
-- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 100% Tests PASS, Build Thành Công, 9/9 E2E Tests PASS)**.
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 100% Tests PASS, 27/27 Test Suites PASS, 13/13 Phase 6.15 Tests PASS, Build Thành Công)**.
+- **Mục tiêu cốt lõi**:
+  - Triển khai cơ chế lựa chọn chiến lược 3 cấp độ ưu tiên cho STARFRONT WORLD:
+    1. **System Auto Strategy**: Đánh giá tất định, minh bạch dựa trên tỷ lệ thành công, biến động ổn định/đe dọa, ngữ cảnh Sector, tiêu hao tài nguyên & quân lực, và tổn thất. Phá vỡ thế hòa ổn định (score DESC -> chance DESC -> duration ASC -> id ASC).
+    2. **Default Strategy Fallback**: Phương án dự phòng an toàn khi System Auto không đủ điều kiện hoặc bị tắt bởi cấu hình.
+    3. **Player Choice Fallback**: Chuyển quyền quyết định cho Chỉ Huy khi cả 2 cấp trên không thể xử lý, không làm crash hoặc dừng simulator.
+  - Tích hợp trọn vẹn vào **Events & Missions Board**, **Dual Results Hub**, **Operations Center ADMIN CP**, và **Động cơ Tick Engine**.
+  - Bảo vệ tuyệt đối tính lũy đẳng (idempotent), bảo toàn lưu trữ `STARFRONT_WORLD_SAVE_V1` và bảo vệ phân hệ RPG Save V4.
 - **Mục tiêu cốt lõi**:
   - **Bản Đồ Thiên Hà Toàn Màn Hình (`components/game/world/world-map.tsx`)**:
     * Hiển thị chuẩn xác mạng lưới 8 Sector thiên hà và 12 Tuyến Siêu Không Gian lấy trực tiếp từ `WorldState` và đồ thị `initial-state.ts`.

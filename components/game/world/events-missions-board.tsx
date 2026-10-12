@@ -35,6 +35,11 @@ import { cn } from "@/lib/utils"
 import { playClickSound, playShieldSound } from "@/lib/game/audio"
 import { markEventResultAsRead, type EventLifecycleSummary } from "@/lib/game/world/event-engine"
 import { MAX_DISPATCH_DEFER_TICKS } from "@/lib/game/world/mission-chains"
+import {
+  scoreEventStrategy,
+  selectBestStrategyForEvent,
+  evaluateAndApplyEventStrategyPolicy,
+} from "@/lib/game/world/event-strategy-policy"
 import type {
   WorldState,
   WorldEvent,
@@ -69,6 +74,7 @@ export function EventsMissionsBoard({
 }: EventsMissionsBoardProps) {
   const [filterMode, setFilterMode] = useState<BoardFilterMode>("all")
   const [dismissedTickSummary, setDismissedTickSummary] = useState<number | null>(null)
+  const [expandedReasonKeys, setExpandedReasonKeys] = useState<Record<string, boolean>>({})
 
   // 1. Phân loại sự kiện INIT (Cần ra quyết định) và PROCESSING (Đang chạy)
   const initEvents = useMemo(() => {
@@ -370,6 +376,7 @@ export function EventsMissionsBoard({
                 const targetSector = event.sectorId ? worldState.sectors[event.sectorId] : null
                 const defaultStrategy = event.availableStrategies.find((s) => s.id === event.defaultStrategyId)
                 const daysRemaining = Math.max(0, event.decisionDeadlineTick - worldState.currentDay)
+                const bestCandidate = selectBestStrategyForEvent(worldState, event)
 
                 return (
                   <div
@@ -400,6 +407,19 @@ export function EventsMissionsBoard({
                           {getCategoryIcon(event.category)}
                           <span>{event.category}</span>
                         </div>
+
+                        {/* Huy hiệu Nguồn Chiến Lược / Quyền Quyết Định (Phase 6.15) */}
+                        {event.strategySource === "player_choice" ? (
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/70 text-amber-200 text-[10px] font-bold uppercase">
+                            <HelpCircle className="size-3 text-amber-400" />
+                            <span>Chờ Chỉ Huy</span>
+                          </div>
+                        ) : event.strategySource === "system_auto" ? (
+                          <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/70 text-cyan-200 text-[10px] font-bold uppercase">
+                            <Sparkles className="size-3 text-cyan-400" />
+                            <span>System Auto</span>
+                          </div>
+                        ) : null}
 
                         {/* Tên Sự kiện */}
                         <span className="font-bold text-zinc-100 text-xs sm:text-sm tracking-wide">
@@ -440,6 +460,17 @@ export function EventsMissionsBoard({
                       {event.description}
                     </p>
 
+                    {/* Thông báo quyền quyết định nếu System Auto & Default không khả thi (Phase 6.15) */}
+                    {event.autoSelectionFailureReason && (
+                      <div className="flex items-start gap-2 rounded bg-amber-950/30 border border-amber-500/40 p-2 text-[10px] text-amber-200">
+                        <AlertOctagon className="size-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-amber-300">THÔNG BÁO QUYỀN QUYẾT ĐỊNH:</span>{" "}
+                          {event.autoSelectionFailureReason}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Cảnh báo tự động khóa phương án mặc định */}
                     {defaultStrategy && (
                       <div className="flex items-start gap-2 rounded bg-amber-950/20 border border-amber-500/30 p-2 text-[10px] text-amber-200">
@@ -457,35 +488,61 @@ export function EventsMissionsBoard({
 
                     {/* Danh sách các chiến lược có thể chọn */}
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-[11px]">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
                         <span className="font-bold text-cyan-400 uppercase tracking-wide flex items-center gap-1">
                           <Zap className="size-3.5 text-cyan-400" />
                           LỰA CHỌN PHƯƠNG ÁN ĐỐI ỨNG (PHÊ CHUẨN CHIẾN LƯỢC):
                         </span>
-                        <span className="text-zinc-500 text-[10px]">
-                          Chọn 1 trong {event.availableStrategies.length} phương án
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              playClickSound()
+                              const dec = evaluateAndApplyEventStrategyPolicy(worldState, event)
+                              if (dec.applied) {
+                                playShieldSound()
+                                onStateUpdated?.()
+                              }
+                            }}
+                            className="flex items-center gap-1 rounded bg-cyan-950/80 border border-cyan-500/60 px-2 py-0.5 text-[10px] text-cyan-300 hover:bg-cyan-900 transition-colors cursor-pointer font-bold shadow-sm shadow-cyan-950"
+                            title="Tự động phê chuẩn theo System Auto Strategy"
+                          >
+                            <Sparkles className="size-3 text-cyan-400" />
+                            <span>System Auto Phê Chuẩn Ngay</span>
+                          </button>
+                          <span className="text-zinc-500 text-[10px]">
+                            ({event.availableStrategies.length} phương án)
+                          </span>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
                         {event.availableStrategies.map((strat) => {
                           const isDefault = strat.id === event.defaultStrategyId
                           const hasCost = strat.cost && Object.keys(strat.cost).length > 0
+                          const isBest = bestCandidate?.strategy.id === strat.id
+                          const scoreInfo = scoreEventStrategy(worldState, event, strat)
+                          const reasonKey = `${event.id}_${strat.id}`
+                          const isExpanded = !!expandedReasonKeys[reasonKey]
 
-                          // Kiểm tra khả năng chi trả tài nguyên
-                          const canAfford =
+                          // Kiểm tra khả năng chi trả tài nguyên & quân sự
+                          const canAffordRes =
                             !hasCost ||
                             Object.entries(strat.cost!).every(([k, v]) => {
                               const currentVal = (worldState.resources as any)[k] ?? 0
                               return currentVal >= (v as number)
                             })
+                          const canAffordMil = !strat.militaryCost || (worldState.military.reserves >= strat.militaryCost)
+                          const canAfford = canAffordRes && canAffordMil
 
                           return (
                             <div
                               key={strat.id}
                               className={cn(
                                 "rounded border p-3 flex flex-col justify-between space-y-2.5 transition-all",
-                                isDefault
+                                isBest
+                                  ? "border-cyan-500/60 bg-cyan-950/20 shadow-sm shadow-cyan-950/50 ring-1 ring-cyan-500/30"
+                                  : isDefault
                                   ? "border-amber-500/50 bg-amber-950/20 shadow-sm shadow-amber-950/40"
                                   : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
                               )}
@@ -493,37 +550,96 @@ export function EventsMissionsBoard({
                               <div className="space-y-1">
                                 <div className="flex items-center justify-between gap-1">
                                   <span className="font-bold text-zinc-100 text-xs">{strat.name}</span>
-                                  {isDefault && (
-                                    <span className="text-[9px] text-amber-300 uppercase font-black bg-amber-950/60 border border-amber-500/50 px-1.5 py-0.2 rounded shrink-0">
-                                      Mặc Định
-                                    </span>
-                                  )}
+                                  <div className="flex items-center gap-1">
+                                    {isBest && (
+                                      <span className="text-[8px] text-cyan-300 uppercase font-black bg-cyan-950/80 border border-cyan-400 px-1 py-0.2 rounded shrink-0">
+                                        ★ Đề Xuất
+                                      </span>
+                                    )}
+                                    {isDefault && (
+                                      <span className="text-[8px] text-amber-300 uppercase font-black bg-amber-950/60 border border-amber-500/50 px-1 py-0.2 rounded shrink-0">
+                                        Mặc Định
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <p className="text-[10px] text-zinc-400 leading-normal">{strat.description}</p>
                               </div>
 
+                              {/* Điểm Đánh Giá & Phân Tích (Phase 6.15) */}
+                              <div className="rounded bg-zinc-950/70 p-1.5 border border-zinc-800 text-[10px] space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-zinc-400 text-[9px]">Điểm Đánh Giá:</span>
+                                  <span
+                                    className={cn(
+                                      "font-mono font-bold text-[10px]",
+                                      scoreInfo.score >= 50
+                                        ? "text-cyan-300"
+                                        : scoreInfo.score >= 0
+                                        ? "text-amber-300"
+                                        : "text-red-300"
+                                    )}
+                                  >
+                                    {scoreInfo.score > 0 ? `+${scoreInfo.score}` : scoreInfo.score}đ
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExpandedReasonKeys((prev) => ({
+                                      ...prev,
+                                      [reasonKey]: !prev[reasonKey],
+                                    }))
+                                  }
+                                  className="text-[9px] text-zinc-500 hover:text-cyan-400 transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Info className="size-2.5" />
+                                  <span>{isExpanded ? "Ẩn phân tích" : "Xem phân tích"}</span>
+                                </button>
+                                {isExpanded && (
+                                  <div className="text-[9px] text-zinc-400 bg-black/60 p-1.5 rounded border border-zinc-800/80 space-y-0.5">
+                                    {scoreInfo.reasons.map((r, rIdx) => (
+                                      <div key={rIdx} className="leading-tight">• {r}</div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
                               <div className="border-t border-zinc-800/80 pt-2 space-y-1 text-[10px]">
-                                {/* Chi phí tài nguyên */}
-                                {hasCost && (
+                                {/* Chi phí tài nguyên & quân sự */}
+                                {(hasCost || (strat.militaryCost && strat.militaryCost > 0)) && (
                                   <div className="flex flex-wrap items-center gap-1.5 text-zinc-400">
                                     <span>Chi phí:</span>
-                                    {Object.entries(strat.cost!).map(([k, v]) => {
-                                      const currentVal = (worldState.resources as any)[k] ?? 0
-                                      const enough = currentVal >= (v as number)
-                                      return (
-                                        <span
-                                          key={k}
-                                          className={cn(
-                                            "font-bold px-1 rounded border",
-                                            enough
-                                              ? "border-zinc-700 bg-zinc-800/60 text-amber-300"
-                                              : "border-red-500/50 bg-red-950/50 text-red-300"
-                                          )}
-                                        >
-                                          {k}: {v}
-                                        </span>
-                                      )
-                                    })}
+                                    {hasCost &&
+                                      Object.entries(strat.cost!).map(([k, v]) => {
+                                        const currentVal = (worldState.resources as any)[k] ?? 0
+                                        const enough = currentVal >= (v as number)
+                                        return (
+                                          <span
+                                            key={k}
+                                            className={cn(
+                                              "font-bold px-1 rounded border",
+                                              enough
+                                                ? "border-zinc-700 bg-zinc-800/60 text-amber-300"
+                                                : "border-red-500/50 bg-red-950/50 text-red-300"
+                                            )}
+                                          >
+                                            {k}: {v}
+                                          </span>
+                                        )
+                                      })}
+                                    {strat.militaryCost && strat.militaryCost > 0 && (
+                                      <span
+                                        className={cn(
+                                          "font-bold px-1 rounded border",
+                                          worldState.military.reserves >= strat.militaryCost
+                                            ? "border-amber-700/60 bg-amber-950/40 text-amber-300"
+                                            : "border-red-500/50 bg-red-950/50 text-red-300"
+                                        )}
+                                      >
+                                        Quân: {strat.militaryCost}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
 
@@ -559,12 +675,14 @@ export function EventsMissionsBoard({
                                     "w-full mt-2 rounded p-1.5 text-[11px] font-bold transition-all cursor-pointer text-center",
                                     !canAfford
                                       ? "border border-zinc-800 bg-zinc-900 text-zinc-500 cursor-not-allowed"
+                                      : isBest
+                                      ? "border border-cyan-400 bg-cyan-950/80 text-cyan-200 hover:bg-cyan-900 shadow-sm shadow-cyan-950"
                                       : isDefault
                                       ? "border border-amber-500/70 bg-amber-950/60 text-amber-200 hover:bg-amber-900/60"
-                                      : "border border-cyan-500/60 bg-cyan-950/60 text-cyan-200 hover:bg-cyan-900/60"
+                                      : "border border-zinc-700 bg-zinc-800/80 text-zinc-200 hover:bg-zinc-700"
                                   )}
                                 >
-                                  {!canAfford ? "Thiếu Tài Nguyên" : "Phê Chuẩn Phương Án"}
+                                  {!canAfford ? "Thiếu Tài Nguyên/Quân" : "Phê Chuẩn Phương Án"}
                                 </button>
                               </div>
                             </div>
@@ -617,10 +735,28 @@ export function EventsMissionsBoard({
                     className="rounded border border-cyan-500/40 bg-zinc-950/90 p-3.5 space-y-3 shadow-md"
                   >
                     <div className="flex items-center justify-between gap-2 border-b border-zinc-800 pb-2">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border border-cyan-500/50 bg-cyan-950/60 text-cyan-300">
                           PROCESSING
                         </span>
+                        {event.strategySource && (
+                          <span
+                            className={cn(
+                              "px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border",
+                              event.strategySource === "system_auto"
+                                ? "border-cyan-500/50 bg-cyan-950/60 text-cyan-300"
+                                : event.strategySource === "default_fallback"
+                                ? "border-amber-500/50 bg-amber-950/60 text-amber-300"
+                                : "border-indigo-500/50 bg-indigo-950/60 text-indigo-300"
+                            )}
+                          >
+                            {event.strategySource === "system_auto"
+                              ? "System Auto"
+                              : event.strategySource === "default_fallback"
+                              ? "Default Fallback"
+                              : "Chỉ Huy Phê Chuẩn"}
+                          </span>
+                        )}
                         <span className="font-bold text-zinc-100 text-xs">{event.title}</span>
                       </div>
                       {targetSector && (
@@ -640,6 +776,11 @@ export function EventsMissionsBoard({
                         Phương án đang triển khai: {chosenStrat?.name || event.chosenStrategyId}
                       </div>
                       <p className="text-[10px] text-zinc-400">{chosenStrat?.description}</p>
+                      {event.selectionReason && (
+                        <div className="text-[9px] text-zinc-400 pt-1 border-t border-cyan-500/20 italic">
+                          * {event.selectionReason}
+                        </div>
+                      )}
                     </div>
 
                     {/* Thanh tiến độ trực quan */}

@@ -273,6 +273,25 @@ export function DualResultsHub({
                         {isSuccess ? "THÀNH CÔNG" : isDefault ? "HẾT HẠN (MẶC ĐỊNH)" : "THẤT BẠI"}
                       </span>
 
+                      {result.strategySource && (
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-[9px] font-bold uppercase border",
+                            result.strategySource === "system_auto"
+                              ? "border-cyan-500/40 bg-cyan-950/40 text-cyan-300"
+                              : result.strategySource === "default_fallback"
+                              ? "border-amber-500/40 bg-amber-950/40 text-amber-300"
+                              : "border-indigo-500/40 bg-indigo-950/40 text-indigo-300"
+                          )}
+                        >
+                          {result.strategySource === "system_auto"
+                            ? "SYSTEM AUTO"
+                            : result.strategySource === "default_fallback"
+                            ? "DEFAULT FALLBACK"
+                            : "CHỈ HUY PHÊ CHUẨN"}
+                        </span>
+                      )}
+
                       <span className="font-bold text-zinc-200 text-xs">{result.title}</span>
 
                       {result.category && (
@@ -300,8 +319,15 @@ export function DualResultsHub({
 
                   {/* Chosen Strategy & Summary Text */}
                   <div className="mt-2 text-[11px] text-zinc-300 leading-relaxed">
-                    <span className="text-zinc-400 font-bold">Chiến lược đã chọn:</span>{" "}
-                    <span className="text-cyan-300">{result.chosenStrategyName}</span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-zinc-400 font-bold">Chiến lược đã chọn:</span>{" "}
+                      <span className="text-cyan-300 font-bold">{result.chosenStrategyName}</span>
+                      {result.selectionReason && (
+                        <span className="text-zinc-400 text-[10px] italic">
+                          ({result.selectionReason})
+                        </span>
+                      )}
+                    </div>
                     <p className="mt-1 text-zinc-400 bg-zinc-900/50 p-2 rounded border border-zinc-800/60">
                       {result.summaryText}
                     </p>

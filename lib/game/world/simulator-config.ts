@@ -9,6 +9,8 @@
  * - Max tổng event active: 100.
  */
 
+import type { EventStrategyPolicyConfig, TierStrategyPreference } from "./types"
+
 export type SimulationSpeedPreset = 15 | 30 | 60 | 300
 
 export interface EventTierConfig {
@@ -27,10 +29,29 @@ export interface WorldGeneratorConfig {
   maxGlobalActive: number // Giới hạn tổng số lượng event active toàn thiên hà (mặc định: 100)
 }
 
+export { type EventStrategyPolicyConfig, type TierStrategyPreference }
+
+/**
+ * Cấu hình mặc định cho chính sách lựa chọn chiến lược sự kiện (Phase 6.15)
+ * Ưu tiên: 1. System Auto Strategy -> 2. Default Strategy Fallback -> 3. Player Choice
+ */
+export const DEFAULT_EVENT_STRATEGY_POLICY: EventStrategyPolicyConfig = {
+  systemAutoEnabled: true,
+  defaultFallbackEnabled: true,
+  playerChoiceFallbackEnabled: true,
+  tierPolicies: {
+    small: "system_auto",
+    medium: "system_auto",
+    large: "system_auto",
+  },
+}
+
 export interface WorldSimulatorConfig {
   speedSeconds: number   // 1 ngày game = X giây thực (Mặc định: 300)
   isPaused: boolean       // Trạng thái chạy / tạm dừng (Mặc định: false)
   generator: WorldGeneratorConfig
+  pausedFraction?: number // Tỷ lệ hoàn thành trong ngày khi tạm dừng (0.0 .. 0.999)
+  strategyPolicy: EventStrategyPolicyConfig // Chính sách lựa chọn chiến lược sự kiện (Phase 6.15)
 }
 
 /**
@@ -71,6 +92,7 @@ export const DEFAULT_SIMULATOR_CONFIG: WorldSimulatorConfig = {
   speedSeconds: 300,
   isPaused: false,
   generator: DEFAULT_GENERATOR_CONFIG,
+  strategyPolicy: DEFAULT_EVENT_STRATEGY_POLICY,
 }
 
 export const WORLD_SIMULATOR_CONFIG_KEY = "STARFRONT_WORLD_SIMULATOR_CONFIG"
@@ -94,9 +116,9 @@ export function validateSimulatorConfig(config: WorldSimulatorConfig): {
   }
 
   if (
-    typeof config.generator.maxGlobalActive !== "number" ||
-    isNaN(config.generator.maxGlobalActive) ||
-    config.generator.maxGlobalActive < 1
+    typeof config.generator?.maxGlobalActive !== "number" ||
+    isNaN(config.generator?.maxGlobalActive) ||
+    config.generator?.maxGlobalActive < 1
   ) {
     errors.push("Giới hạn tổng sự kiện hoạt động phải lớn hơn hoặc bằng 1.")
   }
@@ -105,8 +127,12 @@ export function validateSimulatorConfig(config: WorldSimulatorConfig): {
   const tierNames = { small: "Nhỏ (Small)", medium: "Trung bình (Medium)", large: "Lớn (Large)" }
 
   for (const t of tiers) {
-    const tier = config.generator[t]
+    const tier = config.generator?.[t]
     const name = tierNames[t]
+    if (!tier) {
+      errors.push(`${name}: Thiếu cấu hình tier.`)
+      continue
+    }
 
     if (typeof tier.minIntervalDays !== "number" || isNaN(tier.minIntervalDays) || tier.minIntervalDays <= 0) {
       errors.push(`${name}: Chu kỳ sinh tối thiểu phải là số dương (> 0).`)
@@ -124,6 +150,19 @@ export function validateSimulatorConfig(config: WorldSimulatorConfig): {
 
     if (typeof tier.maxActive !== "number" || isNaN(tier.maxActive) || tier.maxActive < 1) {
       errors.push(`${name}: Giới hạn số lượng hoạt động tối đa phải lớn hơn hoặc bằng 1.`)
+    }
+  }
+
+  // Validate strategyPolicy nếu có
+  if (config.strategyPolicy) {
+    const sp = config.strategyPolicy
+    const validPrefs = ["system_auto", "default_fallback", "player_choice"]
+    if (sp.tierPolicies) {
+      for (const t of tiers) {
+        if (!validPrefs.includes(sp.tierPolicies[t])) {
+          errors.push(`Tier ${t}: Tùy chọn ưu tiên chiến lược không hợp lệ.`)
+        }
+      }
     }
   }
 
@@ -146,6 +185,11 @@ export function loadSimulatorConfig(): WorldSimulatorConfig {
     if (!raw) return { ...DEFAULT_SIMULATOR_CONFIG }
 
     const parsed = JSON.parse(raw)
+    // Đảm bảo tương thích ngược nếu lưu trữ cũ chưa có strategyPolicy
+    if (!parsed.strategyPolicy) {
+      parsed.strategyPolicy = { ...DEFAULT_EVENT_STRATEGY_POLICY }
+    }
+
     const validation = validateSimulatorConfig(parsed)
     if (!validation.valid) {
       console.warn("[WORLD SIMULATOR] Cấu hình lưu trữ không hợp lệ, dùng mặc định:", validation.errors)

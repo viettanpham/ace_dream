@@ -364,6 +364,30 @@ export interface EventStrategy {
 }
 
 /**
+ * Nguồn gốc phê chuẩn chiến lược sự kiện (Phase 6.15)
+ */
+export type EventStrategySource = "system_auto" | "default_fallback" | "player_choice"
+
+/**
+ * Tùy chọn ưu tiên xử lý chiến lược theo từng Tier (Phase 6.15)
+ */
+export type TierStrategyPreference = "system_auto" | "default_fallback" | "player_choice"
+
+/**
+ * Cấu hình chính sách lựa chọn chiến lược sự kiện (Phase 6.15)
+ */
+export interface EventStrategyPolicyConfig {
+  systemAutoEnabled: boolean
+  defaultFallbackEnabled: boolean
+  playerChoiceFallbackEnabled: boolean
+  tierPolicies: {
+    small: TierStrategyPreference
+    medium: TierStrategyPreference
+    large: TierStrategyPreference
+  }
+}
+
+/**
  * Bản ghi kết quả sự kiện được lưu trữ bền vững (Event Result)
  */
 export interface WorldEventResult {
@@ -387,6 +411,10 @@ export interface WorldEventResult {
   isRead?: boolean
   missionChainId?: string
   nextNodeUnlocked?: string
+  /** Nguồn phê chuẩn phương án (Phase 6.15) */
+  strategySource?: EventStrategySource
+  /** Lý do lựa chọn (Phase 6.15) */
+  selectionReason?: string
 }
 
 /**
@@ -419,6 +447,12 @@ export interface WorldEvent {
   result?: WorldEventResult
   /** Phân loại quy mô sự kiện (Phase 6.13) */
   tier?: "small" | "medium" | "large"
+  /** Nguồn phê chuẩn phương án (Phase 6.15) */
+  strategySource?: EventStrategySource
+  /** Lý do lựa chọn ngắn gọn (Phase 6.15) */
+  selectionReason?: string
+  /** Lý do chuyển sang người chơi quyết định nếu tự động thất bại (Phase 6.15) */
+  autoSelectionFailureReason?: string
 }
 
 /**

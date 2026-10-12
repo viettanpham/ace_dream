@@ -18,9 +18,9 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | **Phase 6.13: Động Cơ Thời Gian Thực, Tự Động Sinh Sự Kiện/Nhiệm Vụ & ADMIN CP đã hoàn thành 100%** (100% tests PASS, build thành công, 6/6 tests Phase 6.13 PASS, 25/25 test suites PASS tuyệt đối). Hệ thống STARFRONT WORLD tự vận hành với nhịp thời gian thực (mặc định 300s/ngày, hỗ trợ 15s/30s/60s/custom), niên lịch 4 buổi & chu kỳ mùa, bộ sinh sự kiện 3 tier theo ngày game, và bảng điều khiển ADMIN CP quản trị toàn diện. |
+| **Trạng thái hiện tại của dự án?** | **Phase 6.14: Kiểm Chứng Động Cơ Thời Gian Thực & Độ Tin Cậy Sự Kiện đã hoàn thành 100%** (100% tests PASS, build thành công, 15/15 tests Phase 6.14 PASS, 26/26 test suites PASS tuyệt đối). Hệ thống STARFRONT WORLD tự vận hành với nhịp thời gian thực (mặc định 300s/ngày, hỗ trợ 15s/30s/60s/custom), bảo toàn tiến độ phân đoạn ngày khi pause/resume/reload, niên lịch 4 buổi & chu kỳ mùa, bộ sinh sự kiện 3 tier theo ngày game, và bảng điều khiển ADMIN CP quản trị toàn diện. |
 | **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô của toàn bộ sản phẩm, tích hợp vào thanh điều hướng cao nhất của Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
-| **Phase tiếp theo cần thực hiện?** | Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.9) đã hoàn tất 100%. Sẵn sàng bước sang các giai đoạn mở rộng tính năng mới theo yêu cầu của Chỉ Huy. |
+| **Phase tiếp theo cần thực hiện?** | Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.14) đã hoàn tất 100%. Sẵn sàng bước sang các giai đoạn mở rộng tính năng mới theo yêu cầu của Chỉ Huy. |
 | **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>2. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
 | **Phụ thuộc chính giữa WORLD và hệ thống hiện tại?** | - **Combat Integration**: Giao tiếp qua `WorldCombatAdapter`, sử dụng snapshot tại thời điểm khóa trận và Transaction ID chống double-apply.<br>- **Lưu trữ cách ly**: `STARFRONT_WORLD_SAVE_V1` độc lập hoàn toàn với `STARFRONT_SAVE_DATA_V4`, có sao lưu luân phiên A/B.<br>- **Navigation**: Tích hợp tab `world` vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`. |
 
@@ -80,13 +80,14 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.11** | **Tinh Chỉnh Bản Đồ Thiên Hà & Hệ Thống HUD (Galaxy Map & HUD Refinement)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/world-map.tsx`, `components/game/world/world-fullscreen-overlay.tsx`, `tests/world/galaxy-map-hud-ui.test.ts` |
 | **Phase 6.12** | **Biểu Đồ Xu Hướng Đe Dọa (Galaxy Map Threat Trendline)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/types.ts`, `lib/game/world/tick-engine.ts`, `components/game/world/world-map.tsx`, `tests/world/threat-trendline.test.ts` |
 | **Phase 6.13** | **Động Cơ Thời Gian Thực, Tự Động Sinh Sự Kiện/Nhiệm Vụ & ADMIN CP** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/simulator-config.ts`, `lib/game/world/calendar.ts`, `lib/game/world/event-generator.ts`, `components/game/world/operations-center.tsx`, `tests/world/realtime-simulator-admin.test.ts` |
+| **Phase 6.14** | **Kiểm Chứng Động Cơ Thời Gian Thực & Độ Tin Cậy Sự Kiện (Simulator Validation & Reliability)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/simulator-config.ts`, `lib/game/world/event-generator.ts`, `components/game/world/operations-center.tsx`, `tests/world/phase6-14-validation.test.ts` |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.13) đã hoàn tất 100%:
+Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.14) đã hoàn tất 100%:
 1. Toàn bộ 8 sector và 12 tuyến đường hoạt động trên bản đồ chiến lược với pan/zoom/reticle, tích hợp sâu vào Operations Center và Starfront Shell.
-2. Hệ thống mô phỏng thời gian thực tự động vận hành thế giới theo nhịp cấu hình (mặc định 300s/ngày, hỗ trợ 15s/30s/60s/custom), niên lịch 4 buổi & chu kỳ mùa.
+2. Hệ thống mô phỏng thời gian thực tự động vận hành thế giới theo nhịp cấu hình (mặc định 300s/ngày, hỗ trợ 15s/30s/60s/custom), bảo toàn tiến độ phân đoạn ngày, niên lịch 4 buổi & chu kỳ mùa.
 3. Bộ sinh sự kiện 3 tier tự động điều phối theo ngày game, và bảng điều khiển ADMIN CP hỗ trợ cấu hình tốc độ, generator, dev triggers và reset thế giới an toàn.
-4. 100% tests đạt chuẩn (bao gồm toàn bộ 25 test suites) và zero-regression được bảo đảm.
+4. 100% tests đạt chuẩn (bao gồm toàn bộ 26 test suites) và zero-regression được bảo đảm.

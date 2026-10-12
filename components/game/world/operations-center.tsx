@@ -75,8 +75,11 @@ import {
   validateSimulatorConfig,
   DEFAULT_SIMULATOR_CONFIG,
   DEFAULT_GENERATOR_CONFIG,
+  DEFAULT_EVENT_STRATEGY_POLICY,
   type WorldSimulatorConfig,
   type SimulationSpeedPreset,
+  type EventStrategyPolicyConfig,
+  type TierStrategyPreference,
 } from "@/lib/game/world/simulator-config"
 import { getGameCalendarInfo } from "@/lib/game/world/calendar"
 import {
@@ -84,6 +87,10 @@ import {
   countActiveEventsByTier,
   forceSpawnEventByTier,
 } from "@/lib/game/world/event-generator"
+import {
+  batchApplyEventStrategyPolicy,
+  evaluateAndApplyEventStrategyPolicy,
+} from "@/lib/game/world/event-strategy-policy"
 import { DualResultsHub } from "./dual-results-hub"
 import { QuickDispatchDock } from "./quick-dispatch-dock"
 import { WorldMap } from "./world-map"
@@ -138,15 +145,22 @@ export function OperationsCenter({
   // Dialogs & Form States
   const [isSpeedConfirmOpen, setIsSpeedConfirmOpen] = useState(false)
   const [pendingSpeed, setPendingSpeed] = useState<number | null>(null)
+  const [resetWorldOnSpeedChange, setResetWorldOnSpeedChange] = useState<boolean>(false)
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
   const [customSpeedInput, setCustomSpeedInput] = useState<string>("")
   const [generatorForm, setGeneratorForm] = useState(DEFAULT_SIMULATOR_CONFIG.generator)
+  const [strategyPolicyForm, setStrategyPolicyForm] = useState<EventStrategyPolicyConfig>(
+    DEFAULT_EVENT_STRATEGY_POLICY
+  )
 
   // Nạp WorldState & Simulator Config từ Storage khi mount + Offline Catch-up
   useEffect(() => {
     const cfg = loadSimulatorConfig()
     setSimulatorConfig(cfg)
     setGeneratorForm(cfg.generator)
+    if (cfg.strategyPolicy) {
+      setStrategyPolicyForm(cfg.strategyPolicy)
+    }
     isPausedRef.current = cfg.isPaused
     setCountdownSeconds(cfg.speedSeconds)
 
@@ -158,22 +172,41 @@ export function OperationsCenter({
     lastTickTimeRef.current = state.lastTickTimestamp || now
 
     // Bounded Offline Catch-up nếu simulator đang bật và đã trôi qua thời gian
-    if (!cfg.isPaused && state.lastTickTimestamp) {
+    if (state.lastTickTimestamp) {
       const elapsed = now - state.lastTickTimestamp
-      if (elapsed >= speedMs) {
-        const pendingTicks = Math.min(360, Math.floor(elapsed / speedMs))
-        if (pendingTicks > 0) {
-          for (let t = 0; t < pendingTicks; t++) {
-            executeWorldTick(state)
-            checkAndSpawnWorldEvents(state, cfg.generator)
+      if (elapsed < 0) {
+        // Phát hiện lùi giờ hệ thống: khử giá trị bất thường, neo lại về hiện tại
+        state.lastTickTimestamp = now
+        saveWorldState(state)
+        lastTickTimeRef.current = now
+        setDayFraction(0)
+        setCountdownSeconds(cfg.speedSeconds)
+      } else if (!cfg.isPaused) {
+        if (elapsed >= speedMs) {
+          const pendingTicks = Math.min(360, Math.floor(elapsed / speedMs))
+          if (pendingTicks > 0) {
+            for (let t = 0; t < pendingTicks; t++) {
+              executeWorldTick(state)
+              checkAndSpawnWorldEvents(state, cfg.generator, undefined, cfg.strategyPolicy)
+            }
+            saveWorldState(state)
+            const rem = elapsed % speedMs
+            lastTickTimeRef.current = now - rem
+            const fraction = Math.min(0.999, Math.max(0, rem / speedMs))
+            setDayFraction(fraction)
+            setCountdownSeconds(Math.max(1, Math.ceil((speedMs - rem) / 1000)))
           }
-          saveWorldState(state)
-          lastTickTimeRef.current = now - (elapsed % speedMs)
+        } else {
+          const fraction = Math.min(0.999, Math.max(0, elapsed / speedMs))
+          setDayFraction(fraction)
+          setCountdownSeconds(Math.max(1, Math.ceil((speedMs - elapsed) / 1000)))
         }
       } else {
-        const fraction = Math.min(0.999, elapsed / speedMs)
-        setDayFraction(fraction)
-        setCountdownSeconds(Math.max(1, Math.ceil((speedMs - elapsed) / 1000)))
+        // Đang tạm dừng: khôi phục chính xác tiến độ phân đoạn đã lưu
+        const pFraction = cfg.pausedFraction ?? 0
+        setDayFraction(pFraction)
+        setCountdownSeconds(Math.max(1, Math.ceil((1 - pFraction) * cfg.speedSeconds)))
+        lastTickTimeRef.current = now - pFraction * speedMs
       }
     }
 
@@ -196,14 +229,27 @@ export function OperationsCenter({
       const speedMs = simulatorConfig.speedSeconds * 1000
       const elapsed = now - lastTickTimeRef.current
 
+      if (elapsed < 0) {
+        // Đồng hồ hệ thống bị lùi trong lúc chạy: neo lại mốc thời gian mượt mà, không tick bất thường
+        lastTickTimeRef.current = now
+        setDayFraction(0)
+        setCountdownSeconds(simulatorConfig.speedSeconds)
+        return
+      }
+
       if (elapsed >= speedMs) {
         isTickingRef.current = true
         try {
           // Thực thi 1 Strategic Tick
           const tickRes = executeWorldTick(worldState, { logPhases: true })
 
-          // Sinh Event/Quest theo ngày game
-          const spawnRes = checkAndSpawnWorldEvents(worldState, simulatorConfig.generator)
+          // Sinh Event/Quest theo ngày game và áp dụng chính sách chiến lược
+          const spawnRes = checkAndSpawnWorldEvents(
+            worldState,
+            simulatorConfig.generator,
+            undefined,
+            simulatorConfig.strategyPolicy
+          )
 
           // Lưu vĩnh viễn trạng thái
           saveWorldState(worldState)
@@ -239,7 +285,11 @@ export function OperationsCenter({
   const handleTogglePause = () => {
     const newPaused = !simulatorConfig.isPaused
     playClickSound()
-    const updated: WorldSimulatorConfig = { ...simulatorConfig, isPaused: newPaused }
+    const updated: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      isPaused: newPaused,
+      pausedFraction: newPaused ? dayFraction : undefined,
+    }
     setSimulatorConfig(updated)
     isPausedRef.current = newPaused
     saveSimulatorConfig(updated)
@@ -259,26 +309,42 @@ export function OperationsCenter({
     if (newSpeed === simulatorConfig.speedSeconds) return
     playClickSound()
     setPendingSpeed(newSpeed)
+    setResetWorldOnSpeedChange(false)
     setIsSpeedConfirmOpen(true)
   }
 
-  // Xác nhận đổi tốc độ (bảo lưu tiến độ thế giới và điều chỉnh nhịp thời gian mượt mà)
+  // Xác nhận đổi tốc độ (bảo lưu tiến độ thế giới hoặc reset world tùy chọn)
   const handleConfirmSpeedChange = () => {
     if (!pendingSpeed) return
     playClickSound()
-    const updated: WorldSimulatorConfig = { ...simulatorConfig, speedSeconds: pendingSpeed }
+    const updated: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      speedSeconds: pendingSpeed,
+      pausedFraction: undefined,
+    }
     setSimulatorConfig(updated)
     saveSimulatorConfig(updated)
 
-    // Điều chỉnh mốc thời gian mượt mà, bảo toàn tỷ lệ fraction hiện tại
-    const newSpeedMs = pendingSpeed * 1000
-    lastTickTimeRef.current = Date.now() - dayFraction * newSpeedMs
-    setCountdownSeconds(Math.max(1, Math.ceil((1 - dayFraction) * pendingSpeed)))
+    if (resetWorldOnSpeedChange) {
+      // Đổi tốc độ kèm reset World theo yêu cầu người dùng
+      const freshState = resetWorldState()
+      setWorldState(freshState)
+      lastTickTimeRef.current = Date.now()
+      setDayFraction(0)
+      setCountdownSeconds(pendingSpeed)
+      showToast(`Đã chuyển tốc độ sang ${pendingSpeed}s/ngày và RESET WORLD về Ngày 1!`, "success")
+    } else {
+      // Điều chỉnh mốc thời gian mượt mà, bảo toàn tỷ lệ fraction hiện tại
+      const newSpeedMs = pendingSpeed * 1000
+      lastTickTimeRef.current = Date.now() - dayFraction * newSpeedMs
+      setCountdownSeconds(Math.max(1, Math.ceil((1 - dayFraction) * pendingSpeed)))
+      showToast(`Đã chuyển tốc độ mô phỏng sang 1 Ngày = ${pendingSpeed} giây thực!`, "success")
+    }
 
     setIsSpeedConfirmOpen(false)
     setPendingSpeed(null)
+    setResetWorldOnSpeedChange(false)
     playLevelUpSound()
-    showToast(`Đã chuyển tốc độ mô phỏng sang 1 Ngày = ${pendingSpeed} giây thực!`, "success")
   }
 
   // Hủy đổi tốc độ
@@ -286,6 +352,7 @@ export function OperationsCenter({
     playClickSound()
     setIsSpeedConfirmOpen(false)
     setPendingSpeed(null)
+    setResetWorldOnSpeedChange(false)
   }
 
   // Áp dụng tốc độ tùy chỉnh từ input
@@ -307,7 +374,12 @@ export function OperationsCenter({
     try {
       for (let i = 0; i < days; i++) {
         executeWorldTick(worldState)
-        checkAndSpawnWorldEvents(worldState, simulatorConfig.generator)
+        checkAndSpawnWorldEvents(
+          worldState,
+          simulatorConfig.generator,
+          undefined,
+          simulatorConfig.strategyPolicy
+        )
       }
       saveWorldState(worldState)
       setWorldState({ ...worldState })
@@ -327,7 +399,13 @@ export function OperationsCenter({
   const handleForceSpawnEvent = (tier: "small" | "medium" | "large") => {
     if (!worldState) return
     playClickSound()
-    const res = forceSpawnEventByTier(worldState, tier, simulatorConfig.generator)
+    const res = forceSpawnEventByTier(
+      worldState,
+      tier,
+      simulatorConfig.generator,
+      undefined,
+      simulatorConfig.strategyPolicy
+    )
     if (res.success && res.event) {
       saveWorldState(worldState)
       setWorldState({ ...worldState })
@@ -355,6 +433,7 @@ export function OperationsCenter({
   // Xác nhận Reset World độc lập
   const handleConfirmResetWorld = () => {
     playClickSound()
+    isTickingRef.current = false
     const freshState = resetWorldState()
     setWorldState(freshState)
 
@@ -384,6 +463,46 @@ export function OperationsCenter({
     saveSimulatorConfig(candidateConfig)
     playShieldSound()
     showToast("Đã lưu cấu hình Event/Quest Generator thành công!", "success")
+  }
+
+  // Phase 6.15: Lưu cấu hình chính sách chiến lược sự kiện
+  const handleSaveStrategyPolicy = () => {
+    playClickSound()
+    const updatedConfig: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      strategyPolicy: strategyPolicyForm,
+    }
+    const validation = validateSimulatorConfig(updatedConfig)
+    if (!validation.valid) {
+      showToast(`Cấu hình không hợp lệ: ${validation.errors[0]}`, "error")
+      return
+    }
+
+    setSimulatorConfig(updatedConfig)
+    saveSimulatorConfig(updatedConfig)
+    playShieldSound()
+    showToast("Đã lưu chính sách chiến lược sự kiện (Event Strategy Policy) thành công!", "success")
+  }
+
+  // Phase 6.15: Khôi phục chính sách chiến lược mặc định
+  const handleResetStrategyPolicyToDefault = () => {
+    playClickSound()
+    setStrategyPolicyForm({ ...DEFAULT_EVENT_STRATEGY_POLICY })
+    showToast("Đã khôi phục chính sách chiến lược về mặc định ban đầu.", "info")
+  }
+
+  // Phase 6.15: Áp dụng chính sách cho tất cả sự kiện INIT đang chờ
+  const handleBatchApplyStrategyPolicy = () => {
+    if (!worldState) return
+    playClickSound()
+    const batchRes = batchApplyEventStrategyPolicy(worldState, strategyPolicyForm)
+    saveWorldState(worldState)
+    setWorldState({ ...worldState })
+    playLevelUpSound()
+    showToast(
+      `Đã áp dụng chính sách: ${batchRes.autoProcessedCount} System Auto, ${batchRes.defaultFallbackCount} Default Fallback, ${batchRes.playerChoiceCount} Chờ chỉ huy.`,
+      "success"
+    )
   }
 
   // Thông tin Niên lịch & Đồng hồ
@@ -445,6 +564,12 @@ export function OperationsCenter({
 
     try {
       const tickRes = executeWorldTick(worldState, { logPhases: true })
+      const spawnRes = checkAndSpawnWorldEvents(
+        worldState,
+        simulatorConfig.generator,
+        undefined,
+        simulatorConfig.strategyPolicy
+      )
       saveWorldState(worldState)
       setWorldState({ ...worldState })
       playShieldSound()
@@ -459,12 +584,15 @@ export function OperationsCenter({
       const autoLocked = tickRes.eventsSummary?.autoLockedCount || 0
       const resolved = tickRes.eventsSummary?.resolvedCount || 0
       let eventNote = ""
+      if (spawnRes.spawnedEvents.length > 0) {
+        eventNote += ` · Xuất hiện ${spawnRes.spawnedEvents.length} sự kiện mới`
+      }
       if (autoLocked > 0 && resolved > 0) {
-        eventNote = ` · ${resolved} sự kiện hoàn tất, ${autoLocked} sự kiện tự động khóa`
+        eventNote += ` · ${resolved} sự kiện hoàn tất, ${autoLocked} sự kiện tự động khóa`
       } else if (resolved > 0) {
-        eventNote = ` · ${resolved} sự kiện hoàn tất`
+        eventNote += ` · ${resolved} sự kiện hoàn tất`
       } else if (autoLocked > 0) {
-        eventNote = ` · ${autoLocked} sự kiện tự động khóa phương án mặc định`
+        eventNote += ` · ${autoLocked} sự kiện tự động khóa phương án mặc định`
       }
 
       showToast(`Chiến lược đã bước sang Ngày ${worldState.currentDay}! (${summaryLogs.length} biến động${eventNote})`, "success")
@@ -2225,13 +2353,168 @@ export function OperationsCenter({
           </div>
 
           {/* ================================================================
-              KHỐI 3: KÍCH HOẠT THỬ NGHIỆM & LỆNH NHANH (DEV TRIGGERS)
+              KHỐI 3: CẤU HÌNH CHÍNH SÁCH CHIẾN LƯỢC SỰ KIỆN (STRATEGY POLICY)
+              ================================================================ */}
+          <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-cyan-400" />
+                <h3 className="text-xs font-bold uppercase text-cyan-300 tracking-wider">
+                  3. Chính Sách Lựa Chọn Chiến Lược Sự Kiện (Event Strategy Policy & System Auto)
+                </h3>
+              </div>
+              <span className="text-[10px] text-zinc-400">
+                Ưu tiên 3 cấp: System Auto &rarr; Default Fallback &rarr; Player Choice
+              </span>
+            </div>
+
+            <p className="text-[10px] text-zinc-400 leading-relaxed">
+              Hệ thống tự động đánh giá các chiến lược hợp lệ dựa trên tỷ lệ thành công, biến động độ ổn định, mức đe dọa, ngữ cảnh sector, chi phí và tổn thất. Khi tự động không khả thi, hệ thống lùi về phương án mặc định, hoặc chuyển quyền quyết định cho Chỉ Huy mà không crash simulator.
+            </p>
+
+            {/* 3 Cấp Độ Toàn Cục */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
+              <label className="flex items-start gap-2 rounded border border-cyan-500/30 bg-zinc-900/40 p-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={strategyPolicyForm.systemAutoEnabled}
+                  onChange={(e) =>
+                    setStrategyPolicyForm({
+                      ...strategyPolicyForm,
+                      systemAutoEnabled: e.target.checked,
+                    })
+                  }
+                  className="rounded accent-cyan-400 mt-0.5"
+                />
+                <div>
+                  <div className="font-bold text-cyan-300">Cấp 1: System Auto</div>
+                  <div className="text-[10px] text-zinc-400">
+                    Tự động chấm điểm & phê chuẩn phương án tối ưu nhất.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-2 rounded border border-amber-500/30 bg-zinc-900/40 p-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={strategyPolicyForm.defaultFallbackEnabled}
+                  onChange={(e) =>
+                    setStrategyPolicyForm({
+                      ...strategyPolicyForm,
+                      defaultFallbackEnabled: e.target.checked,
+                    })
+                  }
+                  className="rounded accent-amber-400 mt-0.5"
+                />
+                <div>
+                  <div className="font-bold text-amber-300">Cấp 2: Default Fallback</div>
+                  <div className="text-[10px] text-zinc-400">
+                    Dự phòng phương án mặc định nếu System Auto không đủ điều kiện.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-2 rounded border border-indigo-500/30 bg-zinc-900/40 p-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={strategyPolicyForm.playerChoiceFallbackEnabled}
+                  onChange={(e) =>
+                    setStrategyPolicyForm({
+                      ...strategyPolicyForm,
+                      playerChoiceFallbackEnabled: e.target.checked,
+                    })
+                  }
+                  className="rounded accent-indigo-400 mt-0.5"
+                />
+                <div>
+                  <div className="font-bold text-indigo-300">Cấp 3: Player Choice</div>
+                  <div className="text-[10px] text-zinc-400">
+                    Chờ người chơi can thiệp khi cả 2 cấp trên không thể thực thi.
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Tùy Chọn Ưu Tiên Theo Từng Tier */}
+            <div className="space-y-2 pt-2 border-t border-zinc-800/80">
+              <div className="text-[11px] font-bold text-zinc-300 uppercase">
+                Ưu Tiên Chiến Lược Theo Từng Quy Mô (Tier Strategy Preference):
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-[11px]">
+                {[
+                  { key: "small", label: "Sự Kiện Nhỏ (Small)", color: "text-cyan-300" },
+                  { key: "medium", label: "Sự Kiện Vừa (Medium)", color: "text-amber-300" },
+                  { key: "large", label: "Sự Kiện Lớn (Large)", color: "text-rose-300" },
+                ].map(({ key, label, color }) => {
+                  const currentPref = strategyPolicyForm.tierPolicies[key as "small" | "medium" | "large"]
+                  return (
+                    <div key={key} className="rounded border border-zinc-800 bg-zinc-900/50 p-2.5 space-y-1.5">
+                      <div className={cn("font-bold text-xs uppercase", color)}>{label}</div>
+                      <select
+                        value={currentPref}
+                        onChange={(e) =>
+                          setStrategyPolicyForm({
+                            ...strategyPolicyForm,
+                            tierPolicies: {
+                              ...strategyPolicyForm.tierPolicies,
+                              [key]: e.target.value as TierStrategyPreference,
+                            },
+                          })
+                        }
+                        className="w-full rounded border border-zinc-700 bg-black/60 px-2 py-1 text-xs font-mono text-zinc-200 focus:border-cyan-400 focus:outline-none cursor-pointer"
+                      >
+                        <option value="system_auto">1. Ưu tiên System Auto</option>
+                        <option value="default_fallback">2. Buộc dùng Default Strategy</option>
+                        <option value="player_choice">3. Thủ công (Player Choice)</option>
+                      </select>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Action Buttons for Strategy Policy */}
+            <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-zinc-800/80">
+              <button
+                type="button"
+                onClick={handleBatchApplyStrategyPolicy}
+                className="flex items-center gap-1.5 rounded border border-cyan-500/60 bg-cyan-950/60 px-3 py-1.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
+                title="Đánh giá và phê chuẩn ngay cho tất cả các sự kiện INIT đang chờ"
+              >
+                <Zap className="size-3.5 text-cyan-400" />
+                <span>Áp Dụng Cho Tất Cả Sự Kiện Chờ</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleResetStrategyPolicyToDefault}
+                  className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="size-3.5 text-zinc-400" />
+                  <span>Khôi Phục Mặc Định</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveStrategyPolicy}
+                  className="flex items-center gap-1.5 rounded border border-cyan-400 bg-cyan-600/40 px-3.5 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-600/60 hover:text-white transition-all cursor-pointer shadow-md shadow-cyan-950/50"
+                >
+                  <Save className="size-3.5" />
+                  <span>Lưu Chính Sách Chiến Lược</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ================================================================
+              KHỐI 4: KÍCH HOẠT THỬ NGHIỆM & LỆNH NHANH (DEV TRIGGERS)
               ================================================================ */}
           <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
             <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2.5">
               <Zap className="size-4 text-amber-400" />
               <h3 className="text-xs font-bold uppercase text-amber-300 tracking-wider">
-                3. Thao Tác Kích Hoạt Thử Nghiệm Nhanh (Dev & Testing Actions)
+                4. Thao Tác Kích Hoạt Thử Nghiệm Nhanh (Dev & Testing Actions)
               </h3>
             </div>
 
@@ -2423,8 +2706,27 @@ export function OperationsCenter({
                 </div>
               </div>
               <p className="text-[11px] text-zinc-400 leading-relaxed">
-                Tiến độ ngày hiện tại sẽ được bảo lưu theo tỷ lệ phân đoạn mới, không gây chạy bù ngoài dự kiến và giữ nguyên toàn bộ lịch sử thế giới.
+                {resetWorldOnSpeedChange
+                  ? "Cảnh báo: Thế giới sẽ được reset về Ngày 1 và bắt đầu vận hành ngay với tốc độ mới. RPG Save V4 được bảo toàn 100%."
+                  : "Tiến độ ngày hiện tại sẽ được bảo lưu theo tỷ lệ phân đoạn mới, không gây chạy bù ngoài dự kiến và giữ nguyên toàn bộ lịch sử thế giới."}
               </p>
+
+              {/* Tùy chọn Reset World kèm theo */}
+              <div className="flex items-center gap-2 rounded bg-zinc-900/60 p-2 border border-zinc-800">
+                <input
+                  type="checkbox"
+                  id="resetWorldOnSpeedChangeCb"
+                  checked={resetWorldOnSpeedChange}
+                  onChange={(e) => setResetWorldOnSpeedChange(e.target.checked)}
+                  className="size-3.5 rounded border-zinc-700 bg-zinc-950 text-cyan-500 focus:ring-0 cursor-pointer"
+                />
+                <label
+                  htmlFor="resetWorldOnSpeedChangeCb"
+                  className="text-[11px] text-zinc-300 cursor-pointer select-none"
+                >
+                  Đồng thời Reset WORLD về Ngày 1 (Bắt đầu chu kỳ mô phỏng mới)
+                </label>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-zinc-800">

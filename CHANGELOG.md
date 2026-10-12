@@ -4,6 +4,74 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.15] — STARFRONT WORLD: Chính Sách Lựa Chọn Chiến Lược & Tự Động Phê Chuẩn (Event Strategy Policy & System Auto Strategy)
+
+*Đã hoàn thành 100% Phase 6.15 — Triển khai cơ chế điều phối và lựa chọn chiến lược sự kiện 3 cấp độ tập trung, minh bạch và tất định cho STARFRONT WORLD: System Auto Strategy (Cấp 1) -> Default Strategy Fallback (Cấp 2) -> Player Choice Fallback (Cấp 3). Tích hợp toàn diện vào Events & Missions Board, Dual Results Hub, ADMIN CP và Tick Engine (100% tests PASS, 27/27 test suites, 0 regression)*
+
+### Các tính năng & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Module Lựa Chọn Chiến Lược Tập Trung (`lib/game/world/event-strategy-policy.ts`, `lib/game/world/index.ts`)**:
+  - **Thẩm định khả thi nghiêm ngặt (`validateStrategyExecution`)**: Kiểm tra đầy đủ tài nguyên (`credits`, `alloys`, `energy`, `minerals`, `food`, ...), quân lực dự bị (`military.reserves`) và ngữ cảnh chiến đấu của sector.
+  - **Hệ thống chấm điểm minh bạch (`scoreEventStrategy`)**:
+    * Tỷ lệ thành công (tối đa +50đ).
+    * Biến động độ ổn định (+3đ/điểm tăng, -2đ/điểm giảm).
+    * Biến động mức đe dọa (+2đ/điểm hạ, -2đ/điểm tăng).
+    * Ngữ cảnh Sector khẩn cấp: Threat >= 500 (+25đ), Stability <= 50 (+20đ).
+    * Chiết khấu tiêu hao tài nguyên (tối đa -30đ) và quân sự (tối đa -25đ).
+    * Ưu tiên thời gian thực thi ngắn (tối đa -15đ).
+    * Tổn thất nhân mạng dân sự/quân sự (tối đa -30đ/mỗi loại) và phần thưởng tài nguyên (+25đ).
+  - **Phá vỡ thế hòa ổn định (`selectBestStrategyForEvent`)**: Tiêu chí tất định theo thứ tự `score DESC -> successChance DESC -> processingTicks ASC -> id ASC`.
+  - **Áp dụng chiến lược an toàn (`applyStrategyToEvent`)**: Khấu trừ tài nguyên, điều động quân số dự bị sang triển khai, khóa Encounter Snapshot nếu yêu cầu combat, cập nhật trạng thái sự kiện sang `PROCESSING`.
+  - **Điều phối 3 cấp độ (`evaluateAndApplyEventStrategyPolicy`)**:
+    * **Cấp 1 — System Auto Strategy**: Tự động chấm điểm và áp dụng phương án tối ưu hợp lệ.
+    * **Cấp 2 — Default Strategy Fallback**: Tự động kích hoạt phương án mặc định an toàn nếu System Auto không tìm được phương án thỏa điều kiện.
+    * **Cấp 3 — Player Choice Fallback**: Chuyển quyền quyết định cho Chỉ Huy kèm lý do cụ thể khi cả 2 cấp trên không khả thi, không crash hay nghẽn simulator.
+  - **Hỗ trợ thực thi hàng loạt (`batchApplyEventStrategyPolicy`)**: Quét và phê chuẩn tức thì cho toàn bộ sự kiện INIT đang chờ.
+- **2. Đồng Bộ Giao Diện & Trải Nghiệm Người Chơi**:
+  - **Events & Missions Board (`components/game/world/events-missions-board.tsx`)**:
+    * Thẻ chiến lược hiển thị điểm số đánh giá, huy hiệu "★ Đề Xuất", "Mặc Định", và hộp phân tích lý do chấm điểm mở rộng.
+    * Nút "System Auto Phê Chuẩn Ngay" cho phép người chơi kích hoạt đánh giá tự động tức thì.
+    * Huy hiệu nguồn gốc chiến lược (`Chờ Chỉ Huy`, `System Auto`, `Default Fallback`) và thông báo nguyên nhân nếu tự động thất bại.
+  - **Dual Results Hub (`components/game/world/dual-results-hub.tsx`)**:
+    * Hiển thị rõ nguồn gốc phê chuẩn (`SYSTEM AUTO`, `DEFAULT FALLBACK`, `CHỈ HUY PHÊ CHUẨN`) và lý do lựa chọn trong lịch sử lưu trữ sự kiện.
+  - **ADMIN CP (`components/game/world/operations-center.tsx`)**:
+    * Bổ sung mục quản trị chính sách chiến lược: Bật/tắt 3 cấp độ toàn cục, cấu hình ưu tiên theo từng Tier (`Small`, `Medium`, `Large`), nút áp dụng cho tất cả sự kiện chờ, khôi phục mặc định và lưu trữ cấu hình.
+- **3. Bộ Kiểm Thử Chuyên Sâu (`tests/world/event-strategy-policy.test.ts`)**:
+  - 13 unit tests bao phủ đầy đủ validation, chấm điểm tất định, phá vỡ thế hòa, 3 cấp độ điều phối, thực thi hàng loạt, khấu trừ tài nguyên và lưu trữ bền vững (13/13 tests PASS).
+  - Đảm bảo 100% không ảnh hưởng hoặc làm sai lệch phân hệ RPG Save V4.
+
+---
+
+## [Phase 6.14] — STARFRONT WORLD: Kiểm Chứng Động Cơ Thời Gian Thực & Độ Tin Cậy Sự Kiện (Real-time Simulator Validation & Event Reliability)
+
+*Đã hoàn thành 100% Phase 6.14 — Kiểm chứng có mục tiêu toàn diện các hệ thống thời gian thực, tự động sinh Event/Quest, tính bền vững sau reload và reset thế giới (100% tests PASS, 26/26 test suites, 0 regression)*
+
+### Các kết quả kiểm chứng & cải tiến kỹ thuật đã thực hiện:
+- **A. Tốc Độ Mô Phỏng & Toàn Vẹn Chu Kỳ Tick (`lib/game/world/simulator-config.ts`, `components/game/world/operations-center.tsx`)**:
+  - Kiểm chứng tự động cả hai tốc độ 15 giây/ngày và 300 giây/ngày; mỗi ngày game chỉ commit duy nhất một lần.
+  - Bổ sung trường `pausedFraction` trong `WorldSimulatorConfig` để bảo toàn chính xác tiến độ phân đoạn trong ngày qua các lần Pause/Resume và Reload trang.
+  - Chống hoàn toàn tick trùng và chạy bù ngoài ý muốn khi đổi tab, unmount/remount component hay tải lại giao diện.
+- **B. Bộ Sinh Event/Quest & Concurrency Guard (`lib/game/world/event-generator.ts`, `components/game/world/operations-center.tsx`)**:
+  - Mô phỏng xuyên suốt 40 ngày game: xác nhận Event/Quest thực sự tự động xuất hiện theo lịch game-time mà không cần thao tác thủ công Force Spawn.
+  - Phát hiện và khắc phục lỗi thiếu kiểm tra giới hạn `maxActive` theo từng Tier trong hàm `forceSpawnEventByTier`.
+  - Khắc phục việc thiếu gọi `checkAndSpawnWorldEvents` khi bấm nút "+1 Ngày Chiến Lược" thủ công trong Operations Center.
+  - Xác nhận tính nhất quán 100% giữa thẻ chỉ số Overview (`countActiveEventsByTier().total`) và danh sách sự kiện trên Events & Missions Board (`getActiveEvents().length`).
+  - Kiểm tra đầy đủ vòng đời: Lifetime, Countdown deadline, Auto-lock phương án mặc định, Resolve kết quả và lưu trữ vào `eventResultsArchive`.
+- **C. Lưu Trữ Bền Vững, Reset & Bảo Vệ RPG Save V4 (`lib/game/world/storage.ts`, `components/game/world/operations-center.tsx`)**:
+  - Xác nhận `nextEventSpawnDay` và `decisionDeadlineTick` được lưu trữ bền vững qua các lần reload mà không bị mất hoặc reset mốc đếm.
+  - Xác nhận hủy đổi tốc độ giữ nguyên WorldState và cấu hình cũ.
+  - Bổ sung tùy chọn checkbox cho phép người dùng chọn Reset World về Ngày 1 khi đổi tốc độ hoặc giữ nguyên tiến độ thế giới.
+  - Xác nhận Reset WORLD độc lập giữ nguyên cấu hình tốc độ và bộ sinh generator, đồng thời hủy bỏ cờ `isTickingRef` để ngăn chặn bất kỳ scheduler cũ nào ghi đè dữ liệu.
+  - Bảo đảm cách ly 100% an toàn cho phân hệ RPG Save V4 (`STARFRONT_SAVE_DATA_V4`) trong mọi kịch bản Reset.
+- **D. Catch-Up Bounded & Niên Lịch Thiên Hà (`lib/game/world/catchup-engine.ts`, `lib/game/world/calendar.ts`)**:
+  - Xác nhận Bounded Catch-up tuân thủ nghiêm ngặt trần an toàn `OFFLINE_CATCHUP_CAP = 360 ticks`.
+  - Bảo đảm tính lũy đẳng: hậu quả của sự kiện không bao giờ bị áp dụng trùng lặp dù hàm được gọi nhiều lần.
+  - Xác nhận niên lịch 4 buổi (Sáng/Chiều/Tối/Đêm), ngày/tháng/mùa/năm tính toán mượt mà và nhất quán qua các điểm chuyển giao ranh giới (Ngày 30->31, 90->91, 360->361).
+  - Tích hợp bộ lọc chống lùi giờ hệ thống: khử giá trị âm bất thường và neo lại mốc thời gian an toàn mà không sinh tick hay event sai lệch.
+- **E. Bộ Test Suite Chuyên Sâu (`tests/world/phase6-14-validation.test.ts`)**:
+  - Bổ sung 15 unit tests chuyên biệt bao phủ toàn bộ 4 kịch bản A, B, C, D (15/15 tests PASS, toàn bộ 26 test suites của STARFRONT PASS 100%).
+
+---
+
 ## [Phase 6.13] — STARFRONT WORLD: Động Cơ Thời Gian Thực, Tự Động Sinh Sự Kiện/Nhiệm Vụ & ADMIN CP (Real-time Simulator, Event/Quest Generator & ADMIN CP)
 
 *Đã hoàn thành 100% Phase 6.13 — Khởi động hệ thống mô phỏng thời gian thực cho STARFRONT WORLD: ngày game tự vận hành trôi qua, niên lịch thiên hà 4 buổi (Sáng/Chiều/Tối/Đêm), bộ sinh Event/Quest 3 tier chuẩn hóa theo Ngày Game, trung tâm quản trị ADMIN CP toàn diện cho phép cấu hình tốc độ, tạm dừng/tiếp tục, dev triggers và reset thế giới an toàn (100% tests PASS, 25/25 test suites)*

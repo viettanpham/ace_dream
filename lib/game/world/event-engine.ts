@@ -285,6 +285,9 @@ export function chooseEventStrategy(
   // Chuyển trạng thái sang PROCESSING
   event.status = "PROCESSING"
   event.chosenStrategyId = strategyId
+  event.strategySource = "player_choice"
+  event.selectionReason = "Chỉ huy trực tiếp phê chuẩn phương án."
+  event.autoSelectionFailureReason = undefined
   event.processingStartedTick = state.currentDay
   event.processingCompletesTick = state.currentDay + Math.max(1, strategy.processingTicks)
 
@@ -317,6 +320,9 @@ export function autoLockDefaultStrategy(
   // Chuyển sang PROCESSING với chiến lược mặc định
   event.status = "PROCESSING"
   event.chosenStrategyId = chosenId
+  event.strategySource = "default_fallback"
+  event.selectionReason = `Hết hạn đếm ngược (Ngày ${state.currentDay}): Tự động khóa phương án mặc định "${strategy?.name || chosenId}".`
+  event.autoSelectionFailureReason = undefined
   event.processingStartedTick = state.currentDay
   event.processingCompletesTick =
     state.currentDay + (strategy ? Math.max(1, strategy.processingTicks) : 1)
@@ -484,6 +490,12 @@ export function resolveProcessingEvent(
     isRead: false,
     missionChainId: event.missionChainId,
     nextNodeUnlocked: strategy?.nextChainNodeId,
+    strategySource: event.strategySource || (isDefault ? "default_fallback" : "player_choice"),
+    selectionReason:
+      event.selectionReason ||
+      (isDefault
+        ? "Tự động khóa phương án mặc định do hết hạn đếm ngược"
+        : "Chỉ huy trực tiếp phê chuẩn phương án"),
   }
 
   event.status = "RESULT"

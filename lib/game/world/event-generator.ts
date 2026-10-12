@@ -11,7 +11,8 @@ import { WorldPRNG } from "./random"
 import { EVENT_TEMPLATES, createEventFromTemplate } from "./event-templates"
 import { canRegisterWorldEvent, registerWorldEvent, ensureWorldEventState } from "./event-engine"
 import { DEFAULT_GENERATOR_CONFIG, type WorldGeneratorConfig } from "./simulator-config"
-import type { WorldEvent, WorldState } from "./types"
+import type { WorldEvent, WorldState, EventStrategyPolicyConfig } from "./types"
+import { evaluateAndApplyEventStrategyPolicy } from "./event-strategy-policy"
 
 /**
  * Bảng phân loại 20 Templates sự kiện vào 3 Tiers chuẩn hóa
@@ -107,7 +108,8 @@ export function ensureNextEventSpawnDay(state: WorldState, config = DEFAULT_GENE
 export function checkAndSpawnWorldEvents(
   state: WorldState,
   config: WorldGeneratorConfig = DEFAULT_GENERATOR_CONFIG,
-  customPrng?: WorldPRNG
+  customPrng?: WorldPRNG,
+  policyConfig?: EventStrategyPolicyConfig
 ): {
   spawnedEvents: WorldEvent[]
   logs: string[]
@@ -212,6 +214,15 @@ export function checkAndSpawnWorldEvents(
 
       if (regRes.success && regRes.event) {
         createdEvent = regRes.event
+
+        // Phase 6.15: Đánh giá chính sách chiến lược nếu được cung cấp
+        if (policyConfig) {
+          const decision = evaluateAndApplyEventStrategyPolicy(state, regRes.event, policyConfig)
+          if (decision.applied) {
+            logs.push(`[POLICY] ${decision.reason}`)
+          }
+        }
+
         spawnedEvents.push(regRes.event)
         logs.push(
           `[GENERATOR] Đã kích hoạt sự kiện [${tier.toUpperCase()}] "${event.title}" tại ${targetSectorId || "Toàn Thiên Hà"} (Hạn chót: Ngày ${event.decisionDeadlineTick})`
@@ -240,7 +251,8 @@ export function forceSpawnEventByTier(
   state: WorldState,
   tier: "small" | "medium" | "large",
   config: WorldGeneratorConfig = DEFAULT_GENERATOR_CONFIG,
-  customPrng?: WorldPRNG
+  customPrng?: WorldPRNG,
+  policyConfig?: EventStrategyPolicyConfig
 ): { success: boolean; event?: WorldEvent; message: string } {
   ensureWorldEventState(state)
   const prng = customPrng || new WorldPRNG(Date.now() + Math.floor(Math.random() * 10000))
@@ -250,6 +262,12 @@ export function forceSpawnEventByTier(
   }
 
   const counts = countActiveEventsByTier(state)
+  if (counts[tier] >= config[tier].maxActive) {
+    return {
+      success: false,
+      message: `Tier ${tier.toUpperCase()} đã chạm trần số lượng hoạt động (${counts[tier]}/${config[tier].maxActive}).`,
+    }
+  }
   if (counts.total >= config.maxGlobalActive) {
     return { success: false, message: `Đã đạt trần tối đa toàn thiên hà (${counts.total}/${config.maxGlobalActive}).` }
   }
@@ -300,6 +318,9 @@ export function forceSpawnEventByTier(
     })
 
     if (regRes.success && regRes.event) {
+      if (policyConfig) {
+        evaluateAndApplyEventStrategyPolicy(state, regRes.event, policyConfig)
+      }
       return {
         success: true,
         event: regRes.event,

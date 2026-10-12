@@ -4,6 +4,39 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.26] — STARFRONT WORLD: Trực Quan Hóa Xu Hướng Đe Dọa & Dự Trữ Tài Nguyên (Threat & Resource Trend Visualization)
+
+*Đã hoàn thành 100% Phase 6.26 — Nâng cấp toàn diện tab Tình Hình Toàn Cảnh (Overview) với hệ thống trực quan hóa trực quan bằng biểu đồ đường Threat Visualizer (SVG) và micro-sparklines cho tài nguyên thiết yếu (Lương thực dân sự & Vật tư tiếp tế); giúp người chỉ huy phát hiện sớm các nguy cơ leo thang đe dọa hoặc nguy cơ cạn kiệt tài nguyên trước khi khủng hoảng xảy ra; tích hợp 2 chế độ hiển thị Threat (Điểm Nóng Tác Chiến và Trung Bình Toàn Thiên Hà); hiển thị Delta biến động theo chu kỳ ngày thực tế kèm tooltip tương tác; trạng thái Fallback trung thực "Chưa đủ dữ liệu lịch sử" khi có dưới 2 điểm thay vì giả lập số liệu; bảo toàn 100% World Save Schema V1, RPG Save V4, Tick Engine và các ngưỡng cảnh báo hiện có (7/7 Phase 6.26 tests PASS, 36/36 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Component `ThreatVisualizer` (Biểu Đồ Đường Xu Hướng Đe Dọa)** (`threat-visualizer.tsx`):
+  * Dựng biểu đồ đường SVG responsive gọn nhẹ (viewBox 280x52px) thể hiện biến động Threat qua các chu kỳ ngày chiến lược thực tế.
+  * Hỗ trợ 2 chế độ xem linh hoạt qua toggle: **Điểm Nóng Tác Chiến** (Critical Sector) và **Trung Bình Toàn Thiên Hà** (Galaxy Average Threat).
+  * Tự động tính toán Delta (+/- Threat) và chỉ hướng biến động: Tăng (`up` - đỏ), Giảm (`down` - lục), Ổn định (`flat` - xám).
+  * Tương tác mượt mà: Tooltip khi hover hiển thị chi tiết mốc ngày và mức Threat tại từng điểm nút; hiệu ứng sóng lan tỏa tại điểm dữ liệu mới nhất.
+  * Hàng nhãn mốc thời gian ngày chiến lược (N#1..N#10) có thể tương tác chọn điểm.
+  * Fallback trung thực: Hiển thị thông báo *"Chưa đủ dữ liệu lịch sử"* (Cần ít nhất 2 chu kỳ ngày chiến lược) khi dữ liệu `< 2` điểm; không nội suy hay dựng xu hướng giả.
+  * Nút điều hướng nhanh: Cho phép nhảy trực tiếp tới Sector trong War Room từ thẻ Điểm Nóng.
+- **2. Component `ResourceSparkline` (Sparkline Lương Thực & Vật Tư Tiếp Tế)** (`resource-sparkline.tsx`):
+  * Tích hợp micro-sparkline SVG (84x24px) gọn gàng bên cạnh thông tin dự trữ tài nguyên trong Thẻ 1.3 (Quân Sự & Hậu Cần).
+  * Áp dụng cho 2 tài nguyên thiết yếu: **Lương thực dân sự (Civilian Food)** và **Vật tư tiếp tế (Logistics Supplies)**.
+  * Cơ chế ghi nhận lịch sử theo phiên (Session Resource History Tracker) ghi nhận tối đa 10 chu kỳ ngày thực tế trong phiên mà không sửa đổi World Save Schema V1.
+  * Khi phiên có dưới 2 mốc ghi nhận, hiển thị chính xác trạng thái *"Chưa đủ dữ liệu lịch sử"*, không giả lập dữ liệu từ giá trị hiện tại.
+  * Khi có từ 2 mốc trở lên, hiển thị đường xu hướng thu nhỏ kèm biến động Delta (+/- trên ngày) và tooltip khi hover.
+  * Bảo toàn 100% ngưỡng cảnh báo thiết yếu đang sử dụng:
+    - Food: Cạn kiệt (`<= 0`), Thiếu hụt cảnh báo (`< 100`), An toàn (`>= 100`).
+    - Logistics Supplies: Cạn kiệt (`<= 0`), Thiếu hụt cảnh báo (`< 50`), An toàn (`>= 50`).
+- **3. Tích Hợp Vào Strategic Overview & Bảo Toàn Kiến Trúc 3 Tầng** (`operations-center.tsx`):
+  * Tích hợp `ThreatVisualizer` vào Thẻ 1.2 (Threat & Điểm Nóng) và `ResourceSparkline` vào Thẻ 1.3 (Quân Sự & Hậu Cần).
+  * Giữ nguyên cấu trúc 3 tầng: Tầng 1 Strategic Status, Tầng 2 Actionable Situation Triage (P0/P1/P2), Tầng 3 Operational Pulse.
+  * Không làm mất hay che khuất các cảnh báo P0/P1/P2, Quick Review Modal hay Debriefing Drawer.
+- **4. Bảo Toàn Gameplay, Save Schemas & Kiểm Thử Tự Động**:
+  * Giữ nguyên schema `STARFRONT_WORLD_SAVE_V1` và `STARFRONT_SAVE_DATA_V4`.
+  * Bộ kiểm thử tự động `tests/world/phase6-26-threat-resource-trend-visualization.test.ts` đạt 7/7 test cases PASS.
+  * Toàn bộ 36 test suites của dự án đạt 100% PASS tuyệt đối.
+
+---
+
 ## [Phase 6.25] — STARFRONT WORLD: Tái Thiết Kế Bàn Chỉ Huy Sự Kiện & Nhiệm Vụ (Events & Missions Command Desk Redesign)
 
 *Đã hoàn thành 100% Phase 6.25 — Tái thiết kế toàn diện tab Events & Missions thành Bàn Chỉ Huy Chiến Lược (Command Desk) 3 chế độ độc lập: Cần Quyết Định [INIT], Đang Triển Khai [PROCESSING] và Chuỗi Nhiệm Vụ [CHAINS]; loại bỏ khối Recent Results Feed trùng lặp khỏi chân trang mà bảo toàn nguyên vẹn kho dữ liệu Event Archive & Debriefing Drawer; chế độ INIT tập trung vào mục tiêu bối cảnh và so sánh 2-3 phương án trực quan, ẩn công thức chi tiết nhưng xem được khi cần, chỉ hiển thị xác suất thực tế; chế độ PROCESSING chuyển sang trạm giám sát tiến độ thực tế không có nút phê chuẩn trùng lặp; chế độ CHAINS nâng cấp thành pipeline stepper toàn diện với 4 trạng thái nút rõ ràng và điều hướng sector trực tiếp; bảo toàn 100% logic engine, validation, concurrency guard và cách ly lưu trữ (7/7 Phase 6.25 tests PASS, 35/35 Test Suites PASS, build & lint thành công).*

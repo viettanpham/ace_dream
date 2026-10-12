@@ -103,6 +103,8 @@ import { WorldFullscreenOverlay } from "./world-fullscreen-overlay"
 import { EventsMissionsBoard } from "./events-missions-board"
 import { AdminSettingsModal } from "./admin-settings-modal"
 import { DebriefingDrawer } from "./debriefing-drawer"
+import { ThreatVisualizer } from "./threat-visualizer"
+import { ResourceSparkline } from "./resource-sparkline"
 import {
   lockEncounterAndCreateSnapshot,
   abortSuspendedCombat,
@@ -165,6 +167,12 @@ export function OperationsCenter({
 
   // Phase 6.24: Quick approval review modal state from Strategic Overview
   const [reviewingEvent, setReviewingEvent] = useState<WorldEvent | null>(null)
+
+  // Phase 6.26: Threat Visualizer mode & Session Resource History (Không thay đổi Schema V1)
+  const [threatVisualizerMode, setThreatVisualizerMode] = useState<"critical" | "average">("critical")
+  const [sessionResourceHistory, setSessionResourceHistory] = useState<
+    Array<{ day: number; food: number; logisticsSupplies: number }>
+  >([])
 
   // Nạp WorldState & Simulator Config từ Storage khi mount + Offline Catch-up
   useEffect(() => {
@@ -411,6 +419,7 @@ export function OperationsCenter({
     isTickingRef.current = false
     const freshState = resetWorldState()
     setWorldState(freshState)
+    setSessionResourceHistory([])
 
     lastTickTimeRef.current = Date.now()
     setDayFraction(0)
@@ -502,6 +511,29 @@ export function OperationsCenter({
       setActiveTab(initialTab)
     }
   }, [initialTab])
+
+  // Phase 6.26: Ghi nhận lịch sử tài nguyên theo phiên (Session Resource History)
+  // Bảo toàn nguyên vẹn WORLD Save Schema V1; ghi nhận tối đa 10 chu kỳ ngày gần nhất trong phiên
+  useEffect(() => {
+    if (!worldState) return
+    const currentDay = worldState.currentDay
+    const food = worldState.resources.food
+    const logisticsSupplies = worldState.resources.logisticsSupplies
+
+    setSessionResourceHistory((prev) => {
+      const idx = prev.findIndex((p) => p.day === currentDay)
+      if (idx >= 0) {
+        if (prev[idx].food === food && prev[idx].logisticsSupplies === logisticsSupplies) {
+          return prev
+        }
+        const updated = [...prev]
+        updated[idx] = { day: currentDay, food, logisticsSupplies }
+        return updated
+      }
+      const next = [...prev, { day: currentDay, food, logisticsSupplies }]
+      return next.slice(-10)
+    })
+  }, [worldState?.currentDay, worldState?.resources.food, worldState?.resources.logisticsSupplies])
 
   const reloadState = () => {
     const loadRes = loadWorldState()
@@ -835,6 +867,43 @@ export function OperationsCenter({
       direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
     }
   }, [criticalSector])
+
+  // Phase 6.26: Lịch sử đe dọa của Điểm Nóng (Critical Sector)
+  const criticalSectorThreatHistory = useMemo(() => {
+    if (!criticalSector?.threatHistory) return []
+    return criticalSector.threatHistory
+  }, [criticalSector])
+
+  // Phase 6.26: Lịch sử đe dọa trung bình toàn thiên hà (Galaxy Average Threat)
+  const galaxyAverageThreatHistory = useMemo(() => {
+    if (!worldState?.sectors) return []
+    const dayTotals: Record<number, { sum: number; count: number }> = {}
+    for (const sector of Object.values(worldState.sectors)) {
+      if (sector.threatHistory && sector.threatHistory.length > 0) {
+        for (const pt of sector.threatHistory) {
+          if (!dayTotals[pt.day]) {
+            dayTotals[pt.day] = { sum: 0, count: 0 }
+          }
+          dayTotals[pt.day].sum += pt.threat
+          dayTotals[pt.day].count += 1
+        }
+      }
+    }
+    const days = Object.keys(dayTotals).map(Number).sort((a, b) => a - b)
+    return days.map((day) => ({
+      day,
+      threat: Math.round(dayTotals[day].sum / dayTotals[day].count),
+    }))
+  }, [worldState?.sectors])
+
+  // Phase 6.26: Lịch sử tài nguyên Lương thực và Vật tư tiếp tế
+  const foodSparklineHistory = useMemo(() => {
+    return sessionResourceHistory.map((p) => ({ day: p.day, value: p.food }))
+  }, [sessionResourceHistory])
+
+  const suppliesSparklineHistory = useMemo(() => {
+    return sessionResourceHistory.map((p) => ({ day: p.day, value: p.logisticsSupplies }))
+  }, [sessionResourceHistory])
 
   // Lực lượng hành quân in-transit thực tế
   const inTransitTroopsCount = useMemo(() => {
@@ -1554,55 +1623,17 @@ export function OperationsCenter({
                 </div>
               </div>
 
-              {/* Sector nguy cấp nhất & Xu hướng Threat */}
-              <div className="space-y-1.5 pt-2 border-t border-zinc-800/60 text-[10px]">
-                {criticalSector ? (
-                  <div className="flex flex-col gap-1.5 bg-zinc-900/60 p-2 rounded border border-zinc-800/80">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <span className="text-zinc-400">Điểm nóng:</span>
-                        <span className="font-bold text-amber-300 uppercase truncate">
-                          {criticalSector.name}
-                        </span>
-                      </div>
-                      <span className="font-bold text-red-400 font-mono shrink-0">
-                        Threat: {criticalSector.threatLevel}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[9px] text-zinc-400">
-                      <span>Xu hướng Threat:</span>
-                      {criticalSectorThreatTrend ? (
-                        <span className={cn(
-                          "font-bold flex items-center gap-0.5",
-                          criticalSectorThreatTrend.direction === "up"
-                            ? "text-red-400"
-                            : criticalSectorThreatTrend.direction === "down"
-                            ? "text-emerald-400"
-                            : "text-zinc-400"
-                        )}>
-                          {criticalSectorThreatTrend.direction === "up" && <TrendingUp className="size-3" />}
-                          {criticalSectorThreatTrend.direction === "down" && <TrendingDown className="size-3" />}
-                          {criticalSectorThreatTrend.direction === "flat" && <Minus className="size-3" />}
-                          {criticalSectorThreatTrend.delta > 0 ? `+${criticalSectorThreatTrend.delta}` : criticalSectorThreatTrend.delta} Threat
-                        </span>
-                      ) : (
-                        <span className="text-zinc-500 italic">Chưa có dữ liệu xu hướng</span>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleNavigateToSector(criticalSector.id)}
-                      className="w-full flex items-center justify-center gap-1 py-1 rounded bg-cyan-950/40 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-900/40 text-[9px] font-bold cursor-pointer transition-colors"
-                    >
-                      <Crosshair className="size-3" />
-                      <span>Xem Sector Trong War Room &rarr;</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="text-zinc-500 italic">Không có dữ liệu sector.</div>
-                )}
+              {/* Phase 6.26: Threat Visualizer (Điểm Nóng hoặc TB Thiên Hà) */}
+              <div className="pt-2 border-t border-zinc-800/60">
+                <ThreatVisualizer
+                  history={threatVisualizerMode === "critical" ? criticalSectorThreatHistory : galaxyAverageThreatHistory}
+                  currentThreat={threatVisualizerMode === "critical" ? (criticalSector?.threatLevel ?? avgThreat) : avgThreat}
+                  sectorName={threatVisualizerMode === "critical" ? criticalSector?.name : undefined}
+                  title={threatVisualizerMode === "critical" ? "Điểm Nóng Tác Chiến" : "TB Toàn Thiên Hà"}
+                  viewMode={threatVisualizerMode}
+                  onToggleViewMode={setThreatVisualizerMode}
+                  onNavigateToSector={criticalSector ? () => handleNavigateToSector(criticalSector.id) : undefined}
+                />
               </div>
             </div>
 
@@ -1636,47 +1667,26 @@ export function OperationsCenter({
                 </div>
               </div>
 
-              {/* Cảnh báo thiếu hụt Lương thực & Tiếp tế */}
-              <div className="space-y-1.5 pt-2 border-t border-zinc-800/60 text-[10px]">
-                {/* Lương thực dân sự */}
-                <div className={cn(
-                  "flex items-center justify-between p-1.5 rounded border text-[10px]",
-                  worldState.resources.food <= 0
-                    ? "border-red-500/70 bg-red-950/30 text-red-300"
-                    : worldState.resources.food < 100
-                    ? "border-amber-500/60 bg-amber-950/20 text-amber-300"
-                    : "border-zinc-800/80 bg-zinc-900/40 text-zinc-300"
-                )}>
-                  <span className="flex items-center gap-1">
-                    <Wheat className="size-3 shrink-0" />
-                    <span>Lương thực dân sự:</span>
-                  </span>
-                  <span className="font-bold font-mono">
-                    {worldState.resources.food <= 0
-                      ? "CẠN KIỆT (0)"
-                      : `${worldState.resources.food.toLocaleString()} / 100`}
-                  </span>
-                </div>
-
-                {/* Vật tư hậu cần */}
-                <div className={cn(
-                  "flex items-center justify-between p-1.5 rounded border text-[10px]",
-                  worldState.resources.logisticsSupplies <= 0
-                    ? "border-red-500/70 bg-red-950/30 text-red-300"
-                    : worldState.resources.logisticsSupplies < 50
-                    ? "border-amber-500/60 bg-amber-950/20 text-amber-300"
-                    : "border-zinc-800/80 bg-zinc-900/40 text-zinc-300"
-                )}>
-                  <span className="flex items-center gap-1">
-                    <Boxes className="size-3 shrink-0" />
-                    <span>Vật tư tiếp tế:</span>
-                  </span>
-                  <span className="font-bold font-mono">
-                    {worldState.resources.logisticsSupplies <= 0
-                      ? "CẠN KIỆT (0)"
-                      : `${worldState.resources.logisticsSupplies.toLocaleString()} / 50`}
-                  </span>
-                </div>
+              {/* Phase 6.26: Resource Sparklines cho Lương thực và Vật tư hậu cần */}
+              <div className="space-y-1.5 pt-2 border-t border-zinc-800/60">
+                <ResourceSparkline
+                  name="Lương thực dân sự"
+                  currentValue={worldState.resources.food}
+                  targetValue={100}
+                  warningThreshold={100}
+                  criticalThreshold={0}
+                  icon={Wheat}
+                  history={foodSparklineHistory}
+                />
+                <ResourceSparkline
+                  name="Vật tư tiếp tế"
+                  currentValue={worldState.resources.logisticsSupplies}
+                  targetValue={50}
+                  warningThreshold={50}
+                  criticalThreshold={0}
+                  icon={Boxes}
+                  history={suppliesSparklineHistory}
+                />
               </div>
             </div>
           </div>

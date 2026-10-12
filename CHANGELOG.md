@@ -4,6 +4,44 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.25] — STARFRONT WORLD: Tái Thiết Kế Bàn Chỉ Huy Sự Kiện & Nhiệm Vụ (Events & Missions Command Desk Redesign)
+
+*Đã hoàn thành 100% Phase 6.25 — Tái thiết kế toàn diện tab Events & Missions thành Bàn Chỉ Huy Chiến Lược (Command Desk) 3 chế độ độc lập: Cần Quyết Định [INIT], Đang Triển Khai [PROCESSING] và Chuỗi Nhiệm Vụ [CHAINS]; loại bỏ khối Recent Results Feed trùng lặp khỏi chân trang mà bảo toàn nguyên vẹn kho dữ liệu Event Archive & Debriefing Drawer; chế độ INIT tập trung vào mục tiêu bối cảnh và so sánh 2-3 phương án trực quan, ẩn công thức chi tiết nhưng xem được khi cần, chỉ hiển thị xác suất thực tế; chế độ PROCESSING chuyển sang trạm giám sát tiến độ thực tế không có nút phê chuẩn trùng lặp; chế độ CHAINS nâng cấp thành pipeline stepper toàn diện với 4 trạng thái nút rõ ràng và điều hướng sector trực tiếp; bảo toàn 100% logic engine, validation, concurrency guard và cách ly lưu trữ (7/7 Phase 6.25 tests PASS, 35/35 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Điều Hướng Cấp 1 Với 3 Chế Độ Tác Chiến Chuyên Biệt (`events-missions-board.tsx`)**:
+  - Tách bạch giao diện thành 3 chế độ rõ ràng qua thanh điều phối trên cùng:
+    * **CẦN QUYẾT ĐỊNH [INIT]**: Hàng đợi sự kiện khẩn cấp thu gọn (4 cột) đối chiếu trực tiếp với Decision Panel (8 cột) tập trung vào mục tiêu, bối cảnh và so sánh phương án.
+    * **ĐANG TRIỂN KHAI [PROCESSING]**: Trạm giám sát tiến trình thực thi trực quan với thanh tiến độ % thời gian thực, đích đến ngày game, giải thích nguồn phê chuẩn và lý do lựa chọn.
+    * **CHUỖI NHIỆM VỤ [CHAINS]**: Nâng cấp thành chế độ xem chính độc lập, hiển thị pipeline timeline/stepper toàn màn hình cho các tuyến nhiệm vụ.
+  - Tích hợp thanh tìm kiếm tức thời theo từ khóa, tên sự kiện, sector và danh mục trên từng chế độ.
+- **2. Chế Độ A [INIT] — Decision Panel Tập Trung Tác Động & Chi Phí Thực Tế**:
+  - Trình bày 2–3 phương án đối ứng qua các thẻ so sánh trực quan: tên phương án, biến động Ổn định và Đe dọa thực tế, chi phí tài nguyên và điều kiện quân dự bị (`military.reserves`).
+  - Nút phê chuẩn rõ ràng có kiểm tra thẩm định khả năng chi trả qua `validateStrategyExecution`.
+  - Ẩn điểm số trừu tượng khỏi giao diện chính nhưng cho phép bật mở xem hệ số chi tiết (Explainable Scoring).
+  - Chỉ hiển thị xác suất thành công khi cấu hình template thực sự quy định xác suất có ý nghĩa (`strat.successChance`); không đổi điểm chiến lược thành phần trăm thành công giả.
+  - Bảo toàn nút *"⚡ System Auto Phê Chuẩn Ngay"* sử dụng `evaluateAndApplyEventStrategyPolicy`.
+- **3. Chế Độ B [PROCESSING] — Trạm Giám Sát Tiến Trình Thực Tế**:
+  - Không lặp lại Decision Panel như thể sự kiện đang chờ phê chuẩn.
+  - Hiển thị phương án đang thực thi, sector liên quan, tiến độ hoàn tất thực tế (% và progress bar), ngày bắt đầu và ngày dự kiến kết thúc (`processingCompletesTick`).
+  - Minh bạch nguồn phê chuẩn (`System Auto`, `Tự Động Khóa Mặc Định`, `Chỉ Huy Phê Chuẩn`) và lý do lựa chọn (`selectionReason`).
+  - Cảnh báo trận chiến thực địa nếu sự kiện gắn với `encounterTransactionId`.
+  - Tuyệt đối loại bỏ nút phê chuẩn (Idempotent Guard), ngăn ngừa tạo giao dịch trùng lặp.
+- **4. Chế Độ C [CHAINS] — Pipeline Timeline & Stepper Chuỗi Nhiệm Vụ**:
+  - Hiển thị tiến trình từng bước dạng pipeline stepper đa cột.
+  - Phân biệt rõ 4 trạng thái nút nhiệm vụ: Đã Hoàn Tất (`completed`), Đang Hoạt Động (`active`), Đang Chờ Điều Kiện Sector (`isPendingDispatch` + số ngày hoãn), Chưa Mở Khóa (`locked`).
+  - Hiển thị sector liên kết và hỗ trợ điều hướng trực tiếp sang Galaxy Map / War Room qua nút *"Bản đồ &rarr;"*.
+- **5. Loại Bỏ Nội Dung Trùng Lặp & Bảo Toàn Lưu Trữ**:
+  - Loại bỏ khối Recent Results Feed khỏi cuối trang để tránh trùng lặp với **Khay Báo Cáo Tình Báo** (`DebriefingDrawer`).
+  - Bổ sung nút liên kết mở nhanh *Khay Báo Cáo Tình Báo* tại thanh tiêu đề board.
+  - Bảo toàn 100% kho dữ liệu `eventResultsArchive`, Safe Pruning và tính cách ly tuyệt đối với RPG Save V4.
+- **6. Bộ Kiểm Thử Chuyên Sâu & Độ Tin Cậy Toàn Cục**:
+  - Bổ sung `tests/world/phase6-25-events-missions-command-desk.test.ts` gồm 7 test cases chuyên sâu (100% PASS).
+  - Toàn bộ 35 test suites trong `package.json` (`npm test`) vượt qua thành công.
+  - Next.js build và typecheck thành công tuyệt đối.
+
+---
+
 ## [Phase 6.24] — STARFRONT WORLD: Tái Thiết Kế Tình Hình Toàn Cảnh & Điểm Nóng Tác Chiến (Strategic Overview Redesign & Actionable Triage)
 
 *Đã hoàn thành 100% Phase 6.24 — Tái thiết kế toàn diện tab Tình hình toàn cảnh (Overview) trong Operations Center dựa trên kiểm toán UX; thay thế bố cục chiếm dụng diện tích bằng 3 tầng giao diện chuẩn mực: Strategic Status (Chủ quyền VSS, Threat trung bình/điểm nóng, Quân dự bị & Cảnh báo hậu cần), Actionable Situation Triage (Danh sách điểm nóng ưu tiên P0/P1/P2 kèm điều hướng trực tiếp War Room, Quick Dispatch, Events & Missions, Suspended Combat), Operational Pulse (Niên lịch thu gọn & Khay báo cáo tình báo Debriefing Drawer), Modal Xem Đề Xuất & Phê Chuẩn An Toàn có xác nhận từ người chơi; sửa dứt điểm lỗi đồng bộ cờ Tactical Retreat trong Combat Arena (7/7 Phase 6.24 tests PASS, 34/34 Test Suites PASS, build & lint thành công).*

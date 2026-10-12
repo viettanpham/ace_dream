@@ -4,6 +4,44 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.17] — STARFRONT WORLD: Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (Primary Navigation & War Room Foundation)
+
+*Đã hoàn thành 100% Phase 6.17 — Triển khai giai đoạn P0 từ Blueprint Phase 6.16: Tái cấu trúc menu Shell đưa STARFRONT WORLD thành mục chỉ huy chiến lược vĩ mô tối cao theo mô hình 3 tầng chỉ huy, hợp nhất hoàn toàn Galaxy Map và Sector Inspector thành War Room trung tâm với Sector Command Ribbon 8 sector, loại bỏ màn hình chữ trùng lặp (100% tests PASS, build thành công, 27/27 test suites PASS tuyệt đối).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Tái Cấu Trúc Menu Shell & Mô Hình 3 Tầng Chỉ Huy (`components/game/starfront-shell.tsx`)**:
+  - **Tôn vinh STARFRONT WORLD làm trung tâm**: Ghim ở vị trí đầu tiên của Khối 1 với huy hiệu `LIVE GALAXY`, chấm radar nhấp nháy, viền phát sáng cyan và phong cách thẻ chỉ huy quân sự chuyên biệt.
+  - **3 Tầng Chỉ Huy Phân Định Minh Bạch**:
+    * **Khối 1: Tổng Hành Dinh Chiến Lược (Strategic Hub)**: `world` (Chiến Trường Thiên Hà WORLD) và `home` (Tổng Quan Tác Chiến Console).
+    * **Khối 2: Buồng Lái & Tác Chiến (Tactical Mecha)**: `battlefield` (Đấu Trường 2D), `character-gear` (Phi Công & Gear), `gallery` (Pilot Art Gallery).
+    * **Khối 3: Hậu Phương & Khí Tài (Base & Armory)**: `hangar` (Hangar & Kho), `shop` (Chợ Quân Sự), `missions` (Chiến Dịch RPG 12 ải), `mission-logs` (Full Logs).
+  - **Phân định rạch ròi ngữ cảnh**: Làm rõ ranh giới giữa Chiến Dịch Cốt Truyện RPG (12 ải tuần tự) và Sự Kiện Chiến Trường WORLD (Thiên hà động 8 sector).
+  - **Bảo tồn toàn vẹn**: Giữ nguyên trạng thái active, luồng chọn nhân vật, khóa phi công/cơ giáp và các phân hệ mở rộng `OPERATION_SECTIONS` (`pilot`, `fleet`, `base`, `war`).
+- **2. Nền Tảng War Room Trung Tâm & Sector Ribbon (`components/game/world/operations-center.tsx`, `components/game/world/world-map.tsx`)**:
+  - **Galaxy Map là Trọng Tâm Tác Chiến**: Trở thành màn hình mặc định khi bước vào WORLD (`initialTab="map"`), nâng chiều cao khung nhìn lên `680px-780px` (min 580px).
+  - **Thanh Điều Phối Sector Nhanh (Sector Command Ribbon)**: Đặt ngay trên bản đồ, hiển thị 8 sector đồng bộ thời gian thực kèm chấm chủ quyền (VSS/Void/Contested), Threat level, đồn trú và cảnh báo combat lock.
+  - **Đồng bộ hai chiều tức thì**: Bấm chọn sector trên thanh ribbon hoặc trực tiếp trên SVG Map đều lập tức cập nhật `selectedSectorId`, kích hoạt Sector Inspector chi tiết.
+  - **Tích hợp toàn diện thao tác Sector vào Inspector**:
+    * Xem 6 chỉ số vĩ mô + Biểu đồ Threat Sparkline 5 ngày gần nhất kèm delta badge.
+    * Đổi Lệnh Chiến Lược (Cố thủ, tập kết, phản công, hồi phục, bình thường).
+    * Nâng cấp công sự (+50 vật liệu, sửa lỗi kiểm tra tài nguyên).
+    * Mở Quick Dispatch Dock chi viện.
+    * Xuất kích buồng lái can thiệp trực tiếp sang Đấu Trường.
+    * Nút "Tập Trung Góc Nhìn Vào Sector Này" căn chỉnh camera thông minh có bù trừ vị trí Inspector.
+  - **Khử bỏ Tab Sectors Trùng Lặp**: Hợp nhất vào War Room, tự động tương thích và hiển thị banner thông báo nếu truy cập qua liên kết cũ.
+- **3. Kiểm Thử & Xác Thực Toàn Diện**:
+  - `compile_applet` thành công 100%, không phát sinh lỗi biên dịch hay typecheck.
+  - 27/27 test suites PASS 100% qua `npm test`.
+  - Bảo vệ tuyệt đối phân hệ lưu trữ `STARFRONT_SAVE_DATA_V4`, `STARFRONT_WORLD_SAVE_V1` và `STARFRONT_WORLD_SIMULATOR_CONFIG`.
+
+---
+
+## [Phase 6.16] — STARFRONT WORLD: Đánh Giá Toàn Diện UI/UX & Bản Thiết Kế Tái Cấu Trúc (UI/UX Audit & Redesign Blueprint)
+
+*Đã hoàn thành 100% Phase 6.16 — Khảo sát và lập hồ sơ đánh giá UI/UX toàn diện cho STARFRONT WORLD, phê duyệt tài liệu đặc tả `WORLD_UI_UX_AUDIT.md`, thiết lập mô hình 3 tầng chỉ huy và lộ trình P0/P1/P2 không can thiệp mã nguồn.*
+
+---
+
 ## [Phase 6.15] — STARFRONT WORLD: Chính Sách Lựa Chọn Chiến Lược & Tự Động Phê Chuẩn (Event Strategy Policy & System Auto Strategy)
 
 *Đã hoàn thành 100% Phase 6.15 — Triển khai cơ chế điều phối và lựa chọn chiến lược sự kiện 3 cấp độ tập trung, minh bạch và tất định cho STARFRONT WORLD: System Auto Strategy (Cấp 1) -> Default Strategy Fallback (Cấp 2) -> Player Choice Fallback (Cấp 3). Tích hợp toàn diện vào Events & Missions Board, Dual Results Hub, ADMIN CP và Tick Engine (100% tests PASS, 27/27 test suites, 0 regression)*

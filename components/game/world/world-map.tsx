@@ -420,8 +420,9 @@ export function WorldMap({
   const handleCenterSelected = () => {
     if (!selectedSector) return
     playClickSound()
-    // Đưa tọa độ sector về trung tâm viewBox (50, 50)
-    const targetX = (50 - selectedSector.x) * 6
+    // Đưa tọa độ sector về trung tâm khu vực hiển thị (tính bù vị trí khi Inspector đang mở)
+    const centerX = showInspector ? 38 : 50
+    const targetX = (centerX - selectedSector.x) * 6
     const targetY = (50 - selectedSector.y) * 4.5
     setPanOffset({ x: targetX, y: targetY })
     setZoomLevel(1.2)
@@ -1659,31 +1660,31 @@ export function WorldMap({
                 disabled={
                   selectedSector.isLockedForCombat ||
                   (selectedSector.fortificationLevel ?? 1) >= 5 ||
-                  worldState.resources.industrialMaterials < 100
+                  worldState.resources.industrialMaterials < 50
                 }
                 className={cn(
                   "w-full flex items-center justify-center gap-2 rounded bg-amber-950/30 hover:bg-amber-900/40 border border-amber-500/40 hover:border-amber-400 text-amber-200 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer",
                   (selectedSector.isLockedForCombat ||
                     (selectedSector.fortificationLevel ?? 1) >= 5 ||
-                    worldState.resources.industrialMaterials < 100) &&
+                    worldState.resources.industrialMaterials < 50) &&
                     "opacity-50 cursor-not-allowed"
                 )}
               >
                 <Hammer className="size-3.5 text-amber-400" />
-                <span>Nâng Cấp Công Sự (+100 Vật Liệu)</span>
+                <span>Nâng Cấp Công Sự (+50 Vật Liệu)</span>
               </button>
 
-              {/* Nhóm 4: Điều Hướng Chi Tiết Sang Tab Sector Operations */}
+              {/* Nhóm 4: Tập trung góc nhìn vào sector này */}
               {onNavigateToSectorOperations && (
                 <button
                   onClick={() => {
-                    playClickSound()
+                    handleCenterSelected()
                     onNavigateToSectorOperations(selectedSector.id)
                   }}
-                  className="w-full flex items-center justify-center gap-2 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-500 text-zinc-300 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-cyan-500/50 text-zinc-300 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer"
                 >
-                  <Eye className="size-3.5 text-zinc-400" />
-                  <span>Xem Chi Tiết Tại Sector Operations</span>
+                  <Crosshair className="size-3.5 text-cyan-400" />
+                  <span>Tập Trung Góc Nhìn Vào Sector Này</span>
                   <ArrowRight className="size-3 text-zinc-400" />
                 </button>
               )}

@@ -18,9 +18,9 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | **Phase 6.14: Kiểm Chứng Động Cơ Thời Gian Thực & Độ Tin Cậy Sự Kiện đã hoàn thành 100%** (100% tests PASS, build thành công, 15/15 tests Phase 6.14 PASS, 26/26 test suites PASS tuyệt đối). Hệ thống STARFRONT WORLD tự vận hành với nhịp thời gian thực (mặc định 300s/ngày, hỗ trợ 15s/30s/60s/custom), bảo toàn tiến độ phân đoạn ngày khi pause/resume/reload, niên lịch 4 buổi & chu kỳ mùa, bộ sinh sự kiện 3 tier theo ngày game, và bảng điều khiển ADMIN CP quản trị toàn diện. |
-| **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô của toàn bộ sản phẩm, tích hợp vào thanh điều hướng cao nhất của Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
-| **Phase tiếp theo cần thực hiện?** | Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.14) đã hoàn tất 100%. Sẵn sàng bước sang các giai đoạn mở rộng tính năng mới theo yêu cầu của Chỉ Huy. |
+| **Trạng thái hiện tại của dự án?** | **Phase 6.17: Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (P0 UI/UX Foundation) đã hoàn thành 100%** (100% tests PASS, build thành công, 27/27 test suites PASS tuyệt đối). Hệ thống STARFRONT WORLD được tôn vinh thành trung tâm chỉ huy chiến lược cấp cao nhất trong Shell với mô hình 3 tầng phân định rõ ràng. Hợp nhất hoàn toàn Galaxy Map và Sector Inspector thành War Room trung tâm với Sector Ribbon điều phối nhanh 8 sector, loại bỏ màn hình chữ trùng lặp. |
+| **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô tối cao của toàn bộ sản phẩm, tích hợp ở vị trí nổi bật nhất tại Khối 1 Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
+| **Phase tiếp theo cần thực hiện?** | Sẵn sàng bước sang Phase 6.18 (Slim Tactical HUD, Tách ADMIN CP thành Modal, Debriefing Drawer cho Dual Results Hub) khi có yêu cầu. |
 | **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>2. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
 | **Phụ thuộc chính giữa WORLD và hệ thống hiện tại?** | - **Combat Integration**: Giao tiếp qua `WorldCombatAdapter`, sử dụng snapshot tại thời điểm khóa trận và Transaction ID chống double-apply.<br>- **Lưu trữ cách ly**: `STARFRONT_WORLD_SAVE_V1` độc lập hoàn toàn với `STARFRONT_SAVE_DATA_V4`, có sao lưu luân phiên A/B.<br>- **Navigation**: Tích hợp tab `world` vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`. |
 
@@ -81,13 +81,15 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.12** | **Biểu Đồ Xu Hướng Đe Dọa (Galaxy Map Threat Trendline)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/types.ts`, `lib/game/world/tick-engine.ts`, `components/game/world/world-map.tsx`, `tests/world/threat-trendline.test.ts` |
 | **Phase 6.13** | **Động Cơ Thời Gian Thực, Tự Động Sinh Sự Kiện/Nhiệm Vụ & ADMIN CP** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/simulator-config.ts`, `lib/game/world/calendar.ts`, `lib/game/world/event-generator.ts`, `components/game/world/operations-center.tsx`, `tests/world/realtime-simulator-admin.test.ts` |
 | **Phase 6.14** | **Kiểm Chứng Động Cơ Thời Gian Thực & Độ Tin Cậy Sự Kiện (Simulator Validation & Reliability)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/simulator-config.ts`, `lib/game/world/event-generator.ts`, `components/game/world/operations-center.tsx`, `tests/world/phase6-14-validation.test.ts` |
+| **Phase 6.15** | **Chính Sách Chiến Lược Sự Kiện & Tự Động Hóa Hệ Thống (Event Strategy Policy & System Auto)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/event-strategy-policy.ts`, `lib/game/world/event-engine.ts`, `tests/world/event-strategy-policy.test.ts` |
+| **Phase 6.16** | **Đánh Giá Toàn Diện UI/UX & Bản Thiết Kế Tái Cấu Trúc (UI/UX Audit & Redesign Blueprint)** | **ĐÃ HOÀN THÀNH (DONE — BLUEPRINT APPROVED)** | `WORLD_UI_UX_AUDIT.md` |
+| **Phase 6.17** | **Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (P0 UI/UX Foundation)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/starfront-shell.tsx`, `components/game/world/operations-center.tsx`, `components/game/world/world-map.tsx` |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.14) đã hoàn tất 100%:
-1. Toàn bộ 8 sector và 12 tuyến đường hoạt động trên bản đồ chiến lược với pan/zoom/reticle, tích hợp sâu vào Operations Center và Starfront Shell.
-2. Hệ thống mô phỏng thời gian thực tự động vận hành thế giới theo nhịp cấu hình (mặc định 300s/ngày, hỗ trợ 15s/30s/60s/custom), bảo toàn tiến độ phân đoạn ngày, niên lịch 4 buổi & chu kỳ mùa.
-3. Bộ sinh sự kiện 3 tier tự động điều phối theo ngày game, và bảng điều khiển ADMIN CP hỗ trợ cấu hình tốc độ, generator, dev triggers và reset thế giới an toàn.
-4. 100% tests đạt chuẩn (bao gồm toàn bộ 26 test suites) và zero-regression được bảo đảm.
+1. **Khối Điều Hướng Shell**: STARFRONT WORLD đứng đầu Khối 1 với huy hiệu Live Galaxy và viền chỉ huy nổi bật; 3 tầng chỉ huy phân định rõ ràng giữa chiến lược vĩ mô, buồng lái cơ giáp và hậu phương khí tài.
+2. **War Room Foundation**: Galaxy Map là trung tâm tác chiến với Sector Command Ribbon 8 sector, Sector Inspector tích hợp đầy đủ lệnh và cập nhật tức thì, loại bỏ tab duplicate.
+3. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 27/27 test suites PASS 100%.
+4. Sẵn sàng cho Phase 6.18 theo lộ trình thiết kế.

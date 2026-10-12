@@ -27,6 +27,9 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 6.12** | STARFRONT WORLD — Biểu Đồ Xu Hướng Đe Dọa (Galaxy Map Threat Trendline) | **Đã triển khai (Done)** | Hoàn thành Phase 6.12 (`types.ts`, `sector-lifecycle.ts`, `tick-engine.ts`, `world-map.tsx`, `threat-trendline.test.ts`). Sparkline Threat 5 ngày gần nhất theo ngày chiến lược, Delta Badge biến động so với đầu chuỗi (+/- / 0), mốc thời gian N.day, tương thích 100% trong cả bản đồ nhúng và toàn màn hình (7/7 tests PASS). |
 | **Phase 6.13** | STARFRONT WORLD — Động Cơ Thời Gian Thực, Sinh Sự Kiện/Nhiệm Vụ & ADMIN CP | **Đã triển khai (Done)** | Hoàn thành Phase 6.13 (`simulator-config.ts`, `calendar.ts`, `event-generator.ts`, `operations-center.tsx`, `realtime-simulator-admin.test.ts`). Mô phỏng thời gian thực (mặc định 300s/ngày, hỗ trợ 15s/30s/60s/custom), niên lịch 4 buổi & chu kỳ mùa, bộ sinh sự kiện 3 tier theo ngày game, và bảng điều khiển ADMIN CP quản trị toàn diện (6/6 tests PASS). |
 | **Phase 6.14** | STARFRONT WORLD — Kiểm Chứng Động Cơ Thời Gian Thực & Độ Tin Cậy Sự Kiện | **Đã triển khai (Done)** | Hoàn thành Phase 6.14 (`simulator-config.ts`, `event-generator.ts`, `operations-center.tsx`, `phase6-14-validation.test.ts`). Kiểm chứng 4 kịch bản bắt buộc: tốc độ mô phỏng & bảo toàn phân đoạn ngày, tự sinh event 40 ngày game & Concurrency Guard, persistence sau reload/reset & bảo vệ RPG Save V4, Bounded Catch-up & lịch thiên hà (15/15 tests PASS, 26/26 test suites PASS). |
+| **Phase 6.15** | STARFRONT WORLD — Chính Sách Chiến Lược Sự Kiện & Tự Động Hóa Hệ Thống | **Đã triển khai (Done)** | Hoàn thành Phase 6.15 (`event-strategy-policy.ts`, `event-engine.ts`, `event-strategy-policy.test.ts`). Cơ chế lựa chọn chiến lược 3 cấp độ (System Auto -> Default Fallback -> Player Choice), chấm điểm tất định phá vỡ thế hòa, batch policy execution (27/27 test suites PASS). |
+| **Phase 6.16** | STARFRONT WORLD — Đánh Giá Toàn Diện UI/UX & Bản Thiết Kế Tái Cấu Trúc | **Đã triển khai (Done)** | Hoàn thành Phase 6.16 (`WORLD_UI_UX_AUDIT.md`). Audit toàn diện 7 phân khu WORLD, đề xuất mô hình 3 tầng chỉ huy Shell và nền tảng War Room, thiết lập danh mục ưu tiên P0/P1/P2. |
+| **Phase 6.17** | STARFRONT WORLD — Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (P0) | **Đã triển khai (Done)** | Hoàn thành Phase 6.17 (`starfront-shell.tsx`, `operations-center.tsx`, `world-map.tsx`). Đưa WORLD thành mục chỉ huy tối cao tại Khối 1 Shell, tái cấu trúc menu 3 tầng chỉ huy, hợp nhất Galaxy Map và Sector Inspector thành War Room trung tâm với Sector Command Ribbon 8 sector (100% tests PASS). |
 
 ---
 
@@ -406,6 +409,22 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-### 4.13. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
+### 4.14. Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (Phase 6.17 P0) `[ĐÃ HOÀN THÀNH 100%]`
+- **Mô Hình 3 Tầng Chỉ Huy (Command Tier Architecture) Trong Shell (`starfront-shell.tsx`)**:
+  - *Khối 1: Tổng Hành Dinh Chiến Lược (Strategic Hub)*: STARFRONT WORLD được tôn vinh ở vị trí số 1 với huy hiệu Live Galaxy và viền chỉ huy cyan nổi bật; kèm Trang Tổng Quan Console (`home`).
+  - *Khối 2: Buồng Lái & Tác Chiến (Tactical Mecha)*: Đấu trường cơ giáp 2D (`battlefield`), Hồ sơ phi công & cơ giáp (`character-gear`), và Pilot Art Gallery (`gallery`).
+  - *Khối 3: Hậu Phương & Khí Tài (Base & Armory)*: Hangar & Kho đồ (`hangar`), Chợ quân sự (`shop`), Nhiệm vụ chiến dịch cốt truyện RPG 12 ải (`missions`), và Full Mission Logs (`mission-logs`).
+  - Phân định rạch ròi giữa Chiến Dịch RPG (12 ải cốt truyện tĩnh) và Sự Kiện Chiến Trường WORLD (Thiên hà động 8 sector).
+  - Bảo tồn toàn vẹn 100% các phân hệ mở rộng (`pilot`, `fleet`, `base`, `war`), quy tắc khóa nhân vật và luồng chọn phi công/cơ giáp.
+- **Hợp Nhất War Room: Galaxy Map & Sector Inspector (`operations-center.tsx`, `world-map.tsx`)**:
+  - *Galaxy Map là Trung Tâm*: Trở thành view mặc định khi mở WORLD (`initialTab="map"`), nâng chiều cao khung nhìn lên `680px-780px` min 580px, tối ưu không gian hiển thị.
+  - *Thanh Điều Phối Sector Nhanh (Sector Command Ribbon)*: Lưới 8 sector hiển thị ngay trên đầu bản đồ với trạng thái phe phái (VSS, Void, Contested), Threat level, quân đồn trú và cảnh báo khóa combat.
+  - *Đồng Bộ Hai Chiều Tức Thì*: Bấm chọn sector trên thanh ribbon hoặc trực tiếp trên SVG Map đều tự động cập nhật `selectedSectorId`, kích hoạt Sector Inspector với đầy đủ số liệu và lệnh chiến lược.
+  - *Tích Hợp Toàn Bộ Lệnh Sector*: Cố thủ, tập kết, phản công, hồi phục, bình thường; nâng cấp công sự phòng thủ (+50 vật liệu); mở Quick Dispatch Dock; xuất kích buồng lái can thiệp trực tiếp; biểu đồ Threat Sparkline.
+  - *Loại Bỏ Tab Sectors Trùng Lặp*: Hợp nhất hoàn toàn vào War Room, tự động điều hướng tương thích và hiển thị banner thông báo thân thiện.
+
+---
+
+### 4.15. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
 - **Tốc Độ Suy Thoái Stability Nâng Cao**: Cân bằng mở rộng các biến số kinh tế vĩ mô phức tạp trong các bản cập nhật tiếp theo.
 - **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)**: Kế hoạch mở rộng đồ thị thiên hà cho các mùa giải chiến dịch trong tương lai.

@@ -239,9 +239,9 @@ flowchart TD
 ## 5. Danh Sách Thay Đổi Theo Mức Độ Ưu Tiên (P0 / P1 / P2)
 
 ### Mức P0 — Cốt Lõi, Cần Ưu Tiên Trước
-1. **[Shell Navigation]**: Tái cấu trúc menu `starfront-shell.tsx` đưa `WORLD` thành mục tiêu điểm chiến lược cấp cao nhất; gom nhóm các phân khu RPG Hangar, Armory và Arena gọn gàng.
-2. **[Hợp nhất Map & Sector]**: Đưa Galaxy Map làm tâm điểm thị giác mặc định của WORLD (bố cục bản đồ lớn kết hợp Sector Inspector nổi bên phải), loại bỏ tab `sectors` danh sách chữ trùng lặp.
-3. **[Cách ly ADMIN CP]**: Tách tab `admin` ra khỏi thanh nav chính của Operations Center, chuyển thành Modal/Drawer quản trị cài đặt mở qua nút bánh răng góc HUD.
+1. **[Shell Navigation]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.17]` Tái cấu trúc menu `starfront-shell.tsx` đưa `WORLD` thành mục tiêu điểm chiến lược cấp cao nhất tại Khối 1 với huy hiệu Live Galaxy và viền chỉ huy nổi bật; gom nhóm các phân khu theo mô hình 3 tầng chỉ huy.
+2. **[Hợp nhất War Room & Sector Inspector]**: `[ĐÃ TRIỂN KHAI HOÀN TẤT - PHASE 6.17]` Đưa Galaxy Map làm tâm điểm thị giác mặc định của WORLD (`initialTab="map"`), tích hợp thanh điều phối Sector Ribbon 8 sector, Inspector đầy đủ lệnh chiến lược và đồng bộ hai chiều tức thì, loại bỏ tab `sectors` danh sách chữ trùng lặp.
+3. **[Cách ly ADMIN CP]**: `[Dự kiến Phase 6.18]` Tách tab `admin` ra khỏi thanh nav chính của Operations Center, chuyển thành Modal/Drawer quản trị cài đặt mở qua nút bánh răng góc HUD.
 
 ### Mức P1 — Nâng Cao Trải Nghiệm & Tinh Gọn Thị Giác
 4. **[Thu gọn Top Header & HUD]**: Tinh giản header cồng kềnh của `operations-center.tsx` thành thanh Tactical HUD 1 hàng cao 48px, tối ưu không gian dọc cho bản đồ và bảng điều hành.
@@ -317,4 +317,13 @@ Bản thiết kế này đề xuất **chuyển đổi STARFRONT WORLD từ cấ
 3. **Quyết định sự kiện mạch lạc**: Tách rõ hàng đợi khẩn cấp và bảng đối chiếu phương án chiến lược, làm nổi bật tính minh bạch của System Auto Strategy.
 4. **Phân tách ranh giới rõ ràng**: Người chơi bình thường đắm chìm trong không khí chỉ huy chiến tranh vũ trụ; công cụ ADMIN CP được đưa về đúng vị trí cài đặt quản trị hệ thống.
 
-*Báo cáo kết thúc đợt kiểm định Phase 6.16. Toàn bộ mã nguồn hiện tại được bảo toàn nguyên vẹn, không có thay đổi code nào được áp dụng trong giai đoạn này.*
+## 10. Trạng Thái Triển Khai Thực Tế
+
+- **Phase 6.17: Primary Navigation & War Room Foundation (P0)**: **ĐÃ TRIỂN KHAI HOÀN TẤT 100% (DONE)**.
+  * Tái cấu trúc menu `starfront-shell.tsx` thành Mô hình 3 Tầng Chỉ Huy (`COMMAND_TIERS`), đưa `STARFRONT WORLD` thành mục chỉ huy tối cao Khối 1 với huy hiệu `LIVE GALAXY` và viền chỉ huy nổi bật.
+  * Phân định minh bạch giữa Chiến Dịch Cốt Truyện RPG (12 ải) và Sự Kiện Chiến Trường WORLD (8 sector thiên hà).
+  * Hợp nhất toàn diện Galaxy Map và Sector Inspector thành **War Room** trực quan (`operations-center.tsx`, `world-map.tsx`), tích hợp **Sector Command Ribbon 8 sector** đồng bộ hai chiều thời gian thực.
+  * Tích hợp toàn diện các lệnh Sector vào Inspector (Strategic Orders, Cải tiến công sự 50 Materials, Quick Dispatch, Combat Deploy, Threat Sparkline trendline).
+  * Khử bỏ tab `sectors` văn bản trùng lặp, giữ tính tương thích ngược hoàn hảo.
+  * 100% build & typecheck thành công, 28/28 test suites PASS, bảo toàn tuyệt đối `STARFRONT_SAVE_DATA_V4` và `STARFRONT_WORLD_SAVE_V1`.
+

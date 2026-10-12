@@ -120,42 +120,89 @@ interface SectionConfig {
   label: string
   shortLabel: string
   icon: typeof Rocket
+  group?: "strategic" | "tactical" | "armory"
   badge?: (prog: StarfrontProgression) => string | null
   submenus?: (prog: StarfrontProgression, onSelectSubmenu?: (subId: string) => void) => SubMenuItem[]
 }
 
+// Cấu hình 3 tầng chỉ huy (Command Tier Architecture) từ Blueprint Phase 6.16/6.17
+const COMMAND_TIERS: {
+  id: "strategic" | "tactical" | "armory"
+  label: string
+  shortLabel: string
+  badge?: string
+}[] = [
+  {
+    id: "strategic",
+    label: "Khối 1: Tổng Hành Dinh Chiến Lược",
+    shortLabel: "Chiến Lược",
+    badge: "Galaxy Hub",
+  },
+  {
+    id: "tactical",
+    label: "Khối 2: Buồng Lái & Tác Chiến",
+    shortLabel: "Buồng Lái",
+  },
+  {
+    id: "armory",
+    label: "Khối 3: Hậu Phương & Khí Tài",
+    shortLabel: "Hậu Phương",
+  },
+]
+
 const SECTIONS: SectionConfig[] = [
+  // =========================================================================
+  // KHỐI 1: TỔNG HÀNH DINH CHIẾN LƯỢC (STRATEGIC COMMAND HUB)
+  // =========================================================================
+  {
+    id: "world",
+    label: "★ CHIẾN TRƯỜNG THIÊN HÀ // WORLD",
+    shortLabel: "Chiến Trường WORLD",
+    icon: Orbit,
+    group: "strategic",
+    badge: () => "LIVE GALAXY",
+    submenus: () => [
+      { id: "map", label: "War Room // Bản Đồ Chiến Lược" },
+      { id: "overview", label: "Tình Hình Toàn Cảnh" },
+      { id: "events", label: "Sự Kiện & Nhiệm Vụ" },
+      { id: "military", label: "Quân Sự & Hậu Cần" },
+      { id: "results", label: "Trung Tâm Kết Quả" },
+      { id: "admin", label: "ADMIN CP" },
+    ],
+  },
   {
     id: "home",
-    label: "STARFRONT / Tổng Quan",
-    shortLabel: "Tổng Quan",
+    label: "STARFRONT / Tổng Quan Tác Chiến",
+    shortLabel: "Tổng Quan Console",
     icon: LayoutDashboard,
+    group: "strategic",
     submenus: () => [
       { id: "overview", label: "Bảng Chỉ Huy Tác Chiến" },
       { id: "gears", label: "Hồ Sơ 3 Lớp Cơ Giáp" },
     ],
   },
+
+  // =========================================================================
+  // KHỐI 2: BUỒNG LÁI & TÁC CHIẾN CÁ NHÂN (TACTICAL MECHA COMBAT)
+  // =========================================================================
   {
-    id: "world",
-    label: "Chỉ Huy Chiến Lược // WORLD",
-    shortLabel: "WORLD Chiến Lược",
-    icon: Orbit,
-    badge: () => "Live",
-    submenus: () => [
-      { id: "overview", label: "Tình Hình Chiến Lược" },
-      { id: "map", label: "Bản Đồ Thiên Hà (Map)" },
-      { id: "sectors", label: "Mạng Lưới Sector" },
-      { id: "events", label: "Sự Kiện & Nhiệm Vụ" },
-      { id: "military", label: "Quân Sự & Hậu Cần" },
-      { id: "results", label: "Trung Tâm Kết Quả Kép" },
-      { id: "admin", label: "ADMIN CP" },
+    id: "battlefield",
+    label: "Đấu Trường Cơ Giáp",
+    shortLabel: "Đấu Trường 2D",
+    icon: Swords,
+    group: "tactical",
+    submenus: (p) => [
+      { id: "arena", label: "Đấu Trường Cơ Giáp" },
+      { id: "combat-log", label: "Nhật Ký Tác Chiến" },
+      ...(p.activeQuest ? [{ id: "active-quest", label: "Nhiệm Vụ Đang Thực Hiện", badge: "Live" }] : []),
     ],
   },
   {
     id: "character-gear",
     label: "Nhân Vật & Cơ Giáp",
-    shortLabel: "Nhân Vật & Gear",
+    shortLabel: "Phi Công & Gear",
     icon: Users,
+    group: "tactical",
     badge: (p) => {
       const pilotId = p.activePairing?.pilotId || "marcus"
       const gearId = p.activePairing?.gearId || p.activeGearId || "vanguard"
@@ -174,6 +221,7 @@ const SECTIONS: SectionConfig[] = [
     label: "Bộ Sưu Tập Phi Công // ART GALLERY",
     shortLabel: "Pilot Art Gallery",
     icon: Sparkles,
+    group: "tactical",
     badge: () => "16 Art",
     submenus: () => [
       { id: "all-art", label: "8 Cặp Đôi (16 Tác Phẩm)" },
@@ -182,22 +230,42 @@ const SECTIONS: SectionConfig[] = [
       { id: "inspector", label: "Soi Chi Tiết Từng Phi Công" },
     ],
   },
+
+  // =========================================================================
+  // KHỐI 3: HẬU PHƯƠNG, KHÍ TÀI & CHIẾN DỊCH (BASE, ARMORY & CAMPAIGN)
+  // =========================================================================
   {
-    id: "battlefield",
-    label: "Chiến Trường",
-    shortLabel: "Chiến Trường",
-    icon: Swords,
+    id: "hangar",
+    label: "Hangar & Kho Đồ",
+    shortLabel: "Hangar & Kho",
+    icon: Boxes,
+    group: "armory",
+    badge: (p) => `${p.inventory.length}`,
     submenus: (p) => [
-      { id: "arena", label: "Đấu Trường Cơ Giáp" },
-      { id: "combat-log", label: "Nhật Ký Tác Chiến" },
-      ...(p.activeQuest ? [{ id: "active-quest", label: "Nhiệm Vụ Đang Thực Hiện", badge: "Live" }] : []),
+      { id: "loadout", label: "Buồng Lái & Trang Bị", icon: Cpu },
+      { id: "skills", label: "Mô Đun Kỹ Năng", icon: Flame, badge: "5 Ô" },
+      { id: "inventory", label: "Kho Đồ & Tái Chế", icon: Boxes, badge: `${p.inventory.length}` },
+      { id: "enhancement", label: "Xưởng Cường Hóa", icon: Hammer, badge: "+1..+10" },
+    ],
+  },
+  {
+    id: "shop",
+    label: "Chợ Quân Sự & Tiếp Tế",
+    shortLabel: "Chợ Quân Sự",
+    icon: ShoppingBag,
+    group: "armory",
+    badge: (p) => (p.freeShopRefreshes && p.freeShopRefreshes > 0 ? `${p.freeShopRefreshes} Free` : null),
+    submenus: () => [
+      { id: "armory", label: "Kho Vũ Khí & Trang Bị" },
+      { id: "refresh", label: "Làm Mới Hàng Hóa" },
     ],
   },
   {
     id: "missions",
-    label: "Nhiệm Vụ & Chiến Dịch",
-    shortLabel: "Nhiệm Vụ",
+    label: "Nhiệm Vụ Chiến Dịch Cốt Truyện (RPG)",
+    shortLabel: "Chiến Dịch RPG (12 M)",
     icon: Globe2,
+    group: "armory",
     badge: (p) => `${p.completedMissions.length}/12`,
     submenus: () => [
       { id: "sectors", label: "Bản Đồ 4 Sector Vũ Trụ" },
@@ -210,31 +278,8 @@ const SECTIONS: SectionConfig[] = [
     label: "Nhật Ký Tác Chiến // Full Logs",
     shortLabel: "Full Mission Logs",
     icon: Terminal,
+    group: "armory",
     badge: () => "Logs",
-  },
-  {
-    id: "shop",
-    label: "Chợ Quân Sự",
-    shortLabel: "Chợ Quân Sự",
-    icon: ShoppingBag,
-    badge: (p) => (p.freeShopRefreshes && p.freeShopRefreshes > 0 ? `${p.freeShopRefreshes} Free` : null),
-    submenus: () => [
-      { id: "armory", label: "Kho Vũ Khí & Trang Bị" },
-      { id: "refresh", label: "Làm Mới Hàng Hóa" },
-    ],
-  },
-  {
-    id: "hangar",
-    label: "Hangar & Kho Đồ",
-    shortLabel: "Hangar & Kho",
-    icon: Boxes,
-    badge: (p) => `${p.inventory.length}`,
-    submenus: (p) => [
-      { id: "loadout", label: "Buồng Lái & Trang Bị", icon: Cpu },
-      { id: "skills", label: "Mô Đun Kỹ Năng", icon: Flame, badge: "5 Ô" },
-      { id: "inventory", label: "Kho Đồ & Tái Chế", icon: Boxes, badge: `${p.inventory.length}` },
-      { id: "enhancement", label: "Xưởng Cường Hóa", icon: Hammer, badge: "+1..+10" },
-    ],
   },
 ]
 
@@ -306,7 +351,7 @@ export function StarfrontShell() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeHangarTab, setActiveHangarTab] = useState<HangarTab>("loadout")
-  const [activeWorldTab, setActiveWorldTab] = useState<"overview" | "map" | "sectors" | "events" | "military" | "results">("overview")
+  const [activeWorldTab, setActiveWorldTab] = useState<"overview" | "map" | "sectors" | "events" | "military" | "results">("map")
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     world: true,
     hangar: true,
@@ -654,150 +699,178 @@ export function StarfrontShell() {
             </div>
           )}
 
-          {/* C. Danh Mục Các Phân Hệ Chính (Primary Navigation Items & Submenus) */}
-          <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-            {!isSidebarCollapsed && (
-              <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground/80">
-                Menu Tác Chiến Chính
-              </div>
-            )}
-
-            {SECTIONS.map((sec) => {
-              const Icon = sec.icon
-              const isActive = activeSection === sec.id
-              const requiresSelection = sec.id !== "character-gear" && sec.id !== "home" && sec.id !== "pilot"
-              const isTabLocked = !hasValidSelection && requiresSelection
-              const badgeText = isTabLocked ? "Khóa" : sec.badge ? sec.badge(progression) : null
-              const submenus = sec.submenus ? sec.submenus(progression) : []
-              const hasSubmenus = !isTabLocked && submenus.length > 0 && !isSidebarCollapsed
-              const isExpanded = expandedMenus[sec.id] || false
-
+          {/* C. Danh Mục Các Phân Hệ Chính — Mô Hình 3 Tầng Chỉ Huy (Command Tier Architecture) */}
+          <nav className="flex-1 overflow-y-auto p-2 space-y-2">
+            {COMMAND_TIERS.map((tier) => {
+              const tierSections = SECTIONS.filter((sec) => sec.group === tier.id)
               return (
-                <div key={sec.id} className="space-y-0.5">
-                  <div
-                    onClick={() => handleSwitchSection(sec.id)}
-                    className={cn(
-                      "group relative flex items-center justify-between rounded-sm px-2.5 py-2 font-display text-xs uppercase tracking-wider transition-all cursor-pointer",
-                      isActive
-                        ? "bg-cyan-500/15 text-cyan-300 border-l-2 border-cyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.15)]"
-                        : isTabLocked
-                          ? "text-muted-foreground/60 hover:text-amber-300 hover:bg-amber-950/20"
-                          : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
-                    )}
-                    title={isSidebarCollapsed ? (isTabLocked ? `[Khóa] Cần chọn Phi Công & Cơ Giáp: ${sec.label}` : sec.label) : undefined}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {isTabLocked ? (
-                        <Lock className="size-4 shrink-0 text-amber-400/80 group-hover:text-amber-300" />
-                      ) : (
-                        <Icon className={cn("size-4 shrink-0", isActive ? "text-cyan-400" : "text-muted-foreground group-hover:text-cyan-300")} />
-                      )}
-                      {!isSidebarCollapsed && (
-                        <span className={cn("truncate", isTabLocked && "text-muted-foreground/80")}>{sec.shortLabel}</span>
+                <div key={tier.id} className="space-y-1">
+                  {!isSidebarCollapsed ? (
+                    <div className="flex items-center justify-between px-2 py-1 text-[9px] font-mono font-bold uppercase tracking-wider text-muted-foreground/80 border-b border-border/30">
+                      <span>{tier.label}</span>
+                      {tier.badge && (
+                        <span className="rounded bg-cyan-950/80 px-1 py-0.2 text-[8px] font-bold text-cyan-300 border border-cyan-500/40">
+                          {tier.badge}
+                        </span>
                       )}
                     </div>
+                  ) : (
+                    <div className="my-1 border-t border-border/30" />
+                  )}
 
-                    {!isSidebarCollapsed && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {badgeText && (
-                          <span
-                            className={cn(
-                              "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold border",
-                              isTabLocked
-                                ? "bg-amber-950/60 text-amber-300 border-amber-500/40"
-                                : "bg-black/60 text-cyan-300 border-border/50",
+                  {tierSections.map((sec) => {
+                    const Icon = sec.icon
+                    const isActive = activeSection === sec.id
+                    const isWorld = sec.id === "world"
+                    const requiresSelection = sec.id !== "character-gear" && sec.id !== "home" && sec.id !== "pilot"
+                    const isTabLocked = !hasValidSelection && requiresSelection
+                    const badgeText = isTabLocked ? "Khóa" : sec.badge ? sec.badge(progression) : null
+                    const submenus = sec.submenus ? sec.submenus(progression) : []
+                    const hasSubmenus = !isTabLocked && submenus.length > 0 && !isSidebarCollapsed
+                    const isExpanded = expandedMenus[sec.id] || false
+
+                    return (
+                      <div key={sec.id} className="space-y-0.5">
+                        <div
+                          onClick={() => handleSwitchSection(sec.id)}
+                          className={cn(
+                            "group relative flex items-center justify-between rounded-sm px-2.5 py-2 font-display text-xs uppercase tracking-wider transition-all cursor-pointer",
+                            isActive
+                              ? isWorld
+                                ? "bg-cyan-500/20 text-cyan-200 border-l-2 border-cyan-400 font-bold shadow-[0_0_16px_rgba(6,182,212,0.25)] border-y border-r border-cyan-500/40"
+                                : "bg-cyan-500/15 text-cyan-300 border-l-2 border-cyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+                              : isTabLocked
+                                ? "text-muted-foreground/60 hover:text-amber-300 hover:bg-amber-950/20"
+                                : isWorld
+                                  ? "border border-cyan-500/35 bg-cyan-950/20 text-cyan-200 hover:border-cyan-400 hover:bg-cyan-950/40 shadow-[0_0_8px_rgba(6,182,212,0.1)]"
+                                  : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
+                          )}
+                          title={isSidebarCollapsed ? (isTabLocked ? `[Khóa] Cần chọn Phi Công & Cơ Giáp: ${sec.label}` : sec.label) : undefined}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {isTabLocked ? (
+                              <Lock className="size-4 shrink-0 text-amber-400/80 group-hover:text-amber-300" />
+                            ) : (
+                              <Icon className={cn("size-4 shrink-0", isActive ? "text-cyan-400" : isWorld ? "text-cyan-400 group-hover:text-cyan-300" : "text-muted-foreground group-hover:text-cyan-300")} />
                             )}
-                          >
-                            {badgeText}
-                          </span>
-                        )}
-
-                        {hasSubmenus && (
-                          <button
-                            onClick={(e) => toggleSubmenu(sec.id, e)}
-                            className="size-5 flex items-center justify-center rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer"
-                          >
-                            <ChevronDown
-                              className={cn(
-                                "size-3 transition-transform duration-200",
-                                isExpanded ? "rotate-0" : "-rotate-90",
-                              )}
-                            />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Cây Submenu Mở Rộng */}
-                  {hasSubmenus && isExpanded && (
-                    <div className="ml-5 pl-2 border-l border-border/50 space-y-0.5 py-0.5">
-                      {submenus.map((sub) => {
-                        const SubIcon = sub.icon
-                        const isSubActive =
-                          isActive &&
-                          (sec.id === "world"
-                            ? activeWorldTab === sub.id
-                            : sec.id === "hangar"
-                              ? activeHangarTab === (sub.id === "enhance" ? "enhancement" : sub.id)
-                              : sec.id === "battlefield"
-                                ? (sub.id === "arena" && !activeCampaignMission) ||
-                                  (sub.id === "active-quest" && !!activeCampaignMission)
-                                : false)
-
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => handleSelectSubmenu(sec.id, sub.id)}
-                            className={cn(
-                              "w-full flex items-center justify-between rounded px-2 py-1.5 text-left font-mono text-[11px] transition-all cursor-pointer",
-                              isSubActive
-                                ? sec.id === "hangar" && sub.id === "enhancement"
-                                  ? "bg-purple-500/25 text-purple-200 border-l-2 border-purple-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(168,85,247,0.25)]"
-                                  : "bg-cyan-500/20 text-cyan-300 border-l-2 border-cyan-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]"
-                                : "text-muted-foreground hover:text-white hover:bg-secondary/30",
+                            {!isSidebarCollapsed && (
+                              <div className="flex items-center gap-1.5 truncate">
+                                {isWorld && !isTabLocked && (
+                                  <span className="size-1.5 rounded-full bg-cyan-400 animate-ping shrink-0" />
+                                )}
+                                <span className={cn("truncate", isTabLocked && "text-muted-foreground/80", isWorld && "font-black tracking-wide text-cyan-200")}>
+                                  {sec.shortLabel}
+                                </span>
+                              </div>
                             )}
-                          >
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              {SubIcon ? (
-                                <SubIcon
+                          </div>
+
+                          {!isSidebarCollapsed && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {badgeText && (
+                                <span
                                   className={cn(
-                                    "size-3 shrink-0",
+                                    "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold border",
+                                    isTabLocked
+                                      ? "bg-amber-950/60 text-amber-300 border-amber-500/40"
+                                      : isWorld
+                                        ? "bg-cyan-950/80 text-cyan-300 border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.3)] animate-pulse"
+                                        : "bg-black/60 text-cyan-300 border-border/50",
+                                  )}
+                                >
+                                  {badgeText}
+                                </span>
+                              )}
+
+                              {hasSubmenus && (
+                                <button
+                                  onClick={(e) => toggleSubmenu(sec.id, e)}
+                                  className="size-5 flex items-center justify-center rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                                >
+                                  <ChevronDown
+                                    className={cn(
+                                      "size-3 transition-transform duration-200",
+                                      isExpanded ? "rotate-0" : "-rotate-90",
+                                    )}
+                                  />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Cây Submenu Mở Rộng */}
+                        {hasSubmenus && isExpanded && (
+                          <div className="ml-5 pl-2 border-l border-border/50 space-y-0.5 py-0.5">
+                            {submenus.map((sub) => {
+                              const SubIcon = sub.icon
+                              const isSubActive =
+                                isActive &&
+                                (sec.id === "world"
+                                  ? activeWorldTab === sub.id || (sub.id === "map" && activeWorldTab === "sectors")
+                                  : sec.id === "hangar"
+                                    ? activeHangarTab === (sub.id === "enhance" ? "enhancement" : sub.id)
+                                    : sec.id === "battlefield"
+                                      ? (sub.id === "arena" && !activeCampaignMission) ||
+                                        (sub.id === "active-quest" && !!activeCampaignMission)
+                                      : false)
+
+                              return (
+                                <button
+                                  key={sub.id}
+                                  onClick={() => handleSelectSubmenu(sec.id, sub.id)}
+                                  className={cn(
+                                    "w-full flex items-center justify-between rounded px-2 py-1.5 text-left font-mono text-[11px] transition-all cursor-pointer",
                                     isSubActive
                                       ? sec.id === "hangar" && sub.id === "enhancement"
-                                        ? "text-purple-400"
-                                        : "text-cyan-400"
-                                      : "text-muted-foreground/80",
+                                        ? "bg-purple-500/25 text-purple-200 border-l-2 border-purple-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(168,85,247,0.25)]"
+                                        : "bg-cyan-500/20 text-cyan-300 border-l-2 border-cyan-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+                                      : "text-muted-foreground hover:text-white hover:bg-secondary/30",
                                   )}
-                                />
-                              ) : (
-                                <div
-                                  className={cn(
-                                    "size-1.5 rounded-full shrink-0",
-                                    isSubActive ? "bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]" : "bg-muted-foreground/40",
-                                  )}
-                                />
-                              )}
-                              <span className="truncate">{sub.label}</span>
-                            </div>
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    {SubIcon ? (
+                                      <SubIcon
+                                        className={cn(
+                                          "size-3 shrink-0",
+                                          isSubActive
+                                            ? sec.id === "hangar" && sub.id === "enhancement"
+                                              ? "text-purple-400"
+                                              : "text-cyan-400"
+                                            : "text-muted-foreground/80",
+                                        )}
+                                      />
+                                    ) : (
+                                      <div
+                                        className={cn(
+                                          "size-1.5 rounded-full shrink-0",
+                                          isSubActive ? "bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]" : "bg-muted-foreground/40",
+                                        )}
+                                      />
+                                    )}
+                                    <span className="truncate">{sub.label}</span>
+                                  </div>
 
-                            {sub.badge && (
-                              <span
-                                className={cn(
-                                  "rounded px-1.5 py-0.2 font-mono text-[8px] font-bold border shrink-0",
-                                  isSubActive
-                                    ? "bg-cyan-400/20 text-cyan-200 border-cyan-400/40"
-                                    : "bg-black/60 text-muted-foreground border-border/40",
-                                )}
-                              >
-                                {sub.badge}
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
+                                  {sub.badge && (
+                                    <span
+                                      className={cn(
+                                        "rounded px-1.5 py-0.2 font-mono text-[8px] font-bold border shrink-0",
+                                        isSubActive
+                                          ? "bg-cyan-400/20 text-cyan-200 border-cyan-400/40"
+                                          : "bg-black/60 text-muted-foreground border-border/40",
+                                      )}
+                                    >
+                                      {sub.badge}
+                                    </span>
+                                  )}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )
             })}

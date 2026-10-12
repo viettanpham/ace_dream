@@ -120,7 +120,7 @@ interface OperationsCenterProps {
 }
 
 export function OperationsCenter({
-  initialTab = "overview",
+  initialTab = "map",
   onNavigateSection,
   onDeployEncounter,
 }: OperationsCenterProps) {
@@ -918,13 +918,17 @@ export function OperationsCenter({
       </header>
 
       {/* ====================================================================
-          B. NAVIGATION TABS (5 PHÂN KHU CHỨC NĂNG)
+          B. NAVIGATION TABS (5 PHÂN KHU CHỨC NĂNG CHIẾN LƯỢC)
           ==================================================================== */}
       <nav className="flex flex-wrap items-center gap-1.5 border-b border-zinc-800 pb-2">
         {[
-          { id: "overview", label: "Tình Hình Chiến Lược", icon: Activity },
-          { id: "map", label: "Bản Đồ Thiên Hà", icon: Compass },
-          { id: "sectors", label: "Mạng Lưới Sector", icon: Globe2 },
+          {
+            id: "map",
+            label: "War Room // Bản Đồ Chiến Lược",
+            icon: Compass,
+            badge: "Trung Tâm",
+          },
+          { id: "overview", label: "Tình Hình Toàn Cảnh", icon: Activity },
           {
             id: "events",
             label: "Sự Kiện & Nhiệm Vụ",
@@ -934,7 +938,7 @@ export function OperationsCenter({
           { id: "military", label: "Quân Sự & Hậu Cần", icon: Swords },
           {
             id: "results",
-            label: "Trung Tâm Kết Quả Kép",
+            label: "Trung Tâm Kết Quả",
             icon: Layers,
             badge: worldState.eventResultsArchive?.some((r) => !r.isRead) ? "Mới" : null,
           },
@@ -946,7 +950,7 @@ export function OperationsCenter({
           },
         ].map((tab) => {
           const Icon = tab.icon
-          const isActive = activeTab === tab.id
+          const isActive = activeTab === tab.id || (tab.id === "map" && activeTab === "sectors")
           return (
             <button
               key={tab.id}
@@ -965,7 +969,12 @@ export function OperationsCenter({
               <Icon className={cn("size-3.5", isActive ? "text-cyan-400" : "text-zinc-500")} />
               <span>{tab.label}</span>
               {tab.badge && (
-                <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] text-amber-300 border border-amber-500/40 font-bold">
+                <span className={cn(
+                  "rounded px-1.5 py-0.2 text-[10px] font-bold border",
+                  tab.id === "map"
+                    ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                    : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                )}>
                   {tab.badge}
                 </span>
               )}
@@ -1331,280 +1340,132 @@ export function OperationsCenter({
       )}
 
       {/* ====================================================================
-          TAB: BẢN ĐỒ THIÊN HÀ TOÀN DIỆN (STARFRONT WORLD MAP)
+          WAR ROOM // BẢN ĐỒ CHIẾN LƯỢC TOÀN DIỆN & SECTOR COMMAND FOUNDATION (PHASE 6.17 P0)
           ==================================================================== */}
-      {activeTab === "map" && (
-        <div className="h-[640px] rounded border border-cyan-500/40 bg-zinc-950 overflow-hidden shadow-2xl relative">
-          <WorldMap
-            worldState={worldState}
-            selectedSectorId={selectedSectorId}
-            onSelectSector={(secId) => setSelectedSectorId(secId)}
-            onNavigateToSectorOperations={(secId) => {
-              setSelectedSectorId(secId)
-              setActiveTab("sectors")
-            }}
-            onOpenQuickDispatch={(secId) => {
-              setSelectedSectorId(secId)
-              setIsQuickDispatchOpen(true)
-            }}
-            onDeployCombat={(secId) => {
-              onDeployEncounter?.(secId)
-            }}
-            onUpdateWorldState={(newState) => {
-              setWorldState({ ...newState })
-            }}
-            isFullscreen={false}
-            onToggleFullscreen={() => setIsFullscreenMapOpen(true)}
-          />
-        </div>
-      )}
+      {(activeTab === "map" || activeTab === "sectors") && (
+        <div className="space-y-2.5">
+          {/* Thông báo tương thích nếu truy cập thông qua tab hoặc đường dẫn 'sectors' cũ */}
+          {activeTab === "sectors" && (
+            <div className="flex items-center justify-between rounded border border-cyan-500/40 bg-cyan-950/40 px-3 py-1.5 text-[11px] text-cyan-200 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <Globe2 className="size-3.5 text-cyan-400 shrink-0" />
+                <span>
+                  <strong>Mạng Lưới Sector đã được hợp nhất vào War Room:</strong> Bấm vào sector trên bản đồ hoặc thanh điều phối bên dưới để xem Inspector chi tiết và ra lệnh.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound()
+                  setActiveTab("map")
+                }}
+                className="text-cyan-300 hover:text-white underline text-[10px] font-bold shrink-0 ml-2 cursor-pointer"
+              >
+                Ẩn thông báo
+              </button>
+            </div>
+          )}
 
-      {/* ====================================================================
-          TAB 2: MẠNG LƯỚI SECTOR (SECTOR OPERATIONS & INSPECTOR)
-          ==================================================================== */}
-      {activeTab === "sectors" && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Cột trái 2/3: Danh sách các Sector */}
-          <div className="lg:col-span-2 space-y-2.5">
-            <div className="flex items-center justify-between text-zinc-400 text-[11px]">
-              <span className="font-bold uppercase tracking-wide">
-                DANH SÁCH SECTOR THIÊN HÀ ({sectorsList.length})
+          {/* THANH ĐIỀU PHỐI SECTOR NHANH (SECTOR COMMAND RIBBON) */}
+          <div className="rounded border border-cyan-500/30 bg-zinc-950/90 p-2.5 shadow-lg shadow-cyan-950/20 backdrop-blur-md">
+            <div className="flex items-center justify-between text-[11px] pb-1.5 mb-1.5 border-b border-zinc-800/80">
+              <div className="flex items-center gap-1.5 text-zinc-300 font-bold uppercase tracking-wide">
+                <Compass className="size-3.5 text-cyan-400" />
+                <span>Mạng Lưới 8 Sector Thiên Hà — Điều Phối & Soi Tức Thì</span>
+              </div>
+              <span className="text-[10px] text-zinc-400 hidden sm:inline">
+                Đồng bộ tự động giữa Bản Đồ và Inspector bên phải
               </span>
-              <span>Bấm vào sector để mở bảng điều khiển chi tiết</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
               {sectorsList.map((sector) => {
                 const isSelected = selectedSectorId === sector.id
                 const isLocked = !!sector.isLockedForCombat
+                const threatTier = sector.threatLevel >= 700 ? "high" : sector.threatLevel >= 300 ? "med" : "low"
+
                 return (
-                  <div
+                  <button
                     key={sector.id}
+                    type="button"
                     onClick={() => {
                       playClickSound()
                       setSelectedSectorId(sector.id)
                     }}
                     className={cn(
-                      "p-3 rounded border transition-all cursor-pointer relative",
+                      "flex flex-col justify-between p-2 rounded border text-left transition-all cursor-pointer relative",
                       isSelected
-                        ? "border-cyan-400 bg-cyan-950/30 shadow-md shadow-cyan-950/40"
-                        : "border-zinc-800 bg-zinc-950/60 hover:border-zinc-700 hover:bg-zinc-900/60"
+                        ? "border-cyan-400 bg-cyan-950/50 shadow-md shadow-cyan-950/50 ring-1 ring-cyan-400/50"
+                        : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-850"
                     )}
                   >
-                    {/* Header sector card */}
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-zinc-100 text-xs">{sector.name}</span>
+                    <div className="flex items-center justify-between gap-1 w-full">
+                      <span className={cn("font-bold text-[11px] truncate", isSelected ? "text-cyan-200" : "text-zinc-200")}>
+                        {sector.name.split(" ")[0]}
+                      </span>
                       <span
                         className={cn(
-                          "px-1.5 py-0.2 rounded text-[10px] font-bold uppercase border",
+                          "size-2 rounded-full shrink-0",
                           sector.sovereignty === "vss"
-                            ? "border-emerald-500/40 bg-emerald-950/40 text-emerald-300"
+                            ? "bg-cyan-400"
                             : sector.sovereignty === "void"
-                            ? "border-red-500/40 bg-red-950/40 text-red-300"
-                            : "border-amber-500/40 bg-amber-950/40 text-amber-300"
+                            ? "bg-red-500 animate-pulse"
+                            : "bg-amber-400"
                         )}
+                        title={`Chủ quyền: ${sector.sovereignty.toUpperCase()}`}
+                      />
+                    </div>
+
+                    <div className="mt-1 flex items-center justify-between text-[10px] text-zinc-400 w-full">
+                      <span
+                        className={cn(
+                          "font-mono font-bold text-[10px]",
+                          threatTier === "high" ? "text-red-400" : threatTier === "med" ? "text-amber-400" : "text-emerald-400"
+                        )}
+                        title={`Threat: ${sector.threatLevel}/1000`}
                       >
-                        {sector.sovereignty.toUpperCase()}
+                        T:{sector.threatLevel}
+                      </span>
+
+                      <span className="font-mono text-[10px] text-zinc-300">
+                        {sector.garrisonPower}q
                       </span>
                     </div>
 
-                    {/* Threat & Stability Bars */}
-                    <div className="mt-2.5 space-y-1.5 text-[10px]">
-                      <div>
-                        <div className="flex justify-between text-zinc-400">
-                          <span>Threat:</span>
-                          <span className="font-bold text-amber-400">{sector.threatLevel}/1000</span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-zinc-900 overflow-hidden mt-0.5">
-                          <div
-                            className="h-full bg-amber-500"
-                            style={{ width: `${Math.min(100, (sector.threatLevel / 1000) * 100)}%` }}
-                          />
-                        </div>
+                    {isLocked && (
+                      <div className="absolute top-1 right-1 text-red-400" title="Đang khóa Combat">
+                        <Lock className="size-2.5" />
                       </div>
-
-                      <div>
-                        <div className="flex justify-between text-zinc-400">
-                          <span>Stability:</span>
-                          <span className="font-bold text-emerald-400">{sector.stability}/100</span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-zinc-900 overflow-hidden mt-0.5">
-                          <div
-                            className="h-full bg-emerald-500"
-                            style={{ width: `${sector.stability}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Footer tags */}
-                    <div className="mt-2.5 flex items-center justify-between text-[10px] text-zinc-400 border-t border-zinc-800/80 pt-2">
-                      <span>Đồn trú: <strong className="text-zinc-200">{sector.garrisonPower}</strong></span>
-                      <span>Giai đoạn: <strong className="text-cyan-300 uppercase">{sector.stage}</strong></span>
-                      {isLocked && (
-                        <span className="flex items-center gap-1 text-red-400 font-bold">
-                          <Lock className="size-3" /> Khóa Combat
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                    )}
+                  </button>
                 )
               })}
             </div>
           </div>
 
-          {/* Cột phải 1/3: Inspector chi tiết Sector được chọn */}
-          <div className="rounded border border-cyan-500/40 bg-zinc-950/90 p-4 space-y-3.5">
-            {selectedSector ? (
-              <>
-                <div className="border-b border-zinc-800 pb-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-cyan-400 font-bold uppercase text-xs">
-                      CHI TIẾT SECTOR: {selectedSector.name}
-                    </span>
-                    <span className="text-zinc-500 font-mono text-[10px]">ID: {selectedSector.id}</span>
-                  </div>
-                  <p className="mt-1 text-[11px] text-zinc-400">{selectedSector.desc}</p>
-                </div>
-
-                {/* Banners cảnh báo khóa Combat */}
-                {selectedSector.isLockedForCombat && (
-                  <div className="rounded border border-red-500/60 bg-red-950/30 p-2.5 text-[11px] text-red-300 space-y-1">
-                    <div className="flex items-center gap-1.5 font-bold">
-                      <Lock className="size-3.5 text-red-400" />
-                      <span>ĐANG KHÓA TRẬN CHIẾN (COMBAT LOCKED)</span>
-                    </div>
-                    <p className="text-[10px] text-red-300/80">
-                      Sector này đang giao tranh với buồng lái. Lực lượng đồn trú bị đóng băng để bảo toàn dữ liệu.
-                    </p>
-                  </div>
-                )}
-
-                {/* Các chỉ số chi tiết */}
-                <div className="grid grid-cols-2 gap-2 text-[11px] bg-zinc-900/40 p-2.5 rounded border border-zinc-800">
-                  <div>
-                    <span className="text-zinc-400">Chủ quyền:</span>{" "}
-                    <strong className="text-zinc-200 uppercase">{selectedSector.sovereignty}</strong>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">Giai đoạn:</span>{" "}
-                    <strong className="text-cyan-300 uppercase">{selectedSector.stage}</strong>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">Quân đồn trú:</span>{" "}
-                    <strong className="text-zinc-200">{selectedSector.garrisonPower} quân</strong>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">Công sự:</span>{" "}
-                    <strong className="text-amber-400">Cấp {selectedSector.fortificationLevel ?? 1}/5</strong>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">Dân số:</span>{" "}
-                    <strong className="text-zinc-200">{selectedSector.population.toLocaleString()}</strong>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">Lương thực tồn:</span>{" "}
-                    <strong className="text-emerald-400">{selectedSector.resources.food}</strong>
-                  </div>
-                </div>
-
-                {/* Tác vụ 1: Lệnh Chiến Lược */}
-                <div>
-                  <label className="text-[11px] font-bold text-zinc-300 uppercase tracking-wide">
-                    Lệnh Chiến Lược Đồn Trú (Strategic Order)
-                  </label>
-                  <div className="mt-1.5 grid grid-cols-3 gap-1.5 text-[11px]">
-                    {(["normal", "defend", "reinforce", "attack", "recover"] as StrategicOrder[]).map((ord) => (
-                      <button
-                        key={ord}
-                        type="button"
-                        onClick={() => handleSetStrategicOrder(selectedSector.id, ord)}
-                        className={cn(
-                          "p-1.5 rounded border font-bold uppercase transition-colors cursor-pointer text-center",
-                          (selectedSector.strategicOrder || "normal") === ord
-                            ? "border-cyan-400 bg-cyan-950/60 text-cyan-300"
-                            : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200"
-                        )}
-                      >
-                        {ord === "normal" && "Bình Thường"}
-                        {ord === "defend" && "Cố Thủ"}
-                        {ord === "reinforce" && "Tập Kết"}
-                        {ord === "attack" && "Phản Công"}
-                        {ord === "recover" && "Hồi Phục"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Tác vụ 2: Nâng cấp công sự */}
-                <div>
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="font-bold text-zinc-300 uppercase">Gia Cố Công Sự</span>
-                    <span className="text-zinc-400">Chi phí: 50 Materials</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleUpgradeFortification(selectedSector.id)}
-                    disabled={(selectedSector.fortificationLevel || 1) >= 5 || worldState.resources.industrialMaterials < 50}
-                    className={cn(
-                      "mt-1.5 w-full flex items-center justify-center gap-1.5 rounded p-2 text-xs font-bold transition-colors cursor-pointer",
-                      (selectedSector.fortificationLevel || 1) >= 5 || worldState.resources.industrialMaterials < 50
-                        ? "border border-zinc-800 bg-zinc-900 text-zinc-500 cursor-not-allowed"
-                        : "border border-amber-500/60 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60"
-                    )}
-                  >
-                    <Hammer className="size-3.5" />
-                    <span>Nâng Cấp Công Sự (+1 Cấp)</span>
-                  </button>
-                </div>
-
-                {/* Tác vụ 3: Điều quân nhanh đến sector này */}
-                <button
-                  type="button"
-                  onClick={() => setIsQuickDispatchOpen(true)}
-                  disabled={selectedSector.isLockedForCombat}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-1.5 rounded p-2 text-xs font-bold transition-colors cursor-pointer",
-                    selectedSector.isLockedForCombat
-                      ? "border border-zinc-800 bg-zinc-900 text-zinc-500 cursor-not-allowed"
-                      : "border border-cyan-500/60 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/60"
-                  )}
-                >
-                  <Zap className="size-3.5" />
-                  <span>Điều Quân Chi Viện Cho Sector Này</span>
-                </button>
-
-                {/* Tác vụ: Xem trên Bản Đồ Thiên Hà */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    playClickSound()
-                    setActiveTab("map")
-                  }}
-                  className="w-full flex items-center justify-center gap-1.5 rounded border border-cyan-500/40 bg-zinc-900/60 p-2 text-xs font-bold text-cyan-300 hover:bg-zinc-800 hover:border-cyan-400 transition-colors cursor-pointer"
-                >
-                  <Compass className="size-3.5" />
-                  <span>Xem Vị Trí Trên Bản Đồ Thiên Hà</span>
-                </button>
-
-                {/* Tác vụ 4: Xuất kích can thiệp trực tiếp bằng Buồng Lái (Combat Encounter) */}
-                {(selectedSector.stage === "under_siege" || selectedSector.stage === "threatened" || selectedSector.isLockedForCombat) && onDeployEncounter && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClickSound()
-                      onDeployEncounter(selectedSector.id)
-                    }}
-                    className="w-full flex items-center justify-center gap-1.5 rounded border border-red-500/60 bg-red-950/40 p-2 text-xs font-bold text-red-200 hover:bg-red-900/60 transition-colors cursor-pointer shadow-md shadow-red-950/50"
-                  >
-                    <Swords className="size-3.5 text-red-400 animate-pulse" />
-                    <span>Xuất Kích Can Thiệp Buồng Lái (Đấu Trường)</span>
-                  </button>
-                )}
-              </>
-            ) : (
-              <div className="text-zinc-500 text-center p-6">Chọn một sector để xem chi tiết.</div>
-            )}
+          {/* KHUNG NHÌN WAR ROOM TRUNG TÂM: GALAXY MAP + SECTOR INSPECTOR */}
+          <div className="h-[680px] lg:h-[740px] xl:h-[780px] min-h-[580px] rounded border border-cyan-500/40 bg-zinc-950 overflow-hidden shadow-2xl relative">
+            <WorldMap
+              worldState={worldState}
+              selectedSectorId={selectedSectorId}
+              onSelectSector={(secId) => setSelectedSectorId(secId)}
+              onNavigateToSectorOperations={(secId) => {
+                setSelectedSectorId(secId)
+                setActiveTab("map")
+              }}
+              onOpenQuickDispatch={(secId) => {
+                setSelectedSectorId(secId)
+                setIsQuickDispatchOpen(true)
+              }}
+              onDeployCombat={(secId) => {
+                onDeployEncounter?.(secId)
+              }}
+              onUpdateWorldState={(newState) => {
+                setWorldState({ ...newState })
+              }}
+              isFullscreen={false}
+              onToggleFullscreen={() => setIsFullscreenMapOpen(true)}
+            />
           </div>
         </div>
       )}

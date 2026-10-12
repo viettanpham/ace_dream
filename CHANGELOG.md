@@ -4,6 +4,41 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.7] — STARFRONT WORLD: Động Cơ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược (Event Lifecycle Engine & Strategic Mission Chains)
+
+*Đã hoàn thành 100% Phase 6.7 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.7 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.7:
+- **Động Cơ Vòng Đời Sự Kiện 3 Pha (`lib/game/world/event-engine.ts`)**:
+  - Triển khai vòng đời khép kín `INIT` $\rightarrow$ `PROCESSING` $\rightarrow$ `RESULT`:
+    * `INIT`: Sự kiện xuất hiện kèm đồng hồ đếm ngược `decisionDeadlineTick`. Người chơi có thể lựa chọn các phương án phản ứng (Strategy) với chi phí tài nguyên và yêu cầu quân sự rõ ràng.
+    * Tự động khóa phương án mặc định (`autoLockDefaultStrategy`): Khi countdown về 0 mà người chơi chưa chọn lệnh, hệ thống tự động khóa và kích hoạt `defaultStrategyId`, không để sự kiện bị treo lơ lửng.
+    * `PROCESSING`: Đang thực thi theo thời lượng xác định (`processingTicks`); lưu trữ bền vững qua các lần reload trang web và tiếp tục tiến trình qua batch offline catch-up.
+    * `RESULT`: Đánh giá kết quả (thắng/thua, biến động tài nguyên, thương vong), ghi nhận vào kho lưu trữ bền vững `worldEventResultsArchive`.
+  - Bộ lọc chống áp dụng hậu quả 2 lần (`applyEventConsequencesOnce` với guard `consequencesApplied`): Tuyệt đối chỉ áp dụng biến động tài nguyên, quân số, Stability và Threat đúng 1 lần duy nhất.
+  - Phân tách rạch ròi Event Result với Battle Result, hỗ trợ đánh dấu đã đọc (`isRead`) và dọn dẹp an toàn (`pruneReadEventResultsSafe`) không làm thay đổi World State.
+  - Sắp xếp thứ tự thực thi theo quy tắc tie-break tất định: `(priority DESC, createdAtTick ASC, id ASC)`.
+- **Đồ Thị Chuỗi Nhiệm Vụ Chiến Lược 6 Hình Thái (`lib/game/world/mission-chains.ts`)**:
+  - Hỗ trợ đầy đủ 6 cấu trúc chuỗi nhiệm vụ:
+    1. *Linear (Tuyến tính)*: Bước 1 $\rightarrow$ Bước 2 $\rightarrow$ Bước 3 (`chain_linear_void_inquiry`).
+    2. *Branching (Phân nhánh)*: Quyết định/chiến lược mở ra Nhánh Dân Sự hoặc Nhánh Quân Sự (`chain_branching_mining_crisis`).
+    3. *Threshold-based (Theo ngưỡng)*: Tự động kích hoạt khi Threat $\ge 600$ (`chain_threshold_high_threat`).
+    4. *Reactive (Phản ứng)*: Kích hoạt đáp trả khi sector bị vây hãm `under_siege` (`chain_reactive_rescue`).
+    5. *Periodic / Patrol (Tuần hoàn)*: Nhiệm vụ tuần tra lặp lại định kỳ mỗi chu kỳ (`chain_periodic_patrol`) với cơ chế cooldown chống sinh vô hạn trong cùng một tick.
+    6. *Standalone (Độc lập)*: Chiến dịch đặc biệt một lần (`chain_standalone_ancient_cache`).
+  - Khống chế trần toàn cục `MAX_ACTIVE_MISSION_CHAINS = 8` và trần sự kiện `MAX_ACTIVE_EVENTS = 12`.
+- **Bộ Cấu Hình 20 Sự Kiện Mẫu Sci-Fi (`lib/game/world/event-templates.ts`)**:
+  - 20 sự kiện mẫu trải rộng trên 7 danh mục: Khủng hoảng (Crisis), Ngoại giao (Diplomacy), Quân sự (Military), Dị thường (Anomaly), Hậu cần (Logistics), Dân sự (Civil), Tình báo (Intel).
+  - Mỗi sự kiện đều có mô tả lore vũ trụ, mức độ nghiêm trọng, thời hạn đếm ngược, chiến lược mặc định và các phương án xử lý kèm chi phí/hậu quả.
+- **Tích Hợp Tick Engine & Bộ Lưu Trữ Bền Vững**:
+  - Tích hợp vào Phase 5 của Tick Engine: Kiểm tra countdown event, tự động chuyển `INIT` $\rightarrow$ `PROCESSING`, hoàn tất `PROCESSING` $\rightarrow$ `RESULT`, và chuyển tiếp các nút trong chuỗi nhiệm vụ.
+  - Tích hợp vào Phase 6 của Tick Engine: Quét và kích hoạt các chuỗi nhiệm vụ theo ngưỡng (Threshold), phản ứng (Reactive) và tuần hoàn (Periodic).
+  - Tương thích 100% với `STARFRONT_WORLD_SAVE_V1` và cơ chế di chuyển/default an toàn trong `storage.ts`.
+- **Kiểm Thử Đơn Vị Đầy Đủ (`tests/world/event-lifecycle.test.ts`)**:
+  - 8/8 bài kiểm thử chuyên sâu bao phủ trọn vẹn: Vòng đời 3 pha, Deadline online/offline catch-up, Idempotency guard, 6 cấu trúc Mission chain, Trần 8 chuỗi, Reload & Safe pruning, Combat adapter contract, và Deterministic PRNG.
+
+---
+
 ## [Phase 6.6] — STARFRONT WORLD: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng (Combat Integration Adapter & Idempotent Journal)
 
 *Đã hoàn thành 100% Phase 6.6 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.6 PASS)*

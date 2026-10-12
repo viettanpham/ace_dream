@@ -272,6 +272,182 @@ export interface InFlightTransaction {
 }
 
 /**
+ * Trạng thái của sự kiện chiến lược theo vòng đời 3 pha
+ */
+export type EventStatus = "INIT" | "PROCESSING" | "RESULT" | "EXPIRED"
+
+export type EventSeverity = "critical" | "warning" | "info"
+
+export type EventCategory =
+  | "crisis"
+  | "diplomacy"
+  | "military"
+  | "anomaly"
+  | "logistics"
+  | "civil"
+  | "intel"
+
+export type EventScope = "sector" | "galaxy"
+
+/**
+ * Hậu quả chiến lược tác động lên World State
+ */
+export interface EventConsequence {
+  resourceDelta?: Partial<WorldResourceLedger>
+  militaryDelta?: {
+    deployedDelta?: number
+    reservesDelta?: number
+    casualtiesDelta?: number
+    woundedDelta?: number
+  }
+  stabilityDelta?: number
+  threatDelta?: number
+  populationDelta?: {
+    civilianCasualties?: number
+    refugees?: number
+  }
+  fortificationDelta?: number
+  sectorId?: string
+  newStrategicOrder?: StrategicOrder
+  message: string
+}
+
+/**
+ * Phương án / Chiến lược người chơi có thể lựa chọn cho sự kiện
+ */
+export interface EventStrategy {
+  id: string
+  name: string
+  description: string
+  cost?: Partial<WorldResourceLedger>
+  militaryCost?: number
+  processingTicks: number
+  successChance?: number
+  consequences: EventConsequence
+  failureConsequences?: EventConsequence
+  requiresCombat?: boolean
+  encounterConfig?: {
+    enemyPower?: number
+    tier?: number
+    name?: string
+  }
+  nextChainNodeId?: string
+}
+
+/**
+ * Bản ghi kết quả sự kiện được lưu trữ bền vững (Event Result)
+ */
+export interface WorldEventResult {
+  id: string
+  eventId: string
+  templateId: string
+  title: string
+  category: EventCategory
+  severity: EventSeverity
+  sectorId?: string
+  status: "success" | "failure" | "expired_default" | "aborted"
+  chosenStrategyId: string
+  chosenStrategyName: string
+  summaryText: string
+  resolvedAtTick: number
+  resolvedAtTimestamp: number
+  resourceChanges?: Partial<WorldResourceLedger>
+  stabilityChange?: number
+  threatChange?: number
+  casualties?: number
+  isRead?: boolean
+  missionChainId?: string
+  nextNodeUnlocked?: string
+}
+
+/**
+ * Thực thể Sự Kiện Chiến Lược trong STARFRONT WORLD (World Event)
+ */
+export interface WorldEvent {
+  id: string
+  templateId: string
+  title: string
+  description: string
+  category: EventCategory
+  severity: EventSeverity
+  scope: EventScope
+  sectorId?: string
+  status: EventStatus
+  priority: number
+  createdAtTick: number
+  createdAtTimestamp: number
+  decisionDeadlineTick: number
+  defaultStrategyId: string
+  availableStrategies: EventStrategy[]
+  chosenStrategyId?: string
+  processingStartedTick?: number
+  processingCompletesTick?: number
+  isResolved: boolean
+  consequencesApplied: boolean
+  missionChainId?: string
+  nodeId?: string
+  encounterTransactionId?: string
+  result?: WorldEventResult
+}
+
+/**
+ * 6 Hình thái cấu trúc chuỗi nhiệm vụ chiến lược (Mission Topologies)
+ */
+export type MissionTopology =
+  | "linear"
+  | "branching"
+  | "threshold"
+  | "reactive"
+  | "periodic"
+  | "standalone"
+
+/**
+ * Một nút trong đồ thị chuỗi nhiệm vụ (Mission Chain Node)
+ */
+export interface MissionChainNode {
+  id: string
+  title: string
+  description: string
+  eventTemplateId: string
+  status: "locked" | "active" | "completed" | "failed"
+  sectorId?: string
+  requiredPreviousNodeIds?: string[]
+  branchChoiceId?: string
+  thresholdCondition?: {
+    metric: "threat" | "stability" | "food" | "reserves"
+    sectorId?: string
+    operator: ">=" | "<="
+    value: number
+  }
+  reactiveCondition?: {
+    triggerType: "sector_under_siege" | "sector_lost" | "starvation"
+    sectorId?: string
+  }
+  nextBranchMap?: Record<string, string>
+  rewardSummary?: string
+}
+
+/**
+ * Chuỗi nhiệm vụ chiến lược toàn diện (Mission Chain)
+ */
+export interface MissionChain {
+  id: string
+  templateId: string
+  title: string
+  description: string
+  topology: MissionTopology
+  sectorId?: string
+  status: "active" | "completed" | "failed"
+  nodes: Record<string, MissionChainNode>
+  currentNodeId: string
+  startedAtTick: number
+  completedAtTick?: number
+  recurringIntervalTicks?: number
+  lastRunTick?: number
+  cooldownUntilTick?: number
+}
+
+/**
  * Toàn bộ trạng thái của phân hệ STARFRONT WORLD (World State v1)
  */
 export interface WorldState {
@@ -296,6 +472,10 @@ export interface WorldState {
   isSuspendedCombat: boolean
   suspendedEncounterId?: string
   suspendedSnapshot?: EncounterSnapshot
+  // Phase 6.7: Event Engine & Mission Chains
+  events?: Record<string, WorldEvent>
+  missionChains?: Record<string, MissionChain>
+  eventResultsArchive?: WorldEventResult[]
 }
 
 /**

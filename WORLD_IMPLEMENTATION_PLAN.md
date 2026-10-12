@@ -220,12 +220,15 @@ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ       Operations Center & Dual R
   3. Hiện thực hóa các mẫu chuỗi nhiệm vụ: Hỗ trợ rẽ nhánh kết quả dựa trên quyết định hoặc thành tích chiến đấu của người chơi.
   4. Quản lý trần chuỗi nhiệm vụ: Khi đạt giới hạn 8 chuỗi, tạm hoãn sinh nhiệm vụ mới cho đến khi hoàn thành hoặc hủy bớt các chuỗi cũ.
 - **Tiêu chí hoàn thành (Exit Criteria)**:
-  - Sự kiện hết hạn tự động chuyển sang `PROCESSING` với đúng chiến lược mặc định mà không gây lỗi null/undefined.
-  - Reload ứng dụng khi sự kiện đang xử lý không làm thời gian đếm ngược bị đặt lại từ đầu.
-  - 100% Tests sự kiện đạt PASS.
+  - [x] Sự kiện hết hạn tự động chuyển sang `PROCESSING` với đúng chiến lược mặc định mà không gây lỗi null/undefined.
+  - [x] Reload ứng dụng khi sự kiện đang xử lý không làm thời gian đếm ngược bị đặt lại từ đầu.
+  - [x] Hậu quả chiến lược của sự kiện chỉ được áp dụng lũy đẳng đúng 1 lần (`consequencesApplied` guard).
+  - [x] Đồ thị chuỗi nhiệm vụ hỗ trợ đầy đủ 6 hình thái (Linear, Branching, Threshold, Reactive, Periodic, Standalone).
+  - [x] Khống chế trần toàn cục `MAX_ACTIVE_MISSION_CHAINS = 8` và trần sự kiện `MAX_ACTIVE_EVENTS = 12`.
+  - [x] 100% Tests sự kiện đạt PASS (8/8 subtests trong `tests/world/event-lifecycle.test.ts` PASS tuyệt đối).
 - **Rủi ro kỹ thuật & Giải pháp phòng ngừa**:
   - *Rủi ro*: Các sự kiện phản ứng (Reactive) kích hoạt dây chuyền không kiểm soát gây tràn danh sách.
-  - *Giải pháp*: Thiết lập thời gian giãn cách tối thiểu (Cooldown Period) giữa các sự kiện cùng loại tại một sector.
+  - *Giải pháp*: Thiết lập thời gian giãn cách tối thiểu (Cooldown Period) giữa các sự kiện cùng loại tại một sector, cùng bộ lọc trùng lặp chuỗi đang active.
 
 ---
 

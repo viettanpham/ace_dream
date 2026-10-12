@@ -1,0 +1,522 @@
+/**
+ * STARFRONT WORLD — Authoritative Event Lifecycle Engine (Phase 6.7)
+ * Động cơ vòng đời sự kiện chiến lược 3 pha:
+ *   - INIT: Chờ người chơi lựa chọn chiến lược hoặc đếm ngược hạn chót (decisionDeadline)
+ *   - PROCESSING: Đang thực thi theo thời lượng xác định; lưu trữ bền vững qua các lần reload
+ *   - RESULT: Đạt thời hạn hoàn thành, kết quả được đánh giá và ghi nhận lũy đẳng DUY NHẤT 1 LẦN
+ *
+ * Tích hợp chặt chẽ:
+ *   - Tự động khóa chiến lược mặc định (Default Strategy) khi countdown về 0
+ *   - Chống áp dụng hậu quả 2 lần (consequencesApplied guard)
+ *   - Phân biệt Event Result vs Battle Result (lưu trữ tách biệt trong eventResultsArchive)
+ *   - Tuân thủ thứ tự tie-break tất định: (priority DESC, scheduledTick ASC, eventId ASC)
+ */
+
+import type {
+  WorldState,
+  WorldEvent,
+  EventStatus,
+  EventStrategy,
+  EventConsequence,
+  WorldEventResult,
+} from "./types"
+import { WorldPRNG } from "./random"
+import { EVENT_TEMPLATES, createEventFromTemplate } from "./event-templates"
+import { lockEncounterAndCreateSnapshot } from "./combat-adapter"
+import { getJournalEntry } from "./transaction-journal"
+
+/**
+ * Giới hạn trần số lượng sự kiện hoạt động đồng thời để chống quá tải
+ */
+export const MAX_ACTIVE_EVENTS = 12
+
+/**
+ * Giới hạn trần lưu trữ nhật ký kết quả sự kiện trong kho lưu trữ
+ */
+export const MAX_EVENT_ARCHIVE_SIZE = 60
+
+/**
+ * Đảm bảo các cấu trúc dữ liệu sự kiện tồn tại trong WorldState
+ */
+export function ensureWorldEventState(state: WorldState): void {
+  if (!state.events) {
+    state.events = {}
+  }
+  if (!state.eventResultsArchive) {
+    state.eventResultsArchive = []
+  }
+  if (!state.activeMissionChains) {
+    state.activeMissionChains = []
+  }
+  if (!state.completedMissionChainIds) {
+    state.completedMissionChainIds = []
+  }
+  if (!state.missionChains) {
+    state.missionChains = {}
+  }
+}
+
+/**
+ * Lấy danh sách các sự kiện đang hoạt động (INIT hoặc PROCESSING)
+ * Được sắp xếp ổn định theo (priority DESC, createdAtTick ASC, id ASC)
+ */
+export function getActiveEvents(state: WorldState): WorldEvent[] {
+  ensureWorldEventState(state)
+  return Object.values(state.events!)
+    .filter((e) => e.status === "INIT" || e.status === "PROCESSING")
+    .sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority
+      if (a.createdAtTick !== b.createdAtTick) return a.createdAtTick - b.createdAtTick
+      return a.id.localeCompare(b.id)
+    })
+}
+
+/**
+ * Lấy sự kiện theo ID
+ */
+export function getEventById(state: WorldState, eventId: string): WorldEvent | null {
+  ensureWorldEventState(state)
+  return state.events![eventId] || null
+}
+
+/**
+ * Thêm một sự kiện mới vào WorldState với kiểm tra giới hạn trần
+ */
+export function registerWorldEvent(
+  state: WorldState,
+  event: WorldEvent
+): { success: boolean; event?: WorldEvent; error?: string } {
+  ensureWorldEventState(state)
+
+  const activeCount = Object.values(state.events!).filter(
+    (e) => e.status === "INIT" || e.status === "PROCESSING"
+  ).length
+
+  if (activeCount >= MAX_ACTIVE_EVENTS) {
+    return {
+      success: false,
+      error: `Đã chạm trần số sự kiện hoạt động đồng thời (${MAX_ACTIVE_EVENTS}). Tạm hoãn sinh sự kiện mới.`,
+    }
+  }
+
+  // Đảm bảo không ghi đè sự kiện đã tồn tại
+  if (state.events![event.id]) {
+    return {
+      success: false,
+      error: `Sự kiện có ID ${event.id} đã tồn tại trong World State.`,
+    }
+  }
+
+  state.events![event.id] = event
+  return { success: true, event }
+}
+
+/**
+ * Người chơi chọn một chiến lược cho sự kiện đang ở trạng thái INIT
+ */
+export function chooseEventStrategy(
+  state: WorldState,
+  eventId: string,
+  strategyId: string
+): { success: boolean; event?: WorldEvent; error?: string } {
+  ensureWorldEventState(state)
+  const event = state.events![eventId]
+  if (!event) {
+    return { success: false, error: `Không tìm thấy sự kiện ${eventId}` }
+  }
+
+  if (event.status !== "INIT") {
+    return {
+      success: false,
+      error: `Sự kiện ${eventId} đang ở trạng thái ${event.status}, không thể chọn chiến lược.`,
+    }
+  }
+
+  const strategy = event.availableStrategies.find((s) => s.id === strategyId)
+  if (!strategy) {
+    return {
+      success: false,
+      error: `Chiến lược ${strategyId} không thuộc danh mục phương án của sự kiện ${eventId}.`,
+    }
+  }
+
+  // 1. Kiểm tra tài nguyên chi phí
+  if (strategy.cost) {
+    for (const [resKey, costVal] of Object.entries(strategy.cost)) {
+      const currentVal = (state.resources as any)[resKey] ?? 0
+      if (typeof costVal === "number" && currentVal < costVal) {
+        return {
+          success: false,
+          error: `Không đủ tài nguyên ${resKey} để thực hiện phương án (Yêu cầu: ${costVal}, Hiện có: ${currentVal}).`,
+        }
+      }
+    }
+  }
+
+  // 2. Kiểm tra chi phí quân sự nếu có
+  if (strategy.militaryCost && strategy.militaryCost > 0) {
+    if (state.military.reserves < strategy.militaryCost) {
+      return {
+        success: false,
+        error: `Không đủ quân dự bị để triển khai (Yêu cầu: ${strategy.militaryCost}, Dự bị: ${state.military.reserves}).`,
+      }
+    }
+  }
+
+  // Trừ chi phí tài nguyên
+  if (strategy.cost) {
+    for (const [resKey, costVal] of Object.entries(strategy.cost)) {
+      if (typeof costVal === "number") {
+        ;(state.resources as any)[resKey] = Math.max(0, ((state.resources as any)[resKey] ?? 0) - costVal)
+      }
+    }
+  }
+
+  // Trừ quân dự bị nếu có
+  if (strategy.militaryCost && strategy.militaryCost > 0) {
+    state.military.reserves -= strategy.militaryCost
+    state.military.deployed += strategy.militaryCost
+  }
+
+  // Nếu chiến lược yêu cầu combat, kích hoạt snapshot qua combat-adapter
+  if (strategy.requiresCombat && event.sectorId) {
+    try {
+      const snapshot = lockEncounterAndCreateSnapshot(state, {
+        sectorId: event.sectorId,
+        customEnemyName: strategy.encounterConfig?.name || "Void Skirmish Unit",
+        customEnemyType: "void-vanguard",
+      })
+
+      if (snapshot) {
+        event.encounterTransactionId = snapshot.transactionId
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        error: `Không thể khóa trận đấu cho sự kiện: ${err?.message || "Lỗi khóa trận"}`,
+      }
+    }
+  }
+
+  // Chuyển trạng thái sang PROCESSING
+  event.status = "PROCESSING"
+  event.chosenStrategyId = strategyId
+  event.processingStartedTick = state.currentDay
+  event.processingCompletesTick = state.currentDay + Math.max(1, strategy.processingTicks)
+
+  return { success: true, event }
+}
+
+/**
+ * Tự động khóa chiến lược mặc định khi sự kiện hết hạn countdown (decisionDeadline)
+ */
+export function autoLockDefaultStrategy(
+  state: WorldState,
+  event: WorldEvent
+): { success: boolean; strategyId: string; log: string } {
+  if (event.status !== "INIT") {
+    return {
+      success: false,
+      strategyId: event.chosenStrategyId || "",
+      log: `Sự kiện ${event.id} không ở trạng thái INIT, bỏ qua auto-lock.`,
+    }
+  }
+
+  // Tìm chiến lược mặc định
+  let strategy = event.availableStrategies.find((s) => s.id === event.defaultStrategyId)
+  if (!strategy && event.availableStrategies.length > 0) {
+    strategy = event.availableStrategies[0]
+  }
+
+  const chosenId = strategy?.id || "default_fallback"
+
+  // Chuyển sang PROCESSING với chiến lược mặc định
+  event.status = "PROCESSING"
+  event.chosenStrategyId = chosenId
+  event.processingStartedTick = state.currentDay
+  event.processingCompletesTick =
+    state.currentDay + (strategy ? Math.max(1, strategy.processingTicks) : 1)
+
+  const log = `[EVENT AUTO-LOCK] Sự kiện "${event.title}" (ID: ${event.id}) hết hạn đếm ngược tại ngày ${state.currentDay}. Đã tự động kích hoạt phương án mặc định "${strategy?.name || chosenId}".`
+
+  return { success: true, strategyId: chosenId, log }
+}
+
+/**
+ * Áp dụng hậu quả chiến lược vào WorldState DUY NHẤT MỘT LẦN (Idempotent Consequence Application)
+ */
+export function applyEventConsequencesOnce(
+  state: WorldState,
+  event: WorldEvent,
+  consequences: EventConsequence
+): { applied: boolean; message: string } {
+  if (event.consequencesApplied) {
+    return {
+      applied: false,
+      message: `Hậu quả của sự kiện ${event.id} đã được áp dụng trước đó. Bỏ qua để chống trùng lặp.`,
+    }
+  }
+
+  // 1. Áp dụng biến động tài nguyên
+  if (consequences.resourceDelta) {
+    for (const [key, val] of Object.entries(consequences.resourceDelta)) {
+      if (typeof val === "number") {
+        const cur = (state.resources as any)[key] ?? 0
+        ;(state.resources as any)[key] = Math.max(0, cur + val)
+      }
+    }
+  }
+
+  // 2. Áp dụng quân sự
+  if (consequences.militaryDelta) {
+    const md = consequences.militaryDelta
+    if (md.reservesDelta) {
+      state.military.reserves = Math.max(0, state.military.reserves + md.reservesDelta)
+    }
+    if (md.deployedDelta) {
+      state.military.deployed = Math.max(0, state.military.deployed + md.deployedDelta)
+    }
+    if (md.casualtiesDelta) {
+      state.military.casualties += md.casualtiesDelta
+      state.military.deployed = Math.max(0, state.military.deployed - md.casualtiesDelta)
+    }
+    if (md.woundedDelta) {
+      state.military.woundedOrRepair += md.woundedDelta
+      state.military.deployed = Math.max(0, state.military.deployed - md.woundedDelta)
+    }
+  }
+
+  // 3. Áp dụng lên Sector (Stability, Threat, Fortification, Order)
+  const targetSectorId = consequences.sectorId || event.sectorId
+  if (targetSectorId && state.sectors[targetSectorId]) {
+    const sector = state.sectors[targetSectorId]
+
+    if (typeof consequences.stabilityDelta === "number") {
+      sector.stability = Math.max(0, Math.min(100, sector.stability + consequences.stabilityDelta))
+    }
+
+    if (typeof consequences.threatDelta === "number") {
+      sector.threatLevel = Math.max(0, Math.min(1000, sector.threatLevel + consequences.threatDelta))
+    }
+
+    if (typeof consequences.fortificationDelta === "number") {
+      sector.fortificationLevel = Math.max(
+        0,
+        Math.min(5, (sector.fortificationLevel || 0) + consequences.fortificationDelta)
+      )
+    }
+
+    if (consequences.newStrategicOrder) {
+      sector.strategicOrder = consequences.newStrategicOrder
+    }
+  }
+
+  // 4. Áp dụng dân sự
+  if (consequences.populationDelta) {
+    const pd = consequences.populationDelta
+    if (pd.civilianCasualties) {
+      state.demographics.civilianCasualties += pd.civilianCasualties
+      state.demographics.controlledTerritoryPopulation = Math.max(
+        0,
+        state.demographics.controlledTerritoryPopulation - pd.civilianCasualties
+      )
+    }
+  }
+
+  // Đánh dấu đã áp dụng vĩnh viễn
+  event.consequencesApplied = true
+  event.isResolved = true
+
+  return { applied: true, message: consequences.message }
+}
+
+/**
+ * Đánh giá và kết thúc sự kiện đang PROCESSING thành RESULT
+ */
+export function resolveProcessingEvent(
+  state: WorldState,
+  event: WorldEvent,
+  prng?: WorldPRNG
+): { success: boolean; result?: WorldEventResult; log: string } {
+  if (event.status !== "PROCESSING") {
+    return {
+      success: false,
+      log: `Sự kiện ${event.id} không ở trạng thái PROCESSING.`,
+    }
+  }
+
+  // Nếu sự kiện gắn với combat và chưa giải quyết xong combat, tiếp tục chờ
+  if (event.encounterTransactionId) {
+    const journalEntry = getJournalEntry(state, event.encounterTransactionId)
+    if (journalEntry && journalEntry.status === "pending") {
+      return {
+        success: false,
+        log: `Sự kiện ${event.id} đang chờ kết thúc trận đấu (TxID: ${event.encounterTransactionId}).`,
+      }
+    }
+  }
+
+  const strategy = event.availableStrategies.find((s) => s.id === event.chosenStrategyId)
+  const isDefault = event.chosenStrategyId === event.defaultStrategyId
+
+  // Đánh giá tỷ lệ thành công (tất định)
+  let outcomeStatus: "success" | "failure" | "expired_default" = "success"
+  if (isDefault) {
+    outcomeStatus = "expired_default"
+  } else if (strategy?.successChance && strategy.successChance < 100) {
+    const roll = prng ? prng.nextInt(1, 100) : 50
+    if (roll > strategy.successChance) {
+      outcomeStatus = "failure"
+    }
+  }
+
+  const consequencesToApply =
+    outcomeStatus === "failure" && strategy?.failureConsequences
+      ? strategy.failureConsequences
+      : strategy?.consequences || { message: "Sự kiện kết thúc không có hậu quả đặc biệt." }
+
+  // Áp dụng hậu quả lũy đẳng
+  const applyRes = applyEventConsequencesOnce(state, event, consequencesToApply)
+
+  const now = typeof Date !== "undefined" ? Date.now() : 1773000000000
+  const resultObj: WorldEventResult = {
+    id: `res_${event.id}`,
+    eventId: event.id,
+    templateId: event.templateId,
+    title: event.title,
+    category: event.category,
+    severity: event.severity,
+    sectorId: event.sectorId,
+    status: outcomeStatus,
+    chosenStrategyId: event.chosenStrategyId || "unknown",
+    chosenStrategyName: strategy?.name || "Chiến lược mặc định",
+    summaryText: consequencesToApply.message,
+    resolvedAtTick: state.currentDay,
+    resolvedAtTimestamp: now,
+    resourceChanges: consequencesToApply.resourceDelta,
+    stabilityChange: consequencesToApply.stabilityDelta,
+    threatChange: consequencesToApply.threatDelta,
+    casualties: consequencesToApply.militaryDelta?.casualtiesDelta,
+    isRead: false,
+    missionChainId: event.missionChainId,
+    nextNodeUnlocked: strategy?.nextChainNodeId,
+  }
+
+  event.status = "RESULT"
+  event.result = resultObj
+
+  // Lưu trữ bền vững vào archive
+  ensureWorldEventState(state)
+  state.eventResultsArchive!.unshift(resultObj)
+  if (state.eventResultsArchive!.length > MAX_EVENT_ARCHIVE_SIZE) {
+    state.eventResultsArchive = state.eventResultsArchive!.slice(0, MAX_EVENT_ARCHIVE_SIZE)
+  }
+
+  const log = `[EVENT RESOLVED] Sự kiện "${event.title}" hoàn tất với kết quả [${outcomeStatus.toUpperCase()}]. ${applyRes.message}`
+
+  return { success: true, result: resultObj, log }
+}
+
+/**
+ * Xử lý chu kỳ tiến trình sự kiện trong Tick (được gọi ở Phase 5 của Tick Engine)
+ *   1. Kiểm tra hạn chót INIT: nếu currentDay >= decisionDeadlineTick -> autoLockDefaultStrategy
+ *   2. Kiểm tra tiến trình PROCESSING: nếu currentDay >= processingCompletesTick -> resolveProcessingEvent
+ */
+export function advanceEventLifecyclesAndDeadlines(
+  state: WorldState,
+  prng: WorldPRNG
+): {
+  autoLockedEvents: string[]
+  resolvedEvents: string[]
+  logs: string[]
+} {
+  ensureWorldEventState(state)
+
+  const autoLockedEvents: string[] = []
+  const resolvedEvents: string[] = []
+  const logs: string[] = []
+
+  // Sắp xếp các sự kiện theo tiêu chí ổn định
+  const allEvents = Object.values(state.events!).sort((a, b) => {
+    if (b.priority !== a.priority) return b.priority - a.priority
+    if (a.createdAtTick !== b.createdAtTick) return a.createdAtTick - b.createdAtTick
+    return a.id.localeCompare(b.id)
+  })
+
+  for (const event of allEvents) {
+    // 1. Kiểm tra sự kiện INIT đã hết hạn đếm ngược
+    if (event.status === "INIT" && state.currentDay >= event.decisionDeadlineTick) {
+      const lockRes = autoLockDefaultStrategy(state, event)
+      if (lockRes.success) {
+        autoLockedEvents.push(event.id)
+        logs.push(lockRes.log)
+      }
+    }
+
+    // 2. Kiểm tra sự kiện PROCESSING đã hoàn tất thời lượng
+    if (
+      event.status === "PROCESSING" &&
+      typeof event.processingCompletesTick === "number" &&
+      state.currentDay >= event.processingCompletesTick
+    ) {
+      const resolveRes = resolveProcessingEvent(state, event, prng)
+      if (resolveRes.success) {
+        resolvedEvents.push(event.id)
+        logs.push(resolveRes.log)
+      }
+    }
+  }
+
+  return {
+    autoLockedEvents,
+    resolvedEvents,
+    logs,
+  }
+}
+
+/**
+ * Đánh dấu một kết quả sự kiện là đã đọc
+ */
+export function markEventResultAsRead(state: WorldState, resultId: string): boolean {
+  ensureWorldEventState(state)
+  const item = state.eventResultsArchive?.find((r) => r.id === resultId)
+  if (item) {
+    item.isRead = true
+    return true
+  }
+  return false
+}
+
+/**
+ * Đánh dấu tất cả kết quả sự kiện là đã đọc
+ */
+export function markAllEventResultsAsRead(state: WorldState): number {
+  ensureWorldEventState(state)
+  let count = 0
+  for (const item of state.eventResultsArchive || []) {
+    if (!item.isRead) {
+      item.isRead = true
+      count++
+    }
+  }
+  return count
+}
+
+/**
+ * Xóa an toàn các báo cáo kết quả đã đọc (Safe Pruning)
+ * CHỈ xóa bản ghi log hiển thị trong archive, TUYỆT ĐỐI KHÔNG làm biến đổi WorldState
+ */
+export function pruneReadEventResultsSafe(state: WorldState): {
+  prunedCount: number
+  remainingCount: number
+} {
+  ensureWorldEventState(state)
+  const beforeCount = state.eventResultsArchive!.length
+  state.eventResultsArchive = state.eventResultsArchive!.filter((r) => !r.isRead)
+  const prunedCount = beforeCount - state.eventResultsArchive!.length
+
+  return {
+    prunedCount,
+    remainingCount: state.eventResultsArchive!.length,
+  }
+}

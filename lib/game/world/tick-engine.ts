@@ -24,6 +24,15 @@ import {
 } from "./forces-ledger"
 import { evaluateVoidStrategicBehavior } from "./threat-ai"
 import { reconcileCombatTransactionsInTick } from "./transaction-journal"
+import {
+  advanceEventLifecyclesAndDeadlines,
+  ensureWorldEventState,
+} from "./event-engine"
+import {
+  advanceMissionChainNode,
+  evaluateMissionChainUnlocks,
+} from "./mission-chains"
+import { createEventFromTemplate } from "./event-templates"
 import type {
   InFlightTransaction,
   MilitaryForceLedger,
@@ -351,32 +360,69 @@ function executePhase4MilitaryAndThreat(
 /**
  * Phase 5: Hạn Chót & Kết Quả (Deadlines & Resolutions)
  * - Kiểm tra hạn chót nhiệm vụ hoặc sự kiện đếm ngược
- * - Điểm kết nối cho Auto-Resolve (Phase 6.5) và Combat Adapter Journal (Phase 6.6)
+ * - Tự động khóa chiến lược mặc định khi countdown về 0 (INIT -> PROCESSING)
+ * - Hoàn tất xử lý và áp dụng hậu quả lũy đẳng duy nhất một lần (PROCESSING -> RESULT)
+ * - Cập nhật bước tiếp theo trong đồ thị chuỗi nhiệm vụ nếu sự kiện thuộc về một chuỗi
  */
 function executePhase5DeadlinesAndResolutions(
   state: WorldState,
   prng: WorldPRNG,
   log: TickPhaseLog
 ): void {
-  // Điểm kết nối (Integration Hook): Giữ chỗ cho Phase 6.5 & 6.6
-  // Trong Phase 6.3: Duyệt danh sách chuỗi nhiệm vụ active và kiểm tra tính toàn vẹn
+  ensureWorldEventState(state)
+
+  // 5.1. Xử lý vòng đời sự kiện (INIT -> PROCESSING -> RESULT)
+  const eventCycleResult = advanceEventLifecyclesAndDeadlines(state, prng)
+
+  for (const l of eventCycleResult.logs) {
+    log.changesApplied.push(l)
+  }
+
+  // 5.2. Chuyển tiếp các nút trong chuỗi nhiệm vụ tương ứng với các sự kiện vừa hoàn tất
+  for (const resolvedId of eventCycleResult.resolvedEvents) {
+    const event = state.events?.[resolvedId]
+    if (event?.missionChainId && event?.nodeId) {
+      const advResult = advanceMissionChainNode(
+        state,
+        event.missionChainId,
+        event.nodeId,
+        event.chosenStrategyId
+      )
+      log.changesApplied.push(`[MISSION CHAIN ADVANCE] ${advResult.message}`)
+    }
+  }
+
   log.changesApplied.push(
-    `Deadlines evaluated: ${state.activeMissionChains.length} active chains checked`
+    `Deadlines evaluated: ${eventCycleResult.autoLockedEvents.length} event(s) auto-locked, ${eventCycleResult.resolvedEvents.length} resolved`
   )
 }
 
 /**
  * Phase 6: Kích Hoạt Mới (New Activations)
- * - Điểm kết nối cho Event Lifecycle Engine & Strategic Mission Chains (Phase 6.7)
- * - Đảm bảo cấu trúc mở rộng không gây null/undefined
+ * - Kích hoạt các chuỗi nhiệm vụ theo ngưỡng (Threat >= 600)
+ * - Kích hoạt nhiệm vụ phản ứng khi sector bị vây hãm (Under Siege)
+ * - Khởi tạo tuần tra định kỳ (Periodic Patrol) theo chu kỳ tuần hoàn
+ * - Khống chế trần MAX_ACTIVE_MISSION_CHAINS = 8
  */
 function executePhase6NewActivations(
   state: WorldState,
   prng: WorldPRNG,
   log: TickPhaseLog
 ): void {
-  // Điểm kết nối (Integration Hook): Giữ chỗ cho Phase 6.7
-  log.changesApplied.push("Strategic intel scanned; no anomalous triggers")
+  ensureWorldEventState(state)
+
+  const missionUnlockResult = evaluateMissionChainUnlocks(state, prng)
+  for (const l of missionUnlockResult.logs) {
+    log.changesApplied.push(l)
+  }
+
+  if (missionUnlockResult.activatedChains.length > 0) {
+    log.changesApplied.push(
+      `Strategic activations: ${missionUnlockResult.activatedChains.length} new mission chain(s) opened`
+    )
+  } else {
+    log.changesApplied.push("Strategic intel scanned; no anomalous triggers")
+  }
 }
 
 // -------------------------------------------------------------

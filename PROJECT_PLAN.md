@@ -72,16 +72,16 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.3** | Động Cơ Tick Chiến Lược & Mô Phỏng Bắt Kịp Ngoại Tuyến | **Đã hoàn thành (Done)** | `lib/game/world/tick-engine.ts`, `lib/game/world/catchup-engine.ts`, `lib/game/world/random.ts` |
 | **Phase 6.4** | Kinh Tế Chiến Lược, Mạng Lưới Hậu Cần & Nhân Khẩu Học | **Đã hoàn thành (Done)** | `lib/game/world/economy.ts`, `lib/game/world/logistics.ts`, `lib/game/world/demographics.ts` |
 | **Phase 6.5** | Phe Phái VSS & The Void, Lực Lượng Quân Sự & Auto-Resolve | **Đã hoàn thành (Done)** | `lib/game/world/forces-ledger.ts`, `lib/game/world/auto-resolve.ts`, `lib/game/world/threat-ai.ts` |
-| **Phase 6.6 (Hiện tại)** | **Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/combat-adapter.ts`, `lib/game/world/transaction-journal.ts` |
-| **Phase 6.7–6.9** | Triển khai mã nguồn WORLD tuần tự (Events & Mission Chains $\rightarrow$ Operations Center UI $\rightarrow$ Fullscreen Map) | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
+| **Phase 6.6** | Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng | **Đã hoàn thành (Done)** | `lib/game/world/combat-adapter.ts`, `lib/game/world/transaction-journal.ts` |
+| **Phase 6.7 (Hiện tại)** | **Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược (6 Hình Thái)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/event-engine.ts`, `lib/game/world/mission-chains.ts`, `lib/game/world/event-templates.ts` |
+| **Phase 6.8–6.9** | Triển khai mã nguồn WORLD tuần tự (Operations Center UI & Dual Results $\rightarrow$ Fullscreen Map) | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.7:
-1. Đọc kỹ [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) (Mục I: Sự kiện, Chuỗi nhiệm vụ & Trung tâm tác chiến) và [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Phase 6.7: Event Lifecycle Engine & Strategic Mission Chains).
-2. Xây dựng `lib/game/world/event-engine.ts`, `lib/game/world/mission-chains.ts`, `lib/game/world/event-templates.ts`.
-3. Hiện thực hóa vòng đời 3 pha của sự kiện (`INIT` -> `PROCESSING` -> `RESULT`), tự động khóa `defaultStrategy` khi hết hạn đếm ngược.
-4. Hiện thực 6 hình thái chuỗi nhiệm vụ và giới hạn trần toàn cục `MAX_ACTIVE_MISSION_CHAINS = 8`.
-5. Viết bộ kiểm thử tự động `tests/world/event-lifecycle.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.
+Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.8:
+1. Đọc kỹ [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) (Mục I.3: Phân khu kết quả kép trong Operations Center) và [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Giai Đoạn 6.8: Operations Center UI & Dual Results Hub).
+2. Xây dựng `components/game/world/operations-center.tsx`, `components/game/world/dual-results-hub.tsx`, `components/game/world/quick-dispatch-dock.tsx`.
+3. Tích hợp Situation Deck, Active Operations Board và Safe Pruning của Dual Results Hub.
+4. Viết bộ kiểm thử tự động `tests/world/operations-center-ui.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.

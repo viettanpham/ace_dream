@@ -320,8 +320,15 @@ export function loadWorldState(): LoadWorldResult {
   let primaryValidation = parseAndValidateEnvelope(rawPrimary)
 
   if (primaryValidation.valid && primaryValidation.envelope) {
+    const loadedData = primaryValidation.envelope.data
+    if (!loadedData.events) loadedData.events = {}
+    if (!loadedData.missionChains) loadedData.missionChains = {}
+    if (!loadedData.eventResultsArchive) loadedData.eventResultsArchive = []
+    if (!loadedData.activeMissionChains) loadedData.activeMissionChains = []
+    if (!loadedData.completedMissionChainIds) loadedData.completedMissionChainIds = []
+
     return {
-      state: primaryValidation.envelope.data,
+      state: loadedData,
       status: "loaded_primary",
       recoveredFromBackup: false,
       message: `Nạp thành công bản lưu World chính (Checksum: ${primaryValidation.envelope.checksum})`,

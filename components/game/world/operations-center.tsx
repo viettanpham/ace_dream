@@ -21,6 +21,7 @@ import {
   History,
   Layers,
   Lock,
+  Orbit,
   Play,
   RefreshCw,
   Route,
@@ -59,6 +60,8 @@ import {
 } from "@/lib/game/world/forces-ledger"
 import { DualResultsHub } from "./dual-results-hub"
 import { QuickDispatchDock } from "./quick-dispatch-dock"
+import { WorldMap } from "./world-map"
+import { WorldFullscreenOverlay } from "./world-fullscreen-overlay"
 import type {
   WorldState,
   WorldSector,
@@ -69,6 +72,7 @@ import type {
 
 export type OperationsTab =
   | "overview"
+  | "map"
   | "sectors"
   | "events"
   | "military"
@@ -89,6 +93,7 @@ export function OperationsCenter({
   const [activeTab, setActiveTab] = useState<OperationsTab>(initialTab)
   const [selectedSectorId, setSelectedSectorId] = useState<string>("sol_command_hq")
   const [isQuickDispatchOpen, setIsQuickDispatchOpen] = useState(false)
+  const [isFullscreenMapOpen, setIsFullscreenMapOpen] = useState(false)
   const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null)
   const [isTickAdvancing, setIsTickAdvancing] = useState(false)
   const [lastTickLogs, setLastTickLogs] = useState<string[]>([])
@@ -298,6 +303,19 @@ export function OperationsCenter({
             {/* Action Buttons */}
             <button
               type="button"
+              onClick={() => {
+                playClickSound()
+                setIsFullscreenMapOpen(true)
+              }}
+              className="flex items-center gap-1.5 rounded border border-cyan-500/60 bg-cyan-950/40 px-3 py-1.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 hover:text-white transition-all cursor-pointer shadow-sm shadow-cyan-950/40"
+              title="Mở Bản Đồ Toàn Màn Hình (100vw/100vh)"
+            >
+              <Orbit className="size-3.5 text-cyan-400" />
+              <span>Bản Đồ Fullscreen</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleAdvanceTick}
               disabled={isTickAdvancing}
               className={cn(
@@ -405,6 +423,7 @@ export function OperationsCenter({
       <nav className="flex flex-wrap items-center gap-1.5 border-b border-zinc-800 pb-2">
         {[
           { id: "overview", label: "Tình Hình Chiến Lược", icon: Activity },
+          { id: "map", label: "Bản Đồ Thiên Hà", icon: Compass },
           { id: "sectors", label: "Mạng Lưới Sector", icon: Globe2 },
           {
             id: "events",
@@ -644,6 +663,35 @@ export function OperationsCenter({
       )}
 
       {/* ====================================================================
+          TAB: BẢN ĐỒ THIÊN HÀ TOÀN DIỆN (STARFRONT WORLD MAP)
+          ==================================================================== */}
+      {activeTab === "map" && (
+        <div className="h-[640px] rounded border border-cyan-500/40 bg-zinc-950 overflow-hidden shadow-2xl relative">
+          <WorldMap
+            worldState={worldState}
+            selectedSectorId={selectedSectorId}
+            onSelectSector={(secId) => setSelectedSectorId(secId)}
+            onNavigateToSectorOperations={(secId) => {
+              setSelectedSectorId(secId)
+              setActiveTab("sectors")
+            }}
+            onOpenQuickDispatch={(secId) => {
+              setSelectedSectorId(secId)
+              setIsQuickDispatchOpen(true)
+            }}
+            onDeployCombat={(secId) => {
+              onDeployEncounter?.(secId)
+            }}
+            onUpdateWorldState={(newState) => {
+              setWorldState({ ...newState })
+            }}
+            isFullscreen={false}
+            onToggleFullscreen={() => setIsFullscreenMapOpen(true)}
+          />
+        </div>
+      )}
+
+      {/* ====================================================================
           TAB 2: MẠNG LƯỚI SECTOR (SECTOR OPERATIONS & INSPECTOR)
           ==================================================================== */}
       {activeTab === "sectors" && (
@@ -652,7 +700,7 @@ export function OperationsCenter({
           <div className="lg:col-span-2 space-y-2.5">
             <div className="flex items-center justify-between text-zinc-400 text-[11px]">
               <span className="font-bold uppercase tracking-wide">
-                DANH SÁCH 7 SECTOR THIÊN HÀ ({sectorsList.length})
+                DANH SÁCH SECTOR THIÊN HÀ ({sectorsList.length})
               </span>
               <span>Bấm vào sector để mở bảng điều khiển chi tiết</span>
             </div>
@@ -748,7 +796,7 @@ export function OperationsCenter({
                     </span>
                     <span className="text-zinc-500 font-mono text-[10px]">ID: {selectedSector.id}</span>
                   </div>
-                  <p className="mt-1 text-[11px] text-zinc-400">{selectedSector.description}</p>
+                  <p className="mt-1 text-[11px] text-zinc-400">{selectedSector.desc}</p>
                 </div>
 
                 {/* Banners cảnh báo khóa Combat */}
@@ -856,6 +904,19 @@ export function OperationsCenter({
                 >
                   <Zap className="size-3.5" />
                   <span>Điều Quân Chi Viện Cho Sector Này</span>
+                </button>
+
+                {/* Tác vụ: Xem trên Bản Đồ Thiên Hà */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound()
+                    setActiveTab("map")
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 rounded border border-cyan-500/40 bg-zinc-900/60 p-2 text-xs font-bold text-cyan-300 hover:bg-zinc-800 hover:border-cyan-400 transition-colors cursor-pointer"
+                >
+                  <Compass className="size-3.5" />
+                  <span>Xem Vị Trí Trên Bản Đồ Thiên Hà</span>
                 </button>
 
                 {/* Tác vụ 4: Xuất kích can thiệp trực tiếp bằng Buồng Lái (Combat Encounter) */}
@@ -1133,7 +1194,7 @@ export function OperationsCenter({
               <div className="space-y-2">
                 {worldState.activeDeployments.map((dep) => (
                   <div
-                    key={dep.id}
+                    key={dep.deploymentId}
                     className="flex flex-wrap items-center justify-between rounded border border-zinc-800 bg-zinc-900/40 p-2.5 text-[11px]"
                   >
                     <div>
@@ -1203,6 +1264,25 @@ export function OperationsCenter({
         onDispatchComplete={(msg) => {
           setWorldState({ ...worldState })
           showToast(msg, "success")
+        }}
+      />
+
+      {/* CHẾ ĐỘ BẢN ĐỒ TOÀN MÀN HÌNH (100vw/100vh FULLSCREEN OVERLAY) */}
+      <WorldFullscreenOverlay
+        isOpen={isFullscreenMapOpen}
+        onClose={() => setIsFullscreenMapOpen(false)}
+        worldState={worldState}
+        selectedSectorId={selectedSectorId}
+        onSelectSector={(secId) => setSelectedSectorId(secId)}
+        onNavigateToSectorOperations={(secId) => {
+          setSelectedSectorId(secId)
+          setActiveTab("sectors")
+        }}
+        onDeployCombat={(secId) => {
+          onDeployEncounter?.(secId)
+        }}
+        onUpdateWorldState={(newState) => {
+          setWorldState({ ...newState })
         }}
       />
     </div>

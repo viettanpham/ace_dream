@@ -369,7 +369,18 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-### 4.10. Các Đề Xuất Kỹ Thuật Cần Xác Minh & Hạng Mục Tương Lai (Proposals & TBD)
-- **Viewport Bản Đồ Toàn Màn Hình Canvas vs SVG** `[ĐỀ XUẤT CẦN XÁC MINH]`: Cần benchmark hiệu năng render 60fps khi có nhiều hạt plasma và tuyến đường hoạt họa.
-- **Tốc Độ Suy Thoái Stability** `[ĐỀ XUẤT CẦN XÁC MINH]`: Cần cân bằng thông qua prototype để tránh hiệu ứng trừng phạt người chơi quá khắc nghiệt.
-- **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)** `[CHƯA XÁC ĐỊNH / TBD]`: Dành riêng cho các bản mở rộng tiếp theo sau khi Phase 6 hoàn thành trọn vẹn.
+### 4.10. Bản Đồ Toàn Màn Hình & Tích Hợp Toàn Diện (Fullscreen Map & E2E Integration — Phase 6.9) `[ĐÃ HOÀN THÀNH 100%]`
+- **Viewport Bản Đồ Toàn Màn Hình Sci-Fi Aerospace (`components/game/world/world-map.tsx` & `world-fullscreen-overlay.tsx`)**:
+  - Bản đồ chiến lược vector SVG/CSS tương tác cao hiển thị đầy đủ 8 sector thiên hà và 12 tuyến đường siêu không gian.
+  - Phân cấp rõ rệt chủ quyền lãnh thổ (VSS, The Void, Tranh Chấp, Trung Lập) và 5 giai đoạn vòng đời (`stable`, `threatened`, `under_siege`, `lost`, `recovery`).
+  - Trực quan hóa hạm đội di chuyển `in_transit` với điểm xuất phát, đích đến, số quân và số ngày còn lại.
+  - Hiển thị vành đai khóa giao tranh đỏ xung quanh các sector đang giao chiến (`isLockedForCombat`).
+  - Bộ công cụ điều khiển: Phóng to, thu nhỏ, căn giữa (reset view), lưới tọa độ chiến thuật HUD và phím tắt `ESC` đóng nhanh chế độ toàn màn hình.
+  - Inspector chi tiết cho phép cập nhật Lệnh Chiến Lược, nâng cấp Công Sự Phòng Thủ, và liên kết nhanh đến Sector Operations, Quick Dispatch và Đấu Trường.
+  - Kiểm thử tích hợp E2E toàn diện đạt 9/9 subtests PASS và zero-regression được bảo đảm 100%.
+
+---
+
+### 4.11. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
+- **Tốc Độ Suy Thoái Stability Nâng Cao**: Cân bằng mở rộng các biến số kinh tế vĩ mô phức tạp trong các bản cập nhật tiếp theo.
+- **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)**: Kế hoạch mở rộng đồ thị thiên hà cho các mùa giải chiến dịch trong tương lai.

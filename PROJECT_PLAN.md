@@ -18,9 +18,9 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | Phase 6.6: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng (Combat Integration Adapter & Idempotent Journal) đã hoàn thành 100% (100% tests PASS, build thành công). Tầng Adapter trung gian kết nối giữa WORLD và buồng lái Đấu Trường (`CombatArena`), khóa Encounter Snapshot bất biến, cấp phát Transaction ID, đóng băng tạm thời quân đồn trú và mở khóa sau trận, áp dụng biên lai kết quả đúng 1 lần duy nhất với bộ lọc chống replay 10 lần liên tiếp (Idempotency Guard), luồng khôi phục treo an toàn (Suspended Recovery Flow) và hủy bỏ an toàn (Safe Abort) không phạt thua oan. |
+| **Trạng thái hiện tại của dự án?** | **Phase 6.9: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp Toàn Diện (Fullscreen Map & E2E Integration) đã hoàn thành 100%** (100% tests PASS, build thành công, 9/9 tests Phase 6.9 PASS, toàn bộ test suite PASS tuyệt đối). Bản đồ chiến lược thiên hà toàn màn hình (`WorldMap` & `WorldFullscreenOverlay`) hiển thị 8 sector, 12 tuyến đường, hạm đội di chuyển `in_transit`, pan/zoom/reticle, tích hợp sâu vào Operations Center và Shell navigation, hoàn tất trọn vẹn lộ trình 9 sub-phase của STARFRONT WORLD. |
 | **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô của toàn bộ sản phẩm, tích hợp vào thanh điều hướng cao nhất của Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
-| **Phase tiếp theo cần thực hiện?** | Chuẩn bị triển khai **Sub-Phase 6.7: Động Cơ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược** (`lib/game/world/event-engine.ts`, `lib/game/world/mission-chains.ts`, `lib/game/world/event-templates.ts`). |
+| **Phase tiếp theo cần thực hiện?** | Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.9) đã hoàn tất 100%. Sẵn sàng bước sang các giai đoạn mở rộng tính năng mới theo yêu cầu của Chỉ Huy. |
 | **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>2. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
 | **Phụ thuộc chính giữa WORLD và hệ thống hiện tại?** | - **Combat Integration**: Giao tiếp qua `WorldCombatAdapter`, sử dụng snapshot tại thời điểm khóa trận và Transaction ID chống double-apply.<br>- **Lưu trữ cách ly**: `STARFRONT_WORLD_SAVE_V1` độc lập hoàn toàn với `STARFRONT_SAVE_DATA_V4`, có sao lưu luân phiên A/B.<br>- **Navigation**: Tích hợp tab `world` vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`. |
 
@@ -74,15 +74,15 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.5** | Phe Phái VSS & The Void, Lực Lượng Quân Sự & Auto-Resolve | **Đã hoàn thành (Done)** | `lib/game/world/forces-ledger.ts`, `lib/game/world/auto-resolve.ts`, `lib/game/world/threat-ai.ts` |
 | **Phase 6.6** | Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng | **Đã hoàn thành (Done)** | `lib/game/world/combat-adapter.ts`, `lib/game/world/transaction-journal.ts` |
 | **Phase 6.7** | Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược (6 Hình Thái) | **Đã hoàn thành (Done)** | `lib/game/world/event-engine.ts`, `lib/game/world/mission-chains.ts`, `lib/game/world/event-templates.ts` |
-| **Phase 6.8 (Hiện tại)** | **Operations Center UI & Trung Tâm Kết Quả Kép (Dual Results Hub)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/operations-center.tsx`, `components/game/world/dual-results-hub.tsx`, `components/game/world/quick-dispatch-dock.tsx` |
-| **Phase 6.9** | Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử E2E Toàn Diện | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
+| **Phase 6.8** | Operations Center UI & Trung Tâm Kết Quả Kép (Dual Results Hub) | **Đã hoàn thành (Done)** | `components/game/world/operations-center.tsx`, `components/game/world/dual-results-hub.tsx`, `components/game/world/quick-dispatch-dock.tsx` |
+| **Phase 6.9** | **Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử E2E Toàn Diện** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/world-map.tsx`, `components/game/world/world-fullscreen-overlay.tsx`, `tests/world/e2e-world-integration.test.ts` |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.9:
-1. Đọc kỹ [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Giai Đoạn 6.9: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp Toàn Diện) và [`WORLD_DESIGN.md`](./WORLD_DESIGN.md).
-2. Xây dựng `components/game/world/world-map.tsx` và `components/game/world/world-fullscreen-overlay.tsx`.
-3. Hoàn thiện hiệu ứng âm thanh Sci-Fi Web Audio và tích hợp hiển thị tuyến đường hạm đội di chuyển trên bản đồ.
-4. Viết bộ kiểm thử hồi quy tích hợp E2E `tests/world/e2e-world-integration.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.
+Lộ trình STARFRONT WORLD (Phase 6.1 đến 6.9) đã hoàn tất 100%:
+1. Toàn bộ 8 sector và 12 tuyến đường hoạt động trên bản đồ chiến lược toàn màn hình với pan/zoom/reticle, tích hợp sâu vào Operations Center và Starfront Shell.
+2. Vòng đời sector, tick engine, kinh tế dân số, quân sự auto-resolve, khế ước combat adapter và sự kiện chiến lược hoạt động trơn tru.
+3. 100% tests đạt chuẩn (bao gồm 9/9 E2E integration tests) và zero-regression được bảo đảm.
+4. Sẵn sàng tiếp nhận các giai đoạn mở rộng tính năng mới theo chỉ huy của dự án.

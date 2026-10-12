@@ -4,6 +4,48 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.9] — STARFRONT WORLD: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp Toàn Diện (Fullscreen Map, Polish & E2E Verification)
+
+*Đã hoàn thành 100% Phase 6.9 — Phase cuối cùng trong lộ trình STARFRONT WORLD (100% automated tests PASS, build thành công, 9/9 tests E2E Phase 6.9 PASS, bảo toàn zero-regression toàn bộ hệ thống)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.9:
+- **Bản Đồ Thiên Hà Toàn Màn Hình Chuẩn Sci-Fi Aerospace (`components/game/world/world-map.tsx`)**:
+  - Tích hợp mạng lưới 8 Sector thiên hà và 12 Tuyến Siêu Không Gian (Hyperlanes) lấy trực tiếp từ `WorldState` và graph chuẩn (`INITIAL_WORLD_SECTORS`, `INITIAL_WORLD_ROUTES`), không hardcode.
+  - Hiển thị trực quan chủ quyền lãnh thổ (VSS, The Void, Tranh Chấp, Trung Lập) và 5 giai đoạn vòng đời (`stable`, `threatened`, `under_siege`, `lost`, `recovery`).
+  - Phân cấp trạng thái 12 tuyến đường bằng màu sắc và nét vẽ: Bình Thường (`open`), Nguy Cấp (`hazardous`), Bị Khóa (`blocked`), Mất Kết Nối (`offline`).
+  - Trực quan hóa các cánh quân viễn chinh đang hành quân `in_transit` với điểm xuất phát, đích đến, số quân và số ngày còn lại.
+  - Hiển thị vòng khóa tác chiến màu đỏ xung quanh các sector đang bị khóa combat (`isLockedForCombat`).
+  - Hỗ trợ công cụ điều khiển bản đồ: Phóng to (+), Thu nhỏ (-), Căn giữa (Reset View), Lưới tọa độ chiến thuật Sci-Fi HUD và thông tin phụ trợ.
+  - Bảng điều khiển kiểm tra chi tiết (Sector Inspector Panel):
+    * Xem thông tin dân số, lương thực, tài nguyên, lực lượng đồn trú VSS vs The Void.
+    * Thay đổi Lệnh Chiến Lược Đồn Trú (`normal`, `defend`, `reinforce`, `attack`, `recover`).
+    * Nâng cấp Công Sự Phòng Thủ (0..5 cấp).
+    * Các nút liên kết thao tác nhanh: "Chi Tiết Tại Sector Operations", "Điều Động Chi Viện" (mở Quick Dispatch), "Tham Chiến Khẩn Cấp" (khi có sự kiện combat).
+- **Khung Trực Quan Hóa Toàn Màn Hình 100vw/100vh (`components/game/world/world-fullscreen-overlay.tsx`)**:
+  - Chế độ toàn màn hình không viền chuyên dụng với thanh tiêu đề HUD quân sự, chỉ số vĩ mô tóm tắt (Ngày chiến lược, Threat trung bình, Tỷ lệ kiểm soát VSS).
+  - Hỗ trợ phím tắt bàn phím `ESC` để đóng chế độ toàn màn hình mượt mà, cùng nút thoát trực tiếp trên thanh công cụ.
+  - Tích hợp trực tiếp Bến Điều Động Nhanh (`QuickDispatchDock`) ngay trên bản đồ toàn màn hình.
+- **Tích Hợp Điều Hướng Đa Chiều Trong Operations Center & Starfront Shell**:
+  - Bổ sung tab "Bản Đồ Thiên Hà" (`map`) vào hệ thống Navigation của Operations Center.
+  - Bổ sung nút chuyển đổi Toàn Màn Hình (`Maximize2`) tại tiêu đề Operations Center và thanh công cụ bản đồ.
+  - Bổ sung nút "Xem Vị Trí Trên Bản Đồ" từ thẻ Sector của tab `sectors` chuyển mượt mà sang `map` với sector tương ứng được chọn sẵn.
+  - Cập nhật cây submenu `map` trong mục WORLD của thanh điều hướng chính `starfront-shell.tsx`.
+- **Bộ Kiểm Thử Tích Hợp E2E Toàn Diện (`tests/world/e2e-world-integration.test.ts`)**:
+  - 9/9 subtests E2E kiểm chứng toàn bộ luồng nghiệp vụ thực tế của hệ thống:
+    1. *Nạp bản đồ*: Chuẩn xác 8 sector và 12 tuyến đường từ WorldState.
+    2. *Tương tác Inspector*: Chọn sector, cập nhật lệnh chiến lược và nâng cấp công sự.
+    3. *Định tuyến quân sự*: Điều quân qua tuyến hợp lệ, chặn đứng tuyến Blocked/Offline, bảo toàn tuyệt đối quân số.
+    4. *Cơ chế phòng thủ*: Chặn xuất quân khỏi sector đang bị khóa giao tranh (`isLockedForCombat`).
+    5. *Tiến 1 Ngày (Tick Engine)*: Cập nhật Threat, di chuyển quân đoàn và phản ánh đúng đắn WorldState.
+    6. *Vòng đời sự kiện*: Áp dụng hậu quả chỉ đúng 1 lần (Idempotency Guard).
+    7. *Kết quả chiến đấu*: Commit qua Combat Adapter và chống áp dụng lần 2 qua Transaction Journal.
+    8. *Lưu trữ bền vững*: Lưu và nạp bảo toàn nguyên vẹn WorldState qua `STARFRONT_WORLD_SAVE_V1`.
+    9. *Zero-Regression*: Đảm bảo 100% tiến trình RPG Schema v4 (Phi công, Gear, Trang bị, Nhiệm vụ) độc lập và không suy suyển.
+- **Hoàn Tất Lộ Trình STARFRONT WORLD**:
+  - Toàn bộ 9 sub-phases (Phase 6.1 đến 6.9) của bản đồ chiến lược vĩ mô STARFRONT WORLD đã được triển khai hoàn chỉnh, liên kết chặt chẽ với buồng lái Đấu Trường và giao diện Shell.
+
+---
+
 ## [Phase 6.8] — STARFRONT WORLD: Giao Diện Operations Center & Trung Tâm Kết Quả Kép (Operations Center UI & Dual Results Hub)
 
 *Đã hoàn thành 100% Phase 6.8 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.8 PASS, tích hợp trực tiếp vào thanh điều hướng của Shell)*

@@ -143,6 +143,7 @@ const SECTIONS: SectionConfig[] = [
     badge: () => "Live",
     submenus: () => [
       { id: "overview", label: "Tình Hình Chiến Lược" },
+      { id: "map", label: "Bản Đồ Thiên Hà (Map)" },
       { id: "sectors", label: "Mạng Lưới Sector" },
       { id: "events", label: "Sự Kiện & Nhiệm Vụ" },
       { id: "military", label: "Quân Sự & Hậu Cần" },
@@ -304,7 +305,7 @@ export function StarfrontShell() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeHangarTab, setActiveHangarTab] = useState<HangarTab>("loadout")
-  const [activeWorldTab, setActiveWorldTab] = useState<"overview" | "sectors" | "events" | "military" | "results">("overview")
+  const [activeWorldTab, setActiveWorldTab] = useState<"overview" | "map" | "sectors" | "events" | "military" | "results">("overview")
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     world: true,
     hangar: true,

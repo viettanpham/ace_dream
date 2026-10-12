@@ -62,7 +62,7 @@ export function QuickDispatchDock({
 
   // Tính toán lộ trình
   const originId = sourceType === "reserves" ? "sol_command_hq" : fromSectorId
-  const pathResult = findShortestPath(worldState.routes, originId, toSectorId)
+  const pathResult = findShortestPath(worldState.sectors, worldState.routes, originId, toSectorId)
 
   const handleAdjustCount = (delta: number) => {
     playClickSound()

@@ -4,6 +4,45 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.3] — STARFRONT WORLD: Động Cơ Tick Chiến Lược & Mô Phỏng Bắt Kịp Ngoại Tuyến (Strategic Tick Engine, Seeded PRNG & Bounded Offline Catch-up)
+
+*Đã hoàn thành 100% Phase 6.3 (149/149 automated tests passed, build thành công, 16/16 tests Phase 6.3 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.3:
+- **Bộ Sinh Số Giả Ngẫu Nhiên Có Seed (`lib/game/world/random.ts`)**:
+  - Triển khai thuật toán SplitMix32 và Mulberry32 chuẩn 32-bit cho mô phỏng tất định (Deterministic Simulation).
+  - Lớp điều khiển `WorldPRNG` cung cấp các hàm `nextFloat()`, `nextInt(min, max)`, `chance(probability)`, `choice(items)`, và `stepSeed()`.
+  - Kết quả có thể tái lập 100%: Cùng một seed ban đầu luôn sinh ra chuỗi số hoàn toàn trùng khớp trên mọi môi trường.
+- **Quy Tắc Phá Vỡ Thế Hòa Ổn Định (`lib/game/world/tick-engine.ts`)**:
+  - Hàm `stableTieBreakSort` triển khai quy tắc sắp xếp ưu tiên theo thiết kế G.3: `(priorityLevel DESC, scheduledTimestamp ASC, entityId ASC)`.
+  - Đảm bảo trật tự thực thi giữa các hạm đội, đoàn xe vận tải và sự kiện đến hạn cùng lúc luôn đồng nhất và bất biến.
+- **Động Cơ Chuỗi 6 Phase Tick Chiến Lược (`lib/game/world/tick-engine.ts`)**:
+  - Hàm điều phối `executeWorldTick` thực thi tuần tự nghiêm ngặt qua 6 phase theo chuẩn thiết kế G.1:
+    * **Phase 1 (Phục hồi & Giao dịch đang chờ)**: Tự động commit các giao dịch in-flight pending, phục hồi 5% thương binh/sửa chữa cơ giáp chuyển về reserves, phục hồi tự nhiên nhẹ tại các sector Recovery.
+    * **Phase 2 (Vận chuyển & Di cư)**: Điều phối dòng dân tị nạn an toàn, điểm kết nối kiến trúc cho Phase 6.4.
+    * **Phase 3 (Kinh tế & Dân số)**: Tính toán sản xuất tài nguyên dựa trên năng lực công nghiệp của sector, điều chỉnh bởi Stability và hệ số giai đoạn sector; tiêu thụ lương thực thiết yếu (Food); kích hoạt cơ chế suy thoái từng bước (Gradual Attrition) khi cạn kiệt lương thực.
+    * **Phase 4 (Quân sự & Mức đe dọa)**: Tính toán biến động Threat tự nhiên có seed; giới hạn trần tăng trưởng đe dọa tối đa (+50 Threat/ngày) ngăn ngừa hiệu ứng tuyết lở (Snowball Effect); tự động đánh giá chuyển giai đoạn sector.
+    * **Phase 5 (Hạn chót & Kết quả)**: Kiểm tra các chuỗi nhiệm vụ active và countdown sự kiện (điểm kết nối Phase 6.5 & 6.6).
+    * **Phase 6 (Kích hoạt mới)**: Quét kích hoạt sự kiện mới, giữ chỗ mở rộng cho Phase 6.7.
+  - Mỗi tick tiến hóa seed một bước xác định (`worldSeed = prng.stepSeed()`), tăng `currentDay += 1`, cập nhật dấu thời gian và trả về chi tiết log thay đổi.
+  - Kiểm chứng tính tất định (Deterministic Verification): Chạy 100 ticks với cùng trạng thái và seed ban đầu cho ra kết quả trùng khớp 100%.
+- **Mô Phỏng Bắt Kịp Ngoại Tuyến Theo Đợt (`lib/game/world/catchup-engine.ts`)**:
+  - Đo khoảng thời gian vắng mặt thực tế (`calculatePendingTicks`): Chu kỳ chuẩn $1 \text{ Strategic Day} = 300 \text{ giây thực}$.
+  - Cơ chế bắt kịp an toàn theo từng đợt (Bounded Batch Catch-up): `MAX_TICKS_PER_BATCH = 50 ticks` kèm cơ chế yield luồng không gây treo hay đơ trình duyệt.
+  - Trần bảo vệ ngoại tuyến: Kẹp chặt ở tối đa `OFFLINE_CATCHUP_CAP = 360 ticks` (~30 ngày thực tế) chống tàn phá thế giới người chơi.
+  - Chống gian lận đồng hồ (Clock Tampering): Nếu phát hiện thời gian hệ thống bị lùi lại, tự động bỏ qua tick và giữ nguyên World State hiện tại.
+  - Giả lập offline 7 ngày thực tế (~2016 ticks $\rightarrow$ kẹp 360 ticks) hoàn tất xử lý trong ~10-15ms (dưới ngưỡng 500ms theo thiết kế).
+  - Cung cấp cả 2 phiên bản `processOfflineCatchup` (bất đồng bộ có yield) và `processOfflineCatchupSync` (đồng bộ headless/test).
+- **Bảng Điều Khiển Kiểm Thử Thời Gian Dành Cho Nhà Phát Triển (`lib/game/world/catchup-engine.ts`)**:
+  - Hàm dự báo tác động `forecastTimeTravelImpact`: Ước tính biến động tài nguyên, Threat trung bình và các sector chuyển giai đoạn trước khi thực thi, hoàn toàn không gây tác dụng phụ lên World State gốc.
+  - Hàm tua thời gian an toàn `executeTimeTravel`: Tái sử dụng chính xác `executeWorldTick` của hệ thống thật; ranh giới an toàn tuyệt đối chỉ tác động lên World State, không can thiệp combat hay kích hoạt đấu trường.
+- **Tích Hợp Checkpoint & World Storage v1**:
+  - Nạp/lưu trạng thái sau các chuỗi tick vào hệ thống lưu trữ cách ly `STARFRONT_WORLD_SAVE_V1` với xác thực CRC32 checksum toàn vẹn 100%.
+- **Kiểm Thử Đơn Vị Đầy Đủ (`tests/world/tick-engine.test.ts`)**:
+  - 16 bài kiểm thử bao phủ toàn diện: SplitMix32, Mulberry32, WorldPRNG, Tie-Breaking, chuỗi 6 phase, deterministic verification 100 ticks, trần threat +50, tính toán pending ticks, kẹp trần 360, chống lùi giờ hệ thống, benchmark hiệu năng offline 7 ngày, batch yielding, forecast preview, execute time travel, và storage persistence.
+
+---
+
 ## [Phase 6.2] — STARFRONT WORLD: Mạng Lưới Đồ Thị World Map & Máy Trạng Thái Sector (World Map Graph Network & Sector State Machine)
 
 *Đã hoàn thành 100% Phase 6.2 (133/133 automated tests passed, build thành công, 19/19 tests Phase 6.2 PASS)*

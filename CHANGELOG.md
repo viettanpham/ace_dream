@@ -4,6 +4,37 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.22] — STARFRONT WORLD: Khắc Phục Hitbox Galaxy Map & Tương Tác Viewport (Galaxy Map Hitbox & Viewport Interaction Fix)
+
+*Đã hoàn thành 100% Phase 6.22 — Khắc phục việc chọn sector khó trên Galaxy Map khi zoom nhỏ hoặc click gần node; phân biệt chính xác click chọn sector với thao tác kéo bản đồ (Pan) bằng movement threshold; bảo đảm trải nghiệm mượt mà, zero micro-jitter và nhất quán hoàn toàn giữa Embedded War Room Map và Fullscreen Overlay (5/5 Phase 6.22 tests PASS, 32/32 Test Suites PASS, build & typecheck thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Hit Area SVG Trong Suốt Chuyên Dụng Cho Từng Sector Node (`components/game/world/world-map.tsx`)**:
+  - Bổ sung hit area hình chữ nhật bo góc trong suốt kích thước lớn ($140 \times 88\text{px}$) riêng biệt cho mỗi sector node: `<rect x={cx - 70} y={cy - 35} width="140" height="88" rx="16" fill="transparent" />`.
+  - Bao trọn vẹn vòng tròn trung tâm node ($cx, cy$), nhãn tên sector ($cy + 30$) và thanh đo Threat ($cy + 42$), xóa bỏ hoàn toàn khoảng chết (deadzone) gây trôi click trước đây.
+  - Phân bố không gian chuẩn xác: khoảng cách tối thiểu giữa các sector canonical $\ge 120\text{px}$, hitbox không bao trùm sang tâm sector lân cận, loại bỏ nguy cơ chọn nhầm.
+  - Gắn `pointer-events-none select-none` cho các nhãn cự ly và rủi ro trên tuyến đường hyperlane, ngăn chặn hoàn toàn việc route label chiếm sự kiện của sector.
+- **2. Phân Biệt Chính Xác Click Chọn Sector Và Pan Bản Đồ (Pointer Drag Threshold)**:
+  - Thiết lập ngưỡng chuyển động `DRAG_THRESHOLD = 5px`:
+    * Khi con trỏ dịch chuyển dưới $5\text{px}$ (click tĩnh hoặc micro-jitter rung tay), giữ nguyên `panOffset`, không làm giật camera và kích hoạt click chọn sector chính xác.
+    * Khi con trỏ dịch chuyển $\ge 5\text{px}$, chuyển sang trạng thái Pan kéo bản đồ (`isDragging = true`).
+  - Khi nhả chuột (`onPointerUp`): cờ `hasExceededDragThreshold` ngăn chặn kích hoạt click chọn sector ở cuối thao tác kéo.
+  - Ứng dụng Pointer Events API (`setPointerCapture` / `releasePointerCapture`), xử lý an toàn ngay cả khi người chơi nhả chuột bên ngoài container bản đồ.
+- **3. Trải Nghiệm Zoom Nhỏ Vượt Trội ($0.7\times$)**:
+  - Nhờ hit area $140 \times 88\text{px}$, khi zoom nhỏ ở mức tối thiểu ($0.7\times$), diện tích bấm trên màn hình thực tế vẫn đạt $\approx 98 \times 61\text{px}$, giúp người chơi click trúng cực kỳ dễ dàng trên cả chuột, trackpad và màn hình cảm ứng mà không cần phóng to hình ảnh đồ họa.
+- **4. Nhất Quán Giữa Embedded Map & Fullscreen Overlay**:
+  - Cả chế độ nhúng trong War Room và chế độ Toàn màn hình (`world-fullscreen-overlay.tsx`) dùng chung 100% logic hitbox và drag threshold.
+  - Thao tác chọn sector đồng bộ tức thì với thanh Sector Command Ribbon và bảng chi tiết Sector Inspector bên phải.
+- **5. Minh Bạch Hóa Trạng Thái Nút Tác Chiến**:
+  - Khi sector ở trạng thái bình thường/ổn định (`normal`, `recovery`), hiển thị thông báo trạng thái rõ ràng: *"Tác chiến: Chưa có giao tranh"* kèm nhãn *"Khu vực ổn định"* hoặc *"Cần giải vây tuyến ngoài"* thay vì biến mất đột ngột.
+  - Giữ nguyên giới hạn an toàn: không tự khởi chạy combat WORLD khi chưa đủ điều kiện.
+- **6. Kiểm Thử & Tương Thích Tuyệt Đối**:
+  - Bổ sung bộ kiểm thử chuyên dụng `tests/world/phase6-22-galaxy-map-hitbox-viewport.test.ts` (5/5 tests PASS).
+  - Toàn bộ 32 test suites của dự án vượt qua thành công (100% PASS).
+  - Next.js build & TypeScript typecheck hoàn hảo.
+
+---
+
 ## [Phase 6.20] — STARFRONT WORLD: Khay Báo Cáo Tình Báo & Truy Cập Kết Quả (Debriefing Drawer & Results Access)
 
 *Đã hoàn thành 100% Phase 6.20 — Triển khai hạng mục P1 theo `WORLD_UI_UX_AUDIT.md`: Chuyển Dual Results Hub thành Khay Báo Cáo Debriefing Drawer mở nhanh từ Tactical HUD với huy hiệu đếm số lượng chưa đọc, trượt mượt mà từ cạnh phải màn hình mà không làm gián đoạn hoặc mất trạng thái War Room; tích hợp xem chi tiết kết quả, liên kết nhảy trực tiếp sang Sector trên Galaxy Map, dọn dẹp log an toàn (Safe Pruning) và bảo toàn 100% World Save V1 (10/10 Phase 6.20 tests PASS, 31/31 Test Suites PASS, build & lint thành công).*

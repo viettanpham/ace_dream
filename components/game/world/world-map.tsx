@@ -428,23 +428,77 @@ export function WorldMap({
     setZoomLevel(1.2)
   }
 
-  // Chuột drag để pan
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return // Chỉ chuột trái
-    setIsDragging(true)
+  const DRAG_THRESHOLD = 5 // Ngưỡng dịch chuyển pixel tối thiểu để phân biệt Click vs Pan
+  const isPointerDownRef = useRef<boolean>(false)
+  const pointerStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const hasExceededDragThresholdRef = useRef<boolean>(false)
+
+  // Xử lý Pointer Drag để Pan bản đồ với Drag Threshold chống giật click & micro-jitter
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return // Chỉ xử lý pointer chuột trái hoặc touch chính
+    // Nếu người chơi bấm vào nút hoặc UI con trong container, không kích hoạt map pan
+    const target = e.target as HTMLElement | SVGElement | null
+    if (target?.closest("button") || target?.closest("[data-no-pan]")) {
+      return
+    }
+
+    isPointerDownRef.current = true
+    hasExceededDragThresholdRef.current = false
+    pointerStartRef.current = { x: e.clientX, y: e.clientY }
     setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y })
+
+    // Bắt pointer capture để không bị mất sự kiện khi kéo nhanh ra ngoài container
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId)
+    } catch {
+      // Bỏ qua nếu môi trường không hỗ trợ capture
+    }
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isPointerDownRef.current) return
+
+    const deltaX = Math.abs(e.clientX - pointerStartRef.current.x)
+    const deltaY = Math.abs(e.clientY - pointerStartRef.current.y)
+    const distanceMoved = Math.hypot(deltaX, deltaY)
+
+    if (!hasExceededDragThresholdRef.current) {
+      if (distanceMoved >= DRAG_THRESHOLD) {
+        hasExceededDragThresholdRef.current = true
+        setIsDragging(true)
+      } else {
+        // Chưa vượt ngưỡng: không thay đổi panOffset để tránh micro-jitter camera
+        return
+      }
+    }
+
     setPanOffset({
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y,
     })
   }
 
-  const handleMouseUp = () => {
-    setIsDragging(false)
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (isPointerDownRef.current) {
+      isPointerDownRef.current = false
+      setIsDragging(false)
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId)
+        }
+      } catch {
+        // Bỏ qua nếu release capture lỗi
+      }
+    }
+  }
+
+  const handleSectorNodePointerUp = (sectorId: string, e: React.PointerEvent) => {
+    e.stopPropagation()
+    // Nếu người chơi đã thực sự thực hiện thao tác kéo bản đồ (vượt ngưỡng drag), KHÔNG kích hoạt click chọn sector
+    if (hasExceededDragThresholdRef.current) {
+      return
+    }
+    handleSectorClick(sectorId)
   }
 
   // Thao tác đổi Lệnh Chiến Lược trực tiếp từ Inspector
@@ -626,12 +680,12 @@ export function WorldMap({
       {/* 2. MAIN MAP VIEWPORT CONTAINER */}
       <div
         ref={mapContainerRef}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         className={cn(
-          "relative flex-1 w-full h-full overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900/40 via-zinc-950 to-black cursor-grab",
+          "relative flex-1 w-full h-full overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900/40 via-zinc-950 to-black cursor-grab select-none touch-none",
           isDragging && "cursor-grabbing"
         )}
       >
@@ -766,7 +820,10 @@ export function WorldMap({
 
                   {/* Nếu route đang kết nối với sector đang chọn hoặc hover, hiển thị tag cự ly và rủi ro */}
                   {(isSelectedAdjacent || isHovered) && (
-                    <g transform={`translate(${midX}, ${midY - (route.state !== "open" ? 14 : 0)})`}>
+                    <g
+                      transform={`translate(${midX}, ${midY - (route.state !== "open" ? 14 : 0)})`}
+                      className="pointer-events-none select-none"
+                    >
                       <rect
                         x="-38"
                         y="-8"
@@ -877,12 +934,29 @@ export function WorldMap({
               return (
                 <g
                   key={sector.id}
+                  onPointerUp={(e) => handleSectorNodePointerUp(sector.id, e)}
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleSectorClick(sector.id)
+                    // onClick fallback dự phòng
+                    if (!hasExceededDragThresholdRef.current) {
+                      handleSectorClick(sector.id)
+                    }
                   }}
                   className="cursor-pointer group"
+                  data-sector-node={sector.id}
                 >
+                  {/* 0. HIT AREA TRONG SUỐT RIÊNG BIỆT (DEDICATED HITBOX LAYER)
+                      Bao phủ cả node tròn (cx, cy) và nhãn tên (cy+30), loại bỏ hoàn toàn deadzone.
+                      Đủ rộng (140x88px) để click cực nhạy khi zoom nhỏ (scale 0.7x), nhưng không lấn sang sector lân cận. */}
+                  <rect
+                    x={cx - 70}
+                    y={cy - 35}
+                    width="140"
+                    height="88"
+                    rx="16"
+                    fill="transparent"
+                    className="cursor-pointer"
+                  />
                   {/* 1. Vòng định vị khi được chọn (Tactical Targeting Reticle) */}
                   {isSelected && (
                     <g transform={`translate(${cx}, ${cy})`}>
@@ -1616,10 +1690,10 @@ export function WorldMap({
             {/* CÁC THAO TÁC HÀNH ĐỘNG CHIẾN THUẬT (SẮP XẾP HỢP LÝ THEO MỨC ƯU TIÊN) */}
             <div className="space-y-2 pt-2 border-t border-zinc-800">
               {/* Nhóm 1: Xuất Kích Chiến Đấu khẩn cấp (Nếu có) */}
-              {onDeployCombat &&
-                (selectedSector.stage === "threatened" ||
-                  selectedSector.stage === "under_siege" ||
-                  selectedSector.isLockedForCombat) && (
+              {onDeployCombat && (
+                selectedSector.stage === "threatened" ||
+                selectedSector.stage === "under_siege" ||
+                selectedSector.isLockedForCombat ? (
                   <button
                     onClick={() => {
                       playClickSound()
@@ -1630,7 +1704,21 @@ export function WorldMap({
                     <Swords className="size-3.5 text-red-400" />
                     <span>Xuất Kích Tác Chiến Tại Sector</span>
                   </button>
-                )}
+                ) : (
+                  <div
+                    className="w-full flex items-center justify-between rounded bg-zinc-900/40 border border-zinc-800/80 px-2.5 py-1.5 text-[10px] text-zinc-500 font-mono"
+                    title="Sector đang trong tầm kiểm soát an toàn, chưa phát hiện hạm đội thù địch xâm nhập hoặc bao vây"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Swords className="size-3 text-zinc-600" />
+                      <span>Tác chiến: Chưa có giao tranh</span>
+                    </span>
+                    <span className="text-[9px] text-zinc-600 uppercase font-sans">
+                      {selectedSector.stage === "lost" ? "Cần giải vây tuyến ngoài" : "Khu vực ổn định"}
+                    </span>
+                  </div>
+                )
+              )}
 
               {/* Nhóm 2: Điều Quân Chi Viện */}
               {onOpenQuickDispatch && (

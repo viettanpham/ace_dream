@@ -332,12 +332,26 @@ Bản thiết kế này đề xuất **chuyển đổi STARFRONT WORLD từ cấ
   * Tách biệt hoàn toàn tab `admin` ra khỏi thanh điều hướng tác chiến, chuyển thành Modal Settings Overlay chuyên dụng (`admin-settings-modal.tsx`).
   * Cơ chế bảo vệ Danger Zone với xác nhận kép khi đổi tốc độ hoặc reset world.
 
-- **Phase 6.19: Events & Missions Decision Matrix (P1)**: **ĐÃ TRIỂN KHAI HOÀN TẤT 100% (DONE)**.
-  * Tái cấu trúc `events-missions-board.tsx` thành Ma trận Ra quyết định 2 Cột (Decision Matrix) phân định chuyên sâu:
-    - **Cột Trái (Urgency Queue)**: Hàng đợi sự kiện khẩn cấp sắp xếp theo hạn chót cấp bách (`decisionDeadlineTick - currentDay` ASC), mức độ nghiêm trọng (`critical` > `warning` > `info`) và priority; chiều cao giới hạn có thanh cuộn độc lập; thẻ sự kiện cô đọng với đầy đủ tín hiệu cảnh báo, đếm ngược ngày, phân loại category và nguồn gốc quyết định.
-    - **Cột Phải (Decision Panel)**: Bảng chi tiết và đối chiếu chiến lược theo thời gian thực; hiển thị tình báo sector; so sánh song song các phương án với tỷ lệ thành công, thời gian thực thi, tác động biến động ổn định/đe dọa, chi phí tài nguyên và quân lực có kiểm tra xác thực (`validateStrategyExecution`); hệ số chấm điểm minh bạch (`scoreEventStrategy`) kèm phần mở rộng/thu gọn giải thích lý do; làm rõ phương án được đề xuất bởi System Auto và phương án mặc định tự động khóa.
-    - **Empty State Trung Thực**: Hiển thị hướng dẫn chọn sự kiện khi chưa có lựa chọn, tuyệt đối không tạo dữ liệu giả mạo.
-    - **Phân Định Rõ Ràng Nguồn Gốc**: Hiển thị chính xác các nguồn quyết định (`Chờ Chỉ Huy`, `System Auto`, `Default Fallback`, `Processing`) và hiển thị nguyên nhân tự động thất bại (`autoSelectionFailureReason`). Ngăn chặn phê chuẩn lại sự kiện đã `PROCESSING` để bảo toàn tính lũy đẳng.
-    - **Bảo Toàn Toàn Vẹn Mission Chains**: Duy trì đầy đủ đồ thị cây nút nhiệm vụ, các trạng thái `completed`, `active`, `locked`, cùng cơ chế hoãn điều động `isPendingDispatch` và đếm ngày hoãn `dispatchDeferredTicks`.
-  * Bộ kiểm thử chuyên biệt `tests/world/phase6-19-decision-matrix.test.ts` 6/6 tests PASS, 100% build & typecheck hoàn hảo.
+- **Phase 6.20: Debriefing Drawer & Results Access (P1)**: **ĐÃ TRIỂN KHAI HOÀN TẤT 100% (DONE)**.
+  * Chuyển Dual Results Hub thành Khay Báo Cáo Debriefing Drawer trượt từ cạnh phải màn hình khi bấm nút "Báo Cáo" trên Slim Tactical HUD.
+  * Bảo toàn 100% `activeTab` và `selectedSectorId` khi mở/đóng; hỗ trợ phím `Escape` toàn cục, nút đóng rõ ràng và backdrop.
+  * Phân tách 2 luồng báo cáo có thẩm quyền: Báo Cáo Sự Kiện (`eventResultsArchive`) & Nhật Ký Trận Đánh (`transactionJournal`).
+  * Liên kết nhảy trực tiếp sang Sector trên Galaxy Map, bảng xem chi tiết kết quả mở rộng, bộ lọc 4 chế độ và dọn dẹp Safe Pruning an toàn.
+  * Bộ kiểm thử `tests/world/phase6-20-debriefing-drawer.test.ts` 10/10 tests PASS, 31/31 test suites PASS.
+
+- **Phase 6.21: Galaxy Map Interaction & WORLD Combat Integration Audit**: **ĐÃ HOÀN TẤT (AUDIT APPROVED)**.
+  * Rà soát chuyên sâu 2 vấn đề lớn:
+    1. Vấn đề click chọn sector trên Galaxy Map (deadzone, zoom nhỏ, nhầm lẫn pan vs click, micro-jitter).
+    2. Điểm đứt gãy luồng tác chiến tại `starfront-shell.tsx` (bỏ rơi `sectorId`, combat V1 chưa kết nối Encounter Snapshot và commit receipt về WORLD).
+  * Lập lộ trình 3 phase nhỏ: Phase 6.22 (Hitbox/Pan Fix), Phase 6.23 (Combat Context Binding), Phase 6.24 (Combat Commit & Debriefing Return).
+
+- **Phase 6.22: Galaxy Map Hitbox & Viewport Interaction Fix (P1)**: **ĐÃ TRIỂN KHAI HOÀN TẤT 100% (DONE)**.
+  * **Hit Area Trong Suốt Chuyên Dụng**: Thêm vùng hit area SVG $140 \times 88\text{px}$ riêng biệt cho mỗi sector node, bao trọn node, nhãn tên và thanh Threat, xóa sạch khoảng chết (deadzone).
+  * **Khoảng Cách An Toàn**: Đảm bảo khoảng cách tối thiểu giữa các sector canonical $\ge 120\text{px}$, hitbox không bao trùm tâm sector kế bên.
+  * **Khử Chặn Sự Kiện Tuyến Đường**: Gắn `pointer-events-none` cho nhãn cự ly và rủi ro trên tuyến đường hyperlane.
+  * **Movement Threshold $5\text{px}$**: Phân biệt chính xác giữa Click tĩnh và Pan kéo bản đồ; loại bỏ hiện tượng rung giật micro-jitter; cờ `hasExceededDragThreshold` ngăn chặn click chọn sector khi kết thúc thao tác kéo.
+  * **Pointer Capture**: Bắt và nhả capture an toàn, xử lý mượt mà ngay cả khi pointer di chuyển ra ngoài khung bản đồ.
+  * **Khả Năng Chọn Khi Zoom Nhỏ ($0.7\times$)**: Nhấp chọn cực kỳ nhạy và chuẩn xác mà không cần tăng kích thước đồ họa node.
+  * **Minh Bạch Hóa Trạng Thái Nút Tác Chiến**: Hiển thị rõ lý do *"Tác chiến: Chưa có giao tranh"* kèm nhãn trạng thái khi sector đang ổn định.
+  * **Kiểm Thử & Build**: Bộ kiểm thử `tests/world/phase6-22-galaxy-map-hitbox-viewport.test.ts` 5/5 tests PASS, 32/32 test suites PASS 100%, Next.js build & typecheck thành công.
 

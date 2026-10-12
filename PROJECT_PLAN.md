@@ -87,11 +87,13 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.18** | **Slim Tactical HUD & ADMIN CP Isolation (P1 UI/UX Refinement)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/operations-center.tsx`, `components/game/world/admin-settings-modal.tsx`, `tests/world/phase6-18-slim-hud-admin-isolation.test.ts` |
 | **Phase 6.19** | **Ma Trận Ra Quyết Định Sự Kiện & Nhiệm Vụ (Events & Missions Decision Matrix)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/events-missions-board.tsx`, `tests/world/phase6-19-decision-matrix.test.ts` |
 | **Phase 6.20** | **Khay Báo Cáo Tình Báo & Truy Cập Kết Quả (Debriefing Drawer & Results Access)** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/debriefing-drawer.tsx`, `components/game/world/dual-results-hub.tsx`, `components/game/world/operations-center.tsx`, `tests/world/phase6-20-debriefing-drawer.test.ts` |
+| **Phase 6.21** | **Galaxy Map Interaction & WORLD Combat Integration Audit** | **ĐÃ HOÀN THÀNH (AUDIT REPORT APPROVED)** | `WORLD_UI_UX_AUDIT.md`, `lib/game/world/combat-adapter.ts` |
+| **Phase 6.22** | **Galaxy Map Hitbox & Viewport Interaction Fix** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/world-map.tsx`, `tests/world/phase6-22-galaxy-map-hitbox-viewport.test.ts` |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-1. **Debriefing Drawer & Results Access (Phase 6.20)**: Chuyển Dual Results Hub thành Khay Báo Cáo Debriefing Drawer mở nhanh từ Tactical HUD với badge số lượng chưa đọc, hỗ trợ phím Escape, liên kết Sector trực tiếp sang Galaxy Map và Safe Pruning an toàn.
-2. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 31/31 test suites PASS 100%.
-3. Chuẩn bị cho các hạng mục P2 (Phase 6.21) theo lộ trình thiết kế.
+1. **Galaxy Map Hitbox & Viewport Interaction Fix (Phase 6.22)**: Đã hoàn tất 100% hit area trong suốt $140 \times 88\text{px}$, loại bỏ deadzone giữa node và nhãn, Drag Threshold $5\text{px}$ tách biệt Pan vs Click, ngăn micro-jitter và nhả pointer an toàn với pointer capture.
+2. **WORLD Combat Integration (Phase 6.23 & 6.24)**: Chuẩn bị cho các phase tiếp theo theo lộ trình audit: kết nối Encounter Snapshot vào Combat Arena (Phase 6.23) và commit kết quả trận đánh một lần duy nhất về World State kèm debriefing return (Phase 6.24).
+3. **Bảo tồn toàn vẹn**: Giữ nguyên toàn bộ logic mô phỏng, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`), 32/32 test suites PASS 100%.

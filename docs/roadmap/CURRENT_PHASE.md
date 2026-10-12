@@ -1,51 +1,49 @@
 # STARFRONT — Kế Hoạch Triển Khai Giai Đoạn Hiện Tại (Current Phase Scope)
 
-## GIAI ĐOẠN HIỆN TẠI: PHASE 6.20 — DEBRIEFING DRAWER & RESULTS ACCESS (HOÀN THÀNH TOÀN DIỆN)
+## GIAI ĐOẠN HIỆN TẠI: PHASE 6.22 — GALAXY MAP HITBOX & VIEWPORT INTERACTION FIX (HOÀN THÀNH TOÀN DIỆN)
 
 ---
 
 ## 1. Mục Tiêu & Trạng Thái Giai Đoạn (Phase Status)
-- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 100% Tests PASS, 31/31 Test Suites PASS, 10/10 Phase 6.20 Tests PASS, Build Succeeded)**.
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (Done — 100% Tests PASS, 32/32 Test Suites PASS, 5/5 Phase 6.22 Tests PASS, Build Succeeded)**.
 - **Mục tiêu cốt lõi**:
-  - Triển khai hạng mục P1 từ `WORLD_UI_UX_AUDIT.md`:
-    1. **Khay Báo Cáo Tình Báo Trượt Cạnh Phải (`components/game/world/debriefing-drawer.tsx`)**:
-       * Mở nhanh trực tiếp từ nút "Báo Cáo" trên Slim Tactical HUD của War Room.
-       * Không làm gián đoạn hay mất trạng thái War Room: giữ nguyên vẹn 100% `activeTab` và `selectedSectorId` khi đóng Drawer.
-       * Hỗ trợ phím tắt `Escape` toàn cục, nút đóng rõ ràng `[ESC]`, nhấp vào backdrop mờ hoặc liên kết "Quay lại War Room &rarr;".
-       * Thiết kế đáp ứng linh hoạt: rộng cố định trên desktop (`560px` - `720px`) và tự động chuyển sang chế độ Overlay toàn màn hình (`w-screen`) trên thiết bị di động/màn hình hẹp.
-       * Cho phép cuộn nội bộ độc lập (`overflow-y-auto`) với thanh cuộn tối ưu, không ảnh hưởng đến bản đồ nền.
-    2. **Huy Hiệu Kết Quả Chưa Đọc (Unread Badge)**:
-       * Tính toán chính xác số lượng báo cáo chưa đọc (`unreadResultsCount`) từ `eventResultsArchive`.
-       * Tự động cập nhật badge khi sự kiện hoàn tất chu trình `PROCESSING`, không tạo thông báo lặp hay tăng số ảo qua các tick mô phỏng.
-    3. **Tích Hợp & Nâng Cấp Dual Results Hub (`components/game/world/dual-results-hub.tsx`)**:
-       * Phân tách rõ ràng 2 luồng báo cáo có thẩm quyền: Báo Cáo Sự Kiện & Khủng Hoảng (Event Results) và Nhật Ký Trận Đánh Buồng Lái (Battle Results).
-       * Liên kết nhảy trực tiếp sang Sector (`onNavigateToSector`): Tên Sector trên thẻ kết quả trở thành nút liên kết có thể nhấp, tự động chuyển camera Galaxy Map đến Sector đó, mở Sector Inspector và đóng Drawer mượt mà.
-       * Xem chi tiết mở rộng: Nút bật/tắt "Chi Tiết" / "Biên Lai" cho từng kết quả, mở rộng ID sự kiện, tick hoàn tất, lý do lựa chọn chiến lược và mã giao dịch TxID.
-       * Bộ lọc 4 chế độ: `Tất Cả`, `Chưa Đọc`, `Thắng / Tốt`, `Thua / Xấu`.
-       * Đánh dấu một kết quả đã đọc, đánh dấu tất cả đã đọc, và dọn dẹp an toàn (`pruneReadEventResultsSafe`) bảo toàn 100% World State.
-    4. **Bảo Toàn Hệ Thống & Lưu Trữ Độc Lập**:
-       * Tái sử dụng 100% dữ liệu gốc từ `eventResultsArchive` và `transactionJournal`, tuyệt đối không tạo thêm cơ chế lưu trữ thứ hai.
-       * Giữ nguyên tab 5 "Trung Tâm Kết Quả" để bảo đảm tính tương thích ngược hoàn toàn.
-       * Không can thiệp đến Event Engine, simulator, tick engine, hay save schemas (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`).
+  - Triển khai giải pháp kỹ thuật tinh gọn giải quyết triệt để 2 vấn đề tương tác cốt lõi phát hiện từ Phase 6.21 Audit:
+    1. **Hitbox Sector Chuyên Dụng Trong Suốt (`world-map.tsx`)**:
+       * Thêm vùng hit area SVG trong suốt kích thước lớn ($140 \times 88\text{px}$) riêng biệt cho mỗi sector node (`data-sector-node`).
+       * Bao trọn cả vòng tròn trung tâm, nhãn tên sector và thanh đo Threat, xóa bỏ hoàn toàn khoảng chết (deadzone) giữa node và nhãn.
+       * Hit area không làm thay đổi hình ảnh hiển thị, không chồng lấn sang tâm các sector lân cận (khoảng cách tối thiểu giữa các sector canonical $\ge 120\text{px}$).
+       * Nhãn cự ly/rủi ro trên tuyến đường hyperlane được gắn `pointer-events-none select-none` để không chặn sự kiện click sector bên dưới.
+    2. **Phân Biệt Chính Xác Thao Tác Click Chọn Sector Và Kéo Bản Đồ (Pointer Drag Threshold)**:
+       * Thiết lập `DRAG_THRESHOLD = 5px` để phân biệt rõ ràng: nếu con trỏ dịch chuyển dưới ngưỡng ($< 5\text{px}$), xử lý như click chọn sector thông thường mà không làm dịch chuyển camera panOffset (loại bỏ rung giật micro-jitter).
+       * Khi pointer dịch chuyển $\ge 5\text{px}$, chuyển sang chế độ Pan bản đồ (`isDragging = true`). Khi nhả chuột (`onPointerUp`), cờ `hasExceededDragThreshold` ngăn chặn kích hoạt click chọn sector ngoài ý muốn.
+       * Áp dụng `setPointerCapture` và `releasePointerCapture` trên container bản đồ để giữ trọn vẹn thao tác kéo mượt mà ngay cả khi pointer di chuyển nhanh ra ngoài mép khung nhìn.
+    3. **Tương Tác Nhất Quán Giữa Embedded Map & Fullscreen Overlay**:
+       * Cả chế độ nhúng trong War Room và chế độ Toàn màn hình (`world-fullscreen-overlay.tsx`) đều dùng chung 100% logic hitbox và drag threshold.
+       * Khi zoom nhỏ ($0.7\times$), diện tích hitbox $140 \times 88\text{px}$ vẫn tương đương $\approx 98 \times 61\text{px}$ trên màn hình thực tế, giúp người chơi nhấp chọn cực kỳ dễ dàng mà không làm phóng to hình ảnh đồ họa.
+    4. **Làm Rõ Điều Kiện Nút Tác Chiến Trong Sector Inspector**:
+       * Giữ nguyên 100% logic chiến đấu an toàn: chỉ hiển thị nút "Xuất Kích Tác Chiến" khi sector đủ điều kiện (`threatened`, `under_siege` hoặc `isLockedForCombat`).
+       * Khi sector ở trạng thái bình thường/an toàn, hiển thị trạng thái minh bạch: "Tác chiến: Chưa có giao tranh" kèm nhãn "Khu vực ổn định" hoặc "Cần giải vây tuyến ngoài", giúp người chơi hiểu rõ lý do mà không tự khởi chạy combat sai quy tắc.
+    5. **Bảo Toàn Hệ Thống Tuyệt Đối**:
+       * Không can thiệp vào Combat Arena V1, WORLD Combat Adapter, Tick Engine, Event Engine hay Simulator.
+       * Không thay đổi các save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`).
 
 ---
 
-## 2. Bảng Đối Chiếu Tính Năng Triển Khai Phase 6.20
+## 2. Bảng Đối Chiếu Tính Năng Triển Khai Phase 6.22
 
 | Hạng mục tính năng | Trạng thái kỹ thuật | Đối chiếu mã nguồn thực tế |
 |---|---|---|
-| Khay Báo Cáo Debriefing Drawer trượt từ cạnh phải | **Đã hoàn thành (Done)** | `components/game/world/debriefing-drawer.tsx` |
-| Kết nối nút Báo Cáo trên Slim Tactical HUD | **Đã hoàn thành (Done)** | `components/game/world/operations-center.tsx` |
-| Bảo toàn tab và sector đang chọn khi đóng/mở Drawer | **Đã hoàn thành (Done)** | `operations-center.tsx`, `debriefing-drawer.tsx` |
-| Nút đóng [ESC], phím tắt Escape toàn cục và backdrop | **Đã hoàn thành (Done)** | `debriefing-drawer.tsx` |
-| Cuộn nội bộ độc lập và hỗ trợ viewport hẹp (w-screen) | **Đã hoàn thành (Done)** | `debriefing-drawer.tsx` |
-| Badge số lượng chưa đọc không tăng lặp do tick | **Đã hoàn thành (Done)** | `operations-center.tsx`, `debriefing-drawer.tsx` |
-| Phân biệt Event Results và Combat Results | **Đã hoàn thành (Done)** | `components/game/world/dual-results-hub.tsx` |
-| Liên kết điều hướng Sector trực tiếp sang Galaxy Map | **Đã hoàn thành (Done)** | `dual-results-hub.tsx`, `operations-center.tsx` |
-| Bảng xem chi tiết kết quả mở rộng (Expandable Details) | **Đã hoàn thành (Done)** | `dual-results-hub.tsx` |
-| Đánh dấu đã đọc, đánh dấu tất cả và bộ lọc 4 chế độ | **Đã hoàn thành (Done)** | `dual-results-hub.tsx` |
-| Safe Pruning bảo toàn 100% World State và tài nguyên | **Đã hoàn thành (Done)** | `dual-results-hub.tsx`, `event-engine.ts` |
-| Dữ liệu lấy trực tiếp từ archive/journal, không tạo store thứ 2 | **Đã hoàn thành (Done)** | `dual-results-hub.tsx`, `storage.ts` |
-| Bộ kiểm thử Phase 6.20 Debriefing Drawer (10/10 tests PASS) | **Đã hoàn thành (Done)** | `tests/world/phase6-20-debriefing-drawer.test.ts` |
-| Toàn bộ 31 Test Suites vượt qua thành công (100% PASS) | **Đã hoàn thành (Done)** | `package.json` (`npm test`) |
+| Hit area SVG trong suốt chuyên dụng ($140 \times 88\text{px}$) | **Đã hoàn thành (Done)** | `components/game/world/world-map.tsx` (dòng 950–960) |
+| Xóa bỏ deadzone giữa node và nhãn tên sector | **Đã hoàn thành (Done)** | `world-map.tsx` |
+| Route label không chặn click sector (`pointer-events-none`) | **Đã hoàn thành (Done)** | `world-map.tsx` (dòng 820–830) |
+| Movement threshold ($5\text{px}$) phân biệt Click và Pan | **Đã hoàn thành (Done)** | `world-map.tsx` (dòng 430–480) |
+| Loại bỏ micro-jitter camera khi click chuột tĩnh | **Đã hoàn thành (Done)** | `world-map.tsx` |
+| Drag không kích hoạt click chọn sector ngoài ý muốn | **Đã hoàn thành (Done)** | `world-map.tsx` (`handleSectorNodePointerUp`) |
+| Pointer capture xử lý nhả chuột ngoài vùng bản đồ | **Đã hoàn thành (Done)** | `world-map.tsx` (`handlePointerDown`/`handlePointerUp`) |
+| Tương tác mượt mà khi zoom nhỏ ($0.7\times$) | **Đã hoàn thành (Done)** | `world-map.tsx` |
+| Đồng bộ chọn sector với Ribbon và Inspector | **Đã hoàn thành (Done)** | `world-map.tsx`, `operations-center.tsx` |
+| Thống nhất hành vi Embedded Map và Fullscreen Overlay | **Đã hoàn thành (Done)** | `world-map.tsx`, `world-fullscreen-overlay.tsx` |
+| Trạng thái minh bạch cho nút tác chiến khi chưa có giao tranh | **Đã hoàn thành (Done)** | `world-map.tsx` (dòng 1700–1725) |
+| Bộ kiểm thử Phase 6.22 (5/5 tests PASS) | **Đã hoàn thành (Done)** | `tests/world/phase6-22-galaxy-map-hitbox-viewport.test.ts` |
+| Toàn bộ 32 Test Suites vượt qua thành công (100% PASS) | **Đã hoàn thành (Done)** | `package.json` (`npm test`) |
 | Next.js Build & Typecheck thành công hoàn toàn | **Đã hoàn thành (Done)** | `compile_applet`, `lint_applet` |

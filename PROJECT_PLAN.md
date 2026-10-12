@@ -18,10 +18,11 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | Phase 5.9: Hoàn thành 100% logic gameplay, Tuyệt Kỹ Liên Hoàn Phi Công, Reroll, Admin CP và Lưu trữ Schema v4 (93/93 tests PASS). Asset ảnh Mecha và Fullbody chất lượng cao ở trạng thái PENDING do quota AI Studio 429 (đang dùng fallback SVG). |
-| **Phase tiếp theo cần thực hiện?** | Bổ sung asset ảnh Mecha/Fullbody khi có quota; chuyển tiếp sang **Phase 6.0**: Specter Gear & Phân hệ Chiến tranh Mẹ hạm. |
-| **Tài liệu BẮT BUỘC đọc trước khi sửa code?** | 1. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md)<br>2. [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md)<br>3. [`docs/systems/SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) |
-| **Các hệ thống liên quan trực tiếp?** | - `lib/game/pilot-skill-types.ts` & `pilot-skill-engine.ts`: Tuyệt kỹ liên hoàn, template, progression, reroll.<br>- `lib/game/types.ts` & `lib/game/storage.ts`: Save Schema v4 & migration.<br>- `lib/game/progression.ts` & `engine.ts`: Tính toán chỉ số, thực chiến, phản đòn, sát thương.<br>- `components/game/character-gear-select.tsx` & `pilot-skill-view.tsx`: Giao diện buồng lái, sub-tab kỹ năng phi công.<br>- `components/game/admin-cp-modal.tsx`: Bảng điều khiển quản trị toàn cục. |
+| **Trạng thái hiện tại của dự án?** | Phase 6.4: Kinh Tế Chiến Lược, Mạng Lưới Hậu Cần & Nhân Khẩu Học đã hoàn thành 100% (170/170 automated tests PASS, build thành công). Mô hình 4+1 tài nguyên vĩ mô với Lương thực (Food) thiết yếu riêng biệt, cơ chế suy thoái từng bậc (Gradual Shortage Degradation), mạng lưới hậu cần với mức tồn kho an toàn 3 ngày (Safety Stock Buffer), quản lý hàng In-Transit, tự động cân bằng chuỗi cung ứng theo thứ tự ưu tiên (Food -> Energy -> Supplies -> Materials -> Data), xử lý hao hụt tuyến Hazardous (20%), chặn tuyến Blocked/Offline, và quy tắc bảo toàn dân cư tuyệt đối (Zero-Sum Migration Conservation) hoạt động chuẩn xác 100%. |
+| **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô của toàn bộ sản phẩm, tích hợp vào thanh điều hướng cao nhất của Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
+| **Phase tiếp theo cần thực hiện?** | Chuẩn bị triển khai **Sub-Phase 6.5: Phe Phái VSS & The Void, Lực Lượng & Quân Sự** (`lib/game/world/forces-ledger.ts`, `lib/game/world/auto-resolve.ts`, `lib/game/world/threat-ai.ts`). |
+| **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>2. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
+| **Phụ thuộc chính giữa WORLD và hệ thống hiện tại?** | - **Combat Integration**: Giao tiếp qua `WorldCombatAdapter`, sử dụng snapshot tại thời điểm khóa trận và Transaction ID chống double-apply.<br>- **Lưu trữ cách ly**: `STARFRONT_WORLD_SAVE_V1` độc lập hoàn toàn với `STARFRONT_SAVE_DATA_V4`, có sao lưu luân phiên A/B.<br>- **Navigation**: Tích hợp tab `world` vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`. |
 
 *Lưu ý: Không đọc tài liệu lịch sử cũ trừ khi cần đối chiếu tương thích ngược (Backward Compatibility).*
 
@@ -29,24 +30,28 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 ## 3. Bản Đồ Tài Liệu Kiến Trúc & Lộ Trình (Documentation Index)
 
-Toàn bộ tài liệu chi tiết được tổ chức module hóa trong thư mục `docs/`:
+Toàn bộ tài liệu chi tiết được tổ chức module hóa:
+
+### 🌍 Đặc Tả & Kế Hoạch Triển Khai Chiến Lược WORLD (Phase 6 Core Docs)
+- **Đặc Tả Thiết Kế WORLD Toàn Diện**: [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Tổng quan UI, World Map 5 giai đoạn, Phe VSS vs The Void, Khế ước Combat Adapter lũy đẳng, Save cách ly & Rotating Backup, Mô phỏng Offline & Tick 6-phase, Kinh tế 4 tài nguyên + Lương thực riêng, Vòng đời sự kiện INIT->PROC->RES, Operations Center.
+- **Kế Hoạch Triển Khai Tuần Tự WORLD**: [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — 9 Sub-phases chi tiết (6.1 đến 6.9) kèm tiền đề, danh mục file, tiêu chí nghiệm thu (Exit Criteria) và kịch bản test.
 
 ### 📍 Lộ Trình Phát Triển (`docs/roadmap/`)
-- **Phase Hiện Tại**: [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Kế hoạch Phase 5.8 (Luồng 3 bước, Khóa 5 trận/nhiệm vụ, Điểm thuộc tính phi công).
-- **Lịch Sử Đã Hoàn Thành**: [`docs/roadmap/COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) — Tóm tắt gọn Phase 1, Phase 2, Phase 3, Phase 4 (M4.1–M4.4), Phase 5 (M5.1–M5.6) và kiểm định Phase 5.7.
-- **Lộ Trình Tương Lai**: [`docs/roadmap/FUTURE_PHASES.md`](./docs/roadmap/FUTURE_PHASES.md) — Kế hoạch hoàn thiện Mô-đun kỹ năng rời Phase 5.7, Specter Gear, và Phase 6 (Phe phái thiên hà, Trận chiến Mẹ Hạm, Nghiên cứu Multiplayer).
+- **Phase Hiện Tại**: [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Hiện trạng Phase 5.12 (Màn hình kết quả sau nhiệm vụ & D3 Combat Efficiency) và bước chuyển tiếp Phase 6.
+- **Lịch Sử Đã Hoàn Thành**: [`docs/roadmap/COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) — Tóm tắt gọn Phase 1 đến Phase 5.
+- **Lộ Trình Tương Lai**: [`docs/roadmap/FUTURE_PHASES.md`](./docs/roadmap/FUTURE_PHASES.md) — Định hướng mở rộng dài hạn.
 
 ### ⚙️ Đặc Tả Hệ Thống Chuyên Sâu (`docs/systems/`)
-- **Nhân Vật & Cơ Giáp**: [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) — Quy trình ghép đôi 3 bước, cơ chế khóa 5 trận, tiến trình độc lập phi công (+5 điểm/cấp), và phân rã chỉ số.
-- **Kỹ Năng & 5 Slot Mô-đun**: [`docs/systems/SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) — 5 Ô kỹ năng, tương thích All-Gear vs Gear-specific, và nâng cấp Slot phi cơ (+2 SP/cấp).
-- **Trang Bị & Kho Đồ**: [`docs/systems/EQUIPMENT_SYSTEM.md`](./docs/systems/EQUIPMENT_SYSTEM.md) — 3 Vị trí trang bị, cấp cường hóa +1..+10, và cơ chế Tái chế rã đồ (Salvage).
-- **Cân Bằng & Power Budget**: [`docs/systems/ITEM_BALANCE.md`](./docs/systems/ITEM_BALANCE.md) — Quy đổi Power Tokens (PT), công thức Item Rating và định giá thương mại.
-- **Chiến Đấu & Hiệu Ứng**: [`docs/systems/COMBAT_SYSTEM.md`](./docs/systems/COMBAT_SYSTEM.md) — Sáng kiến tốc độ, công thức sát thương, 11 hiệu ứng trạng thái, và 4 Archetype AI.
-- **Lưu Trữ & Di Chuyển Schema**: [`docs/systems/SAVE_DATA.md`](./docs/systems/SAVE_DATA.md) — Quy tắc bảo toàn dữ liệu và di chuyển an toàn Schema v1 ➔ v2 ➔ v3 ➔ v4.
-- **Danh Mục Tổng Thể Hệ Thống**: [`docs/systems/GAME_SYSTEMS.md`](./docs/systems/GAME_SYSTEMS.md) — Phân loại trách nhiệm giữa buồng lái STARFRONT và phân hệ Ace Manager.
+- **Nhân Vật & Cơ Giáp**: [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) — Ghép đôi 3 bước, khóa nhiệm vụ, tiến trình 8 phi công.
+- **Kỹ Năng & 5 Slot Mô-đun**: [`docs/systems/SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) — 5 Ô kỹ năng, tương thích All-Gear vs Gear-specific.
+- **Trang Bị & Kho Đồ**: [`docs/systems/EQUIPMENT_SYSTEM.md`](./docs/systems/EQUIPMENT_SYSTEM.md) — 3 Vị trí trang bị, cường hóa +1..+10, rã đồ Salvage.
+- **Cân Bằng & Power Budget**: [`docs/systems/ITEM_BALANCE.md`](./docs/systems/ITEM_BALANCE.md) — Quy đổi Power Tokens (PT), Item Rating.
+- **Chiến Đấu & Hiệu Ứng**: [`docs/systems/COMBAT_SYSTEM.md`](./docs/systems/COMBAT_SYSTEM.md) — Sáng kiến tốc độ, công thức sát thương, AI 4 Archetype.
+- **Lưu Trữ & Di Chuyển Schema**: [`docs/systems/SAVE_DATA.md`](./docs/systems/SAVE_DATA.md) — Lưu trữ v1 -> v2 -> v3 -> v4.
+- **Danh Mục Tổng Thể Hệ Thống**: [`docs/systems/GAME_SYSTEMS.md`](./docs/systems/GAME_SYSTEMS.md) — Phân loại trách nhiệm phân hệ.
 
 ### 🎨 Quy Chuẩn Mỹ Thuật & Hình Ảnh (`docs/art-direction/`)
-- **Quy Chuẩn Art Direction Toàn Cầu**: [`docs/art-direction/ART_DIRECTION.md`](./docs/art-direction/ART_DIRECTION.md) — Thẩm mỹ Hard Sci-Fi Aerospace, Concept Art Mecha 3D, Chân dung & Toàn thân Pilot anime-realistic, Prompt Engineering chuẩn, Kiến trúc Fallback 3 lớp và QA Checklist 10 điểm.
+- **Quy Chuẩn Art Direction Toàn Cầu**: [`docs/art-direction/ART_DIRECTION.md`](./docs/art-direction/ART_DIRECTION.md) — Thẩm mỹ Hard Sci-Fi Aerospace, Concept Art Mecha 3D, Chân dung & Toàn thân Pilot anime-realistic.
 
 ---
 
@@ -57,18 +62,26 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa trong thư m�
 | **Phase 1** | Nguyên mẫu chiến đấu theo lượt (Vanguard, 3 quái) | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
 | **Phase 2** | Tiến trình Cấp độ, EXP, Credits, Hangar 3 slots | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
 | **Phase 3** | Bản đồ 3 Sector, 3 Lớp Gear, Chợ quân sự, Âm thanh | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
-| **Phase 4** | Hiệu ứng trạng thái DoT/Stun/Slow, AI 4 Archetype, Boss Enrage | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
+| **Phase 4** | Hiệu ứng DoT/Stun/Slow, AI 4 Archetype, Boss Enrage | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
 | **Phase 5 (5.1–5.6)** | Cường hóa +10, Nội tại Gear, Rã đồ, Nhiệm vụ 1–15 & Biến thể quái | **Đã hoàn thành (Done)** | [`COMPLETED_PHASES.md`](./docs/roadmap/COMPLETED_PHASES.md) |
-| **Phase 5.7** | Khung giao diện 5 Slot Kỹ Năng & Điểm SP Phi Thuyền | **Khung UI Đã Xong (UI Shell Done)** | [`SKILL_SYSTEM.md`](./docs/systems/SKILL_SYSTEM.md) |
-| **Phase 5.8** | **Ghép Đôi Nhân Vật & Cơ Giáp (3 Bước, Khóa 5 Trận, +5 Điểm)** | **ĐÃ HOÀN THÀNH (DONE)** | [`CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) |
-| **Phase 6.1–6.4** | Mở rộng Thế giới, Phe phái BCU/ANI, Đại chiến Mẹ Hạm | **Lộ trình tương lai (Planned)** | [`FUTURE_PHASES.md`](./docs/roadmap/FUTURE_PHASES.md) |
+| **Phase 5.7–5.9** | Khung Kỹ Năng, Ghép Đôi Nhân Vật/Gear, Tuyệt Kỹ Liên Hoàn & Admin CP | **Đã hoàn thành (Done)** | [`CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) |
+| **Phase 5.11–5.12** | Luồng Mở Khóa Ghép Đôi Linh Hoạt & Màn Hình Kết Quả Tác Chiến D3 | **Đã hoàn thành (Done)** | [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) |
+| **Phase 6.0** | STARFRONT WORLD — Thiết Kế Tổng Thể & Kế Hoạch Triển Khai Chiến Lược | **Hoàn thành (Done)** | [`WORLD_DESIGN.md`](./WORLD_DESIGN.md), [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
+| **Phase 6.1** | WORLD Data Foundation & Isolated Save Resilience (`STARFRONT_WORLD_SAVE_V1`) | **Đã hoàn thành (Done)** | `lib/game/world/types.ts`, `lib/game/world/storage.ts` |
+| **Phase 6.2** | Mạng Lưới Đồ Thị World Map & Máy Trạng Thái Sector | **Đã hoàn thành (Done)** | `lib/game/world/graph.ts`, `lib/game/world/sector-lifecycle.ts` |
+| **Phase 6.3** | Động Cơ Tick Chiến Lược & Mô Phỏng Bắt Kịp Ngoại Tuyến | **Đã hoàn thành (Done)** | `lib/game/world/tick-engine.ts`, `lib/game/world/catchup-engine.ts`, `lib/game/world/random.ts` |
+| **Phase 6.4 (Hiện tại)** | **Kinh Tế Chiến Lược, Mạng Lưới Hậu Cần & Nhân Khẩu Học** | **ĐÃ HOÀN THÀNH (DONE — 170/170 TESTS PASS)** | `lib/game/world/economy.ts`, `lib/game/world/logistics.ts`, `lib/game/world/demographics.ts` |
+| **Phase 6.5–6.9** | Triển khai mã nguồn WORLD tuần tự (Military Ledger & Auto-Resolve $\rightarrow$ Combat Adapter $\rightarrow$ Events $\rightarrow$ UI) | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Khi có hiệu lệnh chuyển từ Lập Kế Hoạch sang Triển Khai mã nguồn Phase 5.8:
-1. Đọc kỹ [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) và [`docs/systems/CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md).
-2. Mở rộng TypeScript interfaces và viết hàm `migrateProgressionToV4` trong `lib/game/types.ts` và `lib/game/storage.ts`.
-3. Mở rộng hàm `calculateTotalGearStats` trong `lib/game/progression.ts` tích hợp chỉ số phi công.
-4. Xây dựng component giao diện `components/game/character-gear-select.tsx` và gắn vào `starfront-shell.tsx`.
+Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.5:
+1. Đọc kỹ [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) (Mục C: Phe phái, Lực lượng & Quân sự) và [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Phase 6.5: Authoritative Forces Ledger & Auto-Resolve).
+2. Xây dựng `lib/game/world/forces-ledger.ts`, `lib/game/world/auto-resolve.ts`, `lib/game/world/threat-ai.ts`.
+3. Kiểm thử bảo toàn lực lượng quân sự (Total Force = Deployed + Reserves + Wounded + Retreating + Casualties) và thuật toán Lanchester cải tiến.
+2. Xây dựng công thức sản xuất, tiêu thụ lương thực và suy thoái do thiếu hụt tại `lib/game/world/economy.ts`.
+3. Hiện thực hệ thống phân bổ hậu cần tự động và quản lý hàng trên đường tại `lib/game/world/logistics.ts`.
+4. Đảm bảo quy tắc bảo toàn di cư dân số (Zero-Sum Conservation) tại `lib/game/world/demographics.ts`.
+5. Viết bộ kiểm thử tự động `tests/world/economy-demographics.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.

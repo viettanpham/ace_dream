@@ -4,6 +4,192 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.4] — STARFRONT WORLD: Kinh Tế Chiến Lược, Mạng Lưới Hậu Cần & Nhân Khẩu Học (Strategic Economy, Logistics Network & Demographics)
+
+*Đã hoàn thành 100% Phase 6.4 (170/170 automated tests passed, build thành công, 21/21 tests Phase 6.4 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.4:
+- **Kinh Tế Chiến Lược & Mô Hình 4+1 Tài Nguyên (`lib/game/world/economy.ts`)**:
+  - Tách bạch dứt khoát 4 nhóm tài nguyên chiến lược vĩ mô (`industrialMaterials`, `energy`, `logisticsSupplies`, `tacticalData`) và Lương thực thiết yếu (`food`) độc lập, không bị gộp vào vật tư hậu cần.
+  - Công thức sản xuất phản ánh năng lực công nghiệp của sector (`industryCapacity`), điều chỉnh theo hệ số giai đoạn vòng đời (`normal: 1.0`, `threatened: 0.85`, `under_siege: 0.3`, `recovery: 0.5`, `lost: 0.0`) và hệ số Stability (`>= 80`: +15% prosperity boost; `50-79`: 100%; `25-49`: -25% unrest penalty; `< 25`: -50% crisis penalty).
+  - Tỷ lệ tiêu thụ lương thực dân sinh chuẩn hóa: $100,000 \text{ dân} = 150 \text{ đơn vị Food/ngày}$.
+  - Tính toán ba năng lực chiến lược vĩ mô: Industry toàn cục, Logistics throughput mạng lưới, và Stability trung bình.
+  - Cơ chế suy thoái do thiếu hụt lương thực theo từng bậc (Gradual Shortage Degradation):
+    * Ngày 1–2: Cảnh báo đỏ, Stability giảm -5/ngày.
+    * Ngày 3–5: Stability giảm -8/ngày, phạt 25% phòng thủ, sản lượng công nghiệp giảm 50%.
+    * Sau 5 ngày: Phát sinh thương vong đói (1% dân số/ngày), Stability giảm -12/ngày.
+  - Bảo vệ kho tài nguyên không bao giờ âm vô lý; đồng bộ hóa kho tổng quốc gia theo tổng tồn kho thực tế tại các sector VSS.
+- **Mạng Lưới Hậu Cần & Mức Dự Trữ An Toàn (`lib/game/world/logistics.ts`)**:
+  - Mức dự trữ an toàn 3 ngày (Safety Stock Buffer = $3 \times \text{DailyConsumption}$): Sector nguồn luôn bảo toàn tối thiểu 3 ngày lương thực và vật tư trước khi cho phép xuất khẩu.
+  - Quản lý hàng hóa đang trên đường (In-Transit Convoys): Khấu trừ ngay tại kho sector xuất khi đoàn xe khởi hành; không thể bị tiêu thụ trước khi đến đích; ghi nhận vào `InFlightTransaction` với trạng thái `pending`.
+  - Hàng hóa chỉ được cộng vào kho đích khi đến nơi an toàn (`status: "delivered"`).
+  - Xử lý các trạng thái tuyến đường qua đồ thị:
+    * `Open`: 100% thông lượng, 0% hao hụt.
+    * `Hazardous`: Hao hụt tài nguyên 20% do cướp bóc/quấy rối (Attrition rate = 0.2), giảm tốc độ hành quân.
+    * `Blocked` & `Offline`: Chặn tuyệt đối, không cho phép vận tải đi qua các tuyến bị phong tỏa hoặc cắt đứt.
+  - Tự động điều phối hậu cần (Automated Logistics Balancing): Quét phát hiện sector thiếu hụt và tự động ghép cặp với sector có thặng dư theo đúng thứ tự ưu tiên: Cứu đói (Food) $\rightarrow$ Phòng thủ (Energy) $\rightarrow$ Quân sự (Supplies) $\rightarrow$ Công nghiệp (Materials) $\rightarrow$ Tình báo (Tactical Data).
+- **Nhân Khẩu Học & Quy Tắc Di Cư Bảo Toàn Tuyệt Đối (`lib/game/world/demographics.ts`)**:
+  - Phân tách rõ ràng giữa Dân số quốc gia (`nationalTotalPopulation`) và Dân số trong vùng kiểm soát thực tế (`controlledTerritoryPopulation`).
+  - Dân sự bị chiếm đóng (Suppressed Population): Dân chúng tại sector bị Void chiếm hoặc tranh chấp vẫn là thường dân chịu áp bức, không bị biến thành lính Void.
+  - Quy tắc bảo toàn di cư dân số (Zero-Sum Migration Conservation): Khi sơ tán, dân số trừ khỏi sector đi, cộng vào `refugeesInTransit`; khi cập bến, cộng người sống sót vào sector đến và cộng tổn thất (nếu qua tuyến Hazardous) vào `civilianCasualties`.
+  - Tổng dân số toàn ngân hà luôn thỏa mãn đẳng thức bảo toàn 100%: $\sum \text{Dân số Sector} + \text{Dân số Đang Di Tản} + \text{Thương Vong Tích Lũy} = \text{Dân Số Quốc Gia}$.
+  - Tăng trưởng dân số tự nhiên tại các sector VSS thịnh vượng (Stability $\ge 80$ và đủ lương thực) đồng bộ hóa tức thời trên toàn bộ các chỉ số nhân khẩu học.
+- **Tích Hợp Vào Chu Kỳ Tick Engine 6 Phase (`lib/game/world/tick-engine.ts`)**:
+  - Phase 2 kết nối hoàn chỉnh với `processLogisticsCycle` và `processDemographicsCycle`.
+  - Phase 3 kết nối hoàn chỉnh với `processStrategicEconomyCycle`.
+  - Bảo toàn tính tất định 100% qua Seeded PRNG.
+- **Kiểm Thử Đơn Vị Đầy Đủ (`tests/world/economy-demographics.test.ts`)**:
+  - 21 bài kiểm thử bao phủ toàn diện 5 nhóm yêu cầu A-E đạt 100% PASS.
+
+---
+
+## [Phase 6.3] — STARFRONT WORLD: Động Cơ Tick Chiến Lược & Mô Phỏng Bắt Kịp Ngoại Tuyến (Strategic Tick Engine, Seeded PRNG & Bounded Offline Catch-up)
+
+*Đã hoàn thành 100% Phase 6.3 (149/149 automated tests passed, build thành công, 16/16 tests Phase 6.3 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.3:
+- **Bộ Sinh Số Giả Ngẫu Nhiên Có Seed (`lib/game/world/random.ts`)**:
+  - Triển khai thuật toán SplitMix32 và Mulberry32 chuẩn 32-bit cho mô phỏng tất định (Deterministic Simulation).
+  - Lớp điều khiển `WorldPRNG` cung cấp các hàm `nextFloat()`, `nextInt(min, max)`, `chance(probability)`, `choice(items)`, và `stepSeed()`.
+  - Kết quả có thể tái lập 100%: Cùng một seed ban đầu luôn sinh ra chuỗi số hoàn toàn trùng khớp trên mọi môi trường.
+- **Quy Tắc Phá Vỡ Thế Hòa Ổn Định (`lib/game/world/tick-engine.ts`)**:
+  - Hàm `stableTieBreakSort` triển khai quy tắc sắp xếp ưu tiên theo thiết kế G.3: `(priorityLevel DESC, scheduledTimestamp ASC, entityId ASC)`.
+  - Đảm bảo trật tự thực thi giữa các hạm đội, đoàn xe vận tải và sự kiện đến hạn cùng lúc luôn đồng nhất và bất biến.
+- **Động Cơ Chuỗi 6 Phase Tick Chiến Lược (`lib/game/world/tick-engine.ts`)**:
+  - Hàm điều phối `executeWorldTick` thực thi tuần tự nghiêm ngặt qua 6 phase theo chuẩn thiết kế G.1:
+    * **Phase 1 (Phục hồi & Giao dịch đang chờ)**: Tự động commit các giao dịch in-flight pending, phục hồi 5% thương binh/sửa chữa cơ giáp chuyển về reserves, phục hồi tự nhiên nhẹ tại các sector Recovery.
+    * **Phase 2 (Vận chuyển & Di cư)**: Điều phối dòng dân tị nạn an toàn, điểm kết nối kiến trúc cho Phase 6.4.
+    * **Phase 3 (Kinh tế & Dân số)**: Tính toán sản xuất tài nguyên dựa trên năng lực công nghiệp của sector, điều chỉnh bởi Stability và hệ số giai đoạn sector; tiêu thụ lương thực thiết yếu (Food); kích hoạt cơ chế suy thoái từng bước (Gradual Attrition) khi cạn kiệt lương thực.
+    * **Phase 4 (Quân sự & Mức đe dọa)**: Tính toán biến động Threat tự nhiên có seed; giới hạn trần tăng trưởng đe dọa tối đa (+50 Threat/ngày) ngăn ngừa hiệu ứng tuyết lở (Snowball Effect); tự động đánh giá chuyển giai đoạn sector.
+    * **Phase 5 (Hạn chót & Kết quả)**: Kiểm tra các chuỗi nhiệm vụ active và countdown sự kiện (điểm kết nối Phase 6.5 & 6.6).
+    * **Phase 6 (Kích hoạt mới)**: Quét kích hoạt sự kiện mới, giữ chỗ mở rộng cho Phase 6.7.
+  - Mỗi tick tiến hóa seed một bước xác định (`worldSeed = prng.stepSeed()`), tăng `currentDay += 1`, cập nhật dấu thời gian và trả về chi tiết log thay đổi.
+  - Kiểm chứng tính tất định (Deterministic Verification): Chạy 100 ticks với cùng trạng thái và seed ban đầu cho ra kết quả trùng khớp 100%.
+- **Mô Phỏng Bắt Kịp Ngoại Tuyến Theo Đợt (`lib/game/world/catchup-engine.ts`)**:
+  - Đo khoảng thời gian vắng mặt thực tế (`calculatePendingTicks`): Chu kỳ chuẩn $1 \text{ Strategic Day} = 300 \text{ giây thực}$.
+  - Cơ chế bắt kịp an toàn theo từng đợt (Bounded Batch Catch-up): `MAX_TICKS_PER_BATCH = 50 ticks` kèm cơ chế yield luồng không gây treo hay đơ trình duyệt.
+  - Trần bảo vệ ngoại tuyến: Kẹp chặt ở tối đa `OFFLINE_CATCHUP_CAP = 360 ticks` (~30 ngày thực tế) chống tàn phá thế giới người chơi.
+  - Chống gian lận đồng hồ (Clock Tampering): Nếu phát hiện thời gian hệ thống bị lùi lại, tự động bỏ qua tick và giữ nguyên World State hiện tại.
+  - Giả lập offline 7 ngày thực tế (~2016 ticks $\rightarrow$ kẹp 360 ticks) hoàn tất xử lý trong ~10-15ms (dưới ngưỡng 500ms theo thiết kế).
+  - Cung cấp cả 2 phiên bản `processOfflineCatchup` (bất đồng bộ có yield) và `processOfflineCatchupSync` (đồng bộ headless/test).
+- **Bảng Điều Khiển Kiểm Thử Thời Gian Dành Cho Nhà Phát Triển (`lib/game/world/catchup-engine.ts`)**:
+  - Hàm dự báo tác động `forecastTimeTravelImpact`: Ước tính biến động tài nguyên, Threat trung bình và các sector chuyển giai đoạn trước khi thực thi, hoàn toàn không gây tác dụng phụ lên World State gốc.
+  - Hàm tua thời gian an toàn `executeTimeTravel`: Tái sử dụng chính xác `executeWorldTick` của hệ thống thật; ranh giới an toàn tuyệt đối chỉ tác động lên World State, không can thiệp combat hay kích hoạt đấu trường.
+- **Tích Hợp Checkpoint & World Storage v1**:
+  - Nạp/lưu trạng thái sau các chuỗi tick vào hệ thống lưu trữ cách ly `STARFRONT_WORLD_SAVE_V1` với xác thực CRC32 checksum toàn vẹn 100%.
+- **Kiểm Thử Đơn Vị Đầy Đủ (`tests/world/tick-engine.test.ts`)**:
+  - 16 bài kiểm thử bao phủ toàn diện: SplitMix32, Mulberry32, WorldPRNG, Tie-Breaking, chuỗi 6 phase, deterministic verification 100 ticks, trần threat +50, tính toán pending ticks, kẹp trần 360, chống lùi giờ hệ thống, benchmark hiệu năng offline 7 ngày, batch yielding, forecast preview, execute time travel, và storage persistence.
+
+---
+
+## [Phase 6.2] — STARFRONT WORLD: Mạng Lưới Đồ Thị World Map & Máy Trạng Thái Sector (World Map Graph Network & Sector State Machine)
+
+*Đã hoàn thành 100% Phase 6.2 (133/133 automated tests passed, build thành công, 19/19 tests Phase 6.2 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.2:
+- **World Map Graph Network (`lib/game/world/graph.ts`)**:
+  - Xây dựng mô hình đồ thị vô hướng $G = (V, E)$ kết nối mạng lưới các sector thiên hà qua các tuyến siêu không gian.
+  - Sử dụng trực tiếp dữ liệu khởi tạo chuẩn hóa (8 sectors và 12 routes từ `initial-state.ts`), đảm bảo nguyên tắc duy nhất một nguồn dữ liệu (Single Source of Truth).
+  - Thuật toán Dijkstra tìm đường ngắn nhất (`findShortestPath`) với đo lường khoảng cách chính xác (`getPathMetrics`).
+  - Chế độ định tuyến an toàn (`mode: "safest"` hoặc `avoidHazardous: true`) ưu tiên né tránh các tuyến nguy hiểm.
+  - Xử lý đầy đủ 4 trạng thái tuyến đường: `open`, `hazardous`, `blocked`, `offline`.
+  - Thuật toán từ chối lưu thông qua các tuyến đang bị `blocked` hoặc `offline`.
+  - Phân tích tính liên thông mạng lưới (`isNetworkConnected`) và phân rã các thành phần liên thông (`getConnectedComponents`).
+  - Hàm cập nhật trạng thái tuyến đường thuần túy không gây đột biến ngoài ý muốn (`updateRouteState`, `setRouteStateBetween`).
+- **Cấu Hình Bản Đồ Mẫu & Helper (`lib/game/world/initial-map.ts`)**:
+  - Tái sử dụng dữ liệu 8 sector và 12 routes từ `initial-state.ts`, cung cấp các hàm helper tra cứu nhanh không tạo bản đồ thứ hai trùng lặp.
+- **Sector State Machine 5 Giai Đoạn (`lib/game/world/sector-lifecycle.ts`)**:
+  - Hiện thực máy trạng thái hữu hạn 5 giai đoạn: `Normal` $\rightarrow$ `Threatened` $\rightarrow$ `Under Siege` $\rightarrow$ `Lost` $\rightarrow$ `Recovery`.
+  - Bảng quy tắc chuyển đổi trực tiếp hợp lệ (`VALID_STAGE_TRANSITIONS`) và bộ kiểm tra điều kiện chuyển đổi (`canTransitionStage`).
+  - Cơ chế từ chối các bước nhảy trạng thái bất hợp lệ (chặn nhảy từ Normal sang Lost, chặn nhảy từ Lost sang Normal không qua Recovery, v.v.).
+  - Tự động đánh giá giai đoạn theo ngưỡng Threat Level (`evaluateSectorStage`):
+    * Threat < 300: `Normal`
+    * Threat 300–699: `Threatened`
+    * Threat $\ge$ 700: `Under Siege`
+  - Quy trình giải phóng sector thất thủ (`liberateLostSector`): chuyển `Lost` $\rightarrow$ `Recovery`, trao lại quyền kiểm soát cho VSS.
+  - Quy trình thất thủ (`conquerSector`): chuyển `Under Siege` $\rightarrow$ `Lost`, trao quyền kiểm soát cho The Void.
+  - Hoàn tất tái thiết (`completeRecovery`): chuyển `Recovery` $\rightarrow$ `Normal`.
+  - Hệ số hiệu suất sản xuất theo từng giai đoạn (`getSectorStageEfficiency`): Normal 100%, Threatened 85%, Under Siege 40%, Recovery 50%, Lost 0%.
+  - Tách biệt tuyệt đối giữa Vòng đời (Stage), Quyền kiểm soát phe phái (Sovereignty) và Mức độ đe dọa (Threat Level [0..1000]).
+- **Kiểm Thử Toàn Diện & Tính Bền Vững (`tests/world/sector-lifecycle.test.ts`)**:
+  - 19 bài kiểm thử đơn vị bao phủ toàn diện: cấu trúc đồ thị, Dijkstra shortest/safest path, lọc route state, tính liên thông, chuỗi chuyển đổi 5 giai đoạn, từ chối chuyển đổi bất hợp lệ, tự động đánh giá threat, giải phóng/thất thủ, hiệu suất sản xuất, giới hạn an toàn [0..1000], và lưu/nạp lại chính xác qua World Storage v1 cách ly an toàn khỏi RPG save v4.
+- **Tập tin xuất khẩu module tập trung (`lib/game/world/index.ts`)**:
+  - Cung cấp điểm nhập module sạch sẽ cho toàn bộ phân hệ World.
+
+---
+
+## [Phase 6.1] — STARFRONT WORLD: Nền Tảng Dữ Liệu & Hệ Thống Lưu Trữ Cách Ly (World Data Foundation & Isolated Save Resilience)
+
+*Đã hoàn thành 100% Phase 6.1 (114/114 automated tests passed, build thành công, cách ly an toàn 100% khỏi RPG save v4)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.1:
+- **Khởi Tạo Data Model & Interfaces Chuẩn Hóa (`lib/game/world/types.ts`)**:
+  - Định nghĩa đầy đủ kiểu dữ liệu: `WorldSector`, `WorldRoute`, `WorldFaction`, `WorldResourceLedger`, `MilitaryForceLedger`, `StrategicCapacities`, `DemographicsState`, `WorldState`, và `WorldSaveEnvelope`.
+  - Schema version chính thức: `version: 1` cho World State.
+  - Phân tách rạch ròi 4 nhóm tài nguyên chiến lược kết hợp **Lương thực (Food) là tài nguyên riêng biệt** (không gộp vào vật tư hậu cần).
+  - Sổ cái quân sự bảo toàn quân số: $\text{Total} = \text{Deployed} + \text{Reserves} + \text{Wounded} + \text{Retreating} + \text{Casualties}$.
+- **Bộ Dữ Liệu Khởi Tạo Chuẩn Hóa (`lib/game/world/initial-state.ts`)**:
+  - 8 Sector thiên hà khởi đầu: Sol Command HQ, Helios, Mining Outpost K-7, Asteroid Delta, Nebula Bastion, Waypoint Orion, Shadow Reach, Tartarus Breach.
+  - 12 Tuyến siêu không gian kết nối mạng lưới với trạng thái `open`, `hazardous`, `blocked`.
+  - 2 Phe phái ban đầu: Chính phủ VSS và Đế Chế The Void.
+- **Hệ Thống Lưu Trữ Cách Ly Tuyệt Đối (`lib/game/world/storage.ts`)**:
+  - Khóa lưu trữ độc lập: `STARFRONT_WORLD_SAVE_V1`, `STARFRONT_WORLD_BACKUP_A`, `STARFRONT_WORLD_BACKUP_B`, `STARFRONT_WORLD_BACKUP_META`, `STARFRONT_WORLD_STAGING`.
+  - **Cách ly 100% khỏi RPG v4**: Tuyệt đối không đọc, ghi, sửa đổi hay làm rò rỉ dữ liệu `STARFRONT_SAVE_DATA_V4`.
+- **Cơ Chế Ghi Nguyên Tử & Sao Lưu Luân Phiên Slot A/B (Rotating Backups)**:
+  - Kiểm tra tính hợp lệ cấu trúc state $\rightarrow$ Đóng gói Envelope kèm timestamp đơn điệu $\rightarrow$ Tính mã băm CRC32 xác thực $\rightarrow$ Ghi thử nghiệm vào Staging $\rightarrow$ Xoay vòng bản lưu chính cũ sang Backup Slot A hoặc B $\rightarrow$ Commit khóa chính $\rightarrow$ Dọn dẹp Staging.
+- **Khả Năng Tự Phục Hồi Khi Save Hỏng (Auto-Rescue)**:
+  - Tự động phát hiện khi file chính bị hỏng cú pháp JSON, sai lệch cấu trúc hoặc không khớp checksum.
+  - Quét tìm và tự động phục hồi từ bản sao lưu Slot A/B hợp lệ mới nhất có dấu thời gian gần nhất.
+  - Trả về thông báo minh bạch trong `LoadWorldResult` và cờ `recoveredFromBackup: true`.
+  - Tự động tái lập trạng thái mặc định an toàn nếu cả bản chính và toàn bộ backup đều bị phá hủy.
+- **Bộ Kiểm Thử Tự Động Toàn Diện (`tests/world/storage-resilience.test.ts`)**:
+  - 12 bài kiểm thử tự động chuyên sâu kiểm chứng: Tính toàn vẹn của Data Model, xác thực mã băm CRC32, tính bất biến của `STARFRONT_SAVE_DATA_V4`, chu kỳ luân phiên A $\rightarrow$ B $\rightarrow$ A, tự phục hồi khi crash/tamper, và chẩn đoán kho lưu trữ.
+  - Toàn bộ 114/114 automated unit tests trong toàn bộ dự án PASS 100%.
+
+---
+
+## [Phase 6.0] — STARFRONT WORLD: Thiết Kế Tổng Thể & Kế Hoạch Triển Khai Chiến Lược (World Architecture Design & Implementation Planning)
+
+*Đã hoàn thành 100% tài liệu thiết kế và kế hoạch hóa lộ trình triển khai kỹ thuật cho STARFRONT WORLD (Lập tài liệu và kế hoạch hóa 100% — KHÔNG thay đổi mã nguồn gameplay, không sửa đổi hành vi game, bảo toàn nguyên vẹn 102/102 automated tests PASS).*
+
+### Công việc đã hoàn thành trong Phase 6.0:
+- **Tạo Mới Tài Liệu Đặc Tả Thiết Kế Tổng Thể (`WORLD_DESIGN.md`)**:
+  - Xác lập 9 trụ cột thiết kế chiến lược hoàn chỉnh (Mục A đến Mục I):
+    * **A. Tổng quan & UI**: Định vị WORLD là trung tâm chỉ huy chiến lược vĩ mô của sản phẩm; tích hợp tab cấp cao nhất vào Shell; chế độ World Map toàn màn hình 100vw/vh; tổng hành dinh Operations Center.
+    * **B. World Map & Mạng Lưới Tuyến Đường**: Đồ thị tuyến siêu không gian (open, hazardous, blocked, offline); phân tách rạch ròi giữa Quyền kiểm soát phe phái và Mức độ đe dọa (Threat); vòng đời 5 giai đoạn của sector (`Normal` $\rightarrow$ `Threatened` $\rightarrow$ `Under Siege` $\rightarrow$ `Lost` $\rightarrow$ `Recovery`); quy mô 6–10 sector ban đầu.
+    * **C. Phe Phái, Lực Lượng & Quân Sự**: Hai phe ban đầu Chính phủ VSS vs Đế Chế The Void (không thêm phe mới vào phạm vi ban đầu); Sổ cái quân sự bảo toàn quân số (Deployed, Reserves, Wounded, Retreating, Casualties); thuật toán auto-resolve Lanchester cho trận phụ; can thiệp buồng lái trong trận quyết định; hậu quả thất bại theo ngữ cảnh (không mặc định mất sector ngay).
+    * **D. Tích Hợp Chiến Đấu & Khế Ước Giao Dịch**: Khế ước `WorldCombatAdapter`; cấu hình `combatVersion: "v1" | "v2"`; Encounter Snapshot độc lập tại thời điểm khóa trận; nhật ký giao dịch lũy đẳng (`worldTransactionJournal`) chống áp dụng hai lần; luồng xử lý an toàn khi combat bị lỗi (`PENDING_RECOVERY`), không tạo kết quả thắng/thua giả.
+    * **E. Lưu Trữ, Checkpoint & Phục Hồi Thảm Họa**: Lưu trữ cách ly `STARFRONT_WORLD_SAVE_V1` độc lập với tiến trình RPG v4; sao lưu luân phiên Slot A/B với kiểm tra checksum nguyên tử; tự động phục hồi từ backup khi save chính lỗi; checkpoint tự động và khôi phục giao dịch dang dở an toàn.
+    * **F. Thời Gian & Mô Phỏng Ngoại Tuyến**: Mốc thời gian thực tế Unix timestamp; cơ chế bắt kịp bounded batch (tối đa 50 ticks/batch, trần 360 ticks) chống đơ trình duyệt; công cụ Time Travel Dev Controls (+1, +7, +30 ngày) có bản xem trước tác động và hộp thoại xác nhận, dùng chung 100% logic với engine thật.
+    * **G. Chu Kỳ Tick & Thứ Tự Sự Kiện Tất Định**: Thứ tự 6 phase cố định trong từng tick (Phục hồi $\rightarrow$ Vận chuyển $\rightarrow$ Kinh tế $\rightarrow$ Quân sự $\rightarrow$ Hạn chót $\rightarrow$ Kích hoạt mới); phân tích phụ thuộc dữ liệu; phá thế hòa ổn định và Seeded PRNG.
+    * **H. Kinh Tế Chiến Lược & Nhân Khẩu Học**: 4 Nhóm tài nguyên + Lương thực thiết yếu riêng biệt; 3 năng lực Industry/Logistics/Stability; cơ chế suy thoái theo bậc khi cạn kiệt; hậu cần tự động với mức tồn kho an toàn 3 ngày (Safety Stock Buffer); di cư bảo toàn dân số zero-sum (không sinh dân ảo).
+    * **I. Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ**: Vòng đời 3 pha `INIT` $\rightarrow$ `PROCESSING` $\rightarrow$ `RESULT`; tự động khóa chiến lược mặc định khi hết hạn countdown; 6 hình thái chuỗi nhiệm vụ; giới hạn trần 8 chuỗi đồng thời; Trung tâm kết quả kép (Mission Results vs Event Results) kèm xóa log hiển thị an toàn.
+  - Bổ sung Ma trận đối chiếu thực tế kỹ thuật (4 nhóm: Đã có trong code, Đã xác nhận thiết kế, Đề xuất cần xác minh, Chưa xác định/TBD).
+- **Tạo Mới Kế Hoạch Triển Khai Kỹ Thuật Chi Tiết (`WORLD_IMPLEMENTATION_PLAN.md`)**:
+  - Phân kỳ toàn diện thành 9 giai đoạn nhỏ tuần tự (Phase 6.1 đến 6.9):
+    * **Phase 6.1**: Nền tảng dữ liệu, Interfaces & Save cách ly (`STARFRONT_WORLD_SAVE_V1`, Rotating Backups A/B).
+    * **Phase 6.2**: Mạng lưới đồ thị World Map & Máy trạng thái 5 giai đoạn Sector.
+    * **Phase 6.3**: Động cơ mô phỏng chuỗi Tick 6 phase & Bắt kịp ngoại tuyến theo batch.
+    * **Phase 6.4**: Kinh tế chiến lược, Mạng lưới hậu cần & Nhân khẩu học bảo toàn.
+    * **Phase 6.5**: Phe phái VSS vs The Void & Sổ cái điều phối quân sự có thẩm quyền.
+    * **Phase 6.6**: Khế ước Adapter tích hợp chiến đấu & Nhật ký giao dịch lũy đẳng.
+    * **Phase 6.7**: Động cơ vòng đời sự kiện & Chuỗi nhiệm vụ chiến lược.
+    * **Phase 6.8**: Giao diện Operations Center & Trung tâm kết quả kép (Dual Results Hub).
+    * **Phase 6.9**: Chế độ bản đồ toàn màn hình, Tinh chỉnh thị giác & Kiểm thử tích hợp E2E.
+  - Mỗi giai đoạn quy định đầy đủ: Mục tiêu, Tiền đề, Danh mục file/interfaces, Các bước thực hiện, Tiêu chí nghiệm thu (Exit Criteria), và Rủi ro kỹ thuật/Giải pháp dự phòng.
+- **Cập Nhật Đồng Bộ Kế Hoạch Tổng Thể (`PROJECT_PLAN.md`)**:
+  - Cập nhật bảng chỉ dẫn AI Agent Context, mục tiêu chiến lược của WORLD trong sản phẩm.
+  - Cập nhật Bản đồ tài liệu (Documentation Index) tham chiếu đến `WORLD_DESIGN.md` và `WORLD_IMPLEMENTATION_PLAN.md`.
+  - Cập nhật Ma trận trạng thái tổng quát (High-Level Phase Matrix).
+- **Cập Nhật Danh Mục Tính Năng (`FEATURES.md`)**:
+  - Bổ sung mục 4 chi tiết hóa 9 nhóm tính năng chiến lược của WORLD.
+  - Phân định minh bạch trạng thái kỹ thuật (Design Confirmed / Planned) và nhấn mạnh chưa triển khai code.
+- **Bảo Toàn Chất Lượng & Mã Nguồn**:
+  - Giữ nguyên vẹn 100% mã nguồn game hiện có.
+  - 102/102 automated tests tiếp tục PASS 100%.
+
+---
+
 ## [Phase 5.12] — Màn Hình Kết Quả Sau Nhiệm Vụ & Trực Quan Hóa Điểm Hiệu Suất Tác Chiến (D3 Post-Mission Debriefing)
 
 *Đã hoàn thành toàn bộ màn hình kết quả sau nhiệm vụ (102/102 automated tests passed, build thành công)*

@@ -14,6 +14,9 @@
 
 import { WorldPRNG } from "./random"
 import { evaluateSectorStage } from "./sector-lifecycle"
+import { processStrategicEconomyCycle } from "./economy"
+import { processLogisticsCycle } from "./logistics"
+import { processDemographicsCycle } from "./demographics"
 import type {
   InFlightTransaction,
   MilitaryForceLedger,
@@ -149,124 +152,79 @@ function executePhase1RecoveryAndTransactions(
 
 /**
  * Phase 2: Vận Chuyển & Di Cư (Logistics & Migration)
- * - Điểm kết nối cho Phase 6.4 (Logistics & Demographics)
- * - Quản lý dòng dân tị nạn: Giảm nhẹ refugeesInTransit khi đến đích an toàn
+ * - Xử lý đoàn vận tải hàng hóa in-transit & điều phối chuỗi cung ứng tự động
+ * - Xử lý đoàn di cư dân sự an toàn & bảo toàn tổng dân số (Zero-Sum Conservation)
  */
 function executePhase2LogisticsAndMigration(
   state: WorldState,
   prng: WorldPRNG,
   log: TickPhaseLog
 ): void {
-  // Điểm kết nối (Integration Hook): Giữ chỗ cấu trúc cho Phase 6.4
-  // Xử lý luồng tị nạn đang di chuyển nếu có
-  if (state.demographics.refugeesInTransit > 0) {
-    // Mỗi tick một phần dân tị nạn cập bến sector an toàn Sol Command
-    const settled = Math.min(
-      state.demographics.refugeesInTransit,
-      Math.max(500, Math.floor(state.demographics.refugeesInTransit * 0.1))
-    )
-    state.demographics.refugeesInTransit -= settled
-    state.demographics.controlledTerritoryPopulation += settled
+  // 2.1. Chu kỳ vận chuyển hàng hóa
+  const logisticsReport = processLogisticsCycle(state)
+
+  if (logisticsReport.convoysArrived.length > 0) {
     log.changesApplied.push(
-      `Civilian convoy arrived: ${settled} refugees resettled in secure territory`
+      `Logistics: ${logisticsReport.convoysArrived.length} convoy(s) delivered cargo safely`
     )
-  } else {
-    log.changesApplied.push("Logistics & migration flows synchronized")
   }
+  if (logisticsReport.convoysDispatched.length > 0) {
+    log.changesApplied.push(
+      `Logistics: ${logisticsReport.convoysDispatched.length} supply convoy(s) dispatched to needy sectors`
+    )
+  }
+
+  // 2.2. Chu kỳ nhân khẩu học & di cư dân sự
+  const demographicsReport = processDemographicsCycle(state)
+
+  if (demographicsReport.migrantsArrived > 0) {
+    log.changesApplied.push(
+      `Civilian migration: ${demographicsReport.migrantsArrived} migrants arrived safely at destination`
+    )
+  }
+  if (demographicsReport.naturalGrowth > 0) {
+    log.changesApplied.push(
+      `Demographics: +${demographicsReport.naturalGrowth} natural population growth in prosperous sectors`
+    )
+  }
+
+  log.changesApplied.push("Logistics & demographics network cycle completed")
 }
 
 /**
  * Phase 3: Kinh Tế & Dân Số (Economy & Demographics)
- * - Sản xuất tài nguyên cơ bản dựa trên năng lực công nghiệp của các sector VSS
+ * - Sản xuất tài nguyên theo năng lực công nghiệp của từng sector VSS
  * - Tiêu thụ lương thực thiết yếu dân sinh (Food)
- * - Cập nhật Stability theo cán cân cung ứng lương thực
+ * - Cập nhật Stability và áp dụng suy thoái do thiếu hụt (Gradual Attrition)
+ * - Đồng bộ hóa kho tổng quốc gia
  */
 function executePhase3EconomyAndDemographics(
   state: WorldState,
   prng: WorldPRNG,
   log: TickPhaseLog
 ): WorldResourceLedger {
-  const resourceDelta: WorldResourceLedger = {
-    industrialMaterials: 0,
-    energy: 0,
-    logisticsSupplies: 0,
-    tacticalData: 0,
-    food: 0,
-  }
+  const report = processStrategicEconomyCycle(state)
 
-  let totalIndustryOutput = 0
-
-  // 3.1. Sản xuất tại từng sector thuộc quyền kiểm soát VSS
-  for (const sector of Object.values(state.sectors)) {
-    if (sector.sovereignty === "vss") {
-      // Hệ số hiệu quả theo trạng thái sector
-      let efficiency = 1.0
-      if (sector.stage === "threatened") efficiency = 0.85
-      else if (sector.stage === "under_siege") efficiency = 0.3
-      else if (sector.stage === "recovery") efficiency = 0.5
-      else if (sector.stage === "lost") efficiency = 0.0
-
-      // Hiệu quả từ Stability [0.5 -> 1.15]
-      const stabilityFactor = 0.5 + (sector.stability / 100) * 0.65
-      const effectiveCap = sector.industryCapacity * efficiency * stabilityFactor
-
-      totalIndustryOutput += effectiveCap
-
-      // Tăng tích lũy tài nguyên quốc gia
-      const matGen = Math.round(effectiveCap * 0.35)
-      const energyGen = Math.round(effectiveCap * 0.3)
-      const supGen = Math.round(effectiveCap * 0.2)
-      const dataGen = Math.round(effectiveCap * 0.1)
-      const foodGen = Math.round(effectiveCap * 0.4)
-
-      resourceDelta.industrialMaterials += matGen
-      resourceDelta.energy += energyGen
-      resourceDelta.logisticsSupplies += supGen
-      resourceDelta.tacticalData += dataGen
-      resourceDelta.food += foodGen
-
-      // Đồng thời cập nhật kho riêng của sector
-      sector.resources.industrialMaterials += matGen
-      sector.resources.energy += energyGen
-      sector.resources.logisticsSupplies += supGen
-      sector.resources.tacticalData += dataGen
-      sector.resources.food += foodGen
-    }
-  }
-
-  // 3.2. Tiêu thụ lương thực dân sinh (Food consumption):
-  // 100,000 dân tiêu thụ ~150 food/ngày
-  const foodConsumption = Math.round(
-    (state.demographics.controlledTerritoryPopulation / 100000) * 150
+  log.changesApplied.push(
+    `Economy produced: +${report.grossProduction.industrialMaterials} Mats, +${report.grossProduction.energy} Energy, +${report.grossProduction.logisticsSupplies} Supplies, +${report.grossProduction.tacticalData} Data, +${report.grossProduction.food} Food`
   )
-  resourceDelta.food -= foodConsumption
+  log.changesApplied.push(
+    `Civilian consumption: -${report.totalFoodConsumed} Food (Net Food: ${report.netResourceDelta.food >= 0 ? "+" : ""}${report.netResourceDelta.food})`
+  )
 
-  // Áp dụng delta vào kho tổng quốc gia
-  state.resources.industrialMaterials += resourceDelta.industrialMaterials
-  state.resources.energy += resourceDelta.energy
-  state.resources.logisticsSupplies += resourceDelta.logisticsSupplies
-  state.resources.tacticalData += resourceDelta.tacticalData
-  state.resources.food += resourceDelta.food
-
-  // Bảo vệ không để âm vô lý (chuyển sang thiếu hụt - Gradual Attrition)
-  if (state.resources.food < 0) {
-    // Thiếu lương thực -> sụt giảm stability toàn cục
-    state.resources.food = 0
-    for (const sector of Object.values(state.sectors)) {
-      if (sector.sovereignty === "vss") {
-        sector.stability = Math.max(10, sector.stability - 3)
-      }
-    }
+  if (report.shortageSectors.length > 0) {
     log.changesApplied.push(
-      `CRITICAL: Food shortage triggered! Sector stability penalized by -3.`
+      `CRITICAL: Food shortage triggered across ${report.shortageSectors.length} sector(s): ${report.shortageSectors.join(", ")}`
     )
   }
 
-  log.changesApplied.push(
-    `Economy produced: +${resourceDelta.industrialMaterials} Mats, +${resourceDelta.energy} Energy, +${resourceDelta.logisticsSupplies} Supplies, +${resourceDelta.tacticalData} Data, Net Food: ${resourceDelta.food >= 0 ? "+" : ""}${resourceDelta.food}`
-  )
+  if (report.starvationCasualties > 0) {
+    log.changesApplied.push(
+      `TRAGEDY: ${report.starvationCasualties} civilian casualties due to prolonged starvation`
+    )
+  }
 
-  return resourceDelta
+  return report.netResourceDelta
 }
 
 /**

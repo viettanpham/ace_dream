@@ -4,6 +4,45 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.4] — STARFRONT WORLD: Kinh Tế Chiến Lược, Mạng Lưới Hậu Cần & Nhân Khẩu Học (Strategic Economy, Logistics Network & Demographics)
+
+*Đã hoàn thành 100% Phase 6.4 (170/170 automated tests passed, build thành công, 21/21 tests Phase 6.4 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.4:
+- **Kinh Tế Chiến Lược & Mô Hình 4+1 Tài Nguyên (`lib/game/world/economy.ts`)**:
+  - Tách bạch dứt khoát 4 nhóm tài nguyên chiến lược vĩ mô (`industrialMaterials`, `energy`, `logisticsSupplies`, `tacticalData`) và Lương thực thiết yếu (`food`) độc lập, không bị gộp vào vật tư hậu cần.
+  - Công thức sản xuất phản ánh năng lực công nghiệp của sector (`industryCapacity`), điều chỉnh theo hệ số giai đoạn vòng đời (`normal: 1.0`, `threatened: 0.85`, `under_siege: 0.3`, `recovery: 0.5`, `lost: 0.0`) và hệ số Stability (`>= 80`: +15% prosperity boost; `50-79`: 100%; `25-49`: -25% unrest penalty; `< 25`: -50% crisis penalty).
+  - Tỷ lệ tiêu thụ lương thực dân sinh chuẩn hóa: $100,000 \text{ dân} = 150 \text{ đơn vị Food/ngày}$.
+  - Tính toán ba năng lực chiến lược vĩ mô: Industry toàn cục, Logistics throughput mạng lưới, và Stability trung bình.
+  - Cơ chế suy thoái do thiếu hụt lương thực theo từng bậc (Gradual Shortage Degradation):
+    * Ngày 1–2: Cảnh báo đỏ, Stability giảm -5/ngày.
+    * Ngày 3–5: Stability giảm -8/ngày, phạt 25% phòng thủ, sản lượng công nghiệp giảm 50%.
+    * Sau 5 ngày: Phát sinh thương vong đói (1% dân số/ngày), Stability giảm -12/ngày.
+  - Bảo vệ kho tài nguyên không bao giờ âm vô lý; đồng bộ hóa kho tổng quốc gia theo tổng tồn kho thực tế tại các sector VSS.
+- **Mạng Lưới Hậu Cần & Mức Dự Trữ An Toàn (`lib/game/world/logistics.ts`)**:
+  - Mức dự trữ an toàn 3 ngày (Safety Stock Buffer = $3 \times \text{DailyConsumption}$): Sector nguồn luôn bảo toàn tối thiểu 3 ngày lương thực và vật tư trước khi cho phép xuất khẩu.
+  - Quản lý hàng hóa đang trên đường (In-Transit Convoys): Khấu trừ ngay tại kho sector xuất khi đoàn xe khởi hành; không thể bị tiêu thụ trước khi đến đích; ghi nhận vào `InFlightTransaction` với trạng thái `pending`.
+  - Hàng hóa chỉ được cộng vào kho đích khi đến nơi an toàn (`status: "delivered"`).
+  - Xử lý các trạng thái tuyến đường qua đồ thị:
+    * `Open`: 100% thông lượng, 0% hao hụt.
+    * `Hazardous`: Hao hụt tài nguyên 20% do cướp bóc/quấy rối (Attrition rate = 0.2), giảm tốc độ hành quân.
+    * `Blocked` & `Offline`: Chặn tuyệt đối, không cho phép vận tải đi qua các tuyến bị phong tỏa hoặc cắt đứt.
+  - Tự động điều phối hậu cần (Automated Logistics Balancing): Quét phát hiện sector thiếu hụt và tự động ghép cặp với sector có thặng dư theo đúng thứ tự ưu tiên: Cứu đói (Food) $\rightarrow$ Phòng thủ (Energy) $\rightarrow$ Quân sự (Supplies) $\rightarrow$ Công nghiệp (Materials) $\rightarrow$ Tình báo (Tactical Data).
+- **Nhân Khẩu Học & Quy Tắc Di Cư Bảo Toàn Tuyệt Đối (`lib/game/world/demographics.ts`)**:
+  - Phân tách rõ ràng giữa Dân số quốc gia (`nationalTotalPopulation`) và Dân số trong vùng kiểm soát thực tế (`controlledTerritoryPopulation`).
+  - Dân sự bị chiếm đóng (Suppressed Population): Dân chúng tại sector bị Void chiếm hoặc tranh chấp vẫn là thường dân chịu áp bức, không bị biến thành lính Void.
+  - Quy tắc bảo toàn di cư dân số (Zero-Sum Migration Conservation): Khi sơ tán, dân số trừ khỏi sector đi, cộng vào `refugeesInTransit`; khi cập bến, cộng người sống sót vào sector đến và cộng tổn thất (nếu qua tuyến Hazardous) vào `civilianCasualties`.
+  - Tổng dân số toàn ngân hà luôn thỏa mãn đẳng thức bảo toàn 100%: $\sum \text{Dân số Sector} + \text{Dân số Đang Di Tản} + \text{Thương Vong Tích Lũy} = \text{Dân Số Quốc Gia}$.
+  - Tăng trưởng dân số tự nhiên tại các sector VSS thịnh vượng (Stability $\ge 80$ và đủ lương thực) đồng bộ hóa tức thời trên toàn bộ các chỉ số nhân khẩu học.
+- **Tích Hợp Vào Chu Kỳ Tick Engine 6 Phase (`lib/game/world/tick-engine.ts`)**:
+  - Phase 2 kết nối hoàn chỉnh với `processLogisticsCycle` và `processDemographicsCycle`.
+  - Phase 3 kết nối hoàn chỉnh với `processStrategicEconomyCycle`.
+  - Bảo toàn tính tất định 100% qua Seeded PRNG.
+- **Kiểm Thử Đơn Vị Đầy Đủ (`tests/world/economy-demographics.test.ts`)**:
+  - 21 bài kiểm thử bao phủ toàn diện 5 nhóm yêu cầu A-E đạt 100% PASS.
+
+---
+
 ## [Phase 6.3] — STARFRONT WORLD: Động Cơ Tick Chiến Lược & Mô Phỏng Bắt Kịp Ngoại Tuyến (Strategic Tick Engine, Seeded PRNG & Bounded Offline Catch-up)
 
 *Đã hoàn thành 100% Phase 6.3 (149/149 automated tests passed, build thành công, 16/16 tests Phase 6.3 PASS)*

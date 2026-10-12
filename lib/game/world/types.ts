@@ -73,6 +73,7 @@ export interface WorldSector {
   population: number
   stability: number        // Chỉ số ổn định riêng của sector [0..100]
   lastSiegeDay?: number
+  foodShortageDays?: number
 }
 
 /**

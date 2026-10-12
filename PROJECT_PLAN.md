@@ -18,9 +18,9 @@ Khi nhận tác vụ mới, AI **chỉ cần đọc bảng tóm tắt này** mà
 
 | Câu hỏi xác định | Câu trả lời & Chỉ dẫn thao tác |
 |---|---|
-| **Trạng thái hiện tại của dự án?** | Phase 6.1: Nền tảng dữ liệu & Hệ thống lưu trữ cách ly STARFRONT WORLD đã hoàn thành 100% (114/114 automated tests PASS, build thành công). Khóa lưu trữ `STARFRONT_WORLD_SAVE_V1` cùng cơ chế sao lưu luân phiên Slot A/B, checksum CRC32 và auto-rescue đã hoạt động ổn định và cách ly 100% khỏi RPG save v4. |
+| **Trạng thái hiện tại của dự án?** | Phase 6.2: Mạng Lưới Đồ Thị World Map & Máy Trạng Thái Sector đã hoàn thành 100% (133/133 automated tests PASS, build thành công). Đồ thị Dijkstra, 4 trạng thái tuyến đường (`open`, `hazardous`, `blocked`, `offline`), cùng máy trạng thái 5 giai đoạn (`Normal` $\rightarrow$ `Threatened` $\rightarrow$ `Under Siege` $\rightarrow$ `Lost` $\rightarrow$ `Recovery`) hoạt động ổn định và tích hợp mượt mà với World Storage v1 cách ly an toàn khỏi RPG save v4. |
 | **Vai trò & vị trí của WORLD trong sản phẩm?** | **STARFRONT WORLD** là trung tâm chỉ huy chiến lược vĩ mô của toàn bộ sản phẩm, tích hợp vào thanh điều hướng cao nhất của Shell. WORLD kết nối đồ thị các sector thiên hà, quản lý cuộc chiến giữa Chính phủ VSS và Đế Chế The Void, điều phối lực lượng quân sự, vận tải kinh tế/dân số, và tích hợp với Đấu Trường thông qua khế ước Adapter lũy đẳng. |
-| **Phase tiếp theo cần thực hiện?** | Chuẩn bị triển khai **Sub-Phase 6.2: Mạng Lưới Đồ Thị World Map & Máy Trạng Thái Sector** (`lib/game/world/graph.ts`, `lib/game/world/sector-lifecycle.ts`). |
+| **Phase tiếp theo cần thực hiện?** | Chuẩn bị triển khai **Sub-Phase 6.3: Động Cơ Mô Phỏng Chuỗi Tick Chiến Lược & Bắt Kịp Thời Gian Thực** (`lib/game/world/tick-engine.ts`, `lib/game/world/catchup-engine.ts`, `lib/game/world/random.ts`). |
 | **Tài liệu BẮT BUỘC đọc trước khi thao tác?** | 1. [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) — Kế hoạch phân kỳ 9 sub-phase (6.1–6.9) kèm tiêu chí nghiệm thu.<br>2. [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) — Đặc tả toàn diện 9 trụ cột A–I của WORLD.<br>3. [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) — Tổng kết hiện trạng kỹ thuật. |
 | **Phụ thuộc chính giữa WORLD và hệ thống hiện tại?** | - **Combat Integration**: Giao tiếp qua `WorldCombatAdapter`, sử dụng snapshot tại thời điểm khóa trận và Transaction ID chống double-apply.<br>- **Lưu trữ cách ly**: `STARFRONT_WORLD_SAVE_V1` độc lập hoàn toàn với `STARFRONT_SAVE_DATA_V4`, có sao lưu luân phiên A/B.<br>- **Navigation**: Tích hợp tab `world` vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`. |
 
@@ -67,15 +67,16 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 5.7–5.9** | Khung Kỹ Năng, Ghép Đôi Nhân Vật/Gear, Tuyệt Kỹ Liên Hoàn & Admin CP | **Đã hoàn thành (Done)** | [`CHARACTER_GEAR_SYSTEM.md`](./docs/systems/CHARACTER_GEAR_SYSTEM.md) |
 | **Phase 5.11–5.12** | Luồng Mở Khóa Ghép Đôi Linh Hoạt & Màn Hình Kết Quả Tác Chiến D3 | **Đã hoàn thành (Done)** | [`docs/roadmap/CURRENT_PHASE.md`](./docs/roadmap/CURRENT_PHASE.md) |
 | **Phase 6.0** | STARFRONT WORLD — Thiết Kế Tổng Thể & Kế Hoạch Triển Khai Chiến Lược | **Hoàn thành (Done)** | [`WORLD_DESIGN.md`](./WORLD_DESIGN.md), [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
-| **Phase 6.1 (Hiện tại)** | **WORLD Data Foundation & Isolated Save Resilience (`STARFRONT_WORLD_SAVE_V1`)** | **ĐÃ HOÀN THÀNH (DONE — 114/114 TESTS PASS)** | `lib/game/world/types.ts`, `lib/game/world/storage.ts` |
-| **Phase 6.2–6.9** | Triển khai mã nguồn WORLD tuần tự (Map Graph $\rightarrow$ Tick Engine $\rightarrow$ Economy $\rightarrow$ Military $\rightarrow$ Combat Adapter $\rightarrow$ Events $\rightarrow$ UI) | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
+| **Phase 6.1** | WORLD Data Foundation & Isolated Save Resilience (`STARFRONT_WORLD_SAVE_V1`) | **Đã hoàn thành (Done)** | `lib/game/world/types.ts`, `lib/game/world/storage.ts` |
+| **Phase 6.2 (Hiện tại)** | **Mạng Lưới Đồ Thị World Map & Máy Trạng Thái Sector** | **ĐÃ HOÀN THÀNH (DONE — 133/133 TESTS PASS)** | `lib/game/world/graph.ts`, `lib/game/world/sector-lifecycle.ts` |
+| **Phase 6.3–6.9** | Triển khai mã nguồn WORLD tuần tự (Tick Engine $\rightarrow$ Economy $\rightarrow$ Military $\rightarrow$ Combat Adapter $\rightarrow$ Events $\rightarrow$ UI) | **Sẵn sàng triển khai (Planned)** | [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) |
 
 ---
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.2:
-1. Đọc kỹ [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) (Mục B) và [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Phase 6.2).
-2. Xây dựng thuật toán đồ thị tuyến đường tại `lib/game/world/graph.ts` (Dijkstra tìm đường ngắn nhất, lọc tuyến phong tỏa).
-3. Hiện thực máy trạng thái 5 giai đoạn (`Normal` $\rightarrow$ `Threatened` $\rightarrow$ `Under Siege` $\rightarrow$ `Lost` $\rightarrow$ `Recovery`) và lan truyền Threat tại `lib/game/world/sector-lifecycle.ts`.
-4. Viết bộ kiểm thử tự động `tests/world/sector-lifecycle.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.
+Khi có hiệu lệnh chuyển sang Triển Khai Mã Nguồn Phase 6.3:
+1. Đọc kỹ [`WORLD_DESIGN.md`](./WORLD_DESIGN.md) (Mục F: Mô phỏng Offline & Bắt kịp thời gian thực) và [`WORLD_IMPLEMENTATION_PLAN.md`](./WORLD_IMPLEMENTATION_PLAN.md) (Phase 6.3).
+2. Xây dựng động cơ mô phỏng chuỗi 6 phase tất định tại `lib/game/world/tick-engine.ts`.
+3. Hiện thực cơ chế bắt kịp thời gian an toàn theo từng batch tại `lib/game/world/catchup-engine.ts` và bộ sinh số ngẫu nhiên có seed `lib/game/world/random.ts`.
+4. Viết bộ kiểm thử tự động `tests/world/tick-engine.test.ts` và đảm bảo toàn bộ kiểm thử của dự án tiếp tục PASS 100%.

@@ -4,6 +4,42 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.2] — STARFRONT WORLD: Mạng Lưới Đồ Thị World Map & Máy Trạng Thái Sector (World Map Graph Network & Sector State Machine)
+
+*Đã hoàn thành 100% Phase 6.2 (133/133 automated tests passed, build thành công, 19/19 tests Phase 6.2 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.2:
+- **World Map Graph Network (`lib/game/world/graph.ts`)**:
+  - Xây dựng mô hình đồ thị vô hướng $G = (V, E)$ kết nối mạng lưới các sector thiên hà qua các tuyến siêu không gian.
+  - Sử dụng trực tiếp dữ liệu khởi tạo chuẩn hóa (8 sectors và 12 routes từ `initial-state.ts`), đảm bảo nguyên tắc duy nhất một nguồn dữ liệu (Single Source of Truth).
+  - Thuật toán Dijkstra tìm đường ngắn nhất (`findShortestPath`) với đo lường khoảng cách chính xác (`getPathMetrics`).
+  - Chế độ định tuyến an toàn (`mode: "safest"` hoặc `avoidHazardous: true`) ưu tiên né tránh các tuyến nguy hiểm.
+  - Xử lý đầy đủ 4 trạng thái tuyến đường: `open`, `hazardous`, `blocked`, `offline`.
+  - Thuật toán từ chối lưu thông qua các tuyến đang bị `blocked` hoặc `offline`.
+  - Phân tích tính liên thông mạng lưới (`isNetworkConnected`) và phân rã các thành phần liên thông (`getConnectedComponents`).
+  - Hàm cập nhật trạng thái tuyến đường thuần túy không gây đột biến ngoài ý muốn (`updateRouteState`, `setRouteStateBetween`).
+- **Cấu Hình Bản Đồ Mẫu & Helper (`lib/game/world/initial-map.ts`)**:
+  - Tái sử dụng dữ liệu 8 sector và 12 routes từ `initial-state.ts`, cung cấp các hàm helper tra cứu nhanh không tạo bản đồ thứ hai trùng lặp.
+- **Sector State Machine 5 Giai Đoạn (`lib/game/world/sector-lifecycle.ts`)**:
+  - Hiện thực máy trạng thái hữu hạn 5 giai đoạn: `Normal` $\rightarrow$ `Threatened` $\rightarrow$ `Under Siege` $\rightarrow$ `Lost` $\rightarrow$ `Recovery`.
+  - Bảng quy tắc chuyển đổi trực tiếp hợp lệ (`VALID_STAGE_TRANSITIONS`) và bộ kiểm tra điều kiện chuyển đổi (`canTransitionStage`).
+  - Cơ chế từ chối các bước nhảy trạng thái bất hợp lệ (chặn nhảy từ Normal sang Lost, chặn nhảy từ Lost sang Normal không qua Recovery, v.v.).
+  - Tự động đánh giá giai đoạn theo ngưỡng Threat Level (`evaluateSectorStage`):
+    * Threat < 300: `Normal`
+    * Threat 300–699: `Threatened`
+    * Threat $\ge$ 700: `Under Siege`
+  - Quy trình giải phóng sector thất thủ (`liberateLostSector`): chuyển `Lost` $\rightarrow$ `Recovery`, trao lại quyền kiểm soát cho VSS.
+  - Quy trình thất thủ (`conquerSector`): chuyển `Under Siege` $\rightarrow$ `Lost`, trao quyền kiểm soát cho The Void.
+  - Hoàn tất tái thiết (`completeRecovery`): chuyển `Recovery` $\rightarrow$ `Normal`.
+  - Hệ số hiệu suất sản xuất theo từng giai đoạn (`getSectorStageEfficiency`): Normal 100%, Threatened 85%, Under Siege 40%, Recovery 50%, Lost 0%.
+  - Tách biệt tuyệt đối giữa Vòng đời (Stage), Quyền kiểm soát phe phái (Sovereignty) và Mức độ đe dọa (Threat Level [0..1000]).
+- **Kiểm Thử Toàn Diện & Tính Bền Vững (`tests/world/sector-lifecycle.test.ts`)**:
+  - 19 bài kiểm thử đơn vị bao phủ toàn diện: cấu trúc đồ thị, Dijkstra shortest/safest path, lọc route state, tính liên thông, chuỗi chuyển đổi 5 giai đoạn, từ chối chuyển đổi bất hợp lệ, tự động đánh giá threat, giải phóng/thất thủ, hiệu suất sản xuất, giới hạn an toàn [0..1000], và lưu/nạp lại chính xác qua World Storage v1 cách ly an toàn khỏi RPG save v4.
+- **Tập tin xuất khẩu module tập trung (`lib/game/world/index.ts`)**:
+  - Cung cấp điểm nhập module sạch sẽ cho toàn bộ phân hệ World.
+
+---
+
 ## [Phase 6.1] — STARFRONT WORLD: Nền Tảng Dữ Liệu & Hệ Thống Lưu Trữ Cách Ly (World Data Foundation & Isolated Save Resilience)
 
 *Đã hoàn thành 100% Phase 6.1 (114/114 automated tests passed, build thành công, cách ly an toàn 100% khỏi RPG save v4)*

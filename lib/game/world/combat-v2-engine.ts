@@ -37,11 +37,17 @@ import { commitCombatResultReceipt } from "./combat-adapter"
  * Centralized Combat V2 Configuration Defaults (matching docs/WORLD_ADMINCP_CONFIG_REFERENCE.md)
  */
 export const DEFAULT_COMBAT_V2_CONFIG: CombatV2Config = {
+  // APPROVED DESIGN DEFAULT: 1 round in RETREATING before RETREATED
   defaultRetreatDurationRounds: 1,
+  // TECHNICAL SAFETY DEFAULT: Engine loop safety guard against infinite simulation, NOT a canonical gameplay rule
   maxCombatRounds: 30,
-  retreatOffenseReductionRatio: 1.0, // Full suppression of attacks while retreating
-  retreatDefenseRetentionRatio: 1.0, // Full preservation of defense while retreating
+  // TEMPORARY TECHNICAL DEFAULT: Neutral placeholder (1.0 = 100% suppression); exact balance unresolved
+  retreatOffenseReductionRatio: 1.0,
+  // TEMPORARY TECHNICAL DEFAULT: Neutral placeholder (1.0 = 100% retention); exact balance unresolved
+  retreatDefenseRetentionRatio: 1.0,
+  // UNRESOLVED CONFIG DEFAULT: Temporary baseline rating; not yet approved gameplay balance
   defaultMoraleValue: 100,
+  // CONCEPTUAL EXAMPLE: Conceptual threshold for panic evaluation; not yet approved gameplay balance
   moraleThresholdPanic: 30,
 }
 

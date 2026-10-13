@@ -282,10 +282,16 @@ export interface CombatV2BattlefieldViewModel {
  * Centralized Combat V2 Configuration Parameters
  */
 export interface CombatV2Config {
+  /** APPROVED DESIGN DEFAULT: Rounds a unit spends in RETREATING before RETREATED */
   defaultRetreatDurationRounds: number
+  /** TECHNICAL SAFETY DEFAULT: Engine loop guard to prevent infinite simulation, NOT a canonical gameplay rule */
   maxCombatRounds: number
+  /** TEMPORARY TECHNICAL DEFAULT: Neutral placeholder (1.0 = 100% suppression); exact balance unresolved */
   retreatOffenseReductionRatio: number
+  /** TEMPORARY TECHNICAL DEFAULT: Neutral placeholder (1.0 = 100% retention); exact balance unresolved */
   retreatDefenseRetentionRatio: number
+  /** UNRESOLVED CONFIG DEFAULT: Temporary baseline morale rating; not approved gameplay balance */
   defaultMoraleValue: number
+  /** CONCEPTUAL EXAMPLE: Conceptual threshold for panic evaluation; not approved gameplay balance */
   moraleThresholdPanic: number
 }

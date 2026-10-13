@@ -182,11 +182,11 @@ test("STARFRONT Phase 6.32 — Combat V2 Core Engine Verification", async (t) =>
       enemyGears: [eOpponent],
     })
 
-    // 1. Phát lệnh rút lui (1 hiệp)
-    const retOrder = orderGearRetreat(gRetreating, 1)
+    // 1. Phát lệnh rút lui (sử dụng cấu hình mặc định defaultRetreatDurationRounds)
+    const retOrder = orderGearRetreat(gRetreating)
     assert.ok(retOrder.success)
     assert.equal(gRetreating.state, "RETREATING")
-    assert.equal(gRetreating.retreatTurnsRemaining, 1)
+    assert.equal(gRetreating.retreatTurnsRemaining, DEFAULT_COMBAT_V2_CONFIG.defaultRetreatDurationRounds)
 
     // Khi ở RETREATING: Vẫn có thể bị nhắm bắn, giữ nguyên phòng thủ, công kích bị tiết giảm
     const aggMid = recalculateForceAggregate([gRetreating], "allied", 100)

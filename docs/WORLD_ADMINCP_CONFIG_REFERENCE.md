@@ -19,12 +19,12 @@ It distinguishes between APPROVED DEFAULT, CONCEPTUAL EXAMPLE, and UNRESOLVED DE
 
 | Configuration Key | Type | Default Value | Status | Purpose / Rule |
 | :--- | :--- | :--- | :--- | :--- |
-| `defaultRetreatDurationRounds` | `number` | `1` | **APPROVED DEFAULT** | Number of completed combat rounds a unit spends in `RETREATING` before transitioning to `RETREATED`. |
-| `maxCombatRounds` | `number` | `30` | **APPROVED DEFAULT** | Safety round cap preventing infinite engagement loops. |
-| `retreatOffenseReductionRatio` | `number` | `1.0` | **APPROVED DEFAULT** | Ratio of offensive firepower suppressed while retreating (1.0 = 100% suppression, unit does not fire while disengaging). |
-| `retreatDefenseRetentionRatio` | `number` | `1.0` | **APPROVED DEFAULT** | Ratio of defensive armor/evasion preserved while retreating (unit remains targetable but screens itself). |
-| `defaultMoraleValue` | `number` | `100` | **APPROVED DEFAULT** | Baseline squad/force morale rating at engagement start. |
-| `moraleThresholdPanic` | `number` | `30` | **CONCEPTUAL EXAMPLE** | Morale level below which NPC units evaluate automated tactical withdrawal. |
+| `defaultRetreatDurationRounds` | `number` | `1` | **APPROVED DEFAULT** | Number of completed combat rounds a unit spends in `RETREATING` before transitioning to `RETREATED`. Explicitly approved design default. |
+| `maxCombatRounds` | `number` | `30` | **TECHNICAL SAFETY DEFAULT** | Engine loop safety guard preventing infinite simulation. NOT a canonical gameplay rule or battle design limit. |
+| `retreatOffenseReductionRatio` | `number` | `1.0` | **TEMPORARY TECHNICAL DEFAULT** | Temporary technical placeholder (1.0 = 100% suppression). Exact gameplay balance percentage remains unresolved and configurable. |
+| `retreatDefenseRetentionRatio` | `number` | `1.0` | **TEMPORARY TECHNICAL DEFAULT** | Temporary technical placeholder (1.0 = 100% retention). Exact gameplay balance percentage remains unresolved and configurable. |
+| `defaultMoraleValue` | `number` | `100` | **UNRESOLVED CONFIG DEFAULT** | Temporary baseline rating required for engine/tests. NOT yet approved as canonical gameplay balance. |
+| `moraleThresholdPanic` | `number` | `30` | **CONCEPTUAL EXAMPLE** | Conceptual non-approved example threshold below which NPC units evaluate automated tactical withdrawal. |
 | `supportedFactions` | `string[]` | `["vss", "void"]`| **APPROVED DEFAULT** | Faction keys participating in Combat V2 engagements. |
 
 ---

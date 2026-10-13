@@ -121,9 +121,12 @@ Commander Authority represents faction-level battlefield leadership and is stric
 
 ## 7. Retreat Mechanics
 
-- **Conceptual Retreat Duration**: By default, an order to retreat requires **1 full tactical round** of transitional flight (`RETREATING`). This duration is config-driven.
-- **Vulnerability**: A unit in `RETREATING` status remains an active target for enemy interception.
-- **Combat Contribution**: Units in retreat retain defensive shielding and evasive maneuvers, but their offensive damage output is dampened or removed by configuration to represent disengagement maneuvers.
+- **Approved Retreat Duration Default**: `defaultRetreatDurationRounds = 1` is an explicitly **APPROVED DEFAULT**. An order to retreat requires **1 full tactical round** of transitional flight (`RETREATING`) before transitioning to `RETREATED`. This parameter is centrally configurable.
+- **Vulnerability**: A unit in `RETREATING` status remains an active target for enemy interception on the battlefield.
+- **Combat Contribution Semantics**: While in retreat, units may retain defensive contribution and their offensive output may be reduced or removed. The current implementation uses:
+  - `retreatOffenseReductionRatio = 1.0` (100% suppression of offensive fire)
+  - `retreatDefenseRetentionRatio = 1.0` (100% retention of defense rating)
+  These two values are **TEMPORARY TECHNICAL DEFAULTS** for neutral engine behavior. They are **NOT finalized gameplay balance**; exact balance percentages remain unresolved and configurable.
 
 ---
 
@@ -132,7 +135,16 @@ Commander Authority represents faction-level battlefield leadership and is stric
 Combat V2 reserves architectural hooks for Force/Squad Morale:
 - Morale reflects unit confidence, combat fatigue, and psychological shock resulting from friendly losses or devastating enemy strikes.
 - Morale states will eventually influence combat efficiency, willingness to hold the line, and automated NPC retreat triggers.
+- **Baseline Morale**: `defaultMoraleValue = 100` is an **UNRESOLVED CONFIG DEFAULT** required for engine and test operation, NOT finalized gameplay balance.
+- **Panic Threshold**: `moraleThresholdPanic = 30` remains a **CONCEPTUAL EXAMPLE**, not an approved gameplay balance rule.
 - *Rule*: Future phases must not invent arbitrary hardcoded morale formulas until formal design approval is codified.
+
+---
+
+## 8.1 Technical Safety Guard: Round Limit
+
+- **Engine Safety Round Cap**: `maxCombatRounds = 30` is a **TECHNICAL SAFETY DEFAULT**. It acts strictly as an engine-level guard preventing infinite simulation loops (e.g. two invincible defensive units failing to damage each other).
+- **Distinction**: It is **NOT** a canonical gameplay rule or battle design limit. If a battle reaches 30 rounds without a tactical resolution, the engine terminates with a stalemate receipt to safeguard the event queue.
 
 ---
 

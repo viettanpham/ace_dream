@@ -62,6 +62,11 @@ Temporary heuristics in `lib/game/world/mission-dispatch.ts` (+15% player comman
   - Headless NPC-only battle simulation capability
   - Structured `CombatResult` and immutable WORLD state commit boundary
   - Strict idempotency protection for combat commits
+- **Config & Balancing Classification**:
+  - *Approved Design Default*: `defaultRetreatDurationRounds = 1`
+  - *Technical Safety Default*: `maxCombatRounds = 30` (engine guard against infinite loops, NOT a canonical gameplay rule)
+  - *Temporary Technical Defaults*: `retreatOffenseReductionRatio = 1.0`, `retreatDefenseRetentionRatio = 1.0` (unresolved gameplay balance; neutral technical defaults)
+  - *Unresolved / Conceptual*: `defaultMoraleValue = 100` (unresolved baseline), `moraleThresholdPanic = 30` (conceptual example)
 
 ### Phase 6.33 — Combat Command, Retreat, Support & Battle UI
 - **Primary Documents**: `docs/WORLD_COMBAT_V2_DESIGN.md`, `docs/WORLD_BASE_SECTOR_UX.md`

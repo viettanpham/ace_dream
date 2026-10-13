@@ -238,6 +238,107 @@ function getThreatTier(threat: number): {
   }
 }
 
+/**
+ * Chuyển đổi tọa độ client (clientX, clientY) sang tọa độ trong không gian SVG viewBox 1000x650
+ * Tự động tính toán chính xác cả khi Pan, Zoom, CSS transforms và Letterboxing (preserveAspectRatio="xMidYMid meet").
+ */
+export function transformClientToSVG(
+  svgElement: SVGSVGElement | null,
+  clientX: number,
+  clientY: number
+): { x: number; y: number } | null {
+  if (!svgElement) return null
+
+  // 1. Tính toán chuẩn xác qua getBoundingClientRect và tỷ lệ viewBox 1000x650 (xMidYMid meet)
+  // Phương pháp này hoàn toàn miễn nhiễm với lỗi CTM không bao gồm CSS transform trên root SVG.
+  try {
+    const rect = svgElement.getBoundingClientRect?.()
+    if (rect && rect.width > 0 && rect.height > 0) {
+      const vbW = 1000
+      const vbH = 650
+      const aspectVb = vbW / vbH
+      const aspectRect = rect.width / rect.height
+
+      let scale: number
+      let padX = 0
+      let padY = 0
+
+      if (aspectRect > aspectVb) {
+        // Chiều cao khống chế (letterbox 2 bên trái/phải)
+        scale = rect.height / vbH
+        padX = (rect.width - vbW * scale) / 2
+      } else {
+        // Chiều rộng khống chế (letterbox 2 bên trên/dưới)
+        scale = rect.width / vbW
+        padY = (rect.height - vbH * scale) / 2
+      }
+
+      const x = (clientX - rect.left - padX) / scale
+      const y = (clientY - rect.top - padY) / scale
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        return { x, y }
+      }
+    }
+  } catch {
+    // Dự phòng phương pháp CTM nếu getBoundingClientRect lỗi
+  }
+
+  // 2. Dự phòng bằng ma trận CTM nếu trong môi trường không hỗ trợ getBoundingClientRect
+  try {
+    const ctm = svgElement.getScreenCTM?.()
+    if (ctm) {
+      const pt = svgElement.createSVGPoint()
+      pt.x = clientX
+      pt.y = clientY
+      const transformed = pt.matrixTransform(ctm.inverse())
+      if (Number.isFinite(transformed.x) && Number.isFinite(transformed.y)) {
+        return { x: transformed.x, y: transformed.y }
+      }
+    }
+  } catch {
+    return null
+  }
+
+  return null
+}
+
+/**
+ * Tra cứu Sector nằm dưới tọa độ SVG (svgX, svgY) dựa trên Hitbox chuẩn hóa (140x88px)
+ * Bán kính tâm và diện tích bao trùm cả Node tròn và Nhãn tên sector.
+ */
+export function getSectorHitboxAtPoint(
+  sectors: WorldSector[],
+  svgX: number,
+  svgY: number
+): string | null {
+  for (const sector of sectors) {
+    const cx = (sector.x / 100) * 1000
+    const cy = (sector.y / 100) * 650
+    // Hitbox: [-70, +70] theo trục X, [-35, +53] theo trục Y (tương đương 140x88px)
+    if (
+      svgX >= cx - 70 &&
+      svgX <= cx + 70 &&
+      svgY >= cy - 35 &&
+      svgY <= cy + 53
+    ) {
+      return sector.id
+    }
+  }
+  // Fallback: Tìm sector gần nhất trong bán kính an toàn 48px
+  let closestId: string | null = null
+  let closestDist = Infinity
+  for (const sector of sectors) {
+    const cx = (sector.x / 100) * 1000
+    const cy = (sector.y / 100) * 650
+    const dist = Math.hypot(svgX - cx, svgY - cy)
+    if (dist < 48 && dist < closestDist) {
+      closestDist = dist
+      closestId = sector.id
+    }
+  }
+  return closestId
+}
+
 export function WorldMap({
   worldState,
   selectedSectorId: externalSelectedSectorId,
@@ -256,15 +357,16 @@ export function WorldMap({
   const [zoomLevel, setZoomLevel] = useState<number>(1)
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [showLegend, setShowLegend] = useState<boolean>(true)
   const [showDeployments, setShowDeployments] = useState<boolean>(true)
   const [showInspector, setShowInspector] = useState<boolean>(true)
   const [isSectorIntelOpen, setIsSectorIntelOpen] = useState<boolean>(false)
   const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null)
+  const [hoveredSectorId, setHoveredSectorId] = useState<string | null>(null)
   const [feedback, setFeedback] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null)
 
   const mapContainerRef = useRef<HTMLDivElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
 
   // Danh sách sectors và routes từ state hiện hữu
   const sectors = useMemo(() => Object.values(worldState.sectors || {}), [worldState.sectors])
@@ -396,7 +498,13 @@ export function WorldMap({
     setTimeout(() => setFeedback(null), 3600)
   }
 
+  const lastClickTimeRef = useRef<{ id: string; time: number }>({ id: "", time: 0 })
   const handleSectorClick = (sectorId: string) => {
+    const now = Date.now()
+    if (lastClickTimeRef.current.id === sectorId && now - lastClickTimeRef.current.time < 150) {
+      return
+    }
+    lastClickTimeRef.current = { id: sectorId, time: now }
     playClickSound()
     setInternalSelectedId(sectorId)
     setShowInspector(true)
@@ -423,10 +531,16 @@ export function WorldMap({
   const handleCenterSelected = () => {
     if (!selectedSector) return
     playClickSound()
-    // Đưa tọa độ sector về trung tâm khu vực hiển thị (tính bù vị trí khi Inspector đang mở)
-    const centerX = showInspector ? 38 : 50
-    const targetX = (centerX - selectedSector.x) * 6
-    const targetY = (50 - selectedSector.y) * 4.5
+    const cx = (selectedSector.x / 100) * 1000
+    const cy = (selectedSector.y / 100) * 650
+    const container = mapContainerRef.current
+    const w = container?.clientWidth || 1000
+    const h = container?.clientHeight || 650
+    // Đưa tọa độ sector về trung tâm khu vực hiển thị dựa trên tỷ lệ đồng dạng (uniform aspect ratio scale)
+    const scale = Math.min(w / 1000, h / 650)
+    const inspectorOffset = showInspector ? (w >= 1024 ? -160 : -100) : 0
+    const targetX = (500 - cx) * scale * 1.2 + inspectorOffset
+    const targetY = (325 - cy) * scale * 1.2
     setPanOffset({ x: targetX, y: targetY })
     setZoomLevel(1.2)
   }
@@ -434,7 +548,9 @@ export function WorldMap({
   const DRAG_THRESHOLD = 5 // Ngưỡng dịch chuyển pixel tối thiểu để phân biệt Click vs Pan
   const isPointerDownRef = useRef<boolean>(false)
   const pointerStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
   const hasExceededDragThresholdRef = useRef<boolean>(false)
+  const clickedSectorIdRef = useRef<string | null>(null)
 
   // Xử lý Pointer Drag để Pan bản đồ với Drag Threshold chống giật click & micro-jitter
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -448,14 +564,7 @@ export function WorldMap({
     isPointerDownRef.current = true
     hasExceededDragThresholdRef.current = false
     pointerStartRef.current = { x: e.clientX, y: e.clientY }
-    setDragStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y })
-
-    // Bắt pointer capture để không bị mất sự kiện khi kéo nhanh ra ngoài container
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId)
-    } catch {
-      // Bỏ qua nếu môi trường không hỗ trợ capture
-    }
+    dragStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y }
   }
 
   const handlePointerMove = (e: React.PointerEvent) => {
@@ -468,7 +577,14 @@ export function WorldMap({
     if (!hasExceededDragThresholdRef.current) {
       if (distanceMoved >= DRAG_THRESHOLD) {
         hasExceededDragThresholdRef.current = true
+        clickedSectorIdRef.current = null // Đã bắt đầu kéo bản đồ: hủy click sector
         setIsDragging(true)
+        // Khi thực sự Pan (vượt ngưỡng drag), bắt pointer capture để giữ drag mượt mà
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        } catch {
+          // Bỏ qua nếu môi trường không hỗ trợ capture
+        }
       } else {
         // Chưa vượt ngưỡng: không thay đổi panOffset để tránh micro-jitter camera
         return
@@ -476,32 +592,45 @@ export function WorldMap({
     }
 
     setPanOffset({
-      x: e.clientX - dragStart.x,
-      y: e.clientY - dragStart.y,
+      x: e.clientX - dragStartRef.current.x,
+      y: e.clientY - dragStartRef.current.y,
     })
   }
 
   const handlePointerUp = (e: React.PointerEvent) => {
-    if (isPointerDownRef.current) {
-      isPointerDownRef.current = false
-      setIsDragging(false)
-      try {
-        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
-          e.currentTarget.releasePointerCapture(e.pointerId)
+    if (!isPointerDownRef.current) return
+
+    const wasDragging = hasExceededDragThresholdRef.current
+    const pendingSectorId = clickedSectorIdRef.current
+
+    isPointerDownRef.current = false
+    hasExceededDragThresholdRef.current = false
+    clickedSectorIdRef.current = null
+    setIsDragging(false)
+
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+      }
+    } catch {
+      // Bỏ qua nếu release capture lỗi
+    }
+
+    // Nếu KHÔNG vượt ngưỡng drag (thao tác click chọn)
+    if (!wasDragging) {
+      if (pendingSectorId) {
+        handleSectorClick(pendingSectorId)
+      } else {
+        // Fallback chọn chuẩn xác bằng ma trận / bounding client rect sang không gian toạ độ SVG
+        const svgPt = transformClientToSVG(svgRef.current, e.clientX, e.clientY)
+        if (svgPt) {
+          const hitSectorId = getSectorHitboxAtPoint(sectors, svgPt.x, svgPt.y)
+          if (hitSectorId) {
+            handleSectorClick(hitSectorId)
+          }
         }
-      } catch {
-        // Bỏ qua nếu release capture lỗi
       }
     }
-  }
-
-  const handleSectorNodePointerUp = (sectorId: string, e: React.PointerEvent) => {
-    e.stopPropagation()
-    // Nếu người chơi đã thực sự thực hiện thao tác kéo bản đồ (vượt ngưỡng drag), KHÔNG kích hoạt click chọn sector
-    if (hasExceededDragThresholdRef.current) {
-      return
-    }
-    handleSectorClick(sectorId)
   }
 
   // Thao tác đổi Lệnh Chiến Lược trực tiếp từ Inspector
@@ -713,8 +842,13 @@ export function WorldMap({
 
         {/* SVG MAP CANVAS */}
         <svg
+          ref={svgRef}
           viewBox="0 0 1000 650"
-          className="w-full h-full transition-transform duration-75"
+          preserveAspectRatio="xMidYMid meet"
+          className={cn(
+            "w-full h-full",
+            !isDragging && "transition-transform duration-100 ease-out"
+          )}
           style={{
             transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
             transformOrigin: "center center",
@@ -933,11 +1067,17 @@ export function WorldMap({
               const incomingDeployments = incomingDeploymentsBySector.get(sector.id) || []
               const incomingTroops = incomingDeployments.reduce((sum, d) => sum + d.troopCount, 0)
               const isDeploymentTarget = incomingDeployments.length > 0
+              const isHovered = hoveredSectorId === sector.id
 
               return (
                 <g
                   key={sector.id}
-                  onPointerUp={(e) => handleSectorNodePointerUp(sector.id, e)}
+                  transform={`translate(${cx}, ${cy})`}
+                  onPointerDown={() => {
+                    clickedSectorIdRef.current = sector.id
+                  }}
+                  onPointerEnter={() => setHoveredSectorId(sector.id)}
+                  onPointerLeave={() => setHoveredSectorId((prev) => (prev === sector.id ? null : prev))}
                   onClick={(e) => {
                     e.stopPropagation()
                     // onClick fallback dự phòng
@@ -948,14 +1088,14 @@ export function WorldMap({
                   className="cursor-pointer group select-none"
                   data-sector-node={sector.id}
                 >
-                  {/* 0. HIT AREA TRONG SUỐT ĐỘC LẬP (DEDICATED HITBOX LAYER - PHASE 6.28)
-                      Tách biệt 100% khỏi hiệu ứng quay/pulse và chữ nhãn để không bao giờ bị lệch tâm.
-                      Bao phủ cả node tròn (cx, cy) và nhãn tên (cy+30), pointerEvents="all" bắt trọn click. */}
+                  <title>{`${sector.name} — ${sovCfg.label} | Threat: ${sector.threatLevel}/1000`}</title>
+                  {/* 0. HIT AREA TRONG SUỐT ĐỘC LẬP (DEDICATED HITBOX LAYER - 140x88px)
+                      Bao phủ trọn vẹn node và nhãn tên, toạ độ đồng bộ 100% với hệ quy chiếu tâm (cx, cy). */}
                   <rect
-                    x={cx - 60}
-                    y={cy - 30}
-                    width="120"
-                    height="82"
+                    x="-70"
+                    y="-35"
+                    width="140"
+                    height="88"
                     rx="14"
                     fill="#000000"
                     fillOpacity={0.001}
@@ -965,18 +1105,19 @@ export function WorldMap({
 
                   {/* TOÀN BỘ ĐỒ HỌA TRANG TRÍ (POINTER-EVENTS-NONE ĐẢM BẢO KHÔNG NUỐT EVENT HAY LỆCH VỊ TRÍ) */}
                   <g className="pointer-events-none">
-                    {/* 1. Vòng định vị khi được chọn (Tactical Targeting Reticle) */}
+                    {/* 1. Vòng định vị khi được chọn (Tactical Targeting Reticle) - Đồng bộ tâm 100% */}
                     {isSelected && (
-                      <g transform={`translate(${cx}, ${cy})`}>
+                      <g>
                         <circle
+                          cx="0"
+                          cy="0"
                           r="34"
                           fill="none"
                           stroke="#06b6d4"
                           strokeWidth="1.5"
                           strokeDasharray="8 6"
-                          className="animate-spin-slow"
                         />
-                        <circle r="42" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.4" />
+                        <circle cx="0" cy="0" r="42" fill="none" stroke="#06b6d4" strokeWidth="0.8" opacity="0.4" />
                         {/* 4 dấu ngắm góc chữ thập */}
                         <line x1="-38" y1="0" x2="-32" y2="0" stroke="#06b6d4" strokeWidth="2" />
                         <line x1="32" y1="0" x2="38" y2="0" stroke="#06b6d4" strokeWidth="2" />
@@ -988,8 +1129,8 @@ export function WorldMap({
                     {/* 2. Vòng hiển thị trạng thái Stage (Chỉ pulse có chọn lọc ở under_siege) */}
                     {sector.stage === "under_siege" && (
                       <circle
-                        cx={cx}
-                        cy={cy}
+                        cx="0"
+                        cy="0"
                         r="28"
                         fill="none"
                         stroke="#ef4444"
@@ -1001,8 +1142,8 @@ export function WorldMap({
 
                     {sector.stage === "threatened" && (
                       <circle
-                        cx={cx}
-                        cy={cy}
+                        cx="0"
+                        cy="0"
                         r="26"
                         fill="none"
                         stroke="#f59e0b"
@@ -1014,8 +1155,8 @@ export function WorldMap({
 
                     {sector.stage === "lost" && (
                       <circle
-                        cx={cx}
-                        cy={cy}
+                        cx="0"
+                        cy="0"
                         r="26"
                         fill="none"
                         stroke="#a855f7"
@@ -1027,8 +1168,8 @@ export function WorldMap({
 
                     {sector.stage === "recovery" && (
                       <circle
-                        cx={cx}
-                        cy={cy}
+                        cx="0"
+                        cy="0"
                         r="26"
                         fill="none"
                         stroke="#06b6d4"
@@ -1038,22 +1179,22 @@ export function WorldMap({
                       />
                     )}
 
-                    {/* 3. Vòng nền Sector mang màu sắc phe phái */}
+                    {/* 3. Vòng nền Sector mang màu sắc phe phái (hover không dịch chuyển tâm) */}
                     <circle
-                      cx={cx}
-                      cy={cy}
-                      r={isSelected ? "22" : "19"}
+                      cx="0"
+                      cy="0"
+                      r={isSelected ? "22" : isHovered ? "21" : "19"}
                       fill={sovCfg.bg}
-                      stroke={sovCfg.border}
-                      strokeWidth={isSelected ? "2.5" : "1.8"}
-                      className="transition-all duration-200 group-hover:scale-110"
-                      style={{ filter: isSelected ? `drop-shadow(${sovCfg.glow})` : undefined }}
+                      stroke={isSelected ? "#06b6d4" : isHovered ? "#38bdf8" : sovCfg.border}
+                      strokeWidth={isSelected ? "2.5" : isHovered ? "2.2" : "1.8"}
+                      className="transition-colors duration-150"
+                      style={{ filter: isSelected || isHovered ? (isSelected ? `drop-shadow(${sovCfg.glow})` : "drop-shadow(0 0 10px rgba(56, 189, 248, 0.45))") : undefined }}
                     />
 
                     {/* 4. Lõi trung tâm */}
                     <circle
-                      cx={cx}
-                      cy={cy}
+                      cx="0"
+                      cy="0"
                       r="8"
                       fill={sovCfg.color}
                       opacity="0.95"
@@ -1061,7 +1202,7 @@ export function WorldMap({
 
                     {/* 5. Huy hiệu đích đến điều quân (Incoming Reinforcements Badge) */}
                     {isDeploymentTarget && (
-                      <g transform={`translate(${cx - 38}, ${cy - 22})`}>
+                      <g transform="translate(-38, -22)">
                         <rect
                           width="36"
                           height="14"
@@ -1087,7 +1228,7 @@ export function WorldMap({
 
                     {/* 6. Huy hiệu khóa Combat (Combat Lock Badge) */}
                     {isLocked && (
-                      <g transform={`translate(${cx + 10}, ${cy - 16})`}>
+                      <g transform="translate(10, -16)">
                         <rect width="20" height="15" rx="2" fill="#7f1d1d" stroke="#ef4444" strokeWidth="1" />
                         <text
                           x="10"
@@ -1105,7 +1246,7 @@ export function WorldMap({
                     )}
 
                     {/* 7. Nhãn tên Sector */}
-                    <g transform={`translate(${cx}, ${cy + (isSelected ? 34 : 30)})`}>
+                    <g transform={`translate(0, ${isSelected ? 34 : 30})`}>
                       <rect
                         x="-65"
                         y="-10"
@@ -1114,15 +1255,15 @@ export function WorldMap({
                         rx="3"
                         fill="#020617"
                         fillOpacity="0.88"
-                        stroke={isSelected ? "#06b6d4" : "rgba(255,255,255,0.18)"}
-                        strokeWidth={isSelected ? "1.5" : "0.8"}
+                        stroke={isSelected ? "#06b6d4" : isHovered ? "#38bdf8" : "rgba(255,255,255,0.18)"}
+                        strokeWidth={isSelected ? "1.5" : isHovered ? "1.2" : "0.8"}
                       />
                       <text
                         textAnchor="middle"
                         dominantBaseline="central"
-                        fill={isSelected ? "#38bdf8" : "#f1f5f9"}
+                        fill={isSelected ? "#38bdf8" : isHovered ? "#67e8f9" : "#f1f5f9"}
                         fontSize="9.5"
-                        fontWeight={isSelected ? "bold" : "600"}
+                        fontWeight={isSelected || isHovered ? "bold" : "600"}
                         fontFamily="sans-serif"
                       >
                         {sector.name}
@@ -1130,7 +1271,7 @@ export function WorldMap({
                     </g>
 
                     {/* 8. Thanh đo Threat & Chỉ số số học rõ ràng dưới tên */}
-                    <g transform={`translate(${cx - 40}, ${cy + (isSelected ? 46 : 42)})`}>
+                    <g transform={`translate(-40, ${isSelected ? 46 : 42})`}>
                       <rect width="80" height="4" rx="1" fill="#18181b" />
                       <rect
                         width={Math.min(80, (sector.threatLevel / 1000) * 80)}

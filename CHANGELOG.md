@@ -4,6 +4,12 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Hotfix] — STARFRONT WORLD: Khắc Phục Lỗi Vòng Chọn Sector & Căn Chỉnh Tọa Độ Bản Đồ Chiến Lược (Strategic Map Selection Alignment Fix)
+
+*Đã hoàn thành 100% việc chuẩn hóa và đồng bộ tọa độ hiển thị, vòng định vị (Selection Reticle) và hệ thống Hit-Testing tại Warzone &rarr; Bản đồ chiến lược (War Room // Galaxy Map) trong `components/game/world/world-map.tsx`: khắc phục triệt để lỗi stuck pointer event lifecycle khiến thao tác kéo bản đồ chặn click chọn sector; bổ sung thuật toán chuyển đổi tọa độ SVG tất định thông qua `getBoundingClientRect` và letterbox viewBox math (`preserveAspectRatio="xMidYMid meet"`) miễn nhiễm với các lỗi CTM trình duyệt khi zoom/pan; hỗ trợ nhận diện hover sector mượt mà và trực quan; bảo toàn 100% World Save Schema V1, Checksum CRC32 và RPG Save V4 (7/7 tests PASS trong `strategic-map-selection-alignment.test.ts`, 39/39 Test Suites PASS toàn dự án).*
+
+---
+
 ## [Phase 6.29] — STARFRONT WORLD: Trung Tâm Điều Hành Toàn Cảnh & Tổng Hợp Sự Kiện (Global Operations & Event Hub)
 
 *Đã hoàn thành 100% Phase 6.29 — Xây dựng và tích hợp Trung Tâm Điều Hành Toàn Cảnh (Global Operations & Event Hub) vào tab Overview của Operations Center, giúp người chơi nhanh chóng nắm bắt bức tranh toàn cảnh thiên hà, phát hiện các vấn đề cần xử lý và chuyển thẳng tới màn hình hành động tương ứng; tổng hợp đầy đủ 5 nhóm thông tin chiến lược: Critical Alerts (P0, P1, P2), Active Events (INIT chờ quyết định vs PROCESSING đang triển khai), Combat Operations (suspended combat, locked sectors, kết quả tác chiến), Sector Operations (tình trạng 10 sector, chi viện, vây hãm), và Recent Reports (lối tắt Debriefing Drawer); tích hợp bộ đếm Actionable Counter chống đếm trùng; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (8/8 Phase 6.29 tests PASS, 38/38 Test Suites PASS, build & lint thành công).*

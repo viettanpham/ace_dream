@@ -357,9 +357,24 @@ export function WorldMap({
   const [zoomLevel, setZoomLevel] = useState<number>(1)
   const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
-  const [showLegend, setShowLegend] = useState<boolean>(true)
+  // Phase 6.30: Map Legend mặc định OFF khi mở bản đồ. Tái sử dụng localStorage preference nếu người chơi đã bật trước đó.
+  const [showLegend, setShowLegend] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("starfront_map_show_legend")
+      if (saved !== null) return saved === "true"
+    }
+    return false
+  })
   const [showDeployments, setShowDeployments] = useState<boolean>(true)
-  const [showInspector, setShowInspector] = useState<boolean>(true)
+  // Phase 6.30: Node Details & Inspector mặc định OFF để người chơi quan sát tổng thể bản đồ rõ ràng.
+  const [showNodeDetails, setShowNodeDetails] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("starfront_map_node_details")
+      if (saved !== null) return saved === "true"
+    }
+    return false
+  })
+  const [showInspector, setShowInspector] = useState<boolean>(false)
   const [isSectorIntelOpen, setIsSectorIntelOpen] = useState<boolean>(false)
   const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null)
   const [hoveredSectorId, setHoveredSectorId] = useState<string | null>(null)
@@ -507,8 +522,102 @@ export function WorldMap({
     lastClickTimeRef.current = { id: sectorId, time: now }
     playClickSound()
     setInternalSelectedId(sectorId)
-    setShowInspector(true)
+    // Phase 6.30: Không tự động mở Inspector ép buộc khi click chọn sector nếu đang ở chế độ xem tổng thể
+    if (showNodeDetails) {
+      setShowInspector(true)
+    }
     onSelectSector?.(sectorId)
+  }
+
+  const toggleLegend = () => {
+    playClickSound()
+    setShowLegend((prev) => {
+      const next = !prev
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("starfront_map_show_legend", String(next))
+        } catch {}
+      }
+      return next
+    })
+  }
+
+  const toggleNodeDetails = () => {
+    playClickSound()
+    setShowNodeDetails((prev) => {
+      const next = !prev
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem("starfront_map_node_details", String(next))
+        } catch {}
+      }
+      setShowInspector(next)
+      return next
+    })
+  }
+
+  // Phase 6.30: Mouse-wheel zoom trực tiếp trên vùng bản đồ (giới hạn [0.7, 2.2])
+  useEffect(() => {
+    const container = mapContainerRef.current
+    if (!container) return
+
+    const handleWheel = (e: WheelEvent) => {
+      const target = e.target as HTMLElement | SVGElement | null
+      // Bỏ qua nếu sự kiện cuộn xảy ra bên trong phần tử cuộn được (như Inspector drawer hoặc Legend)
+      if (
+        target?.closest(".overflow-y-auto") ||
+        target?.closest("[data-no-wheel]") ||
+        target?.closest("button")
+      ) {
+        return
+      }
+
+      e.preventDefault()
+      e.stopPropagation()
+
+      const delta = e.deltaY < 0 ? 0.15 : -0.15
+      setZoomLevel((prev) => {
+        return Math.max(0.7, Math.min(2.2, Number((prev + delta).toFixed(2))))
+      })
+    }
+
+    container.addEventListener("wheel", handleWheel, { passive: false })
+    return () => {
+      container.removeEventListener("wheel", handleWheel)
+    }
+  }, [])
+
+  // Phase 6.30: Double-click to zoom
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement | SVGElement | null
+    if (
+      target?.closest("button") ||
+      target?.closest("[data-no-pan]") ||
+      target?.closest(".overflow-y-auto")
+    ) {
+      return
+    }
+
+    playClickSound()
+    const svgPt = transformClientToSVG(svgRef.current, e.clientX, e.clientY)
+
+    if (zoomLevel >= 1.7) {
+      // Đã phóng to nhiều: double-click đưa về mặc định 100%
+      setZoomLevel(1)
+      setPanOffset({ x: 0, y: 0 })
+    } else {
+      const newZoom = Math.min(2.2, Number((zoomLevel + 0.4).toFixed(2)))
+      if (svgPt) {
+        const container = mapContainerRef.current
+        const w = container?.clientWidth || 1000
+        const h = container?.clientHeight || 650
+        const scale = Math.min(w / 1000, h / 650)
+        const targetX = (500 - svgPt.x) * scale * (newZoom - 1)
+        const targetY = (325 - svgPt.y) * scale * (newZoom - 1)
+        setPanOffset({ x: targetX, y: targetY })
+      }
+      setZoomLevel(newZoom)
+    }
   }
 
   // Pan & Zoom controls
@@ -754,9 +863,32 @@ export function WorldMap({
             <span className="font-bold">{activeDeployments.length}</span>
           </button>
 
+          {/* Nút bật/tắt Chế độ xem Chi Tiết vs Tổng Thể (Node Details Mode - Phase 6.30) */}
+          <button
+            onClick={toggleNodeDetails}
+            className={cn(
+              "flex items-center gap-1 rounded border px-2 py-1 text-xs transition-colors cursor-pointer",
+              showNodeDetails
+                ? "border-cyan-500/50 bg-cyan-950/60 text-cyan-200"
+                : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-zinc-200"
+            )}
+            title={
+              showNodeDetails
+                ? "Chuyển sang Chế độ Tổng Thể (ẩn bớt chi tiết node)"
+                : "Chuyển sang Chế độ Chi Tiết (hiển thị đầy đủ telemetry & inspector)"
+            }
+          >
+            {showNodeDetails ? <Eye className="size-3 text-cyan-400" /> : <EyeOff className="size-3 text-zinc-400" />}
+            <span className="hidden sm:inline">Chế Độ:</span>
+            <span className="font-bold">{showNodeDetails ? "Chi Tiết" : "Tổng Thể"}</span>
+          </button>
+
           {/* Nút bật/tắt Inspector Drawer */}
           <button
-            onClick={() => setShowInspector(!showInspector)}
+            onClick={() => {
+              playClickSound()
+              setShowInspector(!showInspector)
+            }}
             className={cn(
               "flex items-center gap-1 rounded border px-2 py-1 text-xs transition-colors cursor-pointer",
               showInspector
@@ -766,7 +898,7 @@ export function WorldMap({
             title={showInspector ? "Đóng bảng chi tiết Sector" : "Mở bảng chi tiết Sector"}
           >
             {showInspector ? <PanelRightClose className="size-3.5" /> : <PanelRightOpen className="size-3.5" />}
-            <span className="hidden sm:inline">Chi Tiết</span>
+            <span className="hidden sm:inline">Bảng Tin</span>
           </button>
 
           {/* Nút Fullscreen Toggle */}
@@ -816,6 +948,7 @@ export function WorldMap({
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onDoubleClick={handleDoubleClick}
         className={cn(
           "relative flex-1 w-full h-full overflow-hidden bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900/40 via-zinc-950 to-black cursor-grab select-none touch-none",
           isDragging && "cursor-grabbing"
@@ -868,7 +1001,85 @@ export function WorldMap({
               <feGaussianBlur stdDeviation="3" result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
+            <filter id="glow-purple" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+
+            {/* Subtle space depth nebulae gradients */}
+            <radialGradient id="nebula-vss" cx="24%" cy="40%" r="42%">
+              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.07" />
+              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="nebula-void" cx="82%" cy="55%" r="45%">
+              <stop offset="0%" stopColor="#ef4444" stopOpacity="0.06" />
+              <stop offset="60%" stopColor="#7c3aed" stopOpacity="0.04" />
+              <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+            </radialGradient>
+            <radialGradient id="nebula-center" cx="52%" cy="45%" r="35%">
+              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.04" />
+              <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+            </radialGradient>
           </defs>
+
+          {/* SPACE DEPTH & TACTICAL BACKDROP (POINTER-EVENTS-NONE) */}
+          <g id="space-depth-layer" className="pointer-events-none select-none">
+            {/* Tinh vân vũ trụ mờ ảo */}
+            <rect x="0" y="0" width="1000" height="650" fill="url(#nebula-vss)" />
+            <rect x="0" y="0" width="1000" height="650" fill="url(#nebula-void)" />
+            <rect x="0" y="0" width="1000" height="650" fill="url(#nebula-center)" />
+
+            {/* Mạng lưới sao tĩnh mật độ vừa phải */}
+            <g opacity="0.35" fill="#f8fafc">
+              <circle cx="85" cy="70" r="1.1" opacity="0.6" />
+              <circle cx="140" cy="180" r="0.9" opacity="0.4" />
+              <circle cx="210" cy="95" r="1.2" opacity="0.7" fill="#67e8f9" />
+              <circle cx="320" cy="60" r="0.8" opacity="0.3" />
+              <circle cx="280" cy="220" r="1" opacity="0.5" />
+              <circle cx="120" cy="460" r="1" opacity="0.4" />
+              <circle cx="70" cy="580" r="1.3" opacity="0.6" fill="#67e8f9" />
+              <circle cx="240" cy="540" r="0.9" opacity="0.3" />
+              <circle cx="360" cy="420" r="1.1" opacity="0.5" />
+              <circle cx="430" cy="150" r="1" opacity="0.4" />
+              <circle cx="510" cy="80" r="1.2" opacity="0.6" />
+              <circle cx="540" cy="260" r="0.8" opacity="0.3" />
+              <circle cx="470" cy="560" r="1" opacity="0.5" />
+              <circle cx="590" cy="490" r="1.1" opacity="0.4" fill="#fbbf24" />
+              <circle cx="670" cy="120" r="1.2" opacity="0.7" fill="#fbbf24" />
+              <circle cx="720" cy="250" r="0.9" opacity="0.4" />
+              <circle cx="630" cy="380" r="1" opacity="0.5" />
+              <circle cx="750" cy="420" r="1.3" opacity="0.6" fill="#f87171" />
+              <circle cx="860" cy="90" r="1.1" opacity="0.5" />
+              <circle cx="920" cy="220" r="1.2" opacity="0.7" fill="#c084fc" />
+              <circle cx="780" cy="580" r="1" opacity="0.4" fill="#f87171" />
+              <circle cx="940" cy="450" r="0.9" opacity="0.5" />
+              <circle cx="890" cy="590" r="1.2" opacity="0.6" fill="#f87171" />
+              <circle cx="970" cy="140" r="1" opacity="0.4" />
+              <circle cx="30" cy="310" r="0.8" opacity="0.3" />
+              <circle cx="400" cy="340" r="1" opacity="0.5" fill="#67e8f9" />
+            </g>
+
+            {/* Dấu định vị góc bản đồ chiến thuật */}
+            <g stroke="#06b6d4" strokeWidth="1" opacity="0.3">
+              <path d="M 30 45 L 30 30 L 45 30" fill="none" />
+              <path d="M 970 45 L 970 30 L 955 30" fill="none" />
+              <path d="M 30 605 L 30 620 L 45 620" fill="none" />
+              <path d="M 970 605 L 970 620 L 955 620" fill="none" />
+            </g>
+
+            {/* Tọa độ hiển thị góc */}
+            <text
+              x="36"
+              y="635"
+              fill="#06b6d4"
+              opacity="0.3"
+              fontSize="8"
+              fontFamily="monospace"
+              fontWeight="bold"
+            >
+              SECTOR GRID // 1000x650 MLY · TACTICAL MATRIX
+            </text>
+          </g>
 
           {/* A. VẼ CÁC TUYẾN ĐƯỜNG SIÊU KHÔNG GIAN (12 HYPERLANE ROUTES LAYER) */}
           <g id="routes-layer">
@@ -1270,16 +1481,18 @@ export function WorldMap({
                       </text>
                     </g>
 
-                    {/* 8. Thanh đo Threat & Chỉ số số học rõ ràng dưới tên */}
-                    <g transform={`translate(-40, ${isSelected ? 46 : 42})`}>
-                      <rect width="80" height="4" rx="1" fill="#18181b" />
-                      <rect
-                        width={Math.min(80, (sector.threatLevel / 1000) * 80)}
-                        height="4"
-                        rx="1"
-                        fill={threatInfo.color}
-                      />
-                    </g>
+                    {/* 8. Thanh đo Threat & Chỉ số số học rõ ràng dưới tên (Chế độ Chi Tiết hoặc khi node được chọn/hover) */}
+                    {(showNodeDetails || isSelected || isHovered) && (
+                      <g transform={`translate(-40, ${isSelected ? 46 : 42})`}>
+                        <rect width="80" height="4" rx="1" fill="#18181b" />
+                        <rect
+                          width={Math.min(80, (sector.threatLevel / 1000) * 80)}
+                          height="4"
+                          rx="1"
+                          fill={threatInfo.color}
+                        />
+                      </g>
+                    )}
                   </g>
                 </g>
               )
@@ -1319,23 +1532,23 @@ export function WorldMap({
           </button>
         </div>
 
-        {/* 4. CHÚ GIẢI BẢN ĐỒ THỐNG NHẤT 5 NHÓM (MAP LEGEND FLOATING PANEL) */}
+        {/* 4. CHÚ GIẢI BẢN ĐỒ THỐNG NHẤT 5 NHÓM (MAP LEGEND FLOATING PANEL - PHASE 6.30) */}
         <div className="absolute top-3 left-3 z-20 max-w-xs font-mono text-[10px]">
-          <div className="rounded border border-zinc-800/90 bg-zinc-950/90 p-2.5 backdrop-blur-md space-y-2 shadow-2xl">
-            <div className="flex items-center justify-between text-zinc-400 border-b border-zinc-800 pb-1">
-              <span className="font-bold text-cyan-400 flex items-center gap-1.5">
-                <Compass className="size-3 text-cyan-400" />
-                CHÚ GIẢI BẢN ĐỒ
-              </span>
-              <button
-                onClick={() => setShowLegend(!showLegend)}
-                className="text-zinc-500 hover:text-cyan-300 transition-colors cursor-pointer text-[10px]"
-              >
-                {showLegend ? "Thu gọn" : "Mở rộng"}
-              </button>
-            </div>
+          {showLegend ? (
+            <div className="rounded border border-cyan-500/40 bg-zinc-950/95 p-2.5 backdrop-blur-md space-y-2 shadow-2xl animate-in fade-in duration-150">
+              <div className="flex items-center justify-between text-zinc-400 border-b border-zinc-800 pb-1">
+                <span className="font-bold text-cyan-400 flex items-center gap-1.5">
+                  <Compass className="size-3 text-cyan-400" />
+                  CHÚ GIẢI BẢN ĐỒ
+                </span>
+                <button
+                  onClick={toggleLegend}
+                  className="text-zinc-400 hover:text-cyan-300 transition-colors cursor-pointer text-[10px] px-1.5 py-0.5 rounded border border-zinc-800 hover:border-zinc-700"
+                >
+                  Thu gọn
+                </button>
+              </div>
 
-            {showLegend && (
               <div className="space-y-2 pt-0.5 max-h-[460px] overflow-y-auto pr-1">
                 {/* Nhóm 1: Chủ quyền (Sovereignty) */}
                 <div>
@@ -1438,8 +1651,17 @@ export function WorldMap({
                   </div>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <button
+              onClick={toggleLegend}
+              className="flex items-center gap-1.5 rounded border border-zinc-800/90 bg-zinc-950/85 hover:border-cyan-500/50 hover:bg-zinc-900 px-2.5 py-1 text-zinc-400 hover:text-cyan-300 backdrop-blur-md shadow-lg transition-colors cursor-pointer"
+              title="Bật chú giải bản đồ (5 nhóm)"
+            >
+              <Compass className="size-3 text-cyan-400" />
+              <span>Chú Giải</span>
+            </button>
+          )}
         </div>
 
         {/* Nút nổi mở lại Inspector nếu Inspector đang đóng và có sector được chọn */}

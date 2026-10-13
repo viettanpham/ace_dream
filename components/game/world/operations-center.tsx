@@ -110,6 +110,8 @@ import {
   GlobalOperationsHub,
   computeCriticalAlerts,
   computeActionableItemsCount,
+  computeActiveEventsGroups,
+  computeCombatOperations,
 } from "./global-operations-hub"
 import {
   lockEncounterAndCreateSnapshot,
@@ -856,6 +858,16 @@ export function OperationsCenter({
       worldState
     )
   }, [hubCriticalAlerts, activeEventsList, worldState])
+
+  // Phase 6.30: War Room Strategic Situation Indicators & Critical Alerts
+  const [showWarRoomOverview, setShowWarRoomOverview] = useState<boolean>(true)
+  const warRoomCriticalAlerts = hubCriticalAlerts
+  const warRoomP0Alerts = useMemo(() => warRoomCriticalAlerts.filter((a) => a.priority === "P0"), [warRoomCriticalAlerts])
+  const warRoomP1Alerts = useMemo(() => warRoomCriticalAlerts.filter((a) => a.priority === "P1"), [warRoomCriticalAlerts])
+  const warRoomCombatOps = useMemo(() => {
+    if (!worldState) return { suspendedEncounter: null, lockedSectors: [], recentCombatResults: [] }
+    return computeCombatOperations(worldState)
+  }, [worldState])
 
   // Phase 6.24: Helpers điều hướng trực tiếp từ Strategic Overview
   const handleNavigateToEvent = (eventId: string) => {
@@ -1665,6 +1677,200 @@ export function OperationsCenter({
               </button>
             </div>
           )}
+
+          {/* TỔNG QUAN CHIẾN LƯỢC WAR ROOM (WAR ROOM STRATEGIC SITUATION DECK - PHASE 6.30) */}
+          <div className="rounded border border-cyan-500/30 bg-zinc-950/90 p-2.5 shadow-lg shadow-cyan-950/20 backdrop-blur-md space-y-2">
+            <div className="flex items-center justify-between text-[11px] pb-1 border-b border-zinc-800/80">
+              <div className="flex items-center gap-2">
+                <Flame className="size-3.5 text-amber-400" />
+                <span className="text-zinc-200 font-bold uppercase tracking-wide">
+                  Tổng Quan Tình Hình Chiến Lược Toàn Cảnh
+                </span>
+                {warRoomP0Alerts.length > 0 && (
+                  <span className="px-1.5 py-0.5 rounded bg-red-950/80 border border-red-500/60 text-[10px] font-bold text-red-300 animate-pulse flex items-center gap-1">
+                    <AlertOctagon className="size-2.5 text-red-400" />
+                    {warRoomP0Alerts.length} CẢNH BÁO P0 TỐI NGUY
+                  </span>
+                )}
+                {warRoomP1Alerts.length > 0 && (
+                  <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded bg-amber-950/70 border border-amber-500/50 text-[10px] font-bold text-amber-300">
+                    {warRoomP1Alerts.length} P1 Nguy Cơ
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound()
+                    setShowWarRoomOverview(!showWarRoomOverview)
+                  }}
+                  className="text-[10px] text-zinc-400 hover:text-cyan-300 transition-colors cursor-pointer px-1.5 py-0.5 rounded border border-zinc-800 hover:border-zinc-700"
+                >
+                  {showWarRoomOverview ? "Thu Gọn" : "Mở Rộng"}
+                </button>
+              </div>
+            </div>
+
+            {showWarRoomOverview && (
+              <div className="space-y-2 animate-in fade-in duration-150">
+                {/* 4 Thẻ tổng hợp chỉ số cốt lõi */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 text-[11px] font-mono">
+                  {/* Thẻ 1: Tình trạng 10 Sector */}
+                  <div className="rounded bg-zinc-900/60 border border-zinc-800 p-2 space-y-1">
+                    <div className="flex items-center justify-between text-zinc-400 text-[10px]">
+                      <span>10 SECTORS THIÊN HÀ</span>
+                      <Globe2 className="size-3 text-cyan-400" />
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="text-cyan-300 font-bold">VSS: {sectorsList.filter((s) => s.sovereignty === "vss").length}</span>
+                      <span className="text-zinc-600">·</span>
+                      <span className="text-amber-300 font-bold">Tranh chấp: {sectorsList.filter((s) => s.sovereignty === "contested" || s.sovereignty === "neutral").length}</span>
+                      <span className="text-zinc-600">·</span>
+                      <span className="text-red-400 font-bold">Void: {sectorsList.filter((s) => s.sovereignty === "void").length}</span>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 2: Threat & Nguy cấp */}
+                  <div className="rounded bg-zinc-900/60 border border-zinc-800 p-2 space-y-1">
+                    <div className="flex items-center justify-between text-zinc-400 text-[10px]">
+                      <span>THREAT TRUNG BÌNH</span>
+                      <Flame className="size-3 text-amber-400" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-zinc-100">
+                        {Math.round(sectorsList.reduce((acc, s) => acc + s.threatLevel, 0) / Math.max(1, sectorsList.length))}/1000
+                      </span>
+                      <span className="text-[10px] text-amber-400">
+                        {sectorsList.filter((s) => s.threatLevel >= 700).length} Sector nguy cấp
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 3: Quân lực & Garrison */}
+                  <div className="rounded bg-zinc-900/60 border border-zinc-800 p-2 space-y-1">
+                    <div className="flex items-center justify-between text-zinc-400 text-[10px]">
+                      <span>QUÂN LỰC & HÀNH QUÂN</span>
+                      <Swords className="size-3 text-cyan-400" />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-cyan-300 font-bold">
+                        Đồn trú: {sectorsList.reduce((acc, s) => acc + (s.garrisonPower || 0), 0)}q
+                      </span>
+                      <span className="text-zinc-400">
+                        Hành quân: {worldState?.activeDeployments?.filter((d) => d.status === "in_transit").length || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 4: Sự kiện & Tác chiến */}
+                  <div className="rounded bg-zinc-900/60 border border-zinc-800 p-2 space-y-1">
+                    <div className="flex items-center justify-between text-zinc-400 text-[10px]">
+                      <span>SỰ KIỆN & GIAO TRANH</span>
+                      <Activity className="size-3 text-cyan-400" />
+                    </div>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-amber-300 font-bold">
+                        {activeEventsList.filter((e) => e.status === "INIT").length} Chờ phê chuẩn
+                      </span>
+                      <span className={cn(warRoomCombatOps.suspendedEncounter ? "text-red-400 font-bold animate-pulse" : "text-emerald-400")}>
+                        {warRoomCombatOps.suspendedEncounter ? "Trận dở dang" : "Giao tranh ổn định"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Banner cảnh báo khẩn cấp P0/P1 có hành động điều hướng thực tế */}
+                {warRoomCriticalAlerts.length > 0 && (
+                  <div className="space-y-1.5 pt-1">
+                    {/* Ưu tiên 1: Trận chiến dở dang */}
+                    {warRoomCombatOps.suspendedEncounter && (
+                      <div className="flex items-center justify-between rounded border border-red-500/70 bg-red-950/60 p-2 text-xs text-red-200">
+                        <div className="flex items-center gap-2">
+                          <AlertOctagon className="size-4 text-red-400 animate-pulse shrink-0" />
+                          <div>
+                            <span className="font-bold text-red-300 uppercase">
+                              Trận Đấu Dở Dang Đang Bị Khóa (Suspended Combat):
+                            </span>{" "}
+                            Sector {warRoomCombatOps.suspendedEncounter.sector?.name || warRoomCombatOps.suspendedEncounter.snapshot.sectorId}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound()
+                            if (warRoomCombatOps.suspendedEncounter?.snapshot.sectorId) {
+                              handleDeployCombat(warRoomCombatOps.suspendedEncounter.snapshot.sectorId)
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] uppercase transition-colors cursor-pointer shrink-0 shadow-md flex items-center gap-1"
+                        >
+                          <Zap className="size-3" />
+                          <span>Tiếp Tục Tác Chiến &rarr;</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Danh sách 2 cảnh báo P0/P1 nổi bật nhất */}
+                    {warRoomCriticalAlerts
+                      .filter((a) => a.type !== "suspended_combat")
+                      .slice(0, 2)
+                      .map((alert) => (
+                        <div
+                          key={alert.id}
+                          className={cn(
+                            "flex items-center justify-between rounded border p-2 text-xs",
+                            alert.priority === "P0"
+                              ? "border-red-500/60 bg-red-950/40 text-red-200"
+                              : "border-amber-500/50 bg-amber-950/30 text-amber-200"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 pr-2">
+                            {alert.priority === "P0" ? (
+                              <AlertOctagon className="size-3.5 text-red-400 shrink-0" />
+                            ) : (
+                              <AlertTriangle className="size-3.5 text-amber-400 shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <span className="font-bold">{alert.urgencyBadge}:</span>{" "}
+                              <span className="text-zinc-200">{alert.title}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {alert.actionType === "resolve_event" && alert.eventRef && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playClickSound()
+                                  setReviewingEvent(alert.eventRef!)
+                                }}
+                                className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-200 text-[10px] font-bold uppercase transition-colors cursor-pointer"
+                              >
+                                Phê Chuẩn &rarr;
+                              </button>
+                            )}
+
+                            {alert.sectorId && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playClickSound()
+                                  setSelectedSectorId(alert.sectorId!)
+                                }}
+                                className="px-2 py-0.5 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-200 text-[10px] font-bold uppercase transition-colors cursor-pointer"
+                              >
+                                Focus Sector &rarr;
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* THANH ĐIỀU PHỐI SECTOR NHANH (SECTOR COMMAND RIBBON) */}
           <div className="rounded border border-cyan-500/30 bg-zinc-950/90 p-2.5 shadow-lg shadow-cyan-950/20 backdrop-blur-md">

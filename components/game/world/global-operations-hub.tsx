@@ -43,6 +43,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { playClickSound } from "@/lib/game/audio"
+import { getActiveEvents } from "@/lib/game/world/event-engine"
 import { ThreatVisualizer } from "./threat-visualizer"
 import { ResourceSparkline, type ResourceHistoryPoint } from "./resource-sparkline"
 import type {
@@ -119,7 +120,7 @@ export type HubFilterCategory = "all" | "alerts" | "events" | "combat" | "sector
  */
 export function computeCriticalAlerts(
   worldState: WorldState,
-  activeEvents: WorldEvent[]
+  activeEvents: WorldEvent[] = getActiveEvents(worldState)
 ): CriticalAlertItem[] {
   const alerts: CriticalAlertItem[] = []
   const sectorsList = Object.values(worldState.sectors)
@@ -136,7 +137,7 @@ export function computeCriticalAlerts(
       sectorName: snap.sectorName,
       statusText: "Đóng băng chiến trường",
       urgencyBadge: "P0 TỐI NGUY · CHIẾN SỰ DỞ DANG",
-      description: `Mã giao dịch ${snap.transactionId}. ${snap.lockedGarrison.toLocaleString()} quân đồn trú đang bị đóng băng chờ giải quyết.`,
+      description: `Mã giao dịch ${snap.transactionId}. ${(snap.lockedGarrison ?? 0).toLocaleString()} quân đồn trú đang bị đóng băng chờ giải quyết.`,
       actionType: "resume_combat",
     })
   }
@@ -153,7 +154,7 @@ export function computeCriticalAlerts(
       sectorName: s.name,
       statusText: "Bị vây hãm",
       urgencyBadge: "P0 TỐI NGUY · BỊ VÂY HÃM",
-      description: `Mức đe dọa cực hạn ${s.threatLevel}/1000. Đồn trú: ${s.garrisonPower.toLocaleString()} quân. Cần giải vây khẩn cấp!`,
+      description: `Mức đe dọa cực hạn ${s.threatLevel}/1000. Đồn trú: ${(s.garrisonPower ?? 0).toLocaleString()} quân. Cần giải vây khẩn cấp!`,
       actionType: "war_room",
     })
   }
@@ -396,7 +397,7 @@ export function computeCombatOperations(worldState: WorldState) {
  */
 export function computeSectorOperations(
   worldState: WorldState,
-  activeEvents: WorldEvent[]
+  activeEvents: WorldEvent[] = getActiveEvents(worldState)
 ): SectorOperationItem[] {
   const items: SectorOperationItem[] = []
   const sectors = Object.values(worldState.sectors)

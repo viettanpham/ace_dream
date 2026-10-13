@@ -2,6 +2,31 @@
 
 Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án **STARFRONT** được ghi lại tại đây theo trình tự thời gian đảo ngược (mới nhất lên đầu).
 
+## [Phase 6.30] — STARFRONT WORLD: Nâng Cấp Bản Đồ Thiên Hà Chiến Lược & Trải Nghiệm Điều Khiển (Strategic Galaxy Map & Command UX Enhancement)
+
+*Đã hoàn thành 100% Phase 6.30 theo đúng roadmap STARFRONT: Nâng cấp toàn diện bản đồ thiên hà node-only theo phong cách sci-fi tactical command center với chiều sâu không gian, tinh vân mờ ảo và lưới tọa độ 1000x650 MLY; chuẩn hóa trạng thái hiển thị mặc định của Map Legend (mặc định OFF) và Node Details (mặc định OFF - chế độ Tổng Thể); bổ sung Mouse-Wheel Zoom và Double-Click Zoom trên giới hạn an toàn [0.7x, 2.2x]; tích hợp War Room Strategic Situation Deck và dải cảnh báo P0/P1 có hành động thực tế (tiếp tục trận đấu suspended combat, phê chuẩn sự kiện INIT, focus sector); bảo toàn 100% thuật toán căn chỉnh tọa độ, 10 sectors, Save Schema V1 và RPG Save V4 (100% tests PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Nâng Cấp Giao Diện Bản Đồ Node-Only Chuẩn Sci-Fi Tactical Command**:
+  * Giữ vững kiến trúc sector nodes nối bằng hyperspace routes, không chuyển sang bản đồ địa lý hay hành tinh vẽ chi tiết.
+  * Bổ sung nền không gian có chiều sâu với các radial gradients tinh vân mờ ảo (`#nebula-vss`, `#nebula-void`, `#nebula-center`), hệ thống sao tĩnh mật độ vừa phải không gây nhiễu, cùng lưới tọa độ và radar circles tinh tế.
+  * Phân biệt rõ ràng 4 trạng thái tuyến: Thông suốt (cyan solid), Nguy hiểm (amber dashed), Phong tỏa (red dashed), và Ngoại tuyến (zinc dark).
+  * Tăng cường trực quan 10 sector theo phe phái (VSS, The Void, Tranh chấp, Trung lập) và giai đoạn (under_siege pulse alert ring, threatened dashed ring, recovery bracket) với hover và selected reticle sắc nét.
+- **2. Chuẩn Hóa Trạng Thái Hiển Thị Mặc Định**:
+  * **Map Legend**: Mặc định là **OFF** khi mở bản đồ (thu gọn thành nút `[🧭 Chú Giải]`). Cho phép bật/tắt tự do và ghi nhớ qua `localStorage`, không tự động mở lại khi re-render hoặc click sector.
+  * **Node Details**: Mặc định là **OFF** (chế độ Tổng Thể) để người chơi có tầm nhìn bao quát thiên hà mà không bị che khuất. Nút chuyển đổi `Chế Độ: Tổng Thể / Chi Tiết` trên HUD cho phép bật Inspector và telemetry theo nhu cầu. Khi Inspector đóng, nút nổi `[Mở Bảng: <Sector Name>]` cho phép xem thông tin tức thì.
+- **3. Bổ Sung Các Phương Thức Zoom Linh Hoạt**:
+  * **Mouse-Wheel Zoom**: Cho phép cuộn con lăn chuột trực tiếp trên vùng bản đồ để phóng to / thu nhỏ mượt mà trong giới hạn [0.7x, 2.2x], tự động chặn cuộn trang ngoài và bỏ qua các vùng cuộn nội dung.
+  * **Double-Click Zoom**: Nhấp đúp chuột vào bản đồ hoặc sector để zoom sâu; tự động reset về góc nhìn chuẩn 1.0x khi đã phóng to (>= 1.7x).
+  * **Drag-to-Zoom**: Chủ động bỏ qua để tránh xung đột cử chỉ Pan camera và click chọn sector theo drag threshold 5px.
+- **4. Tích Hợp Tổng Quan Tình Hình Chiến Lược Toàn Cảnh Vào War Room**:
+  * Bổ sung **War Room Strategic Situation Deck** ngay trên thanh Sector Command Ribbon trong tab War Room.
+  * Tận dụng 100% pure helpers từ `global-operations-hub.tsx` (`computeCriticalAlerts`, `computeCombatOperations`), hiển thị 4 nhóm số liệu thực: 10 Sectors kiểm soát & chủ quyền, Threat TB & sector nguy cấp, Quân lực & hành quân, Sự kiện chờ duyệt & trạng thái giao tranh.
+  * Dải cảnh báo khẩn cấp P0/P1 với điều hướng thực tế: Tiếp tục trận đấu dở dang (suspended combat), Phê chuẩn sự kiện INIT, hoặc Focus thẳng vào sector nguy cơ. Hỗ trợ thu gọn/mở rộng linh hoạt.
+- **5. Bảo Toàn Kiến Trúc, Hitbox & Dữ Liệu**:
+  * Bảo toàn 100% Strategic Map Selection Alignment Fix (`transformClientToSVG`, letterbox math, hitbox 140x88px, drag threshold 5px).
+  * Bảo toàn `STARFRONT_WORLD_SAVE_V1`, Checksum CRC32 và RPG Save V4.
+
 ---
 
 ## [Hotfix] — STARFRONT WORLD: Khắc Phục Lỗi Vòng Chọn Sector & Căn Chỉnh Tọa Độ Bản Đồ Chiến Lược (Strategic Map Selection Alignment Fix)

@@ -107,6 +107,11 @@ import { ThreatVisualizer } from "./threat-visualizer"
 import { ResourceSparkline } from "./resource-sparkline"
 import { SectorIntelModal } from "./sector-intel-modal"
 import {
+  GlobalOperationsHub,
+  computeCriticalAlerts,
+  computeActionableItemsCount,
+} from "./global-operations-hub"
+import {
   lockEncounterAndCreateSnapshot,
   abortSuspendedCombat,
 } from "@/lib/game/world/combat-adapter"
@@ -837,6 +842,21 @@ export function OperationsCenter({
 
   const selectedSector = worldState?.sectors[selectedSectorId] || sectorsList[0]
 
+  // Phase 6.29: Global Operations Hub alerts và actionable count
+  const hubCriticalAlerts = useMemo(() => {
+    if (!worldState) return []
+    return computeCriticalAlerts(worldState, activeEventsList)
+  }, [worldState, activeEventsList])
+
+  const hubActionableCount = useMemo(() => {
+    if (!worldState) return 0
+    return computeActionableItemsCount(
+      hubCriticalAlerts,
+      activeEventsList.filter((e) => e.status === "INIT"),
+      worldState
+    )
+  }, [hubCriticalAlerts, activeEventsList, worldState])
+
   // Phase 6.24: Helpers điều hướng trực tiếp từ Strategic Overview
   const handleNavigateToEvent = (eventId: string) => {
     playClickSound()
@@ -1504,7 +1524,12 @@ export function OperationsCenter({
             icon: Compass,
             badge: "Trung Tâm",
           },
-          { id: "overview", label: "Tình Hình Toàn Cảnh", icon: Activity },
+          {
+            id: "overview",
+            label: "Trung Tâm Điều Hành",
+            icon: Activity,
+            badge: hubActionableCount > 0 ? `${hubActionableCount} Việc` : null,
+          },
           {
             id: "events",
             label: "Sự Kiện & Nhiệm Vụ",
@@ -1554,493 +1579,64 @@ export function OperationsCenter({
       </nav>
 
       {/* ====================================================================
-          TAB 1: TÌNH HÌNH TOÀN CẢNH / STRATEGIC OVERVIEW (PHASE 6.24 REDESIGN)
+          TAB 1: TRUNG TÂM ĐIỀU HÀNH TOÀN CẢNH (PHASE 6.29: GLOBAL OPERATIONS & EVENT HUB)
           ==================================================================== */}
       {activeTab === "overview" && (
-        <div className="space-y-4 font-mono text-xs">
-          {/* ================================================================
-              TẦNG 1: STRATEGIC STATUS (MACRO SITUATION DECK - 3 THẺ CHIẾN LƯỢC)
-              ================================================================ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
-            {/* THẺ 1.1: CHỦ QUYỀN & TÌNH TRẠNG THIÊN HÀ */}
-            <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3.5 space-y-2.5 shadow-md flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                  <span className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-zinc-300">
-                    <Globe2 className="size-3.5 text-cyan-400" />
-                    Chủ Quyền & Lãnh Thổ
-                  </span>
-                  <span className="font-bold text-emerald-400 font-mono text-xs">
-                    {Math.round((vssCount / sectorsList.length) * 100)}% VSS
-                  </span>
-                </div>
-
-                {/* Thanh phân bố lãnh thổ */}
-                <div className="flex h-2 w-full rounded-full overflow-hidden bg-zinc-900 mt-2.5">
-                  <div
-                    style={{ width: `${(vssCount / sectorsList.length) * 100}%` }}
-                    className="bg-emerald-500"
-                    title={`VSS: ${vssCount} sector`}
-                  />
-                  <div
-                    style={{ width: `${(contestedCount / sectorsList.length) * 100}%` }}
-                    className="bg-amber-500"
-                    title={`Tranh chấp: ${contestedCount} sector`}
-                  />
-                  <div
-                    style={{ width: `${(voidCount / sectorsList.length) * 100}%` }}
-                    className="bg-red-500"
-                    title={`The Void: ${voidCount} sector`}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-zinc-400 mt-1">
-                  <span className="text-emerald-400 font-bold">{vssCount} VSS</span>
-                  <span className="text-amber-400 font-bold">{contestedCount} Tranh Chấp</span>
-                  <span className="text-red-400 font-bold">{voidCount} The Void</span>
-                </div>
-              </div>
-
-              {/* Vòng đời Sector & Mạng lưới Tuyến đường */}
-              <div className="space-y-1.5 pt-2 border-t border-zinc-800/60 text-[10px]">
-                <div className="grid grid-cols-3 gap-1.5 text-center">
-                  <div className="rounded bg-zinc-900/60 p-1.5 border border-zinc-800">
-                    <div className="text-[9px] text-zinc-500 uppercase">Ổn Định</div>
-                    <div className="font-bold text-emerald-300 font-mono text-xs mt-0.5">
-                      {stableSectorsCount}
-                    </div>
-                  </div>
-                  <div className="rounded bg-zinc-900/60 p-1.5 border border-zinc-800">
-                    <div className="text-[9px] text-zinc-500 uppercase">Đe Dọa</div>
-                    <div className="font-bold text-amber-300 font-mono text-xs mt-0.5">
-                      {threatenedSectorsCount}
-                    </div>
-                  </div>
-                  <div className="rounded bg-zinc-900/60 p-1.5 border border-zinc-800">
-                    <div className="text-[9px] text-zinc-500 uppercase">Vây Hãm</div>
-                    <div className="font-bold text-red-400 font-mono text-xs mt-0.5">
-                      {underSiegeSectorsCount}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-zinc-400 px-0.5 pt-1">
-                  <span>Mạng lưới siêu không gian:</span>
-                  <span className="font-mono">
-                    {blockedRoutes.length > 0 ? (
-                      <span className="text-red-400 font-bold">{blockedRoutes.length} Tuyến Bị Chặn</span>
-                    ) : hazardousRoutes.length > 0 ? (
-                      <span className="text-amber-400 font-bold">{hazardousRoutes.length} Nguy Hiểm</span>
-                    ) : (
-                      <span className="text-emerald-400 font-bold">Tất Cả Thông Suốt ({worldState.routes.length})</span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* THẺ 1.2: THREAT & ĐIỂM NÓNG CHIẾN SỰ */}
-            <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3.5 space-y-2.5 shadow-md flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                  <span className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-zinc-300">
-                    <ShieldAlert className="size-3.5 text-amber-400" />
-                    Threat & Điểm Nóng
-                  </span>
-                  <span className="font-bold text-cyan-400 font-mono text-xs">
-                    TB {avgThreat} / 1000
-                  </span>
-                </div>
-
-                {/* Progress bar mức đe dọa toàn cầu */}
-                <div className="h-2 w-full rounded-full bg-zinc-900 overflow-hidden mt-2.5">
-                  <div
-                    className={cn(
-                      "h-full transition-all duration-500",
-                      avgThreat >= 700 ? "bg-red-500" : avgThreat >= 300 ? "bg-amber-500" : "bg-cyan-500"
-                    )}
-                    style={{ width: `${Math.min(100, (avgThreat / 1000) * 100)}%` }}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-zinc-500 mt-1">
-                  <span>An Toàn [&lt;300]</span>
-                  <span>Báo Động [300–699]</span>
-                  <span>Nguy Cấp [&ge;700]</span>
-                </div>
-              </div>
-
-              {/* Phase 6.26: Threat Visualizer (Điểm Nóng hoặc TB Thiên Hà) */}
-              <div className="pt-2 border-t border-zinc-800/60">
-                <ThreatVisualizer
-                  history={threatVisualizerMode === "critical" ? criticalSectorThreatHistory : galaxyAverageThreatHistory}
-                  currentThreat={threatVisualizerMode === "critical" ? (criticalSector?.threatLevel ?? avgThreat) : avgThreat}
-                  sectorName={threatVisualizerMode === "critical" ? criticalSector?.name : undefined}
-                  title={threatVisualizerMode === "critical" ? "Điểm Nóng Tác Chiến" : "TB Toàn Thiên Hà"}
-                  viewMode={threatVisualizerMode}
-                  onToggleViewMode={setThreatVisualizerMode}
-                  onNavigateToSector={criticalSector ? () => handleNavigateToSector(criticalSector.id) : undefined}
-                />
-              </div>
-            </div>
-
-            {/* THẺ 1.3: QUÂN SỰ & HẬU CẦN */}
-            <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3.5 space-y-2.5 shadow-md flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                  <span className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-zinc-300">
-                    <Swords className="size-3.5 text-indigo-400" />
-                    Quân Sự & Hậu Cần
-                  </span>
-                  <span className="font-bold text-cyan-300 font-mono text-xs">
-                    Dự bị: {worldState.military.reserves.toLocaleString()}
-                  </span>
-                </div>
-
-                {/* Sức chứa quân lực */}
-                <div className="grid grid-cols-2 gap-1.5 mt-2.5 text-[10px]">
-                  <div className="rounded bg-zinc-900/60 p-1.5 border border-zinc-800">
-                    <div className="text-[9px] text-zinc-500 uppercase">Trực Chiến</div>
-                    <div className="font-bold text-zinc-200 font-mono text-xs mt-0.5">
-                      {worldState.military.deployed.toLocaleString()}
-                    </div>
-                  </div>
-                  <div className="rounded bg-zinc-900/60 p-1.5 border border-zinc-800">
-                    <div className="text-[9px] text-zinc-500 uppercase">Hành Quân (In-Transit)</div>
-                    <div className="font-bold text-indigo-300 font-mono text-xs mt-0.5">
-                      {inTransitTroopsCount !== null ? `${inTransitTroopsCount.toLocaleString()} (${inTransitDeploymentsCount})` : "Chưa có dữ liệu"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Phase 6.26: Resource Sparklines cho Lương thực và Vật tư hậu cần */}
-              <div className="space-y-1.5 pt-2 border-t border-zinc-800/60">
-                <ResourceSparkline
-                  name="Lương thực dân sự"
-                  currentValue={worldState.resources.food}
-                  targetValue={100}
-                  warningThreshold={100}
-                  criticalThreshold={0}
-                  icon={Wheat}
-                  history={foodSparklineHistory}
-                />
-                <ResourceSparkline
-                  name="Vật tư tiếp tế"
-                  currentValue={worldState.resources.logisticsSupplies}
-                  targetValue={50}
-                  warningThreshold={50}
-                  criticalThreshold={0}
-                  icon={Boxes}
-                  history={suppliesSparklineHistory}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* ================================================================
-              TẦNG 2: ACTIONABLE SITUATION TRIAGE (ĐIỂM NÓNG & VIỆC CẦN XỬ LÝ)
-              ================================================================ */}
-          <div className="rounded border border-cyan-500/30 bg-zinc-950/80 p-3.5 space-y-3 shadow-lg shadow-cyan-950/10">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="size-4 text-amber-400" />
-                <span className="text-xs font-bold uppercase tracking-wider text-amber-300">
-                  Bảng Điểm Nóng & Việc Cần Xử Lý (Actionable Situation Triage)
-                </span>
-              </div>
-              <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] text-zinc-400 border border-zinc-800 font-mono">
-                {triageHotspots.length} Mục cần lưu ý
-              </span>
-            </div>
-
-            {triageHotspots.length === 0 ? (
-              <div className="rounded border border-emerald-500/30 bg-emerald-950/10 p-4 text-center text-emerald-400 space-y-1">
-                <div className="font-bold uppercase tracking-wide">
-                  Phòng Tuyến Vững Vàng — Không Có Điểm Nóng Cấp Bách
-                </div>
-                <div className="text-[11px] text-zinc-400">
-                  Không có sector nào đang bị vây hãm, sự kiện quá hạn hoặc khủng hoảng hậu cần cần xử lý ngay.
-                </div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                {triageHotspots.map((item) => (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      "rounded p-2.5 border flex flex-col justify-between gap-2 transition-all",
-                      item.priority === "P0"
-                        ? "border-red-500/60 bg-red-950/20 text-red-200"
-                        : item.priority === "P1"
-                        ? "border-amber-500/50 bg-amber-950/20 text-amber-200"
-                        : "border-cyan-500/40 bg-zinc-900/50 text-cyan-200"
-                    )}
-                  >
-                    <div>
-                      <div className="flex flex-wrap items-center justify-between gap-1 pb-1">
-                        <span className="font-bold uppercase text-[11px] truncate max-w-[220px]">
-                          {item.title}
-                        </span>
-                        <span
-                          className={cn(
-                            "rounded px-1.5 py-0.2 text-[9px] font-bold border shrink-0",
-                            item.priority === "P0"
-                              ? "bg-red-500/20 text-red-300 border-red-500/40 animate-pulse"
-                              : item.priority === "P1"
-                              ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                              : "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
-                          )}
-                        >
-                          {item.urgencyBadge}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2">
-                        {item.description}
-                      </p>
-                    </div>
-
-                    {/* Hàng nút hành động tiếp theo hợp lệ */}
-                    <div className="flex flex-wrap items-center justify-end gap-1.5 pt-1.5 border-t border-zinc-800/60">
-                      {item.type === "suspended_combat" && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              playClickSound()
-                              handleDeployCombat(item.sectorId!)
-                            }}
-                            className="rounded bg-amber-500 hover:bg-amber-400 text-black px-2.5 py-1 text-[10px] font-bold cursor-pointer transition-colors"
-                          >
-                            Tiếp Tục Tác Chiến &rarr;
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              playClickSound()
-                              if (!worldState.suspendedSnapshot) return
-                              const res = abortSuspendedCombat(
-                                worldState,
-                                worldState.suspendedSnapshot.transactionId,
-                                "Hủy bỏ an toàn từ Strategic Overview Triage"
-                              )
-                              saveWorldState(worldState)
-                              setWorldState({ ...worldState })
-                              showToast(res.message, "info")
-                            }}
-                            className="rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 px-2 py-1 text-[10px] cursor-pointer transition-colors"
-                          >
-                            Hủy Bỏ An Toàn
-                          </button>
-                        </>
-                      )}
-
-                      {(item.type === "siege" || item.type === "threatened") && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleNavigateToSector(item.sectorId!)}
-                            className="rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
-                          >
-                            Mở War Room
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickDispatchToSector(item.sectorId!)}
-                            className="rounded bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
-                          >
-                            Điều Quân Nhanh
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeployCombat(item.sectorId!)}
-                            className="rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
-                          >
-                            Xuất Kích
-                          </button>
-                        </>
-                      )}
-
-                      {item.type === "event_deadline" && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => handleNavigateToEvent(item.eventId!)}
-                            className="rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
-                          >
-                            Chi Tiết & Phê Chuẩn &rarr;
-                          </button>
-                          {item.eventRef && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                playClickSound()
-                                setReviewingEvent(item.eventRef!)
-                              }}
-                              className="rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
-                            >
-                              ⚡ Xem Đề Xuất
-                            </button>
-                          )}
-                        </>
-                      )}
-
-                      {item.type === "logistics_crisis" && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            playClickSound()
-                            setActiveTab("military")
-                          }}
-                          className="rounded bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 px-2.5 py-1 text-[10px] font-bold cursor-pointer transition-colors"
-                        >
-                          Quản Lý Hậu Cần &rarr;
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* ================================================================
-              TẦNG 3: OPERATIONAL PULSE (NHỊP ĐIỆU CHIẾN LƯỢC & BIẾN ĐỘNG GẦN NHẤT)
-              ================================================================ */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
-            {/* Cột 1: Dải trạng thái thời gian thực thu gọn */}
-            <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3 space-y-2.5 shadow-md flex flex-col justify-between">
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between border-b border-zinc-800/80 pb-1.5">
-                  <span className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-zinc-300">
-                    <Calendar className="size-3.5 text-cyan-400" />
-                    Niên Lịch Chiến Lược
-                  </span>
-                  <span className="font-bold text-cyan-300 font-mono text-xs">
-                    Ngày #{worldState.currentDay}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-zinc-300">
-                  <span>Ngày {calendarInfo.dayOfMonth}/30 · {calendarInfo.monthName}</span>
-                  <span className="text-zinc-400">Năm {calendarInfo.year.toString().padStart(2, "0")}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                  <span className="flex items-center gap-1">
-                    <span>{calendarInfo.seasonIcon}</span>
-                    <span>{calendarInfo.seasonName}</span>
-                  </span>
-                  <span className="text-amber-300 font-mono">
-                    {calendarInfo.timeString} ({calendarInfo.cycleName})
-                  </span>
-                </div>
-
-                {/* Trạng thái Mô Phỏng & Đếm ngược */}
-                <div className="rounded bg-zinc-900/60 p-2 border border-zinc-800/80 space-y-1 mt-1">
-                  <div className="flex items-center justify-between text-[10px]">
-                    <span className="text-zinc-500 uppercase font-bold">Mô Phỏng:</span>
-                    <span className={cn("font-bold flex items-center gap-1", simulatorConfig.isPaused ? "text-amber-400" : "text-emerald-400")}>
-                      <span className={cn("size-1.5 rounded-full", simulatorConfig.isPaused ? "bg-amber-400" : "bg-emerald-400 animate-ping")} />
-                      {simulatorConfig.isPaused ? "TẠM DỪNG" : "ĐANG CHẠY"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
-                    <span>1 Ngày = {simulatorConfig.speedSeconds}s</span>
-                    <span className={simulatorConfig.isPaused ? "text-amber-300" : "text-cyan-300"}>
-                      {simulatorConfig.isPaused ? "ĐÃ DỪNG" : `Còn ${countdownSeconds}s`}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Nút điều khiển nhanh tiến độ */}
-              <div className="grid grid-cols-2 gap-1.5 pt-1">
-                <button
-                  type="button"
-                  onClick={handleTogglePause}
-                  className={cn(
-                    "flex items-center justify-center gap-1 py-1 rounded border text-[10px] font-bold cursor-pointer transition-colors",
-                    simulatorConfig.isPaused
-                      ? "border-emerald-500/50 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50"
-                      : "border-amber-500/50 bg-amber-950/40 text-amber-300 hover:bg-amber-900/50"
-                  )}
-                >
-                  {simulatorConfig.isPaused ? <Play className="size-3" /> : <Pause className="size-3" />}
-                  <span>{simulatorConfig.isPaused ? "Tiếp Tục" : "Tạm Dừng"}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAdvanceTick}
-                  disabled={isTickAdvancing}
-                  className="flex items-center justify-center gap-1 py-1 rounded border border-cyan-500/40 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/50 text-[10px] font-bold cursor-pointer transition-colors disabled:opacity-50"
-                >
-                  <ArrowRight className="size-3" />
-                  <span>Tiến 1 Ngày</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Cột 2 & 3: Tóm tắt biến động & Lối vào Debriefing Drawer */}
-            <div className="lg:col-span-2 rounded border border-zinc-800 bg-zinc-950/80 p-3 space-y-2.5 shadow-md flex flex-col justify-between">
-              <div>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
-                  <div className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-zinc-300">
-                    <History className="size-3.5 text-cyan-400" />
-                    <span>Nhật Ký Biến Động Chu Kỳ (Ngày #{worldState.currentDay})</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playClickSound()
-                      setIsDebriefingDrawerOpen(true)
-                    }}
-                    className="flex items-center gap-1 rounded bg-cyan-950/70 border border-cyan-500/40 px-2 py-0.5 text-[10px] text-cyan-300 hover:bg-cyan-900/60 font-bold cursor-pointer transition-colors"
-                  >
-                    <FileText className="size-3" />
-                    <span>Mở Debriefing Drawer</span>
-                    {unreadResultsCount > 0 && (
-                      <span className="rounded bg-amber-500 text-black px-1 py-0.2 text-[9px] font-black ml-1">
-                        {unreadResultsCount} Mới
-                      </span>
-                    )}
-                  </button>
-                </div>
-
-                {/* Danh sách 3-4 mục biến động gần nhất */}
-                <div className="pt-2">
-                  {lastTickLogs.length > 0 ? (
-                    <ul className="space-y-1.5 text-[11px] text-zinc-300">
-                      {lastTickLogs.slice(0, 4).map((log, idx) => (
-                        <li key={idx} className="flex items-start gap-1.5">
-                          <span className="text-cyan-400 font-bold shrink-0">&bull;</span>
-                          <span className="leading-snug">{log}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="text-zinc-500 italic text-[11px] py-2">
-                      Chưa ghi nhận biến động mới trong chu kỳ này. Nhấn "Tiến 1 Ngày" hoặc chờ mô phỏng thực thi để cập nhật tình hình thiên hà.
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Thông tin nhân khẩu & độ ổn định vĩ mô súc tích */}
-              <div className="pt-2 border-t border-zinc-800/60 flex flex-wrap items-center justify-between text-[10px] text-zinc-400">
-                <span>
-                  Dân số liên minh: <strong className="text-zinc-200">{worldState.demographics.controlledTerritoryPopulation.toLocaleString()}</strong>
-                </span>
-                <span>
-                  Đang sơ tán: <strong className="text-cyan-300">{worldState.demographics.refugeesInTransit.toLocaleString()}</strong>
-                </span>
-                <span>
-                  Ổn định trung bình: <strong className="text-emerald-400">{avgStability}/100</strong>
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <GlobalOperationsHub
+          worldState={worldState}
+          activeEvents={activeEventsList}
+          activeMissionChains={activeMissionChainsList}
+          lastTickLogs={lastTickLogs}
+          unreadResultsCount={unreadResultsCount}
+          onNavigateToSector={handleNavigateToSector}
+          onOpenSectorIntel={(sectorId) => {
+            playClickSound()
+            setSelectedSectorId(sectorId)
+            setIsSectorIntelOpen(true)
+          }}
+          onNavigateToEvent={(eventId) => {
+            playClickSound()
+            setSelectedEventIdForBoard(eventId)
+            setActiveTab("events")
+          }}
+          onQuickDispatch={handleQuickDispatchToSector}
+          onDeployCombat={handleDeployCombat}
+          onAbortSuspendedCombat={() => {
+            if (!worldState.suspendedSnapshot) return
+            const res = abortSuspendedCombat(
+              worldState,
+              worldState.suspendedSnapshot.transactionId,
+              "Hủy bỏ an toàn từ Global Operations Hub"
+            )
+            saveWorldState(worldState)
+            setWorldState({ ...worldState })
+            showToast(res.message, "info")
+          }}
+          onOpenDebriefingDrawer={() => {
+            playClickSound()
+            setIsDebriefingDrawerOpen(true)
+          }}
+          onNavigateToMilitary={() => {
+            playClickSound()
+            setActiveTab("military")
+          }}
+          onAdvanceTick={handleAdvanceTick}
+          isTickAdvancing={isTickAdvancing}
+          foodSparklineHistory={foodSparklineHistory}
+          suppliesSparklineHistory={suppliesSparklineHistory}
+          criticalSectorThreatHistory={criticalSectorThreatHistory}
+          galaxyAverageThreatHistory={galaxyAverageThreatHistory}
+          threatVisualizerMode={threatVisualizerMode}
+          onToggleThreatVisualizerMode={setThreatVisualizerMode}
+          calendarInfo={calendarInfo}
+          simulatorConfig={simulatorConfig}
+          countdownSeconds={countdownSeconds}
+          onTogglePause={handleTogglePause}
+          onReviewEventModal={(ev) => {
+            playClickSound()
+            setReviewingEvent(ev)
+          }}
+        />
       )}
 
       {/* ====================================================================

@@ -4,6 +4,39 @@ Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án
 
 ---
 
+## [Phase 6.29] — STARFRONT WORLD: Trung Tâm Điều Hành Toàn Cảnh & Tổng Hợp Sự Kiện (Global Operations & Event Hub)
+
+*Đã hoàn thành 100% Phase 6.29 — Xây dựng và tích hợp Trung Tâm Điều Hành Toàn Cảnh (Global Operations & Event Hub) vào tab Overview của Operations Center, giúp người chơi nhanh chóng nắm bắt bức tranh toàn cảnh thiên hà, phát hiện các vấn đề cần xử lý và chuyển thẳng tới màn hình hành động tương ứng; tổng hợp đầy đủ 5 nhóm thông tin chiến lược: Critical Alerts (P0, P1, P2), Active Events (INIT chờ quyết định vs PROCESSING đang triển khai), Combat Operations (suspended combat, locked sectors, kết quả tác chiến), Sector Operations (tình trạng 10 sector, chi viện, vây hãm), và Recent Reports (lối tắt Debriefing Drawer); tích hợp bộ đếm Actionable Counter chống đếm trùng; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (8/8 Phase 6.29 tests PASS, 38/38 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Tích Hợp Global Operations & Event Hub Vào Operations Center**:
+  * Tạo component `GlobalOperationsHub` với thiết kế giao diện sci-fi command center sắc nét, hiện đại và phản ứng tức thì.
+  * Tích hợp thanh Command Bar hiển thị ngày chiến lược, tình trạng 10 sector, bộ đếm Actionable Counter, bộ lọc danh mục con nhanh (Tất Cả, Cảnh Báo, Sự Kiện, Tác Chiến, Sector, Báo Cáo) và nút thực thi chu kỳ "+1 Ngày".
+  * Bảo toàn 100% tầng Macro Situation Deck (Chủ quyền & Lãnh thổ, Threat Visualizer, Quân sự & Hậu cần với Resource Sparklines) của các phase trước.
+- **2. Tổng Hợp 5 Nhóm Thông Tin Chiến Lược Chuyên Biệt**:
+  * **A. Critical Alerts**: Tổng hợp các tình huống tối khẩn theo 3 cấp độ:
+    - **P0 Tối nguy**: Trận đấu dở dang (suspended combat), sector bị vây hãm (`under_siege`), kho lương thực hoặc vật tư hậu cần chạm đáy 0, sự kiện INIT hết hạn hôm nay.
+    - **P1 Nguy cơ**: Sector bị đe dọa (`threatened`), sector có threat cao (`>= 700`), tuyến siêu không gian bị chặn (`blocked`), sự kiện còn 1 ngày hoặc mức độ critical.
+    - **P2 Cảnh báo**: Tuyến đường nguy hiểm (`hazardous`), tồn kho lương thực/tiếp tế dưới ngưỡng an toàn, sự kiện thông thường.
+  * **B. Active Events**: Phân loại chuẩn xác:
+    - **INIT (Chờ Quyết Định)**: Hiển thị tên sự kiện, sector, mức độ, hạn chót và nút hành động *"Phê Chuẩn Chiến Lược &rarr;"* dẫn thẳng vào bảng quyết định.
+    - **PROCESSING (Đang Triển Khai)**: Hiển thị tiến trình, phương án đã chọn, thời gian hoàn tất dự kiến và nút *"Xem Tiến Trình"* (tuyệt đối không xuất hiện nút phê chuẩn hay tạo giao dịch trùng lặp).
+  * **C. Combat Operations**: Theo dõi trận chiến treo dở dang (suspended combat) trích xuất chính xác Transaction ID, quân đồn trú bị đóng băng, kèm nút *"Tiếp Tục Tác Chiến &rarr;"* và *"Hủy Bỏ An Toàn"*; liệt kê danh sách sector đang bị khóa giao tranh và kết quả tác chiến gần nhất.
+  * **D. Sector Operations**: Giám sát toàn bộ 10 sector có biến động; cung cấp bộ ba hành động nhanh: *"Hồ Sơ Intel"* (mở `SectorIntelModal`), *"War Room"* (mở bản đồ tại sector), và *"Điều Quân Nhanh"* (mở dock điều quân).
+  * **E. Recent Reports**: Lối tắt trực tiếp vào `DebriefingDrawer`, liệt kê các kết quả sự kiện và báo cáo tình báo gần nhất từ `eventResultsArchive`.
+- **3. Cơ Chế Ưu Tiên, Sắp Xếp & Chống Đếm Trùng Lặp**:
+  * Các hàm tính toán thuần nhất (`computeCriticalAlerts`, `computeActiveEventsGroups`, `computeCombatOperations`, `computeSectorOperations`, `computeActionableItemsCount`) bảo đảm tính tất định và dễ dàng kiểm thử độc lập.
+  * Cơ chế Deduplication loại bỏ hoàn toàn các cảnh báo trùng lặp cho cùng một thực thể, không gộp mất các hành động riêng biệt nếu cùng một sector có nhiều sự cố khác nhau.
+- **4. Bảo Toàn Dữ Liệu Lưu Trữ & Gameplay Độc Lập**:
+  * Hub hoạt động như một lớp điều phối và hiển thị, không tạo Event Engine hay Mission Engine mới, không lưu trữ bản sao state gây lệch dữ liệu.
+  * Bảo toàn 100% định dạng `STARFRONT_WORLD_SAVE_V1`, Checksum CRC32 và phân hệ RPG Save V4.
+- **5. Kiểm Thử Tự Động & Độ Tin Cậy Mã Nguồn**:
+  * Bổ sung bộ kiểm thử `tests/world/phase6-29-global-operations-event-hub.test.ts` đạt 8/8 tests PASS.
+  * Toàn bộ 38/38 test suites của dự án vượt qua thành công (100% PASS).
+  * Build Next.js 16 và TypeScript linting thành công 100%.
+
+---
+
 ## [Phase 6.28] — STARFRONT WORLD: Mở Rộng 10 Sector Thiên Hà & Hồ Sơ Tình Báo Sector Intel (Galaxy Expansion to 10 Sectors & Sector Intel)
 
 *Đã hoàn thành 100% Phase 6.28 — Mở rộng mạng lưới Galaxy Map từ 8 lên 10 sector với topology tối ưu và 16 tuyến đường siêu không gian chuẩn hóa; bổ sung 2 sector chiến lược mới là Thánh Địa Elysium (VSS) và Khe Nứt Vô Tận (The Void); giải quyết triệt để lỗi click lệch vị trí trên Galaxy Map bằng Dedicated Hitbox độc lập 120x82 px và phân tách pointer-events đồ họa; chuẩn hóa cơ chế Drag Threshold (5px) phân biệt rõ ràng giữa Panning camera và Click chọn Sector; xây dựng modal hồ sơ tình báo Sector Intel toàn diện với visual backdrop đặc trưng cho 10 sector, báo cáo hoạt động tác chiến và các thao tác điều hướng nhanh; tự động di chuyển (migration) các file save 8 sector lên 10 sector mà không mất dữ liệu; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (7/7 Phase 6.28 tests PASS, 37/37 Test Suites PASS, build & lint thành công).*

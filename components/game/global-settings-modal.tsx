@@ -635,17 +635,37 @@ export function GlobalSettingsModal({
                 })}
               </div>
 
-              {/* Step-locked Range Slider (100 to 200 with step 25) */}
-              <div className="pt-2 space-y-1">
-                <input
-                  type="range"
-                  min={MIN_UI_SCALE}
-                  max={MAX_UI_SCALE}
-                  step={UI_SCALE_STEP}
-                  value={uiScale}
-                  onChange={(e) => handleSetScale(parseInt(e.target.value, 10))}
-                  className="w-full accent-cyan-400 cursor-pointer"
-                />
+              {/* Step-locked Range Slider (100 to 200 with step 5) */}
+              <div className="pt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSetScale(uiScale - UI_SCALE_STEP)}
+                    disabled={uiScale <= MIN_UI_SCALE}
+                    className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs font-mono font-bold text-zinc-200 hover:border-cyan-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    title="Giảm 5%"
+                  >
+                    -5%
+                  </button>
+                  <input
+                    type="range"
+                    min={MIN_UI_SCALE}
+                    max={MAX_UI_SCALE}
+                    step={UI_SCALE_STEP}
+                    value={uiScale}
+                    onChange={(e) => handleSetScale(parseInt(e.target.value, 10))}
+                    className="w-full accent-cyan-400 cursor-pointer"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleSetScale(uiScale + UI_SCALE_STEP)}
+                    disabled={uiScale >= MAX_UI_SCALE}
+                    className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs font-mono font-bold text-zinc-200 hover:border-cyan-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                    title="Tăng 5%"
+                  >
+                    +5%
+                  </button>
+                </div>
                 <div className="flex justify-between text-xs text-zinc-500 font-mono">
                   <span>100% (Mặc định)</span>
                   <span>125%</span>
@@ -658,10 +678,10 @@ export function GlobalSettingsModal({
 
             <div className="rounded border border-cyan-500/30 bg-cyan-950/20 p-2.5 text-xs text-cyan-300/90 leading-relaxed space-y-1">
               <div>
-                💡 <strong>Quy định hiển thị:</strong> Hỗ trợ chính xác các mức từ <strong>100%</strong> tới <strong>200%</strong> (bước nhảy 25%).
+                💡 <strong>Quy định hiển thị:</strong> Hỗ trợ chính xác các mức từ <strong>100%</strong> tới <strong>200%</strong> (bước nhảy 5%).
               </div>
-              <div className="text-xs text-cyan-400/90">
-                Khi tăng scale, toàn bộ font chữ của giao diện (Combat V2, Nhật ký, Bảng điều khiển) phóng to thực sự theo tỷ lệ tương ứng, giúp đọc rõ ràng trên mọi màn hình.
+              <div className="text-xs text-cyan-400/90 break-words whitespace-normal">
+                Khi tăng scale, toàn bộ font chữ của giao diện (Combat V2, Nhật ký, Bảng điều khiển) phóng to thực sự theo tỷ lệ tương ứng; văn bản dài tự động co dãn hoặc wrap xuống dòng đảm bảo đọc dễ dàng và không bị tràn viền.
               </div>
             </div>
           </div>

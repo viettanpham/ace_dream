@@ -18,6 +18,7 @@ export const INITIAL_WORLD_SECTORS: Record<string, WorldSector> = {
     y: 78,
     sovereignty: "vss",
     threatLevel: 40,
+    maxThreat: 500,
     stage: "normal",
     industryCapacity: 220,
     garrisonPower: 550,
@@ -480,6 +481,12 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     operationsArchiveConfig: {
       eventArchiveQuota: 60,
       battleArchiveQuota: 40,
+    },
+    threatConfig: {
+      maxThreatStandard: 1000,
+      maxThreatHQ: 500,
+      threatFormulaMultiplier: 1.0,
+      lastModified: now,
     },
   }
 }

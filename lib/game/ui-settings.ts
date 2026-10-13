@@ -11,14 +11,30 @@ import { setAudioMuted, setAudioVolume } from "./audio"
 
 export const MIN_UI_SCALE = 100
 export const MAX_UI_SCALE = 200
-export const UI_SCALE_STEP = 25
+export const UI_SCALE_STEP = 5
 export const DEFAULT_UI_SCALE = 100
 
 export const SUPPORTED_UI_SCALES = [
   100,
+  105,
+  110,
+  115,
+  120,
   125,
+  130,
+  135,
+  140,
+  145,
   150,
+  155,
+  160,
+  165,
+  170,
   175,
+  180,
+  185,
+  190,
+  195,
   200,
 ] as const
 
@@ -46,14 +62,14 @@ function getLocalStorage(): Storage | null {
 
 /**
  * Normalizes any raw scale value (number, string, legacy float 0.8-3.0, percentage, or out-of-range)
- * to one of the supported 25% steps in [100, 200] (Phase 6.33_FIX3).
+ * to one of the supported 5% steps in [100, 200] (Phase 6.33_FIX4).
  * 
  * Rules:
  * - Missing / invalid: 100
- * - Decimal legacy (<= 3.0 and > 0): multiplied by 100 (e.g. 0.8 -> 80, 1.2 -> 120, 2.0 -> 200, 2.5 -> 250 -> 200)
+ * - Decimal legacy (<= 3.0 and > 0): multiplied by 100 (e.g. 0.8 -> 80, 1.25 -> 125, 2.0 -> 200, 2.5 -> 250 -> 200)
  * - Below 100: 100
  * - Above 200: 200
- * - Round to nearest 25 step (e.g. 80 -> 100, 90 -> 100, 110 -> 100, 120 -> 125, 160 -> 150, 225 -> 200, 300 -> 200)
+ * - Round to nearest 5 step (e.g. 102 -> 100, 103 -> 105, 118 -> 120, 225 -> 200, 300 -> 200)
  */
 export function normalizeUiScale(val: unknown): SupportedUiScale {
   if (val === null || val === undefined) return DEFAULT_UI_SCALE
@@ -66,7 +82,7 @@ export function normalizeUiScale(val: unknown): SupportedUiScale {
     num = Math.round(num * 100)
   }
 
-  // Round to nearest 25 step
+  // Round to nearest 5 step
   const rounded = Math.round(num / UI_SCALE_STEP) * UI_SCALE_STEP
 
   // Clamp within bounds [100, 200]

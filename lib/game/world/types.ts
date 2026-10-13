@@ -108,6 +108,7 @@ export interface WorldSector {
   y: number // Tọa độ hiển thị Y (0 - 100)
   sovereignty: SectorSovereignty
   threatLevel: number // Mức độ đe dọa [0..1000] (Độc lập với Sovereignty)
+  maxThreat?: number   // Mức đe dọa tối đa của Sector (Chuẩn hóa HQ vs Sector thường - Phase 6.33_FIX4)
   stage: SectorStage  // Vòng đời 5 giai đoạn
   industryCapacity: number // Năng lực công nghiệp riêng của sector
   garrisonPower: number    // Sức mạnh lực lượng đồn trú
@@ -621,6 +622,13 @@ export interface MissionDispatch {
   resultSummary?: string
 }
 
+export interface WorldThreatConfig {
+  maxThreatStandard: number // default 1000
+  maxThreatHQ: number       // default 500
+  threatFormulaMultiplier: number // default 1.0
+  lastModified?: number
+}
+
 export interface OperationsArchiveConfig {
   eventArchiveQuota: number
   battleArchiveQuota: number
@@ -674,6 +682,8 @@ export interface WorldState {
   missionDispatches?: Record<string, MissionDispatch>
   activePlayerMissionId?: string | null
   operationsArchiveConfig?: OperationsArchiveConfig
+  // Phase 6.33_FIX4: Canonical HP-based Threat & Threat Configuration
+  threatConfig?: WorldThreatConfig
 }
 
 /**

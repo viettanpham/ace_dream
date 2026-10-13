@@ -17,6 +17,10 @@ import {
   markTransactionAborted,
   markTransactionCommitted,
 } from "./transaction-journal"
+import {
+  calculateCanonicalHpThreatDelta,
+  getSectorMaxThreat,
+} from "./threat-engine"
 import type {
   AbortCombatResult,
   CombatResolutionResult,
@@ -282,9 +286,17 @@ export function commitCombatResultReceipt(
 
   if (receipt.victory) {
     // === CHIẾN THẮNG ===
-    // Giảm mạnh mức độ đe dọa (Threat) của sector
-    threatChange = -Math.round(140 + Math.min(260, sector.threatLevel * 0.35))
-    sector.threatLevel = Math.max(0, sector.threatLevel + threatChange)
+    // Giảm mức độ đe dọa (Threat) theo công thức chuẩn hóa dựa trên HP (Phase 6.33_FIX4)
+    const sectorMaxThreat = getSectorMaxThreat(sector, state.threatConfig)
+    threatChange = calculateCanonicalHpThreatDelta({
+      maxThreat: sectorMaxThreat,
+      currentThreat: sector.threatLevel,
+      playerRemainingHpPercent: receipt.playerRemainingHpPercent,
+      enemyRemainingHpPercent: receipt.enemyRemainingHpPercent,
+      isVictory: true,
+      multiplier: state.threatConfig?.threatFormulaMultiplier ?? 1.0,
+    })
+    sector.threatLevel = Math.max(0, Math.min(sectorMaxThreat, sector.threatLevel + threatChange))
 
     // Tăng chỉ số ổn định (Stability)
     stabilityChange = Math.round(12 + Math.min(20, (100 - sector.stability) * 0.25))
@@ -319,10 +331,18 @@ export function commitCombatResultReceipt(
     evaluateSectorStage(sector)
   } else {
     // === THẤT BẠI ===
-    // Hậu quả thất bại theo ngữ cảnh (Contextual Defeat Penalties):
+    // Hậu quả thất bại theo công thức chuẩn hóa dựa trên HP (Phase 6.33_FIX4):
     // Thất bại trong trận đánh KHÔNG mặc định là mất trắng sector ngay lập tức
-    threatChange = Math.round(120 + (1000 - sector.threatLevel) * 0.2)
-    sector.threatLevel = Math.min(1000, sector.threatLevel + threatChange)
+    const sectorMaxThreat = getSectorMaxThreat(sector, state.threatConfig)
+    threatChange = calculateCanonicalHpThreatDelta({
+      maxThreat: sectorMaxThreat,
+      currentThreat: sector.threatLevel,
+      playerRemainingHpPercent: receipt.playerRemainingHpPercent,
+      enemyRemainingHpPercent: receipt.enemyRemainingHpPercent,
+      isVictory: false,
+      multiplier: state.threatConfig?.threatFormulaMultiplier ?? 1.0,
+    })
+    sector.threatLevel = Math.max(0, Math.min(sectorMaxThreat, sector.threatLevel + threatChange))
 
     stabilityChange = -25
     sector.stability = Math.max(0, sector.stability + stabilityChange)

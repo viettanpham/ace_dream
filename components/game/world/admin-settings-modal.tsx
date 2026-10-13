@@ -7,6 +7,8 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Clock,
   Database,
   Flame,
@@ -40,9 +42,15 @@ import {
   updateOperationsArchiveConfig,
 } from "@/lib/game/world/operations-archive"
 import { saveWorldState } from "@/lib/game/world/storage"
-import type { WorldState } from "@/lib/game/world/types"
+import {
+  DEFAULT_THREAT_CONFIG,
+  getWorldThreatConfig,
+  getSectorMaxThreat,
+  checkMaxThreatReduction,
+} from "@/lib/game/world/threat-engine"
+import type { WorldSector, WorldState, WorldThreatConfig } from "@/lib/game/world/types"
 
-export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "triggers" | "storage"
+export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "threat" | "triggers" | "storage"
 
 export interface AdminSettingsModalProps {
   isOpen: boolean
@@ -95,6 +103,34 @@ export function AdminSettingsModal({
   // Tabs trong modal
   const [activeTab, setActiveTab] = useState<AdminModalTab>("all")
 
+  // Trạng thái thu gọn/mở rộng từng section trong AdminCP (Phase 6.33_FIX4)
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+
+  const toggleSection = (sectionKey: string) => {
+    playClickSound()
+    setCollapsedSections((prev) => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey],
+    }))
+  }
+
+  const handleExpandAll = () => {
+    playClickSound()
+    setCollapsedSections({})
+  }
+
+  const handleCollapseAll = () => {
+    playClickSound()
+    setCollapsedSections({
+      speed: true,
+      generator: true,
+      policy: true,
+      threat: true,
+      triggers: true,
+      storage: true,
+    })
+  }
+
   // Form states cục bộ trong modal
   const [customSpeedInput, setCustomSpeedInput] = useState<string>("")
   const [generatorForm, setGeneratorForm] = useState(simulatorConfig.generator || DEFAULT_SIMULATOR_CONFIG.generator)
@@ -106,21 +142,44 @@ export function AdminSettingsModal({
   })
   const [archiveSavedFeedback, setArchiveSavedFeedback] = useState(false)
 
+  // Threat Config & Sector Threat Form states (Phase 6.33_FIX4)
+  const [threatForm, setThreatForm] = useState<WorldThreatConfig>(() => getWorldThreatConfig(worldState))
+  const [sectorThreatsForm, setSectorThreatsForm] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {}
+    if (worldState) {
+      for (const [id, sec] of Object.entries(worldState.sectors)) {
+        init[id] = sec.threatLevel
+      }
+    }
+    return init
+  })
+  const [threatSavedFeedback, setThreatSavedFeedback] = useState(false)
+  const [isThreatResetConfirmOpen, setIsThreatResetConfirmOpen] = useState(false)
+  const [pendingThreatViolations, setPendingThreatViolations] = useState<
+    Array<{ id: string; name: string; currentThreat: number; newMaxThreat: number }>
+  >([])
+
   // Sub-dialog xác nhận đổi tốc độ
   const [isSpeedConfirmOpen, setIsSpeedConfirmOpen] = useState(false)
   const [pendingSpeed, setPendingSpeed] = useState<number | null>(null)
   const [resetWorldOnSpeedChange, setResetWorldOnSpeedChange] = useState<boolean>(false)
 
-  // Sub-dialog xác nhận Reset World
+  // Sub-dialog xác nhận Reset World thông thường
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
 
-  // Đồng bộ form khi modal mở hoặc simulatorConfig thay đổi
+  // Đồng bộ form khi modal mở hoặc simulatorConfig / worldState thay đổi
   useEffect(() => {
     if (isOpen) {
       setGeneratorForm(simulatorConfig.generator || DEFAULT_SIMULATOR_CONFIG.generator)
       setStrategyPolicyForm(simulatorConfig.strategyPolicy || DEFAULT_EVENT_STRATEGY_POLICY)
       if (worldState) {
         setArchiveConfigForm(getOperationsArchiveConfig(worldState))
+        setThreatForm(getWorldThreatConfig(worldState))
+        const updatedThreats: Record<string, number> = {}
+        for (const [id, sec] of Object.entries(worldState.sectors)) {
+          updatedThreats[id] = sec.threatLevel
+        }
+        setSectorThreatsForm(updatedThreats)
       }
     }
   }, [isOpen, simulatorConfig, worldState])
@@ -131,10 +190,10 @@ export function AdminSettingsModal({
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (isSpeedConfirmOpen) {
+        if (isThreatResetConfirmOpen) {
+          setIsThreatResetConfirmOpen(false)
+        } else if (isSpeedConfirmOpen) {
           setIsSpeedConfirmOpen(false)
-          setPendingSpeed(null)
-          setResetWorldOnSpeedChange(false)
         } else if (isResetConfirmOpen) {
           setIsResetConfirmOpen(false)
         } else {
@@ -146,7 +205,7 @@ export function AdminSettingsModal({
 
     window.addEventListener("keydown", handleKeyDown)
     return () => window.removeEventListener("keydown", handleKeyDown)
-  }, [isOpen, isSpeedConfirmOpen, isResetConfirmOpen, onClose])
+  }, [isOpen, isSpeedConfirmOpen, isResetConfirmOpen, isThreatResetConfirmOpen, onClose])
 
   if (!isOpen) return null
 
@@ -218,20 +277,114 @@ export function AdminSettingsModal({
     onBatchApplyStrategyPolicy(strategyPolicyForm)
   }
 
-  // Xác nhận Reset World từ sub-dialog
+  // Lưu cấu hình Quota Archive
+  const handleSaveArchiveConfig = () => {
+    if (!worldState) return
+    playClickSound()
+    updateOperationsArchiveConfig(worldState, archiveConfigForm)
+    saveWorldState(worldState)
+    playLevelUpSound()
+    setArchiveSavedFeedback(true)
+    setTimeout(() => setArchiveSavedFeedback(false), 2500)
+  }
+
+  // Lưu Threat Config & Sector Threats (Phase 6.33_FIX4)
+  const handleSaveThreatConfig = () => {
+    if (!worldState) return
+    playClickSound()
+
+    // 1. Kiểm tra xem có Sector nào mà Current Threat > Max Threat mới hay không
+    const virtualSectors: Record<string, WorldSector> = {}
+    for (const [id, sec] of Object.entries(worldState.sectors)) {
+      virtualSectors[id] = {
+        ...sec,
+        threatLevel: sectorThreatsForm[id] ?? sec.threatLevel,
+      }
+    }
+
+    const reductionCheck = checkMaxThreatReduction(virtualSectors, threatForm)
+    if (reductionCheck.needsConfirmation) {
+      // Có sector bị vi phạm: Mở cảnh báo yêu cầu Reset WORLD về Year 1 (Yêu cầu 5)
+      setPendingThreatViolations(reductionCheck.violatingSectors)
+      setIsThreatResetConfirmOpen(true)
+      return
+    }
+
+    // 2. Không vi phạm: Lưu trực tiếp vào WorldState
+    worldState.threatConfig = {
+      ...threatForm,
+      lastModified: Date.now(),
+    }
+
+    for (const [id, sec] of Object.entries(worldState.sectors)) {
+      const maxT = getSectorMaxThreat(sec, threatForm)
+      const newThreatVal = Math.max(0, Math.min(maxT, sectorThreatsForm[id] ?? sec.threatLevel))
+      sec.threatLevel = newThreatVal
+      sec.maxThreat = maxT
+    }
+
+    saveWorldState(worldState)
+    playLevelUpSound()
+    setThreatSavedFeedback(true)
+    setTimeout(() => setThreatSavedFeedback(false), 2500)
+  }
+
+  // Xác nhận giảm Max Threat dẫn đến Reset WORLD về Year 1 (Phase 6.33_FIX4 Yêu cầu 5)
+  const handleConfirmThreatReductionReset = () => {
+    playShieldSound()
+    setIsThreatResetConfirmOpen(false)
+
+    const targetConfig: WorldThreatConfig = {
+      ...threatForm,
+      lastModified: Date.now(),
+    }
+
+    // Reset world về Year 1
+    onConfirmResetWorld()
+
+    // Cập nhật cấu hình Threat vào WorldState sau reset
+    if (worldState) {
+      worldState.threatConfig = targetConfig
+      for (const sec of Object.values(worldState.sectors)) {
+        const maxT = getSectorMaxThreat(sec, targetConfig)
+        sec.maxThreat = maxT
+        sec.threatLevel = Math.min(sec.threatLevel, maxT)
+      }
+      saveWorldState(worldState)
+    }
+
+    setPendingThreatViolations([])
+    setThreatSavedFeedback(true)
+    setTimeout(() => setThreatSavedFeedback(false), 2500)
+  }
+
+  // Khôi phục mặc định Threat Config
+  const handleResetThreatToDefault = () => {
+    playClickSound()
+    setThreatForm({ ...DEFAULT_THREAT_CONFIG })
+    if (worldState) {
+      const updatedThreats: Record<string, number> = {}
+      for (const [id, sec] of Object.entries(worldState.sectors)) {
+        updatedThreats[id] = sec.threatLevel
+      }
+      setSectorThreatsForm(updatedThreats)
+    }
+  }
+
+  // Xác nhận Reset World thông thường
   const handleConfirmResetDialog = () => {
     onConfirmResetWorld()
     setIsResetConfirmOpen(false)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto animate-fadeIn">
-      <div className="relative flex flex-col w-full max-w-4xl max-h-[92vh] rounded-lg border border-amber-500/60 bg-zinc-950 shadow-2xl shadow-amber-950/60 font-mono text-zinc-200 select-none overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-fadeIn text-xs">
+      <div className="relative flex flex-col w-full max-w-4xl max-h-[92vh] rounded-lg border border-amber-500/60 bg-zinc-950 shadow-2xl shadow-amber-950/60 font-mono text-zinc-200 select-none overflow-hidden text-xs">
         
         {/* ====================================================================
             HEADER CỐ ĐỊNH CỦA MODAL
             ==================================================================== */}
-        <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/90 px-4 py-3 shrink-0">
+        <div className="flex flex-wrap items-center justify-between border-b border-zinc-800 bg-zinc-900/90 px-4 py-3 shrink-0 gap-2">
           <div className="flex items-center gap-2.5">
             <div className="flex size-7 items-center justify-center rounded bg-amber-950/80 border border-amber-500/60 text-amber-300">
               <Sliders className="size-4" />
@@ -241,32 +394,40 @@ export function AdminSettingsModal({
                 <h2 className="font-display text-sm sm:text-base font-black tracking-wider text-amber-300 uppercase">
                   CÀI ĐẶT & QUẢN TRỊ VIÊN // ADMIN CP
                 </h2>
-                <span className="rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-zinc-400 border border-zinc-800">
+                <span className="rounded bg-black/60 px-1.5 py-0.5 text-xs text-zinc-400 border border-zinc-800">
                   ISOLATED SETTINGS
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400 hidden sm:block">
-                Cấu hình nhịp độ thời gian thực, bộ sinh Event/Quest, chính sách chiến lược & bảo trì dữ liệu
+              <p className="text-xs text-zinc-400 hidden sm:block">
+                Cấu hình nhịp độ thời gian thực, HP-Based Threat, Event/Quest, chính sách chiến lược & bảo trì dữ liệu
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Quick Status Pill */}
-            <span
-              className={cn(
-                "hidden sm:flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-bold border",
-                simulatorConfig.isPaused
-                  ? "border-amber-500/60 bg-amber-950/50 text-amber-300"
-                  : "border-emerald-500/60 bg-emerald-950/50 text-emerald-300"
-              )}
-            >
-              <span
-                className={cn(
-                  "size-2 rounded-full",
-                  simulatorConfig.isPaused ? "bg-amber-400" : "bg-emerald-400 animate-ping"
-                )}
-              />
+            {/* Quick Collapse / Expand Controls */}
+            <div className="flex items-center gap-1 border border-zinc-800 rounded bg-black/60 px-1.5 py-0.5 text-xs">
+              <button
+                type="button"
+                onClick={handleExpandAll}
+                className="text-zinc-400 hover:text-cyan-300 px-1 py-0.5 rounded cursor-pointer"
+                title="Mở rộng tất cả các section"
+              >
+                Mở Rộng
+              </button>
+              <span className="text-zinc-600">/</span>
+              <button
+                type="button"
+                onClick={handleCollapseAll}
+                className="text-zinc-400 hover:text-amber-300 px-1 py-0.5 rounded cursor-pointer"
+                title="Thu gọn tất cả các section"
+              >
+                Thu Gọn
+              </button>
+            </div>
+
+            <span className="flex items-center gap-1.5 rounded border border-amber-500/40 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-300">
+              <span className="size-2 rounded-full bg-amber-400 animate-ping" />
               <span>{simulatorConfig.isPaused ? "PAUSED" : `${simulatorConfig.speedSeconds}s/Ngày`}</span>
             </span>
 
@@ -295,8 +456,9 @@ export function AdminSettingsModal({
             { id: "speed", label: "1. Tốc Độ & Thời Gian", icon: Clock },
             { id: "generator", label: "2. Bộ Sinh Sự Kiện", icon: Flame },
             { id: "policy", label: "3. Chính Sách Chiến Lược", icon: Sparkles },
-            { id: "triggers", label: "4. Thử Nghiệm Nhanh", icon: Zap },
-            { id: "storage", label: "5. Lưu Trữ & Reset", icon: Database },
+            { id: "threat", label: "4. Threat & HP AI", icon: ShieldAlert },
+            { id: "triggers", label: "5. Thử Nghiệm Nhanh", icon: Zap },
+            { id: "storage", label: "6. Lưu Trữ & Reset", icon: Database },
           ].map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -311,7 +473,7 @@ export function AdminSettingsModal({
                 className={cn(
                   "flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-bold transition-all cursor-pointer",
                   isActive
-                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-sm"
+                    ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-xs"
                     : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
                 )}
               >
@@ -338,977 +500,844 @@ export function AdminSettingsModal({
                   </span>
                 </div>
                 
-                <button
-                  type="button"
-                  onClick={onTogglePause}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded border px-3 py-1 text-xs font-bold transition-all cursor-pointer",
-                    simulatorConfig.isPaused
-                      ? "border-emerald-500/60 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/60"
-                      : "border-amber-500/60 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60"
-                  )}
-                >
-                  {simulatorConfig.isPaused ? (
-                    <Play className="size-3.5 fill-current text-emerald-400" />
-                  ) : (
-                    <Pause className="size-3.5 text-amber-400" />
-                  )}
-                  <span>{simulatorConfig.isPaused ? "Tiếp Tục Mô Phỏng" : "Tạm Dừng Thế Giới"}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={onTogglePause}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-bold transition-all cursor-pointer",
+                      simulatorConfig.isPaused
+                        ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/60"
+                        : "bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-950/60"
+                    )}
+                  >
+                    {simulatorConfig.isPaused ? (
+                      <>
+                        <Play className="size-3.5" />
+                        <span>Tiếp Tục Chạy (RESUME)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Pause className="size-3.5" />
+                        <span>Tạm Dừng (PAUSE)</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                <div className="rounded bg-black/40 p-2 border border-zinc-800">
-                  <div className="text-zinc-500 text-[10px] uppercase font-bold">Tốc Độ Hiện Tại</div>
-                  <div className="font-mono font-black text-cyan-300 text-sm">
-                    1 Ngày = {simulatorConfig.speedSeconds}s
+              {/* Thông tin hiển thị */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
+                  <div className="text-zinc-400 text-xs">Niên Lịch Game</div>
+                  <div className="font-bold text-white text-sm mt-0.5">
+                    Năm {calendarInfo.year}, {calendarInfo.seasonName}
                   </div>
+                  <div className="text-zinc-500 text-xs">{calendarInfo.formattedDate}</div>
                 </div>
 
-                <div className="rounded bg-black/40 p-2 border border-zinc-800">
-                  <div className="text-zinc-500 text-[10px] uppercase font-bold">Kế Tiếp Sau</div>
-                  <div className="font-mono font-black text-amber-300 text-sm">
-                    {simulatorConfig.isPaused ? "ĐÃ TẠM DỪNG" : `${countdownSeconds} giây`}
+                <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
+                  <div className="text-zinc-400 text-xs">Tổng Ngày Tích Lũy</div>
+                  <div className="font-bold text-cyan-300 text-sm mt-0.5">
+                    Ngày {worldState?.currentDay ?? 1}
                   </div>
+                  <div className="text-zinc-500 text-xs">Đã trôi: {worldState?.totalDaysElapsed ?? 0} ngày</div>
                 </div>
 
-                <div className="rounded bg-black/40 p-2 border border-zinc-800">
-                  <div className="text-zinc-500 text-[10px] uppercase font-bold">Niên Lịch & Buổi</div>
-                  <div className="font-mono font-bold text-zinc-200 truncate">
-                    {calendarInfo.timeString} · {calendarInfo.cycleName} ({calendarInfo.seasonIcon})
+                <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
+                  <div className="text-zinc-400 text-xs">Đếm Ngược Tick Kế</div>
+                  <div className="font-bold text-amber-300 text-sm mt-0.5 font-mono">
+                    {simulatorConfig.isPaused ? "PAUSED" : `${countdownSeconds}s`}
                   </div>
+                  <div className="text-zinc-500 text-xs">Tiến trình: {(dayFraction * 100).toFixed(0)}%</div>
                 </div>
 
-                <div className="rounded bg-black/40 p-2 border border-zinc-800">
-                  <div className="text-zinc-500 text-[10px] uppercase font-bold">Sự Kiện Đang Chạy</div>
-                  <div className="font-mono font-bold text-cyan-300">
-                    {eventTierCounts.total} / {simulatorConfig.generator.maxGlobalActive} (N:{eventTierCounts.small} · V:{eventTierCounts.medium} · L:{eventTierCounts.large})
+                <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
+                  <div className="text-zinc-400 text-xs">Sự Kiện Đang Chạy</div>
+                  <div className="font-bold text-emerald-300 text-sm mt-0.5">
+                    {eventTierCounts.total} sự kiện
                   </div>
+                  <div className="text-zinc-500 text-xs">S: {eventTierCounts.small} | M: {eventTierCounts.medium} | L: {eventTierCounts.large}</div>
                 </div>
               </div>
             </div>
           )}
 
           {/* ================================================================
-              KHỐI 1: CẤU HÌNH TỐC ĐỘ THỜI GIAN THỰC (SIMULATION SPEED)
+              KHỐI 1: CẤU HÌNH TỐC ĐỘ THỜI GIAN (SPEED CONFIG)
               ================================================================ */}
           {(activeTab === "all" || activeTab === "speed") && (
             <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
+              <div
+                onClick={() => toggleSection("speed")}
+                className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5 cursor-pointer hover:text-amber-300 transition-colors"
+              >
                 <div className="flex items-center gap-2">
-                  <Clock className="size-4 text-cyan-400" />
-                  <h3 className="text-xs font-bold uppercase text-cyan-300 tracking-wider">
-                    1. Cấu Hình Tốc Độ Mô Phỏng Thời Gian Thực (Simulation Speed)
+                  {collapsedSections.speed ? (
+                    <ChevronRight className="size-4 text-zinc-400" />
+                  ) : (
+                    <ChevronDown className="size-4 text-amber-400" />
+                  )}
+                  <Clock className="size-4 text-amber-400" />
+                  <h3 className="text-xs font-bold uppercase text-amber-300 tracking-wider">
+                    1. Điều Chỉnh Tốc Độ Thời Gian Thực // Real-time Speed
                   </h3>
                 </div>
-                <span className="text-[10px] text-zinc-400">
-                  Mặc định: 300s/ngày (5 phút) · 15s/ngày là chế độ test nhanh
+                <span className="text-xs text-zinc-500 font-mono">
+                  {simulatorConfig.speedSeconds}s/ngày {collapsedSections.speed ? "[Thu Gọn]" : "[Mở Rộng]"}
                 </span>
               </div>
 
-              <div className="space-y-3">
-                {/* Presets */}
-                <div>
-                  <label className="text-[11px] text-zinc-400 font-bold block mb-1.5">
-                    Chọn Preset Tốc Độ (Presets):
-                  </label>
+              {!collapsedSections.speed && (
+                <div className="space-y-3">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
-                      { sec: 15, label: "15 Giây / Ngày", desc: "Test Siêu Nhanh", isFast: true },
-                      { sec: 30, label: "30 Giây / Ngày", desc: "Nhanh Gấp 10x" },
-                      { sec: 60, label: "60 Giây / Ngày", desc: "1 Phút / Ngày" },
-                      { sec: 300, label: "300 Giây / Ngày", desc: "Mặc Định (5 Phút)", isDefault: true },
+                      { seconds: 15, label: "Siêu Tốc (15s)", desc: "Debug nhanh" },
+                      { seconds: 30, label: "Nhanh (30s)", desc: "Thử nghiệm" },
+                      { seconds: 60, label: "Tiêu Chuẩn (60s)", desc: "Khuyến nghị" },
+                      { seconds: 120, label: "Thư Thái (120s)", desc: "Chiến thuật sâu" },
                     ].map((preset) => {
-                      const isSelected = simulatorConfig.speedSeconds === preset.sec
+                      const isCurrent = simulatorConfig.speedSeconds === preset.seconds
                       return (
                         <button
-                          key={preset.sec}
+                          key={preset.seconds}
                           type="button"
-                          onClick={() => handleRequestSpeed(preset.sec)}
+                          onClick={() => handleRequestSpeed(preset.seconds)}
                           className={cn(
-                            "rounded border p-2.5 text-left transition-all cursor-pointer relative",
-                            isSelected
-                              ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 shadow-md shadow-cyan-950/50"
-                              : "border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
+                            "flex flex-col items-start p-2.5 rounded border text-left transition-all cursor-pointer",
+                            isCurrent
+                              ? "border-amber-400 bg-amber-950/60 text-amber-200 ring-1 ring-amber-400/40"
+                              : "border-zinc-800 bg-zinc-900/40 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900"
                           )}
                         >
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-xs">{preset.label}</span>
-                            {isSelected && (
-                              <span className="size-2 rounded-full bg-cyan-400 animate-pulse" />
-                            )}
-                          </div>
-                          <div className="text-[10px] text-zinc-400 mt-0.5">{preset.desc}</div>
-                          {preset.isFast && (
-                            <span className="absolute top-1 right-1 rounded bg-amber-500/20 px-1 text-[8px] text-amber-300 font-bold">
-                              TEST
-                            </span>
-                          )}
-                          {preset.isDefault && (
-                            <span className="absolute top-1 right-1 rounded bg-cyan-500/20 px-1 text-[8px] text-cyan-300 font-bold">
-                              DEFAULT
-                            </span>
-                          )}
+                          <div className="font-bold text-xs">{preset.label}</div>
+                          <div className="text-xs text-zinc-500 mt-0.5">{preset.desc}</div>
                         </button>
                       )
                     })}
                   </div>
-                </div>
 
-                {/* Custom speed */}
-                <div className="rounded bg-zinc-900/40 p-3 border border-zinc-800/80">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="text-[11px] text-zinc-300 font-bold">
-                      Tùy Chỉnh Tốc Độ Bất Kỳ (Custom Seconds):
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={1}
-                        max={86400}
-                        value={customSpeedInput}
-                        onChange={(e) => setCustomSpeedInput(e.target.value)}
-                        placeholder="ví dụ: 45, 120, 600..."
-                        className="rounded border border-zinc-700 bg-black/60 px-2.5 py-1 text-xs font-mono text-zinc-200 w-36 focus:border-cyan-400 focus:outline-none"
-                      />
-                      <span className="text-[11px] text-zinc-400">giây / ngày</span>
-                      <button
-                        type="button"
-                        onClick={handleApplyCustomSpeed}
-                        disabled={!customSpeedInput.trim()}
-                        className={cn(
-                          "rounded border border-cyan-500/60 bg-cyan-950/60 px-3 py-1 text-xs font-bold text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer",
-                          !customSpeedInput.trim() && "opacity-50 cursor-not-allowed"
-                        )}
-                      >
-                        Áp Dụng
-                      </button>
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-zinc-900">
+                    <span className="text-xs text-zinc-400">Tùy chỉnh số giây/ngày:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={86400}
+                      value={customSpeedInput}
+                      onChange={(e) => setCustomSpeedInput(e.target.value)}
+                      placeholder="Nhập số giây..."
+                      className="w-28 rounded border border-zinc-800 bg-zinc-900 px-2 py-1 text-xs text-zinc-200 focus:border-amber-400 focus:outline-hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyCustomSpeed}
+                      className="rounded border border-amber-500/40 bg-amber-950/40 px-3 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/50 transition-colors cursor-pointer"
+                    >
+                      Áp Dụng Tốc Độ
+                    </button>
                   </div>
-                  <p className="text-[10px] text-zinc-500 mt-1.5">
-                    Lưu ý: Tốc độ được lưu cố định vào cấu hình và tự động khôi phục khi tải lại trang. Thay đổi tốc độ bảo toàn 100% tiến độ ngày hiện tại.
-                  </p>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* ================================================================
-              KHỐI 2: CẤU HÌNH TỰ ĐỘNG SINH SỰ KIỆN & NHIỆM VỤ (WORLD GENERATOR)
+              KHỐI 2: CẤU HÌNH BỘ SINH SỰ KIỆN (GENERATOR CONFIG)
               ================================================================ */}
           {(activeTab === "all" || activeTab === "generator") && (
             <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
+              <div
+                onClick={() => toggleSection("generator")}
+                className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5 cursor-pointer hover:text-cyan-300 transition-colors"
+              >
                 <div className="flex items-center gap-2">
-                  <Flame className="size-4 text-amber-400" />
-                  <h3 className="text-xs font-bold uppercase text-amber-300 tracking-wider">
-                    2. Cấu Hình Tự Động Sinh Sự Kiện & Nhiệm Vụ (Event / Quest Generator)
+                  {collapsedSections.generator ? (
+                    <ChevronRight className="size-4 text-zinc-400" />
+                  ) : (
+                    <ChevronDown className="size-4 text-cyan-400" />
+                  )}
+                  <Flame className="size-4 text-cyan-400" />
+                  <h3 className="text-xs font-bold uppercase text-cyan-300 tracking-wider">
+                    2. Cấu Hình Bộ Sinh Sự Kiện // Strategic Event Generator
                   </h3>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-zinc-400">Trần Toàn Cầu:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={200}
-                    value={generatorForm.maxGlobalActive}
-                    onChange={(e) =>
-                      setGeneratorForm({
-                        ...generatorForm,
-                        maxGlobalActive: Math.max(1, parseInt(e.target.value, 10) || 1),
-                      })
-                    }
-                    className="rounded border border-zinc-700 bg-black/60 px-2 py-0.5 text-xs font-mono text-cyan-300 w-16 text-center focus:border-cyan-400 focus:outline-none"
-                  />
-                  <span className="text-[10px] text-zinc-500">events</span>
-                </div>
+                <span className="text-xs text-zinc-500 font-mono">
+                  {collapsedSections.generator ? "[Thu Gọn]" : "[Mở Rộng]"}
+                </span>
               </div>
 
-              <p className="text-[10px] text-zinc-400">
-                Toàn bộ chu kỳ sinh và thời gian tồn tại (lifetime) được định lượng bằng <strong>NGÀY GAME</strong> (Game Days), không dùng giây thực. Khi thay đổi tốc độ thế giới, nhịp độ gameplay trong vũ trụ vẫn được bảo toàn tuyệt đối.
-              </p>
-
-              {/* Bảng 3 Tier Cấu hình */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Tier 1: Nhỏ (Small) */}
-                <div className="rounded border border-cyan-500/30 bg-zinc-900/40 p-3 space-y-2.5">
-                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-cyan-400" />
-                      <span className="font-bold text-xs text-cyan-300 uppercase">Sự Kiện Nhỏ (Small)</span>
-                    </div>
-                    <label className="flex items-center gap-1 cursor-pointer text-[10px] text-zinc-300">
-                      <input
-                        type="checkbox"
-                        checked={generatorForm.small.enabled}
-                        onChange={(e) =>
-                          setGeneratorForm({
-                            ...generatorForm,
-                            small: { ...generatorForm.small, enabled: e.target.checked },
-                          })
-                        }
-                        className="rounded accent-cyan-400"
-                      />
-                      <span>Kích Hoạt</span>
-                    </label>
-                  </div>
-
-                  <div className="text-[10px] text-zinc-400">
-                    Hiện có: <strong className="text-cyan-300 font-mono">{eventTierCounts.small}</strong> / {generatorForm.small.maxActive} đang active
-                  </div>
-
-                  <div className="space-y-1.5 text-[11px]">
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Chu kỳ sinh (Ngày game):</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="number"
-                          step={0.1}
-                          min={0.1}
-                          value={generatorForm.small.minIntervalDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              small: { ...generatorForm.small, minIntervalDays: parseFloat(e.target.value) || 0.1 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500">&rarr;</span>
-                        <input
-                          type="number"
-                          step={0.1}
-                          min={0.1}
-                          value={generatorForm.small.maxIntervalDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              small: { ...generatorForm.small, maxIntervalDays: parseFloat(e.target.value) || 1 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500 text-[10px]">ngày</span>
+              {!collapsedSections.generator && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Small Events */}
+                    <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-emerald-400 text-xs">TIER 1 (NHỎ)</span>
+                        <span className="text-zinc-500 text-xs">2 - 3 ngày/lần</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-400">Tối đa active:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={generatorForm.small.maxActive}
+                            onChange={(e) =>
+                              setGeneratorForm({
+                                ...generatorForm,
+                                small: { ...generatorForm.small, maxActive: parseInt(e.target.value, 10) || 1 },
+                              })
+                            }
+                            className="w-16 rounded border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 text-right text-xs"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-400">Chu kỳ (ngày):</span>
+                          <span className="font-mono text-zinc-300">
+                            {generatorForm.small.minIntervalDays} - {generatorForm.small.maxIntervalDays}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Thời gian tồn tại (Ngày game):</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="number"
-                          step={0.5}
-                          min={0.5}
-                          value={generatorForm.small.minLifetimeDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              small: { ...generatorForm.small, minLifetimeDays: parseFloat(e.target.value) || 0.5 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500">&rarr;</span>
-                        <input
-                          type="number"
-                          step={0.5}
-                          min={0.5}
-                          value={generatorForm.small.maxLifetimeDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              small: { ...generatorForm.small, maxLifetimeDays: parseFloat(e.target.value) || 1 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500 text-[10px]">ngày</span>
+                    {/* Medium Events */}
+                    <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-amber-400 text-xs">TIER 2 (VỪA)</span>
+                        <span className="text-zinc-500 text-xs">5 - 7 ngày/lần</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-400">Tối đa active:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={6}
+                            value={generatorForm.medium.maxActive}
+                            onChange={(e) =>
+                              setGeneratorForm({
+                                ...generatorForm,
+                                medium: { ...generatorForm.medium, maxActive: parseInt(e.target.value, 10) || 1 },
+                              })
+                            }
+                            className="w-16 rounded border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 text-right text-xs"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-400">Chu kỳ (ngày):</span>
+                          <span className="font-mono text-zinc-300">
+                            {generatorForm.medium.minIntervalDays} - {generatorForm.medium.maxIntervalDays}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Giới hạn đồng thời (Max Active):</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        value={generatorForm.small.maxActive}
-                        onChange={(e) =>
-                          setGeneratorForm({
-                            ...generatorForm,
-                            small: { ...generatorForm.small, maxActive: parseInt(e.target.value, 10) || 1 },
-                          })
-                        }
-                        className="rounded border border-zinc-700 bg-black/60 px-2 py-0.5 text-xs font-mono text-zinc-200 w-20 text-center mt-0.5"
-                      />
+                    {/* Large Events */}
+                    <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-red-400 text-xs">TIER 3 (LỚN)</span>
+                        <span className="text-zinc-500 text-xs">12 - 15 ngày/lần</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-400">Tối đa active:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={3}
+                            value={generatorForm.large.maxActive}
+                            onChange={(e) =>
+                              setGeneratorForm({
+                                ...generatorForm,
+                                large: { ...generatorForm.large, maxActive: parseInt(e.target.value, 10) || 1 },
+                              })
+                            }
+                            className="w-16 rounded border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 text-right text-xs"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-zinc-400">Chu kỳ (ngày):</span>
+                          <span className="font-mono text-zinc-300">
+                            {generatorForm.large.minIntervalDays} - {generatorForm.large.maxIntervalDays}
+                          </span>
+                        </div>
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-900">
+                    <button
+                      type="button"
+                      onClick={handleResetGenerator}
+                      className="rounded border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      Khôi Phục Mặc Định
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveGenerator}
+                      className="flex items-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 px-3.5 py-1.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 transition-colors cursor-pointer"
+                    >
+                      <Save className="size-3.5" />
+                      <span>Lưu Cấu Hình Generator</span>
+                    </button>
                   </div>
                 </div>
-
-                {/* Tier 2: Vừa (Medium) */}
-                <div className="rounded border border-amber-500/30 bg-zinc-900/40 p-3 space-y-2.5">
-                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-amber-400" />
-                      <span className="font-bold text-xs text-amber-300 uppercase">Sự Kiện Vừa (Medium)</span>
-                    </div>
-                    <label className="flex items-center gap-1 cursor-pointer text-[10px] text-zinc-300">
-                      <input
-                        type="checkbox"
-                        checked={generatorForm.medium.enabled}
-                        onChange={(e) =>
-                          setGeneratorForm({
-                            ...generatorForm,
-                            medium: { ...generatorForm.medium, enabled: e.target.checked },
-                          })
-                        }
-                        className="rounded accent-amber-400"
-                      />
-                      <span>Kích Hoạt</span>
-                    </label>
-                  </div>
-
-                  <div className="text-[10px] text-zinc-400">
-                    Hiện có: <strong className="text-amber-300 font-mono">{eventTierCounts.medium}</strong> / {generatorForm.medium.maxActive} đang active
-                  </div>
-
-                  <div className="space-y-1.5 text-[11px]">
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Chu kỳ sinh (Ngày game):</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="number"
-                          step={0.5}
-                          min={0.5}
-                          value={generatorForm.medium.minIntervalDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              medium: { ...generatorForm.medium, minIntervalDays: parseFloat(e.target.value) || 0.5 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500">&rarr;</span>
-                        <input
-                          type="number"
-                          step={0.5}
-                          min={0.5}
-                          value={generatorForm.medium.maxIntervalDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              medium: { ...generatorForm.medium, maxIntervalDays: parseFloat(e.target.value) || 2 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500 text-[10px]">ngày</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Thời gian tồn tại (Ngày game):</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="number"
-                          step={1}
-                          min={1}
-                          value={generatorForm.medium.minLifetimeDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              medium: { ...generatorForm.medium, minLifetimeDays: parseFloat(e.target.value) || 1 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500">&rarr;</span>
-                        <input
-                          type="number"
-                          step={1}
-                          min={1}
-                          value={generatorForm.medium.maxLifetimeDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              medium: { ...generatorForm.medium, maxLifetimeDays: parseFloat(e.target.value) || 5 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500 text-[10px]">ngày</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Giới hạn đồng thời (Max Active):</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={100}
-                        value={generatorForm.medium.maxActive}
-                        onChange={(e) =>
-                          setGeneratorForm({
-                            ...generatorForm,
-                            medium: { ...generatorForm.medium, maxActive: parseInt(e.target.value, 10) || 1 },
-                          })
-                        }
-                        className="rounded border border-zinc-700 bg-black/60 px-2 py-0.5 text-xs font-mono text-zinc-200 w-20 text-center mt-0.5"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tier 3: Lớn (Large) */}
-                <div className="rounded border border-rose-500/30 bg-zinc-900/40 p-3 space-y-2.5">
-                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                    <div className="flex items-center gap-1.5">
-                      <span className="size-2 rounded-full bg-rose-400" />
-                      <span className="font-bold text-xs text-rose-300 uppercase">Sự Kiện Lớn (Large)</span>
-                    </div>
-                    <label className="flex items-center gap-1 cursor-pointer text-[10px] text-zinc-300">
-                      <input
-                        type="checkbox"
-                        checked={generatorForm.large.enabled}
-                        onChange={(e) =>
-                          setGeneratorForm({
-                            ...generatorForm,
-                            large: { ...generatorForm.large, enabled: e.target.checked },
-                          })
-                        }
-                        className="rounded accent-rose-400"
-                      />
-                      <span>Kích Hoạt</span>
-                    </label>
-                  </div>
-
-                  <div className="text-[10px] text-zinc-400">
-                    Hiện có: <strong className="text-rose-300 font-mono">{eventTierCounts.large}</strong> / {generatorForm.large.maxActive} đang active
-                  </div>
-
-                  <div className="space-y-1.5 text-[11px]">
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Chu kỳ sinh (Ngày game):</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="number"
-                          step={1}
-                          min={1}
-                          value={generatorForm.large.minIntervalDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              large: { ...generatorForm.large, minIntervalDays: parseFloat(e.target.value) || 5 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500">&rarr;</span>
-                        <input
-                          type="number"
-                          step={1}
-                          min={1}
-                          value={generatorForm.large.maxIntervalDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              large: { ...generatorForm.large, maxIntervalDays: parseFloat(e.target.value) || 10 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500 text-[10px]">ngày</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Thời gian tồn tại (Ngày game):</span>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <input
-                          type="number"
-                          step={1}
-                          min={1}
-                          value={generatorForm.large.minLifetimeDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              large: { ...generatorForm.large, minLifetimeDays: parseFloat(e.target.value) || 5 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500">&rarr;</span>
-                        <input
-                          type="number"
-                          step={1}
-                          min={1}
-                          value={generatorForm.large.maxLifetimeDays}
-                          onChange={(e) =>
-                            setGeneratorForm({
-                              ...generatorForm,
-                              large: { ...generatorForm.large, maxLifetimeDays: parseFloat(e.target.value) || 20 },
-                            })
-                          }
-                          className="rounded border border-zinc-700 bg-black/60 px-1.5 py-0.5 text-xs font-mono text-zinc-200 w-16 text-center"
-                        />
-                        <span className="text-zinc-500 text-[10px]">ngày</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <span className="text-zinc-500 text-[10px] block">Giới hạn đồng thời (Max Active):</span>
-                      <input
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={generatorForm.large.maxActive}
-                        onChange={(e) =>
-                          setGeneratorForm({
-                            ...generatorForm,
-                            large: { ...generatorForm.large, maxActive: parseInt(e.target.value, 10) || 1 },
-                          })
-                        }
-                        className="rounded border border-zinc-700 bg-black/60 px-2 py-0.5 text-xs font-mono text-zinc-200 w-20 text-center mt-0.5"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action buttons for Generator */}
-              <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-zinc-800/80">
-                <button
-                  type="button"
-                  onClick={handleResetGenerator}
-                  className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors cursor-pointer"
-                >
-                  <RotateCcw className="size-3.5 text-zinc-400" />
-                  <span>Khôi Phục Mặc Định</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSaveGenerator}
-                  className="flex items-center gap-1.5 rounded border border-cyan-400 bg-cyan-600/40 px-3.5 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-600/60 hover:text-white transition-all cursor-pointer shadow-md shadow-cyan-950/50"
-                >
-                  <Save className="size-3.5" />
-                  <span>Lưu Cấu Hình Generator</span>
-                </button>
-              </div>
+              )}
             </div>
           )}
 
           {/* ================================================================
-              KHỐI 3: CẤU HÌNH CHÍNH SÁCH CHIẾN LƯỢC SỰ KIỆN (STRATEGY POLICY)
+              KHỐI 3: CHÍNH SÁCH QUYẾT ĐỊNH CHIẾN LƯỢC TỰ ĐỘNG (POLICY CONFIG)
               ================================================================ */}
           {(activeTab === "all" || activeTab === "policy") && (
             <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
+              <div
+                onClick={() => toggleSection("policy")}
+                className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5 cursor-pointer hover:text-emerald-300 transition-colors"
+              >
                 <div className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-cyan-400" />
-                  <h3 className="text-xs font-bold uppercase text-cyan-300 tracking-wider">
-                    3. Chính Sách Lựa Chọn Chiến Lược Sự Kiện (Event Strategy Policy & System Auto)
+                  {collapsedSections.policy ? (
+                    <ChevronRight className="size-4 text-zinc-400" />
+                  ) : (
+                    <ChevronDown className="size-4 text-emerald-400" />
+                  )}
+                  <Sparkles className="size-4 text-emerald-400" />
+                  <h3 className="text-xs font-bold uppercase text-emerald-300 tracking-wider">
+                    3. Chính Sách Chiến Lược Tự Động // Strategy Policy
                   </h3>
                 </div>
-                <span className="text-[10px] text-zinc-400">
-                  Ưu tiên 3 cấp: System Auto &rarr; Default Fallback &rarr; Player Choice
+                <span className="text-xs text-zinc-500 font-mono">
+                  {collapsedSections.policy ? "[Thu Gọn]" : "[Mở Rộng]"}
                 </span>
               </div>
 
-              <p className="text-[10px] text-zinc-400 leading-relaxed">
-                Hệ thống tự động đánh giá các chiến lược hợp lệ dựa trên tỷ lệ thành công, biến động độ ổn định, mức đe dọa, ngữ cảnh sector, chi phí và tổn thất. Khi tự động không khả thi, hệ thống lùi về phương án mặc định, hoặc chuyển quyền quyết định cho Chỉ Huy mà không crash simulator.
-              </p>
-
-              {/* 3 Cấp Độ Toàn Cục */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
-                <label className="flex items-start gap-2 rounded border border-cyan-500/30 bg-zinc-900/40 p-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={strategyPolicyForm.systemAutoEnabled}
-                    onChange={(e) =>
-                      setStrategyPolicyForm({
-                        ...strategyPolicyForm,
-                        systemAutoEnabled: e.target.checked,
-                      })
-                    }
-                    className="rounded accent-cyan-400 mt-0.5"
-                  />
-                  <div>
-                    <div className="font-bold text-cyan-300">Cấp 1: System Auto</div>
-                    <div className="text-[10px] text-zinc-400">
-                      Tự động chấm điểm & phê chuẩn phương án tối ưu nhất.
-                    </div>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 rounded border border-amber-500/30 bg-zinc-900/40 p-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={strategyPolicyForm.defaultFallbackEnabled}
-                    onChange={(e) =>
-                      setStrategyPolicyForm({
-                        ...strategyPolicyForm,
-                        defaultFallbackEnabled: e.target.checked,
-                      })
-                    }
-                    className="rounded accent-amber-400 mt-0.5"
-                  />
-                  <div>
-                    <div className="font-bold text-amber-300">Cấp 2: Default Fallback</div>
-                    <div className="text-[10px] text-zinc-400">
-                      Dự phòng phương án mặc định nếu System Auto không đủ điều kiện.
-                    </div>
-                  </div>
-                </label>
-
-                <label className="flex items-start gap-2 rounded border border-indigo-500/30 bg-zinc-900/40 p-2.5 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={strategyPolicyForm.playerChoiceFallbackEnabled}
-                    onChange={(e) =>
-                      setStrategyPolicyForm({
-                        ...strategyPolicyForm,
-                        playerChoiceFallbackEnabled: e.target.checked,
-                      })
-                    }
-                    className="rounded accent-indigo-400 mt-0.5"
-                  />
-                  <div>
-                    <div className="font-bold text-indigo-300">Cấp 3: Player Choice</div>
-                    <div className="text-[10px] text-zinc-400">
-                      Chờ người chơi can thiệp khi cả 2 cấp trên không thể thực thi.
-                    </div>
-                  </div>
-                </label>
-              </div>
-
-              {/* Tùy Chọn Ưu Tiên Theo Từng Tier */}
-              <div className="space-y-2 pt-2 border-t border-zinc-800/80">
-                <div className="text-[11px] font-bold text-zinc-300 uppercase">
-                  Ưu Tiên Chiến Lược Theo Từng Quy Mô (Tier Strategy Preference):
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-[11px]">
-                  {[
-                    { key: "small", label: "Sự Kiện Nhỏ (Small)", color: "text-cyan-300" },
-                    { key: "medium", label: "Sự Kiện Vừa (Medium)", color: "text-amber-300" },
-                    { key: "large", label: "Sự Kiện Lớn (Large)", color: "text-rose-300" },
-                  ].map(({ key, label, color }) => {
-                    const currentPref = strategyPolicyForm.tierPolicies[key as "small" | "medium" | "large"]
-                    return (
-                      <div key={key} className="rounded border border-zinc-800 bg-zinc-900/50 p-2.5 space-y-1.5">
-                        <div className={cn("font-bold text-xs uppercase", color)}>{label}</div>
+              {!collapsedSections.policy && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {(["small", "medium", "large"] as const).map((tier) => (
+                      <div key={tier} className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
+                        <div className="font-bold text-xs uppercase text-zinc-300">
+                          Tier: {tier === "small" ? "Nhỏ" : tier === "medium" ? "Vừa" : "Lớn"}
+                        </div>
                         <select
-                          value={currentPref}
+                          value={strategyPolicyForm.tierPolicies[tier]}
                           onChange={(e) =>
                             setStrategyPolicyForm({
                               ...strategyPolicyForm,
                               tierPolicies: {
                                 ...strategyPolicyForm.tierPolicies,
-                                [key]: e.target.value as TierStrategyPreference,
+                                [tier]: e.target.value as TierStrategyPreference,
                               },
                             })
                           }
-                          className="w-full rounded border border-zinc-700 bg-black/60 px-2 py-1 text-xs font-mono text-zinc-200 focus:border-cyan-400 focus:outline-none cursor-pointer"
+                          className="w-full rounded border border-zinc-800 bg-zinc-950 p-1.5 text-xs text-zinc-200 focus:border-emerald-400 focus:outline-hidden cursor-pointer"
                         >
-                          <option value="system_auto">1. Ưu tiên System Auto</option>
-                          <option value="default_fallback">2. Buộc dùng Default Strategy</option>
-                          <option value="player_choice">3. Thủ công (Player Choice)</option>
+                          <option value="system_auto">Tự Động (AI Tối Ưu)</option>
+                          <option value="default_fallback">Mặc Định (Fallback)</option>
+                          <option value="player_choice">Người Chơi Tự Chọn</option>
                         </select>
                       </div>
-                    )
-                  })}
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-900">
+                    <button
+                      type="button"
+                      onClick={handleBatchApply}
+                      className="rounded border border-purple-500/40 bg-purple-950/30 px-3 py-1.5 text-xs text-purple-300 hover:bg-purple-900/40 cursor-pointer"
+                    >
+                      Áp Dụng Cho Tất Cả Sự Kiện Chờ
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleResetPolicy}
+                        className="rounded border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                      >
+                        Khôi Phục
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSavePolicy}
+                        className="flex items-center gap-1.5 rounded border border-emerald-500/50 bg-emerald-950/40 px-3.5 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-900/50 cursor-pointer"
+                      >
+                        <Save className="size-3.5" />
+                        <span>Lưu Chính Sách</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-
-              {/* Action buttons for Strategy Policy */}
-              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-zinc-800/80">
-                <button
-                  type="button"
-                  onClick={handleBatchApply}
-                  className="flex items-center gap-1.5 rounded border border-cyan-500/60 bg-cyan-950/60 px-3 py-1.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/60 transition-colors cursor-pointer"
-                  title="Đánh giá và phê chuẩn ngay cho tất cả các sự kiện INIT đang chờ"
-                >
-                  <Zap className="size-3.5 text-cyan-400" />
-                  <span>Áp Dụng Cho Tất Cả Sự Kiện Chờ</span>
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleResetPolicy}
-                    className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors cursor-pointer"
-                  >
-                    <RotateCcw className="size-3.5 text-zinc-400" />
-                    <span>Khôi Phục Mặc Định</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSavePolicy}
-                    className="flex items-center gap-1.5 rounded border border-cyan-400 bg-cyan-600/40 px-3.5 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-600/60 hover:text-white transition-all cursor-pointer shadow-md shadow-cyan-950/50"
-                  >
-                    <Save className="size-3.5" />
-                    <span>Lưu Chính Sách Chiến Lược</span>
-                  </button>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* ================================================================
-              KHỐI 4: KÍCH HOẠT THỬ NGHIỆM & LỆNH NHANH (DEV TRIGGERS)
+              KHỐI 4: CẤU HÌNH THREAT & THE VOID AI (HP-BASED THREAT) (PHASE 6.33_FIX4)
+              ================================================================ */}
+          {(activeTab === "all" || activeTab === "threat") && (
+            <div className="rounded border border-rose-500/50 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
+              <div
+                onClick={() => toggleSection("threat")}
+                className="flex items-center justify-between border-b border-rose-900/60 pb-2.5 cursor-pointer hover:text-rose-300 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  {collapsedSections.threat ? (
+                    <ChevronRight className="size-4 text-zinc-400" />
+                  ) : (
+                    <ChevronDown className="size-4 text-rose-400" />
+                  )}
+                  <ShieldAlert className="size-4 text-rose-400" />
+                  <h3 className="text-xs font-bold uppercase text-rose-300 tracking-wider">
+                    4. Cấu Hình Threat & The Void AI // Canonical HP-Based Threat (Phase 6.33_FIX4)
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono">
+                  <span className="text-rose-400 font-bold">
+                    HQ: {threatForm.maxThreatHQ} · Thường: {threatForm.maxThreatStandard}
+                  </span>
+                  <span className="text-zinc-500">
+                    {collapsedSections.threat ? "[Thu Gọn]" : "[Mở Rộng]"}
+                  </span>
+                </div>
+              </div>
+
+              {!collapsedSections.threat && (
+                <div className="space-y-4">
+                  {/* Giải thích công thức HP-Based chuẩn hóa */}
+                  <div className="rounded border border-rose-950 bg-rose-950/20 p-3 text-xs space-y-1.5 text-rose-200">
+                    <div className="font-bold flex items-center gap-1.5 text-rose-300">
+                      <Zap className="size-3.5 text-rose-400" />
+                      <span>CÔNG THỨC THREAT DUY NHẤT DỰA TRÊN KẾT QUẢ HP (CANONICAL FORMULA):</span>
+                    </div>
+                    <p className="text-zinc-300 leading-relaxed">
+                      Thay thế các delta cố định cũ (-140, +120). Mọi biến động đe dọa được tính toán động căn cứ vào lượng máu địch bị tiêu diệt và lượng máu quân ta bảo toàn, quy đổi theo trần Max Threat của từng Sector:
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
+                      <div className="bg-black/50 p-2 rounded border border-rose-900/40">
+                        <span className="text-emerald-400 font-bold">CHIẾN THẮNG:</span>
+                        <div className="text-zinc-400 mt-0.5">
+                          -maxThreat &times; (0.25 &times; HP_địch_diệt + 0.15 &times; HP_ta_sống) &times; HệSố
+                        </div>
+                      </div>
+                      <div className="bg-black/50 p-2 rounded border border-rose-900/40">
+                        <span className="text-rose-400 font-bold">THẤT BẠI:</span>
+                        <div className="text-zinc-400 mt-0.5">
+                          +maxThreat &times; (0.20 &times; HP_ta_mất + 0.15 &times; HP_địch_sống) &times; HệSố
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cấu hình tham số Threat toàn cục */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="rounded border border-zinc-800 bg-zinc-900/50 p-3 space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-300 uppercase">
+                        Trần Đe Dọa Sector Thường
+                      </label>
+                      <input
+                        type="number"
+                        min={100}
+                        max={2000}
+                        step={50}
+                        value={threatForm.maxThreatStandard}
+                        onChange={(e) =>
+                          setThreatForm({
+                            ...threatForm,
+                            maxThreatStandard: Math.max(100, parseInt(e.target.value, 10) || 1000),
+                          })
+                        }
+                        className="w-full rounded border border-zinc-700 bg-zinc-950 p-1.5 font-mono text-sm text-cyan-300 focus:border-rose-400 focus:outline-hidden"
+                      />
+                      <div className="text-[11px] text-zinc-400">Mặc định: 1000 Threat</div>
+                    </div>
+
+                    <div className="rounded border border-zinc-800 bg-zinc-900/50 p-3 space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-300 uppercase">
+                        Trần Đe Dọa Căn Cứ Sol HQ
+                      </label>
+                      <input
+                        type="number"
+                        min={50}
+                        max={1000}
+                        step={50}
+                        value={threatForm.maxThreatHQ}
+                        onChange={(e) =>
+                          setThreatForm({
+                            ...threatForm,
+                            maxThreatHQ: Math.max(50, parseInt(e.target.value, 10) || 500),
+                          })
+                        }
+                        className="w-full rounded border border-zinc-700 bg-zinc-950 p-1.5 font-mono text-sm text-cyan-300 focus:border-rose-400 focus:outline-hidden"
+                      />
+                      <div className="text-[11px] text-zinc-400">Mặc định: 500 Threat (Bảo vệ tối đa)</div>
+                    </div>
+
+                    <div className="rounded border border-zinc-800 bg-zinc-900/50 p-3 space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-300 uppercase">
+                        Hệ Số Nhân Công Thức
+                      </label>
+                      <input
+                        type="number"
+                        min={0.1}
+                        max={3.0}
+                        step={0.1}
+                        value={threatForm.threatFormulaMultiplier}
+                        onChange={(e) =>
+                          setThreatForm({
+                            ...threatForm,
+                            threatFormulaMultiplier: Math.max(0.1, parseFloat(e.target.value) || 1.0),
+                          })
+                        }
+                        className="w-full rounded border border-zinc-700 bg-zinc-950 p-1.5 font-mono text-sm text-cyan-300 focus:border-rose-400 focus:outline-hidden"
+                      />
+                      <div className="text-[11px] text-zinc-400">Mặc định: 1.0x (Tăng/giảm độ nhạy)</div>
+                    </div>
+                  </div>
+
+                  {/* Bảng điều chỉnh Threat trực tiếp cho từng Sector */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between border-b border-zinc-800 pb-1">
+                      <span className="font-bold text-zinc-300 text-xs uppercase">
+                        Bảng Điều Chỉnh Threat Trực Tiếp Theo Từng Sector
+                      </span>
+                      <span className="text-[11px] text-zinc-400">
+                        {worldState ? Object.keys(worldState.sectors).length : 0} Sectors
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1">
+                      {worldState &&
+                        Object.values(worldState.sectors).map((sec) => {
+                          const isHQ = sec.id === "sol_command_hq" || sec.id.endsWith("_hq")
+                          const maxT = getSectorMaxThreat(sec, threatForm)
+                          const currentVal = sectorThreatsForm[sec.id] ?? sec.threatLevel
+
+                          return (
+                            <div
+                              key={sec.id}
+                              className={cn(
+                                "rounded border p-2.5 space-y-1.5 transition-colors",
+                                isHQ
+                                  ? "border-cyan-500/50 bg-cyan-950/20"
+                                  : "border-zinc-800 bg-zinc-900/40"
+                              )}
+                            >
+                              <div className="flex items-center justify-between gap-1 text-xs">
+                                <div className="flex items-center gap-1.5 truncate">
+                                  <span className="font-bold text-white truncate">{sec.name}</span>
+                                  <span
+                                    className={cn(
+                                      "rounded px-1.5 py-0.2 text-[10px] font-mono font-bold uppercase",
+                                      isHQ
+                                        ? "bg-cyan-900/60 text-cyan-200 border border-cyan-500/40"
+                                        : "bg-zinc-800 text-zinc-400"
+                                    )}
+                                  >
+                                    {isHQ ? "CĂN CỨ HQ" : "SECTOR"}
+                                  </span>
+                                </div>
+                                <span className="font-mono text-xs font-bold text-rose-300">
+                                  {currentVal} / {maxT}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="range"
+                                  min={0}
+                                  max={maxT}
+                                  step={10}
+                                  value={currentVal}
+                                  onChange={(e) =>
+                                    setSectorThreatsForm({
+                                      ...sectorThreatsForm,
+                                      [sec.id]: parseInt(e.target.value, 10),
+                                    })
+                                  }
+                                  className="w-full accent-rose-500 cursor-pointer"
+                                />
+                                <input
+                                  type="number"
+                                  min={0}
+                                  max={maxT}
+                                  value={currentVal}
+                                  onChange={(e) =>
+                                    setSectorThreatsForm({
+                                      ...sectorThreatsForm,
+                                      [sec.id]: Math.max(0, Math.min(maxT, parseInt(e.target.value, 10) || 0)),
+                                    })
+                                  }
+                                  className="w-16 rounded border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 font-mono text-xs text-right text-rose-200"
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-900">
+                    <button
+                      type="button"
+                      onClick={handleResetThreatToDefault}
+                      className="rounded border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
+                    >
+                      Khôi Phục Mặc Định (HQ 500 / Sector 1000)
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      {threatSavedFeedback && (
+                        <span className="flex items-center gap-1 text-xs text-emerald-400 font-bold">
+                          <CheckCircle2 className="size-3.5" />
+                          <span>Đã lưu Threat Config thành công!</span>
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={handleSaveThreatConfig}
+                        className="flex items-center gap-1.5 rounded border border-rose-500/50 bg-rose-950/50 px-4 py-1.5 text-xs font-bold text-rose-200 hover:bg-rose-900/60 transition-colors cursor-pointer shadow-md shadow-rose-950/40"
+                      >
+                        <Save className="size-3.5" />
+                        <span>Lưu Cấu Hình Threat & Sector</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ================================================================
+              KHỐI 5: KÍCH HOẠT SỰ KIỆN KHẨN CẤP (TRIGGERS)
               ================================================================ */}
           {(activeTab === "all" || activeTab === "triggers") && (
             <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
-              <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2.5">
-                <Zap className="size-4 text-amber-400" />
-                <h3 className="text-xs font-bold uppercase text-amber-300 tracking-wider">
-                  4. Thao Tác Kích Hoạt Thử Nghiệm Nhanh (Dev & Testing Actions)
-                </h3>
-              </div>
-
-              {/* Sinh sự kiện ngay lập tức */}
-              <div className="space-y-1.5">
-                <label className="text-[11px] text-zinc-400 font-bold block">
-                  Kích Hoạt Sinh Sự Kiện Ngay Lập Tức (Manual Spawn Event):
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onForceSpawnEvent("small")}
-                    className="flex items-center justify-center gap-2 rounded border border-cyan-500/50 bg-cyan-950/40 p-2 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 transition-colors cursor-pointer"
-                  >
-                    <Sparkles className="size-3.5 text-cyan-400" />
-                    <span>Sinh Sự Kiện Nhỏ (Small)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onForceSpawnEvent("medium")}
-                    className="flex items-center justify-center gap-2 rounded border border-amber-500/50 bg-amber-950/40 p-2 text-xs font-bold text-amber-300 hover:bg-amber-900/50 transition-colors cursor-pointer"
-                  >
-                    <Flame className="size-3.5 text-amber-400" />
-                    <span>Sinh Sự Kiện Vừa (Medium)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onForceSpawnEvent("large")}
-                    className="flex items-center justify-center gap-2 rounded border border-rose-500/50 bg-rose-950/40 p-2 text-xs font-bold text-rose-300 hover:bg-rose-900/50 transition-colors cursor-pointer"
-                  >
-                    <AlertTriangle className="size-3.5 text-rose-400" />
-                    <span>Sinh Sự Kiện Lớn (Large)</span>
-                  </button>
+              <div
+                onClick={() => toggleSection("triggers")}
+                className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5 cursor-pointer hover:text-amber-300 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  {collapsedSections.triggers ? (
+                    <ChevronRight className="size-4 text-zinc-400" />
+                  ) : (
+                    <ChevronDown className="size-4 text-amber-400" />
+                  )}
+                  <Zap className="size-4 text-amber-400" />
+                  <h3 className="text-xs font-bold uppercase text-amber-300 tracking-wider">
+                    5. Thử Nghiệm Nhanh & Kích Hoạt Sự Kiện // Event Triggers
+                  </h3>
                 </div>
+                <span className="text-xs text-zinc-500 font-mono">
+                  {collapsedSections.triggers ? "[Thu Gọn]" : "[Mở Rộng]"}
+                </span>
               </div>
 
-              {/* Tua thời gian */}
-              <div className="space-y-1.5 pt-2 border-t border-zinc-800/80">
-                <label className="text-[11px] text-zinc-400 font-bold block">
-                  Tua Thời Gian Nhanh (Time Acceleration & Multi-Tick):
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <button
-                    type="button"
-                    onClick={onAdvanceTick}
-                    disabled={isTickAdvancing}
-                    className="flex items-center justify-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 p-2 text-xs font-bold text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800 transition-colors cursor-pointer"
-                  >
-                    <Play className="size-3 fill-current text-cyan-400" />
-                    <span>+1 Ngày</span>
-                  </button>
+              {!collapsedSections.triggers && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => onForceSpawnEvent("small")}
+                      className="flex items-center justify-center gap-2 rounded border border-emerald-500/40 bg-emerald-950/30 p-2.5 text-xs font-bold text-emerald-300 hover:bg-emerald-900/40 cursor-pointer"
+                    >
+                      <Zap className="size-3.5" />
+                      <span>Kích Hoạt Sự Kiện Nhỏ (T1)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onForceSpawnEvent("medium")}
+                      className="flex items-center justify-center gap-2 rounded border border-amber-500/40 bg-amber-950/30 p-2.5 text-xs font-bold text-amber-300 hover:bg-amber-900/40 cursor-pointer"
+                    >
+                      <Zap className="size-3.5" />
+                      <span>Kích Hoạt Sự Kiện Vừa (T2)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onForceSpawnEvent("large")}
+                      className="flex items-center justify-center gap-2 rounded border border-red-500/40 bg-red-950/30 p-2.5 text-xs font-bold text-red-300 hover:bg-red-900/40 cursor-pointer"
+                    >
+                      <Zap className="size-3.5" />
+                      <span>Kích Hoạt Khủng Hoảng (T3)</span>
+                    </button>
+                  </div>
 
-                  <button
-                    type="button"
-                    onClick={() => onFastForwardDays(5)}
-                    disabled={isTickAdvancing}
-                    className="flex items-center justify-center gap-1.5 rounded border border-cyan-500/40 bg-zinc-900/60 p-2 text-xs font-bold text-cyan-300 hover:bg-zinc-800 transition-colors cursor-pointer"
-                  >
-                    <ArrowRight className="size-3 text-cyan-400" />
-                    <span>Tua +5 Ngày</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onFastForwardDays(10)}
-                    disabled={isTickAdvancing}
-                    className="flex items-center justify-center gap-1.5 rounded border border-cyan-500/40 bg-zinc-900/60 p-2 text-xs font-bold text-cyan-300 hover:bg-zinc-800 transition-colors cursor-pointer"
-                  >
-                    <ArrowRight className="size-3 text-cyan-400" />
-                    <span>Tua +10 Ngày</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => onFastForwardDays(30)}
-                    disabled={isTickAdvancing}
-                    className="flex items-center justify-center gap-1.5 rounded border border-amber-500/50 bg-amber-950/30 p-2 text-xs font-bold text-amber-300 hover:bg-amber-900/40 transition-colors cursor-pointer"
-                  >
-                    <Calendar className="size-3 text-amber-400" />
-                    <span>Tua +30 Ngày (1 Tháng)</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-zinc-900 text-xs">
+                    <span className="text-zinc-400">Tua nhanh thời gian:</span>
+                    {[1, 5, 10, 30].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => onFastForwardDays(d)}
+                        className="rounded border border-zinc-800 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-300 hover:border-amber-400 hover:text-white cursor-pointer"
+                      >
+                        +{d} ngày
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={onAdvanceTick}
+                      disabled={isTickAdvancing}
+                      className="ml-auto rounded border border-cyan-500/50 bg-cyan-950/40 px-3 py-1 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 cursor-pointer"
+                    >
+                      Tiến 1 Tick Ngay
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
           {/* ================================================================
-              KHỐI 5: QUẢN TRỊ TRẠNG THÁI LƯU TRỮ & VÙNG NGUY HIỂM (STORAGE & DANGER ZONE)
+              KHỐI 6: QUẢN TRỊ TRẠNG THÁI LƯU TRỮ & VÙNG NGUY HIỂM (STORAGE & DANGER ZONE)
               ================================================================ */}
           {(activeTab === "all" || activeTab === "storage") && (
             <div className="space-y-4">
               {/* Lưu trữ an toàn */}
               <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
-                <div className="flex items-center gap-2 border-b border-zinc-800/80 pb-2.5">
-                  <Database className="size-4 text-cyan-400" />
-                  <h3 className="text-xs font-bold uppercase text-cyan-300 tracking-wider">
-                    5. Quản Trị Trạng Thái Lưu Trữ Cách Ly (Isolated Storage)
-                  </h3>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="space-y-1 text-[11px] text-zinc-400 font-mono">
-                    <div>&bull; Khóa dữ liệu: <strong className="text-cyan-300">STARFRONT_WORLD_SAVE_V1</strong></div>
-                    <div>&bull; Khóa cấu hình: <strong className="text-cyan-300">STARFRONT_WORLD_SIMULATOR_CONFIG</strong></div>
-                    <div>&bull; Cơ chế sao lưu: <span className="text-emerald-400 font-bold">A/B Rotating Slot (Slot A / Slot B)</span></div>
-                    <div>&bull; Kiểm tra toàn vẹn: <span className="text-emerald-400 font-bold">CRC32 Checksum Verified</span></div>
-                    <div>&bull; Cách ly RPG Save V4: <span className="text-cyan-300 font-bold">100% Độc Lập</span></div>
+                <div
+                  onClick={() => toggleSection("storage")}
+                  className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5 cursor-pointer hover:text-cyan-300 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    {collapsedSections.storage ? (
+                      <ChevronRight className="size-4 text-zinc-400" />
+                    ) : (
+                      <ChevronDown className="size-4 text-cyan-400" />
+                    )}
+                    <Database className="size-4 text-cyan-400" />
+                    <h3 className="text-xs font-bold uppercase text-cyan-300 tracking-wider">
+                      6. Quản Trị Lưu Trữ & Hạn Ngạch Operations Archive
+                    </h3>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={onManualSave}
-                    className="mt-2 w-full flex items-center justify-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 p-2.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 transition-colors cursor-pointer"
-                  >
-                    <Save className="size-3.5" />
-                    <span>Lưu Trạng Thái Thế Giới Ngay Bây Giờ (Force Save)</span>
-                  </button>
+                  <span className="text-xs text-zinc-500 font-mono">
+                    {collapsedSections.storage ? "[Thu Gọn]" : "[Mở Rộng]"}
+                  </span>
                 </div>
+
+                {!collapsedSections.storage && (
+                  <div className="space-y-3">
+                    <div className="space-y-1 text-xs text-zinc-400 font-mono">
+                      <div>&bull; Khóa dữ liệu: <strong className="text-cyan-300">STARFRONT_WORLD_SAVE_V1</strong></div>
+                      <div>&bull; Khóa cấu hình: <strong className="text-cyan-300">STARFRONT_WORLD_SIMULATOR_CONFIG</strong></div>
+                      <div>&bull; Cơ chế sao lưu: <span className="text-emerald-400 font-bold">A/B Rotating Slot (Slot A / Slot B)</span></div>
+                      <div>&bull; Kiểm tra toàn vẹn: <span className="text-emerald-400 font-bold">CRC32 Checksum Verified</span></div>
+                      <div>&bull; Cách ly RPG Save V4: <span className="text-cyan-300 font-bold">100% Độc Lập</span></div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={onManualSave}
+                      className="mt-2 w-full flex items-center justify-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 p-2.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 transition-colors cursor-pointer"
+                    >
+                      <Save className="size-3.5" />
+                      <span>Lưu Trạng Thái Thế Giới Ngay Bây Giờ (Force Save)</span>
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Cấu hình hạn ngạch Operations Archive */}
-              <div className="rounded border border-indigo-900/60 bg-indigo-950/20 p-4 space-y-3.5 shadow-md">
-                <div className="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <Database className="size-4 text-indigo-400" />
-                    <h3 className="text-xs font-bold uppercase text-indigo-200 tracking-wider">
-                      Hạn Ngạch Kho Lưu Trữ Tác Chiến // Operations Archive Quotas (Phase 6.31)
-                    </h3>
-                  </div>
-                  <span className="rounded bg-indigo-950/80 px-2 py-0.5 text-[10px] font-bold text-indigo-300 border border-indigo-500/40">
-                    BOUNDED FIFO RETENTION
-                  </span>
-                </div>
-
-                <p className="text-zinc-300 text-xs leading-relaxed">
-                  Thiết lập giới hạn lưu trữ tối đa cho 2 luồng hồ sơ độc lập. Khi vượt quá hạn ngạch, hệ thống tự động áp dụng chính sách cắt tỉa FIFO an toàn, không xóa dữ liệu đang chạy và không bịa đặt sự kiện lịch sử.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="rounded border border-zinc-800 bg-zinc-900/60 p-3 space-y-1.5">
-                    <div className="flex items-center justify-between font-bold text-zinc-300 text-[11px]">
-                      <span>Hạn Ngạch Báo Cáo Sự Kiện & Nhiệm Vụ</span>
-                      <span className="font-mono text-cyan-400">{archiveConfigForm.eventArchiveQuota} bản ghi</span>
+              {!collapsedSections.storage && (
+                <div className="rounded border border-indigo-900/60 bg-indigo-950/20 p-4 space-y-3.5 shadow-md">
+                  <div className="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Database className="size-4 text-indigo-400" />
+                      <h3 className="text-xs font-bold uppercase text-indigo-200 tracking-wider">
+                        Hạn Ngạch Kho Lưu Trữ Tác Chiến // Operations Archive Quotas
+                      </h3>
                     </div>
-                    <input
-                      type="range"
-                      min={10}
-                      max={200}
-                      step={5}
-                      value={archiveConfigForm.eventArchiveQuota}
-                      onChange={(e) =>
-                        setArchiveConfigForm({
-                          ...archiveConfigForm,
-                          eventArchiveQuota: Number(e.target.value),
-                        })
-                      }
-                      className="w-full accent-cyan-400 cursor-pointer"
-                    />
-                    <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
-                      <span>Tối thiểu: 10</span>
-                      <span>Mặc định: 60</span>
-                      <span>Tối đa: 200</span>
-                    </div>
+                    <span className="rounded bg-indigo-950/80 px-2 py-0.5 text-xs font-bold text-indigo-300 border border-indigo-500/40">
+                      BOUNDED FIFO RETENTION
+                    </span>
                   </div>
 
-                  <div className="rounded border border-zinc-800 bg-zinc-900/60 p-3 space-y-1.5">
-                    <div className="flex items-center justify-between font-bold text-zinc-300 text-[11px]">
-                      <span>Hạn Ngạch Nhật Ký Chiến Đấu Buồng Lái</span>
-                      <span className="font-mono text-amber-400">{archiveConfigForm.battleArchiveQuota} bản ghi</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="rounded border border-indigo-900/40 bg-zinc-950/60 p-3 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-zinc-300 font-bold">Hạn ngạch Kết Quả Sự Kiện:</span>
+                        <span className="font-mono text-indigo-300 font-bold">
+                          {archiveConfigForm.eventArchiveQuota} bản ghi
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={20}
+                        max={200}
+                        step={10}
+                        value={archiveConfigForm.eventArchiveQuota}
+                        onChange={(e) =>
+                          setArchiveConfigForm({
+                            ...archiveConfigForm,
+                            eventArchiveQuota: parseInt(e.target.value, 10),
+                          })
+                        }
+                        className="w-full accent-indigo-400 cursor-pointer"
+                      />
                     </div>
-                    <input
-                      type="range"
-                      min={10}
-                      max={150}
-                      step={5}
-                      value={archiveConfigForm.battleArchiveQuota}
-                      onChange={(e) =>
-                        setArchiveConfigForm({
-                          ...archiveConfigForm,
-                          battleArchiveQuota: Number(e.target.value),
-                        })
-                      }
-                      className="w-full accent-amber-400 cursor-pointer"
-                    />
-                    <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
-                      <span>Tối thiểu: 10</span>
-                      <span>Mặc định: 40</span>
-                      <span>Tối đa: 150</span>
+
+                    <div className="rounded border border-indigo-900/40 bg-zinc-950/60 p-3 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-zinc-300 font-bold">Hạn ngạch Nhật Ký Chiến Đấu:</span>
+                        <span className="font-mono text-indigo-300 font-bold">
+                          {archiveConfigForm.battleArchiveQuota} trận
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min={10}
+                        max={100}
+                        step={5}
+                        value={archiveConfigForm.battleArchiveQuota}
+                        onChange={(e) =>
+                          setArchiveConfigForm({
+                            ...archiveConfigForm,
+                            battleArchiveQuota: parseInt(e.target.value, 10),
+                          })
+                        }
+                        className="w-full accent-indigo-400 cursor-pointer"
+                      />
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-[11px] text-emerald-400 font-semibold">
-                    {archiveSavedFeedback ? "✓ Đã áp dụng hạn ngạch và đồng bộ World State!" : ""}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!worldState) return
-                      playClickSound()
-                      updateOperationsArchiveConfig(worldState, archiveConfigForm)
-                      saveWorldState(worldState)
-                      playShieldSound()
-                      setArchiveSavedFeedback(true)
-                      setTimeout(() => setArchiveSavedFeedback(false), 3000)
-                    }}
-                    className="flex items-center gap-1.5 rounded border border-indigo-400 bg-indigo-600/40 px-3.5 py-1.5 text-xs font-bold text-indigo-200 hover:bg-indigo-600/60 hover:text-white transition-all cursor-pointer shadow-md shadow-indigo-950/50"
-                  >
-                    <Save className="size-3.5" />
-                    <span>Lưu Cấu Hình Hạn Ngạch Lưu Trữ</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* VÙNG NGUY HIỂM — DANGER ZONE: TÁCH BIỆT RÕ RÀNG */}
-              <div className="rounded-lg border-2 border-red-500/70 bg-gradient-to-b from-red-950/30 to-red-950/10 p-4 space-y-3 shadow-lg shadow-red-950/40">
-                <div className="flex items-center justify-between border-b border-red-500/30 pb-2">
-                  <div className="flex items-center gap-2">
-                    <ShieldAlert className="size-5 text-red-400 animate-pulse" />
-                    <h4 className="font-display text-xs sm:text-sm font-black uppercase text-red-300 tracking-wider">
-                      VÙNG THAO TÁC NGUY HIỂM // DANGER ZONE
-                    </h4>
+                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-indigo-900/40">
+                    {archiveSavedFeedback && (
+                      <span className="text-xs text-emerald-400 font-bold">
+                        Đã lưu cấu hình Archive Quota!
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSaveArchiveConfig}
+                      className="rounded border border-indigo-500/50 bg-indigo-900/40 px-3.5 py-1.5 text-xs font-bold text-indigo-200 hover:bg-indigo-800/50 cursor-pointer"
+                    >
+                      Lưu Hạn Ngạch Archive
+                    </button>
                   </div>
-                  <span className="rounded bg-red-950/80 px-2 py-0.5 text-[10px] font-bold text-red-300 border border-red-500/50">
-                    DESTRUCTIVE ACTION
-                  </span>
+                </div>
+              )}
+
+              {/* Vùng nguy hiểm: Reset World */}
+              <div className="rounded border border-red-500/40 bg-red-950/20 p-4 space-y-3 shadow-md">
+                <div className="flex items-center gap-2 border-b border-red-900/60 pb-2">
+                  <AlertOctagon className="size-4 text-red-400" />
+                  <h3 className="text-xs font-black uppercase text-red-300 tracking-wider">
+                    Vùng Nguy Hiểm // Reset Toàn Bộ Thế Giới
+                  </h3>
                 </div>
 
-                <div className="space-y-1.5 text-xs">
-                  <p className="text-zinc-300 leading-relaxed">
-                    Hành động Reset World sẽ xóa toàn bộ trạng thái thiên hà (8 sectors, quân lực, tài nguyên và sự kiện đang chạy) để quay về <strong>Ngày 1</strong> ban đầu.
+                <div className="space-y-1 text-xs text-zinc-300">
+                  <p className="leading-relaxed">
+                    Hành động Reset World sẽ đưa toàn bộ trạng thái thiên hà (8 sectors, quân lực, tài nguyên và sự kiện) quay về <strong>Ngày 1 / Year 1</strong>.
                   </p>
-                  <p className="text-emerald-400 font-bold text-[11px]">
+                  <p className="text-emerald-400 font-bold text-xs">
                     ✓ Bảo toàn tuyệt đối: Tiến trình RPG (Phi công, Cấp độ, Trang bị, Kho đồ, Chiến dịch 12 ải) KHÔNG bị ảnh hưởng.
                   </p>
-                  <p className="text-zinc-400 text-[11px]">
-                    ✓ Cấu hình Simulator (Tốc độ {simulatorConfig.speedSeconds}s/ngày, Generator) được GIỮ NGUYÊN theo đúng quy tắc.
-                  </p>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -1318,7 +1347,7 @@ export function AdminSettingsModal({
                     className="w-full flex items-center justify-center gap-2 rounded border border-red-500 bg-red-600/30 p-2.5 text-xs font-black text-red-200 hover:bg-red-600/50 hover:text-white transition-all cursor-pointer shadow-md shadow-red-950/60"
                   >
                     <Trash2 className="size-4 text-red-400" />
-                    <span>RESET TOÀN BỘ WORLD VỀ NGÀY 1 (YÊU CẦU XÁC NHẬN)</span>
+                    <span>RESET TOÀN BỘ WORLD VỀ NGÀY 1 (YEAR 1)</span>
                   </button>
                 </div>
               </div>
@@ -1330,9 +1359,9 @@ export function AdminSettingsModal({
         {/* ====================================================================
             FOOTER CỐ ĐỊNH CỦA MODAL
             ==================================================================== */}
-        <div className="flex items-center justify-between border-t border-zinc-800 bg-zinc-900/90 px-4 py-2.5 shrink-0 text-xs text-zinc-400">
-          <div className="text-[11px]">
-            STARFRONT WORLD ENGINE · PHASE 6.18 ADMIN CP
+        <div className="flex flex-wrap items-center justify-between border-t border-zinc-800 bg-zinc-900/90 px-4 py-2.5 shrink-0 text-xs text-zinc-400 gap-2">
+          <div className="text-xs font-mono">
+            STARFRONT WORLD ENGINE · PHASE 6.33_FIX4 ADMIN CP
           </div>
           <button
             type="button"
@@ -1352,13 +1381,13 @@ export function AdminSettingsModal({
           SUB-DIALOG 1: XÁC NHẬN ĐỔI TỐC ĐỘ (SPEED CONFIRM DIALOG)
           ==================================================================== */}
       {isSpeedConfirmOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="w-full max-w-md rounded-lg border border-cyan-500/60 bg-zinc-950 p-5 shadow-2xl shadow-cyan-950/60 space-y-4 font-mono text-zinc-200">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-xs p-4 animate-fadeIn text-xs">
+          <div className="w-full max-w-md rounded-lg border border-cyan-500/60 bg-zinc-950 p-5 shadow-2xl shadow-cyan-950/60 space-y-4 font-mono text-zinc-200 text-xs">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
               <div className="flex items-center gap-2">
                 <Clock className="size-4 text-cyan-400" />
                 <h3 className="text-xs font-bold uppercase text-cyan-300">
-                  Xác Nhận Đổi Tốc Độ Thời Gian Thực
+                  Xác Nhận Đổi Tốc Độ Thời Gian
                 </h3>
               </div>
               <button
@@ -1371,48 +1400,18 @@ export function AdminSettingsModal({
             </div>
 
             <div className="space-y-2 text-xs">
-              <p className="text-zinc-300">
-                Bạn sắp thay đổi nhịp độ vận hành của thế giới:
+              <p>
+                Bạn đang chuyển từ{" "}
+                <strong className="text-amber-300">{simulatorConfig.speedSeconds}s/ngày</strong> sang{" "}
+                <strong className="text-cyan-300">{pendingSpeed}s/ngày</strong>.
               </p>
-              <div className="rounded bg-zinc-900 p-2.5 border border-zinc-800 space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Tốc độ hiện tại:</span>
-                  <span className="font-bold text-zinc-300">{simulatorConfig.speedSeconds}s / Ngày</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500">Tốc độ mới:</span>
-                  <span className="font-bold text-cyan-300 text-sm">{pendingSpeed}s / Ngày</span>
-                </div>
-              </div>
-              <p className="text-[11px] text-zinc-400 leading-relaxed">
-                {resetWorldOnSpeedChange
-                  ? "Cảnh báo: Thế giới sẽ được reset về Ngày 1 và bắt đầu vận hành ngay với tốc độ mới. RPG Save V4 được bảo toàn 100%."
-                  : "Tiến độ ngày hiện tại sẽ được bảo lưu theo tỷ lệ phân đoạn mới, không gây chạy bù ngoài dự kiến và giữ nguyên toàn bộ lịch sử thế giới."}
-              </p>
-
-              {/* Tùy chọn Reset World kèm theo */}
-              <div className="flex items-center gap-2 rounded bg-zinc-900/60 p-2 border border-zinc-800">
-                <input
-                  type="checkbox"
-                  id="resetWorldOnSpeedChangeModalCb"
-                  checked={resetWorldOnSpeedChange}
-                  onChange={(e) => setResetWorldOnSpeedChange(e.target.checked)}
-                  className="size-3.5 rounded border-zinc-700 bg-zinc-950 text-cyan-500 focus:ring-0 cursor-pointer"
-                />
-                <label
-                  htmlFor="resetWorldOnSpeedChangeModalCb"
-                  className="text-[11px] text-zinc-300 cursor-pointer select-none"
-                >
-                  Đồng thời Reset WORLD về Ngày 1 (Bắt đầu chu kỳ mô phỏng mới)
-                </label>
-              </div>
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-zinc-800">
               <button
                 type="button"
                 onClick={handleCancelSpeedDialog}
-                className="rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="rounded border border-zinc-700 bg-zinc-900 px-3.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
               >
                 Hủy Bỏ
               </button>
@@ -1429,11 +1428,11 @@ export function AdminSettingsModal({
       )}
 
       {/* ====================================================================
-          SUB-DIALOG 2: XÁC NHẬN NGUY HIỂM RESET WORLD VỀ NGÀY 1 (DANGER DIALOG)
+          SUB-DIALOG 2: XÁC NHẬN NGUY HIỂM RESET WORLD VỀ NGÀY 1
           ==================================================================== */}
       {isResetConfirmOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-fadeIn">
-          <div className="w-full max-w-md rounded-lg border border-red-500/70 bg-zinc-950 p-5 shadow-2xl shadow-red-950/60 space-y-4 font-mono text-zinc-200">
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-xs p-4 animate-fadeIn text-xs">
+          <div className="w-full max-w-md rounded-lg border border-red-500/70 bg-zinc-950 p-5 shadow-2xl shadow-red-950/60 space-y-4 font-mono text-zinc-200 text-xs">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
               <div className="flex items-center gap-2">
                 <AlertOctagon className="size-4 text-red-400 animate-pulse" />
@@ -1452,15 +1451,14 @@ export function AdminSettingsModal({
 
             <div className="space-y-2 text-xs">
               <p className="text-red-200 font-bold">
-                Bạn có chắc chắn muốn đặt lại toàn bộ thế giới STARFRONT WORLD về Ngày 1?
+                Bạn có chắc chắn muốn đặt lại toàn bộ thế giới STARFRONT WORLD về Ngày 1 / Year 1?
               </p>
-              <div className="rounded bg-red-950/30 p-2.5 border border-red-500/30 space-y-1 text-[11px] text-zinc-300">
+              <div className="rounded bg-red-950/30 p-2.5 border border-red-500/30 space-y-1 text-xs text-zinc-300">
                 <div>&bull; Toàn bộ 8 sector sẽ trở về chủ quyền & đồn trú ban đầu.</div>
                 <div>&bull; Toàn bộ sự kiện đang chạy và chuỗi nhiệm vụ sẽ bị xóa.</div>
                 <div>&bull; Các đạo quân đang hành quân sẽ bị hủy an toàn.</div>
-                <div>&bull; Tốc độ cấu hình ({simulatorConfig.speedSeconds}s/ngày) và Generator sẽ được giữ nguyên.</div>
               </div>
-              <p className="text-[11px] text-emerald-400 font-bold">
+              <p className="text-xs text-emerald-400 font-bold">
                 Bảo đảm an toàn: Dữ liệu RPG Save V4 (Phi công, Cấp độ, Trang bị, Kho đồ, Chiến dịch) KHÔNG bị xóa.
               </p>
             </div>
@@ -1479,6 +1477,81 @@ export function AdminSettingsModal({
                 className="rounded border border-red-500 bg-red-600 px-4 py-1.5 text-xs font-black text-white hover:bg-red-700 transition-colors cursor-pointer shadow-lg shadow-red-950/80"
               >
                 Xác Nhận Reset Toàn Bộ World
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          SUB-DIALOG 3: CẢNH BÁO GIẢM MAX THREAT & RESET WORLD VỀ YEAR 1 (PHASE 6.33_FIX4 YÊU CẦU 5)
+          ==================================================================== */}
+      {isThreatResetConfirmOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/85 backdrop-blur-xs p-4 animate-fadeIn text-xs">
+          <div className="w-full max-w-lg rounded-lg border border-red-500/80 bg-zinc-950 p-5 shadow-2xl shadow-red-950/80 space-y-4 font-mono text-zinc-200 text-xs">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+              <div className="flex items-center gap-2">
+                <AlertOctagon className="size-4 text-red-400 animate-pulse" />
+                <h3 className="text-xs font-black uppercase text-red-300">
+                  CẢNH BÁO: GIẢM MAX THREAT DƯỚI CURRENT THREAT
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsThreatResetConfirmOpen(false)}
+                className="text-zinc-400 hover:text-white"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <p className="text-amber-300 font-bold leading-relaxed">
+                Mức Max Threat mới thấp hơn mức Threat hiện tại của một hoặc nhiều Sector!
+              </p>
+              
+              <div className="rounded bg-red-950/40 p-2.5 border border-red-500/40 space-y-1 text-xs text-zinc-300 max-h-36 overflow-y-auto">
+                {pendingThreatViolations.map((v) => (
+                  <div key={v.id} className="flex items-center justify-between gap-2 border-b border-red-900/30 pb-1">
+                    <span className="font-bold text-white truncate">{v.name}</span>
+                    <span className="text-rose-300 font-mono shrink-0">
+                      Threat: <b className="text-rose-200">{v.currentThreat}</b> &gt; Max mới: <b className="text-yellow-300">{v.newMaxThreat}</b>
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded bg-zinc-900 p-2.5 border border-zinc-800 text-xs text-zinc-300 space-y-1 leading-relaxed">
+                <div className="font-bold text-amber-400">
+                  ⚠️ YÊU CẦU ĐỒNG BỘ TRẠNG THÁI THIÊN HÀ:
+                </div>
+                <div>
+                  Để ngăn chặn xung đột dữ liệu khi mức đe dọa vượt quá trần cho phép, xác nhận hành động này sẽ <strong>RESET THẾ GIỚI STARFRONT WORLD VỀ YEAR 1</strong>.
+                </div>
+                <div className="text-cyan-300">
+                  Cấu hình Threat mới (HQ: {threatForm.maxThreatHQ}, Sector: {threatForm.maxThreatStandard}) sẽ được áp dụng trực tiếp vào thế giới khởi đầu mới.
+                </div>
+              </div>
+
+              <p className="text-emerald-400 font-bold text-xs">
+                ✓ Dữ liệu RPG Save V4 (Phi công, Cấp độ, Trang bị, Kho đồ, Chiến dịch) hoàn toàn KHÔNG bị ảnh hưởng.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setIsThreatResetConfirmOpen(false)}
+                className="rounded border border-zinc-700 bg-zinc-900 px-3.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                Hủy Bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmThreatReductionReset}
+                className="rounded border border-red-500 bg-red-600 px-4 py-1.5 text-xs font-black text-white hover:bg-red-700 transition-colors cursor-pointer shadow-lg shadow-red-950/80"
+              >
+                Xác Nhận & Reset WORLD về Year 1
               </button>
             </div>
           </div>

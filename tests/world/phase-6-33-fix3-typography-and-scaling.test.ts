@@ -87,13 +87,19 @@ test("PHASE 6.33_FIX3: Typography & UI Scaling (100% - 200%) Test Suite", async 
   // --------------------------------------------------------------------------
   // TEST 1 — Supported Scale Range
   // --------------------------------------------------------------------------
-  await t.test("Test 1 — Supported Scale Range: Exactly [100, 125, 150, 175, 200]", () => {
-    const expected = [100, 125, 150, 175, 200]
-    assert.deepStrictEqual(Array.from(SUPPORTED_UI_SCALES), expected)
+  // --------------------------------------------------------------------------
+  // TEST 1 — Supported Scale Range (Updated in FIX4: Step 5% from 100 to 200)
+  // --------------------------------------------------------------------------
+  await t.test("Test 1 — Supported Scale Range: [100, 200] with step 5%", () => {
     assert.strictEqual(MIN_UI_SCALE, 100)
     assert.strictEqual(MAX_UI_SCALE, 200)
-    assert.strictEqual(UI_SCALE_STEP, 25)
+    assert.strictEqual(UI_SCALE_STEP, 5)
     assert.strictEqual(DEFAULT_UI_SCALE, 100)
+    assert.ok(SUPPORTED_UI_SCALES.includes(100))
+    assert.ok(SUPPORTED_UI_SCALES.includes(125))
+    assert.ok(SUPPORTED_UI_SCALES.includes(150))
+    assert.ok(SUPPORTED_UI_SCALES.includes(175))
+    assert.ok(SUPPORTED_UI_SCALES.includes(200))
   })
 
   // --------------------------------------------------------------------------
@@ -127,16 +133,15 @@ test("PHASE 6.33_FIX3: Typography & UI Scaling (100% - 200%) Test Suite", async 
   })
 
   // --------------------------------------------------------------------------
-  // TEST 4 — Nearest Step Rounding
+  // TEST 4 — Nearest Step Rounding (Step 5%)
   // --------------------------------------------------------------------------
-  await t.test("Test 4 — Nearest Step Rounding: 110 -> 100, 120 -> 125, 160 -> 150, 170 -> 175", () => {
-    assert.strictEqual(normalizeUiScale(110), 100, "110 rounds to nearest step 100")
-    assert.strictEqual(normalizeUiScale(120), 125, "120 rounds to nearest step 125")
-    assert.strictEqual(normalizeUiScale(130), 125, "130 rounds to nearest step 125")
-    assert.strictEqual(normalizeUiScale(140), 150, "140 rounds to nearest step 150")
-    assert.strictEqual(normalizeUiScale(160), 150, "160 rounds to nearest step 150")
-    assert.strictEqual(normalizeUiScale(170), 175, "170 rounds to nearest step 175")
-    assert.strictEqual(normalizeUiScale(190), 200, "190 rounds to nearest step 200")
+  await t.test("Test 4 — Nearest Step Rounding: 102 -> 100, 103 -> 105, 118 -> 120", () => {
+    assert.strictEqual(normalizeUiScale(102), 100, "102 rounds to 100")
+    assert.strictEqual(normalizeUiScale(103), 105, "103 rounds to 105")
+    assert.strictEqual(normalizeUiScale(110), 110, "110 is exactly a 5% step")
+    assert.strictEqual(normalizeUiScale(118), 120, "118 rounds to 120")
+    assert.strictEqual(normalizeUiScale(124), 125, "124 rounds to 125")
+    assert.strictEqual(normalizeUiScale(182), 180, "182 rounds to 180")
   })
 
   // --------------------------------------------------------------------------
@@ -145,7 +150,7 @@ test("PHASE 6.33_FIX3: Typography & UI Scaling (100% - 200%) Test Suite", async 
   await t.test("Test 5 — Decimal Multipliers safely converted and clamped", () => {
     assert.strictEqual(normalizeUiScale(0.8), 100, "0.8 -> 80 -> 100")
     assert.strictEqual(normalizeUiScale(1.0), 100, "1.0 -> 100")
-    assert.strictEqual(normalizeUiScale(1.2), 125, "1.2 -> 120 -> 125")
+    assert.strictEqual(normalizeUiScale(1.2), 120, "1.2 -> 120")
     assert.strictEqual(normalizeUiScale(1.25), 125, "1.25 -> 125")
     assert.strictEqual(normalizeUiScale(1.5), 150, "1.5 -> 150")
     assert.strictEqual(normalizeUiScale(1.75), 175, "1.75 -> 175")

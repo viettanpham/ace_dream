@@ -34,6 +34,7 @@ import {
   evaluateMissionChainUnlocks,
   retryPendingMissionChainDispatches,
 } from "./mission-chains"
+import { advanceMissionDispatches } from "./mission-dispatch"
 import { createEventFromTemplate } from "./event-templates"
 import type {
   InFlightTransaction,
@@ -396,8 +397,14 @@ function executePhase5DeadlinesAndResolutions(
     }
   }
 
+  // 5.3. Xử lý điều phối nhiệm vụ tác chiến (Mission Dispatches & PREPARE / NPC Takeover)
+  const dispatchCycleResult = advanceMissionDispatches(state, prng)
+  for (const l of dispatchCycleResult.logs) {
+    log.changesApplied.push(l)
+  }
+
   log.changesApplied.push(
-    `Deadlines evaluated: ${eventCycleResult.autoLockedEvents.length} event(s) auto-locked, ${eventCycleResult.resolvedEvents.length} resolved`
+    `Deadlines evaluated: ${eventCycleResult.autoLockedEvents.length} event(s) auto-locked, ${eventCycleResult.resolvedEvents.length} resolved, ${dispatchCycleResult.prepareTakeoversCount} NPC takeover(s), ${dispatchCycleResult.completedCount} mission(s) completed`
   )
 
   return eventCycleResult.summary

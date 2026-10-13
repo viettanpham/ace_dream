@@ -37,16 +37,17 @@
 
 ## 3. Chi Tiết Kế Hoạch Cho Từng Giai Đoạn
 
-### 3.1. Phase 6.31 — Mission Dispatch & Operations Archive (Kế hoạch / Chưa triển khai)
-- **Mục tiêu cốt lõi**:
-  - **Giới hạn tham gia duy nhất**: Người chơi chỉ được trực tiếp chỉ huy/tham gia tối đa **một** nhiệm vụ tại một thời điểm, bảo đảm tính hiện diện chiến lược tập trung.
-  - **Trạng thái chuẩn bị (PREPARE)**: Nhiệm vụ ở pha PREPARE có thể tiếp tục nhận lực lượng hoặc điều chỉnh người tham gia trước khi xuất phát.
-  - **Ủy quyền NPC thay thế tự động**: Khi thời gian chuẩn bị (PREPARE) kết thúc mà người chơi không trực tiếp tham gia, NPC cấp phó/chỉ huy đồn trú sẽ tự động tiếp quản để nhiệm vụ tiếp tục diễn biến mà không bị đóng băng.
-  - **Mô phỏng nhiệm vụ không có người chơi**: Các nhiệm vụ do NPC thực hiện vẫn được động cơ mô phỏng đầy đủ từng bước và ghi nhận kết quả thực tế vào thế giới.
-  - **Hệ thống Objective tái sử dụng**: Xây dựng cấu trúc mục tiêu nhiệm vụ chuẩn hóa dùng chung cho 6 hình thái hoạt động: Tuần tra biên giới (Patrol), Hộ tống đoàn vận tải (Escort), Phòng thủ căn cứ (Defend), Đột kích căn cứ The Void (Raid), Tiêu diệt mục tiêu đầu não (Eliminate), và Ứng phó điểm nóng Threat (Threat Containment).
-  - **Hộp lưu trữ Operations Archive**: Lưu trữ kết quả nhiệm vụ/sự kiện và kết quả chiến đấu với quota/giới hạn dung lượng lưu trữ riêng biệt; áp dụng dọn dẹp an toàn khi đầy.
-  - **Tính xác thực của nhật ký (Authentic Logs)**: Nhật ký hành động nhiệm vụ phải dựa 100% trên dữ liệu sự kiện thực tế, tuyệt đối không sinh timestamp giả, tên nhân vật giả lập tùy tiện hoặc phần thưởng ảo.
-- **Quy tắc tiền triển khai**: Khảo sát kỹ lưỡng cấu trúc dữ liệu `mission-chains.ts`, `event-engine.ts`, và `quick-dispatch-dock.tsx` hiện có để xác định chính xác phần đã có sẵn và phần thực sự cần bổ sung.
+### 3.1. Phase 6.31 — Mission Dispatch & Operations Archive
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (DONE)**.
+- **Kết quả thực tế đã nghiệm thu**:
+  - **Giới hạn tham gia duy nhất**: Người chơi chỉ được trực tiếp chỉ huy tối đa **1** nhiệm vụ tại một thời điểm (`canPlayerJoinMission`, `playerJoinMission`, `playerWithdrawMission`, `getActivePlayerMission`). Ngăn chặn duplicate và xung đột vai trò.
+  - **Cơ chế PREPARE & NPC Takeover**: Nhiệm vụ ở giai đoạn PREPARE tiếp tục nhận lực lượng đồn trú (`assignGarrisonForcesToMission`). Khi hết hạn PREPARE mà người chơi chưa tham gia, sĩ quan NPC cấp phó/đồn trú (`getEligibleNPCCommander`) tự động tiếp quản (`processPrepareExpirationsAndTakeovers`), chuyển sang PROCESSING để nhiệm vụ không bị đóng băng.
+  - **Mô phỏng nhiệm vụ NPC-only với kết quả thực tế**: Động cơ `simulateAndResolveMission` mô phỏng tác chiến có kiểm soát dựa trên độ ổn định, Threat, quân đồn trú và tư cách chỉ huy; áp dụng biến động thực tế vào Threat, Stability, Casualties và Tài nguyên, đồng thời giải phóng quyền chỉ huy của người chơi.
+  - **Hệ thống Objective chuẩn hóa tái sử dụng**: Hỗ trợ 6 hình thái nhiệm vụ: Patrol, Escort, Defend, Raid, Eliminate, Threat Containment (`createStandardObjective`), tích hợp tiêu chí thành công rõ ràng.
+  - **Operations Archive có giới hạn (Bounded Retention)**: Lưu trữ 2 luồng kết quả độc lập (`eventResultsArchive` và committed combat trong `transactionJournal`), hỗ trợ cấu hình hạn ngạch quota động (`eventArchiveQuota`, `battleArchiveQuota`), cắt tỉa FIFO an toàn (`archiveEventResult`, `enforceOperationsArchiveQuotas`).
+  - **Nhật ký dòng thời gian xác thực (Action Timeline)**: Ghi nhận đúng các bước chuyển đổi trạng thái thực (`created`, `participant_joined`, `participant_withdrawn`, `prepare_completed`, `npc_takeover`, `processing_started`, `objective_resolved`, `completed`, `failed`, `aborted`), không sinh timestamp giả hay spam per-tick.
+  - **Giao diện Command Desk & Admin CP**: Tab "ĐIỀU PHỐI [DISPATCH]" trực quan trong `events-missions-board.tsx`, quản lý chỉ huy, tiếp quản, bổ sung quân, xem timeline và tạo lệnh điều phối mới; hiển thị quota badge trong `dual-results-hub.tsx`; thanh điều chỉnh quota trong Admin CP `admin-settings-modal.tsx`.
+  - **Khế ước WORLD an toàn**: Bảo toàn 100% `STARFRONT_WORLD_SAVE_V1`, CRC32 checksum, cách ly Save V4, Transaction Journal, Safe Abort (`abortMissionDispatch`), và tính lũy đẳng (Idempotent Resolution).
 
 ---
 
@@ -85,6 +86,6 @@
 | Phase | Tên Phân Hệ | Trạng Thái Kỹ Thuật | Nhiệm Vụ Trọng Tâm |
 |---|---|---|---|
 | **Phase 6.30** | Strategic Galaxy Map & Command UX Enhancement | **HOÀN THÀNH (DONE)** | Chiều sâu không gian node-only, Legend/Details mặc định OFF, Wheel/Double-click zoom, War Room Situation Deck |
-| **Phase 6.31** | Mission Dispatch & Operations Archive | **KẾ HOẠCH (PLANNED / CHƯA TRIỂN KHAI)** | 1 mission trực tiếp, PREPARE timeout NPC thay thế, objective chuẩn hóa, Operations Archive authentic logs |
+| **Phase 6.31** | Mission Dispatch & Operations Archive | **HOÀN THÀNH (DONE)** | 1 mission trực tiếp, PREPARE timeout NPC takeover, 6 objectives chuẩn hóa, Bounded Operations Archive & Action Timeline |
 | **Combat V2 Review** | Architectural Review & Design Specification | **THIẾT KẾ (DESIGN ONLY / CHƯA TRIỂN KHAI)** | Đánh giá kiến trúc quy mô squad/fleet, quan hệ quân số - HP, mô phỏng NPC, khế ước WORLD (`COMBAT_V2_REVIEW.md`) |
 | **Phase 6.32** | Route Intelligence & Action Logs | **KẾ HOẠCH (PLANNED / CHƯA TRIỂN KHAI)** | Route cards điểm đi - đến, Route Detail modal, focus tuyến, Action logs FIFO 100 bản ghi cấu hình AdminCP |

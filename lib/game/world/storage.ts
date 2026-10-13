@@ -379,6 +379,11 @@ export function loadWorldState(): LoadWorldResult {
     if (!loadedData.eventResultsArchive) loadedData.eventResultsArchive = []
     if (!loadedData.activeMissionChains) loadedData.activeMissionChains = []
     if (!loadedData.completedMissionChainIds) loadedData.completedMissionChainIds = []
+    if (!loadedData.missionDispatches) loadedData.missionDispatches = {}
+    if (loadedData.activePlayerMissionId === undefined) loadedData.activePlayerMissionId = null
+    if (!loadedData.operationsArchiveConfig) {
+      loadedData.operationsArchiveConfig = { eventArchiveQuota: 60, battleArchiveQuota: 40 }
+    }
 
     // Phase 6.28: Tự động di chuyển lên 10 Sector & 16 Tuyến đường nếu là save cũ
     const migration = migrateWorldStateTo10Sectors(loadedData)
@@ -451,7 +456,14 @@ export function loadWorldState(): LoadWorldResult {
     const msg = `Phát hiện lỗi bản lưu chính (${primaryValidation.error || "Hư hại dữ liệu"}); đã tự động phục hồi từ Backup Slot ${chosenBackup.slot} (Lưu lúc ${dateStr})`
     console.warn(`[STARFRONT WORLD] ${msg}`)
 
-    const migration = migrateWorldStateTo10Sectors(chosenBackup.envelope.data)
+    const backupData = chosenBackup.envelope.data
+    if (!backupData.missionDispatches) backupData.missionDispatches = {}
+    if (backupData.activePlayerMissionId === undefined) backupData.activePlayerMissionId = null
+    if (!backupData.operationsArchiveConfig) {
+      backupData.operationsArchiveConfig = { eventArchiveQuota: 60, battleArchiveQuota: 40 }
+    }
+
+    const migration = migrateWorldStateTo10Sectors(backupData)
     return {
       state: migration.state,
       status: chosenBackup.slot === "A" ? "recovered_backup_a" : "recovered_backup_b",

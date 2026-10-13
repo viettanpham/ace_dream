@@ -26,6 +26,7 @@ import { WorldPRNG } from "./random"
 import { EVENT_TEMPLATES, createEventFromTemplate } from "./event-templates"
 import { lockEncounterAndCreateSnapshot } from "./combat-adapter"
 import { getJournalEntry } from "./transaction-journal"
+import { archiveEventResult } from "./operations-archive"
 
 /**
  * Giới hạn trần số lượng sự kiện hoạt động đồng thời để chống quá tải
@@ -501,12 +502,8 @@ export function resolveProcessingEvent(
   event.status = "RESULT"
   event.result = resultObj
 
-  // Lưu trữ bền vững vào archive
-  ensureWorldEventState(state)
-  state.eventResultsArchive!.unshift(resultObj)
-  if (state.eventResultsArchive!.length > MAX_EVENT_ARCHIVE_SIZE) {
-    state.eventResultsArchive = state.eventResultsArchive!.slice(0, MAX_EVENT_ARCHIVE_SIZE)
-  }
+  // Lưu trữ bền vững vào Operations Archive
+  archiveEventResult(state, resultObj)
 
   const log = `[EVENT RESOLVED] Sự kiện "${event.title}" hoàn tất với kết quả [${outcomeStatus.toUpperCase()}]. ${applyRes.message}`
 

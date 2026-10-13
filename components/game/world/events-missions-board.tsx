@@ -34,6 +34,9 @@ import {
   TrendingDown,
   TrendingUp,
   Truck,
+  User,
+  UserCheck,
+  UserMinus,
   Wheat,
   X,
   Zap,
@@ -47,6 +50,17 @@ import {
   evaluateAndApplyEventStrategyPolicy,
   validateStrategyExecution,
 } from "@/lib/game/world/event-strategy-policy"
+import {
+  canPlayerJoinMission,
+  playerJoinMission,
+  playerWithdrawMission,
+  getActivePlayerMission,
+  assignGarrisonForcesToMission,
+  createMissionDispatch,
+  abortMissionDispatch,
+  createStandardObjective,
+} from "@/lib/game/world/mission-dispatch"
+import { saveWorldState } from "@/lib/game/world/storage"
 import type {
   WorldState,
   WorldEvent,
@@ -54,6 +68,9 @@ import type {
   MissionChain,
   MissionChainNode,
   EventStrategy,
+  MissionDispatch,
+  MissionObjectiveCategory,
+  MissionTimelineEntry,
 } from "@/lib/game/world/types"
 import type { EventLifecycleSummary } from "@/lib/game/world/event-engine"
 
@@ -70,7 +87,7 @@ interface EventsMissionsBoardProps {
   onSelectEvent?: (eventId: string | null) => void
 }
 
-export type CommandDeskMode = "init" | "processing" | "chains"
+export type CommandDeskMode = "init" | "processing" | "chains" | "dispatches"
 
 export function EventsMissionsBoard({
   worldState,
@@ -177,6 +194,78 @@ export function EventsMissionsBoard({
       setSelectedChainId(activeMissionChains[0].id)
     }
   }, [activeMissionChains, selectedChainId])
+
+  // Dữ liệu Mission Dispatches (Phase 6.31)
+  const dispatchesList = useMemo(() => {
+    return Object.values(worldState.missionDispatches || {}).sort((a, b) => {
+      const statusWeight: Record<string, number> = {
+        PREPARE: 3,
+        PROCESSING: 2,
+        COMPLETED: 1,
+        FAILED: 1,
+        ABORTED: 0,
+      }
+      const diff = (statusWeight[b.status] || 0) - (statusWeight[a.status] || 0)
+      if (diff !== 0) return diff
+      return b.createdAtTick - a.createdAtTick
+    })
+  }, [worldState.missionDispatches])
+
+  const activePlayerMission = useMemo(() => {
+    return getActivePlayerMission(worldState)
+  }, [worldState])
+
+  const [selectedDispatchId, setSelectedDispatchId] = useState<string | null>(null)
+  const [dispatchFilterMode, setDispatchFilterMode] = useState<"all" | "prepare" | "processing" | "resolved">("all")
+  const [isCreateDispatchOpen, setIsCreateDispatchOpen] = useState(false)
+  const [newDispatchCategory, setNewDispatchCategory] = useState<MissionObjectiveCategory>("patrol")
+  const [newDispatchSectorId, setNewDispatchSectorId] = useState<string>("helios_perimeter")
+  const [newDispatchDuration, setNewDispatchDuration] = useState<number>(2)
+  const [newDispatchTitle, setNewDispatchTitle] = useState<string>("")
+  const [dispatchFeedback, setDispatchFeedback] = useState<string | null>(null)
+  const [assignTroopsCount, setAssignTroopsCount] = useState<number>(20)
+
+  // Auto-select cho Dispatches khi danh sách thay đổi
+  useEffect(() => {
+    if (dispatchesList.length === 0) {
+      setSelectedDispatchId(null)
+      return
+    }
+    const exists = dispatchesList.some((d) => d.id === selectedDispatchId)
+    if (!exists) {
+      setSelectedDispatchId(dispatchesList[0].id)
+    }
+  }, [dispatchesList, selectedDispatchId])
+
+  const filteredDispatches = useMemo(() => {
+    return dispatchesList.filter((d) => {
+      if (dispatchFilterMode === "prepare" && d.status !== "PREPARE") return false
+      if (dispatchFilterMode === "processing" && d.status !== "PROCESSING") return false
+      if (
+        dispatchFilterMode === "resolved" &&
+        d.status !== "COMPLETED" &&
+        d.status !== "FAILED" &&
+        d.status !== "ABORTED"
+      ) {
+        return false
+      }
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim()
+        const titleMatch = d.title.toLowerCase().includes(q)
+        const descMatch = d.description.toLowerCase().includes(q)
+        const sectorMatch = worldState.sectors[d.sectorId]?.name.toLowerCase().includes(q)
+        const catMatch = d.category.toLowerCase().includes(q)
+        return titleMatch || descMatch || sectorMatch || catMatch
+      }
+      return true
+    })
+  }, [dispatchesList, dispatchFilterMode, searchQuery, worldState.sectors])
+
+  const activeSelectedDispatch = useMemo(() => {
+    if (!selectedDispatchId) return null
+    return dispatchesList.find((d) => d.id === selectedDispatchId) || null
+  }, [selectedDispatchId, dispatchesList])
 
   // Lọc tìm kiếm theo chế độ hiện tại
   const filteredInitEvents = useMemo(() => {
@@ -404,6 +493,30 @@ export function EventsMissionsBoard({
               <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
                 {activeMissionChains.length}/8
               </span>
+            </button>
+
+            {/* TAB 4: Điều Phối Tác Chiến [DISPATCH] (Phase 6.31) */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound()
+                setCommandMode("dispatches")
+              }}
+              className={cn(
+                "px-3 py-1.5 rounded border transition-all cursor-pointer flex items-center gap-2 text-[11px] font-bold",
+                commandMode === "dispatches"
+                  ? "border-amber-400 bg-amber-950/70 text-amber-200 shadow-md shadow-amber-950/40 ring-1 ring-amber-400/50"
+                  : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
+              )}
+            >
+              <Crosshair className="size-3.5 text-amber-400" />
+              <span>ĐIỀU PHỐI [DISPATCH]</span>
+              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                {dispatchesList.length}
+              </span>
+              {activePlayerMission && (
+                <span className="size-2 rounded-full bg-cyan-400 animate-pulse" title="Đang trực tiếp chỉ huy 1 nhiệm vụ" />
+              )}
             </button>
           </div>
 
@@ -1495,6 +1608,726 @@ export function EventsMissionsBoard({
           )}
         </div>
       )}
+
+      {/* ====================================================================
+          5. CHẾ ĐỘ D: ĐIỀU PHỐI TÁC CHIẾN [DISPATCH] (PHASE 6.31)
+          ==================================================================== */}
+      {commandMode === "dispatches" && (
+        <div className="space-y-3 font-mono text-xs">
+          {/* 5.1. THANH CHỈ HUY TRỰC TIẾP & TẠO LỆNH ĐIỀU PHỐI */}
+          <div className="rounded border border-border/80 bg-zinc-950/90 p-3 shadow-md backdrop-blur-md">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Crosshair className="size-4 text-amber-400" />
+                  <span className="font-bold text-amber-300 uppercase tracking-wide text-sm">
+                    ĐIỀU PHỐI CHIẾN DỊCH & LƯU TRỮ TÁC CHIẾN // MISSION DISPATCH
+                  </span>
+                </div>
+                {activePlayerMission ? (
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-300">
+                    <span className="flex items-center gap-1 rounded bg-cyan-950/80 px-2 py-0.5 text-cyan-300 border border-cyan-500/50 font-bold">
+                      <UserCheck className="size-3 text-cyan-400" />
+                      ĐANG CHỈ HUY: &quot;{activePlayerMission.title}&quot;
+                    </span>
+                    <span className="text-zinc-500">·</span>
+                    <span className="text-zinc-400">
+                      Sector: {worldState.sectors[activePlayerMission.sectorId]?.name}
+                    </span>
+                    <span className="text-zinc-500">·</span>
+                    <span className="text-amber-400 font-bold">
+                      {activePlayerMission.status === "PREPARE"
+                        ? `Còn ${Math.max(0, activePlayerMission.prepareDeadlineTick - worldState.currentDay)} ngày PREPARE`
+                        : `Đang tác chiến (Xong ngày #${activePlayerMission.processingCompletesTick})`}
+                    </span>
+                    {activePlayerMission.status === "PREPARE" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound()
+                          const res = playerWithdrawMission(worldState, activePlayerMission.id)
+                          if (res.success) {
+                            saveWorldState(worldState)
+                            setDispatchFeedback(res.message)
+                            onStateUpdated?.()
+                          }
+                        }}
+                        className="ml-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors cursor-pointer"
+                        title="Bàn giao lại quyền chỉ huy về đồn trú"
+                      >
+                        Rút Lui Chỉ Huy
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-zinc-400">
+                    <span className="text-emerald-400 font-bold">✓ Sẵn sàng nhận nhiệm vụ</span>: Bạn chưa chỉ huy nhiệm vụ nào. Người chơi có thể tiếp quản chỉ huy tối đa 1 nhiệm vụ tại một thời điểm.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound()
+                    setIsCreateDispatchOpen(!isCreateDispatchOpen)
+                  }}
+                  className="flex items-center gap-1.5 rounded border border-amber-500/60 bg-amber-950/60 px-3 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-900/60 hover:text-white transition-all cursor-pointer shadow-sm"
+                >
+                  <Crosshair className="size-3.5 text-amber-400" />
+                  <span>+ Mở Lệnh Điều Phối Mới</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Thông báo phản hồi tác vụ */}
+            {dispatchFeedback && (
+              <div className="mt-2.5 flex items-center justify-between rounded border border-amber-500/40 bg-amber-950/40 p-2 text-[11px] text-amber-200 animate-fadeIn">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="size-3.5 text-amber-400 shrink-0" />
+                  <span>{dispatchFeedback}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDispatchFeedback(null)}
+                  className="text-zinc-400 hover:text-white"
+                >
+                  <X className="size-3" />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 5.2. HỘP THOẠI / FORM TẠO LỆNH ĐIỀU PHỐI MỚI (DISPATCH CREATION FORM) */}
+          {isCreateDispatchOpen && (
+            <div className="rounded border border-amber-500/50 bg-zinc-950/95 p-3.5 space-y-3 shadow-lg animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                <div className="flex items-center gap-2">
+                  <Crosshair className="size-4 text-amber-400" />
+                  <span className="font-bold text-amber-300 uppercase text-xs">
+                    THIẾT LẬP LỆNH ĐIỀU PHỐI MỚI (6 HÌNH THÁI MỤC TIÊU)
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDispatchOpen(false)}
+                  className="text-zinc-400 hover:text-white"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                {/* 1. Chọn hình thái mục tiêu */}
+                <div className="space-y-1">
+                  <label className="text-[11px] text-zinc-400 font-bold block">
+                    Hình Thái Mục Tiêu (Objective Category):
+                  </label>
+                  <select
+                    value={newDispatchCategory}
+                    onChange={(e) => setNewDispatchCategory(e.target.value as MissionObjectiveCategory)}
+                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 focus:border-amber-400 focus:outline-none cursor-pointer"
+                  >
+                    <option value="patrol">Tuần Tra Tuyến Phòng Ngự (Patrol)</option>
+                    <option value="escort">Hộ Tống Đoàn Vận Tải (Escort)</option>
+                    <option value="defend">Gia Cố & Phòng Thủ Tiền Đồn (Defend)</option>
+                    <option value="raid">Đột Kích Căn Cứ Tiền Phương The Void (Raid)</option>
+                    <option value="eliminate">Tiêu Diệt Chỉ Huy Tiên Phong (Eliminate)</option>
+                    <option value="threat_containment">Khống Chế Điểm Nóng Đe Dọa (Threat Containment)</option>
+                  </select>
+                </div>
+
+                {/* 2. Chọn Sector */}
+                <div className="space-y-1">
+                  <label className="text-[11px] text-zinc-400 font-bold block">
+                    Sector Địa Bàn Tác Chiến:
+                  </label>
+                  <select
+                    value={newDispatchSectorId}
+                    onChange={(e) => setNewDispatchSectorId(e.target.value)}
+                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 focus:border-amber-400 focus:outline-none cursor-pointer"
+                  >
+                    {Object.values(worldState.sectors).map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.sovereignty.toUpperCase()} · Threat: {s.threatLevel} · Ổn định: {s.stability}%)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 3. Thời gian chuẩn bị (PREPARE duration) */}
+                <div className="space-y-1">
+                  <label className="text-[11px] text-zinc-400 font-bold block">
+                    Thời Gian Chuẩn Bị (PREPARE Duration):
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="range"
+                      min={1}
+                      max={4}
+                      value={newDispatchDuration}
+                      onChange={(e) => setNewDispatchDuration(Number(e.target.value))}
+                      className="flex-1 accent-amber-400 cursor-pointer"
+                    />
+                    <span className="font-mono text-amber-300 font-bold w-16 text-right">
+                      {newDispatchDuration} ngày
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-500">
+                    Khi hết {newDispatchDuration} ngày mà người chơi không trực tiếp tham gia, NPC đồn trú sẽ tự động tiếp quản chỉ huy để nhiệm vụ không bị đóng băng.
+                  </p>
+                </div>
+
+                {/* 4. Tiêu đề tùy chỉnh */}
+                <div className="space-y-1">
+                  <label className="text-[11px] text-zinc-400 font-bold block">
+                    Tiêu Đề Tùy Chỉnh (Tùy chọn):
+                  </label>
+                  <input
+                    type="text"
+                    value={newDispatchTitle}
+                    onChange={(e) => setNewDispatchTitle(e.target.value)}
+                    placeholder="Để trống để sử dụng tiêu đề chuẩn..."
+                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:border-amber-400 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Xem trước mục tiêu chuẩn */}
+              {worldState.sectors[newDispatchSectorId] && (
+                <div className="rounded border border-zinc-800 bg-zinc-900/50 p-2 text-[11px] space-y-1">
+                  <div className="flex items-center justify-between text-zinc-400">
+                    <span className="font-bold text-zinc-300 uppercase">Xem Trước Mục Tiêu Chuẩn Hóa:</span>
+                    <span className="text-amber-400 uppercase font-mono">{newDispatchCategory}</span>
+                  </div>
+                  <div className="text-zinc-200 font-bold">
+                    {createStandardObjective(newDispatchCategory, worldState.sectors[newDispatchSectorId]).title}
+                  </div>
+                  <div className="text-emerald-400">
+                    Tiêu chí thành công: {createStandardObjective(newDispatchCategory, worldState.sectors[newDispatchSectorId]).successCriteriaText}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDispatchOpen(false)}
+                  className="rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:text-white cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound()
+                    const sector = worldState.sectors[newDispatchSectorId]
+                    if (!sector) return
+
+                    const stdObj = createStandardObjective(newDispatchCategory, sector)
+                    const title = newDispatchTitle.trim() || stdObj.title
+                    const desc = stdObj.description
+
+                    const res = createMissionDispatch(worldState, {
+                      title,
+                      description: desc,
+                      category: newDispatchCategory,
+                      sectorId: newDispatchSectorId,
+                      prepareDurationTicks: newDispatchDuration,
+                    })
+
+                    if (res.success && res.dispatch) {
+                      saveWorldState(worldState)
+                      setSelectedDispatchId(res.dispatch.id)
+                      setIsCreateDispatchOpen(false)
+                      setNewDispatchTitle("")
+                      setDispatchFeedback(`Đã thiết lập thành công lệnh điều phối "${title}". Đang ở giai đoạn PREPARE.`)
+                      playShieldSound()
+                      onStateUpdated?.()
+                    } else {
+                      setDispatchFeedback(res.error || "Không thể khởi tạo lệnh điều phối.")
+                    }
+                  }}
+                  className="rounded border border-amber-400 bg-amber-600/40 px-3.5 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-600/60 hover:text-white transition-all cursor-pointer shadow-md"
+                >
+                  Xác Nhận Thiết Lập Điều Phối
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 5.3. BỘ LỌC TRẠNG THÁI NHIỆM VỤ */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
+            <div className="flex items-center gap-1">
+              {(
+                [
+                  { key: "all", label: "Tất Cả", count: dispatchesList.length },
+                  {
+                    key: "prepare",
+                    label: "Chuẩn Bị (PREPARE)",
+                    count: dispatchesList.filter((d) => d.status === "PREPARE").length,
+                  },
+                  {
+                    key: "processing",
+                    label: "Đang Tác Chiến",
+                    count: dispatchesList.filter((d) => d.status === "PROCESSING").length,
+                  },
+                  {
+                    key: "resolved",
+                    label: "Đã Kết Thúc",
+                    count: dispatchesList.filter(
+                      (d) => d.status === "COMPLETED" || d.status === "FAILED" || d.status === "ABORTED"
+                    ).length,
+                  },
+                ] as const
+              ).map(({ key, label, count }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    playClickSound()
+                    setDispatchFilterMode(key)
+                  }}
+                  className={cn(
+                    "px-2.5 py-1 rounded border transition-colors cursor-pointer text-[10px] font-bold uppercase",
+                    dispatchFilterMode === key
+                      ? "border-amber-400 bg-amber-950/70 text-amber-200 shadow-xs"
+                      : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200"
+                  )}
+                >
+                  {label} ({count})
+                </button>
+              ))}
+            </div>
+
+            <div className="text-[11px] text-zinc-500 font-mono">
+              Hiển thị: {filteredDispatches.length} / {dispatchesList.length} nhiệm vụ
+            </div>
+          </div>
+
+          {/* 5.4. BỐ CỤC 2 CỘT: DANH SÁCH & CHI TIẾT ĐIỀU PHỐI */}
+          {filteredDispatches.length === 0 ? (
+            <div className="rounded border border-dashed border-zinc-800 p-8 text-center text-zinc-500 space-y-2">
+              <Crosshair className="size-8 mx-auto text-zinc-600" />
+              <div className="font-bold text-zinc-300">Không có lệnh điều phối nào trong bộ lọc này</div>
+              <p className="text-[11px] text-zinc-500 max-w-md mx-auto">
+                Bấm &quot;+ Mở Lệnh Điều Phối Mới&quot; ở trên để triển khai nhiệm vụ tuần tra, hộ tống, phòng thủ, đột kích, tiêu diệt mục tiêu hoặc khống chế đe dọa.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+              {/* CỘT TRÁI: DANH SÁCH CARDS (5/12) */}
+              <div className="lg:col-span-5 space-y-2 max-h-[640px] overflow-y-auto pr-1">
+                {filteredDispatches.map((dispatch) => {
+                  const isSelected = selectedDispatchId === dispatch.id
+                  const sector = worldState.sectors[dispatch.sectorId]
+                  const isPlayerLeading = dispatch.participant?.type === "player"
+                  const isNPCLeading = dispatch.participant?.type === "npc"
+
+                  return (
+                    <div
+                      key={dispatch.id}
+                      onClick={() => {
+                        playClickSound()
+                        setSelectedDispatchId(dispatch.id)
+                      }}
+                      className={cn(
+                        "rounded border p-2.5 space-y-2 cursor-pointer transition-all",
+                        isSelected
+                          ? "border-amber-400/80 bg-amber-950/30 ring-1 ring-amber-400/50 shadow-md"
+                          : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900/80"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="rounded bg-zinc-800 px-1.5 py-0.2 text-[9px] font-bold uppercase text-amber-300 border border-zinc-700">
+                              {dispatch.category}
+                            </span>
+                            <span className="font-bold text-zinc-200 text-xs truncate">
+                              {dispatch.title}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-zinc-400 flex items-center gap-1">
+                            <MapPin className="size-2.5 text-cyan-400" />
+                            <span>{sector?.name || dispatch.sectorId}</span>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <span
+                          className={cn(
+                            "px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 border",
+                            dispatch.status === "PREPARE"
+                              ? "bg-amber-950/80 text-amber-300 border-amber-500/50"
+                              : dispatch.status === "PROCESSING"
+                              ? "bg-cyan-950/80 text-cyan-300 border-cyan-500/50 animate-pulse"
+                              : dispatch.status === "COMPLETED"
+                              ? "bg-emerald-950/80 text-emerald-300 border-emerald-500/50"
+                              : dispatch.status === "FAILED"
+                              ? "bg-rose-950/80 text-rose-300 border-rose-500/50"
+                              : "bg-zinc-800 text-zinc-400 border-zinc-700"
+                          )}
+                        >
+                          {dispatch.status === "PREPARE"
+                            ? "PREPARE"
+                            : dispatch.status === "PROCESSING"
+                            ? "PROCESSING"
+                            : dispatch.status === "COMPLETED"
+                            ? "THẮNG"
+                            : dispatch.status === "FAILED"
+                            ? "THUA"
+                            : "HỦY"}
+                        </span>
+                      </div>
+
+                      {/* Commander Tag & Timers */}
+                      <div className="flex items-center justify-between text-[10px] pt-1 border-t border-zinc-800/60">
+                        <div className="flex items-center gap-1.5">
+                          {isPlayerLeading ? (
+                            <span className="flex items-center gap-1 text-cyan-300 font-bold">
+                              <User className="size-3 text-cyan-400" />
+                              Chỉ Huy Trực Tiếp
+                            </span>
+                          ) : isNPCLeading ? (
+                            <span className="flex items-center gap-1 text-indigo-300 font-semibold">
+                              <Shield className="size-3 text-indigo-400" />
+                              NPC Tiếp Quản
+                            </span>
+                          ) : (
+                            <span className="text-zinc-500 italic">Chờ Chỉ Huy</span>
+                          )}
+                        </div>
+
+                        <div className="font-mono text-[10px]">
+                          {dispatch.status === "PREPARE" && (
+                            <span className="text-amber-400">
+                              Hạn: Ngày #{dispatch.prepareDeadlineTick} (Còn {Math.max(0, dispatch.prepareDeadlineTick - worldState.currentDay)} ngày)
+                            </span>
+                          )}
+                          {dispatch.status === "PROCESSING" && (
+                            <span className="text-cyan-400">
+                              Xong: Ngày #{dispatch.processingCompletesTick} (Còn {Math.max(0, (dispatch.processingCompletesTick || 0) - worldState.currentDay)} ngày)
+                            </span>
+                          )}
+                          {(dispatch.status === "COMPLETED" || dispatch.status === "FAILED" || dispatch.status === "ABORTED") && (
+                            <span className="text-zinc-400">Hoàn tất</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* CỘT PHẢI: CHI TIẾT NHIỆM VỤ ĐƯỢC CHỌN (7/12) */}
+              <div className="lg:col-span-7">
+                {activeSelectedDispatch ? (
+                  <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3.5 space-y-3.5 shadow-md">
+                    {/* Header nhiệm vụ */}
+                    <div className="flex items-start justify-between gap-3 border-b border-zinc-800 pb-2.5">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300 border border-amber-500/40">
+                            {activeSelectedDispatch.category}
+                          </span>
+                          <span className="font-mono text-zinc-500 text-[10px]">ID: {activeSelectedDispatch.id}</span>
+                        </div>
+                        <h3 className="font-bold text-zinc-100 text-sm">
+                          {activeSelectedDispatch.title}
+                        </h3>
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                          {activeSelectedDispatch.description}
+                        </p>
+                      </div>
+
+                      {onNavigateToSector && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound()
+                            onNavigateToSector(activeSelectedDispatch.sectorId)
+                          }}
+                          className="shrink-0 flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] text-zinc-300 hover:text-cyan-300 hover:border-cyan-500 cursor-pointer"
+                          title="Xem Sector trên Galaxy Map"
+                        >
+                          <MapPin className="size-3 text-cyan-400" />
+                          <span>Galaxy Map</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Khung điều khiển Chỉ Huy & Lực Lượng */}
+                    <div className="rounded border border-zinc-800/80 bg-zinc-900/60 p-3 space-y-2.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-bold text-zinc-300 uppercase tracking-wide">
+                          Phân Định Quyền Chỉ Huy & Lực Lượng:
+                        </span>
+                        <span className="font-mono text-[10px] text-zinc-400">
+                          Trạng Thái: <strong className="text-amber-300 uppercase">{activeSelectedDispatch.status}</strong>
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                        <div className="rounded border border-zinc-800 bg-black/40 p-2 space-y-1">
+                          <span className="text-zinc-500 block text-[10px]">CHỈ HUY HIỆN TẠI:</span>
+                          {activeSelectedDispatch.participant?.type === "player" ? (
+                            <div className="font-bold text-cyan-300 flex items-center gap-1.5">
+                              <UserCheck className="size-3.5 text-cyan-400" />
+                              <span>{activeSelectedDispatch.participant.name} (Người Chơi Trực Tiếp)</span>
+                            </div>
+                          ) : activeSelectedDispatch.participant?.type === "npc" ? (
+                            <div className="font-bold text-indigo-300 flex items-center gap-1.5">
+                              <Shield className="size-3.5 text-indigo-400" />
+                              <span>{activeSelectedDispatch.participant.name} (NPC Tiếp Quản)</span>
+                            </div>
+                          ) : (
+                            <div className="text-amber-400 font-semibold italic">
+                              Chưa có chỉ huy trực tiếp (Sẵn sàng tiếp quản)
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="rounded border border-zinc-800 bg-black/40 p-2 space-y-1">
+                          <span className="text-zinc-500 block text-[10px]">LỰC LƯỢNG ĐỒN TRÚ ĐIỀU ĐỘNG:</span>
+                          <div className="font-bold text-zinc-200">
+                            {(activeSelectedDispatch.assignedForces?.garrisonTroops || 0).toLocaleString()} quân
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tác vụ trong giai đoạn PREPARE */}
+                      {activeSelectedDispatch.status === "PREPARE" && (
+                        <div className="pt-2 border-t border-zinc-800 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Nút Tiếp Quản hoặc Rút Lui */}
+                            {activeSelectedDispatch.participant?.type === "player" ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playClickSound()
+                                  const res = playerWithdrawMission(worldState, activeSelectedDispatch.id)
+                                  if (res.success) {
+                                    saveWorldState(worldState)
+                                    setDispatchFeedback(res.message)
+                                    onStateUpdated?.()
+                                  }
+                                }}
+                                className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-300 hover:text-white cursor-pointer"
+                              >
+                                <UserMinus className="size-3.5 text-zinc-400" />
+                                <span>Rút Lui Khỏi Vị Trí Chỉ Huy</span>
+                              </button>
+                            ) : (
+                              (() => {
+                                const check = canPlayerJoinMission(worldState, activeSelectedDispatch.id)
+                                return (
+                                  <button
+                                    type="button"
+                                    disabled={!check.allowed}
+                                    onClick={() => {
+                                      playClickSound()
+                                      const res = playerJoinMission(worldState, activeSelectedDispatch.id, {
+                                        pilotName: "Chỉ Huy VSS",
+                                      })
+                                      if (res.success) {
+                                        saveWorldState(worldState)
+                                        setDispatchFeedback(res.message)
+                                        playShieldSound()
+                                        onStateUpdated?.()
+                                      } else {
+                                        setDispatchFeedback(res.message)
+                                      }
+                                    }}
+                                    className={cn(
+                                      "flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-bold transition-all",
+                                      check.allowed
+                                        ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 hover:bg-cyan-900 hover:text-white cursor-pointer shadow-md shadow-cyan-950/40"
+                                        : "border-zinc-800 bg-zinc-900/50 text-zinc-500 cursor-not-allowed"
+                                    )}
+                                    title={check.reason}
+                                  >
+                                    <UserCheck className="size-3.5 text-cyan-400" />
+                                    <span>Tiếp Quản Chỉ Huy Trực Tiếp</span>
+                                  </button>
+                                )
+                              })()
+                            )}
+
+                            {/* Nút Bổ sung quân đồn trú */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playClickSound()
+                                const sector = worldState.sectors[activeSelectedDispatch.sectorId]
+                                if (!sector) return
+                                const troopsToAdd = Math.min(25, Math.floor(sector.garrisonPower * 0.2))
+                                if (troopsToAdd <= 0) {
+                                  setDispatchFeedback("Đồn trú tại Sector không còn đủ quân để bổ sung.")
+                                  return
+                                }
+                                const res = assignGarrisonForcesToMission(
+                                  worldState,
+                                  activeSelectedDispatch.id,
+                                  troopsToAdd
+                                )
+                                if (res.success) {
+                                  saveWorldState(worldState)
+                                  setDispatchFeedback(res.message)
+                                  onStateUpdated?.()
+                                } else {
+                                  setDispatchFeedback(res.message)
+                                }
+                              }}
+                              className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900/80 px-2.5 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer"
+                              title="Tăng cường thêm quân đồn trú từ căn cứ"
+                            >
+                              <Shield className="size-3.5 text-zinc-400" />
+                              <span>+ Điều Động Quân Đồn Trú (+25)</span>
+                            </button>
+
+                            {/* Nút Hủy bỏ an toàn */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playClickSound()
+                                const res = abortMissionDispatch(
+                                  worldState,
+                                  activeSelectedDispatch.id,
+                                  "Hủy bỏ theo quyết định của Bộ Chỉ Huy trong giai đoạn PREPARE."
+                                )
+                                if (res.success) {
+                                  saveWorldState(worldState)
+                                  setDispatchFeedback(res.message)
+                                  onStateUpdated?.()
+                                }
+                              }}
+                              className="ml-auto rounded border border-red-900/50 bg-red-950/30 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-900/40 cursor-pointer"
+                            >
+                              Hủy Nhiệm Vụ
+                            </button>
+                          </div>
+
+                          {!canPlayerJoinMission(worldState, activeSelectedDispatch.id).allowed &&
+                            activeSelectedDispatch.participant?.type !== "player" && (
+                              <p className="text-[10px] text-amber-400">
+                                ⚠ {canPlayerJoinMission(worldState, activeSelectedDispatch.id).reason}
+                              </p>
+                            )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Khung Mục Tiêu Chuẩn Hóa (Standard Reusable Objective) */}
+                    <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-zinc-200">MỤC TIÊU CHIẾN DỊCH:</span>
+                        <span className="text-emerald-400 font-mono">
+                          Tiến Độ: {activeSelectedDispatch.objective.currentProgress || 0}%
+                        </span>
+                      </div>
+                      <div className="text-xs font-semibold text-zinc-300">
+                        {activeSelectedDispatch.objective.title}
+                      </div>
+                      <div className="text-[11px] text-zinc-400">
+                        {activeSelectedDispatch.objective.description}
+                      </div>
+
+                      {/* Tiêu chí thành công */}
+                      <div className="rounded bg-emerald-950/30 border border-emerald-500/30 p-2 text-[11px] text-emerald-300 space-y-0.5">
+                        <div className="font-bold text-[10px] uppercase text-emerald-400">Tiêu Chí Hoàn Tất Tác Chiến:</div>
+                        <div>{activeSelectedDispatch.objective.successCriteriaText}</div>
+                      </div>
+
+                      {/* Thanh tiến độ */}
+                      <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                        <div
+                          className="bg-emerald-400 h-full transition-all duration-300"
+                          style={{ width: `${Math.min(100, activeSelectedDispatch.objective.currentProgress || 0)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Tóm tắt kết quả nếu đã giải quyết */}
+                    {activeSelectedDispatch.resultSummary && (
+                      <div className="rounded border border-indigo-500/30 bg-indigo-950/20 p-2.5 text-xs space-y-1">
+                        <div className="font-bold text-indigo-300 text-[11px] uppercase">
+                          KẾT QUẢ ĐÃ LƯU TRỮ (OPERATIONS ARCHIVE):
+                        </div>
+                        <div className="text-zinc-300 text-[11px]">
+                          {activeSelectedDispatch.resultSummary}
+                        </div>
+                        {onNavigateToResults && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              playClickSound()
+                              onNavigateToResults()
+                            }}
+                            className="text-[10px] text-cyan-400 hover:text-cyan-200 underline cursor-pointer"
+                          >
+                            Xem chi tiết trong Trung Tâm Kết Quả Kép &rarr;
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* DÒNG THỜI GIAN HÀNH ĐỘNG THỰC TẾ (AUTHENTIC ACTION TIMELINE) */}
+                    <div className="space-y-2 pt-2 border-t border-zinc-800">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 font-bold text-zinc-300 uppercase">
+                          <Clock className="size-3.5 text-zinc-400" />
+                          <span>NHẬT KÝ DÒNG THỜI GIAN THỰC TẾ // ACTION TIMELINE</span>
+                        </div>
+                        <span className="font-mono text-[10px] text-zinc-500">
+                          {activeSelectedDispatch.actionTimeline.length} bản ghi
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                        {activeSelectedDispatch.actionTimeline.map((entry, idx) => (
+                          <div
+                            key={entry.id || idx}
+                            className="rounded border border-zinc-800/80 bg-black/40 p-2 text-[10px] font-mono space-y-1"
+                          >
+                            <div className="flex items-center justify-between text-zinc-400">
+                              <span className="font-bold text-zinc-200">{entry.title}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-zinc-500">Ngày #{entry.tick}</span>
+                                <span
+                                  className={cn(
+                                    "px-1 py-0.2 rounded font-bold uppercase text-[9px] border",
+                                    entry.actor.type === "player"
+                                      ? "border-cyan-500/50 bg-cyan-950/60 text-cyan-300"
+                                      : entry.actor.type === "npc"
+                                      ? "border-indigo-500/50 bg-indigo-950/60 text-indigo-300"
+                                      : "border-zinc-700 bg-zinc-800 text-zinc-400"
+                                  )}
+                                >
+                                  {entry.actor.name}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-zinc-400 text-[10px] font-sans leading-relaxed">
+                              {entry.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded border border-dashed border-zinc-800 p-8 text-center text-zinc-500">
+                    Chọn một nhiệm vụ từ danh sách bên trái để xem chi tiết và nhật ký điều phối.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
+

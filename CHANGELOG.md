@@ -2,6 +2,40 @@
 
 Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án **STARFRONT** được ghi lại tại đây theo trình tự thời gian đảo ngược (mới nhất lên đầu).
 
+## [Phase 6.31] — STARFRONT WORLD: Điều Phối Nhiệm Vụ & Hộp Lưu Trữ Tác Chiến (Mission Dispatch & Operations Archive)
+
+*Đã hoàn thành 100% Phase 6.31 theo đúng roadmap STARFRONT: Thiết lập hệ thống điều phối nhiệm vụ chiến lược với giới hạn người chơi trực tiếp tham gia tối đa 1 nhiệm vụ tại một thời điểm; cơ chế chuyển giao tự động cho NPC đồn trú (NPC Takeover) khi hết hạn PREPARE; mô phỏng tác chiến NPC-only với kết quả thực tế vào WORLD; cấu trúc mục tiêu chuẩn hóa tái sử dụng cho 6 hình thái tác chiến; kho lưu trữ Operations Archive có hạn ngạch bounded FIFO riêng biệt; nhật ký dòng thời gian Action Timeline xác thực không spam per-tick; giao diện Command Desk & Admin CP trực quan; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (100% tests PASS, compile & lint thành công).*
+
+### Các nâng cấp kỹ thuật & tính năng đã hoàn thành:
+- **1. Phân Định Quyền Chỉ Huy & Giới Hạn Tham Gia Duy Nhất**:
+  * Người chơi chỉ được trực tiếp chỉ huy tối đa **một** nhiệm vụ tại một thời điểm (`activePlayerMissionId`, `canPlayerJoinMission`, `playerJoinMission`, `playerWithdrawMission`).
+  * Ngăn chặn triệt để tình trạng duplicate participation, race condition hoặc ghi nhận chồng chéo vai trò chỉ huy.
+- **2. Vòng Đời PREPARE & Chuyển Giao Tự Động Cho NPC (NPC Takeover)**:
+  * Trong giai đoạn PREPARE, căn cứ có thể tiếp tục điều động bổ sung quân đồn trú chi viện (`assignGarrisonForcesToMission`).
+  * Khi thời gian PREPARE kết thúc mà không có người chơi tham gia, sĩ quan đồn trú cấp phó (`getEligibleNPCCommander`) tự động tiếp quản quyền chỉ huy (`processPrepareExpirationsAndTakeovers`), chuyển trạng thái sang PROCESSING để nhiệm vụ không bị đóng băng.
+- **3. Mô Phỏng Nhiệm Vụ NPC-Only & Kết Quả Thực Tế Vào WORLD**:
+  * Động cơ `simulateAndResolveMission` mô phỏng kết quả tác chiến dựa trên thực lực: ổn định sector, threat, quân số đồn trú và tư cách chỉ huy (bonus +15% khi người chơi trực tiếp dẫn dắt).
+  * Áp dụng biến động thực tế vào Threat Level, Stability, Casualties và Tài nguyên thế giới; giải phóng người chơi khi nhiệm vụ kết thúc; bảo đảm tính lũy đẳng (Idempotency Guard).
+- **4. Cấu Trúc Mục Tiêu Chuẩn Hóa Tái Sử Dụng (6 Hình Thái)**:
+  * Hỗ trợ 6 phân loại tác chiến: Tuần Tra (Patrol), Hộ Tống (Escort), Phòng Thủ (Defend), Đột Kích (Raid), Tiêu Diệt (Eliminate), và Khống Chế Điểm Nóng (Threat Containment) qua `createStandardObjective`.
+  * Mỗi mục tiêu đi kèm mô tả, địa bàn sector, tiến độ 0-100% và tiêu chí thành công minh bạch.
+- **5. Hộp Lưu Trữ Tác Chiến Bounded Operations Archive**:
+  * Lưu trữ bền vững 2 luồng hồ sơ: Kết quả sự kiện / nhiệm vụ (`eventResultsArchive`) và Nhật ký trận đấu buồng lái (`transactionJournal`).
+  * Hạn ngạch quota độc lập có thể cấu hình linh hoạt (mặc định 60 sự kiện, 40 trận đấu) qua `updateOperationsArchiveConfig` và giao diện Admin CP.
+  * Cắt tỉa FIFO an toàn (`enforceOperationsArchiveQuotas`, `pruneOperationsArchiveSafe`), không xóa dữ liệu đang chạy và không bịa đặt timestamp/kết quả giả.
+- **6. Nhật Ký Dòng Thời Gian Xác Thực (Authentic Action Timeline)**:
+  * Ghi nhận chính xác các bước chuyển đổi trạng thái thực: `created`, `participant_joined`, `participant_withdrawn`, `prepare_completed`, `npc_takeover`, `processing_started`, `objective_resolved`, `completed`, `failed`, `aborted`.
+  * Xác định rõ định danh tác nhân (Player, NPC, System), ngày chiến lược (Tick) và thời gian thực tế; loại trừ hoàn toàn log spam per-tick.
+- **7. Tích Hợp UI Command Desk & Admin CP**:
+  * Bổ sung Tab `[ĐIỀU PHỐI (DISPATCH)]` trên bảng chỉ huy `EventsMissionsBoard`, cho phép tiếp quản, rút lui, bổ sung quân, hủy an toàn (`abortMissionDispatch`), xem Action Timeline và thiết lập lệnh điều phối mới.
+  * Tích hợp badge hiển thị dung lượng hạn ngạch Operations Archive trong `DualResultsHub` (`dual-results-hub.tsx`).
+  * Bổ sung bảng cấu hình hạn ngạch lưu trữ trong tab Storage của Admin CP (`admin-settings-modal.tsx`).
+- **8. Kiểm Thử & Kiểm Chứng Hệ Thống**:
+  * Toàn bộ 8/8 bài kiểm thử tự động trong `tests/world/phase-6-31-mission-dispatch-archive.test.ts` đạt 100% PASS.
+  * Build TypeScript và Lint không phát sinh lỗi (`tsc --noEmit` & `npm run build` thành công).
+
+---
+
 ## [Roadmap Planning] — Xác Lập Lộ Trình Tác Chiến Tiếp Theo Sau Phase 6.30 (Phases 6.31, Combat V2 Review, 6.32)
 
 *Cập nhật và hoàn thiện hệ thống tài liệu kế hoạch chiến lược chuẩn bị cho giai đoạn phát triển tiếp theo sau khi Phase 6.30 hoàn thành: xác lập phạm vi kỹ thuật của Phase 6.31 (Mission Dispatch & Operations Archive: giới hạn 1 nhiệm vụ trực tiếp, PREPARE timeout ủy quyền NPC, objective tái sử dụng, Operations Archive authentic logs); khởi tạo tài liệu thiết kế độc lập `docs/roadmap/COMBAT_V2_REVIEW.md` đánh giá kiến trúc Combat V2 (quy mô squad/fleet, quan hệ quân số - HP, mô phỏng NPC, khế ước WORLD); xác lập kế hoạch Phase 6.32 (Route Intelligence & Action Logs FIFO 100 bản ghi cấu hình AdminCP); bảo toàn 100% trạng thái hoàn thành của Phase 6.30, không sửa đổi mã nguồn gameplay hay save schema.*

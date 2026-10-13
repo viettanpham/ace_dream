@@ -530,6 +530,112 @@ export interface MissionChain {
 }
 
 /**
+ * ============================================================================
+ * PHASE 6.31 — MISSION DISPATCH, OBJECTIVES & OPERATIONS ARCHIVE TYPES
+ * ============================================================================
+ */
+
+export type MissionDispatchStatus = "PREPARE" | "PROCESSING" | "COMPLETED" | "FAILED" | "ABORTED"
+
+export type MissionParticipantType = "player" | "npc"
+
+export interface MissionParticipant {
+  type: MissionParticipantType
+  id: string
+  name: string
+  role: "commander" | "deputy" | "escort" | "specialist"
+  joinedAtTick: number
+  assignedGarrisonTroops?: number
+}
+
+export type MissionObjectiveCategory =
+  | "patrol"
+  | "escort"
+  | "defend"
+  | "raid"
+  | "eliminate"
+  | "threat_containment"
+
+export interface MissionObjective {
+  id: string
+  category: MissionObjectiveCategory
+  title: string
+  description: string
+  targetSectorId?: string
+  targetValue?: number
+  currentProgress?: number
+  isCompleted?: boolean
+  successCriteriaText: string
+}
+
+export type MissionTimelineEventType =
+  | "created"
+  | "participant_joined"
+  | "participant_withdrawn"
+  | "prepare_completed"
+  | "npc_takeover"
+  | "processing_started"
+  | "objective_resolved"
+  | "completed"
+  | "failed"
+  | "aborted"
+
+export interface MissionTimelineEntry {
+  id: string
+  missionId: string
+  tick: number
+  timestamp: number
+  type: MissionTimelineEventType
+  title: string
+  description: string
+  actor: {
+    type: "player" | "npc" | "system"
+    name: string
+  }
+}
+
+export interface MissionDispatch {
+  id: string
+  title: string
+  description: string
+  category: MissionObjectiveCategory
+  sectorId: string
+  status: MissionDispatchStatus
+  createdAtTick: number
+  prepareDeadlineTick: number
+  processingStartedTick?: number
+  processingCompletesTick?: number
+  participant: MissionParticipant | null
+  leaderType?: "player" | "npc"
+  objective: MissionObjective
+  assignedForces?: {
+    garrisonTroops?: number
+    pilotId?: string
+  }
+  actionTimeline: MissionTimelineEntry[]
+  eventId?: string
+  missionChainId?: string
+  nodeId?: string
+  isResolved?: boolean
+  consequencesApplied?: boolean
+  resultSummary?: string
+}
+
+export interface OperationsArchiveConfig {
+  eventArchiveQuota: number
+  battleArchiveQuota: number
+}
+
+export interface OperationsArchiveSummary {
+  totalArchivedEvents: number
+  unreadEventsCount: number
+  totalArchivedBattles: number
+  victoriousBattlesCount: number
+  eventArchiveQuota: number
+  battleArchiveQuota: number
+}
+
+/**
  * Toàn bộ trạng thái của phân hệ STARFRONT WORLD (World State v1)
  */
 export interface WorldState {
@@ -564,6 +670,10 @@ export interface WorldState {
     medium: number
     large: number
   }
+  // Phase 6.31: Mission Dispatch & Operations Archive
+  missionDispatches?: Record<string, MissionDispatch>
+  activePlayerMissionId?: string | null
+  operationsArchiveConfig?: OperationsArchiveConfig
 }
 
 /**

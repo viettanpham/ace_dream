@@ -475,5 +475,11 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     events: {},
     missionChains: {},
     eventResultsArchive: [],
+    missionDispatches: {},
+    activePlayerMissionId: null,
+    operationsArchiveConfig: {
+      eventArchiveQuota: 60,
+      battleArchiveQuota: 40,
+    },
   }
 }

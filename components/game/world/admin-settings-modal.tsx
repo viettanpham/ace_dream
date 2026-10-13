@@ -35,6 +35,11 @@ import {
   type TierStrategyPreference,
 } from "@/lib/game/world/simulator-config"
 import { getGameCalendarInfo } from "@/lib/game/world/calendar"
+import {
+  getOperationsArchiveConfig,
+  updateOperationsArchiveConfig,
+} from "@/lib/game/world/operations-archive"
+import { saveWorldState } from "@/lib/game/world/storage"
 import type { WorldState } from "@/lib/game/world/types"
 
 export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "triggers" | "storage"
@@ -96,6 +101,10 @@ export function AdminSettingsModal({
   const [strategyPolicyForm, setStrategyPolicyForm] = useState<EventStrategyPolicyConfig>(
     simulatorConfig.strategyPolicy || DEFAULT_EVENT_STRATEGY_POLICY
   )
+  const [archiveConfigForm, setArchiveConfigForm] = useState(() => {
+    return worldState ? getOperationsArchiveConfig(worldState) : { eventArchiveQuota: 60, battleArchiveQuota: 40 }
+  })
+  const [archiveSavedFeedback, setArchiveSavedFeedback] = useState(false)
 
   // Sub-dialog xác nhận đổi tốc độ
   const [isSpeedConfirmOpen, setIsSpeedConfirmOpen] = useState(false)
@@ -110,8 +119,11 @@ export function AdminSettingsModal({
     if (isOpen) {
       setGeneratorForm(simulatorConfig.generator || DEFAULT_SIMULATOR_CONFIG.generator)
       setStrategyPolicyForm(simulatorConfig.strategyPolicy || DEFAULT_EVENT_STRATEGY_POLICY)
+      if (worldState) {
+        setArchiveConfigForm(getOperationsArchiveConfig(worldState))
+      }
     }
-  }, [isOpen, simulatorConfig])
+  }, [isOpen, simulatorConfig, worldState])
 
   // Lắng nghe phím ESC để đóng dialog phân cấp (Sub-dialog trước, modal sau)
   useEffect(() => {
@@ -1171,6 +1183,101 @@ export function AdminSettingsModal({
                   >
                     <Save className="size-3.5" />
                     <span>Lưu Trạng Thái Thế Giới Ngay Bây Giờ (Force Save)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Cấu hình hạn ngạch Operations Archive */}
+              <div className="rounded border border-indigo-900/60 bg-indigo-950/20 p-4 space-y-3.5 shadow-md">
+                <div className="flex items-center justify-between border-b border-indigo-800/60 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Database className="size-4 text-indigo-400" />
+                    <h3 className="text-xs font-bold uppercase text-indigo-200 tracking-wider">
+                      Hạn Ngạch Kho Lưu Trữ Tác Chiến // Operations Archive Quotas (Phase 6.31)
+                    </h3>
+                  </div>
+                  <span className="rounded bg-indigo-950/80 px-2 py-0.5 text-[10px] font-bold text-indigo-300 border border-indigo-500/40">
+                    BOUNDED FIFO RETENTION
+                  </span>
+                </div>
+
+                <p className="text-zinc-300 text-xs leading-relaxed">
+                  Thiết lập giới hạn lưu trữ tối đa cho 2 luồng hồ sơ độc lập. Khi vượt quá hạn ngạch, hệ thống tự động áp dụng chính sách cắt tỉa FIFO an toàn, không xóa dữ liệu đang chạy và không bịa đặt sự kiện lịch sử.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="rounded border border-zinc-800 bg-zinc-900/60 p-3 space-y-1.5">
+                    <div className="flex items-center justify-between font-bold text-zinc-300 text-[11px]">
+                      <span>Hạn Ngạch Báo Cáo Sự Kiện & Nhiệm Vụ</span>
+                      <span className="font-mono text-cyan-400">{archiveConfigForm.eventArchiveQuota} bản ghi</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={200}
+                      step={5}
+                      value={archiveConfigForm.eventArchiveQuota}
+                      onChange={(e) =>
+                        setArchiveConfigForm({
+                          ...archiveConfigForm,
+                          eventArchiveQuota: Number(e.target.value),
+                        })
+                      }
+                      className="w-full accent-cyan-400 cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
+                      <span>Tối thiểu: 10</span>
+                      <span>Mặc định: 60</span>
+                      <span>Tối đa: 200</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded border border-zinc-800 bg-zinc-900/60 p-3 space-y-1.5">
+                    <div className="flex items-center justify-between font-bold text-zinc-300 text-[11px]">
+                      <span>Hạn Ngạch Nhật Ký Chiến Đấu Buồng Lái</span>
+                      <span className="font-mono text-amber-400">{archiveConfigForm.battleArchiveQuota} bản ghi</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={150}
+                      step={5}
+                      value={archiveConfigForm.battleArchiveQuota}
+                      onChange={(e) =>
+                        setArchiveConfigForm({
+                          ...archiveConfigForm,
+                          battleArchiveQuota: Number(e.target.value),
+                        })
+                      }
+                      className="w-full accent-amber-400 cursor-pointer"
+                    />
+                    <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
+                      <span>Tối thiểu: 10</span>
+                      <span>Mặc định: 40</span>
+                      <span>Tối đa: 150</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-emerald-400 font-semibold">
+                    {archiveSavedFeedback ? "✓ Đã áp dụng hạn ngạch và đồng bộ World State!" : ""}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!worldState) return
+                      playClickSound()
+                      updateOperationsArchiveConfig(worldState, archiveConfigForm)
+                      saveWorldState(worldState)
+                      playShieldSound()
+                      setArchiveSavedFeedback(true)
+                      setTimeout(() => setArchiveSavedFeedback(false), 3000)
+                    }}
+                    className="flex items-center gap-1.5 rounded border border-indigo-400 bg-indigo-600/40 px-3.5 py-1.5 text-xs font-bold text-indigo-200 hover:bg-indigo-600/60 hover:text-white transition-all cursor-pointer shadow-md shadow-indigo-950/50"
+                  >
+                    <Save className="size-3.5" />
+                    <span>Lưu Cấu Hình Hạn Ngạch Lưu Trữ</span>
                   </button>
                 </div>
               </div>

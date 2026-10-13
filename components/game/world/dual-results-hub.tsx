@@ -31,6 +31,10 @@ import {
   markAllEventResultsAsRead,
   pruneReadEventResultsSafe,
 } from "@/lib/game/world/event-engine"
+import {
+  getOperationsArchiveConfig,
+  getOperationsArchiveSummary,
+} from "@/lib/game/world/operations-archive"
 import { saveWorldState } from "@/lib/game/world/storage"
 import type {
   WorldState,
@@ -60,6 +64,8 @@ export function DualResultsHub({
   const [filterMode, setFilterMode] = useState<"all" | "unread" | "success" | "failure">("all")
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [expandedResultId, setExpandedResultId] = useState<string | null>(null)
+
+  const archiveSummary = getOperationsArchiveSummary(worldState)
 
   // 1. Dữ liệu Event / Mission Results từ Archive
   const eventArchive: WorldEventResult[] = worldState.eventResultsArchive || []
@@ -123,9 +129,12 @@ export function DualResultsHub({
               <div className="flex items-center gap-2 text-cyan-400 font-bold uppercase tracking-wider text-sm">
                 <Layers className="size-4" />
                 <span>TRUNG TÂM KẾT QUẢ KÉP // DUAL RESULTS HUB</span>
+                <span className="ml-2 rounded bg-cyan-950/80 px-2 py-0.5 text-[10px] text-cyan-300 border border-cyan-500/40">
+                  Operations Archive Quota: Sự kiện {archiveSummary.totalArchivedEvents}/{archiveSummary.eventArchiveQuota} · Chiến đấu {archiveSummary.totalArchivedBattles}/{archiveSummary.battleArchiveQuota}
+                </span>
               </div>
               <p className="mt-0.5 text-zinc-400 text-[11px] leading-relaxed">
-                Lưu trữ minh bạch 2 luồng báo cáo có thẩm quyền: Báo Cáo Sự Kiện & Khủng Hoảng (Event Results) và Nhật Ký Trận Đánh Buồng Lái (Battle Results).
+                Lưu trữ minh bạch 2 luồng báo cáo có thẩm quyền: Báo Cáo Sự Kiện & Nhiệm Vụ (Event Results) và Nhật Ký Trận Đánh Buồng Lái (Battle Results) với hạn ngạch FIFO an toàn.
               </p>
             </div>
           ) : (
@@ -133,7 +142,7 @@ export function DualResultsHub({
               <Layers className="size-3.5 text-cyan-400" />
               <span className="font-bold text-zinc-200 uppercase">Hồ Sơ Debriefing</span>
               <span className="text-zinc-600">·</span>
-              <span>{eventArchive.length} sự kiện · {journalEntries.length} trận đấu</span>
+              <span>{eventArchive.length}/{archiveSummary.eventArchiveQuota} sự kiện · {journalEntries.length}/{archiveSummary.battleArchiveQuota} trận đấu</span>
             </div>
           )}
 

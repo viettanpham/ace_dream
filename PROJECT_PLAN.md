@@ -91,7 +91,7 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 | **Phase 6.22** | **Galaxy Map Hitbox & Viewport Interaction Fix** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/world-map.tsx`, `tests/world/phase6-22-galaxy-map-hitbox-viewport.test.ts` |
 | **Phase 6.29** | **Global Operations & Event Hub** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/global-operations-hub.tsx`, `tests/world/phase6-29-global-operations-event-hub.test.ts` |
 | **Phase 6.30** | **Strategic Galaxy Map & Command UX Enhancement** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `components/game/world/world-map.tsx`, `components/game/world/operations-center.tsx`, `tests/world/phase-6-30-strategic-galaxy-map.test.ts` |
-| **Phase 6.31** | **Mission Dispatch & Operations Archive** | **KẾ HOẠCH (PLANNED / CHƯA TRIỂN KHAI)** | Điều phối nhiệm vụ 1 người chơi trực tiếp, timeout PREPARE NPC thay thế, objective chuẩn hóa, Operations Archive authentic logs |
+| **Phase 6.31** | **Mission Dispatch & Operations Archive** | **ĐÃ HOÀN THÀNH (DONE — 100% TESTS PASS)** | `lib/game/world/mission-dispatch.ts`, `lib/game/world/operations-archive.ts`, `components/game/world/events-missions-board.tsx`, `tests/world/phase-6-31-mission-dispatch-archive.test.ts` |
 | **Combat V2 Review** | **Architectural Review & Design Specification** | **THIẾT KẾ (DESIGN ONLY / CHƯA TRIỂN KHAI)** | Đánh giá kiến trúc quy mô squad/fleet, quan hệ quân số - HP, mô phỏng NPC, khế ước WORLD (`docs/roadmap/COMBAT_V2_REVIEW.md`) |
 | **Phase 6.32** | **Route Intelligence & Action Logs** | **KẾ HOẠCH (PLANNED / CHƯA TRIỂN KHAI)** | Route cards điểm đi - đến, Route Detail modal, focus tuyến, nhật ký hành động tuyến FIFO 100 bản ghi cấu hình AdminCP |
 
@@ -99,7 +99,7 @@ Toàn bộ tài liệu chi tiết được tổ chức module hóa:
 
 ## 5. Hành Động Tiếp Theo (Next Steps)
 
-1. **Phase 6.31 — Mission Dispatch & Operations Archive**: Khảo sát cấu trúc `mission-chains.ts` và `event-engine.ts`, chuẩn bị triển khai cơ chế giới hạn 1 nhiệm vụ trực tiếp, ủy quyền NPC khi hết giờ PREPARE, objective tái sử dụng và hộp lưu trữ Operations Archive có kiểm soát quota.
+1. **Phase 6.31 — Mission Dispatch & Operations Archive**: Đã hoàn thành 100% (Giới hạn 1 nhiệm vụ trực tiếp, PREPARE timeout NPC takeover, 6 hình thái objective, Bounded Operations Archive và Action Timeline).
 2. **Combat V2 Review**: Thảo luận các quyết định thiết kế mở đã nêu trong `docs/roadmap/COMBAT_V2_REVIEW.md` (quy mô 3v3 vs 4v4, quan hệ HP - quân số, mô phỏng tự động, tích hợp WORLD Adapter) trước khi phê duyệt bắt đầu viết code cho engine chiến đấu mới.
 3. **Phase 6.32 — Route Intelligence & Action Logs**: Triển khai Route cards, modal tình báo tuyến và hệ thống nhật ký hành động FIFO có thể cấu hình dung lượng qua AdminCP sau khi hoàn tất các phase tiền đề.
 4. **Bảo tồn toàn vẹn**: Tuyệt đối không thay đổi gameplay rules, save schema (`STARFRONT_WORLD_SAVE_V1`, `STARFRONT_SAVE_DATA_V4`) trong lượt cập nhật kế hoạch này; giữ nguyên 100% các kết quả đã kiểm chứng.

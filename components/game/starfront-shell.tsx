@@ -91,6 +91,8 @@ import { MissionLog } from "./mission-log"
 import { FullMissionLogView } from "./full-mission-log-view"
 import { TopShipIntegrityBar } from "./top-ship-integrity-bar"
 import { OperationsCenter } from "./world/operations-center"
+import { CombatV2Dashboard } from "./world/combat-v2"
+import { convertWorldBattleContextToCombatV2Snapshot } from "@/lib/game/world/combat-v2-adapter-bridge"
 import type { WorldBattleContext } from "@/lib/game/world/types"
 import { loadWorldState } from "@/lib/game/world/storage"
 
@@ -1239,26 +1241,43 @@ export function StarfrontShell() {
               />
             )}
 
-            {/* Phân hệ 2: Đấu Trường (Battlefield - Phase 6.23 WORLD Combat Integration) */}
+            {/* Phân hệ 2: Đấu Trường (Battlefield - Phase 6.23 & 6.33 Combat V2 Integration) */}
             {activeSection === "battlefield" && (
-              <CombatArena
-                progression={progression}
-                onUpdateProgression={handleUpdateProgression}
-                activeCampaignMission={activeWorldBattle ? null : activeCampaignMission}
-                onClearCampaignMission={handleClearMission}
-                onSelectCampaignMission={setActiveCampaignMission}
-                onNavigateSection={handleSwitchSection}
-                isEmbeddedInShell={true}
-                worldBattleContext={activeWorldBattle}
-                onWorldCombatComplete={(result) => {
-                  setActiveWorldBattle(null)
-                  handleSwitchSection("world")
-                }}
-                onWorldCombatAborted={() => {
-                  setActiveWorldBattle(null)
-                  handleSwitchSection("world")
-                }}
-              />
+              activeWorldBattle?.snapshot?.combatVersion === "v2" ? (
+                <CombatV2Dashboard
+                  initialSnapshot={convertWorldBattleContextToCombatV2Snapshot(activeWorldBattle, {
+                    gearName: progression.activePairing?.gearId || progression.activeGearId || "Vanguard",
+                    pilotName: STARFRONT_PILOT_MAP[progression.activePairing?.pilotId || "marcus"]?.name || "Marcus Vance",
+                  })}
+                  onCombatComplete={(res, resolution) => {
+                    setActiveWorldBattle(null)
+                    handleSwitchSection("world")
+                  }}
+                  onExit={() => {
+                    setActiveWorldBattle(null)
+                    handleSwitchSection("world")
+                  }}
+                />
+              ) : (
+                <CombatArena
+                  progression={progression}
+                  onUpdateProgression={handleUpdateProgression}
+                  activeCampaignMission={activeWorldBattle ? null : activeCampaignMission}
+                  onClearCampaignMission={handleClearMission}
+                  onSelectCampaignMission={setActiveCampaignMission}
+                  onNavigateSection={handleSwitchSection}
+                  isEmbeddedInShell={true}
+                  worldBattleContext={activeWorldBattle}
+                  onWorldCombatComplete={(result) => {
+                    setActiveWorldBattle(null)
+                    handleSwitchSection("world")
+                  }}
+                  onWorldCombatAborted={() => {
+                    setActiveWorldBattle(null)
+                    handleSwitchSection("world")
+                  }}
+                />
+              )
             )}
 
             {/* Phân hệ 3: Nhiệm Vụ & Bản Đồ Chiến Dịch (Missions) */}

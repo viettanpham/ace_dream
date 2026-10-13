@@ -13,7 +13,7 @@
 | :--- | :--- | :--- | :--- |
 | **Phase 6.31** | **Mission Dispatch & Operations Archive** | **DONE** | `lib/game/world/mission-dispatch.ts`, `operations-archive.ts` |
 | **Phase 6.32** | **Combat V2 Core Engine** | **DONE** | `docs/WORLD_COMBAT_V2_DESIGN.md`, `docs/WORLD_SYSTEM_INVARIANTS.md` |
-| **Phase 6.33** | Combat Command, Retreat, Support & Battle UI | PLANNED / NOT STARTED | `docs/WORLD_COMBAT_V2_DESIGN.md`, `docs/WORLD_ADMINCP_CONFIG_REFERENCE.md` |
+| **Phase 6.33** | **Combat Command, Retreat, Support & Battle UI** | **DONE** | `docs/WORLD_COMBAT_V2_DESIGN.md`, `components/game/world/combat-v2` |
 | **Phase 6.34** | Pilot Survival & Rescue | PLANNED / NOT STARTED | `docs/WORLD_PILOT_SURVIVAL_RESCUE.md`, `docs/WORLD_COMBAT_V2_DESIGN.md` |
 | **Phase 6.35** | GEAR Logistics, Repair & Pilot Recovery | PLANNED / NOT STARTED | `docs/WORLD_GEAR_LOGISTICS_REPAIR.md`, `docs/WORLD_ADMINCP_CONFIG_REFERENCE.md` |
 | **Phase 6.36** | National Population & Personnel Pools | PLANNED / NOT STARTED | `docs/WORLD_NATIONAL_PERSONNEL_TRAINING.md`, `docs/WORLD_NATIONAL_ECONOMY.md` |

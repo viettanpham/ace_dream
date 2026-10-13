@@ -58,6 +58,7 @@ import {
   Scan,
   Shield,
   ShoppingBag,
+  Sliders,
   Sparkles,
   Swords,
   Terminal,
@@ -95,6 +96,7 @@ import { CombatV2Dashboard } from "./world/combat-v2"
 import { convertWorldBattleContextToCombatV2Snapshot } from "@/lib/game/world/combat-v2-adapter-bridge"
 import type { WorldBattleContext } from "@/lib/game/world/types"
 import { loadWorldState } from "@/lib/game/world/storage"
+import { GlobalSettingsModal, type GlobalSettingsState } from "./global-settings-modal"
 
 export type StarfrontSection =
   | "home"
@@ -343,6 +345,11 @@ export function StarfrontShell() {
   const [activeWorldBattle, setActiveWorldBattle] = useState<WorldBattleContext | null>(null)
   const [audioMuted, setAudioMutedState] = useState(false)
   const [scanlineEnabled, setScanlineEnabled] = useState(true)
+  const [scanlineBeamEnabled, setScanlineBeamEnabled] = useState(true)
+  const [vignetteEnabled, setVignetteEnabled] = useState(true)
+  const [cornerBracketsEnabled, setCornerBracketsEnabled] = useState(true)
+  const [uiScale, setUiScale] = useState(1.0)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [lockNoticeToast, setLockNoticeToast] = useState<{ text: string; type: "warning" | "success" } | null>(null)
 
   // Trạng thái ghép đôi và khóa nhân vật & cơ giáp (Phase 5.11)
@@ -374,6 +381,25 @@ export function StarfrontShell() {
       const savedScanline = localStorage.getItem("starfront_scanline_overlay")
       if (savedScanline !== null) {
         setScanlineEnabled(savedScanline === "true")
+      }
+      const savedBeam = localStorage.getItem("starfront_scanline_beam")
+      if (savedBeam !== null) {
+        setScanlineBeamEnabled(savedBeam === "true")
+      }
+      const savedVignette = localStorage.getItem("starfront_vignette")
+      if (savedVignette !== null) {
+        setVignetteEnabled(savedVignette === "true")
+      }
+      const savedBrackets = localStorage.getItem("starfront_corner_brackets")
+      if (savedBrackets !== null) {
+        setCornerBracketsEnabled(savedBrackets === "true")
+      }
+      const savedScale = localStorage.getItem("starfront_ui_scale")
+      if (savedScale !== null) {
+        const parsed = parseFloat(savedScale)
+        if (!isNaN(parsed) && parsed >= 0.8 && parsed <= 1.25) {
+          setUiScale(parsed)
+        }
       }
     } catch {
       // ignore local storage errors
@@ -417,6 +443,15 @@ export function StarfrontShell() {
       }
       return next
     })
+  }
+
+  const handleUpdateGlobalSettings = (s: GlobalSettingsState) => {
+    setAudioMutedState(s.audioMuted)
+    setScanlineEnabled(s.scanlineOverlay)
+    setScanlineBeamEnabled(s.scanlineBeam)
+    setVignetteEnabled(s.vignette)
+    setCornerBracketsEnabled(s.cornerBrackets)
+    setUiScale(s.uiScale)
   }
 
   // Lưu tự động mỗi khi có thay đổi tiến trình
@@ -607,7 +642,10 @@ export function StarfrontShell() {
 
   return (
     <GameProvider>
-      <div className="flex min-h-screen bg-background text-foreground antialiased selection:bg-cyan-500 selection:text-black">
+      <div
+        style={{ zoom: uiScale }}
+        className="flex min-h-screen bg-background text-foreground antialiased selection:bg-cyan-500 selection:text-black"
+      >
         {/* ==================================================================
             1. THANH ĐIỀU HƯỚNG BÊN TRÁI CỐ ĐỊNH (PERSISTENT LEFT SIDEBAR)
             ================================================================== */}
@@ -1007,8 +1045,20 @@ export function StarfrontShell() {
               >
                 <Scan className="size-3.5 text-cyan-400" />
                 {!isSidebarCollapsed && (
-                  <span>{scanlineEnabled ? "CRT: Bật" : "CRT: Tắt"}</span>
+                  <span>{scanlineEnabled ? "CRT" : "CRT"}</span>
                 )}
+              </button>
+
+              <button
+                onClick={() => {
+                  playClickSound()
+                  setIsSettingsOpen(true)
+                }}
+                className="flex items-center gap-1.5 rounded border border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 px-2 py-1 text-[11px] font-mono transition-colors cursor-pointer"
+                title="Cài đặt hệ thống (Âm thanh, CRT, Tỷ lệ hiển thị UI)"
+              >
+                <Sliders className="size-3.5 text-cyan-400" />
+                {!isSidebarCollapsed && <span>Cài Đặt</span>}
               </button>
 
               {!isSidebarCollapsed && (
@@ -1123,6 +1173,19 @@ export function StarfrontShell() {
               >
                 <Scan className={cn("size-3", scanlineEnabled ? "text-cyan-400 animate-pulse" : "text-muted-foreground")} />
                 <span className="hidden sm:inline font-semibold">{scanlineEnabled ? "SCANLINE: ON" : "SCANLINE: OFF"}</span>
+              </button>
+
+              {/* Nút Mở Bảng Cài Đặt Toàn Cục // Global Settings */}
+              <button
+                onClick={() => {
+                  playClickSound()
+                  setIsSettingsOpen(true)
+                }}
+                className="flex items-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 hover:bg-cyan-900/60 px-2 py-1 text-[11px] font-mono text-cyan-300 transition-all cursor-pointer shadow-[0_0_8px_rgba(6,182,212,0.2)]"
+                title="Cài đặt hệ thống: Âm thanh, Hiệu ứng CRT, Tỷ lệ hiển thị UI"
+              >
+                <Sliders className="size-3 text-cyan-400" />
+                <span className="hidden sm:inline font-semibold">CÀI ĐẶT</span>
               </button>
             </div>
           </header>
@@ -1405,18 +1468,33 @@ export function StarfrontShell() {
             <div className="absolute inset-0 crt-scanlines opacity-75 pointer-events-none" />
 
             {/* Dải quét tia sáng radar chuyển động mượt mà từ trên xuống dưới (Animated Sweep Beam) */}
-            <div className="absolute inset-x-0 h-44 scanline-beam opacity-85 pointer-events-none" />
+            {scanlineBeamEnabled && (
+              <div className="absolute inset-x-0 h-44 scanline-beam opacity-85 pointer-events-none" />
+            )}
 
             {/* Hiệu ứng viền tối cockpit chiến hạm sci-fi (Subtle Radial Vignette) */}
-            <div className="absolute inset-0 vignette-radial opacity-50 pointer-events-none" />
+            {vignetteEnabled && (
+              <div className="absolute inset-0 vignette-radial opacity-50 pointer-events-none" />
+            )}
 
             {/* Khung ngắm HUD 4 góc phong cách chiến thuật tương lai (Tactical Reticle Corners) */}
-            <div className="absolute top-2 left-2 size-4 border-t-2 border-l-2 border-cyan-500/40 pointer-events-none" />
-            <div className="absolute top-2 right-2 size-4 border-t-2 border-r-2 border-cyan-500/40 pointer-events-none" />
-            <div className="absolute bottom-2 left-2 size-4 border-b-2 border-l-2 border-cyan-500/40 pointer-events-none" />
-            <div className="absolute bottom-2 right-2 size-4 border-b-2 border-r-2 border-cyan-500/40 pointer-events-none" />
+            {cornerBracketsEnabled && (
+              <>
+                <div className="absolute top-2 left-2 size-4 border-t-2 border-l-2 border-cyan-500/40 pointer-events-none" />
+                <div className="absolute top-2 right-2 size-4 border-t-2 border-r-2 border-cyan-500/40 pointer-events-none" />
+                <div className="absolute bottom-2 left-2 size-4 border-b-2 border-l-2 border-cyan-500/40 pointer-events-none" />
+                <div className="absolute bottom-2 right-2 size-4 border-b-2 border-r-2 border-cyan-500/40 pointer-events-none" />
+              </>
+            )}
           </div>
         )}
+
+        {/* Modal Cài Đặt Hệ Thống Toàn Cục // Global Settings Modal (Phase 6.33_FIX1 P1) */}
+        <GlobalSettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onUpdateSettings={handleUpdateGlobalSettings}
+        />
       </div>
     </GameProvider>
   )

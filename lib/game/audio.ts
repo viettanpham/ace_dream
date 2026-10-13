@@ -20,6 +20,7 @@ function getAudioContext(): AudioContext | null {
 }
 
 const STORAGE_MUTE_KEY = "STARFRONT_AUDIO_MUTED"
+const STORAGE_VOLUME_KEY = "STARFRONT_AUDIO_VOLUME"
 
 export function isAudioMuted(): boolean {
   if (typeof window === "undefined") return false
@@ -29,6 +30,22 @@ export function isAudioMuted(): boolean {
 export function setAudioMuted(muted: boolean): void {
   if (typeof window === "undefined") return
   localStorage.setItem(STORAGE_MUTE_KEY, String(muted))
+}
+
+export function getAudioVolume(): number {
+  if (typeof window === "undefined") return 0.8
+  const saved = localStorage.getItem(STORAGE_VOLUME_KEY)
+  if (saved !== null) {
+    const parsed = parseFloat(saved)
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) return parsed
+  }
+  return 0.8
+}
+
+export function setAudioVolume(volume: number): void {
+  if (typeof window === "undefined") return
+  const clamped = Math.max(0, Math.min(1, volume))
+  localStorage.setItem(STORAGE_VOLUME_KEY, String(clamped))
 }
 
 /** Phát âm thanh bắn Laser / Pháo Photon */

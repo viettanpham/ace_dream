@@ -522,10 +522,8 @@ export function WorldMap({
     lastClickTimeRef.current = { id: sectorId, time: now }
     playClickSound()
     setInternalSelectedId(sectorId)
-    // Phase 6.30: Không tự động mở Inspector ép buộc khi click chọn sector nếu đang ở chế độ xem tổng thể
-    if (showNodeDetails) {
-      setShowInspector(true)
-    }
+    // Localized Inspector: luôn mở bảng Inspector khi người chơi click vào sector/căn cứ
+    setShowInspector(true)
     onSelectSector?.(sectorId)
   }
 
@@ -1284,7 +1282,8 @@ export function WorldMap({
                 <g
                   key={sector.id}
                   transform={`translate(${cx}, ${cy})`}
-                  onPointerDown={() => {
+                  onPointerDown={(e) => {
+                    e.stopPropagation()
                     clickedSectorIdRef.current = sector.id
                   }}
                   onPointerEnter={() => setHoveredSectorId(sector.id)}

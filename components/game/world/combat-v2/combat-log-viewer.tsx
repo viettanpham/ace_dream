@@ -12,7 +12,6 @@
 
 import React, { useState } from "react"
 import type { CombatV2RoundLog } from "@/lib/game/world/combat-v2-types"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { Shield, Zap, Skull, PlaneTakeoff, RefreshCw, ChevronRight } from "lucide-react"
 
 interface CombatLogViewerProps {
@@ -55,7 +54,7 @@ export const CombatLogViewer: React.FC<CombatLogViewerProps> = ({
           <button
             type="button"
             onClick={() => setSelectedRound("all")}
-            className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition-colors cursor-pointer ${
+            className={`px-2 py-0.5 rounded text-xs font-semibold border transition-colors cursor-pointer ${
               selectedRound === "all"
                 ? "bg-cyan-950 border-cyan-800 text-cyan-300"
                 : "border-slate-800 text-slate-400 hover:text-slate-200"
@@ -68,7 +67,7 @@ export const CombatLogViewer: React.FC<CombatLogViewerProps> = ({
               key={log.round}
               type="button"
               onClick={() => setSelectedRound(log.round)}
-              className={`px-2 py-0.5 rounded text-[11px] font-semibold border transition-colors cursor-pointer ${
+              className={`px-2 py-0.5 rounded text-xs font-semibold border transition-colors cursor-pointer ${
                 selectedRound === log.round
                   ? "bg-cyan-950 border-cyan-800 text-cyan-300"
                   : "border-slate-800 text-slate-400 hover:text-slate-200"
@@ -81,14 +80,14 @@ export const CombatLogViewer: React.FC<CombatLogViewerProps> = ({
       </div>
 
       {/* Log Feed */}
-      <div className="flex-1 overflow-y-auto space-y-3 max-h-[360px] pr-1">
+      <div className="flex-1 overflow-y-auto space-y-3 min-h-[220px] max-h-[450px] pr-1">
         {displayedLogs.map((roundLog) => (
           <div
             key={roundLog.round}
             className="rounded border border-slate-800 bg-slate-900/40 p-3 text-xs space-y-2"
           >
             {/* Round Summary Bar */}
-            <div className="flex flex-wrap items-center justify-between text-[11px] pb-1.5 border-b border-slate-800/80 gap-2">
+            <div className="flex flex-wrap items-center justify-between text-xs pb-1.5 border-b border-slate-800/80 gap-2">
               <span className="font-bold text-cyan-300">HIỆP {roundLog.round}</span>
               <div className="flex items-center gap-3 text-slate-400">
                 <span>HP VSS: <strong className="text-cyan-400">{roundLog.alliedHpRemaining}</strong></span>
@@ -102,7 +101,7 @@ export const CombatLogViewer: React.FC<CombatLogViewerProps> = ({
                 {roundLog.strategyChanges.map((sc, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-1.5 text-[11px] text-amber-300 bg-amber-950/20 px-2 py-1 rounded border border-amber-900/40"
+                    className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-950/20 px-2 py-1 rounded border border-amber-900/40"
                   >
                     <RefreshCw className="size-3 shrink-0" />
                     <span>
@@ -121,7 +120,7 @@ export const CombatLogViewer: React.FC<CombatLogViewerProps> = ({
                 return (
                   <div
                     key={actIdx}
-                    className="flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-300"
+                    className="flex items-start gap-1.5 text-xs leading-relaxed text-slate-300"
                   >
                     <ChevronRight className="size-3 text-slate-600 shrink-0 mt-0.5" />
                     <div>
@@ -149,7 +148,7 @@ export const CombatLogViewer: React.FC<CombatLogViewerProps> = ({
                 {roundLog.retreatEvents.map((rev, revIdx) => (
                   <div
                     key={revIdx}
-                    className="flex items-center gap-1.5 text-[11px] text-amber-300 bg-amber-950/20 px-2 py-0.5 rounded"
+                    className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-950/20 px-2 py-0.5 rounded"
                   >
                     <PlaneTakeoff className="size-3 shrink-0 text-amber-400" />
                     <span>{rev.message}</span>
@@ -164,7 +163,7 @@ export const CombatLogViewer: React.FC<CombatLogViewerProps> = ({
                 {roundLog.destructionEvents.map((dev, devIdx) => (
                   <div
                     key={devIdx}
-                    className="flex items-center gap-1.5 text-[11px] text-rose-400 bg-rose-950/20 px-2 py-0.5 rounded font-medium"
+                    className="flex items-center gap-1.5 text-xs text-rose-400 bg-rose-950/20 px-2 py-0.5 rounded font-medium"
                   >
                     <Skull className="size-3 shrink-0 text-rose-500" />
                     <span>{dev.message}</span>

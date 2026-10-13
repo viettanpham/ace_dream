@@ -401,7 +401,7 @@ export function advanceCombatV2Round(
     // Tính toán sát thương chuẩn tắc theo công thức công-thủ có điều chỉnh chiến thuật
     const rawAttack = actor.attack * actorStrat.offensiveMultiplier
     const rawDefense = target.defense * 0.4 * targetStrat.defensiveMultiplier
-    const variance = prng ? prng.nextFloat(0.9, 1.1) : 1.0
+    const variance = prng ? 0.9 + prng.nextFloat() * 0.2 : 1.0
     const damage = Math.max(1, Math.round((rawAttack - rawDefense) * variance))
 
     target.currentHp = Math.max(0, target.currentHp - damage)

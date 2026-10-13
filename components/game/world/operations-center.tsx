@@ -116,6 +116,7 @@ import {
 import {
   lockEncounterAndCreateSnapshot,
   abortSuspendedCombat,
+  isEntityCombatLocked,
 } from "@/lib/game/world/combat-adapter"
 import type {
   WorldState,
@@ -1901,7 +1902,7 @@ export function OperationsCenter({
             <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">
               {sectorsList.map((sector) => {
                 const isSelected = selectedSectorId === sector.id
-                const isLocked = !!sector.isLockedForCombat
+                const isLocked = isEntityCombatLocked(sector, worldState)
                 const threatTier = sector.threatLevel >= 700 ? "high" : sector.threatLevel >= 300 ? "med" : "low"
 
                 return (

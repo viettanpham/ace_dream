@@ -622,3 +622,75 @@ export function buildCombatReceiptFromCombatState(
   }
 }
 
+/**
+ * Trạng thái khóa tác chiến của một thực thể (Sector hoặc Base)
+ * Phân định rõ ràng giữa Quyền Tra Cứu (Inspection) và Hành Động Bị Giới Hạn (Restricted Action)
+ */
+export interface EntityCombatLockStatus {
+  isLocked: boolean
+  canInspect: boolean // Luôn là true theo nguyên tắc UX: Không bao giờ chặn thông tin
+  canDeployForces: boolean
+  canChangeOrder: boolean
+  canUpgradeFortification: boolean
+  canResumeCombat: boolean
+  reason?: string
+}
+
+/**
+ * Predicate chuẩn hóa xác định xem một thực thể (Sector/Base) có đang bị khóa giao tranh trực tiếp hay không.
+ * Khóa mang tính LOCALIZED: Chỉ thực thể trực tiếp tham chiến hoặc có EncounterSnapshot đang hoạt động mới bị khóa.
+ * Các Sector/Căn cứ khác (kể cả cùng phe hay căn cứ địch không tham chiến) TUYỆT ĐỐI KHÔNG bị khóa lan truyền.
+ */
+export function isEntityCombatLocked(
+  entity: { id?: string; isLockedForCombat?: boolean } | string,
+  context?: { sectorId?: string; encounterId?: string } | WorldState | null,
+): boolean {
+  const entityId = typeof entity === "string" ? entity : entity.id
+
+  // 1. Kiểm tra cờ isLockedForCombat trực tiếp trên object nếu có
+  if (typeof entity !== "string" && entity.isLockedForCombat === true) {
+    return true
+  }
+
+  // 2. Nếu context là WorldState, kiểm tra cả sector tương ứng trong state và suspendedSnapshot
+  if (context && "sectors" in context && entityId) {
+    const sector = context.sectors[entityId]
+    if (sector?.isLockedForCombat === true) {
+      return true
+    }
+    if (context.isSuspendedCombat && context.suspendedSnapshot?.sectorId === entityId) {
+      return true
+    }
+    return false
+  }
+
+  // 3. Nếu context là encounter context / snapshot
+  if (context && "sectorId" in context && entityId) {
+    return context.sectorId === entityId
+  }
+
+  return false
+}
+
+/**
+ * Trả về chi tiết trạng thái khóa và phân tách rõ ràng giữa Quyền Tra Cứu (Inspection) và Hành Động Bị Hạn Chế.
+ */
+export function getEntityCombatLockStatus(
+  entity: { id: string; name?: string; isLockedForCombat?: boolean },
+  context?: { sectorId?: string; encounterId?: string } | WorldState | null,
+): EntityCombatLockStatus {
+  const isLocked = isEntityCombatLocked(entity, context)
+  return {
+    isLocked,
+    canInspect: true, // Quyền tra cứu thông tin luôn luôn mở
+    canDeployForces: !isLocked,
+    canChangeOrder: !isLocked,
+    canUpgradeFortification: !isLocked,
+    canResumeCombat: isLocked,
+    reason: isLocked
+      ? "Khu vực đang diễn ra tác chiến trực tiếp [IN COMBAT]. Lực lượng đồn trú đang trực chiến."
+      : undefined,
+  }
+}
+
+

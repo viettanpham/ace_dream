@@ -76,7 +76,7 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
           <span className="text-slate-500">·</span>
           <span className="text-slate-400">Hiệp {round}</span>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-slate-400">
+        <div className="flex items-center gap-3 text-xs text-slate-400">
           <div className="flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-cyan-400" />
             <span>Đồng minh ({alliedGears.filter((g) => g.state === "ACTIVE").length}/{alliedGears.length})</span>
@@ -91,7 +91,7 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
 
       {/* Support Low-Orbit Asset Strip */}
       {supportEntities.length > 0 && (
-        <div className="relative z-10 mb-3 rounded border border-cyan-900/40 bg-cyan-950/20 px-3 py-1.5 flex items-center justify-between text-[11px]">
+        <div className="relative z-10 mb-3 rounded border border-cyan-900/40 bg-cyan-950/20 px-3 py-1.5 flex flex-wrap items-center justify-between text-xs gap-2">
           <div className="flex items-center gap-2 text-cyan-400">
             <Radio className="size-3 animate-pulse" />
             <span className="font-medium text-cyan-300">QUỸ ĐẠO THẤP // HỖ TRỢ CHIẾN ĐỘI</span>
@@ -116,7 +116,7 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
           <div>
             <div className="flex items-center justify-between text-xs text-cyan-400 font-semibold mb-2 pb-1 border-b border-cyan-900/30">
               <span className="tracking-wide">TIẾN TUYẾN VSS (PHÍA TÂY)</span>
-              <span className="text-[11px] text-slate-400">Lực lượng bảo an</span>
+              <span className="text-xs text-slate-400">Lực lượng bảo an</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {alliedGears.map((gear) => {
@@ -138,10 +138,10 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold truncate text-slate-100">{gear.name}</span>
                       {gear.isPlayer && (
-                        <span className="text-[10px] text-cyan-400 font-bold px-1 bg-cyan-950 rounded">CHỈ HUY</span>
+                        <span className="text-xs text-cyan-400 font-bold px-1 bg-cyan-950 rounded">CHỈ HUY</span>
                       )}
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                    <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                       <span>HP {gear.currentHp}/{gear.maxHp}</span>
                       <span className="font-semibold">{hpPct}%</span>
                     </div>
@@ -156,7 +156,7 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
                     </div>
 
                     {/* Operational State Indicator */}
-                    <div className="mt-1.5 flex items-center justify-between text-[10px]">
+                    <div className="mt-1.5 flex items-center justify-between text-xs">
                       <span className="text-slate-400">{gear.pilotName || "Phi công AI"}</span>
                       {gear.state === "RETREATING" && (
                         <span className="flex items-center gap-1 text-amber-300 font-bold">
@@ -187,7 +187,7 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
           <div>
             <div className="flex items-center justify-between text-xs text-rose-400 font-semibold mb-2 pb-1 border-b border-rose-900/30">
               <span className="tracking-wide">TIẾN TUYẾN THE VOID (PHÍA ĐÔNG)</span>
-              <span className="text-[11px] text-slate-400">Quân đoàn xâm lược</span>
+              <span className="text-xs text-slate-400">Quân đoàn xâm lược</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {enemyGears.map((gear) => {
@@ -208,9 +208,9 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold truncate text-slate-100">{gear.name}</span>
-                      <span className="text-[10px] text-rose-400 font-medium">ATK {gear.attack}</span>
+                      <span className="text-xs text-rose-400 font-medium">ATK {gear.attack}</span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 mb-1">
+                    <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                       <span>HP {gear.currentHp}/{gear.maxHp}</span>
                       <span className="font-semibold">{hpPct}%</span>
                     </div>
@@ -225,7 +225,7 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
                     </div>
 
                     {/* Operational State Indicator */}
-                    <div className="mt-1.5 flex items-center justify-between text-[10px]">
+                    <div className="mt-1.5 flex items-center justify-between text-xs">
                       <span className="text-slate-400">DEF {gear.defense} · SPD {gear.speed}</span>
                       {gear.state === "RETREATING" && (
                         <span className="flex items-center gap-1 text-amber-300 font-bold">
@@ -259,14 +259,14 @@ export const BattleMap2D: React.FC<BattleMap2DProps> = ({
             <span className="text-cyan-400 font-bold">MỤC TIÊU ĐANG KHÓA:</span>
             <span className="font-bold text-slate-100">{selectedGear.name}</span>
             <span className="text-slate-500">·</span>
-            <span className={`text-[11px] font-medium ${selectedGear.side === "allied" ? "text-cyan-300" : "text-rose-300"}`}>
+            <span className={`text-xs font-medium ${selectedGear.side === "allied" ? "text-cyan-300" : "text-rose-300"}`}>
               {selectedGear.side === "allied" ? "Phe VSS Đồng Minh" : "Phe The Void Đối Nghịch"}
             </span>
             <span className="text-slate-500">·</span>
             <span className="text-slate-400">Trạng thái: {selectedGear.state}</span>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] text-slate-300">
+          <div className="flex items-center gap-3 text-xs text-slate-300">
             <span>HP: <strong className="text-white">{selectedGear.currentHp}/{selectedGear.maxHp}</strong></span>
             <span>ATK: <strong className="text-white">{selectedGear.attack}</strong></span>
             <span>DEF: <strong className="text-white">{selectedGear.defense}</strong></span>

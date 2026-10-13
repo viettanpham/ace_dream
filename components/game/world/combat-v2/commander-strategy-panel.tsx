@@ -154,16 +154,16 @@ export const CommanderStrategyPanel: React.FC<CommanderStrategyPanelProps> = ({
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-bold text-slate-100">{strat.name}</span>
                   {isCurrent && (
-                    <span className="text-[10px] text-cyan-400 font-bold">HIỆN TẠI</span>
+                    <span className="text-xs text-cyan-400 font-bold">HIỆN TẠI</span>
                   )}
                   {isQueued && (
-                    <span className="text-[10px] text-amber-400 font-bold">ĐÃ XẾP HÀNG</span>
+                    <span className="text-xs text-amber-400 font-bold">ĐÃ XẾP HÀNG</span>
                   )}
                 </div>
-                <div className="text-[11px] text-slate-400 line-clamp-2 mb-2">
+                <div className="text-xs text-slate-400 leading-relaxed mb-2">
                   {strat.description}
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-slate-400 border-t border-slate-800/80 pt-1.5">
+                <div className="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-1.5">
                   <span>Công: x{strat.offensiveMultiplier}</span>
                   <span>Thủ: x{strat.defensiveMultiplier}</span>
                   {isClickable && (
@@ -196,7 +196,7 @@ export const CommanderStrategyPanel: React.FC<CommanderStrategyPanelProps> = ({
                   <strong className="text-white">{targetStrat.name}</strong> cho toàn lực lượng?
                 </p>
 
-                <div className="rounded bg-slate-900 border border-slate-800 p-3 mb-4 space-y-1.5 text-[11px]">
+                <div className="rounded bg-slate-900 border border-slate-800 p-3 mb-4 space-y-1.5 text-xs">
                   <div className="text-slate-400">
                     Chiến thuật hiện tại: <strong className="text-cyan-300">{currentStrategy.name}</strong>
                   </div>

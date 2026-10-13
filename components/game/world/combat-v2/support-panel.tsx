@@ -74,19 +74,19 @@ export const SupportPanel: React.FC<SupportPanelProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                 <div>
                   <span className="font-bold text-slate-100">{entity.name}</span>
-                  <span className="text-slate-500 text-[11px] ml-2">
+                  <span className="text-slate-400 text-xs ml-2">
                     Loại: {entity.type.toUpperCase()}
                   </span>
                 </div>
 
                 {/* Auto / Manual Mode Toggle */}
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400">Chế độ:</span>
+                  <span className="text-xs text-slate-400">Chế độ:</span>
                   <button
                     type="button"
                     disabled={disabled}
                     onClick={() => onToggleControlMode(entity.id)}
-                    className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors cursor-pointer ${
+                    className={`px-2 py-0.5 rounded text-xs font-bold border transition-colors cursor-pointer ${
                       entity.controlMode === "auto"
                         ? "bg-cyan-950 border-cyan-800 text-cyan-300"
                         : "bg-amber-950 border-amber-800 text-amber-300"
@@ -99,13 +99,13 @@ export const SupportPanel: React.FC<SupportPanelProps> = ({
 
               {/* Passive Description */}
               {entity.hasPassiveBuff && entity.passiveDescription && (
-                <div className="text-[11px] text-cyan-400/90 mb-2">
+                <div className="text-xs text-cyan-400/90 mb-2">
                   · Bị động: {entity.passiveDescription}
                 </div>
               )}
 
               {/* Cooldown Bar */}
-              <div className="flex items-center justify-between text-[11px] text-slate-400 border-t border-slate-800/80 pt-2">
+              <div className="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-2">
                 <span>Hồi chiêu kỹ năng kích hoạt:</span>
                 <span className={isReady ? "text-emerald-400 font-bold" : "text-amber-400"}>
                   {isReady ? "SẴN SÀNG" : `Hồi lại sau ${entity.activeCooldownRemaining} hiệp`}
@@ -128,7 +128,7 @@ export const SupportPanel: React.FC<SupportPanelProps> = ({
               variant="ghost"
               disabled={disabled}
               onClick={() => onQueueSupportSkill(null)}
-              className="text-[11px] text-slate-400 hover:text-slate-200"
+              className="text-xs text-slate-400 hover:text-slate-200"
             >
               Hủy hàng đợi
             </Button>
@@ -153,13 +153,13 @@ export const SupportPanel: React.FC<SupportPanelProps> = ({
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-bold text-slate-200">{skill.name}</span>
                   {isQueued && (
-                    <span className="text-[10px] text-cyan-400 font-bold flex items-center gap-0.5">
+                    <span className="text-xs text-cyan-400 font-bold flex items-center gap-0.5">
                       <Check className="size-3" /> ĐÃ CHỌN
                     </span>
                   )}
                 </div>
-                <div className="text-[11px] text-slate-400 mb-1.5">{skill.effectSummary}</div>
-                <div className="flex items-center justify-between text-[10px] text-slate-500 border-t border-slate-800/60 pt-1">
+                <div className="text-xs text-slate-400 mb-1.5">{skill.effectSummary}</div>
+                <div className="flex items-center justify-between text-xs text-slate-500 border-t border-slate-800/60 pt-1">
                   <span>Mục tiêu: {skill.targetSide === "enemy" ? "Quân địch" : "Đồng minh"}</span>
                   <span>Hồi chiêu: {skill.cooldownRounds} hiệp</span>
                 </div>

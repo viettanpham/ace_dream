@@ -317,18 +317,18 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
               <span className="font-bold text-sm tracking-wide text-white">
                 COMBAT V2 // TRUNG TÂM ĐIỀU HÀNH TÁC CHIẾN
               </span>
-              <span className="text-[11px] px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300">
+              <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300">
                 Hiệp {currentRound} / {snapshot.maxRounds}
               </span>
             </div>
-            <div className="text-[11px] text-slate-400">
+            <div className="text-xs text-slate-400">
               Phân khu: <strong className="text-slate-200">{snapshot.sectorId.toUpperCase()}</strong> · Mã giao dịch: {snapshot.transactionId}
             </div>
           </div>
         </div>
 
         {/* Round Progression Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {!isConcluded ? (
             <>
               <Button
@@ -354,7 +354,7 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
               </Button>
             </>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mr-2">
                 <CheckCircle2 className="size-4" /> TRẬN ĐẤU ĐÃ KẾT THÚC
               </div>
@@ -376,41 +376,41 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
       {/* Aggregate Status Badges */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
         <div className="rounded border border-cyan-900/40 bg-slate-900/50 p-2.5">
-          <div className="text-slate-400 text-[10px] uppercase font-semibold">TỔNG HP ĐỒNG MINH (VSS)</div>
+          <div className="text-slate-400 text-xs uppercase font-semibold">TỔNG HP ĐỒNG MINH (VSS)</div>
           <div className="text-base font-bold text-cyan-300">
             {viewModel.alliedForce.totalCurrentHp} / {viewModel.alliedForce.totalMaxHp}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-xs text-slate-400">
             Tỷ lệ: {viewModel.alliedForce.hpPercent}% · Đơn vị hoạt động: {viewModel.alliedForce.activeCount}
           </div>
         </div>
 
         <div className="rounded border border-rose-900/40 bg-slate-900/50 p-2.5">
-          <div className="text-slate-400 text-[10px] uppercase font-semibold">TỔNG HP QUÂN ĐỊCH (THE VOID)</div>
+          <div className="text-slate-400 text-xs uppercase font-semibold">TỔNG HP QUÂN ĐỊCH (THE VOID)</div>
           <div className="text-base font-bold text-rose-400">
             {viewModel.enemyForce.totalCurrentHp} / {viewModel.enemyForce.totalMaxHp}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-xs text-slate-400">
             Tỷ lệ: {viewModel.enemyForce.hpPercent}% · Đơn vị hoạt động: {viewModel.enemyForce.activeCount}
           </div>
         </div>
 
         <div className="rounded border border-slate-800 bg-slate-900/50 p-2.5">
-          <div className="text-slate-400 text-[10px] uppercase font-semibold">CHIẾN THUẬT VSS HIỆN TẠI</div>
+          <div className="text-slate-400 text-xs uppercase font-semibold">CHIẾN THUẬT VSS HIỆN TẠI</div>
           <div className="text-base font-bold text-slate-200 truncate">
             {COMBAT_V2_STRATEGIES[viewModel.commanderStrategy.currentStrategyId]?.name || "Cân Bằng"}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-xs text-slate-400">
             Xếp hàng: {viewModel.commanderStrategy.queuedStrategyId || "Không có"}
           </div>
         </div>
 
         <div className="rounded border border-slate-800 bg-slate-900/50 p-2.5">
-          <div className="text-slate-400 text-[10px] uppercase font-semibold">TRẠNG THÁI TỔN THẤT</div>
+          <div className="text-slate-400 text-xs uppercase font-semibold">TRẠNG THÁI TỔN THẤT</div>
           <div className="text-base font-bold text-slate-200">
             {viewModel.alliedForce.destroyedCount} VSS / {viewModel.enemyForce.destroyedCount} Void
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-xs text-slate-400">
             Đang rút lui: {viewModel.alliedForce.retreatingCount} · Đã thoát ly: {viewModel.alliedForce.retreatedCount}
           </div>
         </div>
@@ -535,38 +535,38 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
             {commitResult && (
               <div className="text-right">
                 <span className="text-emerald-400 font-bold block">ĐÃ GHI NHẬN WORLD STATE</span>
-                <span className="text-[11px] text-slate-400">Tx: {combatResult.transactionId}</span>
+                <span className="text-xs text-slate-400">Tx: {combatResult.transactionId}</span>
               </div>
             )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <div className="rounded bg-slate-950 p-3 border border-slate-800">
-              <span className="text-slate-400 text-[11px] block mb-1">TỔN THẤT ĐỒNG MINH VSS</span>
+              <span className="text-slate-400 text-xs block mb-1">TỔN THẤT ĐỒNG MINH VSS</span>
               <div className="text-sm font-bold text-slate-200">
                 {combatResult.alliedAggregate.destroyedCount} cỗ máy bị tiêu diệt
               </div>
-              <div className="text-[11px] text-slate-400">
+              <div className="text-xs text-slate-400">
                 {combatResult.alliedAggregate.retreatedCount} đơn vị đã thoát ly thành công
               </div>
             </div>
 
             <div className="rounded bg-slate-950 p-3 border border-slate-800">
-              <span className="text-slate-400 text-[11px] block mb-1">THIỆT HẠI QUÂN ĐỊCH THE VOID</span>
+              <span className="text-slate-400 text-xs block mb-1">THIỆT HẠI QUÂN ĐỊCH THE VOID</span>
               <div className="text-sm font-bold text-rose-400">
                 {combatResult.enemyAggregate.destroyedCount} cỗ máy bị triệt hạ
               </div>
-              <div className="text-[11px] text-slate-400">
+              <div className="text-xs text-slate-400">
                 {combatResult.enemyAggregate.retreatedCount} đơn vị tháo lui
               </div>
             </div>
 
             <div className="rounded bg-slate-950 p-3 border border-slate-800">
-              <span className="text-slate-400 text-[11px] block mb-1">ỨNG VIÊN PHI CÔNG CẦN CỨU HỘ</span>
+              <span className="text-slate-400 text-xs block mb-1">ỨNG VIÊN PHI CÔNG CẦN CỨU HỘ</span>
               <div className="text-sm font-bold text-amber-300">
                 {combatResult.downedPilotCandidates.length} phi công
               </div>
-              <div className="text-[11px] text-slate-500">
+              <div className="text-xs text-slate-500">
                 Chuyển giao cho Phase 6.34 (Pilot Survival & Rescue)
               </div>
             </div>

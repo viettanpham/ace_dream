@@ -87,9 +87,13 @@
   --gear-m: oklch(0.75 0.16 150);
 
   --radius: 0.4rem;
+  --ui-scale: 1;
 }
 
 @layer base {
+  html {
+    font-size: calc(16px * var(--ui-scale, 1));
+  }
   * {
     @apply border-border;
   }

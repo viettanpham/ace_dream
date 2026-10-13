@@ -60,11 +60,11 @@ export const PlayerGearCombatPanel: React.FC<PlayerGearCombatPanelProps> = ({
         <div className="flex items-center gap-2">
           <span className="font-bold text-sm text-cyan-300">{activeGear.name}</span>
           {isPlayerMachine ? (
-            <span className="text-[10px] bg-cyan-950 border border-cyan-800 text-cyan-400 px-1.5 py-0.5 rounded font-semibold">
+            <span className="text-xs bg-cyan-950 border border-cyan-800 text-cyan-400 px-1.5 py-0.5 rounded font-semibold">
               CƠ GIÁP CHỦ LỰC
             </span>
           ) : (
-            <span className="text-[10px] bg-slate-900 border border-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-semibold">
+            <span className="text-xs bg-slate-900 border border-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-semibold">
               ĐƠN VỊ ĐỒNG MINH
             </span>
           )}
@@ -127,7 +127,7 @@ export const PlayerGearCombatPanel: React.FC<PlayerGearCombatPanelProps> = ({
             <span>CÔNG KÍCH</span>
           </div>
           <div className="text-base font-bold text-slate-100">{activeGear.attack}</div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-xs text-slate-500">
             {activeGear.isContributingOffense ? "Đang đóng góp" : "Bị ngắt"}
           </div>
         </div>
@@ -138,7 +138,7 @@ export const PlayerGearCombatPanel: React.FC<PlayerGearCombatPanelProps> = ({
             <span>GIÁP PHÒNG NGỰ</span>
           </div>
           <div className="text-base font-bold text-slate-100">{activeGear.defense}</div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-xs text-slate-500">
             {activeGear.isContributingDefense ? "Bảo lưu che chắn" : "Mất hiệu lực"}
           </div>
         </div>
@@ -149,13 +149,13 @@ export const PlayerGearCombatPanel: React.FC<PlayerGearCombatPanelProps> = ({
             <span>TỐC ĐỘ XUẤT KÍCH</span>
           </div>
           <div className="text-base font-bold text-slate-100">{activeGear.speed}</div>
-          <div className="text-[10px] text-slate-500">Thứ tự hiệp đấu</div>
+          <div className="text-xs text-slate-500">Thứ tự hiệp đấu</div>
         </div>
       </div>
 
       {/* Retreat Order Trigger */}
       <div className="border-t border-slate-800/80 pt-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[11px] text-slate-400 max-w-xs">
+        <div className="text-xs text-slate-400 max-w-xs">
           {activeGear.state === "RETREATING"
             ? "Đơn vị đang trong giai đoạn di chuyển thoát ly (vẫn chịu sát thương, giữ phòng thủ)."
             : "Phát lệnh thoát ly sẽ chuyển đơn vị sang trạng thái RETREATING trong 1 hiệp."}
@@ -187,7 +187,7 @@ export const PlayerGearCombatPanel: React.FC<PlayerGearCombatPanelProps> = ({
               <strong className="text-white">{activeGear.name}</strong>?
             </p>
 
-            <div className="rounded bg-amber-950/30 border border-amber-900/50 p-2.5 mb-4 text-[11px] text-amber-200/90 space-y-1">
+            <div className="rounded bg-amber-950/30 border border-amber-900/50 p-2.5 mb-4 text-xs text-amber-200/90 space-y-1">
               <div>· Đơn vị sẽ chuyển sang trạng thái <strong>RETREATING</strong> trong 1 hiệp tiếp theo.</div>
               <div>· Đơn vị <strong>vẫn là mục tiêu hợp lệ</strong> của quân địch trong thời gian thoát ly.</div>
               <div>· Lực công kích sẽ bị ngắt, nhưng giá trị phòng ngự vẫn đóng góp che chắn đội hình.</div>

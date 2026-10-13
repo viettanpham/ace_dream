@@ -11,6 +11,15 @@ import {
   setAudioMuted,
 } from "@/lib/game/audio"
 import {
+  applyUiScale,
+  getSavedUiScale,
+  getSavedScanlineOverlay,
+  getSavedScanlineBeam,
+  getSavedVignette,
+  getSavedCornerBrackets,
+  saveCrtSettings,
+} from "@/lib/game/ui-settings"
+import {
   loadStarfrontProgression,
   resetStarfrontProgression,
   saveStarfrontProgression,
@@ -343,12 +352,12 @@ export function StarfrontShell() {
   const [activeSection, setActiveSection] = useState<StarfrontSection>("home")
   const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(null)
   const [activeWorldBattle, setActiveWorldBattle] = useState<WorldBattleContext | null>(null)
-  const [audioMuted, setAudioMutedState] = useState(false)
-  const [scanlineEnabled, setScanlineEnabled] = useState(true)
-  const [scanlineBeamEnabled, setScanlineBeamEnabled] = useState(true)
-  const [vignetteEnabled, setVignetteEnabled] = useState(true)
-  const [cornerBracketsEnabled, setCornerBracketsEnabled] = useState(true)
-  const [uiScale, setUiScale] = useState(1.0)
+  const [audioMuted, setAudioMutedState] = useState(true)
+  const [scanlineEnabled, setScanlineEnabled] = useState(false)
+  const [scanlineBeamEnabled, setScanlineBeamEnabled] = useState(false)
+  const [vignetteEnabled, setVignetteEnabled] = useState(false)
+  const [cornerBracketsEnabled, setCornerBracketsEnabled] = useState(false)
+  const [uiScale, setUiScale] = useState(100)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [lockNoticeToast, setLockNoticeToast] = useState<{ text: string; type: "warning" | "success" } | null>(null)
 
@@ -378,29 +387,18 @@ export function StarfrontShell() {
     setAudioMutedState(isAudioMuted())
 
     try {
-      const savedScanline = localStorage.getItem("starfront_scanline_overlay")
-      if (savedScanline !== null) {
-        setScanlineEnabled(savedScanline === "true")
-      }
-      const savedBeam = localStorage.getItem("starfront_scanline_beam")
-      if (savedBeam !== null) {
-        setScanlineBeamEnabled(savedBeam === "true")
-      }
-      const savedVignette = localStorage.getItem("starfront_vignette")
-      if (savedVignette !== null) {
-        setVignetteEnabled(savedVignette === "true")
-      }
-      const savedBrackets = localStorage.getItem("starfront_corner_brackets")
-      if (savedBrackets !== null) {
-        setCornerBracketsEnabled(savedBrackets === "true")
-      }
-      const savedScale = localStorage.getItem("starfront_ui_scale")
-      if (savedScale !== null) {
-        const parsed = parseFloat(savedScale)
-        if (!isNaN(parsed) && parsed >= 0.8 && parsed <= 1.25) {
-          setUiScale(parsed)
-        }
-      }
+      const savedScanline = getSavedScanlineOverlay()
+      setScanlineEnabled(savedScanline)
+      const savedBeam = getSavedScanlineBeam()
+      setScanlineBeamEnabled(savedBeam)
+      const savedVignette = getSavedVignette()
+      setVignetteEnabled(savedVignette)
+      const savedBrackets = getSavedCornerBrackets()
+      setCornerBracketsEnabled(savedBrackets)
+
+      const savedScale = getSavedUiScale()
+      setUiScale(savedScale)
+      applyUiScale(savedScale)
     } catch {
       // ignore local storage errors
     }
@@ -436,11 +434,7 @@ export function StarfrontShell() {
     playClickSound()
     setScanlineEnabled((prev) => {
       const next = !prev
-      try {
-        localStorage.setItem("starfront_scanline_overlay", String(next))
-      } catch {
-        // ignore
-      }
+      saveCrtSettings({ scanlineOverlay: next })
       return next
     })
   }
@@ -452,6 +446,7 @@ export function StarfrontShell() {
     setVignetteEnabled(s.vignette)
     setCornerBracketsEnabled(s.cornerBrackets)
     setUiScale(s.uiScale)
+    applyUiScale(s.uiScale)
   }
 
   // Lưu tự động mỗi khi có thay đổi tiến trình
@@ -643,7 +638,6 @@ export function StarfrontShell() {
   return (
     <GameProvider>
       <div
-        style={{ zoom: uiScale }}
         className="flex min-h-screen bg-background text-foreground antialiased selection:bg-cyan-500 selection:text-black"
       >
         {/* ==================================================================
@@ -681,11 +675,11 @@ export function StarfrontShell() {
                 <div className="min-w-0 flex-1 leading-tight">
                   <div className="flex items-center gap-1.5 font-display text-base font-black tracking-wider text-white group-hover:text-cyan-300 transition-colors">
                     <span>STARFRONT</span>
-                    <span className="rounded bg-cyan-500/20 px-1 py-0.2 font-mono text-[9px] font-bold text-cyan-300 border border-cyan-500/40">
+                    <span className="rounded bg-cyan-500/20 px-1 py-0.2 font-mono text-xs font-bold text-cyan-300 border border-cyan-500/40">
                       v3.2
                     </span>
                   </div>
-                  <div className="truncate text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                  <div className="truncate text-xs font-mono text-muted-foreground uppercase tracking-widest">
                     Tactical 2D Sci-Fi RPG
                   </div>
                 </div>
@@ -721,14 +715,14 @@ export function StarfrontShell() {
                   />
                   <span>{activeGearDef.name}</span>
                 </div>
-                <span className="rounded bg-cyan-500/20 px-1.5 py-0.2 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
+                <span className="rounded bg-cyan-500/20 px-1.5 py-0.2 font-mono text-xs font-bold text-cyan-300 border border-cyan-500/40">
                   CẤP {progression.level}
                 </span>
               </div>
 
               {/* Thanh EXP nhỏ */}
               <div className="mt-2">
-                <div className="mb-0.5 flex justify-between font-mono text-[10px] text-muted-foreground">
+                <div className="mb-0.5 flex justify-between font-mono text-xs text-muted-foreground">
                   <span>EXP</span>
                   <span>{progression.exp}/{expRequired} ({expPct}%)</span>
                 </div>
@@ -741,7 +735,7 @@ export function StarfrontShell() {
               </div>
 
               {/* Ngân sách Tín Dụng & Hợp Kim */}
-              <div className="mt-2.5 flex items-center justify-between font-mono text-[11px] text-muted-foreground border-t border-border/40 pt-2">
+              <div className="mt-2.5 flex items-center justify-between font-mono text-xs text-muted-foreground border-t border-border/40 pt-2">
                 <div className="flex items-center gap-1 text-amber-300">
                   <Coins className="size-3 text-amber-400" />
                   <span>{progression.credits.toLocaleString("vi-VN")}</span>
@@ -754,7 +748,7 @@ export function StarfrontShell() {
             </div>
           ) : (
             <div className="border-b border-border/50 p-2 flex flex-col items-center gap-1 bg-black/40">
-              <span className="rounded px-1 font-mono text-[9px] font-bold text-cyan-300">
+              <span className="rounded px-1 font-mono text-xs font-bold text-cyan-300">
                 Lv.{progression.level}
               </span>
             </div>
@@ -767,10 +761,10 @@ export function StarfrontShell() {
               return (
                 <div key={tier.id} className="space-y-1">
                   {!isSidebarCollapsed ? (
-                    <div className="flex items-center justify-between px-2 py-1 text-[9px] font-mono font-bold uppercase tracking-wider text-muted-foreground/80 border-b border-border/30">
+                    <div className="flex items-center justify-between px-2 py-1 text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground/80 border-b border-border/30">
                       <span>{tier.label}</span>
                       {tier.badge && (
-                        <span className="rounded bg-cyan-950/80 px-1 py-0.2 text-[8px] font-bold text-cyan-300 border border-cyan-500/40">
+                        <span className="rounded bg-cyan-950/80 px-1 py-0.2 text-xs font-bold text-cyan-300 border border-cyan-500/40">
                           {tier.badge}
                         </span>
                       )}
@@ -831,7 +825,7 @@ export function StarfrontShell() {
                               {badgeText && (
                                 <span
                                   className={cn(
-                                    "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold border",
+                                    "rounded px-1.5 py-0.2 font-mono text-xs font-bold border",
                                     isTabLocked
                                       ? "bg-amber-950/60 text-amber-300 border-amber-500/40"
                                       : isWorld
@@ -881,7 +875,7 @@ export function StarfrontShell() {
                                   key={sub.id}
                                   onClick={() => handleSelectSubmenu(sec.id, sub.id)}
                                   className={cn(
-                                    "w-full flex items-center justify-between rounded px-2 py-1.5 text-left font-mono text-[11px] transition-all cursor-pointer",
+                                    "w-full flex items-center justify-between rounded px-2 py-1.5 text-left font-mono text-xs transition-all cursor-pointer",
                                     isSubActive
                                       ? sec.id === "hangar" && sub.id === "enhancement"
                                         ? "bg-purple-500/25 text-purple-200 border-l-2 border-purple-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(168,85,247,0.25)]"
@@ -915,7 +909,7 @@ export function StarfrontShell() {
                                   {sub.badge && (
                                     <span
                                       className={cn(
-                                        "rounded px-1.5 py-0.2 font-mono text-[8px] font-bold border shrink-0",
+                                        "rounded px-1.5 py-0.2 font-mono text-xs font-bold border shrink-0",
                                         isSubActive
                                           ? "bg-cyan-400/20 text-cyan-200 border-cyan-400/40"
                                           : "bg-black/60 text-muted-foreground border-border/40",
@@ -941,7 +935,7 @@ export function StarfrontShell() {
               {!isSidebarCollapsed ? (
                 <button
                   onClick={() => setShowOperationsGroup(!showOperationsGroup)}
-                  className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors cursor-pointer"
                 >
                   <span>Căn Cứ & Hạm Đội</span>
                   <ChevronDown
@@ -963,7 +957,7 @@ export function StarfrontShell() {
                         key={op.id}
                         onClick={() => handleSwitchSection(op.id)}
                         className={cn(
-                          "w-full flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 font-display text-[11px] uppercase tracking-wider transition-colors cursor-pointer",
+                          "w-full flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 font-display text-xs uppercase tracking-wider transition-colors cursor-pointer",
                           isOpActive
                             ? "bg-purple-500/20 text-purple-300 border-l-2 border-purple-400 font-bold"
                             : !isCharacterLocked
@@ -1009,18 +1003,18 @@ export function StarfrontShell() {
                 title="Mở Nhật Ký Tác Chiến // Full Mission Logs"
               >
                 <Terminal className="size-4 animate-pulse text-cyan-400" />
-                <span className="text-[8px] font-mono mt-0.5 font-bold">LOGS</span>
+                <span className="text-xs font-mono mt-0.5 font-bold">LOGS</span>
               </button>
             )}
           </div>
 
           {/* F. Footer Sidebar: Âm Thanh, CRT Scanline, Cài Lại & Thông Tin */}
           <div className="shrink-0 border-t border-border/60 p-2 bg-black/70 space-y-2">
-            <div className="flex items-center justify-between gap-1">
+            <div className="flex flex-wrap items-center justify-between gap-1">
               <button
                 onClick={handleToggleAudio}
                 className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-colors cursor-pointer",
+                  "flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono transition-colors cursor-pointer",
                   audioMuted
                     ? "border-red-500/40 text-red-300 bg-red-950/30"
                     : "border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50",
@@ -1036,7 +1030,7 @@ export function StarfrontShell() {
               <button
                 onClick={handleToggleScanline}
                 className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-all cursor-pointer",
+                  "flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono transition-all cursor-pointer",
                   !scanlineEnabled
                     ? "border-border/60 text-muted-foreground bg-secondary/30"
                     : "border-cyan-500/50 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 shadow-[0_0_8px_rgba(6,182,212,0.2)]",
@@ -1045,7 +1039,7 @@ export function StarfrontShell() {
               >
                 <Scan className="size-3.5 text-cyan-400" />
                 {!isSidebarCollapsed && (
-                  <span>{scanlineEnabled ? "CRT" : "CRT"}</span>
+                  <span>{scanlineEnabled ? "CRT: ON" : "CRT: OFF"}</span>
                 )}
               </button>
 
@@ -1054,7 +1048,7 @@ export function StarfrontShell() {
                   playClickSound()
                   setIsSettingsOpen(true)
                 }}
-                className="flex items-center gap-1.5 rounded border border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 px-2 py-1 text-[11px] font-mono transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded border border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 px-2 py-1 text-xs font-mono transition-colors cursor-pointer"
                 title="Cài đặt hệ thống (Âm thanh, CRT, Tỷ lệ hiển thị UI)"
               >
                 <Sliders className="size-3.5 text-cyan-400" />
@@ -1064,7 +1058,7 @@ export function StarfrontShell() {
               {!isSidebarCollapsed && (
                 <button
                   onClick={handleResetSave}
-                  className="rounded border border-border/60 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-red-400 hover:border-red-500/50 transition-colors cursor-pointer"
+                  className="rounded border border-border/60 px-2 py-1 text-xs font-mono text-muted-foreground hover:text-red-400 hover:border-red-500/50 transition-colors cursor-pointer"
                   title="Cài lại tiến trình LocalStorage"
                 >
                   Reset
@@ -1073,7 +1067,7 @@ export function StarfrontShell() {
             </div>
 
             {!isSidebarCollapsed && (
-              <div className="text-[9px] font-mono text-muted-foreground/70 leading-tight">
+              <div className="text-xs font-mono text-muted-foreground/70 leading-tight">
                 STARFRONT Phase 5 // Turn-Based Combat & Unified Systems
               </div>
             )}
@@ -1104,7 +1098,7 @@ export function StarfrontShell() {
           />
 
           {/* A. Compact Top Bar: Tiêu đề phân hệ & Nút Mobile Menu */}
-          <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border/70 bg-panel/90 px-4 py-2 backdrop-blur-md">
+          <header className="sticky top-0 z-30 flex min-h-14 h-auto flex-wrap shrink-0 items-center justify-between gap-2 border-b border-border/70 bg-panel/90 px-4 py-2 backdrop-blur-md">
             {/* Trái: Nút Hamburger Mobile & Breadcrumb Phân Hệ */}
             <div className="flex items-center gap-3">
               <button
@@ -1127,7 +1121,7 @@ export function StarfrontShell() {
             </div>
 
             {/* Phải: Huy hiệu Cơ giáp & Tài nguyên Nhanh */}
-            <div className="flex items-center gap-2 font-mono text-xs">
+            <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
               {/* Huy hiệu Cặp Đôi Phi Công & Cơ Giáp */}
               <div
                 onClick={() => handleSwitchSection("pilot")}
@@ -1145,7 +1139,7 @@ export function StarfrontShell() {
                 <span className="font-bold text-white">
                   {STARFRONT_PILOT_MAP[progression.activePairing?.pilotId || "marcus"]?.name.split(" ")[0] || "Marcus"} · {activeGearDef.name}
                 </span>
-                <span className="text-[10px] text-muted-foreground">· Cấp {progression.level}</span>
+                <span className="text-xs text-muted-foreground">· Cấp {progression.level}</span>
               </div>
 
               {/* Credits */}
@@ -1164,7 +1158,7 @@ export function StarfrontShell() {
               <button
                 onClick={handleToggleScanline}
                 className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-all cursor-pointer",
+                  "flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono transition-all cursor-pointer",
                   scanlineEnabled
                     ? "border-cyan-500/50 bg-cyan-950/40 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
                     : "border-border/60 bg-black/40 text-muted-foreground hover:text-white",
@@ -1172,7 +1166,7 @@ export function StarfrontShell() {
                 title={scanlineEnabled ? "Tắt hiệu ứng quét màn hình (CRT Scanline Overlay)" : "Bật hiệu ứng quét màn hình (CRT Scanline Overlay)"}
               >
                 <Scan className={cn("size-3", scanlineEnabled ? "text-cyan-400 animate-pulse" : "text-muted-foreground")} />
-                <span className="hidden sm:inline font-semibold">{scanlineEnabled ? "SCANLINE: ON" : "SCANLINE: OFF"}</span>
+                <span className="hidden sm:inline font-semibold">{scanlineEnabled ? "CRT: ON" : "CRT: OFF"}</span>
               </button>
 
               {/* Nút Mở Bảng Cài Đặt Toàn Cục // Global Settings */}
@@ -1181,7 +1175,7 @@ export function StarfrontShell() {
                   playClickSound()
                   setIsSettingsOpen(true)
                 }}
-                className="flex items-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 hover:bg-cyan-900/60 px-2 py-1 text-[11px] font-mono text-cyan-300 transition-all cursor-pointer shadow-[0_0_8px_rgba(6,182,212,0.2)]"
+                className="flex items-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 hover:bg-cyan-900/60 px-2 py-1 text-xs font-mono text-cyan-300 transition-all cursor-pointer shadow-[0_0_8px_rgba(6,182,212,0.2)]"
                 title="Cài đặt hệ thống: Âm thanh, Hiệu ứng CRT, Tỷ lệ hiển thị UI"
               >
                 <Sliders className="size-3 text-cyan-400" />
@@ -1247,7 +1241,7 @@ export function StarfrontShell() {
                 <button
                   onClick={handleClearMission}
                   title="Hủy nhiệm vụ để tự do chọn mục tiêu"
-                  className="flex items-center gap-1 rounded-xs border border-border/60 bg-black/40 px-2 py-1 text-[11px] font-mono text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                  className="flex items-center gap-1 rounded-xs border border-border/60 bg-black/40 px-2 py-1 text-xs font-mono text-muted-foreground hover:text-white transition-colors cursor-pointer"
                 >
                   <X className="size-3" />
                   <span>Hủy</span>
@@ -1426,7 +1420,7 @@ export function StarfrontShell() {
                   <h2 className="font-display text-sm font-black uppercase tracking-wider text-white">
                     YÊU CẦU BẮT BUỘC: CHỌN PHI CÔNG & CƠ GIÁP
                   </h2>
-                  <span className="text-[10px] text-amber-300 font-bold uppercase">Hệ Thống Chưa Khởi Tạo Tổ Hợp</span>
+                  <span className="text-xs text-amber-300 font-bold uppercase">Hệ Thống Chưa Khởi Tạo Tổ Hợp</span>
                 </div>
               </div>
 
@@ -1434,7 +1428,7 @@ export function StarfrontShell() {
                 Chào mừng Chỉ Huy! Để có thể tham gia các phân hệ tác chiến (Đấu Trường, Bản Đồ Nhiệm Vụ, Hangar & Chợ Quân Sự), bạn bắt buộc phải hoàn tất lựa chọn ghép đôi Phi Công & Cơ Giáp khởi đầu.
               </p>
 
-              <div className="mt-4 rounded bg-black/60 border border-amber-500/30 p-2.5 text-[11px] text-amber-200/90 flex items-center gap-2">
+              <div className="mt-4 rounded bg-black/60 border border-amber-500/30 p-2.5 text-xs text-amber-200/90 flex items-center gap-2">
                 <AlertTriangle className="size-4 text-amber-400 shrink-0" />
                 <span>Không thể bỏ qua bước này khi chưa có tổ hợp hợp lệ.</span>
               </div>

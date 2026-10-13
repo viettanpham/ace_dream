@@ -22,30 +22,53 @@ function getAudioContext(): AudioContext | null {
 const STORAGE_MUTE_KEY = "STARFRONT_AUDIO_MUTED"
 const STORAGE_VOLUME_KEY = "STARFRONT_AUDIO_VOLUME"
 
+let memoryMuted = true
+let memoryVolume = 0.8
+
 export function isAudioMuted(): boolean {
-  if (typeof window === "undefined") return false
-  return localStorage.getItem(STORAGE_MUTE_KEY) === "true"
+  if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+    try {
+      const saved = localStorage.getItem(STORAGE_MUTE_KEY)
+      if (saved !== null) return saved === "true"
+    } catch {}
+  }
+  return memoryMuted
+}
+
+export function isAudioEnabled(): boolean {
+  return !isAudioMuted()
 }
 
 export function setAudioMuted(muted: boolean): void {
-  if (typeof window === "undefined") return
-  localStorage.setItem(STORAGE_MUTE_KEY, String(muted))
+  memoryMuted = muted
+  if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(STORAGE_MUTE_KEY, String(muted))
+    } catch {}
+  }
 }
 
 export function getAudioVolume(): number {
-  if (typeof window === "undefined") return 0.8
-  const saved = localStorage.getItem(STORAGE_VOLUME_KEY)
-  if (saved !== null) {
-    const parsed = parseFloat(saved)
-    if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) return parsed
+  if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+    try {
+      const saved = localStorage.getItem(STORAGE_VOLUME_KEY)
+      if (saved !== null) {
+        const parsed = parseFloat(saved)
+        if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) return parsed
+      }
+    } catch {}
   }
-  return 0.8
+  return memoryVolume
 }
 
 export function setAudioVolume(volume: number): void {
-  if (typeof window === "undefined") return
   const clamped = Math.max(0, Math.min(1, volume))
-  localStorage.setItem(STORAGE_VOLUME_KEY, String(clamped))
+  memoryVolume = clamped
+  if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(STORAGE_VOLUME_KEY, String(clamped))
+    } catch {}
+  }
 }
 
 /** Phát âm thanh bắn Laser / Pháo Photon */

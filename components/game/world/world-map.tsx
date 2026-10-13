@@ -51,6 +51,10 @@ import {
 } from "@/lib/game/world/forces-ledger"
 import { getActiveEvents } from "@/lib/game/world/event-engine"
 import { saveWorldState } from "@/lib/game/world/storage"
+import {
+  isEntityCombatLocked,
+  getEntityCombatLockStatus,
+} from "@/lib/game/world/combat-adapter"
 import { SectorIntelModal } from "./sector-intel-modal"
 import type {
   WorldState,
@@ -743,8 +747,8 @@ export function WorldMap({
   // Thao tác đổi Lệnh Chiến Lược trực tiếp từ Inspector
   const handleChangeOrder = (newOrder: StrategicOrder) => {
     if (!selectedSector) return
-    if (selectedSector.isLockedForCombat) {
-      notify("Không thể thay đổi lệnh: Sector đang bị khóa trong combat!", "error")
+    if (isEntityCombatLocked(selectedSector, worldState)) {
+      notify("Không thể thay đổi lệnh: Sector này đang trực chiến [IN COMBAT]!", "error")
       return
     }
     playClickSound()
@@ -761,8 +765,8 @@ export function WorldMap({
   // Thao tác nâng cấp công sự từ Inspector
   const handleUpgradeFort = () => {
     if (!selectedSector) return
-    if (selectedSector.isLockedForCombat) {
-      notify("Không thể nâng cấp công sự: Sector đang bị khóa giao tranh!", "error")
+    if (isEntityCombatLocked(selectedSector, worldState)) {
+      notify("Không thể nâng cấp công sự: Sector này đang trực chiến [IN COMBAT]!", "error")
       return
     }
     playClickSound()
@@ -1270,7 +1274,7 @@ export function WorldMap({
               const sovCfg = SOVEREIGNTY_CONFIG[sector.sovereignty] || SOVEREIGNTY_CONFIG.neutral
               const stageCfg = STAGE_CONFIG[sector.stage] || STAGE_CONFIG.normal
               const threatInfo = getThreatTier(sector.threatLevel)
-              const isLocked = Boolean(sector.isLockedForCombat)
+              const isLocked = isEntityCombatLocked(sector, worldState)
 
               // Kiểm tra xem sector có đang là đích đến của đoàn quân nào không
               const incomingDeployments = incomingDeploymentsBySector.get(sector.id) || []
@@ -1283,22 +1287,18 @@ export function WorldMap({
                   key={sector.id}
                   transform={`translate(${cx}, ${cy})`}
                   onPointerDown={(e) => {
-                    e.stopPropagation()
                     clickedSectorIdRef.current = sector.id
                   }}
                   onPointerEnter={() => setHoveredSectorId(sector.id)}
                   onPointerLeave={() => setHoveredSectorId((prev) => (prev === sector.id ? null : prev))}
                   onClick={(e) => {
                     e.stopPropagation()
-                    // onClick fallback dự phòng
-                    if (!hasExceededDragThresholdRef.current) {
-                      handleSectorClick(sector.id)
-                    }
+                    handleSectorClick(sector.id)
                   }}
                   className="cursor-pointer group select-none"
                   data-sector-node={sector.id}
                 >
-                  <title>{`${sector.name} — ${sovCfg.label} | Threat: ${sector.threatLevel}/1000`}</title>
+                  <title>{`${sector.name} — ${sovCfg.label} | Threat: ${sector.threatLevel}/1000${isLocked ? " [IN COMBAT - ĐANG TRỰC CHIẾN]" : ""}`}</title>
                   {/* 0. HIT AREA TRONG SUỐT ĐỘC LẬP (DEDICATED HITBOX LAYER - 140x88px)
                       Bao phủ trọn vẹn node và nhãn tên, toạ độ đồng bộ 100% với hệ quy chiếu tâm (cx, cy). */}
                   <rect
@@ -1438,19 +1438,19 @@ export function WorldMap({
 
                     {/* 6. Huy hiệu khóa Combat (Combat Lock Badge) */}
                     {isLocked && (
-                      <g transform="translate(10, -16)">
-                        <rect width="20" height="15" rx="2" fill="#7f1d1d" stroke="#ef4444" strokeWidth="1" />
+                      <g transform="translate(8, -16)">
+                        <rect width="38" height="15" rx="2" fill="#7f1d1d" stroke="#ef4444" strokeWidth="1" />
                         <text
-                          x="10"
+                          x="19"
                           y="8"
                           textAnchor="middle"
                           dominantBaseline="central"
                           fill="#fee2e2"
-                          fontSize="8.5"
+                          fontSize="7"
                           fontWeight="bold"
                           fontFamily="monospace"
                         >
-                          🔒
+                          ⚔️ IN CBT
                         </text>
                       </g>
                     )}
@@ -1730,14 +1730,17 @@ export function WorldMap({
             </div>
 
             {/* Banner Cảnh Báo Khóa Giao Tranh nếu có */}
-            {selectedSector.isLockedForCombat && (
+            {isEntityCombatLocked(selectedSector, worldState) && (
               <div className="rounded border border-red-500/60 bg-red-950/40 p-2.5 text-[11px] text-red-300 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
                   <Lock className="size-3.5 text-red-400" />
-                  <span>ĐANG KHÓA GIAO TRANH (COMBAT LOCKED)</span>
+                  <span className="rounded bg-red-900/80 px-1.5 py-0.5 text-[9px] text-red-100 border border-red-500/60 uppercase font-mono">
+                    IN COMBAT
+                  </span>
+                  <span>ĐANG TRỰC CHIẾN GIAO TRANH</span>
                 </div>
                 <p className="text-[10px] text-red-300/80 leading-normal font-sans">
-                  Sector này đang tham chiến với buồng lái. Lực lượng đồn trú bị đóng băng để bảo toàn dữ liệu. Không thể xuất quân rời khỏi.
+                  Khu vực này đang diễn ra tác chiến trực tiếp. Lực lượng đồn trú đang tham chiến và không thể điều động rời đi. Bạn vẫn có thể tra cứu toàn bộ hồ sơ tình báo, dân số và tài nguyên tại đây.
                 </p>
               </div>
             )}
@@ -2027,17 +2030,19 @@ export function WorldMap({
                 {(["defend", "reinforce", "attack", "recover", "normal"] as StrategicOrder[]).map(
                   (order) => {
                     const isCurrent = (selectedSector.strategicOrder || "normal") === order
+                    const isSectorLocked = isEntityCombatLocked(selectedSector, worldState)
                     return (
                       <button
                         key={order}
                         onClick={() => handleChangeOrder(order)}
-                        disabled={selectedSector.isLockedForCombat}
+                        disabled={isSectorLocked}
+                        title={isSectorLocked ? "Không thể đổi lệnh khi sector đang trực chiến [IN COMBAT]" : undefined}
                         className={cn(
                           "rounded py-1 px-1.5 border text-center uppercase font-bold transition-colors cursor-pointer",
                           isCurrent
                             ? "border-cyan-400 bg-cyan-950/60 text-cyan-300"
                             : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-700",
-                          selectedSector.isLockedForCombat && "opacity-50 cursor-not-allowed"
+                          isSectorLocked && "opacity-50 cursor-not-allowed"
                         )}
                       >
                         {order}
@@ -2077,7 +2082,7 @@ export function WorldMap({
               {onDeployCombat && (
                 selectedSector.stage === "threatened" ||
                 selectedSector.stage === "under_siege" ||
-                selectedSector.isLockedForCombat ? (
+                isEntityCombatLocked(selectedSector, worldState) ? (
                   <button
                     onClick={() => {
                       playClickSound()
@@ -2086,7 +2091,11 @@ export function WorldMap({
                     className="w-full flex items-center justify-center gap-2 rounded bg-red-950/50 hover:bg-red-900/60 border border-red-500/70 hover:border-red-400 text-red-200 py-2 px-3 font-display text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.25)]"
                   >
                     <Swords className="size-3.5 text-red-400" />
-                    <span>Xuất Kích Tác Chiến Tại Sector</span>
+                    <span>
+                      {isEntityCombatLocked(selectedSector, worldState)
+                        ? "Vào Lại Trận Chiến (IN COMBAT)"
+                        : "Xuất Kích Tác Chiến Tại Sector"}
+                    </span>
                   </button>
                 ) : (
                   <div
@@ -2108,17 +2117,18 @@ export function WorldMap({
               {onOpenQuickDispatch && (
                 <button
                   onClick={() => {
-                    if (selectedSector.isLockedForCombat) {
-                      notify("Không thể điều quân rời khỏi sector đang bị khóa combat!", "error")
+                    if (isEntityCombatLocked(selectedSector, worldState)) {
+                      notify("Không thể điều quân rời khỏi sector đang trực chiến [IN COMBAT]!", "error")
                       return
                     }
                     playClickSound()
                     onOpenQuickDispatch(selectedSector.id)
                   }}
-                  disabled={selectedSector.isLockedForCombat}
+                  disabled={isEntityCombatLocked(selectedSector, worldState)}
+                  title={isEntityCombatLocked(selectedSector, worldState) ? "Sector đang trực chiến [IN COMBAT], không thể điều quân rời đi" : undefined}
                   className={cn(
                     "w-full flex items-center justify-center gap-2 rounded bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer",
-                    selectedSector.isLockedForCombat && "opacity-50 cursor-not-allowed"
+                    isEntityCombatLocked(selectedSector, worldState) && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <Truck className="size-3.5 text-cyan-400" />
@@ -2130,13 +2140,14 @@ export function WorldMap({
               <button
                 onClick={handleUpgradeFort}
                 disabled={
-                  selectedSector.isLockedForCombat ||
+                  isEntityCombatLocked(selectedSector, worldState) ||
                   (selectedSector.fortificationLevel ?? 1) >= 5 ||
                   worldState.resources.industrialMaterials < 50
                 }
+                title={isEntityCombatLocked(selectedSector, worldState) ? "Không thể nâng cấp công sự khi đang trực chiến [IN COMBAT]" : undefined}
                 className={cn(
                   "w-full flex items-center justify-center gap-2 rounded bg-amber-950/30 hover:bg-amber-900/40 border border-amber-500/40 hover:border-amber-400 text-amber-200 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer",
-                  (selectedSector.isLockedForCombat ||
+                  (isEntityCombatLocked(selectedSector, worldState) ||
                     (selectedSector.fortificationLevel ?? 1) >= 5 ||
                     worldState.resources.industrialMaterials < 50) &&
                     "opacity-50 cursor-not-allowed"

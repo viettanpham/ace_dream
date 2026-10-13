@@ -2,6 +2,12 @@
 
 Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án **STARFRONT** được ghi lại tại đây theo trình tự thời gian đảo ngược (mới nhất lên đầu).
 
+## [Roadmap Planning] — Xác Lập Lộ Trình Tác Chiến Tiếp Theo Sau Phase 6.30 (Phases 6.31, Combat V2 Review, 6.32)
+
+*Cập nhật và hoàn thiện hệ thống tài liệu kế hoạch chiến lược chuẩn bị cho giai đoạn phát triển tiếp theo sau khi Phase 6.30 hoàn thành: xác lập phạm vi kỹ thuật của Phase 6.31 (Mission Dispatch & Operations Archive: giới hạn 1 nhiệm vụ trực tiếp, PREPARE timeout ủy quyền NPC, objective tái sử dụng, Operations Archive authentic logs); khởi tạo tài liệu thiết kế độc lập `docs/roadmap/COMBAT_V2_REVIEW.md` đánh giá kiến trúc Combat V2 (quy mô squad/fleet, quan hệ quân số - HP, mô phỏng NPC, khế ước WORLD); xác lập kế hoạch Phase 6.32 (Route Intelligence & Action Logs FIFO 100 bản ghi cấu hình AdminCP); bảo toàn 100% trạng thái hoàn thành của Phase 6.30, không sửa đổi mã nguồn gameplay hay save schema.*
+
+---
+
 ## [Phase 6.30] — STARFRONT WORLD: Nâng Cấp Bản Đồ Thiên Hà Chiến Lược & Trải Nghiệm Điều Khiển (Strategic Galaxy Map & Command UX Enhancement)
 
 *Đã hoàn thành 100% Phase 6.30 theo đúng roadmap STARFRONT: Nâng cấp toàn diện bản đồ thiên hà node-only theo phong cách sci-fi tactical command center với chiều sâu không gian, tinh vân mờ ảo và lưới tọa độ 1000x650 MLY; chuẩn hóa trạng thái hiển thị mặc định của Map Legend (mặc định OFF) và Node Details (mặc định OFF - chế độ Tổng Thể); bổ sung Mouse-Wheel Zoom và Double-Click Zoom trên giới hạn an toàn [0.7x, 2.2x]; tích hợp War Room Strategic Situation Deck và dải cảnh báo P0/P1 có hành động thực tế (tiếp tục trận đấu suspended combat, phê chuẩn sự kiện INIT, focus sector); bảo toàn 100% thuật toán căn chỉnh tọa độ, 10 sectors, Save Schema V1 và RPG Save V4 (100% tests PASS, build & lint thành công).*

@@ -36,8 +36,10 @@ Tài liệu này tổng hợp toàn bộ tính năng của dự án **STARFRONT*
 | **Phase 6.21** | STARFRONT WORLD — Galaxy Map Interaction & WORLD Combat Integration Audit | **Đã hoàn thành (Audit Done)** | Hoàn thành Phase 6.21 review (`WORLD_UI_UX_AUDIT.md`). Rà soát chuyên sâu 2 vấn đề: hitbox/click/pan trên Galaxy Map và truy vết luồng combat V1 vs WORLD Combat Adapter; xác minh điểm đứt gãy tại shell và lập kế hoạch sửa 3 sub-phase nhỏ. |
 | **Phase 6.22** | STARFRONT WORLD — Khắc Phục Hitbox Galaxy Map & Tương Tác Viewport | **Đã triển khai (Done)** | Hoàn thành Phase 6.22 (`world-map.tsx`, `tests/world/phase6-22-galaxy-map-hitbox-viewport.test.ts`). Hit area SVG trong suốt chuyên dụng $140 \times 88\text{px}$ xóa bỏ deadzone, Drag Threshold $5\text{px}$ tách biệt Pan vs Click, ngăn micro-jitter camera, pointer capture giữ thao tác kéo mượt mà, route tags `pointer-events-none`, làm rõ trạng thái nút tác chiến (100% tests PASS, 32/32 suites PASS). |
 | **Phase 6.29** | STARFRONT WORLD — Trung Tâm Điều Hành Toàn Cảnh & Tổng Hợp Sự Kiện | **Đã triển khai (Done)** | Hoàn thành Phase 6.29 (`global-operations-hub.tsx`, `operations-center.tsx`, `tests/world/phase6-29-global-operations-event-hub.test.ts`). Tổng hợp 5 nhóm thông tin chiến lược, deduplicated actionable counter, liên kết hành động trực tiếp (100% tests PASS). |
-| **Hotfix** | STARFRONT WORLD — Khắc Phục Vòng Chọn Sector & Căn Chỉnh Tọa Độ Bản Đồ | **Đã triển khai (Done)** | Hoàn thành Hotfix (`world-map.tsx`, `tests/world/strategic-map-selection-alignment.test.ts`). Chuyển đổi tọa độ SVG tất định, giải quyết letterboxing và stuck pointer lifecycle (7/7 tests PASS). |
 | **Phase 6.30** | STARFRONT WORLD — Nâng Cấp Bản Đồ Thiên Hà Chiến Lược & Trải Nghiệm Điều Khiển | **Đã triển khai (Done)** | Hoàn thành Phase 6.30 (`world-map.tsx`, `operations-center.tsx`, `tests/world/phase-6-30-strategic-galaxy-map.test.ts`). Nâng cấp độ sâu không gian node-only (tinh vân, lưới tọa độ), chuẩn hóa Map Legend (mặc định OFF) & Node Details (mặc định OFF), bổ sung Wheel Zoom & Double-Click Zoom [0.7x .. 2.2x], tích hợp War Room Strategic Situation Deck & Critical Alerts Strip có hành động điều hướng thực tế (100% tests PASS, build & lint thành công). |
+| **Phase 6.31** | STARFRONT WORLD — Điều Phối Nhiệm Vụ & Hộp Lưu Trữ Tác Chiến (Mission Dispatch & Operations Archive) | **Kế hoạch (Chưa triển khai)** | Giới hạn 1 nhiệm vụ trực tiếp, timeout PREPARE NPC thay thế, objective chuẩn hóa (tuần tra, hộ tống, đột kích...), Operations Archive authentic logs. |
+| **Combat V2 Review** | STARFRONT WORLD — Đánh Giá & Thiết Kế Kiến Trúc Combat V2 (Architectural Review) | **Thiết kế (Chưa triển khai)** | Đánh giá kiến trúc quy mô squad/fleet, quan hệ quân số - HP, mô phỏng NPC, khế ước WORLD (`docs/roadmap/COMBAT_V2_REVIEW.md`). |
+| **Phase 6.32** | STARFRONT WORLD — Tình Báo Tuyến Đường & Nhật Ký Hành Động (Route Intelligence & Action Logs) | **Kế hoạch (Chưa triển khai)** | Thẻ tuyến hiển thị điểm đi - đến, Route Detail modal, focus tuyến, nhật ký hành động tuyến FIFO trần 100 bản ghi cấu hình AdminCP. |
 
 ---
 
@@ -503,6 +505,33 @@ Qua đối chiếu trực tiếp giữa mã nguồn hiện tại và tài liệu
 
 ---
 
-### 4.18. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
+### 4.19. Điều Phối Nhiệm Vụ & Hộp Lưu Trữ Tác Chiến (Phase 6.31 — Kế Hoạch / Chưa Triển Khai)
+- **Giới Hạn Tham Gia Tác Chiến Trực Tiếp**: Người chơi chỉ trực tiếp tham gia tối đa 1 nhiệm vụ tại một thời điểm nhằm bảo đảm sự tập trung chiến lược.
+- **Tiếp Nhận Quân Trong Pha PREPARE**: Nhiệm vụ ở trạng thái PREPARE cho phép tiếp tục bổ sung hoặc điều chỉnh người tham gia.
+- **Cơ Chế NPC Tiếp Quản Thay Thế**: Khi thời gian chuẩn bị (PREPARE) kết thúc mà người chơi không trực tiếp tham gia, NPC cấp phó/đồn trú sẽ tự động tiếp quản để nhiệm vụ tiếp tục diễn tiến bình thường.
+- **Mô Phỏng Nhiệm Vụ Không Người Chơi**: Mọi nhiệm vụ do NPC điều phối vẫn được mô phỏng đầy đủ và cập nhật kết quả thực tế vào thế giới.
+- **Hệ Thống Objective Chuẩn Hóa**: Cấu trúc mục tiêu tái sử dụng cho 6 hình thái: Tuần tra (Patrol), Hộ tống (Escort), Phòng thủ (Defend), Đột kích (Raid), Tiêu diệt mục tiêu (Eliminate) và Ứng phó Threat.
+- **Hộp Lưu Trữ Operations Archive**: Lưu trữ kết quả nhiệm vụ/event và kết quả chiến đấu với giới hạn dung lượng riêng biệt; nhật ký hoàn toàn xác thực, không tạo timestamp hoặc phần thưởng giả.
+
+---
+
+### 4.20. Đánh Giá & Thiết Kế Kiến Trúc Combat V2 (Combat V2 Review — Thiết Kế / Chưa Triển Khai)
+- **Tài Liệu Thiết Kế Chuyên Biệt**: Tham chiếu toàn diện tại `docs/roadmap/COMBAT_V2_REVIEW.md`.
+- **Nghiên Cứu Quy Mô Đa Tầng**: Phân cấp Unit (từng cỗ GEAR) $\rightarrow$ Squad (3-4 GEARs) $\rightarrow$ Fleet (hạm đội chi viện) $\rightarrow$ Strategic Garrison.
+- **Động Lực Học Sát Thương & Tổn Thất**: Quan hệ giữa HP, quân số đồn trú, hỏa lực; cơ chế phân bổ sát thương khi một GEAR bị loại khỏi trận; 5 trạng thái quân số (tử trận, thương binh, rút lui, đào ngũ, viện binh).
+- **Hệ Thống Bổ Trợ & Tự Động Hóa**: Tác động địa hình, công sự căn cứ (Fortification Barrier), pháo hạm chi viện; thuật toán mô phỏng tự động khi vắng mặt.
+- **Tích Hợp & Kế Thừa An Toàn**: Giữ nguyên khế ước `STARFRONT_WORLD_SAVE_V1`, Encounter Snapshot, Transaction Journal; kế thừa hệ thống Status Effects, Turn Initiative và D3 Visualizer từ Combat V1.
+
+---
+
+### 4.21. Tình Báo Tuyến Đường & Nhật Ký Hành Động (Phase 6.32 — Kế Hoạch / Chưa Triển Khai)
+- **Route Cards Trực Quan**: Hiển thị rõ điểm đi $\rightarrow$ hyperlane $\rightarrow$ điểm đến cùng trạng thái và lưu lượng.
+- **Route Detail Modal**: Bảng tình báo chuyên sâu hiển thị ID tuyến, 2 đầu sector, trạng thái, thời gian di chuyển, mức độ nguy hiểm và thông số quân sự/hậu cần.
+- **Focus Tuyến Trên Bản Đồ**: Nút điều hướng camera tự động căn giữa và làm nổi bật tuyến siêu không gian được chọn.
+- **Nhật Ký Hành Động Tuyến (FIFO Action Logs)**: Ghi nhận tối đa 100 sự kiện biến động trạng thái thực tế cho mỗi tuyến (có thể cấu hình trong AdminCP); tự động xoay vòng FIFO khi vượt trần, không làm ảnh hưởng trạng thái đang hoạt động.
+
+---
+
+### 4.22. Các Hạng Mục Mở Rộng Tương Lai (Future Extensions & TBD)
 - **Tốc Độ Suy Thoái Stability Nâng Cao**: Cân bằng mở rộng các biến số kinh tế vĩ mô phức tạp trong các bản cập nhật tiếp theo.
 - **Mở Rộng Sector 11+ & Phe Phái Thứ 3 (BCU/ANI)**: Kế hoạch mở rộng đồ thị thiên hà cho các mùa giải chiến dịch trong tương lai.

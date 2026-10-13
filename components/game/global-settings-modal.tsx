@@ -67,7 +67,10 @@ export const UI_SCALE_PRESETS: Array<{
   desc: string
 }> = [
   { value: 100, label: "100%", desc: "Mặc định (1x)" },
-  { value: 125, label: "125%", desc: "Rõ nét hơn" },
+  { value: 110, label: "110%", desc: "+10%" },
+  { value: 120, label: "120%", desc: "+20%" },
+  { value: 130, label: "130%", desc: "+30%" },
+  { value: 140, label: "140%", desc: "+40%" },
   { value: 150, label: "150%", desc: "Dễ đọc (1.5x)" },
   { value: 175, label: "175%", desc: "Cỡ chữ lớn" },
   { value: 200, label: "200%", desc: "Tối đa (2x)" },
@@ -611,8 +614,8 @@ export function GlobalSettingsModal({
                 </div>
               </div>
 
-              {/* Supported 25% Step Presets (100, 125, 150, 175, 200) */}
-              <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 text-xs">
+              {/* Supported Step Quick Visual Marks (100, 110, 120, 130, 140, 150, 175, 200) */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 text-xs">
                 {UI_SCALE_PRESETS.map((preset) => {
                   const isCurrent = uiScale === preset.value
                   return (

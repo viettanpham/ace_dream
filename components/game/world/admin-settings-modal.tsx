@@ -895,7 +895,7 @@ export function AdminSettingsModal({
                 </div>
                 <div className="flex items-center gap-2 text-xs font-mono">
                   <span className="text-rose-400 font-bold">
-                    HQ: {threatForm.maxThreatHQ} · Thường: {threatForm.maxThreatStandard}
+                    HQ: {threatForm.maxThreatHQ.toLocaleString()} · Thường: {threatForm.maxThreatStandard.toLocaleString()}
                   </span>
                   <span className="text-zinc-500">
                     {collapsedSections.threat ? "[Thu Gọn]" : "[Mở Rộng]"}
@@ -909,29 +909,29 @@ export function AdminSettingsModal({
                   <div className="rounded border border-rose-950 bg-rose-950/20 p-3 text-xs space-y-1.5 text-rose-200">
                     <div className="font-bold flex items-center gap-1.5 text-rose-300">
                       <Zap className="size-3.5 text-rose-400" />
-                      <span>CÔNG THỨC THREAT DUY NHẤT DỰA TRÊN KẾT QUẢ HP (CANONICAL FORMULA):</span>
+                      <span>CÔNG THỨC THREAT CHÍNH THỨC DUY NHẤT (CANONICAL HP-BASED FORMULA):</span>
                     </div>
-                    <p className="text-zinc-300 leading-relaxed">
-                      Thay thế các delta cố định cũ (-140, +120). Mọi biến động đe dọa được tính toán động căn cứ vào lượng máu địch bị tiêu diệt và lượng máu quân ta bảo toàn, quy đổi theo trần Max Threat của từng Sector:
+                    <p className="text-zinc-300 leading-relaxed font-mono text-[11px] bg-black/60 p-2 rounded border border-rose-900/50">
+                      ThreatChange = floor( ( (WinnerCurrentHP + WinnerMaxHP) * WinnerRatio + LoserMaxHP ) / HPPerThreatPoint )
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 font-mono text-[11px]">
                       <div className="bg-black/50 p-2 rounded border border-rose-900/40">
-                        <span className="text-emerald-400 font-bold">CHIẾN THẮNG:</span>
+                        <span className="text-emerald-400 font-bold">PHE TA THẮNG:</span>
                         <div className="text-zinc-400 mt-0.5">
-                          -maxThreat &times; (0.25 &times; HP_địch_diệt + 0.15 &times; HP_ta_sống) &times; HệSố
+                          Threat khu vực giảm ThreatChange điểm (min 0)
                         </div>
                       </div>
                       <div className="bg-black/50 p-2 rounded border border-rose-900/40">
-                        <span className="text-rose-400 font-bold">THẤT BẠI:</span>
+                        <span className="text-rose-400 font-bold">PHE TA THUA:</span>
                         <div className="text-zinc-400 mt-0.5">
-                          +maxThreat &times; (0.20 &times; HP_ta_mất + 0.15 &times; HP_địch_sống) &times; HệSố
+                          Threat khu vực tăng ThreatChange điểm (max SectorMaxThreat)
                         </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Cấu hình tham số Threat toàn cục */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="rounded border border-zinc-800 bg-zinc-900/50 p-3 space-y-1.5">
                       <label className="text-xs font-bold text-zinc-300 uppercase">
                         Trần Đe Dọa Sector Thường
@@ -939,60 +939,81 @@ export function AdminSettingsModal({
                       <input
                         type="number"
                         min={100}
-                        max={2000}
-                        step={50}
+                        max={100000000}
+                        step={10000}
                         value={threatForm.maxThreatStandard}
                         onChange={(e) =>
                           setThreatForm({
                             ...threatForm,
-                            maxThreatStandard: Math.max(100, parseInt(e.target.value, 10) || 1000),
+                            maxThreatStandard: Math.max(100, parseInt(e.target.value, 10) || 1000000),
                           })
                         }
                         className="w-full rounded border border-zinc-700 bg-zinc-950 p-1.5 font-mono text-sm text-cyan-300 focus:border-rose-400 focus:outline-hidden"
                       />
-                      <div className="text-[11px] text-zinc-400">Mặc định: 1000 Threat</div>
+                      <div className="text-[11px] text-zinc-400">Mặc định: 1,000,000 Threat</div>
                     </div>
 
                     <div className="rounded border border-zinc-800 bg-zinc-900/50 p-3 space-y-1.5">
                       <label className="text-xs font-bold text-zinc-300 uppercase">
-                        Trần Đe Dọa Căn Cứ Sol HQ
+                        Trần Đe Dọa Căn Cứ HQ
                       </label>
                       <input
                         type="number"
-                        min={50}
-                        max={1000}
-                        step={50}
+                        min={100}
+                        max={1000000000}
+                        step={1000000}
                         value={threatForm.maxThreatHQ}
                         onChange={(e) =>
                           setThreatForm({
                             ...threatForm,
-                            maxThreatHQ: Math.max(50, parseInt(e.target.value, 10) || 500),
+                            maxThreatHQ: Math.max(100, parseInt(e.target.value, 10) || 100000000),
                           })
                         }
                         className="w-full rounded border border-zinc-700 bg-zinc-950 p-1.5 font-mono text-sm text-cyan-300 focus:border-rose-400 focus:outline-hidden"
                       />
-                      <div className="text-[11px] text-zinc-400">Mặc định: 500 Threat (Bảo vệ tối đa)</div>
+                      <div className="text-[11px] text-zinc-400">Mặc định: 100,000,000 Threat</div>
                     </div>
 
                     <div className="rounded border border-zinc-800 bg-zinc-900/50 p-3 space-y-1.5">
                       <label className="text-xs font-bold text-zinc-300 uppercase">
-                        Hệ Số Nhân Công Thức
+                        HP Per Threat Point
                       </label>
                       <input
                         type="number"
-                        min={0.1}
-                        max={3.0}
-                        step={0.1}
-                        value={threatForm.threatFormulaMultiplier}
+                        min={1}
+                        max={10000}
+                        step={10}
+                        value={threatForm.hpPerThreatPoint ?? 100}
                         onChange={(e) =>
                           setThreatForm({
                             ...threatForm,
-                            threatFormulaMultiplier: Math.max(0.1, parseFloat(e.target.value) || 1.0),
+                            hpPerThreatPoint: Math.max(1, parseInt(e.target.value, 10) || 100),
                           })
                         }
                         className="w-full rounded border border-zinc-700 bg-zinc-950 p-1.5 font-mono text-sm text-cyan-300 focus:border-rose-400 focus:outline-hidden"
                       />
-                      <div className="text-[11px] text-zinc-400">Mặc định: 1.0x (Tăng/giảm độ nhạy)</div>
+                      <div className="text-[11px] text-zinc-400">Mặc định: 100 HP = 1 Threat</div>
+                    </div>
+
+                    <div className="rounded border border-zinc-800 bg-zinc-900/50 p-3 space-y-1.5">
+                      <label className="text-xs font-bold text-zinc-300 uppercase">
+                        Winner Ratio
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={10}
+                        step={1}
+                        value={threatForm.winnerRatio ?? 2}
+                        onChange={(e) =>
+                          setThreatForm({
+                            ...threatForm,
+                            winnerRatio: Math.max(1, parseInt(e.target.value, 10) || 2),
+                          })
+                        }
+                        className="w-full rounded border border-zinc-700 bg-zinc-950 p-1.5 font-mono text-sm text-cyan-300 focus:border-rose-400 focus:outline-hidden"
+                      />
+                      <div className="text-[11px] text-zinc-400">Mặc định: 2 (Tỷ số phe thắng)</div>
                     </div>
                   </div>
 
@@ -1010,7 +1031,7 @@ export function AdminSettingsModal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1">
                       {worldState &&
                         Object.values(worldState.sectors).map((sec) => {
-                          const isHQ = sec.id === "sol_command_hq" || sec.id.endsWith("_hq")
+                          const isHQ = sec.id === "sol_command_hq" || sec.id.endsWith("_hq") || sec.id === "tartarus_breach"
                           const maxT = getSectorMaxThreat(sec, threatForm)
                           const currentVal = sectorThreatsForm[sec.id] ?? sec.threatLevel
 
@@ -1020,8 +1041,8 @@ export function AdminSettingsModal({
                               className={cn(
                                 "rounded border p-2.5 space-y-1.5 transition-colors",
                                 isHQ
-                                  ? "border-cyan-500/50 bg-cyan-950/20"
-                                  : "border-zinc-800 bg-zinc-900/40"
+                                   ? "border-cyan-500/50 bg-cyan-950/20"
+                                   : "border-zinc-800 bg-zinc-900/40"
                               )}
                             >
                               <div className="flex items-center justify-between gap-1 text-xs">
@@ -1039,7 +1060,7 @@ export function AdminSettingsModal({
                                   </span>
                                 </div>
                                 <span className="font-mono text-xs font-bold text-rose-300">
-                                  {currentVal} / {maxT}
+                                  {currentVal.toLocaleString()} / {maxT.toLocaleString()}
                                 </span>
                               </div>
 
@@ -1048,7 +1069,7 @@ export function AdminSettingsModal({
                                   type="range"
                                   min={0}
                                   max={maxT}
-                                  step={10}
+                                  step={Math.max(1, Math.round(maxT / 100))}
                                   value={currentVal}
                                   onChange={(e) =>
                                     setSectorThreatsForm({
@@ -1069,7 +1090,7 @@ export function AdminSettingsModal({
                                       [sec.id]: Math.max(0, Math.min(maxT, parseInt(e.target.value, 10) || 0)),
                                     })
                                   }
-                                  className="w-16 rounded border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 font-mono text-xs text-right text-rose-200"
+                                  className="w-24 rounded border border-zinc-800 bg-zinc-950 px-1.5 py-0.5 font-mono text-xs text-right text-rose-200"
                                 />
                               </div>
                             </div>
@@ -1085,7 +1106,7 @@ export function AdminSettingsModal({
                       onClick={handleResetThreatToDefault}
                       className="rounded border border-zinc-800 px-3 py-1.5 text-xs text-zinc-400 hover:text-white cursor-pointer"
                     >
-                      Khôi Phục Mặc Định (HQ 500 / Sector 1000)
+                      Khôi Phục Mặc Định (HQ 100M / Sector 1M / 100 HP / Ratio 2)
                     </button>
 
                     <div className="flex items-center gap-2">
@@ -1493,65 +1514,58 @@ export function AdminSettingsModal({
               <div className="flex items-center gap-2">
                 <AlertOctagon className="size-4 text-red-400 animate-pulse" />
                 <h3 className="text-xs font-black uppercase text-red-300">
-                  CẢNH BÁO: GIẢM MAX THREAT DƯỚI CURRENT THREAT
+                  CẢNH BÁO THAY ĐỔI THREAT
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setIsThreatResetConfirmOpen(false)}
-                className="text-zinc-400 hover:text-white"
+                className="text-zinc-400 hover:text-white cursor-pointer"
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            <div className="space-y-2 text-xs">
-              <p className="text-amber-300 font-bold leading-relaxed">
-                Mức Max Threat mới thấp hơn mức Threat hiện tại của một hoặc nhiều Sector!
-              </p>
-              
-              <div className="rounded bg-red-950/40 p-2.5 border border-red-500/40 space-y-1 text-xs text-zinc-300 max-h-36 overflow-y-auto">
+            <div className="space-y-2.5 text-xs">
+              <div className="rounded bg-red-950/40 p-2.5 border border-red-500/40 space-y-1.5 text-xs text-zinc-300 max-h-40 overflow-y-auto font-mono">
                 {pendingThreatViolations.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between gap-2 border-b border-red-900/30 pb-1">
-                    <span className="font-bold text-white truncate">{v.name}</span>
-                    <span className="text-rose-300 font-mono shrink-0">
-                      Threat: <b className="text-rose-200">{v.currentThreat}</b> &gt; Max mới: <b className="text-yellow-300">{v.newMaxThreat}</b>
-                    </span>
+                  <div key={v.id} className="border-b border-red-900/30 pb-1.5 last:border-0 last:pb-0 space-y-0.5">
+                    <div className="font-bold text-white">{v.name} ({v.id})</div>
+                    <div className="flex justify-between text-[11px] text-zinc-300">
+                      <span>Threat Max mới: <strong className="text-yellow-300">{v.newMaxThreat.toLocaleString()}</strong></span>
+                      <span>Threat hiện tại: <strong className="text-rose-300">{v.currentThreat.toLocaleString()}</strong></span>
+                    </div>
                   </div>
                 ))}
               </div>
 
               <div className="rounded bg-zinc-900 p-2.5 border border-zinc-800 text-xs text-zinc-300 space-y-1 leading-relaxed">
-                <div className="font-bold text-amber-400">
-                  ⚠️ YÊU CẦU ĐỒNG BỘ TRẠNG THÁI THIÊN HÀ:
-                </div>
-                <div>
-                  Để ngăn chặn xung đột dữ liệu khi mức đe dọa vượt quá trần cho phép, xác nhận hành động này sẽ <strong>RESET THẾ GIỚI STARFRONT WORLD VỀ YEAR 1</strong>.
-                </div>
-                <div className="text-cyan-300">
-                  Cấu hình Threat mới (HQ: {threatForm.maxThreatHQ}, Sector: {threatForm.maxThreatStandard}) sẽ được áp dụng trực tiếp vào thế giới khởi đầu mới.
-                </div>
+                <p className="text-amber-300 font-bold">
+                  Threat Max mới thấp hơn trạng thái Threat hiện tại.
+                </p>
+                <p>
+                  Nếu tiếp tục, WORLD sẽ được reset về Năm 1 để bảo đảm trạng thái mô phỏng hợp lệ.
+                </p>
+                <p className="text-[11px] text-emerald-400 pt-1">
+                  ✓ Tiến trình RPG Save V4 (Phi công, Mecha, Kho đồ, Chiến dịch) được bảo lưu an toàn.
+                </p>
               </div>
-
-              <p className="text-emerald-400 font-bold text-xs">
-                ✓ Dữ liệu RPG Save V4 (Phi công, Cấp độ, Trang bị, Kho đồ, Chiến dịch) hoàn toàn KHÔNG bị ảnh hưởng.
-              </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2 border-t border-zinc-800">
               <button
                 type="button"
                 onClick={() => setIsThreatResetConfirmOpen(false)}
-                className="rounded border border-zinc-700 bg-zinc-900 px-3.5 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
+                className="rounded border border-zinc-700 bg-zinc-900 px-4 py-1.5 text-xs text-zinc-300 hover:bg-zinc-800 transition-colors cursor-pointer"
               >
-                Hủy Bỏ
+                HỦY
               </button>
               <button
                 type="button"
                 onClick={handleConfirmThreatReductionReset}
                 className="rounded border border-red-500 bg-red-600 px-4 py-1.5 text-xs font-black text-white hover:bg-red-700 transition-colors cursor-pointer shadow-lg shadow-red-950/80"
               >
-                Xác Nhận & Reset WORLD về Year 1
+                ÁP DỤNG & RESET WORLD
               </button>
             </div>
           </div>

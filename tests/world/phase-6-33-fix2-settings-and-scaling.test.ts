@@ -147,17 +147,19 @@ test("PHASE 6.33_FIX2: UI Settings & Scaling Test Suite", async (t) => {
   })
 
   // --------------------------------------------------------------------------
-  // TEST 3 — Supported Scale Values List (Phase 6.33_FIX3: 100% - 200%)
+  // TEST 3 — Supported Scale Values List (Phase 6.33_FIX4: 100% - 200%, Step 5%)
   // --------------------------------------------------------------------------
-  await t.test("Test 3 — Scale Values: Exact list [100, 125, 150, 175, 200]", () => {
-    const expected = [100, 125, 150, 175, 200]
-    assert.deepStrictEqual(Array.from(SUPPORTED_UI_SCALES), expected)
+  await t.test("Test 3 — Scale Values: Exact list [100..200] step 5", () => {
     assert.strictEqual(MIN_UI_SCALE, 100)
     assert.strictEqual(MAX_UI_SCALE, 200)
-    assert.strictEqual(UI_SCALE_STEP, 25)
+    assert.strictEqual(UI_SCALE_STEP, 5)
+    assert.strictEqual(SUPPORTED_UI_SCALES.length, 21)
+    assert.strictEqual(SUPPORTED_UI_SCALES[0], 100)
+    assert.strictEqual(SUPPORTED_UI_SCALES[SUPPORTED_UI_SCALES.length - 1], 200)
 
     // Multipliers
     assert.strictEqual(uiScaleToMultiplier(100), 1.0)
+    assert.strictEqual(uiScaleToMultiplier(105), 1.05)
     assert.strictEqual(uiScaleToMultiplier(125), 1.25)
     assert.strictEqual(uiScaleToMultiplier(200), 2.0)
   })
@@ -190,30 +192,31 @@ test("PHASE 6.33_FIX2: UI Settings & Scaling Test Suite", async (t) => {
   })
 
   // --------------------------------------------------------------------------
-  // TEST 6 — Legacy Values Normalization
+  // TEST 6 — Legacy Values Normalization (Phase 6.33_FIX4: Nearest 5%)
   // --------------------------------------------------------------------------
   await t.test("Test 6 — Legacy Values: 80, 90, 110, 120 and decimals normalized safely", () => {
     // Integer percentages
     assert.strictEqual(normalizeUiScale(80), 100, "80 must normalize to 100")
     assert.strictEqual(normalizeUiScale(90), 100, "90 must normalize to 100")
-    assert.strictEqual(normalizeUiScale(110), 100, "110 must normalize to nearest step (100)")
-    assert.strictEqual(normalizeUiScale(120), 125, "120 must normalize to nearest step (125)")
+    assert.strictEqual(normalizeUiScale(110), 110, "110 stays 110 in step 5%")
+    assert.strictEqual(normalizeUiScale(120), 120, "120 stays 120 in step 5%")
+    assert.strictEqual(normalizeUiScale(123), 125, "123 normalizes to 125")
     assert.strictEqual(normalizeUiScale(125), 125, "125 stays 125")
 
-    // Legacy float multipliers from FIX1 (0.8 -> 80 -> 100, 0.9 -> 90 -> 100, 1.1 -> 110 -> 100, 1.2 -> 120 -> 125)
+    // Legacy float multipliers
     assert.strictEqual(normalizeUiScale(0.8), 100, "0.8 must normalize to 100")
     assert.strictEqual(normalizeUiScale(0.9), 100, "0.9 must normalize to 100")
     assert.strictEqual(normalizeUiScale(1.0), 100, "1.0 must normalize to 100")
-    assert.strictEqual(normalizeUiScale(1.1), 100, "1.1 must normalize to 100")
-    assert.strictEqual(normalizeUiScale(1.2), 125, "1.2 must normalize to 125")
+    assert.strictEqual(normalizeUiScale(1.1), 110, "1.1 must normalize to 110")
+    assert.strictEqual(normalizeUiScale(1.2), 120, "1.2 must normalize to 120")
     assert.strictEqual(normalizeUiScale(1.25), 125, "1.25 stays 125")
     assert.strictEqual(normalizeUiScale(2.0), 200, "2.0 must normalize to 200")
-    assert.strictEqual(normalizeUiScale(3.0), 200, "3.0 must normalize to 200 (FIX3 cap)")
+    assert.strictEqual(normalizeUiScale(3.0), 200, "3.0 must normalize to 200 (FIX3/FIX4 cap)")
 
     // String formats
     assert.strictEqual(normalizeUiScale("80"), 100)
-    assert.strictEqual(normalizeUiScale("120"), 125)
-    assert.strictEqual(normalizeUiScale("1.2"), 125)
+    assert.strictEqual(normalizeUiScale("120"), 120)
+    assert.strictEqual(normalizeUiScale("1.2"), 120)
   })
 
   // --------------------------------------------------------------------------

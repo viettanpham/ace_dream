@@ -19,7 +19,9 @@ import {
 } from "./transaction-journal"
 import {
   calculateCanonicalHpThreatDelta,
+  calculateThreatChange,
   getSectorMaxThreat,
+  getWorldThreatConfig,
 } from "./threat-engine"
 import type {
   AbortCombatResult,
@@ -284,20 +286,55 @@ export function commitCombatResultReceipt(
   let resourceRewards: Partial<typeof state.resources> | undefined = undefined
   let sovereigntyTransferred = false
 
+  const threatCfg = getWorldThreatConfig(state)
+  const sectorMaxThreat = getSectorMaxThreat(sector, threatCfg)
+  const previousThreat = sector.threatLevel
+
+  // Tính toán delta Threat theo Canonical HP-Based Threat Formula (Phase 6.33_FIX4)
+  let rawThreatDelta = 0
+  if (receipt.winnerCurrentHp !== undefined && receipt.winnerMaxHp !== undefined && receipt.loserMaxHp !== undefined) {
+    const change = calculateThreatChange({
+      winnerCurrentHp: receipt.winnerCurrentHp,
+      winnerMaxHp: receipt.winnerMaxHp,
+      loserMaxHp: receipt.loserMaxHp,
+      winnerRatio: threatCfg.winnerRatio,
+      hpPerThreatPoint: threatCfg.hpPerThreatPoint,
+    })
+    rawThreatDelta = receipt.victory ? -change : +change
+  } else if (receipt.playerCurrentHp !== undefined && receipt.playerMaxHp !== undefined &&
+             receipt.enemyCurrentHp !== undefined && receipt.enemyMaxHp !== undefined) {
+    const isPlayerWin = receipt.victory
+    const change = calculateThreatChange({
+      winnerCurrentHp: isPlayerWin ? receipt.playerCurrentHp : receipt.enemyCurrentHp,
+      winnerMaxHp: isPlayerWin ? receipt.playerMaxHp : receipt.enemyMaxHp,
+      loserMaxHp: isPlayerWin ? receipt.enemyMaxHp : receipt.playerMaxHp,
+      winnerRatio: threatCfg.winnerRatio,
+      hpPerThreatPoint: threatCfg.hpPerThreatPoint,
+    })
+    rawThreatDelta = receipt.victory ? -change : +change
+  } else {
+    // Fallback khi chỉ có tỷ lệ phần trăm (vd: receipt mô phỏng hoặc test đơn vị tối giản)
+    const simPlayerMax = 2500
+    const simEnemyMax = 3000
+    const simPlayerCurrent = Math.round((receipt.playerRemainingHpPercent / 100) * simPlayerMax)
+    const simEnemyCurrent = Math.round((receipt.enemyRemainingHpPercent / 100) * simEnemyMax)
+    const change = calculateThreatChange({
+      winnerCurrentHp: receipt.victory ? simPlayerCurrent : simEnemyCurrent,
+      winnerMaxHp: receipt.victory ? simPlayerMax : simEnemyMax,
+      loserMaxHp: receipt.victory ? simEnemyMax : simPlayerMax,
+      winnerRatio: threatCfg.winnerRatio,
+      hpPerThreatPoint: threatCfg.hpPerThreatPoint,
+    })
+    rawThreatDelta = receipt.victory ? -change : +change
+  }
+
+  const targetThreat = sector.threatLevel + rawThreatDelta
+  const newThreat = Math.max(0, Math.min(sectorMaxThreat, targetThreat))
+  sector.threatLevel = newThreat
+  threatChange = newThreat - previousThreat
+
   if (receipt.victory) {
     // === CHIẾN THẮNG ===
-    // Giảm mức độ đe dọa (Threat) theo công thức chuẩn hóa dựa trên HP (Phase 6.33_FIX4)
-    const sectorMaxThreat = getSectorMaxThreat(sector, state.threatConfig)
-    threatChange = calculateCanonicalHpThreatDelta({
-      maxThreat: sectorMaxThreat,
-      currentThreat: sector.threatLevel,
-      playerRemainingHpPercent: receipt.playerRemainingHpPercent,
-      enemyRemainingHpPercent: receipt.enemyRemainingHpPercent,
-      isVictory: true,
-      multiplier: state.threatConfig?.threatFormulaMultiplier ?? 1.0,
-    })
-    sector.threatLevel = Math.max(0, Math.min(sectorMaxThreat, sector.threatLevel + threatChange))
-
     // Tăng chỉ số ổn định (Stability)
     stabilityChange = Math.round(12 + Math.min(20, (100 - sector.stability) * 0.25))
     sector.stability = Math.min(100, sector.stability + stabilityChange)
@@ -331,19 +368,6 @@ export function commitCombatResultReceipt(
     evaluateSectorStage(sector)
   } else {
     // === THẤT BẠI ===
-    // Hậu quả thất bại theo công thức chuẩn hóa dựa trên HP (Phase 6.33_FIX4):
-    // Thất bại trong trận đánh KHÔNG mặc định là mất trắng sector ngay lập tức
-    const sectorMaxThreat = getSectorMaxThreat(sector, state.threatConfig)
-    threatChange = calculateCanonicalHpThreatDelta({
-      maxThreat: sectorMaxThreat,
-      currentThreat: sector.threatLevel,
-      playerRemainingHpPercent: receipt.playerRemainingHpPercent,
-      enemyRemainingHpPercent: receipt.enemyRemainingHpPercent,
-      isVictory: false,
-      multiplier: state.threatConfig?.threatFormulaMultiplier ?? 1.0,
-    })
-    sector.threatLevel = Math.max(0, Math.min(sectorMaxThreat, sector.threatLevel + threatChange))
-
     stabilityChange = -25
     sector.stability = Math.max(0, sector.stability + stabilityChange)
 
@@ -400,6 +424,9 @@ export function commitCombatResultReceipt(
     victory: receipt.victory,
     strategicConsequences: {
       threatChange,
+      previousThreat,
+      newThreat,
+      maxThreat: sectorMaxThreat,
       stabilityChange,
       garrisonCasualties,
       garrisonWounded,
@@ -609,14 +636,23 @@ export function buildCombatReceiptFromCombatState(
   snapshot: EncounterSnapshot,
   isVictory: boolean,
 ): CombatResultReceipt {
+  const playerHp = Math.max(0, Math.round(combatState.player.hp))
+  const playerMaxHp = Math.max(1, Math.round(combatState.player.maxHp))
+  const enemyHp = Math.max(0, Math.round(combatState.enemy.hp))
+  const enemyMaxHp = Math.max(1, Math.round(combatState.enemy.maxHp))
+
   const playerHpPct = Math.max(
     0,
-    Math.min(100, Math.round((combatState.player.hp / Math.max(1, combatState.player.maxHp)) * 100)),
+    Math.min(100, Math.round((playerHp / playerMaxHp) * 100)),
   )
   const enemyHpPct = Math.max(
     0,
-    Math.min(100, Math.round((combatState.enemy.hp / Math.max(1, combatState.enemy.maxHp)) * 100)),
+    Math.min(100, Math.round((enemyHp / enemyMaxHp) * 100)),
   )
+
+  const winnerCurrentHp = isVictory ? playerHp : enemyHp
+  const winnerMaxHp = isVictory ? playerMaxHp : enemyMaxHp
+  const loserMaxHp = isVictory ? enemyMaxHp : playerMaxHp
 
   let tacticalRating: "S+" | "S" | "A" | "B" | "C" = "B"
   if (isVictory) {
@@ -637,6 +673,13 @@ export function buildCombatReceiptFromCombatState(
     rounds: combatState.turnNumber,
     playerRemainingHpPercent: playerHpPct,
     enemyRemainingHpPercent: enemyHpPct,
+    winnerCurrentHp,
+    winnerMaxHp,
+    loserMaxHp,
+    playerCurrentHp: playerHp,
+    playerMaxHp: playerMaxHp,
+    enemyCurrentHp: enemyHp,
+    enemyMaxHp: enemyMaxHp,
     tacticalRating,
     completedAtTimestamp: Date.now(),
   }

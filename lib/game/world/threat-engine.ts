@@ -2,8 +2,9 @@
  * STARFRONT WORLD — Canonical HP-Based Threat Engine & Threat Configuration (Phase 6.33_FIX4)
  * 
  * Cung cấp:
- * 1. Chuẩn hóa Threat Max cho HQ (Sol Command HQ: 500) và Sector thường (1000).
- * 2. Một công thức Threat duy nhất dựa trên tỷ lệ HP (Canonical HP-based Threat Formula).
+ * 1. Chuẩn hóa Threat Max cho HQ (100,000,000) và Sector thường (1,000,000).
+ * 2. Một công thức Threat duy nhất dựa trên HP (Canonical HP-Based Threat Formula):
+ *    ThreatChange = floor(((WinnerCurrentHP + WinnerMaxHP) * WinnerRatio + LoserMaxHP) / HPPerThreatPoint)
  * 3. Kiểm tra vi phạm khi giảm Max Threat xuống dưới Current Threat (trigger Year-1 reset cảnh báo).
  * 4. Quản lý Threat Config cấu hình qua AdminCP.
  */
@@ -11,8 +12,10 @@
 import type { WorldSector, WorldState, WorldThreatConfig } from "./types"
 
 export const DEFAULT_THREAT_CONFIG: WorldThreatConfig = {
-  maxThreatStandard: 1000,
-  maxThreatHQ: 500,
+  maxThreatStandard: 1_000_000,
+  maxThreatHQ: 100_000_000,
+  hpPerThreatPoint: 100,
+  winnerRatio: 2,
   threatFormulaMultiplier: 1.0,
 }
 
@@ -24,6 +27,8 @@ export function getWorldThreatConfig(state?: WorldState | null): WorldThreatConf
     return {
       maxThreatStandard: state.threatConfig.maxThreatStandard ?? DEFAULT_THREAT_CONFIG.maxThreatStandard,
       maxThreatHQ: state.threatConfig.maxThreatHQ ?? DEFAULT_THREAT_CONFIG.maxThreatHQ,
+      hpPerThreatPoint: state.threatConfig.hpPerThreatPoint ?? DEFAULT_THREAT_CONFIG.hpPerThreatPoint,
+      winnerRatio: state.threatConfig.winnerRatio ?? DEFAULT_THREAT_CONFIG.winnerRatio,
       threatFormulaMultiplier: state.threatConfig.threatFormulaMultiplier ?? DEFAULT_THREAT_CONFIG.threatFormulaMultiplier,
       lastModified: state.threatConfig.lastModified,
     }
@@ -32,86 +37,164 @@ export function getWorldThreatConfig(state?: WorldState | null): WorldThreatConf
 }
 
 /**
+ * Xác định một Sector có phải là Headquarters (HQ) / Thủ phủ / Origin căn cứ hay không.
+ * Bảo đảm tính đối xứng (symmetric) giữa hai phe (VSS và Enemy/The Void).
+ */
+export function isHeadquartersSector(
+  sector: WorldSector | { id: string; classification?: string; maxThreat?: number } | string
+): boolean {
+  if (typeof sector === "object") {
+    if (sector.classification === "headquarters") return true
+  }
+  const sectorId = typeof sector === "string" ? sector : sector.id
+  if (sectorId === "sol_command_hq" || sectorId.endsWith("_hq") || sectorId === "tartarus_breach") {
+    return true
+  }
+  return false
+}
+
+/**
  * Xác định ngưỡng Threat tối đa (Max Threat) cho một Sector / HQ chuẩn hóa.
- * - HQ (Sol Command HQ hoặc sector có id kết thúc bằng '_hq'): Mặc định 500 (hoặc config.maxThreatHQ).
- * - Sector thường: Mặc định 1000 (hoặc config.maxThreatStandard).
- * - Ưu tiên thuộc tính explicit sector.maxThreat nếu đã được thiết lập.
+ * - HQ (Sol Command HQ, Tartarus Breach, hoặc sector kết thúc bằng '_hq'): Mặc định 100,000,000 (hoặc config.maxThreatHQ).
+ * - Sector thường / Base phụ: Mặc định 1,000,000 (hoặc config.maxThreatStandard).
+ * - Ưu tiên thuộc tính explicit sector.maxThreat nếu đã được thiết lập (loại trừ giá trị mẫu cũ 500/1000).
  */
 export function getSectorMaxThreat(
-  sector: WorldSector | { id: string; maxThreat?: number } | string,
+  sector: WorldSector | { id: string; maxThreat?: number; classification?: string } | string,
   config?: WorldThreatConfig
 ): number {
   const cfg = config ?? DEFAULT_THREAT_CONFIG
-  const sectorId = typeof sector === "string" ? sector : sector.id
   const explicitMax = typeof sector === "object" ? sector.maxThreat : undefined
 
-  if (explicitMax !== undefined && explicitMax > 0) {
+  // Nếu có explicit maxThreat hợp lệ và khác các giá trị mẫu cũ (500 hoặc 1000)
+  if (explicitMax !== undefined && explicitMax > 0 && explicitMax !== 500 && explicitMax !== 1000) {
     return explicitMax
   }
 
-  // Sol Command HQ hoặc Base tổng hành dinh
-  if (sectorId === "sol_command_hq" || sectorId.endsWith("_hq")) {
+  if (isHeadquartersSector(sector)) {
     return cfg.maxThreatHQ ?? DEFAULT_THREAT_CONFIG.maxThreatHQ
   }
 
   return cfg.maxThreatStandard ?? DEFAULT_THREAT_CONFIG.maxThreatStandard
 }
 
+export interface CalculateThreatChangeParams {
+  winnerCurrentHp: number
+  winnerMaxHp: number
+  loserMaxHp: number
+  winnerRatio?: number // default 2
+  hpPerThreatPoint?: number // default 100
+}
+
+/**
+ * CÔNG THỨC THREAT DUY NHẤT CHÍNH THỨC DỰA TRÊN HP (CANONICAL HP-BASED THREAT FORMULA - Phase 6.33_FIX4)
+ * 
+ * ThreatChange =
+ * floor(
+ *     (
+ *         (WinnerCurrentHP + WinnerMaxHP) * WinnerRatio
+ *         + LoserMaxHP
+ *     )
+ *     / HPPerThreatPoint
+ * )
+ * 
+ * Áp dụng chung cho: Solo, Party, Mission, Event, Base battle, Fleet battle, NPC combat, large-scale battle.
+ * Kết quả dùng Math.floor. Không round, không ceil.
+ */
+export function calculateThreatChange(params: CalculateThreatChangeParams): number {
+  const winnerRatio = params.winnerRatio ?? DEFAULT_THREAT_CONFIG.winnerRatio
+  const hpPerThreatPoint = params.hpPerThreatPoint ?? DEFAULT_THREAT_CONFIG.hpPerThreatPoint
+  if (hpPerThreatPoint <= 0) return 0
+
+  const winnerCurrentHp = Math.max(0, Math.round(params.winnerCurrentHp))
+  const winnerMaxHp = Math.max(0, Math.round(params.winnerMaxHp))
+  const loserMaxHp = Math.max(0, Math.round(params.loserMaxHp))
+
+  const numerator = (winnerCurrentHp + winnerMaxHp) * winnerRatio + loserMaxHp
+  return Math.floor(numerator / hpPerThreatPoint)
+}
+
 export interface CanonicalThreatCalcParams {
-  maxThreat: number
-  currentThreat: number
-  playerRemainingHpPercent: number // [0..100]
-  enemyRemainingHpPercent: number  // [0..100]
+  maxThreat?: number
+  currentThreat?: number
+  playerRemainingHpPercent?: number // [0..100]
+  enemyRemainingHpPercent?: number  // [0..100]
   isVictory: boolean
   multiplier?: number
+  winnerCurrentHp?: number
+  winnerMaxHp?: number
+  loserMaxHp?: number
+  winnerRatio?: number
+  hpPerThreatPoint?: number
+  playerCurrentHp?: number
+  playerMaxHp?: number
+  enemyCurrentHp?: number
+  enemyMaxHp?: number
 }
 
 /**
- * CÔNG THỨC THREAT DUY NHẤT DỰA TRÊN HP (Canonical HP-Based Threat Formula)
- * Thay thế hoàn toàn các hằng số fixed delta cũ (-140, +120).
- * 
- * Nguyên lý:
- * 1. Phe Đồng Minh Chiến Thắng (Victory):
- *    - Tỷ lệ HP địch bị tiêu diệt: enemyDmgRatio = (100 - enemyRemainingHpPercent) / 100 (từ 0.0 đến 1.0)
- *    - Tỷ lệ HP đồng minh bảo toàn: alliedSurvivingRatio = playerRemainingHpPercent / 100 (từ 0.0 đến 1.0)
- *    - Threat giảm tỉ lệ thuận với lượng máu địch bị tiêu diệt và lượng máu quân ta bảo toàn:
- *      rawDelta = maxThreat * (0.25 * enemyDmgRatio + 0.15 * alliedSurvivingRatio) * multiplier
- *    - Giảm tối thiểu: ít nhất 10% của maxThreat.
- *    - Delta trả về là số ÂM (giảm đe dọa).
- * 
- * 2. Phe Đồng Minh Thất Bại (Defeat):
- *    - Tỷ lệ HP đồng minh bị mất: alliedLostRatio = (100 - playerRemainingHpPercent) / 100
- *    - Tỷ lệ HP địch còn sót: enemySurvivingRatio = enemyRemainingHpPercent / 100
- *    - Threat tăng tỉ lệ thuận với lượng máu ta tổn thất và lượng máu địch áp đảo:
- *      rawDelta = maxThreat * (0.20 * alliedLostRatio + 0.15 * enemySurvivingRatio) * multiplier
- *    - Tăng tối thiểu: ít nhất 8% của maxThreat.
- *    - Delta trả về là số DƯƠNG (tăng đe dọa).
+ * Wrapper tính toán delta Threat (âm nếu Victory, dương nếu Defeat)
+ * Sử dụng Canonical Threat Formula làm authoritative core.
  */
 export function calculateCanonicalHpThreatDelta(params: CanonicalThreatCalcParams): number {
-  const mult = params.multiplier && params.multiplier > 0 ? params.multiplier : 1.0
-  const maxT = Math.max(10, Math.round(params.maxThreat))
-  const playerHp = Math.max(0, Math.min(100, params.playerRemainingHpPercent))
-  const enemyHp = Math.max(0, Math.min(100, params.enemyRemainingHpPercent))
+  const winnerRatio = params.winnerRatio ?? DEFAULT_THREAT_CONFIG.winnerRatio
+  const hpPerThreatPoint = params.hpPerThreatPoint ?? DEFAULT_THREAT_CONFIG.hpPerThreatPoint
 
-  if (params.isVictory) {
-    const enemyDmgRatio = (100 - enemyHp) / 100
-    const alliedSurvivingRatio = playerHp / 100
-    const rawDelta = maxT * (0.25 * enemyDmgRatio + 0.15 * alliedSurvivingRatio) * mult
-    const minReduction = Math.max(1, Math.round(maxT * 0.10))
-    const finalReduction = Math.max(minReduction, Math.round(rawDelta))
-    return -finalReduction
-  } else {
-    const alliedLostRatio = (100 - playerHp) / 100
-    const enemySurvivingRatio = enemyHp / 100
-    const rawDelta = maxT * (0.20 * alliedLostRatio + 0.15 * enemySurvivingRatio) * mult
-    const minIncrease = Math.max(1, Math.round(maxT * 0.08))
-    const finalIncrease = Math.max(minIncrease, Math.round(rawDelta))
-    return +finalIncrease
+  let winnerCurrentHp = params.winnerCurrentHp
+  let winnerMaxHp = params.winnerMaxHp
+  let loserMaxHp = params.loserMaxHp
+
+  if (winnerCurrentHp === undefined || winnerMaxHp === undefined || loserMaxHp === undefined) {
+    if (params.playerCurrentHp !== undefined && params.playerMaxHp !== undefined &&
+        params.enemyCurrentHp !== undefined && params.enemyMaxHp !== undefined) {
+      if (params.isVictory) {
+        winnerCurrentHp = params.playerCurrentHp
+        winnerMaxHp = params.playerMaxHp
+        loserMaxHp = params.enemyMaxHp
+      } else {
+        winnerCurrentHp = params.enemyCurrentHp
+        winnerMaxHp = params.enemyMaxHp
+        loserMaxHp = params.playerMaxHp
+      }
+    } else {
+      // Fallback nếu chỉ có tỷ lệ % (từ receipt mô phỏng giả lập)
+      // Mặc định chuẩn 2500 vs 3000 HP nếu không có snapshot thực
+      const simPlayerMax = 2500
+      const simEnemyMax = 3000
+      const pPct = params.playerRemainingHpPercent ?? (params.isVictory ? 80 : 0)
+      const ePct = params.enemyRemainingHpPercent ?? (params.isVictory ? 0 : 70)
+      const simPlayerCurrent = Math.round((pPct / 100) * simPlayerMax)
+      const simEnemyCurrent = Math.round((ePct / 100) * simEnemyMax)
+
+      if (params.isVictory) {
+        winnerCurrentHp = simPlayerCurrent
+        winnerMaxHp = simPlayerMax
+        loserMaxHp = simEnemyMax
+      } else {
+        winnerCurrentHp = simEnemyCurrent
+        winnerMaxHp = simEnemyMax
+        loserMaxHp = simPlayerMax
+      }
+    }
   }
+
+  const change = calculateThreatChange({
+    winnerCurrentHp,
+    winnerMaxHp,
+    loserMaxHp,
+    winnerRatio,
+    hpPerThreatPoint,
+  })
+
+  // Phe ta thắng -> Sector Threat giảm điểm (-change)
+  // Phe ta thua -> Sector Threat tăng điểm (+change)
+  return params.isVictory ? -change : +change
 }
 
 /**
- * Áp dụng threat delta vào Sector theo đúng trần Max Threat chuẩn hóa
+ * Áp dụng threat delta vào Sector theo đúng trần Max Threat chuẩn hóa.
+ * - Phe ta thắng: NewThreat = max(0, CurrentThreat - ThreatChange)
+ * - Phe ta thua: NewThreat = min(SectorMaxThreat, CurrentThreat + ThreatChange)
  */
 export function applyThreatDeltaToSector(
   sector: WorldSector,
@@ -149,7 +232,7 @@ export interface MaxThreatReductionCheckResult {
 
 /**
  * Kiểm tra xem cấu hình Max Threat mới có thấp hơn Current Threat của bất kỳ Sector nào hay không.
- * Nếu có: Cần cảnh báo và xác nhận để thực hiện Reset WORLD về Year 1.
+ * Nếu có: Cần cảnh báo và yêu cầu xác nhận để thực hiện Reset WORLD về Year 1.
  */
 export function checkMaxThreatReduction(
   sectors: Record<string, WorldSector>,
@@ -159,7 +242,7 @@ export function checkMaxThreatReduction(
 
   for (const sector of Object.values(sectors)) {
     const newMax = getSectorMaxThreat(sector, newConfig)
-    if (sector.threatLevel > newMax) {
+    if (newMax < sector.threatLevel) {
       violatingSectors.push({
         id: sector.id,
         name: sector.name,

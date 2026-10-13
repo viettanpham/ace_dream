@@ -107,8 +107,9 @@ export interface WorldSector {
   x: number // Tọa độ hiển thị X (0 - 100)
   y: number // Tọa độ hiển thị Y (0 - 100)
   sovereignty: SectorSovereignty
-  threatLevel: number // Mức độ đe dọa [0..1000] (Độc lập với Sovereignty)
-  maxThreat?: number   // Mức đe dọa tối đa của Sector (Chuẩn hóa HQ vs Sector thường - Phase 6.33_FIX4)
+  threatLevel: number // Mức độ đe dọa [0..maxThreat] (Độc lập với Sovereignty)
+  maxThreat?: number   // Mức đe dọa tối đa của Sector (Chuẩn hóa HQ 100,000,000 vs Sector thường 1,000,000 - Phase 6.33_FIX4)
+  classification?: "headquarters" | "standard"
   stage: SectorStage  // Vòng đời 5 giai đoạn
   industryCapacity: number // Năng lực công nghiệp riêng của sector
   garrisonPower: number    // Sức mạnh lực lượng đồn trú
@@ -225,6 +226,13 @@ export interface CombatResultReceipt {
   rounds: number
   playerRemainingHpPercent: number
   enemyRemainingHpPercent: number
+  winnerCurrentHp?: number
+  winnerMaxHp?: number
+  loserMaxHp?: number
+  playerCurrentHp?: number
+  playerMaxHp?: number
+  enemyCurrentHp?: number
+  enemyMaxHp?: number
   tacticalRating?: "S+" | "S" | "A" | "B" | "C"
   logSummary?: string
   completedAtTimestamp: number
@@ -242,6 +250,9 @@ export interface CombatResolutionResult {
   victory?: boolean
   strategicConsequences?: {
     threatChange: number
+    previousThreat?: number
+    newThreat?: number
+    maxThreat?: number
     stabilityChange: number
     garrisonCasualties: number
     garrisonWounded: number
@@ -623,9 +634,11 @@ export interface MissionDispatch {
 }
 
 export interface WorldThreatConfig {
-  maxThreatStandard: number // default 1000
-  maxThreatHQ: number       // default 500
-  threatFormulaMultiplier: number // default 1.0
+  maxThreatStandard: number // default 1,000,000
+  maxThreatHQ: number       // default 100,000,000
+  hpPerThreatPoint: number  // default 100 (100 HP = 1 Threat Point)
+  winnerRatio: number       // default 2
+  threatFormulaMultiplier?: number // default 1.0 (legacy compatibility)
   lastModified?: number
 }
 

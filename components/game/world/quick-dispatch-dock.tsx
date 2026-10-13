@@ -99,6 +99,12 @@ export function QuickDispatchDock({
     playClickSound()
     setErrorMessage(null)
 
+    // Validate destination existence & viability before confirm (Phase 6.33_FIX4)
+    if (!toSectorId || !worldState.sectors[toSectorId]) {
+      setErrorMessage("Điểm đích không hợp lệ hoặc không tồn tại trên bản đồ chiến lược.")
+      return
+    }
+
     if (troopCount <= 0) {
       setErrorMessage("Số lượng quân điều động phải lớn hơn 0.")
       return

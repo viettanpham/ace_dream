@@ -87,3 +87,35 @@ It distinguishes between APPROVED DEFAULT, CONCEPTUAL EXAMPLE, and UNRESOLVED DE
 | `taxCycleIntervalValue` | `number` | `1` | **APPROVED DEFAULT** | Fiscal assessment cycle value. |
 | `taxCycleIntervalUnit` | `"DAY" \| "MONTH" \| "YEAR"` | `"YEAR"` | **APPROVED DEFAULT** | Standard annual tax assessment cycle. |
 | `shortTaxCycleTestingDays` | `number` | `2` | **APPROVED DEFAULT** | Rapid testing cycle interval (2 days). |
+
+---
+
+## 6. Strategic Threat & HP-Based Formula Configuration (`threatConfig`) — Phase 6.33_FIX4
+
+| Configuration Key | Type | Default Value | Status | Purpose / Rule |
+| :--- | :--- | :--- | :--- | :--- |
+| `hpPerThreatPoint` | `number` | `100` | **APPROVED DEFAULT** | Number of total battle HP equivalent to 1 Threat Point (100 HP = 1 Threat). |
+| `winnerRatio` | `number` | `2` | **APPROVED DEFAULT** | Weighting coefficient applied to winning side's total effective HP (`WinnerCurrentHP + WinnerMaxHP`). |
+| `maxThreatHQ` | `number` | `100000000` | **APPROVED DEFAULT** | Maximum Threat ceiling for Headquarters sectors / origin bases (`100,000,000`). |
+| `maxThreatStandard` | `number` | `1000000` | **APPROVED DEFAULT** | Maximum Threat ceiling for Standard sectors / secondary bases (`1,000,000`). |
+
+### Canonical HP-Based Threat Formula
+
+All encounters with combat results calculate threat consequences via one authoritative formula:
+
+```text
+ThreatChange =
+floor(
+    (
+        (WinnerCurrentHP + WinnerMaxHP) * WinnerRatio
+        + LoserMaxHP
+    )
+    / HPPerThreatPoint
+)
+```
+
+- **Friendly Victory**: `NewThreat = max(0, CurrentThreat - ThreatChange)`
+- **Enemy Victory / Defeat**: `NewThreat = min(SectorMaxThreat, CurrentThreat + ThreatChange)`
+- **Rounding**: `Math.floor(...)` strictly enforced (no round, no ceil).
+- **Lower Max Warning**: Reducing Max Threat below any sector's Current Threat requires warning modal; confirmation triggers WORLD Year-1 reset while preserving RPG save data and UI preferences.
+

@@ -177,20 +177,40 @@ export function WorldCombatPostMissionResults({
         {consequences ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1 text-xs">
             {/* Đe dọa Threat */}
-            <div className="flex items-center justify-between rounded border border-border/50 bg-black/40 px-2.5 py-1.5">
-              <span className="text-zinc-400">Mức Độ Đe Dọa (Threat):</span>
-              <span
-                className={cn(
-                  "font-bold",
-                  consequences.threatChange < 0
-                    ? "text-emerald-400"
-                    : "text-red-400",
-                )}
-              >
-                {consequences.threatChange < 0
-                  ? `${consequences.threatChange} Điểm`
-                  : `+${consequences.threatChange} Điểm`}
-              </span>
+            <div className="rounded border border-border/50 bg-black/40 p-2.5 sm:col-span-2 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400 font-bold">Mức Độ Đe Dọa (Threat):</span>
+                <span
+                  className={cn(
+                    "font-bold text-sm",
+                    consequences.threatChange <= 0
+                      ? "text-emerald-400"
+                      : "text-red-400",
+                  )}
+                >
+                  {consequences.threatChange <= 0
+                    ? `-${Math.abs(consequences.threatChange)} Điểm`
+                    : `+${consequences.threatChange} Điểm`}
+                </span>
+              </div>
+              <div className="text-[11px] text-zinc-300">
+                {consequences.threatChange <= 0
+                  ? `Threat khu vực giảm ${Math.abs(consequences.threatChange)} điểm nhờ chiến thắng trong giao tranh.`
+                  : `Threat khu vực tăng ${consequences.threatChange} điểm do thất bại trong giao tranh.`}
+              </div>
+              {consequences.previousThreat !== undefined && consequences.newThreat !== undefined && (
+                <div className="flex flex-wrap items-center justify-between text-[11px] font-mono text-zinc-400 pt-0.5 border-t border-zinc-800/80">
+                  <span>
+                    Threat: <strong className="text-zinc-200">{consequences.previousThreat.toLocaleString()}</strong> →{" "}
+                    <strong className={consequences.threatChange <= 0 ? "text-emerald-300" : "text-red-300"}>
+                      {consequences.newThreat.toLocaleString()}
+                    </strong>
+                  </span>
+                  <span>
+                    Mức độ nguy hiểm hiện tại: <strong className="text-cyan-300">{consequences.newThreat.toLocaleString()}</strong>
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Ổn định Stability */}

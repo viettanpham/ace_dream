@@ -14,6 +14,10 @@
 | **Phase 6.31** | **Mission Dispatch & Operations Archive** | **DONE** | `lib/game/world/mission-dispatch.ts`, `operations-archive.ts` |
 | **Phase 6.32** | **Combat V2 Core Engine** | **DONE** | `docs/WORLD_COMBAT_V2_DESIGN.md`, `docs/WORLD_SYSTEM_INVARIANTS.md` |
 | **Phase 6.33** | **Combat Command, Retreat, Support & Battle UI** | **DONE** | `docs/WORLD_COMBAT_V2_DESIGN.md`, `components/game/world/combat-v2` |
+| **Phase 6.33_FIX1** | **Localized Locking & Combat Lock Isolation** | **DONE** | `components/game/world/world-map.tsx`, `combat-adapter.ts` |
+| **Phase 6.33_FIX2** | **Settings & UI Scaling Preservation** | **DONE** | `lib/game/ui-settings.ts`, `global-settings-modal.tsx` |
+| **Phase 6.33_FIX3** | **Typography Scaling & Text Overflow Resilience** | **DONE** | `lib/game/ui-settings.ts`, `components/game/world/combat-v2` |
+| **Phase 6.33_FIX4** | **Dispatch Destination UX, Canonical Threat & Threat AdminCP** | **DONE** | `threat-engine.ts`, `quick-dispatch-dock.tsx`, `admin-settings-modal.tsx` |
 | **Phase 6.34** | Pilot Survival & Rescue | PLANNED / NOT STARTED | `docs/WORLD_PILOT_SURVIVAL_RESCUE.md`, `docs/WORLD_COMBAT_V2_DESIGN.md` |
 | **Phase 6.35** | GEAR Logistics, Repair & Pilot Recovery | PLANNED / NOT STARTED | `docs/WORLD_GEAR_LOGISTICS_REPAIR.md`, `docs/WORLD_ADMINCP_CONFIG_REFERENCE.md` |
 | **Phase 6.36** | National Population & Personnel Pools | PLANNED / NOT STARTED | `docs/WORLD_NATIONAL_PERSONNEL_TRAINING.md`, `docs/WORLD_NATIONAL_ECONOMY.md` |

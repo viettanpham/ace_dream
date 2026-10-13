@@ -231,11 +231,11 @@ export function commitCombatResultReceipt(
   }
 
   // 3. Kiểm tra tính tương thích phiên bản Combat
-  if (receipt.combatVersion !== "v1") {
+  if (receipt.combatVersion !== "v1" && receipt.combatVersion !== "v2") {
     return {
       applied: false,
       transactionId: receipt.transactionId,
-      error: `Phiên bản combatVersion "${receipt.combatVersion}" không được hỗ trợ. Chỉ hỗ trợ cấu hình "v1".`,
+      error: `Phiên bản combatVersion "${receipt.combatVersion}" không được hỗ trợ. Chỉ hỗ trợ cấu hình "v1" hoặc "v2".`,
       message: "Từ chối áp dụng do phiên bản combat không tương thích.",
     }
   }

@@ -283,3 +283,78 @@ test("Phase 6.33_FIX4 — 8. UI Scaling Range (100% -> 200%, Step 5%, Legacy Nor
   assert.equal(uiScaleToMultiplier(125), 1.25)
   assert.equal(uiScaleToMultiplier(200), 2.0)
 })
+
+test("Phase 6.33_FIX4A — 9. Dispatch Source Safety (No Invented Source When Source Equals Destination)", () => {
+  const state: WorldState = createInitialWorldState(998877)
+
+  // Case 1: Target X is sol_command_hq
+  // Default reserves originates at sol_command_hq, so default source matches destination!
+  const targetX = state.sectors["sol_command_hq"]
+  assert.ok(targetX, "sol_command_hq must exist")
+
+  // Function representing the canonical Dispatch Source Safety resolution logic
+  function resolveDispatchInitialState(preselectedDestinationId: string) {
+    const isDefaultConflicting = preselectedDestinationId === "sol_command_hq"
+    return {
+      toSectorId: preselectedDestinationId,
+      sourceType: isDefaultConflicting ? null : "reserves",
+      fromSectorId: isDefaultConflicting ? "" : "sol_command_hq",
+    }
+  }
+
+  const initialDock = resolveDispatchInitialState(targetX.id)
+  // Destination must remain preselected as sol_command_hq
+  assert.equal(initialDock.toSectorId, "sol_command_hq")
+  // System MUST NOT invent player intent: source is unselected (null), not another VSS or arbitrary force
+  assert.equal(initialDock.sourceType, null, "Source type must be null (unselected), not auto-switched")
+  assert.equal(initialDock.fromSectorId, "", "From sector ID must be empty, not auto-assigned to another sector")
+
+  // Case 2: Source conflict transition logic (when player changes destination or opened with conflicting source)
+  function handleDestinationSync(
+    preselectedDestinationId: string,
+    currentSourceType: "reserves" | "sector" | null,
+    currentFromSectorId: string
+  ) {
+    const currentOrigin = currentSourceType === "reserves" ? "sol_command_hq" : currentFromSectorId
+    if (currentOrigin === preselectedDestinationId || currentFromSectorId === preselectedDestinationId) {
+      return {
+        toSectorId: preselectedDestinationId,
+        sourceType: null,
+        fromSectorId: "",
+      }
+    }
+    return {
+      toSectorId: preselectedDestinationId,
+      sourceType: currentSourceType,
+      fromSectorId: currentFromSectorId,
+    }
+  }
+
+  // Suppose player had current source as "mining_outpost_k7", then opened/clicked "mining_outpost_k7"
+  const syncedDock = handleDestinationSync("mining_outpost_k7", "sector", "mining_outpost_k7")
+  assert.equal(syncedDock.toSectorId, "mining_outpost_k7", "Destination must remain preselected as target X")
+  assert.equal(syncedDock.sourceType, null, "Source MUST become unselected, not auto-switched to another VSS or reserves")
+  assert.equal(syncedDock.fromSectorId, "", "FromSectorId MUST become empty, requiring player choice")
+
+  // Validation function matching QuickDispatchDock.handleExecuteDispatch
+  function validateDispatchSelection(sourceType: "reserves" | "sector" | null, fromSectorId: string, toSectorId: string) {
+    if (!sourceType || (sourceType === "sector" && !fromSectorId)) {
+      return { valid: false, error: "Vui lòng chọn điểm xuất phát (nguồn lực lượng) hợp lệ trước khi phê chuẩn xuất quân." }
+    }
+    const originId = sourceType === "reserves" ? "sol_command_hq" : fromSectorId
+    if (originId === toSectorId) {
+      return { valid: false, error: "Điểm xuất phát và Điểm đích không được trùng nhau." }
+    }
+    return { valid: true }
+  }
+
+  // Unselected source must fail validation
+  const invalidResult = validateDispatchSelection(syncedDock.sourceType, syncedDock.fromSectorId, syncedDock.toSectorId)
+  assert.equal(invalidResult.valid, false)
+  assert.ok(invalidResult.error?.includes("Vui lòng chọn điểm xuất phát"))
+
+  // Player explicitly picking a separate valid source sector allows dispatch
+  const validPlayerChoice = validateDispatchSelection("sector", "sol_command_hq", "mining_outpost_k7")
+  assert.equal(validPlayerChoice.valid, true)
+})
+

@@ -42,29 +42,33 @@ export function QuickDispatchDock({
   preselectedDestinationId,
   onDispatchComplete,
 }: QuickDispatchDockProps) {
-  const [sourceType, setSourceType] = useState<"reserves" | "sector">("reserves")
-  const [fromSectorId, setFromSectorId] = useState<string>("sol_command_hq")
-  const [toSectorId, setToSectorId] = useState<string>(
-    preselectedDestinationId || "helios_perimeter"
+  const initialDestination = preselectedDestinationId || "helios_perimeter"
+  const isDefaultConflicting = preselectedDestinationId === "sol_command_hq"
+
+  const [sourceType, setSourceType] = useState<"reserves" | "sector" | null>(
+    isDefaultConflicting ? null : "reserves"
   )
+  const [fromSectorId, setFromSectorId] = useState<string>(
+    isDefaultConflicting ? "" : "sol_command_hq"
+  )
+  const [toSectorId, setToSectorId] = useState<string>(initialDestination)
   const [troopCount, setTroopCount] = useState<number>(50)
   const [selectedOrder, setSelectedOrder] = useState<StrategicOrder>("reinforce")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // Đồng bộ điểm đến tự động theo entity mà player vừa click (Phase 6.33_FIX4)
+  // Đồng bộ điểm đến tự động theo entity mà player vừa click (Phase 6.33_FIX4 / FIX4A)
   useEffect(() => {
     if (isOpen && preselectedDestinationId && worldState.sectors[preselectedDestinationId]) {
       setToSectorId(preselectedDestinationId)
-      // Nếu sector nguồn đang vô tình trùng với sector đích vừa click, đổi nguồn sang VSS khác hoặc reserves
-      if (fromSectorId === preselectedDestinationId) {
-        const otherVss = Object.values(worldState.sectors).find(
-          (s) => s.sovereignty === "vss" && s.id !== preselectedDestinationId
-        )
-        if (otherVss) {
-          setFromSectorId(otherVss.id)
-        } else {
-          setSourceType("reserves")
-        }
+
+      // Phase 6.33_FIX4A Dispatch Source Safety:
+      // Nếu default/current source trùng với destination vừa click:
+      // KHÔNG tự động chọn VSS khác, KHÔNG tự động chuyển sang reserves, KHÔNG tự ý chọn force thay player.
+      // Source chuyển thành unselected (null / "") để player tự quyết định.
+      const currentOrigin = sourceType === "reserves" ? "sol_command_hq" : fromSectorId
+      if (currentOrigin === preselectedDestinationId || fromSectorId === preselectedDestinationId) {
+        setSourceType(null)
+        setFromSectorId("")
       }
     }
   }, [isOpen, preselectedDestinationId, worldState.sectors])
@@ -73,23 +77,38 @@ export function QuickDispatchDock({
 
   // Tìm quân khả dụng
   const reservesAvailable = worldState.military.reserves
-  const sourceSector = worldState.sectors[fromSectorId]
+  const sourceSector = fromSectorId ? worldState.sectors[fromSectorId] : null
   const sourceSectorGarrison = sourceSector?.garrisonPower || 0
   const isSourceLocked = sourceType === "sector" && !!sourceSector?.isLockedForCombat
 
-  const maxAvailable = sourceType === "reserves" ? reservesAvailable : sourceSectorGarrison
+  const maxAvailable =
+    sourceType === "reserves"
+      ? reservesAvailable
+      : sourceType === "sector" && fromSectorId
+      ? sourceSectorGarrison
+      : 0
 
   // Tính toán lộ trình
-  const originId = sourceType === "reserves" ? "sol_command_hq" : fromSectorId
-  const pathResult = findShortestPath(worldState.sectors, worldState.routes, originId, toSectorId)
+  const originId =
+    sourceType === "reserves"
+      ? "sol_command_hq"
+      : sourceType === "sector" && fromSectorId
+      ? fromSectorId
+      : ""
+  const pathResult =
+    originId && toSectorId
+      ? findShortestPath(worldState.sectors, worldState.routes, originId, toSectorId)
+      : null
 
   const handleAdjustCount = (delta: number) => {
+    if (maxAvailable <= 0) return
     playClickSound()
     setTroopCount((prev) => Math.max(10, Math.min(maxAvailable, prev + delta)))
     setErrorMessage(null)
   }
 
   const handleSetMax = () => {
+    if (maxAvailable <= 0) return
     playClickSound()
     setTroopCount(Math.max(10, maxAvailable))
     setErrorMessage(null)
@@ -99,9 +118,25 @@ export function QuickDispatchDock({
     playClickSound()
     setErrorMessage(null)
 
+    // Validate source selection (Phase 6.33_FIX4A Dispatch Source Safety)
+    if (!sourceType || (sourceType === "sector" && !fromSectorId)) {
+      setErrorMessage("Vui lòng chọn điểm xuất phát (nguồn lực lượng) hợp lệ trước khi phê chuẩn xuất quân.")
+      return
+    }
+
     // Validate destination existence & viability before confirm (Phase 6.33_FIX4)
     if (!toSectorId || !worldState.sectors[toSectorId]) {
       setErrorMessage("Điểm đích không hợp lệ hoặc không tồn tại trên bản đồ chiến lược.")
+      return
+    }
+
+    if (originId === toSectorId) {
+      setErrorMessage("Điểm xuất phát và Điểm đích không được trùng nhau.")
+      return
+    }
+
+    if (maxAvailable <= 0) {
+      setErrorMessage("Nguồn lực lượng đã chọn không còn quân khả dụng.")
       return
     }
 
@@ -117,11 +152,6 @@ export function QuickDispatchDock({
 
     if (isSourceLocked) {
       setErrorMessage(`Sector nguồn ${sourceSector?.name} hiện đang bị khóa trong giao tranh. Không thể điều quân!`)
-      return
-    }
-
-    if (originId === toSectorId) {
-      setErrorMessage("Sector nguồn và Sector đích không được trùng nhau.")
       return
     }
 
@@ -172,22 +202,38 @@ export function QuickDispatchDock({
 
         {/* Content Form */}
         <div className="mt-4 space-y-4">
-          {/* Nguồn lực lượng */}
+          {/* Nguồn lực lượng / Điểm xuất phát */}
           <div>
-            <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
-              1. Nguồn Lực Lượng Điều Động
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-zinc-400 uppercase tracking-wide">
+                1. Điểm Xuất Phát (Source Force)
+              </label>
+              {(!sourceType || (sourceType === "sector" && !fromSectorId)) && (
+                <span className="font-mono text-xs font-bold text-amber-400">
+                  [ Chọn điểm xuất phát ]
+                </span>
+              )}
+            </div>
             <div className="mt-1.5 grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
                 onClick={() => {
                   playClickSound()
+                  if (toSectorId === "sol_command_hq") {
+                    setErrorMessage("Quân Dự Bị đóng tại Sol Command HQ, không thể điều động đến chính Sol Command HQ. Vui lòng chọn rút từ Sector đồn trú khác.")
+                    return
+                  }
                   setSourceType("reserves")
+                  setFromSectorId("sol_command_hq")
+                  setErrorMessage(null)
+                  if (troopCount === 0 || troopCount > reservesAvailable) {
+                    setTroopCount(Math.min(50, reservesAvailable))
+                  }
                 }}
                 className={cn(
                   "p-2.5 rounded border text-left transition-colors cursor-pointer",
                   sourceType === "reserves"
-                    ? "border-cyan-400 bg-cyan-950/60 text-cyan-200"
+                    ? "border-cyan-400 bg-cyan-950/60 text-cyan-200 ring-1 ring-cyan-400/40"
                     : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700"
                 )}
               >
@@ -205,11 +251,15 @@ export function QuickDispatchDock({
                 onClick={() => {
                   playClickSound()
                   setSourceType("sector")
+                  if (fromSectorId === toSectorId || fromSectorId === "sol_command_hq") {
+                    setFromSectorId("")
+                  }
+                  setErrorMessage(null)
                 }}
                 className={cn(
                   "p-2.5 rounded border text-left transition-colors cursor-pointer",
                   sourceType === "sector"
-                    ? "border-cyan-400 bg-cyan-950/60 text-cyan-200"
+                    ? "border-cyan-400 bg-cyan-950/60 text-cyan-200 ring-1 ring-cyan-400/40"
                     : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:border-zinc-700"
                 )}
               >
@@ -218,7 +268,7 @@ export function QuickDispatchDock({
                   <span>Rút Từ Đồn Trú Sector</span>
                 </div>
                 <div className="mt-1 font-mono text-xs text-zinc-300">
-                  Tại: <span className="font-bold text-cyan-300">{sourceSector?.name}</span>
+                  Tại: <span className="font-bold text-cyan-300">{sourceSector?.name || "[ Chưa chọn ]"}</span>
                 </div>
               </button>
             </div>
@@ -227,14 +277,23 @@ export function QuickDispatchDock({
               <div className="mt-2">
                 <select
                   value={fromSectorId}
-                  onChange={(e) => setFromSectorId(e.target.value)}
+                  onChange={(e) => {
+                    const newFrom = e.target.value
+                    setFromSectorId(newFrom)
+                    setErrorMessage(null)
+                    const selSec = worldState.sectors[newFrom]
+                    if (selSec && selSec.garrisonPower > 0) {
+                      setTroopCount((prev) => (prev <= 0 ? Math.min(50, selSec.garrisonPower) : Math.min(prev, selSec.garrisonPower)))
+                    }
+                  }}
                   className="w-full rounded border border-zinc-800 bg-zinc-900 p-2 text-xs font-mono text-zinc-200 focus:border-cyan-500 focus:outline-hidden cursor-pointer"
                 >
+                  <option value="">[ Chọn điểm xuất phát ]</option>
                   {Object.values(worldState.sectors)
                     .filter((s) => s.sovereignty === "vss")
                     .map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.garrisonPower} quân đồn trú{s.isLockedForCombat ? " - ĐANG KHÓA COMBAT" : ""})
+                      <option key={s.id} value={s.id} disabled={s.id === toSectorId}>
+                        {s.name} ({s.garrisonPower} quân đồn trú{s.isLockedForCombat ? " - ĐANG KHÓA COMBAT" : ""}{s.id === toSectorId ? " - TRÙNG ĐIỂM ĐÍCH" : ""})
                       </option>
                     ))}
                 </select>
@@ -244,6 +303,13 @@ export function QuickDispatchDock({
                     <span>Sector này đang bị khóa trong combat. Không thể điều chuyển quân!</span>
                   </div>
                 )}
+              </div>
+            )}
+
+            {sourceType === null && (
+              <div className="mt-2 rounded border border-amber-500/30 bg-amber-950/20 px-3 py-2 text-xs text-amber-300 flex items-center gap-2">
+                <AlertTriangle className="size-3.5 shrink-0 text-amber-400" />
+                <span>Điểm xuất phát: <b>[ Chọn điểm xuất phát ]</b> — Vui lòng chọn nguồn lực lượng xuất phát hợp lệ.</span>
               </div>
             )}
           </div>
@@ -374,9 +440,17 @@ export function QuickDispatchDock({
               <span>THÔNG SỐ HÀNH QUÂN:</span>
             </div>
             <div className="flex flex-wrap items-center justify-between text-zinc-300 text-xs gap-1">
-              <span>Tuyến: <b className="text-white font-mono">{originId}</b> &rarr; <b className="text-white font-mono">{toSectorId}</b></span>
+              <span>
+                Tuyến: <b className="text-white font-mono">{originId ? (worldState.sectors[originId]?.name || originId) : "[ Chưa chọn điểm xuất phát ]"}</b> &rarr; <b className="text-white font-mono">{worldState.sectors[toSectorId]?.name || toSectorId}</b>
+              </span>
               <span className="font-bold text-cyan-400 font-mono">
-                {pathResult ? `${pathResult.totalDistance} ngày chiến lược` : "Tuyến không thể đi"}
+                {!originId
+                  ? "[ Đang chờ chọn điểm xuất phát ]"
+                  : originId === toSectorId
+                  ? "Trùng điểm xuất phát và đích"
+                  : pathResult
+                  ? `${pathResult.totalDistance} ngày chiến lược`
+                  : "Tuyến không thể đi"}
               </span>
             </div>
           </div>
@@ -405,10 +479,22 @@ export function QuickDispatchDock({
           <button
             type="button"
             onClick={handleExecuteDispatch}
-            disabled={isSourceLocked || troopCount <= 0 || troopCount > maxAvailable}
+            disabled={
+              !sourceType ||
+              (sourceType === "sector" && !fromSectorId) ||
+              originId === toSectorId ||
+              isSourceLocked ||
+              troopCount <= 0 ||
+              troopCount > maxAvailable
+            }
             className={cn(
               "flex items-center gap-1.5 rounded px-4 py-1.5 font-bold text-white transition-colors cursor-pointer",
-              isSourceLocked || troopCount <= 0 || troopCount > maxAvailable
+              !sourceType ||
+                (sourceType === "sector" && !fromSectorId) ||
+                originId === toSectorId ||
+                isSourceLocked ||
+                troopCount <= 0 ||
+                troopCount > maxAvailable
                 ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
                 : "bg-cyan-600 hover:bg-cyan-500 shadow-md shadow-cyan-900/40"
             )}

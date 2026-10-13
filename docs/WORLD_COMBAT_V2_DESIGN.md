@@ -175,3 +175,36 @@ The tactical visualization for Combat V2 follows a 2D Sci-Fi Tactical Operations
 >
 > **These Phase 6.31 heuristics are temporary placeholders and MUST NOT be treated as canonical Combat V2 rules.**
 > When Combat V2 is implemented in Phase 6.32, all tactical combat resolutions will transition to the authoritative round-by-round Combat V2 engine.
+
+---
+
+## 12. Canonical HP-Based Threat Delta Formula (Phase 6.33_FIX4 / 6.33_FIX4A)
+
+Combat V2 tactical battle resolutions commit strategic Threat changes to sectors using a single, unified canonical HP-based formula, replacing all legacy fixed delta heuristics.
+
+### Canonical Threat Formula
+```text
+ThreatChange =
+floor(
+    (
+        (WinnerCurrentHP + WinnerMaxHP) * WinnerRatio
+        + LoserMaxHP
+    )
+    / HPPerThreatPoint
+)
+```
+
+### Definitions & Operational Rules
+- **Canonical Combat Rule**: Đây là canonical Threat formula duy nhất cho mọi kết quả Combat V2 tác động lên WORLD Strategic State. Tuyệt đối không duplicate bất kỳ formula nào khác.
+- **WinnerCurrentHP**: Tổng HP còn lại của toàn bộ đơn vị thuộc phe thắng tham chiến tại thời điểm kết thúc trận đấu.
+- **WinnerMaxHP**: Tổng Max HP của toàn bộ đơn vị thuộc phe thắng tham chiến.
+- **LoserMaxHP**: Tổng Max HP của toàn bộ đơn vị thuộc phe thua tham chiến.
+- **WinnerRatio**: Hệ số trọng số phe thắng, hoàn toàn configurable trong AdminCP, approved default = `2`.
+- **HPPerThreatPoint**: Tỷ lệ quy đổi HP sang điểm Threat, hoàn toàn configurable trong AdminCP, approved default = `100`.
+- **Rounding Rule**: Kết quả cuối cùng bắt buộc dùng `Math.floor` (không làm tròn Math.round, không làm tròn lên Math.ceil).
+- **Directional Threat Delta**:
+  - **Friendly Victory (Phe ta thắng)**: Threat của Sector **giảm** (`-ThreatChange`).
+  - **Friendly Defeat (Phe ta thua / Địch thắng)**: Threat của Sector **tăng** (`+ThreatChange`).
+- **Scope Uniformity**: Cùng một công thức duy nhất này được áp dụng đồng nhất cho mọi quy mô giao tranh: Solo duel, Party skirmish, Sector defense mission, Fleet clash, và Large-scale theater combat.
+- **Idempotent Commit**: Quá trình commit Threat từ `CombatResultReceipt` vào Transaction Journal và World State phải bảo đảm tính **idempotent** (dựa trên `combatReceipt.id` / `transactionId`), bảo đảm một trận đánh không bao giờ bị apply trùng lặp Threat.
+

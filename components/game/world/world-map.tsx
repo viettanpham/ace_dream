@@ -55,6 +55,7 @@ import {
   isEntityCombatLocked,
   getEntityCombatLockStatus,
 } from "@/lib/game/world/combat-adapter"
+import { getSectorMaxThreat } from "@/lib/game/world/threat-engine"
 import { SectorIntelModal } from "./sector-intel-modal"
 import type {
   WorldState,
@@ -206,16 +207,17 @@ const ROUTE_CONFIG: Record<
 }
 
 /**
- * Hàm phân loại Threat Level (0..1000)
+ * Hàm phân loại Threat Level theo tỷ lệ phần trăm so với trần tối đa (Max Threat)
  */
-function getThreatTier(threat: number): {
+function getThreatTier(threat: number, maxThreat: number = 1_000_000): {
   tier: "low" | "medium" | "high"
   label: string
   color: string
   bg: string
   border: string
 } {
-  if (threat >= 700) {
+  const ratio = maxThreat > 0 ? threat / maxThreat : 0
+  if (ratio >= 0.7 || (maxThreat <= 1000 && threat >= 700)) {
     return {
       tier: "high",
       label: "NGUY HIỂM",
@@ -224,7 +226,7 @@ function getThreatTier(threat: number): {
       border: "rgba(239, 68, 68, 0.6)",
     }
   }
-  if (threat >= 300) {
+  if (ratio >= 0.3 || (maxThreat <= 1000 && threat >= 300)) {
     return {
       tier: "medium",
       label: "CẢNH BÁO",
@@ -400,6 +402,16 @@ export function WorldMap({
     [worldState.sectors, selectedSectorId]
   )
 
+  const selectedSectorMaxThreat = useMemo(() => {
+    if (!selectedSector) return 1_000_000
+    return getSectorMaxThreat(selectedSector, worldState?.threatConfig)
+  }, [selectedSector, worldState?.threatConfig])
+
+  const selectedThreatInfo = useMemo(() => {
+    if (!selectedSector) return getThreatTier(0)
+    return getThreatTier(selectedSector.threatLevel, selectedSectorMaxThreat)
+  }, [selectedSector, selectedSectorMaxThreat])
+
   // Bản đồ tra cứu các đạo quân đang hướng tới từng sector (Destination lookup)
   const incomingDeploymentsBySector = useMemo(() => {
     const map = new Map<string, TroopDeployment[]>()
@@ -488,29 +500,33 @@ export function WorldMap({
 
   // Thống kê chủ quyền & Threat toàn thiên hà
   const galaxyMetrics = useMemo(() => {
-    if (!sectors.length) return { vssPct: 0, voidPct: 0, contestedPct: 0, avgThreat: 0, threatTier: getThreatTier(0) }
+    if (!sectors.length) return { vssPct: 0, voidPct: 0, contestedPct: 0, avgThreat: 0, avgMaxThreat: 1000000, threatTier: getThreatTier(0) }
     let vssCount = 0
     let voidCount = 0
     let contestedCount = 0
     let totalThreat = 0
+    let totalMaxThreat = 0
 
     for (const s of sectors) {
       if (s.sovereignty === "vss") vssCount++
       else if (s.sovereignty === "void") voidCount++
       else contestedCount++
       totalThreat += s.threatLevel
+      totalMaxThreat += getSectorMaxThreat(s, worldState?.threatConfig)
     }
 
     const total = sectors.length
     const avgThreat = Math.round(totalThreat / total)
+    const avgMaxThreat = Math.round(totalMaxThreat / total)
     return {
       vssPct: Math.round((vssCount / total) * 100),
       voidPct: Math.round((voidCount / total) * 100),
       contestedPct: Math.round((contestedCount / total) * 100),
       avgThreat,
-      threatTier: getThreatTier(avgThreat),
+      avgMaxThreat,
+      threatTier: getThreatTier(avgThreat, avgMaxThreat),
     }
-  }, [sectors])
+  }, [sectors, worldState?.threatConfig])
 
   const notify = (message: string, type: "success" | "error" | "info" = "success") => {
     setFeedback({ message, type })
@@ -842,10 +858,10 @@ export function WorldMap({
               borderColor: galaxyMetrics.threatTier.border,
               color: galaxyMetrics.threatTier.color,
             }}
-            title={`Threat trung bình: ${galaxyMetrics.avgThreat}/1000 (${galaxyMetrics.threatTier.label})`}
+            title={`Threat trung bình: ${galaxyMetrics.avgThreat.toLocaleString()} / ${(galaxyMetrics.avgMaxThreat ?? 1000000).toLocaleString()} (${galaxyMetrics.threatTier.label})`}
           >
             <Flame className="size-3" />
-            <span className="font-bold">Threat TB: {galaxyMetrics.avgThreat}</span>
+            <span className="font-bold">Threat TB: {galaxyMetrics.avgThreat.toLocaleString()}</span>
             <span className="hidden sm:inline text-[9px] uppercase opacity-90">({galaxyMetrics.threatTier.label})</span>
           </div>
 
@@ -1273,7 +1289,8 @@ export function WorldMap({
               const isSelected = sector.id === selectedSectorId
               const sovCfg = SOVEREIGNTY_CONFIG[sector.sovereignty] || SOVEREIGNTY_CONFIG.neutral
               const stageCfg = STAGE_CONFIG[sector.stage] || STAGE_CONFIG.normal
-              const threatInfo = getThreatTier(sector.threatLevel)
+              const sectorMaxThreat = getSectorMaxThreat(sector, worldState?.threatConfig)
+              const threatInfo = getThreatTier(sector.threatLevel, sectorMaxThreat)
               const isLocked = isEntityCombatLocked(sector, worldState)
 
               // Kiểm tra xem sector có đang là đích đến của đoàn quân nào không
@@ -1298,7 +1315,7 @@ export function WorldMap({
                   className="cursor-pointer group select-none"
                   data-sector-node={sector.id}
                 >
-                  <title>{`${sector.name} — ${sovCfg.label} | Threat: ${sector.threatLevel}/1000${isLocked ? " [IN COMBAT - ĐANG TRỰC CHIẾN]" : ""}`}</title>
+                  <title>{`${sector.name} — ${sovCfg.label} | Threat: ${sector.threatLevel.toLocaleString()} / ${sectorMaxThreat.toLocaleString()}${isLocked ? " [IN COMBAT - ĐANG TRỰC CHIẾN]" : ""}`}</title>
                   {/* 0. HIT AREA TRONG SUỐT ĐỘC LẬP (DEDICATED HITBOX LAYER - 140x88px)
                       Bao phủ trọn vẹn node và nhãn tên, toạ độ đồng bộ 100% với hệ quy chiếu tâm (cx, cy). */}
                   <rect
@@ -1485,7 +1502,7 @@ export function WorldMap({
                       <g transform={`translate(-40, ${isSelected ? 46 : 42})`}>
                         <rect width="80" height="4" rx="1" fill="#18181b" />
                         <rect
-                          width={Math.min(80, (sector.threatLevel / 1000) * 80)}
+                          width={Math.min(80, (sector.threatLevel / sectorMaxThreat) * 80)}
                           height="4"
                           rx="1"
                           fill={threatInfo.color}
@@ -1779,9 +1796,9 @@ export function WorldMap({
               </div>
               <div>
                 <span className="text-zinc-400 text-[10px]">Mức Đe Dọa (Threat):</span>
-                <div className="font-bold mt-0.5 flex items-center gap-1" style={{ color: getThreatTier(selectedSector.threatLevel).color }}>
-                  <span>{selectedSector.threatLevel}/1000</span>
-                  <span className="text-[9px] opacity-80">({getThreatTier(selectedSector.threatLevel).label})</span>
+                <div className="font-bold mt-0.5 flex items-center gap-1" style={{ color: selectedThreatInfo.color }}>
+                  <span>{selectedSector.threatLevel.toLocaleString()} / {selectedSectorMaxThreat.toLocaleString()}</span>
+                  <span className="text-[9px] opacity-80">({selectedThreatInfo.label})</span>
                 </div>
               </div>
               <div>
@@ -1810,7 +1827,7 @@ export function WorldMap({
                 <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-zinc-300">
                   <Activity
                     className="size-3.5"
-                    style={{ color: getThreatTier(selectedSector.threatLevel).color }}
+                    style={{ color: selectedThreatInfo.color }}
                   />
                   <span>Xu Hướng Threat (5 Ngày)</span>
                 </div>
@@ -1867,21 +1884,21 @@ export function WorldMap({
                   Hiện tại:{" "}
                   <strong
                     className="font-mono text-xs"
-                    style={{ color: getThreatTier(selectedSector.threatLevel).color }}
+                    style={{ color: selectedThreatInfo.color }}
                   >
-                    {selectedSector.threatLevel}/1000
+                    {selectedSector.threatLevel.toLocaleString()} / {selectedSectorMaxThreat.toLocaleString()}
                   </strong>
                 </span>
                 <span
                   className="text-[9px] px-1.5 py-0.2 rounded font-semibold uppercase"
                   style={{
-                    color: getThreatTier(selectedSector.threatLevel).color,
-                    backgroundColor: `${getThreatTier(selectedSector.threatLevel).color}15`,
-                    borderColor: `${getThreatTier(selectedSector.threatLevel).color}30`,
+                    color: selectedThreatInfo.color,
+                    backgroundColor: `${selectedThreatInfo.color}15`,
+                    borderColor: `${selectedThreatInfo.color}30`,
                     borderWidth: 1,
                   }}
                 >
-                  {getThreatTier(selectedSector.threatLevel).label}
+                  {selectedThreatInfo.label}
                 </span>
               </div>
 
@@ -1911,12 +1928,12 @@ export function WorldMap({
                         >
                           <stop
                             offset="0%"
-                            stopColor={getThreatTier(selectedSector.threatLevel).color}
+                            stopColor={selectedThreatInfo.color}
                             stopOpacity="0.35"
                           />
                           <stop
                             offset="100%"
-                            stopColor={getThreatTier(selectedSector.threatLevel).color}
+                            stopColor={selectedThreatInfo.color}
                             stopOpacity="0.0"
                           />
                         </linearGradient>
@@ -1943,7 +1960,7 @@ export function WorldMap({
                           <polyline
                             points={sparklineData.lineString}
                             fill="none"
-                            stroke={getThreatTier(selectedSector.threatLevel).color}
+                            stroke={selectedThreatInfo.color}
                             strokeWidth="2"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -1961,7 +1978,7 @@ export function WorldMap({
                                 cx={pt.x}
                                 cy={pt.y}
                                 r="6"
-                                fill={getThreatTier(selectedSector.threatLevel).color}
+                                fill={selectedThreatInfo.color}
                                 fillOpacity="0.3"
                                 className="animate-ping"
                               />
@@ -1970,7 +1987,7 @@ export function WorldMap({
                               cx={pt.x}
                               cy={pt.y}
                               r={isLatest ? "4" : "3"}
-                              fill={getThreatTier(selectedSector.threatLevel).color}
+                              fill={selectedThreatInfo.color}
                               stroke="#09090b"
                               strokeWidth="1.5"
                             />
@@ -1993,10 +2010,10 @@ export function WorldMap({
                               ? "bg-zinc-800/80 border-cyan-500/50 text-cyan-200"
                               : "bg-zinc-950/60 border-zinc-800/80 text-zinc-400"
                           )}
-                          title={`Ngày ${pt.day}: Mức đe dọa ${pt.threat}/1000`}
+                          title={`Ngày ${pt.day}: Mức đe dọa ${pt.threat.toLocaleString()} / ${selectedSectorMaxThreat.toLocaleString()}`}
                         >
                           <span className="text-[8px] opacity-75 font-mono">N.{pt.day}</span>
-                          <span className="font-bold text-[9px]">{pt.threat}</span>
+                          <span className="font-bold text-[9px]">{pt.threat.toLocaleString()}</span>
                         </div>
                       )
                     })}

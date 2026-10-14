@@ -61,6 +61,7 @@ import {
   createStandardObjective,
 } from "@/lib/game/world/mission-dispatch"
 import { saveWorldState } from "@/lib/game/world/storage"
+import { getSectorMaxThreat } from "@/lib/game/world/threat-engine"
 import type {
   WorldState,
   WorldEvent,
@@ -837,6 +838,7 @@ export function EventsMissionsBoard({
                     {activeSelectedInitEvent.sectorId && worldState.sectors[activeSelectedInitEvent.sectorId] && (
                       (() => {
                         const sec = worldState.sectors[activeSelectedInitEvent.sectorId]
+                        const secMaxThreat = getSectorMaxThreat(sec, worldState.threatConfig)
                         return (
                           <div className="flex flex-wrap items-center justify-between gap-2 bg-zinc-950/60 p-2 rounded border border-zinc-800/80 text-[10px]">
                             <div className="flex items-center gap-2">
@@ -847,7 +849,7 @@ export function EventsMissionsBoard({
                               <span className="text-zinc-500">·</span>
                               <span>Ổn định: <strong className="text-emerald-400">{sec.stability}%</strong></span>
                               <span className="text-zinc-500">·</span>
-                              <span>Đe dọa: <strong className="text-amber-400">{sec.threatLevel}/1000</strong></span>
+                              <span>Đe dọa: <strong className="text-amber-400">{sec.threatLevel.toLocaleString()} / {secMaxThreat.toLocaleString()}</strong></span>
                             </div>
 
                             <button
@@ -1343,7 +1345,7 @@ export function EventsMissionsBoard({
                               <span className="text-zinc-500">·</span>
                               <span>Ổn định: <strong className="text-emerald-400">{targetSector.stability}%</strong></span>
                               <span className="text-zinc-500">·</span>
-                              <span>Đe dọa: <strong className="text-amber-400">{targetSector.threatLevel}/1000</strong></span>
+                              <span>Đe dọa: <strong className="text-amber-400">{targetSector.threatLevel.toLocaleString()} / {getSectorMaxThreat(targetSector, worldState.threatConfig).toLocaleString()}</strong></span>
                             </div>
 
                             <button

@@ -3,6 +3,10 @@ import {
   INITIAL_WORLD_SECTORS,
   createInitialWorldState,
 } from "./initial-state"
+import {
+  DEFAULT_THREAT_CONFIG,
+  isHeadquartersSector,
+} from "./threat-engine"
 import type {
   BackupMetadata,
   BackupSlot,
@@ -353,6 +357,75 @@ export function migrateWorldStateTo10Sectors(state: WorldState): { state: WorldS
 }
 
 /**
+ * Phase 6.33_FIX5: Tự động migrate và chuẩn hóa Threat Max (HQ = 100,000,000, Standard = 1,000,000)
+ * - Tự động bổ sung threatConfig nếu save cũ chưa có.
+ * - Nâng cấp các trần đe dọa cũ (<= 1000 hoặc missing/null) lên chuẩn mới:
+ *   HQ (Sol Command HQ, Tartarus Breach, *_hq) -> 100,000,000
+ *   Sector thường -> 1,000,000
+ * - KHÔNG ghi đè cấu hình Admin custom nếu user đã chủ động tinh chỉnh (> 1000).
+ * - Bảo tồn nguyên vẹn currentThreat nếu <= new max.
+ */
+export function migrateWorldThreatState(state: WorldState): boolean {
+  if (!state || !state.sectors) return false
+  let migrated = false
+
+  // 1. Kiểm tra hoặc chuẩn hóa threatConfig
+  if (!state.threatConfig) {
+    state.threatConfig = {
+      ...DEFAULT_THREAT_CONFIG,
+      lastModified: Date.now(),
+    }
+    migrated = true
+  } else {
+    if (!state.threatConfig.maxThreatStandard || state.threatConfig.maxThreatStandard <= 1000) {
+      state.threatConfig.maxThreatStandard = DEFAULT_THREAT_CONFIG.maxThreatStandard
+      migrated = true
+    }
+    if (!state.threatConfig.maxThreatHQ || state.threatConfig.maxThreatHQ <= 1000) {
+      state.threatConfig.maxThreatHQ = DEFAULT_THREAT_CONFIG.maxThreatHQ
+      migrated = true
+    }
+    if (!state.threatConfig.hpPerThreatPoint) {
+      state.threatConfig.hpPerThreatPoint = DEFAULT_THREAT_CONFIG.hpPerThreatPoint
+      migrated = true
+    }
+    if (!state.threatConfig.winnerRatio) {
+      state.threatConfig.winnerRatio = DEFAULT_THREAT_CONFIG.winnerRatio
+      migrated = true
+    }
+  }
+
+  // 2. Chuẩn hóa từng sector
+  for (const [id, sec] of Object.entries(state.sectors)) {
+    const isHq = isHeadquartersSector(sec)
+
+    if (isHq && sec.classification !== "headquarters") {
+      sec.classification = "headquarters"
+      migrated = true
+    } else if (!sec.classification) {
+      sec.classification = "standard"
+      migrated = true
+    }
+
+    // Nếu maxThreat chưa có, null, hoặc mang giá trị legacy <= 1000
+    if (sec.maxThreat === undefined || sec.maxThreat === null || sec.maxThreat <= 1000) {
+      sec.maxThreat = isHq
+        ? state.threatConfig.maxThreatHQ
+        : state.threatConfig.maxThreatStandard
+      migrated = true
+    }
+
+    // Bảo tồn current threat, chỉ clamp nếu vượt quá maxThreat
+    if (sec.threatLevel > sec.maxThreat) {
+      sec.threatLevel = sec.maxThreat
+      migrated = true
+    }
+  }
+
+  return migrated
+}
+
+/**
  * Nạp trạng thái World State với cơ chế tự động phục hồi khi file chính bị hỏng (Auto-Rescue)
  */
 export function loadWorldState(): LoadWorldResult {
@@ -387,7 +460,9 @@ export function loadWorldState(): LoadWorldResult {
 
     // Phase 6.28: Tự động di chuyển lên 10 Sector & 16 Tuyến đường nếu là save cũ
     const migration = migrateWorldStateTo10Sectors(loadedData)
-    if (migration.migrated) {
+    // Phase 6.33_FIX5: Tự động di chuyển và chuẩn hóa Threat Max (HQ = 100,000,000, Standard = 1,000,000)
+    const threatMigrated = migrateWorldThreatState(migration.state)
+    if (migration.migrated || threatMigrated) {
       saveWorldState(migration.state)
     }
 
@@ -464,6 +539,10 @@ export function loadWorldState(): LoadWorldResult {
     }
 
     const migration = migrateWorldStateTo10Sectors(backupData)
+    const threatMigrated = migrateWorldThreatState(migration.state)
+    if (migration.migrated || threatMigrated) {
+      saveWorldState(migration.state)
+    }
     return {
       state: migration.state,
       status: chosenBackup.slot === "A" ? "recovered_backup_a" : "recovered_backup_b",

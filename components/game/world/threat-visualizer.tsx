@@ -19,6 +19,7 @@ export interface ThreatHistoryDataPoint {
 export interface ThreatVisualizerProps {
   history: ThreatHistoryDataPoint[]
   currentThreat: number
+  maxThreat?: number
   title?: string
   sectorName?: string
   viewMode?: "critical" | "average"
@@ -30,6 +31,7 @@ export interface ThreatVisualizerProps {
 export function ThreatVisualizer({
   history,
   currentThreat,
+  maxThreat = 1_000_000,
   title = "Xu Hướng Đe Dọa (Threat)",
   sectorName,
   viewMode = "critical",
@@ -73,7 +75,8 @@ export function ThreatVisualizer({
 
   // Màu sắc theo mức Threat
   const threatTheme = useMemo(() => {
-    if (currentThreat >= 700) {
+    const ratio = maxThreat > 0 ? currentThreat / maxThreat : 0
+    if (ratio >= 0.7 || (maxThreat <= 1000 && currentThreat >= 700)) {
       return {
         color: "#ef4444",
         label: "Nguy Cấp",
@@ -83,7 +86,7 @@ export function ThreatVisualizer({
         gradientStop: "#ef4444",
       }
     }
-    if (currentThreat >= 300) {
+    if (ratio >= 0.3 || (maxThreat <= 1000 && currentThreat >= 300)) {
       return {
         color: "#f59e0b",
         label: "Báo Động",
@@ -101,7 +104,7 @@ export function ThreatVisualizer({
       stroke: "#06b6d4",
       gradientStop: "#06b6d4",
     }
-  }, [currentThreat])
+  }, [currentThreat, maxThreat])
 
   // Tính tọa độ SVG cho biểu đồ đường
   const chartGeometry = useMemo(() => {
@@ -113,8 +116,9 @@ export function ThreatVisualizer({
     const padY = 8
 
     const threats = sanitizedHistory.map((p) => p.threat)
-    const minVal = Math.max(0, Math.min(...threats) - 30)
-    const maxVal = Math.min(1000, Math.max(...threats) + 30)
+    const margin = Math.max(30, Math.round(maxThreat * 0.02))
+    const minVal = Math.max(0, Math.min(...threats) - margin)
+    const maxVal = Math.min(maxThreat, Math.max(...threats) + margin)
     const range = Math.max(80, maxVal - minVal)
 
     const points = sanitizedHistory.map((pt, i) => {
@@ -197,7 +201,7 @@ export function ThreatVisualizer({
         <div className="flex items-center gap-1.5">
           <span className="text-zinc-400">Mức hiện tại:</span>
           <strong className="font-mono text-xs font-bold" style={{ color: threatTheme.color }}>
-            {currentThreat}/1000
+            {currentThreat.toLocaleString()} / {maxThreat.toLocaleString()}
           </strong>
           <span className={cn("px-1.5 py-0.2 rounded text-[9px] font-bold uppercase", threatTheme.badgeBg)}>
             {threatTheme.label}

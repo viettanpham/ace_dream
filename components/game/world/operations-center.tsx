@@ -118,6 +118,7 @@ import {
   abortSuspendedCombat,
   isEntityCombatLocked,
 } from "@/lib/game/world/combat-adapter"
+import { getSectorMaxThreat } from "@/lib/game/world/threat-engine"
 import type {
   WorldState,
   WorldSector,
@@ -138,12 +139,14 @@ export type OperationsTab =
 
 interface OperationsCenterProps {
   initialTab?: OperationsTab
+  adminTrigger?: number
   onNavigateSection?: (section: any) => void
   onDeployEncounter?: (sectorId: string, battleContext?: WorldBattleContext) => void
 }
 
 export function OperationsCenter({
   initialTab = "map",
+  adminTrigger,
   onNavigateSection,
   onDeployEncounter,
 }: OperationsCenterProps) {
@@ -546,6 +549,13 @@ export function OperationsCenter({
       setActiveTab(initialTab)
     }
   }, [initialTab])
+
+  // Phase 6.33_FIX5: Mở Admin CP khi nhận tín hiệu từ Top Menu hoặc Left Menu
+  useEffect(() => {
+    if (adminTrigger && adminTrigger > 0) {
+      setIsAdminSettingsOpen(true)
+    }
+  }, [adminTrigger])
 
   // Phase 6.26: Ghi nhận lịch sử tài nguyên theo phiên (Session Resource History)
   // Bảo toàn nguyên vẹn WORLD Save Schema V1; ghi nhận tối đa 10 chu kỳ ngày gần nhất trong phiên
@@ -1041,7 +1051,7 @@ export function OperationsCenter({
         sectorName: s.name,
         sectorId: s.id,
         urgencyBadge: "P0 TỐI NGUY · BỊ VÂY HÃM",
-        description: `Mức đe dọa cực hạn ${s.threatLevel}/1000. Đồn trú: ${s.garrisonPower.toLocaleString()} quân. Cần giải vây khẩn cấp!`,
+        description: `Mức đe dọa cực hạn ${s.threatLevel.toLocaleString()} / ${getSectorMaxThreat(s, worldState.threatConfig).toLocaleString()}. Đồn trú: ${s.garrisonPower.toLocaleString()} quân. Cần giải vây khẩn cấp!`,
         actionType: "war_room",
       })
     }
@@ -1057,7 +1067,7 @@ export function OperationsCenter({
         sectorName: s.name,
         sectorId: s.id,
         urgencyBadge: "P1 NGUY CƠ · BỊ ĐE DỌA",
-        description: `Mức đe dọa ${s.threatLevel}/1000. Đồn trú: ${s.garrisonPower.toLocaleString()} quân. Cần tăng cường phòng thủ hoặc tiếp viện.`,
+        description: `Mức đe dọa ${s.threatLevel.toLocaleString()} / ${getSectorMaxThreat(s, worldState.threatConfig).toLocaleString()}. Đồn trú: ${s.garrisonPower.toLocaleString()} quân. Cần tăng cường phòng thủ hoặc tiếp viện.`,
         actionType: "war_room",
       })
     }
@@ -1739,11 +1749,14 @@ export function OperationsCenter({
                       <Flame className="size-3 text-amber-400" />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-zinc-100">
-                        {Math.round(sectorsList.reduce((acc, s) => acc + s.threatLevel, 0) / Math.max(1, sectorsList.length))}/1000
+                      <span className="font-bold text-zinc-100 font-mono text-xs">
+                        {Math.round(sectorsList.reduce((acc, s) => acc + s.threatLevel, 0) / Math.max(1, sectorsList.length)).toLocaleString()} / {Math.round(sectorsList.reduce((acc, s) => acc + getSectorMaxThreat(s, worldState.threatConfig), 0) / Math.max(1, sectorsList.length)).toLocaleString()}
                       </span>
                       <span className="text-[10px] text-amber-400">
-                        {sectorsList.filter((s) => s.threatLevel >= 700).length} Sector nguy cấp
+                        {sectorsList.filter((s) => {
+                          const maxT = getSectorMaxThreat(s, worldState.threatConfig)
+                          return maxT > 0 && (s.threatLevel / maxT >= 0.7 || (maxT <= 1000 && s.threatLevel >= 700))
+                        }).length} Sector nguy cấp
                       </span>
                     </div>
                   </div>
@@ -1903,7 +1916,9 @@ export function OperationsCenter({
               {sectorsList.map((sector) => {
                 const isSelected = selectedSectorId === sector.id
                 const isLocked = isEntityCombatLocked(sector, worldState)
-                const threatTier = sector.threatLevel >= 700 ? "high" : sector.threatLevel >= 300 ? "med" : "low"
+                const secMax = getSectorMaxThreat(sector, worldState.threatConfig)
+                const secRatio = secMax > 0 ? sector.threatLevel / secMax : 0
+                const threatTier = (secRatio >= 0.7 || (secMax <= 1000 && sector.threatLevel >= 700)) ? "high" : (secRatio >= 0.3 || (secMax <= 1000 && sector.threatLevel >= 300)) ? "med" : "low"
 
                 return (
                   <button
@@ -1943,7 +1958,7 @@ export function OperationsCenter({
                           "font-mono font-bold text-[10px]",
                           threatTier === "high" ? "text-red-400" : threatTier === "med" ? "text-amber-400" : "text-emerald-400"
                         )}
-                        title={`Threat: ${sector.threatLevel}/1000`}
+                        title={`Threat: ${sector.threatLevel.toLocaleString()} / ${secMax.toLocaleString()}`}
                       >
                         T:{sector.threatLevel}
                       </span>

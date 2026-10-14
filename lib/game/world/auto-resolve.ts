@@ -8,6 +8,7 @@
 import { WorldPRNG } from "./random"
 import { transitionSectorStage } from "./sector-lifecycle"
 import { transferSectorControl } from "./forces-ledger"
+import { getSectorMaxThreat } from "./threat-engine"
 import type {
   FactionId,
   StrategicOrder,
@@ -376,7 +377,8 @@ export function commitAutoResolveResult(
   }
 
   // 3. Cập nhật Threat và Stability của Sector
-  sector.threatLevel = Math.max(0, Math.min(1000, sector.threatLevel + result.threatDelta))
+  const sMax = getSectorMaxThreat(sector, state.threatConfig)
+  sector.threatLevel = Math.max(0, Math.min(sMax, sector.threatLevel + result.threatDelta))
   sector.stability = Math.max(0, Math.min(100, sector.stability + result.stabilityDelta))
 
   // 4. Xử lý chuyển đổi trạng thái vòng đời hoặc mất quyền kiểm soát

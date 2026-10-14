@@ -47,6 +47,7 @@ import {
   getWorldThreatConfig,
   getSectorMaxThreat,
   checkMaxThreatReduction,
+  isHeadquartersSector,
 } from "@/lib/game/world/threat-engine"
 import type { WorldSector, WorldState, WorldThreatConfig } from "@/lib/game/world/types"
 
@@ -1031,7 +1032,7 @@ export function AdminSettingsModal({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1">
                       {worldState &&
                         Object.values(worldState.sectors).map((sec) => {
-                          const isHQ = sec.id === "sol_command_hq" || sec.id.endsWith("_hq") || sec.id === "tartarus_breach"
+                          const isHQ = isHeadquartersSector(sec)
                           const maxT = getSectorMaxThreat(sec, threatForm)
                           const currentVal = sectorThreatsForm[sec.id] ?? sec.threatLevel
 

@@ -21,6 +21,7 @@ import type {
 import { WorldPRNG } from "./random"
 import { createEventFromTemplate } from "./event-templates"
 import { registerWorldEvent, ensureWorldEventState } from "./event-engine"
+import { getSectorMaxThreat } from "./threat-engine"
 
 /**
  * Giới hạn trần số lượng chuỗi nhiệm vụ hoạt động đồng thời
@@ -518,9 +519,11 @@ export function evaluateMissionChainUnlocks(
     return { activatedChains, logs }
   }
 
-  // 1. Kiểm tra Threshold-based: Có sector VSS nào Threat >= 600 không?
+  // 1. Kiểm tra Threshold-based: Có sector VSS nào Threat >= 60% (hoặc legacy >= 600) không?
   for (const sector of Object.values(state.sectors)) {
-    if (sector.sovereignty === "vss" && sector.threatLevel >= 600) {
+    const sMax = getSectorMaxThreat(sector, state.threatConfig)
+    const ratio = sMax > 0 ? sector.threatLevel / sMax : 0
+    if (sector.sovereignty === "vss" && (sector.threatLevel >= 600 || ratio >= 0.6)) {
       const thresholdChainId = `chain_threshold_${sector.id}_day${state.currentDay}`
       // Kiểm tra xem đã có chuỗi tương tự đang active chưa
       const alreadyActive = Object.values(state.missionChains!).some(
@@ -534,7 +537,7 @@ export function evaluateMissionChainUnlocks(
         if (startRes.success) {
           activatedChains.push(thresholdChainId)
           logs.push(
-            `[MISSION ACTIVATION] Áp lực đe dọa tại ${sector.name} vượt ngưỡng (${sector.threatLevel}/1000). Kích hoạt chiến dịch phòng tuyến khẩn nguy!`
+            `[MISSION ACTIVATION] Áp lực đe dọa tại ${sector.name} vượt ngưỡng (${sector.threatLevel.toLocaleString()} / ${sMax.toLocaleString()}). Kích hoạt chiến dịch phòng tuyến khẩn nguy!`
           )
         }
       }

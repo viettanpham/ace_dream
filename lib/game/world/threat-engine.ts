@@ -63,19 +63,23 @@ export function getSectorMaxThreat(
   sector: WorldSector | { id: string; maxThreat?: number; classification?: string } | string,
   config?: WorldThreatConfig
 ): number {
-  const cfg = config ?? DEFAULT_THREAT_CONFIG
-  const explicitMax = typeof sector === "object" ? sector.maxThreat : undefined
+  if (config) {
+    if (isHeadquartersSector(sector)) {
+      return config.maxThreatHQ ?? DEFAULT_THREAT_CONFIG.maxThreatHQ
+    }
+    return config.maxThreatStandard ?? DEFAULT_THREAT_CONFIG.maxThreatStandard
+  }
 
-  // Nếu có explicit maxThreat hợp lệ và khác các giá trị mẫu cũ (500 hoặc 1000)
+  const explicitMax = typeof sector === "object" ? sector.maxThreat : undefined
   if (explicitMax !== undefined && explicitMax > 0 && explicitMax !== 500 && explicitMax !== 1000) {
     return explicitMax
   }
 
   if (isHeadquartersSector(sector)) {
-    return cfg.maxThreatHQ ?? DEFAULT_THREAT_CONFIG.maxThreatHQ
+    return DEFAULT_THREAT_CONFIG.maxThreatHQ
   }
 
-  return cfg.maxThreatStandard ?? DEFAULT_THREAT_CONFIG.maxThreatStandard
+  return DEFAULT_THREAT_CONFIG.maxThreatStandard
 }
 
 export interface CalculateThreatChangeParams {

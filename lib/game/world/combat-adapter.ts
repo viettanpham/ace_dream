@@ -130,7 +130,9 @@ export function lockEncounterAndCreateSnapshot(
   const encounterId = overrideEncounterId || `enc-${sector.id}-${now}`
 
   // Tính toán chỉ số kẻ địch dựa trên threatLevel của sector
-  const threat = Math.max(50, Math.min(1000, sector.threatLevel))
+  const sMax = getSectorMaxThreat(sector)
+  const threatScale = sMax > 1000 ? Math.round((sector.threatLevel / sMax) * 1000) : sector.threatLevel
+  const threat = Math.max(50, Math.min(1000, threatScale))
   const enemyHp = Math.round(180 + threat * 1.4)
   const enemyAttack = Math.round(28 + threat * 0.2)
   const enemyDefense = Math.round(16 + threat * 0.12)

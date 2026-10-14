@@ -45,6 +45,7 @@ import { cn } from "@/lib/utils"
 import { playClickSound } from "@/lib/game/audio"
 import { getActiveEvents } from "@/lib/game/world/event-engine"
 import { ThreatVisualizer } from "./threat-visualizer"
+import { getSectorMaxThreat } from "@/lib/game/world/threat-engine"
 import { ResourceSparkline, type ResourceHistoryPoint } from "./resource-sparkline"
 import type {
   WorldState,
@@ -594,6 +595,9 @@ export function GlobalOperationsHub({
   const avgThreat = Math.round(
     sectorsList.reduce((acc, s) => acc + s.threatLevel, 0) / (sectorsList.length || 1)
   )
+  const avgMaxThreat = Math.round(
+    sectorsList.reduce((acc, s) => acc + getSectorMaxThreat(s, worldState.threatConfig), 0) / (sectorsList.length || 1)
+  )
   const criticalSector = useMemo(() => {
     return [...sectorsList].sort((a, b) => b.threatLevel - a.threatLevel)[0]
   }, [sectorsList])
@@ -798,7 +802,7 @@ export function GlobalOperationsHub({
                   Threat & Điểm Nóng
                 </span>
                 <span className="font-bold text-cyan-400 font-mono text-xs">
-                  TB {avgThreat} / 1000
+                  TB {avgThreat.toLocaleString()} / {avgMaxThreat.toLocaleString()}
                 </span>
               </div>
 
@@ -806,16 +810,20 @@ export function GlobalOperationsHub({
                 <div
                   className={cn(
                     "h-full transition-all duration-500",
-                    avgThreat >= 700 ? "bg-red-500" : avgThreat >= 300 ? "bg-amber-500" : "bg-cyan-500"
+                    (avgThreat / (avgMaxThreat || 1) >= 0.7 || (avgMaxThreat <= 1000 && avgThreat >= 700))
+                      ? "bg-red-500"
+                      : (avgThreat / (avgMaxThreat || 1) >= 0.3 || (avgMaxThreat <= 1000 && avgThreat >= 300))
+                      ? "bg-amber-500"
+                      : "bg-cyan-500"
                   )}
-                  style={{ width: `${Math.min(100, (avgThreat / 1000) * 100)}%` }}
+                  style={{ width: `${Math.min(100, (avgThreat / (avgMaxThreat || 1)) * 100)}%` }}
                 />
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-zinc-500 mt-1">
-                <span>An Toàn [&lt;300]</span>
-                <span>Báo Động [300–699]</span>
-                <span>Nguy Cấp [&ge;700]</span>
+                <span>An Toàn [&lt;30%]</span>
+                <span>Báo Động [30–69%]</span>
+                <span>Nguy Cấp [&ge;70%]</span>
               </div>
             </div>
 
@@ -823,6 +831,7 @@ export function GlobalOperationsHub({
               <ThreatVisualizer
                 history={threatVisualizerMode === "critical" ? criticalSectorThreatHistory : galaxyAverageThreatHistory}
                 currentThreat={threatVisualizerMode === "critical" ? (criticalSector?.threatLevel ?? avgThreat) : avgThreat}
+                maxThreat={threatVisualizerMode === "critical" ? (criticalSector ? getSectorMaxThreat(criticalSector, worldState.threatConfig) : avgMaxThreat) : avgMaxThreat}
                 sectorName={threatVisualizerMode === "critical" ? criticalSector?.name : undefined}
                 title={threatVisualizerMode === "critical" ? "Điểm Nóng Tác Chiến" : "TB Toàn Thiên Hà"}
                 viewMode={threatVisualizerMode}

@@ -160,10 +160,11 @@ export function evaluateSectorStage(
   context?: StageTransitionContext
 ): StageTransitionResult {
   const currentStage = sector.stage
-  const threat = Math.max(
-    THREAT_THRESHOLDS.MIN_THREAT,
-    Math.min(THREAT_THRESHOLDS.MAX_THREAT, sector.threatLevel)
-  )
+  const maxThreat = sector.maxThreat ?? (sector.classification === "headquarters" ? 100_000_000 : 1_000_000)
+  const ratio = maxThreat > 0 ? sector.threatLevel / maxThreat : 0
+  const isUnderSiegeThreat = ratio >= 0.7 || sector.threatLevel >= THREAT_THRESHOLDS.UNDER_SIEGE_MIN
+  const isThreatenedThreat = ratio >= 0.3 || sector.threatLevel >= THREAT_THRESHOLDS.THREATENED_MIN
+  const isSafeThreat = !isThreatenedThreat
 
   // 1. Sector đang ở trạng thái Lost (Đã thất thủ)
   if (currentStage === "lost") {
@@ -186,18 +187,18 @@ export function evaluateSectorStage(
   // 2. Sector đang ở trạng thái Recovery (Tái thiết sau giải phóng)
   if (currentStage === "recovery") {
     // Nếu bị tấn công trở lại trong quá trình tái thiết
-    if (threat >= THREAT_THRESHOLDS.UNDER_SIEGE_MIN) {
+    if (isUnderSiegeThreat) {
       return transitionSectorStage(sector, "under_siege", {
         reason: "Sector đang tái thiết bị phản kích dữ dội; rơi vào tình trạng vây hãm.",
       })
     }
-    if (threat >= THREAT_THRESHOLDS.THREATENED_MIN) {
+    if (isThreatenedThreat) {
       return transitionSectorStage(sector, "threatened", {
         reason: "Sector đang tái thiết bị thám báo uy hiếp an ninh.",
       })
     }
     // Nếu quá trình tái thiết hoàn tất hoặc ổn định đạt chuẩn
-    if (context?.recoveryComplete || (sector.stability >= 75 && threat < THREAT_THRESHOLDS.THREATENED_MIN)) {
+    if (context?.recoveryComplete || (sector.stability >= 75 && isSafeThreat)) {
       return transitionSectorStage(sector, "normal", {
         reason: "Tái thiết cơ sở hạ tầng hoàn tất, xã hội ổn định trở lại mức bình thường.",
         recoveryComplete: true,
@@ -222,12 +223,12 @@ export function evaluateSectorStage(
       })
     }
     // Nếu giải tỏa vây hãm, Threat giảm xuống
-    if (threat < THREAT_THRESHOLDS.THREATENED_MIN) {
+    if (isSafeThreat) {
       return transitionSectorStage(sector, "normal", {
         reason: "Vây hãm bị đập tan hoàn toàn, đe dọa được xóa bỏ triệt để.",
       })
     }
-    if (threat < THREAT_THRESHOLDS.UNDER_SIEGE_MIN) {
+    if (!isUnderSiegeThreat) {
       return transitionSectorStage(sector, "threatened", {
         reason: "Vây hãm được giải tỏa một phần, chuyển về mức uy hiếp thông thường.",
       })
@@ -244,14 +245,14 @@ export function evaluateSectorStage(
 
   // 4. Sector đang bị uy hiếp (Threatened)
   if (currentStage === "threatened") {
-    if (threat >= THREAT_THRESHOLDS.UNDER_SIEGE_MIN) {
+    if (isUnderSiegeThreat) {
       return transitionSectorStage(sector, "under_siege", {
-        reason: "Mức độ đe dọa tăng vọt vượt ngưỡng 700; chuyển sang tình trạng bị bao vây.",
+        reason: "Mức độ đe dọa tăng vọt vượt ngưỡng báo động; chuyển sang tình trạng bị bao vây.",
       })
     }
-    if (threat < THREAT_THRESHOLDS.THREATENED_MIN) {
+    if (isSafeThreat) {
       return transitionSectorStage(sector, "normal", {
-        reason: "Mức độ đe dọa giảm dưới 300; an ninh khu vực trở lại bình thường.",
+        reason: "Mức độ đe dọa giảm an toàn; an ninh khu vực trở lại bình thường.",
       })
     }
     // Giữ nguyên Threatened
@@ -266,9 +267,9 @@ export function evaluateSectorStage(
 
   // 5. Sector đang ở trạng thái bình thường (Normal)
   if (currentStage === "normal") {
-    if (threat >= THREAT_THRESHOLDS.THREATENED_MIN) {
+    if (isThreatenedThreat) {
       return transitionSectorStage(sector, "threatened", {
-        reason: "Mức độ đe dọa vượt ngưỡng 300; kích hoạt trạng thái bị uy hiếp.",
+        reason: "Mức độ đe dọa tăng cao; kích hoạt trạng thái bị uy hiếp.",
       })
     }
     // Giữ nguyên Normal
@@ -298,9 +299,10 @@ export function setSectorThreat(
   newThreatLevel: number,
   autoUpdateStage = true
 ): { sector: WorldSector; transition?: StageTransitionResult } {
+  const maxThreat = sector.maxThreat ?? THREAT_THRESHOLDS.MAX_THREAT
   const clampedThreat = Math.max(
     THREAT_THRESHOLDS.MIN_THREAT,
-    Math.min(THREAT_THRESHOLDS.MAX_THREAT, Math.round(newThreatLevel))
+    Math.min(maxThreat, Math.round(newThreatLevel))
   )
 
   const updatedSector: WorldSector = {

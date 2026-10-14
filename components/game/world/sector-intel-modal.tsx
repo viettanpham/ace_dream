@@ -41,6 +41,7 @@ import {
 import { cn } from "@/lib/utils"
 import { playClickSound } from "@/lib/game/audio"
 import { getActiveEvents } from "@/lib/game/world/event-engine"
+import { getSectorMaxThreat } from "@/lib/game/world/threat-engine"
 import type {
   WorldState,
   WorldSector,
@@ -285,9 +286,15 @@ export function SectorIntelModal({
 
   if (!isOpen || !sector) return null
 
-  const threatPct = Math.min(100, Math.round((sector.threatLevel / 1000) * 100))
+  const maxThreat = getSectorMaxThreat(sector, worldState.threatConfig)
+  const threatRatio = maxThreat > 0 ? sector.threatLevel / maxThreat : 0
+  const threatPct = Math.min(100, Math.round(threatRatio * 100))
   const threatTier =
-    sector.threatLevel >= 700 ? "high" : sector.threatLevel >= 300 ? "medium" : "low"
+    threatRatio >= 0.7 || (maxThreat <= 1000 && sector.threatLevel >= 700)
+      ? "high"
+      : threatRatio >= 0.3 || (maxThreat <= 1000 && sector.threatLevel >= 300)
+      ? "medium"
+      : "low"
 
   const threatBadge =
     threatTier === "high"
@@ -427,7 +434,7 @@ export function SectorIntelModal({
                   threatBadge.border
                 )}
               >
-                {threatBadge.label} ({sector.threatLevel}/1000)
+                {threatBadge.label} ({sector.threatLevel.toLocaleString()} / {maxThreat.toLocaleString()})
               </span>
 
               {sector.isLockedForCombat && (
@@ -564,9 +571,9 @@ export function SectorIntelModal({
                   </div>
                   <div className="flex items-baseline gap-1.5">
                     <span className={cn("text-lg font-black font-display", threatBadge.color)}>
-                      {sector.threatLevel}
+                      {sector.threatLevel.toLocaleString()}
                     </span>
-                    <span className="text-[10px] text-zinc-500">/ 1000</span>
+                    <span className="text-[10px] text-zinc-500">/ {maxThreat.toLocaleString()}</span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-zinc-950 overflow-hidden">
                     <div

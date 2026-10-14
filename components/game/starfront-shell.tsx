@@ -66,6 +66,7 @@ import {
   Rocket,
   Scan,
   Shield,
+  ShieldAlert,
   ShoppingBag,
   Sliders,
   Sparkles,
@@ -525,6 +526,16 @@ export function StarfrontShell() {
     setMobileMenuOpen(false)
   }
 
+  // Phase 6.33_FIX5: Entry point mở nhanh WORLD ADMIN CP từ Top Menu & Left Menu
+  const [worldAdminTrigger, setWorldAdminTrigger] = useState<number>(0)
+  const handleOpenWorldAdminCp = () => {
+    playClickSound()
+    setActiveSection("world")
+    setActiveWorldTab("admin" as any)
+    setWorldAdminTrigger(Date.now())
+    setMobileMenuOpen(false)
+  }
+
   // Đóng/Mở submenu
   const toggleSubmenu = (sectionId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -756,6 +767,32 @@ export function StarfrontShell() {
 
           {/* C. Danh Mục Các Phân Hệ Chính — Mô Hình 3 Tầng Chỉ Huy (Command Tier Architecture) */}
           <nav className="flex-1 overflow-y-auto p-2 space-y-2">
+            {/* 0. ENTRY POINT WORLD ADMIN CP Ở VỊ TRÍ TRÊN CÙNG CỦA LEFT MENU (PHASE 6.33_FIX5) */}
+            <div className="pb-1 border-b border-orange-500/30">
+              <button
+                type="button"
+                onClick={handleOpenWorldAdminCp}
+                className={cn(
+                  "w-full flex items-center justify-between rounded-sm px-2.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border",
+                  "border-orange-500/70 bg-gradient-to-r from-orange-950/80 via-black/70 to-amber-950/70 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.2)] hover:border-orange-400 hover:text-orange-100 hover:from-orange-900/90 hover:to-amber-900/90",
+                  isSidebarCollapsed && "justify-center px-1.5",
+                )}
+                title="Bảng Quản Trị Hệ Thống Toàn Cầu // WORLD ADMIN CP"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <ShieldAlert className="size-3.5 text-orange-400 shrink-0" />
+                  {!isSidebarCollapsed && (
+                    <span className="truncate tracking-wider text-orange-300 font-bold">WORLD ADMIN CP</span>
+                  )}
+                </div>
+                {!isSidebarCollapsed && (
+                  <span className="rounded bg-orange-500/20 border border-orange-500/40 px-1 py-0.2 text-[9px] text-orange-200 shrink-0">
+                    ADM
+                  </span>
+                )}
+              </button>
+            </div>
+
             {COMMAND_TIERS.map((tier) => {
               const tierSections = SECTIONS.filter((sec) => sec.group === tier.id)
               return (
@@ -1012,43 +1049,15 @@ export function StarfrontShell() {
           <div className="shrink-0 border-t border-border/60 p-2 bg-black/70 space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-1">
               <button
-                onClick={handleToggleAudio}
-                className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono transition-colors cursor-pointer",
-                  audioMuted
-                    ? "border-red-500/40 text-red-300 bg-red-950/30"
-                    : "border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50",
-                )}
-                title={audioMuted ? "Bật âm thanh hiệu ứng" : "Tắt âm thanh hiệu ứng"}
-              >
-                {audioMuted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
-                {!isSidebarCollapsed && (
-                  <span>{audioMuted ? "Tắt Âm" : "Âm Thanh"}</span>
-                )}
-              </button>
-
-              <button
-                onClick={handleToggleScanline}
-                className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono transition-all cursor-pointer",
-                  !scanlineEnabled
-                    ? "border-border/60 text-muted-foreground bg-secondary/30"
-                    : "border-cyan-500/50 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 shadow-[0_0_8px_rgba(6,182,212,0.2)]",
-                )}
-                title={scanlineEnabled ? "Tắt hiệu ứng quét màn hình CRT (Scanline)" : "Bật hiệu ứng quét màn hình CRT (Scanline)"}
-              >
-                <Scan className="size-3.5 text-cyan-400" />
-                {!isSidebarCollapsed && (
-                  <span>{scanlineEnabled ? "CRT: ON" : "CRT: OFF"}</span>
-                )}
-              </button>
-
-              <button
+                type="button"
                 onClick={() => {
                   playClickSound()
                   setIsSettingsOpen(true)
                 }}
-                className="flex items-center gap-1.5 rounded border border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 px-2 py-1 text-xs font-mono transition-colors cursor-pointer"
+                className={cn(
+                  "flex items-center gap-1.5 rounded border border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 px-2 py-1 text-xs font-mono transition-colors cursor-pointer",
+                  isSidebarCollapsed && "w-full justify-center px-1"
+                )}
                 title="Cài đặt hệ thống (Âm thanh, CRT, Tỷ lệ hiển thị UI)"
               >
                 <Sliders className="size-3.5 text-cyan-400" />
@@ -1057,6 +1066,7 @@ export function StarfrontShell() {
 
               {!isSidebarCollapsed && (
                 <button
+                  type="button"
                   onClick={handleResetSave}
                   className="rounded border border-border/60 px-2 py-1 text-xs font-mono text-muted-foreground hover:text-red-400 hover:border-red-500/50 transition-colors cursor-pointer"
                   title="Cài lại tiến trình LocalStorage"
@@ -1154,19 +1164,15 @@ export function StarfrontShell() {
                 <span className="font-bold">{alloyCount} Alloy</span>
               </div>
 
-              {/* Nút bật/tắt nhanh hiệu ứng quét CRT Scanline */}
+              {/* Nút Mở Bảng WORLD ADMIN CP // Dedicated Orange Accent Entry Point (Phase 6.33_FIX5) */}
               <button
-                onClick={handleToggleScanline}
-                className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-mono transition-all cursor-pointer",
-                  scanlineEnabled
-                    ? "border-cyan-500/50 bg-cyan-950/40 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
-                    : "border-border/60 bg-black/40 text-muted-foreground hover:text-white",
-                )}
-                title={scanlineEnabled ? "Tắt hiệu ứng quét màn hình (CRT Scanline Overlay)" : "Bật hiệu ứng quét màn hình (CRT Scanline Overlay)"}
+                type="button"
+                onClick={handleOpenWorldAdminCp}
+                className="flex items-center gap-1.5 rounded border border-orange-500/70 bg-gradient-to-r from-orange-950/80 to-amber-950/80 hover:from-orange-900/90 hover:to-amber-900/90 px-2.5 py-1 text-xs font-mono font-bold text-orange-300 hover:text-orange-100 hover:border-orange-400 transition-all cursor-pointer shadow-[0_0_12px_rgba(249,115,22,0.2)]"
+                title="Bảng Quản Trị Hệ Thống Toàn Cầu // WORLD ADMIN CP"
               >
-                <Scan className={cn("size-3", scanlineEnabled ? "text-cyan-400 animate-pulse" : "text-muted-foreground")} />
-                <span className="hidden sm:inline font-semibold">{scanlineEnabled ? "CRT: ON" : "CRT: OFF"}</span>
+                <ShieldAlert className="size-3.5 text-orange-400 shrink-0" />
+                <span className="font-bold tracking-wider">[ WORLD ADMIN CP ]</span>
               </button>
 
               {/* Nút Mở Bảng Cài Đặt Toàn Cục // Global Settings */}
@@ -1265,6 +1271,7 @@ export function StarfrontShell() {
             {activeSection === "world" && (
               <OperationsCenter
                 initialTab={activeWorldTab}
+                adminTrigger={worldAdminTrigger}
                 onNavigateSection={handleSwitchSection}
                 onDeployEncounter={(sectorId, battleContext) => {
                   if (battleContext) {

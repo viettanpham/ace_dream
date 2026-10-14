@@ -24,6 +24,7 @@ import type {
 } from "./types"
 import { WorldPRNG } from "./random"
 import { archiveEventResult, ensureOperationsArchive } from "./operations-archive"
+import { getSectorMaxThreat } from "./threat-engine"
 
 /**
  * Đảm bảo state lưu trữ Mission Dispatch tồn tại trong WorldState
@@ -634,7 +635,8 @@ export function simulateAndResolveMission(
   // Áp dụng thay đổi vào WORLD
   if (sector) {
     if (threatDelta !== 0) {
-      sector.threatLevel = Math.max(0, Math.min(1000, sector.threatLevel + threatDelta))
+      const sMax = getSectorMaxThreat(sector, state.threatConfig)
+      sector.threatLevel = Math.max(0, Math.min(sMax, sector.threatLevel + threatDelta))
     }
     if (stabilityDelta !== 0) {
       sector.stability = Math.max(0, Math.min(100, sector.stability + stabilityDelta))

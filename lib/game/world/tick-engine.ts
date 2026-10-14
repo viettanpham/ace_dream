@@ -36,6 +36,7 @@ import {
 } from "./mission-chains"
 import { advanceMissionDispatches } from "./mission-dispatch"
 import { createEventFromTemplate } from "./event-templates"
+import { getSectorMaxThreat } from "./threat-engine"
 import type {
   InFlightTransaction,
   MilitaryForceLedger,
@@ -331,7 +332,8 @@ function executePhase4MilitaryAndThreat(
     // Kẹp chặt threatDelta trong [-50, +50]
     threatDelta = Math.max(-MAX_THREAT_GROWTH_PER_DAY, Math.min(MAX_THREAT_GROWTH_PER_DAY, threatDelta))
 
-    const newThreat = Math.max(0, Math.min(1000, sector.threatLevel + threatDelta))
+    const sectorMax = getSectorMaxThreat(sector, state.threatConfig)
+    const newThreat = Math.max(0, Math.min(sectorMax, sector.threatLevel + threatDelta))
     sector.threatLevel = newThreat
 
     // 4.2. Đánh giá lại vòng đời 5 giai đoạn nếu cần

@@ -173,6 +173,7 @@ export const INITIAL_WORLD_SECTORS: Record<string, WorldSector> = {
     y: 48,
     sovereignty: "void",
     threatLevel: 980,
+    classification: "headquarters",
     stage: "lost",
     industryCapacity: 40,
     garrisonPower: 800,
@@ -405,8 +406,12 @@ export function createInitialWorldState(customSeed?: number): WorldState {
   // Clone an toàn các object để tránh mutation dữ liệu mẫu
   const sectors: Record<string, WorldSector> = {}
   for (const [id, sector] of Object.entries(INITIAL_WORLD_SECTORS)) {
+    const isHq = id === "sol_command_hq" || id.endsWith("_hq") || id === "tartarus_breach" || sector.classification === "headquarters"
+    const maxThreat = sector.maxThreat ?? (isHq ? 100_000_000 : 1_000_000)
     sectors[id] = {
       ...sector,
+      classification: isHq ? "headquarters" : (sector.classification || "standard"),
+      maxThreat,
       resources: { ...sector.resources },
       threatHistory: [
         {

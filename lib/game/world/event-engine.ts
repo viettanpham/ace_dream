@@ -27,6 +27,7 @@ import { EVENT_TEMPLATES, createEventFromTemplate } from "./event-templates"
 import { lockEncounterAndCreateSnapshot } from "./combat-adapter"
 import { getJournalEntry } from "./transaction-journal"
 import { archiveEventResult } from "./operations-archive"
+import { getSectorMaxThreat } from "./threat-engine"
 
 /**
  * Giới hạn trần số lượng sự kiện hoạt động đồng thời để chống quá tải
@@ -387,7 +388,8 @@ export function applyEventConsequencesOnce(
     }
 
     if (typeof consequences.threatDelta === "number") {
-      sector.threatLevel = Math.max(0, Math.min(1000, sector.threatLevel + consequences.threatDelta))
+      const sMax = getSectorMaxThreat(sector, state.threatConfig)
+      sector.threatLevel = Math.max(0, Math.min(sMax, sector.threatLevel + consequences.threatDelta))
     }
 
     if (typeof consequences.fortificationDelta === "number") {

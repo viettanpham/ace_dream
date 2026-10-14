@@ -11,7 +11,7 @@
 
 Hệ thống STARFRONT hiện tồn tại **hai tầng kiến trúc song song**:
 1. **Tầng Trò Chơi Kế Thừa (Core / Legacy Game)** (`lib/game/`): Quản lý căn cứ tổng hành dinh của người chơi (Player Base) với 13 loại công trình (`command`, `hangar`, `factory`, v.v.), 6 phân khu dân cư (`DistrictKey`), các chỉ số kinh tế `credits`, `alloy`, `crystal`, và hồi phục HP cơ giáp cá nhân (`hangarRepairPerDay`, `districtBonus.repairHp`, `REPAIR_CREDIT_PER_HP`).
-2. **Tầng Chiến Lược Thiên Hà (STARFRONT WORLD)** (`lib/game/world/`): Quản lý 8-10 Sector không gian (`WorldSector`), mạng lưới siêu không gian (`WorldRoute`), sổ cái lực lượng quân sự bảo toàn bảo vệ quân số (`MilitaryForceLedger`), 5 tài nguyên vĩ mô (`WorldResourceLedger`), hệ thống nhân khẩu học (`DemographicsState`), và máy trạng thái vòng đời Sector 5 giai đoạn (`SectorStage`).
+2. **Tầng Chiến Lược Thiên Hà (STARFRONT WORLD)** (`lib/game/world/`): Quản lý 8-10 Sector không gian (`WorldSector`), mạng lưới siêu không gian (`WorldRoute`), sổ cái lực lượng quân sự bảo toàn quân số (`MilitaryForceLedger`), 5 tài nguyên vĩ mô (`WorldResourceLedger`), hệ thống nhân khẩu học (`DemographicsState`), và máy trạng thái vòng đời Sector 5 giai đoạn (`SectorStage`).
 
 ### Bảng đối chiếu hiện trạng giữa 2 tầng kiến trúc:
 
@@ -27,262 +27,463 @@ Hệ thống STARFRONT hiện tồn tại **hai tầng kiến trúc song song**:
 
 ---
 
-## 2. AUDIT CHI TIẾT CÔNG THỨC REPAIR HIỆN TẠI (REPAIR HP/DAY AUDIT)
+## 2. AUDIT CHI TIẾT 13 BUILDING TYPES HIỆN CÓ (`state.buildings`)
 
-### 2.1. Vị trí của `BaseInstallationRepairHpDay`
-- **Nơi khai báo:** Xuất hiện **duy nhất** tại dòng 53 của tài liệu đặc tả:
-  `docs/WORLD_ADMINCP_CONFIG_REFERENCE.md`:
-  ```markdown
-  | `baseInstallationRepairHpDay` | `number` | `100` | **APPROVED DEFAULT** | Local facility baseline daily repair throughput. |
-  ```
-- **Hiện trạng trong mã nguồn runtime:**
-  - **CHƯA ĐƯỢC KHAI BÁO** trong bất kỳ file TypeScript nào (`lib/game/world/types.ts`, `lib/game/world/simulator-config.ts`, `lib/game/world/initial-state.ts`).
-  - **CHƯA ĐƯỢC TÍCH HỢP** vào giao diện cấu hình quản trị AdminCP (`components/game/world/admin-settings-modal.tsx`).
-  - **CHƯA ĐƯỢC KẾT NỐI** với bất kỳ hệ số nhân sự (personnel) hay cơ sở hạ tầng (facility) nào.
+Tất cả 13 công trình dưới đây được định nghĩa trong `lib/game/types.ts` (`BuildingKey`, `BuildingDef`, `Building`) và cấu hình tại `lib/game/data.ts` (`BUILDING_DEFS`, `BUILDING_ORDER`).
 
-### 2.2. Cơ chế phục hồi / sửa chữa hiện có trong mã nguồn
+### 1. `command` — Sở Chỉ Huy
+- **ID / Key:** `command`
+- **Tên hiện tại:** Sở Chỉ Huy
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "command"`), `lib/game/data.ts` (`BUILDING_DEFS.command`).
+- **Chức năng gameplay:** Trung tâm điều hành căn cứ chính. Gatekeeper mở khóa cấp công trình khác (công trình khác không thể vượt quá `commandLevel + 2`).
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `1`.
+- **Upgrade formula:** `scale = Math.pow(costScale, currentLevel)` với `costScale = 1.8`. Chi phí từng loại tài nguyên: `Math.round(baseCost * scale)`.
+- **Resource / Credit cost:** `baseCost: { credits: 2000, alloy: 600, crystal: 40 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+ giới hạn cấp công trình, + uy tín`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `coreProduction`: Đóng góp `300 + command * 120` credits/ngày; đóng góp một phần tinh thể: `Math.floor((command + refinery) / 4) * 5` crystal/ngày.
+    - `baseDefense`: Đóng góp `command * 90` điểm phòng thủ căn cứ.
+- **Personnel liên quan:** Không có nhân sự gắn kèm (chỉ phụ thuộc cấp công trình).
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: Không.
+  - Training: Không.
+  - Military: Có gián tiếp (tăng `baseDefense` +90/cấp).
+- **UI hiện tại:** `components/game/base-panel.tsx` (SummaryCard "Cấp chỉ huy", icon `Building2`, điều kiện khóa "Cần Chỉ Huy" cho các công trình khác).
 
-#### A. Trong STARFRONT WORLD (`lib/game/world/`):
-- **Cơ chế:** Phục hồi quân bị thương / sửa chữa cơ giáp theo **quân số (headcount)** tại `lib/game/world/forces-ledger.ts`:
-  ```ts
-  export const RECOVERY_RATE_BASE = 0.05 // 5% mỗi ngày chiến lược
-  export const MIN_DAILY_RECOVERY = 10   // Tối thiểu 10 đơn vị quân nếu còn tồn dư
+---
 
-  export function recoverWoundedForces(
-    military: MilitaryForceLedger,
-    recoveryRate: number = RECOVERY_RATE_BASE
-  ): { recovered: number; military: MilitaryForceLedger }
-  ```
-- **Cách thức hoạt động:** Khi mỗi ngày trôi qua (`tick-engine.ts`), hệ thống lấy 5% số lượng trong `military.woundedOrRepair` chuyển sang `military.reserves`.
-- **Đặc điểm:** Không tính toán theo điểm máu (HP), không tiêu hao tài nguyên vật tư sửa chữa, không phụ thuộc vào vị trí địa lý của Sector hay cơ sở vật chất của căn cứ.
+### 2. `hangar` — Nhà Chứa (Hangar)
+- **ID / Key:** `hangar`
+- **Tên hiện tại:** Nhà Chứa (Hangar)
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "hangar"`), `lib/game/data.ts` (`BUILDING_DEFS.hangar`).
+- **Chức năng gameplay:** Sửa chữa, bảo dưỡng phi thuyền/cơ giáp (GEAR) qua đêm; tăng giới hạn số lượng Gear tối đa (`gearCap`).
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `1`.
+- **Upgrade formula:** `scale = Math.pow(1.6, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 1200, alloy: 400 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+ hồi durability mỗi ngày, + số Gear tối đa`.
+  - Trong runtime (`lib/game/engine.ts` & `lib/game/store.tsx`):
+    - `hangarRepairPerDay(buildings)`: Hồi phục `0.08 + buildings.hangar * 0.05` tỷ lệ MaxHP mỗi ngày cho tất cả GEAR của người chơi khi qua ngày (`NEXT_DAY`).
+    - `gearCap`: Tăng thêm `+ buildings.hangar` vào sức chứa hạm đội.
+- **Personnel liên quan:** Không có nhân sự kỹ thuật gắn kèm trực tiếp.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: CÓ (8% base + 5%/cấp MaxHP/ngày).
+  - Storage: CÓ (+1 sức chứa GEAR/cấp).
+  - Training: Không.
+  - Military: CÓ (phục hồi khí tài và duy trì quy mô phi đội).
+- **UI hiện tại:** `components/game/base-panel.tsx` (SummaryCard "Sức chứa hạm đội", card nâng cấp Nhà Chứa), `components/game/fleet-panel.tsx`.
 
-#### B. Trong Core / Legacy Game (`lib/game/`):
-- **Hồi phục tự nhiên qua ngày mới (`store.tsx` dòng 184–188):**
-  ```ts
-  const repairFrac = hangarRepairPerDay(state.buildings)
-  // repairFrac = 0.08 + buildings.hangar * 0.05 (fraction của MaxHP)
-  const repairFlat = districtBonus(state.population, state.districts).repairHp
-  // repairFlat = (population * districtPercent / 100) / 100 * 1000 HP
-  hpCurrent = Math.min(maxHp, g.hpCurrent + Math.round(maxHp * repairFrac) + repairFlat)
-  ```
-- **Sửa chữa khẩn cấp bằng Credits (`store.tsx` dòng 225, `fleet-panel.tsx` dòng 222):**
-  ```ts
-  const REPAIR_CREDIT_PER_HP = 0.4 // 0.4 Credits cho mỗi 1 HP bị thiếu hụt
-  const cost = { credits: Math.ceil(missingHp * REPAIR_CREDIT_PER_HP) }
-  ```
+---
 
-### 2.3. Đánh giá khoảng cách với Thiết Kế Mục Tiêu (Design Target)
-Thiết kế mục tiêu đã được phê duyệt quy định:
+### 3. `factory` — Nhà Máy Vũ Khí
+- **ID / Key:** `factory`
+- **Tên hiện tại:** Nhà Máy Vũ Khí
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "factory"`), `lib/game/data.ts` (`BUILDING_DEFS.factory`).
+- **Chức năng gameplay:** Chế tạo vũ khí, trang bị, giảm chi phí sản xuất trang bị.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `0`.
+- **Upgrade formula:** `scale = Math.pow(1.6, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 1400, alloy: 500, crystal: 20 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `- chi phí chế tạo trang bị`.
+  - Trong runtime (`lib/game/engine.ts`): Hiện tại chỉ là placeholder mô tả UI, chưa có logic runtime trừ giá trong shop đồ (`ITEM_MAP`).
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: Không.
+  - Training: Không.
+  - Military: Dự kiến phục vụ chế tạo trang bị vũ khí.
+- **UI hiện tại:** `components/game/base-panel.tsx` (icon `Factory`).
+
+---
+
+### 4. `reactor` — Lò Phản Ứng
+- **ID / Key:** `reactor`
+- **Tên hiện tại:** Lò Phản Ứng
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "reactor"`), `lib/game/data.ts` (`BUILDING_DEFS.reactor`).
+- **Chức năng gameplay:** Sản xuất năng lượng (`energy`) mỗi ngày cho căn cứ.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `1`.
+- **Upgrade formula:** `scale = Math.pow(1.5, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 900, alloy: 260 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+ Năng lượng / ngày`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `coreProduction`: Cung cấp `60 + buildings.reactor * 50` năng lượng mỗi ngày.
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: Không.
+  - Training: Không.
+  - Military: Không (cung cấp tài nguyên năng lượng để đóng tàu/vận hành).
+- **UI hiện tại:** `components/game/base-panel.tsx` (icon `Zap`).
+
+---
+
+### 5. `refinery` — Xưởng Luyện Kim
+- **ID / Key:** `refinery`
+- **Tên hiện tại:** Xưởng Luyện Kim
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "refinery"`), `lib/game/data.ts` (`BUILDING_DEFS.refinery`).
+- **Chức năng gameplay:** Khai thác & tinh luyện hợp kim (`alloy`) và tinh thể (`crystal`) mỗi ngày.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `1`.
+- **Upgrade formula:** `scale = Math.pow(1.5, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 900, alloy: 200 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+ Hợp kim / ngày`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `coreProduction`: Cung cấp `60 + buildings.refinery * 55` hợp kim/ngày; đóng góp tính toán `Math.floor((command + refinery) / 4) * 5` crystal/ngày.
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: Không.
+  - Training: Không.
+  - Military: Không (cung cấp nguyên liệu sản xuất).
+- **UI hiện tại:** `components/game/base-panel.tsx` (icon `Layers`).
+
+---
+
+### 6. `barracks` — Doanh Trại
+- **ID / Key:** `barracks`
+- **Tên hiện tại:** Doanh Trại
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "barracks"`), `lib/game/data.ts` (`BUILDING_DEFS.barracks`).
+- **Chức năng gameplay:** Tăng giới hạn quân số (`armyCap`) cho lực lượng đồn trú và hạm đội viễn chinh.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `1`.
+- **Upgrade formula:** `scale = Math.pow(1.55, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 1100, alloy: 340 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+ giới hạn quân số`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `armyCap(buildings)`: Đóng góp `120 + barracks * 60 + residential * 60`.
+- **Personnel liên quan:** Không có nhân sự quản lý trực tiếp (chỉ lưu trữ quân số).
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: CÓ (sức chứa quân số đồn trú `armyCap` +60/cấp).
+  - Training: Không (chỉ mở trần dung lượng quân số, không đào tạo).
+  - Military: CÓ (mở rộng quy mô quân lực đồn trú).
+- **UI hiện tại:** `components/game/base-panel.tsx` (SummaryCard "Quân số", Panel "Lực lượng đồn trú", icon `Users`).
+
+---
+
+### 7. `turret` — Tháp Phòng Thủ
+- **ID / Key:** `turret`
+- **Tên hiện tại:** Tháp Phòng Thủ
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "turret"`), `lib/game/data.ts` (`BUILDING_DEFS.turret`).
+- **Chức năng gameplay:** Phòng thủ căn cứ trước các cuộc phản kích của địch.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `1`.
+- **Upgrade formula:** `scale = Math.pow(1.5, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 800, alloy: 420, crystal: 15 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+ phòng thủ căn cứ`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `baseDefense(buildings)`: Đóng góp `buildings.turret * 260` điểm phòng thủ.
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: Không.
+  - Training: Không.
+  - Military / Defense: CÓ (+260 điểm Base Defense mỗi cấp).
+- **UI hiện tại:** `components/game/base-panel.tsx` (SummaryCard "Phòng thủ căn cứ", icon `Crosshair`).
+
+---
+
+### 8. `shipyard` — Xưởng Đóng Tàu
+- **ID / Key:** `shipyard`
+- **Tên hiện tại:** Xưởng Đóng Tàu
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "shipyard"`), `lib/game/data.ts` (`BUILDING_DEFS.shipyard`).
+- **Chức năng gameplay:** Đóng phi thuyền (GEAR) mới nhanh và rẻ hơn, đồng thời mở rộng số lượng GEAR tối đa.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `0`.
+- **Upgrade formula:** `scale = Math.pow(1.7, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 1600, alloy: 560, crystal: 30 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `- chi phí đóng Gear, + Gear tối đa`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `gearCap`: Tăng thêm `+ buildings.shipyard` vào số lượng GEAR tối đa.
+    - `gearBuildCost`: Giảm chi phí đóng Gear theo tỷ lệ: `pct = 1 - Math.min(0.4, buildings.shipyard * 0.05)` (tối đa giảm 40%).
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không trực tiếp (chỉ sản xuất đóng mới khí tài).
+  - Storage: CÓ (+1 sức chứa GEAR/cấp).
+  - Training: Không.
+  - Military: CÓ (sản xuất trang bị và mở rộng hạm đội).
+- **UI hiện tại:** `components/game/base-panel.tsx`, `components/game/starfront-hangar.tsx` (Tab đóng tàu, icon `Hammer`).
+
+---
+
+### 9. `finance` — Trung Tâm Tài Chính
+- **ID / Key:** `finance`
+- **Tên hiện tại:** Trung Tâm Tài Chính
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "finance"`), `lib/game/data.ts` (`BUILDING_DEFS.finance`).
+- **Chức năng gameplay:** Quản lý ngân khố và đầu tư liên hành tinh, tạo nguồn thu nhập Credits ổn định.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `0`.
+- **Upgrade formula:** `scale = Math.pow(1.45, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 1500, alloy: 300 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+250 credits/ngày mỗi cấp`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `civicProduction`: Tăng `buildings.finance * 250` credits/ngày.
+    - `prosperity`: Đóng góp `civic * 3` vào điểm phồn vinh.
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: Không.
+  - Training: Không.
+  - Military: Không (thuần túy tài chính).
+- **UI hiện tại:** `components/game/base-panel.tsx` (icon `Landmark`).
+
+---
+
+### 10. `alliance` — Khu Liên Hợp Liên Minh
+- **ID / Key:** `alliance`
+- **Tên hiện tại:** Khu Liên Hợp Liên Minh
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "alliance"`), `lib/game/data.ts` (`BUILDING_DEFS.alliance`).
+- **Chức năng gameplay:** Cảng neo đậu chung của các đồng minh, mở rộng sức chứa hạm đội.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `0`.
+- **Upgrade formula:** `scale = Math.pow(1.5, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 2500, alloy: 900, crystal: 40 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+1 sức chứa hạm đội mỗi cấp`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `gearCap`: Tăng thêm `+ (buildings.alliance ?? 0)` vào tổng số GEAR tối đa.
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: CÓ (+1 sức chứa GEAR/cấp).
+  - Training: Không.
+  - Military: CÓ (sức chứa hỗ trợ liên minh).
+- **UI hiện tại:** `components/game/base-panel.tsx` (icon `Handshake`).
+
+---
+
+### 11. `residential` — Khu Dân Cư
+- **ID / Key:** `residential`
+- **Tên hiện tại:** Khu Dân Cư
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "residential"`), `lib/game/data.ts` (`BUILDING_DEFS.residential`).
+- **Chức năng gameplay:** Nhà ở cho di dân, nền tảng nhân lực, tăng tốc độ tăng dân số, mở rộng giới hạn quân đội, đóng góp thu nhập và phồn vinh.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `0`.
+- **Upgrade formula:** `scale = Math.pow(1.42, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 1200, alloy: 500 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+0.5% tăng dân số, +60 quân số, +100 credits/ngày mỗi cấp`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `populationGrowthRate`: Tăng thêm `0.05 + residential * 0.005` mỗi chu kỳ.
+    - `armyCap`: Tăng thêm `+ residential * 60` vào giới hạn quân số.
+    - `civicProduction`: Tăng thêm `+ residential * 100` credits/ngày.
+    - `prosperity`: Đóng góp `civic * 3` vào điểm phồn vinh.
+- **Personnel liên quan:** Tác động trực tiếp lên quy mô dân số tổng thể (`population`), gián tiếp cung cấp nhân lực cho các phân khu.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không trực tiếp.
+  - Storage: CÓ (tăng trần quân đội `armyCap` +60/cấp).
+  - Training: Không.
+  - Military: CÓ (cơ sở tạo nguồn tuyển quân).
+- **UI hiện tại:** `components/game/base-panel.tsx` (SummaryCard "Dân cư", icon `Home`).
+
+---
+
+### 12. `trade` — Khu Giao Dịch
+- **ID / Key:** `trade`
+- **Tên hiện tại:** Khu Giao Dịch
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "trade"`), `lib/game/data.ts` (`BUILDING_DEFS.trade`).
+- **Chức năng gameplay:** Chợ liên sao trao đổi hàng hóa và khoáng sản. Sản xuất đa tài nguyên (Credits, Hợp kim, Tinh thể).
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `0`.
+- **Upgrade formula:** `scale = Math.pow(1.5, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 2200, alloy: 400, crystal: 20 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+400 credits, +40 hợp kim, +1 tinh thể/ngày mỗi cấp`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `civicProduction`: Tăng `trade * 400` credits, `trade * 40` alloy, `trade * 1` crystal mỗi ngày.
+    - `prosperity`: Đóng góp `civic * 3` vào điểm phồn vinh.
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: Không.
+  - Training: Không.
+  - Military: Không.
+- **UI hiện tại:** `components/game/base-panel.tsx` (icon `Store`).
+
+---
+
+### 13. `entertainment` — Khu Vui Chơi
+- **ID / Key:** `entertainment`
+- **Tên hiện tại:** Khu Vui Chơi
+- **File / Type định nghĩa:** `lib/game/types.ts` (`BuildingKey = "entertainment"`), `lib/game/data.ts` (`BUILDING_DEFS.entertainment`).
+- **Chức năng gameplay:** Giải trí, sòng bạc và đấu trường mô phỏng. Cung cấp dòng tiền Credits lớn và tăng điểm phồn vinh.
+- **Level:** Cấp tối đa `maxLevel = 30`. Cấp mặc định khởi đầu: `0`.
+- **Upgrade formula:** `scale = Math.pow(1.48, currentLevel)`.
+- **Resource / Credit cost:** `baseCost: { credits: 1800, alloy: 350 }`.
+- **Effect / Buff hiện tại:**
+  - Mô tả: `+500 credits/ngày mỗi cấp`.
+  - Trong runtime (`lib/game/engine.ts`):
+    - `civicProduction`: Tăng `entertainment * 500` credits/ngày.
+    - `prosperity`: Đóng góp `civic * 3` vào điểm phồn vinh.
+- **Personnel liên quan:** Không có.
+- **Repair / Storage / Training / Military effect:**
+  - Repair: Không.
+  - Storage: Không.
+  - Training: Không.
+  - Military: Không.
+- **UI hiện tại:** `components/game/base-panel.tsx` (icon `FerrisWheel`).
+
+---
+
+## 3. AUDIT PHÂN KHU & HẠ TẦNG CĂN CỨ HIỆN CÓ (DISTRICT & INFRASTRUCTURE AUDIT)
+
+Hệ thống phân khu hiện tại (`DistrictKey`, `DistrictAllocation`, `DistrictBonus`) định nghĩa tại `lib/game/types.ts` và hiển thị tại `components/game/district-panel.tsx`.
+
+### 3.1. Chi tiết 6 Phân khu Dân cư (`DistrictKey`)
+
+1. **`finance` (Tài chính):**
+   - *Cơ chế:* Phân bổ % dân số (bước nhảy 5%, tối thiểu 5%). Cứ 100 dân cho ra `+50 credits/ngày`.
+   - *Đánh giá hợp nhất:* Thuộc riêng Player Core Base. Không nên merge vào Sector vì WORLD dùng hệ thống thuế vĩ mô (`National Treasury`).
+2. **`service` (Dịch vụ):**
+   - *Cơ chế:* Cứ 100 dân cho ra `+1 tinh thể/ngày`.
+   - *Đánh giá hợp nhất:* Thuộc riêng Player Core Base.
+3. **`industry` (Công nghiệp):**
+   - *Cơ chế:* Cứ 100 dân cho ra `+5 hợp kim/ngày`.
+   - *Đánh giá hợp nhất:* Có thể ánh xạ tương đương với `industryCapacity` trong WORLD Sector.
+4. **`power` (Điện lực / Lò phản ứng):**
+   - *Cơ chế:* Cứ 100 dân cho ra `+10 năng lượng/ngày`.
+   - *Đánh giá hợp nhất:* Có thể ánh xạ sang hạ tầng năng lượng vĩ mô của Sector (`INFRASTRUCTURE`).
+5. **`repair` (Sửa chữa):**
+   - *Cơ chế:* Cứ 100 dân phân bổ cho ra `+1.000 HP hồi phục cho mỗi Gear/ngày` (`repairHp: units("repair") * 1000`).
+   - *Đánh giá hợp nhất:* **Tiền thân quan trọng nhất** của cơ chế nhân lực kỹ thuật làm việc sửa chữa (`ActiveTechnicalWorkers`), nhưng hiện tại đang cho flat HP hồi phục trên toàn bộ phi thuyền mà không có giới hạn trần dung lượng hay phân bổ ưu tiên.
+6. **`shipbuilding` (Đóng tàu):**
+   - *Cơ chế:* Cứ 100 dân giảm 100 chi phí đóng Gear (`shipDiscount`) và tăng +1 sức chứa Gear (`gearCap`).
+   - *Đánh giá hợp nhất:* Thuộc riêng xưởng đóng tàu cá nhân của người chơi tại Căn Cứ Chính.
+
+### 3.2. Phân loại kế thừa và tái sử dụng hạ tầng
+
+| Nhóm phân loại | Các thành phần cụ thể | Định hướng kiến trúc |
+| :--- | :--- | :--- |
+| **Nên REUSE** | - Tư duy điều động tỷ lệ nhân lực (`DistrictAllocation` slider) sang điều động nhân lực kỹ thuật `ActiveTechnicalWorkers`.<br>- Phân khu `repair` (ánh xạ sang `LOGISTICS` / Repair Bay).<br>- Phân khu `industry` & `power` (ánh xạ sang `INDUSTRIAL` & `INFRASTRUCTURE`). | Tái sử dụng nguyên lý phân bổ nhân lực, chuẩn hóa lại đầu ra thành năng suất sửa chữa (HP/day) và sản lượng tài nguyên có kho lưu trữ. |
+| **Chỉ thuộc PLAYER CORE BASE** | - Toàn bộ 6 thanh trượt slider 100% trong `DistrictPanel` (gắn chặt với `state.population` đơn lẻ của người chơi).<br>- Phân khu `service` (+crystal), `finance` (+credits vào túi người chơi), `shipbuilding` (giảm giá đóng gear cá nhân). | Giữ nguyên tại `components/game/district-panel.tsx` để người chơi quản lý căn cứ chính của mình. |
+| **Chuyển thành GENERIC WORLD BUILDING** | - `command` $\rightarrow$ Trụ sở điều hành Sector (`INFRASTRUCTURE` / `CIVIL`).<br>- `hangar` $\rightarrow$ Trạm bảo dưỡng & sửa chữa phi đội (`LOGISTICS`).<br>- `shipyard` $\rightarrow$ Xưởng đóng tàu chiến lược liên sao (`MILITARY` / `INDUSTRIAL`).<br>- `turret` $\rightarrow$ Hệ thống công sự phòng thủ pháo đài (`DEFENSE`).<br>- `barracks` $\rightarrow$ Doanh trại đồn trú tiền phương (`MILITARY`).<br>- `factory` / `refinery` $\rightarrow$ Tổ hợp công nghiệp luyện kim (`INDUSTRIAL`).<br>- `reactor` $\rightarrow$ Trạm năng lượng phản ứng (`INFRASTRUCTURE`). | Xây dựng thành các module Facility độc lập mà Sector VSS hoặc kẻ thù có thể sở hữu, nâng cấp hoặc chiếm đóng. |
+| **KHÔNG NÊN MERGE** | - `entertainment`, `trade`, `finance` của Core Game.<br>- `alliance` (liên hợp liên minh cá nhân). | Các công trình này phục vụ tăng trưởng kinh tế cá nhân của người chơi, nếu merge vào Sector sẽ phá vỡ hệ thống thuế quốc gia `National Treasury` và nhân khẩu học `DemographicsState`. |
+
+---
+
+## 4. BẢNG MA TRẬN ÁNH XẠ CÔNG TRÌNH (BUILDING MAPPING MATRIX)
+
+Bảng đối chiếu toàn diện 13 Core Buildings sang danh mục mục tiêu của STARFRONT WORLD:
+
+| Existing Core Building | Existing Function | Proposed WORLD Category | Reuse / Extend / Keep Separate | Duplicate Risk | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **`command`** (Sở Chỉ Huy) | Mở khóa cấp công trình khác, tăng Credits, Tinh thể và Phòng thủ. | **`CIVIL` / `INFRASTRUCTURE`** | **EXTEND** | **Trung bình:** Dễ nhầm giữa Player HQ và Sector Administrative Outpost. | Mở rộng thành Sector HQ tại mỗi Sector; tại Player Base giữ vai trò Commander HQ. |
+| **`hangar`** (Nhà Chứa) | Hồi phục 8% + 5%/cấp MaxHP/ngày; tăng sức chứa Gear. | **`LOGISTICS`** | **EXTEND** | **Cao:** Xung đột giữa hồi phục % tự động của Core Game và `BaseInstallationRepairHpDay` của WORLD. | Core Game giữ nguyên; WORLD triển khai thành Facility `RepairBay` tuân thủ công thức năng lực sửa chữa dùng chung. |
+| **`factory`** (Nhà Máy Vũ Khí) | Giảm chi phí chế tạo trang bị (placeholder). | **`INDUSTRIAL`** | **REUSE** | **Thấp:** Hiện Core Game chưa có logic runtime phức tạp. | Chuẩn hóa thành xưởng sản xuất vật tư công nghiệp `industrialMaterials` cho Sector. |
+| **`reactor`** (Lò Phản Ứng) | Sản xuất Năng lượng (`energy`) hàng ngày. | **`INFRASTRUCTURE`** | **REUSE** | **Trung bình:** Core Game dùng `energy` cho đóng tàu; WORLD dùng `energy` duy trì khiên và vận hành route. | Ánh xạ cấp lò phản ứng thành sản lượng `energy` trong `WorldResourceLedger`. |
+| **`refinery`** (Xưởng Luyện Kim) | Khai thác Hợp kim (`alloy`) và Tinh thể. | **`INDUSTRIAL`** | **REUSE** | **Thấp:** Tách biệt rõ giữa kho cá nhân và kho Sector. | Ánh xạ thành cơ sở khai thác tài nguyên công nghiệp chiến lược của Sector. |
+| **`barracks`** (Doanh Trại) | Tăng trần quân số đồn trú (`armyCap` +60/cấp). | **`MILITARY`** | **EXTEND** | **Cao:** Xung đột giữa `state.army` (Core) và `military.reserves` / `garrisonPower` (WORLD). | Dùng làm cơ sở tính trần sức chứa đồn trú (`maxGarrisonPower`) tại Sector. |
+| **`turret`** (Tháp Phòng Thủ) | Tăng phòng thủ căn cứ (+260 Base Defense/cấp). | **`DEFENSE`** | **EXTEND** | **Thấp:** Hiện Sector chỉ có `fortificationLevel`. | Kết nối cấp Tháp phòng thủ / Pháo đài với chỉ số phòng thủ và giảm sát thương khi Sector bị vây hãm. |
+| **`shipyard`** (Xưởng Đóng Tàu) | Giảm giá đóng phi thuyền, tăng sức chứa Gear. | **`MILITARY` / `INDUSTRIAL`** | **KEEP SEPARATE** | **Cao:** Xung đột giữa đóng GEAR cá nhân và mua sắm khung thân thay thế (Procurement). | Giữ nguyên xưởng cá nhân cho người chơi; WORLD sử dụng cơ chế Procurement hàng đợi qua Ngân khố Quốc gia. |
+| **`finance`** (TT Tài Chính) | Thu nhập 250 credits/ngày/cấp; tăng phồn vinh. | **`ECONOMIC`** | **KEEP SEPARATE** | **Cao:** Xung đột trực tiếp với hệ thống thu thuế `National Treasury` của WORLD. | Giữ nguyên tại căn cứ người chơi để tạo thu nhập cá nhân; không đưa vào Sector vĩ mô. |
+| **`alliance`** (Khu Liên Minh) | Tăng sức chứa hạm đội (+1 Gear/cấp). | **`SPECIAL`** | **KEEP SEPARATE** | **Thấp:** Thuần túy tính năng cá nhân người chơi. | Giữ riêng ở Core Base. |
+| **`residential`** (Khu Dân Cư) | Tăng dân số (+0.5%/cấp), tăng trần lính (+60/cấp), sinh Credits. | **`CIVIL`** | **EXTEND** | **Cao:** Xung đột với Invariant Zero-Sum của `DemographicsState` thiên hà. | Tại Sector, dân số được quản lý theo nhân khẩu học vĩ mô, không dùng công thức tăng % tự do của Core. |
+| **`trade`** (Khu Giao Dịch) | Sinh Credits, Hợp kim, Tinh thể mỗi ngày; tăng phồn vinh. | **`ECONOMIC`** | **KEEP SEPARATE** | **Trung bình:** Tác động trực tiếp lên kinh tế vi mô. | Giữ ở Core Base cho giao dịch cá nhân. |
+| **`entertainment`** (Khu Vui Chơi) | Sinh 500 credits/ngày/cấp; tăng phồn vinh. | **`SPECIAL` / `CIVIL`** | **KEEP SEPARATE** | **Thấp:** Tính năng giải trí vi mô căn cứ chính. | Giữ ở Core Base. |
+
+---
+
+## 5. THIẾT KẾ ĐÃ ĐƯỢC DUYỆT (APPROVED DESIGN DECISIONS)
+
+Phần này ghi nhận đầy đủ các quyết định thiết kế mới về Tình trạng Khí tài (Condition), Cơ chế Bảo trì (Maintenance) và Năng lực Sửa chữa Dùng chung (Shared Repair Capacity).
+
+### 5.1. Tình trạng Khí tài (Asset Condition)
+
+Khí tài (GEAR, tàu chiến, thiết bị không gian) được quản lý bởi hai chỉ số song song:
+
 ```text
-BaseInstallationRepairHpDay =
-    FacilityRepairCapacityPerDay
-    + WorkerRepairCapacityPerDay
+HP:
+Thiệt hại thực thể do hỏa lực chiến đấu gây ra (Combat/physical damage).
+Mất khi bị kẻ thù tấn công; đạt 0 thì khí tài bị PHÁ HỦY HOÀN TOÀN (DESTROYED / IRREVOCABLE LOSS).
 
-WorkerRepairCapacityPerDay =
-    ActiveTechnicalWorkers
-    * TechnicalWorkerRepairHPPerDay
+ConditionHP:
+Tình trạng kỹ thuật, hao mòn máy móc và độ tin cậy của khí tài sau quá trình vận hành hoặc chiến đấu.
+
+ConditionHPMax:
+Mức trần tình trạng kỹ thuật tối đa của khí tài. Mặc định bằng MaxHP của asset.
 ```
-- **Hiện trạng:** Hoàn toàn **chưa có code**. Hiện tại chưa có biến `FacilityRepairCapacityPerDay`, chưa có `ActiveTechnicalWorkers`, và chưa có `TechnicalWorkerRepairHPPerDay`.
-- **Rủi ro nếu triển khai không đúng quy chuẩn:** Dễ bị nhầm lẫn giữa việc sửa chữa quân số (`woundedOrRepair` headcount) của World State với việc sửa điểm máu (HP) của phi đội GEAR.
+
+#### Quy tắc thiết kế (Design Invariant):
+1. **Không suy giảm chỉ số trực tiếp:** Trong thiết kế hiện tại, `ConditionHP` **KHÔNG** làm suy giảm trực tiếp các chỉ số chiến đấu (`Offense`, `Defense`, `Mobility`) của khí tài.
+2. **Khóa triển khai (Deployment Gate):** Khí tài có `ConditionHP` nằm dưới ngưỡng yêu cầu của nhiệm vụ (Mission Condition Requirement) thì **TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP TRIỂN KHAI** xuất kích.
 
 ---
 
-## 3. AUDIT LỰC LƯỢNG NHÂN SỰ & KỸ THUẬT (WORKFORCE & PERSONNEL AUDIT)
+### 5.2. Cơ chế Bảo trì Kỹ thuật (Maintenance Triggers)
 
-### 3.1. Dữ liệu nhân khẩu học hiện tại trong WORLD
-File: `lib/game/world/demographics.ts` và `lib/game/world/types.ts`:
-```ts
-export interface DemographicsState {
-  nationalTotalPopulation: number       // Tổng dân số liên minh VSS
-  controlledTerritoryPopulation: number // Dân số hiện trong các sector do VSS kiểm soát
-  refugeesInTransit: number             // Dân sự đang sơ tán / di cư an toàn
-  civilianCasualties: number            // Thương vong dân sự tích lũy
-}
-```
-- **Nhận xét:**
-  - `DemographicsState` hiện tại chỉ ghi nhận 4 biến số vĩ mô thuần túy về số lượng cư dân.
-  - **KHÔNG CÓ** phân tầng chức nghiệp: Không có trường dữ liệu nào cho `Logistics`, `Technical`, `Repair`, hay `Maintenance`.
-  - Toàn bộ dân số trong sector chỉ đóng vai trò là cơ sở để tính mức tiêu thụ lương thực (`calculateDailyFoodConsumption`) và tạo ra năng lực công nghiệp vĩ mô.
-
-### 3.2. Đối chiếu với Tài liệu Đặc tả Nhân sự Quốc gia
-Tài liệu `docs/WORLD_NATIONAL_PERSONNEL_TRAINING.md` (Design Source of Truth cho Phase 6.36–6.38) quy định 3 nhóm nhân lực:
-1. **Regular Forces (Quân đội thường trực):** Ban đầu tối đa 1.000.000, tăng trưởng +100.000/năm.
-2. **Auxiliary Forces (Lực lượng bổ trợ / Dự bị):** Ban đầu tối đa 200.000, tăng trưởng +20.000/năm.
-3. **Logistics Workforce (Lực lượng kỹ thuật / Hậu cần):** Kỹ thuật viên sửa chữa, thợ máy, chuyên gia bảo trì. Ban đầu tối đa 100.000, tăng trưởng +10.000/năm.
-- **Tình trạng mã nguồn:** Cả 3 pool này **hoàn toàn chưa có trong runtime state**.
-- **Chỉ số năng suất cá nhân (HP/person/day):**
-  - Trong Core Game: Tương đương 10 HP/người/ngày (100 dân phân khu sửa chữa đem lại 1.000 HP/ngày).
-  - Trong WORLD: **Chưa có biến `TechnicalWorkerRepairHPPerDay`**.
-- **Hệ thống Đào tạo & Điều động (Training / Graduation / Allocation):**
-  - Chưa có cơ chế đào tạo FREESKA (5 năm) hay NEWHORIZON (53 ngày) trong code.
-  - Chưa có khái niệm Unassigned / Available Technical Workers.
-
----
-
-## 4. AUDIT CĂN CỨ, CÔNG TRÌNH & CƠ SỞ VẬT CHẤT (BASE & BUILDING AUDIT)
-
-### 4.1. Cấu trúc Sector hiện tại trong WORLD
-File: `lib/game/world/types.ts` (`WorldSector`):
-- Các thuộc tính hiện có:
-  - `id, name, subtitle, desc, x, y`
-  - `sovereignty`: `"vss" | "void" | "contested" | "neutral"`
-  - `threatLevel`, `maxThreat`, `classification` (`"headquarters" | "standard"`)
-  - `stage`: `"normal" | "threatened" | "under_siege" | "lost" | "recovery"`
-  - `industryCapacity: number`
-  - `garrisonPower: number`
-  - `resources: WorldResourceLedger`
-  - `population: number`
-  - `stability: number`
-  - `fortificationLevel?: number` (Cấp công sự)
-  - `threatHistory?: SectorThreatHistoryPoint[]`
-- **Điểm khuyết thiếu:**
-  - **Không có danh sách công trình (Building list / Facility list).**
-  - Không có chỉ số HP cho công trình.
-  - Không có tiến trình hẹn giờ xây dựng hoặc nâng cấp (Construction / Upgrade Timer). Mọi nâng cấp (nếu có sau này) hiện chưa có hàng đợi hay timer.
-  - Không có phân bổ nhân sự làm việc tại từng công trình.
-
-### 4.2. Khả năng của kẻ thù (Enemy AI Rebuilding & Upgrades)
-- File: `lib/game/world/threat-ai.ts`:
-  - Trí tuệ nhân tạo của The Void hiện tại chỉ thực hiện các thao tác:
-    1. Tăng mức độ đe dọa (`threatLevel`) theo ngày dựa trên khoảng cách đồ thị đến sào huyệt Tartarus Breach.
-    2. Kích hoạt trạng thái vây hãm (`under_siege`) khi Threat vượt ngưỡng.
-  - **Kẻ thù KHÔNG CÓ cơ chế xây dựng, chiếm đoạt cơ sở hay nâng cấp công trình.** Khi chiếm được một Sector (`stage = "lost"`), toàn bộ hoạt động kinh tế của sector đó bị đóng băng (`calculateEffectiveSectorIndustry` trả về 0).
-
----
-
-## 5. AUDIT HẠM ĐỘI & LỰC LƯỢNG ĐỒN TRÚ (FLEET & GARRISON AUDIT)
-
-### 5.1. Dữ liệu đồn trú hiện tại
-- Tại từng Sector: Chỉ lưu một trường số nguyên duy nhất là `sector.garrisonPower: number` (và `lockedGarrisonPower?: number` khi giao tranh bị khóa).
-- Toàn cục: `worldState.military` (`deployed`, `reserves`, `woundedOrRepair`, `retreating`, `casualties`).
-
-### 5.2. Hoạt động di chuyển quân lực
-- Danh sách hành quân: `worldState.activeDeployments: TroopDeployment[]`:
-  - Lưu trữ: `deploymentId`, `fromSectorId`, `toSectorId`, `troopCount`, `order`, `path`, `totalDistance`, `remainingDays`, `status`.
-- Giao diện `SectorIntelModal` (Tab Operations):
-  - Đã hiển thị danh sách `incomingDeployments` (quân đang đến) và `outgoingDeployments` (quân đang rời đi) dựa trên mảng `activeDeployments`.
-  - Đã hiển thị danh sách các sự kiện (`sectorEvents`) đang kích hoạt tại Sector.
-
-### 5.3. Khoảng cách dữ liệu để hiển thị Base Detail đầy đủ
-Để sau này màn hình **Base Detail** có thể hiển thị danh sách Hạm đội / Đồn trú hoàn chỉnh:
-- **Tên Fleet / Đơn vị:** Hiện **chưa có** (hiện chỉ có con số `troopCount`).
-- **Quân số:** Đã có (`garrisonPower` hoặc `troopCount`).
-- **Năng lực chiến đấu (Combat Capability / Power):** Đã có cơ sở từ `garrisonPower`.
-- **Trạng thái / Hoạt động hiện tại (Current Activity):** Đã có `strategicOrder` (`"normal" | "defend" | "reinforce" | "attack" | "recover"`).
-- **Thời gian còn lại / ETA:** Đã có `remainingDays` trong `TroopDeployment`.
-- **Liên kết nhiệm vụ (Mission Link):** Đã có cơ sở từ `MissionDispatch` (`missionDispatches[id].assignedForces`).
-- **Kết luận:** Dữ liệu hành quân và nhiệm vụ đã có khung cơ bản, nhưng **chưa có mô hình thực thể Hạm đội đồn trú cố định (Stationed Fleet Entity)** gắn trực tiếp vào Sector.
-
----
-
-## 6. AUDIT KINH TẾ, KHO TÀI NGUYÊN & BẢO TRÌ (ECONOMY, STORAGE & MAINTENANCE AUDIT)
-
-### 6.1. Tiền tệ (Credits) & Faction Economy
-- **Trong WORLD:** Hệ thống kinh tế vĩ mô (`lib/game/world/economy.ts`) sử dụng 5 loại tài nguyên vật thể:
-  1. `industrialMaterials`: Vật liệu chế tạo và công sự.
-  2. `energy`: Năng lượng plasma duy trì khiên và vận hành.
-  3. `logisticsSupplies`: Vật tư đạn dược và thiết bị tiếp tế.
-  4. `tacticalData`: Dữ liệu và giải mã radar.
-  5. `food`: Lương thực thiết yếu dân sinh (quy tắc A-I).
-  - **HOÀN TOÀN KHÔNG CÓ CREDIT** trong `WorldResourceLedger`.
-  - Credit hiện tại chỉ là đơn vị tiền tệ nội bộ của Core Game (`state.resources.credits`), phục vụ mua bán đồ trong Shop, nâng cấp công trình Base, và đóng tàu.
-  - Tài liệu `docs/WORLD_NATIONAL_ECONOMY.md` (Phase 6.40) đã quy định sẽ bổ sung **Ngân khố Quốc gia (National Treasury)** thu thuế bằng Credits từ công dân các Sector VSS. Tuy nhiên, tính năng này **chưa được viết code**.
-
-### 6.2. Sức chứa kho bãi (Facility Storage Cap)
-- **Hiện trạng:**
-  - Mỗi Sector lưu tài nguyên tại `sector.resources: WorldResourceLedger`.
-  - Không có thuộc tính `storageCapacity`, `maxStorage`, hay `overflowRate`.
-  - Tài nguyên sản xuất hàng ngày cộng dồn vô hạn vào kho của Sector, sau đó được hàm `synchronizeNationalLedger` cộng dồn thành kho tổng quốc gia `state.resources`.
-  - Chưa có giới hạn lưu trữ cho từng nhà kho hay cơ sở tiếp liệu.
-
-### 6.3. Chi phí bảo trì (Upkeep / Maintenance)
-- **Trong runtime code:** **CHƯA TỒN TẠI** bất kỳ logic trừ chi phí bảo trì nào hàng ngày đối với quân đội hay công trình.
-- **Trong tài liệu thiết kế (`docs/WORLD_NATIONAL_ECONOMY.md`):** Đã có định mức dự kiến cho Phase 6.40:
-  - Quân chính quy (Regular Forces): $2.0$ Credits/người/chu kỳ.
-  - Quân bổ trợ (Auxiliary Forces): $1.0$ Credit/người/chu kỳ.
-  - Nhân lực kỹ thuật (Logistics Workforce): $0.5$ Credit/người/chu kỳ.
-
----
-
-## 7. CẢNH BÁO NGUY CƠ TRÙNG LẶP HỆ THỐNG (SYSTEM DUPLICATION RISK ANALYSIS)
-
-Khi triển khai các Phase tiếp theo liên quan đến Base, Cơ sở vật chất và Sửa chữa, bắt buộc phải tránh các nguy cơ xung đột sau:
+Hệ thống thiết lập hai ngưỡng tỷ lệ bảo trì chuẩn hóa (có thể cấu hình qua AdminCP):
 
 ```text
-[NGUY CƠ TRÙNG LẶP KIẾN TRÚC CAO]
+MaintenanceTriggerMinRatio = 0.50 (50%)
+MaintenanceTriggerMaxRatio = 0.90 (90%)
+```
 
-1. Xung đột Kho Tài Nguyên (Double Ledger Risk):
-   - Core Game đang có: state.resources (credits, alloy, crystal, energy).
-   - WORLD đang có: state.resources (materials, energy, supplies, data, food).
-   => GIẢI PHÁP: Giữ nguyên phân định phạm vi: Core Game phục vụ buồng lái/hangar cá nhân;
-      WORLD phục vụ chiến lược vĩ mô. Tuyệt đối không import lẫn lộn.
+#### Quy tắc kích hoạt bảo trì:
+1. **Bắt buộc bảo trì (Compulsory Maintenance):**
+   - Khi $\frac{\text{ConditionHP}}{\text{ConditionHPMax}} < \text{MaintenanceTriggerMinRatio}$ ($< 50\%$):
+   - Khí tài rơi vào trạng thái *Kỹ thuật nguy cấp*, **BẮT BUỘC** phải đưa vào xưởng bảo trì.
+   - Không thể gán vào bất kỳ đội hình xuất kích hay nhiệm vụ nào.
+2. **Bảo trì tự nguyện (Voluntary / Elective Maintenance):**
+   - Khi $\text{MaintenanceTriggerMinRatio} \le \frac{\text{ConditionHP}}{\text{ConditionHPMax}} < \text{MaintenanceTriggerMaxRatio}$ ($50\% - 89\%$):
+   - Khí tài vẫn đủ tiêu chuẩn kỹ thuật thông thường để xuất kích, nhưng người chơi hoặc hệ thống điều phối có thể chủ động đưa vào bảo trì định kỳ để phục hồi về $100\%$.
+3. **Ngưỡng triển khai đặc biệt theo nhiệm vụ (Mission-Specific Threshold):**
+   - Các nhiệm vụ đặc biệt quan trọng (nhiệm vụ hộ tống tổng thống, đột kích Tartarus, tìm kiếm cứu nạn tầm xa) có thể yêu cầu ngưỡng Condition tối thiểu cao hơn `MaintenanceTriggerMinRatio` (ví dụ: yêu cầu $\ge 70\%$ hoặc $\ge 80\%$). Khí tài dù chưa bị cưỡng chế bảo trì nhưng không đạt ngưỡng này cũng không thể tham gia nhiệm vụ.
 
-2. Xung đột Sửa Chữa (Repair Logic Collision):
-   - forces-ledger.ts đang hồi phục 5% headcount quân số bị thương (military.woundedOrRepair).
-   - BaseInstallationRepairHpDay được thiết kế để sửa chữa điểm máu (HP) của trang thiết bị/GEAR.
-   => GIẢI PHÁP: Không dùng BaseInstallationRepairHpDay để can thiệp vào headcount của military.woundedOrRepair.
-      Sửa chữa HP GEAR phải đi qua sổ cái trang bị của phi đội/hangar.
+---
 
-3. Xung đột Công Trình (Building List Duplication):
-   - components/game/base-panel.tsx đang dùng 13 buildings của Player HQ.
-   => GIẢI PHÁP: Không copy nguyên 13 building này vào WorldSector. Cơ sở vật chất tại Sector
-      (Facilities) phải là các module chiến lược nhẹ (ví dụ: SAR Center, Repair Bay, Fortification).
+### 5.3. Năng lực Sửa chữa Dùng Chung (Shared Repair Capacity)
+
+Chỉ số `BaseInstallationRepairHpDay` của một căn cứ là **tổng thông lượng sửa chữa dùng chung (Shared Capacity)** cho cả hai nhiệm vụ:
+1. **Combat HP Repair:** Sửa chữa hư hỏng thực thể do chiến đấu gây ra (đưa điểm `HP` bị mất trở lại MaxHP).
+2. **Maintenance Condition HP Restore:** Phục hồi hao mòn kỹ thuật định kỳ (đưa điểm `ConditionHP` trở lại ConditionHPMax).
+
+#### Nguyên lý điều phối và ưu tiên:
+- **Ưu tiên 1 (Priority 1 — Combat HP Repair):**
+  - Khí tài bị thương tổn sau chiến đấu luôn được ưu tiên sửa chữa trước để cứu vãn tính mạng khí tài và nhanh chóng phục hồi trạng thái sẵn sàng chiến đấu cơ bản.
+- **Ưu tiên 2 (Priority 2 — Scheduled Maintenance):**
+  - Công tác bảo dưỡng kỹ thuật chỉ hấp thụ phần thông lượng sửa chữa còn dư thừa (`Surplus Capacity`) sau khi toàn bộ khí tài hư hỏng chiến đấu đã được phục hồi xong.
+- **Cơ chế phân bổ theo tỷ lệ (Configurable Allocation Ratio):**
+  - Cho phép người chơi hoặc chỉ huy căn cứ cấu hình phân chia tỷ lệ năng lực qua giao diện AdminCP / Base Management (ví dụ: $70\%$ cho Combat Repair / $30\%$ cho Maintenance) khi căn cứ cần đồng thời duy trì cả hai luồng công việc mà không làm tê liệt hoàn toàn công tác bảo trì phòng ngừa.
+
+---
+
+## 6. DANH MỤC THUẬT NGỮ & KHÁI NIỆM ĐÃ PHÊ DUYỆT (APPROVED CONCEPT CATALOG)
+
+```text
+BaseInstallationRepairHpDay:
+Tổng năng lực sửa chữa điểm máu (HP) cơ sở vật chất mỗi ngày của một căn cứ hoặc trạm không gian.
+Là Shared Capacity cho cả Combat HP Repair và Maintenance Condition HP Restore.
+
+FacilityRepairCapacityPerDay:
+Năng lực sửa chữa cơ sở vật chất cố định đến từ nhà xưởng, trạm bảo dưỡng, dây chuyền robot tự động.
+
+WorkerRepairCapacityPerDay:
+Tổng năng lực sửa chữa đóng góp từ toàn bộ đội ngũ nhân sự kỹ thuật thực tế đang làm việc tại căn cứ.
+Công thức: ActiveTechnicalWorkers * TechnicalWorkerRepairHPPerDay.
+
+ActiveTechnicalWorkers:
+Số lượng nhân viên kỹ thuật, thợ máy, chuyên viên bảo trì thực tế đang được điều động và trực tiếp làm việc tại căn cứ.
+
+TechnicalWorkerRepairHPPerDay:
+Định mức năng suất sửa chữa trung bình của một nhân viên kỹ thuật trong một ngày chiến lược (HP/người/ngày).
+
+ConditionHP:
+Điểm đo lường tình trạng hao mòn và kỹ thuật của khí tài ngoài điểm HP chiến đấu.
+
+MaintenanceTriggerMinRatio:
+Ngưỡng tỷ lệ tối thiểu (mặc định 0.50). Dưới ngưỡng này khí tài bắt buộc phải đưa vào bảo trì và bị cấm triển khai.
+
+MaintenanceTriggerMaxRatio:
+Ngưỡng tỷ lệ tối đa (mặc định 0.90). Dưới ngưỡng này khí tài có thể được bảo dưỡng tự nguyện.
 ```
 
 ---
 
-## 8. DANH MỤC THUẬT NGỮ & KHÁI NIỆM ĐÃ PHÊ DUYỆT (APPROVED CONCEPT CATALOG)
+## 7. KẾT LUẬN & KIỂM TRA HỆ THỐNG
 
-Bảng tổng hợp chuẩn hóa các biến và công thức mục tiêu theo đúng quy chuẩn ngôn ngữ:
-
-### `BaseInstallationRepairHpDay`
-- **Ý nghĩa:** Tổng năng lực sửa chữa điểm máu (HP) cơ sở vật chất mỗi ngày của một căn cứ hoặc trạm không gian.
-- **Công thức mục tiêu:**
-  ```text
-  BaseInstallationRepairHpDay =
-      FacilityRepairCapacityPerDay
-      + WorkerRepairCapacityPerDay
-  ```
-- **Nguồn dữ liệu:** Tổng hợp từ năng lực máy móc của trạm (`FacilityRepairCapacityPerDay`) và năng lực của lực lượng thợ kỹ thuật đang làm việc (`WorkerRepairCapacityPerDay`).
-- **Nơi sử dụng dự kiến:** Dùng trong tính toán thời gian sửa chữa cơ giáp hư hỏng rút lui về căn cứ (Phase 6.35, Phase 6.39) và hiển thị trên giao diện Base Detail (Phase 6.42).
-
-### `FacilityRepairCapacityPerDay`
-- **Ý nghĩa:** Năng lực sửa chữa cơ sở vật chất cố định đến từ nhà xưởng, trạm bảo dưỡng, dây chuyền robot tự động và cơ sở hạ tầng của căn cứ, không phụ thuộc vào số lượng công nhân.
-- **Nguồn dữ liệu:** Cấu hình cấp bậc hoặc loại hình cơ sở vật chất (Facility Level / Type).
-- **Nơi sử dụng dự kiến:** Thành phần cấu thành thứ nhất của `BaseInstallationRepairHpDay`.
-
-### `WorkerRepairCapacityPerDay`
-- **Ý nghĩa:** Tổng năng lực sửa chữa đóng góp từ toàn bộ đội ngũ nhân sự kỹ thuật thực tế đang làm việc tại căn cứ trong ngày.
-- **Công thức mục tiêu:**
-  ```text
-  WorkerRepairCapacityPerDay =
-      ActiveTechnicalWorkers
-      * TechnicalWorkerRepairHPPerDay
-  ```
-- **Nơi sử dụng dự kiến:** Thành phần cấu thành thứ hai của `BaseInstallationRepairHpDay`.
-
-### `ActiveTechnicalWorkers`
-- **Ý nghĩa:** Số lượng nhân viên kỹ thuật, thợ máy, chuyên viên bảo trì thực tế đang được điều động và trực tiếp thực hiện nhiệm vụ sửa chữa tại căn cứ (không tính nhân sự đang nghỉ phép, đào tạo, hoặc dự bị).
-- **Nguồn dữ liệu:** Phân bổ từ nhóm Logistics Workforce của căn cứ hoặc quốc gia.
-- **Nơi sử dụng dự kiến:** Tính toán `WorkerRepairCapacityPerDay`.
-
-### `TechnicalWorkerRepairHPPerDay`
-- **Ý nghĩa:** Định mức năng suất sửa chữa trung bình của một nhân viên kỹ thuật trong một ngày chiến lược (đơn vị: HP/người/ngày).
-- **Nguồn dữ liệu:** Cấu hình chuẩn hóa của hệ thống (AdminCP configurable hoặc hằng số cân bằng).
-- **Nơi sử dụng dự kiến:** Hệ số nhân với `ActiveTechnicalWorkers`.
+1. **An toàn mã nguồn:** Không có bất kỳ thay đổi nào tác động đến production logic code (`lib/game/world/*`, `lib/game/*`).
+2. **Khả năng tương thích:** Toàn bộ 13 công trình và 6 phân khu hiện có được bảo toàn 100%, có lộ trình chuyển tiếp rõ ràng sang các Phase 6.35–6.43 của roadmap thiên hà.
+3. **Kiểm tra hồi quy:** Toàn bộ các test suite hiện hữu đạt kết quả **PASS 100%**.
 
 ---
-
-## 9. KẾT LUẬN & KHUYẾN NGHỊ KIẾN TRÚC CHO CÁC PHASE TIẾP THEO
-
-1. **Về Phase 6.34B–6.34G (Pilot Survival & Rescue Expansion):**
-   - Không bị xung đột bởi hiện trạng hạ tầng Base vì Phase 6.34A–6.34G tập trung vào phi công thoát hiểm, phân cấp tử nạn/bảo hộ, nhiệm vụ tìm kiếm cứu nạn và Nano Repair Kits.
-2. **Về Phase 6.35 (GEAR Logistics & Repair):**
-   - Khi triển khai phục hồi cơ giáp rút lui (Retreated Airframes), cần hiện thực hóa `BaseInstallationRepairHpDay` trên nền tảng công thức mục tiêu đã phê duyệt, tránh can thiệp nhầm vào `forces-ledger.ts`.
-3. **Về Phase 6.36–6.38 (Personnel Pools & Technical Workforce):**
-   - Cần bổ sung cấu trúc 3 pools (`Regular`, `Auxiliary`, `Logistics`) vào `DemographicsState` mà không làm phá vỡ Invariant Zero-Sum của dân số.
-4. **Về Phase 6.42–6.43 (Base Details & Facilities UI):**
-   - Tận dụng cấu trúc trực quan từ `SectorIntelModal` (Tab Overview, Operations, Resources) để phát triển thành Base Details hoàn chỉnh, bổ sung thêm tab Quản lý Cơ sở vật chất (Facilities) và danh sách Đồn trú cụ thể.
-
----
-*Tài liệu được tạo tự động bởi hệ thống kiểm tra kiến trúc AI Studio Build — Không chứa thay đổi code thực thi.*
+*Tài liệu đối chiếu và phân tích hiện trạng được cập nhật và đóng băng kiến trúc an toàn.*

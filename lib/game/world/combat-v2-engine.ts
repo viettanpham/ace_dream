@@ -33,6 +33,8 @@ import type {
 import type { CombatResultReceipt, WorldState, CombatResolutionResult } from "./types"
 import { commitCombatResultReceipt } from "./combat-adapter"
 
+import { executeSupportRound } from "./combat-v2-support"
+
 /**
  * Centralized Combat V2 Configuration Defaults (matching docs/WORLD_ADMINCP_CONFIG_REFERENCE.md)
  */
@@ -49,6 +51,8 @@ export const DEFAULT_COMBAT_V2_CONFIG: CombatV2Config = {
   defaultMoraleValue: 100,
   // CONCEPTUAL EXAMPLE: Conceptual threshold for panic evaluation; not yet approved gameplay balance
   moraleThresholdPanic: 30,
+  // TEMPORARY TECHNICAL DEFAULT: NPC retreat HP ratio threshold (0.25 = 25% max HP)
+  npcRetreatHpRatioThreshold: 0.25,
 }
 
 /**
@@ -225,6 +229,68 @@ export function orderGearRetreat(
 }
 
 /**
+ * Đánh giá quyết định rút lui tự động của đơn vị NPC dựa trên các thông số cấu hình chuẩn tắc:
+ * - Không áp dụng cho cỗ máy của người chơi (isPlayer === true)
+ * - Đơn vị phải đang ở trạng thái ACTIVE
+ * - Điều kiện 1 (Chiến thuật): Toàn bộ NPC tuân lệnh khi chiến thuật phe là "tactical_withdrawal"
+ * - Điều kiện 2 (Khủng hoảng tinh thần & tổn thương nặng):
+ *     Morale <= config.moraleThresholdPanic (30) VÀ Tỷ lệ HP <= config.npcRetreatHpRatioThreshold (0.25)
+ */
+export function evaluateNpcRetreat(
+  gear: CombatV2Gear,
+  factionMorale: number,
+  strategyId: string,
+  config: CombatV2Config = DEFAULT_COMBAT_V2_CONFIG
+): boolean {
+  if (gear.isPlayer || gear.state !== "ACTIVE") return false
+
+  // 1. Lệnh rút lui toàn đội từ chiến thuật chỉ huy
+  if (strategyId === "tactical_withdrawal") {
+    return true
+  }
+
+  // 2. Ngưỡng hoảng loạn kết hợp HP cạn kiệt
+  const hpRatio = gear.maxHp > 0 ? gear.currentHp / gear.maxHp : 0
+  const hpThreshold = config.npcRetreatHpRatioThreshold ?? 0.25
+  if (factionMorale <= config.moraleThresholdPanic && hpRatio <= hpThreshold) {
+    return true
+  }
+
+  return false
+}
+
+/**
+ * Lệnh rút lui toàn lực lượng (Force-wide Commander Retreat)
+ * Chỉ huy phát lệnh rút lui đồng loạt cho tất cả các cỗ máy ACTIVE thuộc phe mình
+ */
+export function orderForceRetreat(
+  snapshot: CombatV2EncounterSnapshot,
+  side: CombatSide,
+  retreatDurationRounds = DEFAULT_COMBAT_V2_CONFIG.defaultRetreatDurationRounds
+): { success: boolean; affectedCount: number; message: string } {
+  const gears = side === "allied" ? snapshot.alliedGears : snapshot.enemyGears
+  let count = 0
+  for (const g of gears) {
+    if (g.state === "ACTIVE") {
+      const res = orderGearRetreat(g, retreatDurationRounds)
+      if (res.success) count++
+    }
+  }
+
+  // Tự động chuyển chiến thuật sang Tactical Withdrawal nếu chỉ huy còn hiệu lực
+  const commander = side === "allied" ? snapshot.alliedCommander : snapshot.enemyCommander
+  if (commander.hasActiveAuthority) {
+    commander.queuedStrategyId = "tactical_withdrawal"
+  }
+
+  return {
+    success: count > 0,
+    affectedCount: count,
+    message: `Đã phát lệnh rút lui toàn lực lượng (${count} cỗ máy bắt đầu thoát ly).`,
+  }
+}
+
+/**
  * Khởi tạo Snapshot trận đấu chiến lược Combat V2 hoàn chỉnh
  */
 export function createCombatV2EncounterSnapshot(params: {
@@ -354,6 +420,69 @@ export function advanceCombatV2Round(
     snapshot.enemyCommander.currentStrategyId = next
     snapshot.enemyCommander.queuedStrategyId = null
     strategyChanges.push({ factionId: "void", previousStrategyId: prev, newStrategyId: next })
+  }
+
+  // 1.1 Kích hoạt kỹ năng hỗ trợ quỹ đạo (Support Fleet Round Execution)
+  const supportEvents: Array<{
+    entityId: string
+    entityName: string
+    skillId: string
+    skillName: string
+    mode: "auto" | "manual"
+    message: string
+  }> = []
+
+  if (snapshot.alliedSupport && snapshot.alliedSupport.length > 0) {
+    const suppRes = executeSupportRound(
+      snapshot.alliedSupport,
+      snapshot.queuedSupportSkillId || null,
+      roundNumber
+    )
+    if (suppRes.executedSkills.length > 0) {
+      for (const es of suppRes.executedSkills) {
+        supportEvents.push({
+          entityId: es.entityId,
+          entityName: es.entityName,
+          skillId: es.skillId,
+          skillName: es.skillName,
+          mode: es.mode,
+          message: es.message,
+        })
+      }
+    }
+    // Xóa hàng đợi hỗ trợ đã áp dụng
+    snapshot.queuedSupportSkillId = null
+  }
+
+  // 1.2 Đánh giá rút lui tự động của NPC (NPC Tactical Retreat Evaluation)
+  for (const g of snapshot.alliedGears) {
+    if (evaluateNpcRetreat(g, snapshot.alliedMorale.currentMorale, snapshot.alliedCommander.currentStrategyId, config)) {
+      const ret = orderGearRetreat(g, config.defaultRetreatDurationRounds)
+      if (ret.success) {
+        retreatEvents.push({
+          gearId: g.gearId,
+          gearName: g.name,
+          fromState: "ACTIVE",
+          toState: "RETREATING",
+          message: `${g.name} (Đồng minh NPC) phát lệnh thoát ly chiến trường (${config.defaultRetreatDurationRounds} hiệp còn lại).`,
+        })
+      }
+    }
+  }
+
+  for (const g of snapshot.enemyGears) {
+    if (evaluateNpcRetreat(g, snapshot.enemyMorale.currentMorale, snapshot.enemyCommander.currentStrategyId, config)) {
+      const ret = orderGearRetreat(g, config.defaultRetreatDurationRounds)
+      if (ret.success) {
+        retreatEvents.push({
+          gearId: g.gearId,
+          gearName: g.name,
+          fromState: "ACTIVE",
+          toState: "RETREATING",
+          message: `${g.name} (The Void NPC) phát lệnh thoát ly chiến trường (${config.defaultRetreatDurationRounds} hiệp còn lại).`,
+        })
+      }
+    }
   }
 
   const alliedStrat =
@@ -530,9 +659,10 @@ export function advanceCombatV2Round(
     retreatEvents,
     destructionEvents,
     strategyChanges,
+    supportEvents,
     alliedHpRemaining: alliedAggregate.totalCurrentHp,
     enemyHpRemaining: enemyAggregate.totalCurrentHp,
-    summary: `Hiệp ${roundNumber}: ${actions.length} lượt công kích, ${destructionEvents.length} tiêu diệt, ${retreatEvents.length} rút lui hoàn tất. HP VSS: ${alliedAggregate.totalCurrentHp}/${alliedAggregate.totalMaxHp} | HP The Void: ${enemyAggregate.totalCurrentHp}/${enemyAggregate.totalMaxHp}`,
+    summary: `Hiệp ${roundNumber}: ${actions.length} lượt công kích, ${destructionEvents.length} tiêu diệt, ${retreatEvents.length} rút lui hoàn tất, ${supportEvents.length} hỗ trợ. HP VSS: ${alliedAggregate.totalCurrentHp}/${alliedAggregate.totalMaxHp} | HP The Void: ${enemyAggregate.totalCurrentHp}/${enemyAggregate.totalMaxHp}`,
   }
 
   return {
@@ -681,6 +811,8 @@ export function deriveBattlefieldViewModel(
       queuedStrategyId: snapshot.alliedCommander.queuedStrategyId,
       availableStrategies,
     },
+    supportEntities: snapshot.alliedSupport,
+    queuedSupportSkillId: snapshot.queuedSupportSkillId,
     recentLogs,
   }
 }

@@ -25,6 +25,7 @@ It distinguishes between APPROVED DEFAULT, CONCEPTUAL EXAMPLE, and UNRESOLVED DE
 | `retreatDefenseRetentionRatio` | `number` | `1.0` | **TEMPORARY TECHNICAL DEFAULT** | Temporary technical placeholder (1.0 = 100% retention). Exact gameplay balance percentage remains unresolved and configurable. |
 | `defaultMoraleValue` | `number` | `100` | **UNRESOLVED CONFIG DEFAULT** | Temporary baseline rating required for engine/tests. NOT yet approved as canonical gameplay balance. |
 | `moraleThresholdPanic` | `number` | `30` | **CONCEPTUAL EXAMPLE** | Conceptual non-approved example threshold below which NPC units evaluate automated tactical withdrawal. |
+| `npcRetreatHpRatioThreshold` | `number` | `0.25` | **TEMPORARY TECHNICAL DEFAULT** | Temporary threshold (25% max HP) below which NPC units evaluate automated tactical withdrawal when in morale panic. |
 | `supportedFactions` | `string[]` | `["vss", "void"]`| **APPROVED DEFAULT** | Faction keys participating in Combat V2 engagements. |
 
 ---

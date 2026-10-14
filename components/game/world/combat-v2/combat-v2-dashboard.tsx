@@ -4,15 +4,16 @@
  * The unified player-facing tactical command interface for Combat V2:
  * - Direct connection to Combat V2 Core Engine (Snapshot, advanceCombatV2Round, deriveBattlefieldViewModel)
  * - Battlefield 2D conceptual tactical overview
- * - Player GEAR combat status panel & retreat execution
+ * - Player GEAR combat status panel & retreat execution (Personal & Force-wide)
  * - Commander Strategy queue & stance configuration
- * - Low-orbit Support fleet panel & manual skill queue
- * - Chronological Combat Log viewer
- * - Tactical aggregate status badges & round progression controls
+ * - Low-orbit Support fleet panel & manual skill queue (Auto/Manual mode enforcement)
+ * - Chronological Combat Log viewer with categorized round feeds
+ * - Tactical aggregate force summary HUD (Allied & Enemy)
  * - Concluded combat resolution screen & WORLD state commit boundary
+ * - Continuity in observer/commander mode when player machine is destroyed/retreated
  */
 
-import React, { useState, useMemo, useEffect } from "react"
+import React, { useState, useMemo } from "react"
 import type {
   CombatV2EncounterSnapshot,
   CombatV2Gear,
@@ -25,8 +26,8 @@ import {
   deriveBattlefieldViewModel,
   queueCommanderStrategy,
   orderGearRetreat,
+  orderForceRetreat,
   commitCombatV2Result,
-  combatV2ResultToReceipt,
   DEFAULT_COMBAT_V2_CONFIG,
   COMBAT_V2_STRATEGIES,
 } from "@/lib/game/world/combat-v2-engine"
@@ -46,13 +47,11 @@ import {
   ShieldAlert,
   Play,
   FastForward,
-  RotateCcw,
   CheckCircle2,
-  AlertTriangle,
-  ArrowRight,
-  Radio,
   Trophy,
   XCircle,
+  Shield,
+  Zap,
 } from "lucide-react"
 
 export interface CombatV2DashboardProps {
@@ -126,7 +125,7 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
 
   // ================= XỬ LÝ TƯƠNG TÁC CHỈ HUY & RÚT LUI =================
 
-  // 1. Phát lệnh rút lui cho một cơ giáp
+  // 1. Phát lệnh rút lui cho một cơ giáp cá nhân
   const handleOrderRetreat = (gearId: string) => {
     const gear = snapshot.alliedGears.find((g) => g.gearId === gearId)
     if (!gear) return
@@ -137,15 +136,32 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
     }
   }
 
-  // 2. Xếp hàng chiến thuật chỉ huy cho hiệp tiếp theo
-  const handleQueueStrategy = (strategyId: string) => {
-    const ret = queueCommanderStrategy(snapshot, "allied", strategyId)
-    if (ret.success) {
+  // 2. Phát lệnh rút lui toàn lực lượng đồng minh (Force-wide retreat)
+  const handleOrderForceRetreat = () => {
+    const res = orderForceRetreat(
+      snapshot,
+      "allied",
+      DEFAULT_COMBAT_V2_CONFIG.defaultRetreatDurationRounds
+    )
+    if (res.success) {
       setSnapshot({ ...snapshot })
     }
   }
 
-  // 3. Đổi chế độ Auto / Manual của Support Entity
+  // 3. Xếp hàng chiến thuật chỉ huy cho hiệp tiếp theo
+  const handleQueueStrategy = (strategyId: string | null) => {
+    if (strategyId) {
+      const ret = queueCommanderStrategy(snapshot, "allied", strategyId)
+      if (ret.success) {
+        setSnapshot({ ...snapshot })
+      }
+    } else {
+      snapshot.alliedCommander.queuedStrategyId = null
+      setSnapshot({ ...snapshot })
+    }
+  }
+
+  // 4. Đổi chế độ Auto / Manual của Support Entity
   const handleToggleSupportControlMode = (entityId: string) => {
     if (!snapshot.alliedSupport) return
     const target = snapshot.alliedSupport.find((e) => e.id === entityId)
@@ -155,6 +171,13 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
     }
   }
 
+  // 5. Xếp hàng kỹ năng hỗ trợ thủ công
+  const handleQueueSupportSkill = (skillId: string | null) => {
+    setQueuedSupportSkillId(skillId)
+    snapshot.queuedSupportSkillId = skillId
+    setSnapshot({ ...snapshot })
+  }
+
   // ================= THỰC THI TIẾN TRÌNH HIỆP ĐẤU (ROUND ADVANCE) =================
 
   const handleAdvanceRound = () => {
@@ -162,16 +185,12 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
     setIsProcessing(true)
 
     const nextRound = currentRound + 1
-
-    // Áp dụng kỹ năng hỗ trợ thủ công đã xếp hàng trước hiệp đấu nếu có
-    if (queuedSupportSkillId && snapshot.alliedSupport) {
-      // Giảm hồi chiêu hoặc kích hoạt hiệu ứng bổ trợ
-      setQueuedSupportSkillId(null)
-    }
+    snapshot.queuedSupportSkillId = queuedSupportSkillId
 
     // Thực thi 1 hiệp đấu qua Combat V2 Engine
     const stepResult = advanceCombatV2Round(snapshot, nextRound, prng, DEFAULT_COMBAT_V2_CONFIG)
 
+    setQueuedSupportSkillId(null)
     setCurrentRound(nextRound)
     setRoundLogs((prev) => [...prev, stepResult.roundLog])
 
@@ -317,7 +336,7 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
               <span className="font-bold text-sm tracking-wide text-white">
                 COMBAT V2 // TRUNG TÂM ĐIỀU HÀNH TÁC CHIẾN
               </span>
-              <span className="text-xs px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300">
+              <span className="text-xs px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800 text-cyan-300 font-bold">
                 Hiệp {currentRound} / {snapshot.maxRounds}
               </span>
             </div>
@@ -373,45 +392,135 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
         </div>
       </div>
 
-      {/* Aggregate Status Badges */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-        <div className="rounded border border-cyan-900/40 bg-slate-900/50 p-2.5">
-          <div className="text-slate-400 text-xs uppercase font-semibold">TỔNG HP ĐỒNG MINH (VSS)</div>
-          <div className="text-base font-bold text-cyan-300">
-            {viewModel.alliedForce.totalCurrentHp} / {viewModel.alliedForce.totalMaxHp}
+      {/* Force Summary HUD (Allied vs Enemy Forces) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+        {/* Allied Force HUD */}
+        <div className="rounded border border-cyan-900/50 bg-slate-900/60 p-3 space-y-2">
+          <div className="flex items-center justify-between text-slate-300 font-bold border-b border-cyan-900/40 pb-1">
+            <span className="text-cyan-400 uppercase">LỰC LƯỢNG ĐỒNG MINH VSS</span>
+            <span className="text-xs text-slate-400">Tinh thần: {viewModel.alliedForce.morale}/100</span>
           </div>
-          <div className="text-xs text-slate-400">
-            Tỷ lệ: {viewModel.alliedForce.hpPercent}% · Đơn vị hoạt động: {viewModel.alliedForce.activeCount}
+
+          <div>
+            <div className="flex justify-between items-center text-xs mb-1">
+              <span className="text-slate-400">Tổng HP thân vỏ</span>
+              <span className="font-bold text-cyan-300">
+                {viewModel.alliedForce.totalCurrentHp} / {viewModel.alliedForce.totalMaxHp} ({viewModel.alliedForce.hpPercent}%)
+              </span>
+            </div>
+            <div className="w-full h-2 bg-slate-950 rounded overflow-hidden border border-slate-800">
+              <div
+                className="h-full bg-cyan-400 transition-all duration-300"
+                style={{ width: `${Math.max(0, Math.min(100, viewModel.alliedForce.hpPercent))}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1 text-center text-[11px] pt-1 border-t border-slate-800/60">
+            <div className="bg-slate-950/60 rounded p-1">
+              <div className="text-slate-400 text-[10px]">Tác chiến</div>
+              <div className="font-bold text-emerald-400">{viewModel.alliedForce.activeCount}</div>
+            </div>
+            <div className="bg-slate-950/60 rounded p-1">
+              <div className="text-slate-400 text-[10px]">Thoát ly</div>
+              <div className="font-bold text-amber-300">{viewModel.alliedForce.retreatingCount}</div>
+            </div>
+            <div className="bg-slate-950/60 rounded p-1">
+              <div className="text-slate-400 text-[10px]">Đã thoát</div>
+              <div className="font-bold text-slate-400">{viewModel.alliedForce.retreatedCount}</div>
+            </div>
+            <div className="bg-slate-950/60 rounded p-1">
+              <div className="text-slate-400 text-[10px]">Tổn thất</div>
+              <div className="font-bold text-rose-500">{viewModel.alliedForce.destroyedCount}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+            <span>Công hữu hiệu: <strong className="text-cyan-300">{viewModel.alliedForce.effectiveOffensivePower}</strong></span>
+            <span>Thủ hữu hiệu: <strong className="text-emerald-300">{viewModel.alliedForce.effectiveDefensivePower}</strong></span>
           </div>
         </div>
 
-        <div className="rounded border border-rose-900/40 bg-slate-900/50 p-2.5">
-          <div className="text-slate-400 text-xs uppercase font-semibold">TỔNG HP QUÂN ĐỊCH (THE VOID)</div>
-          <div className="text-base font-bold text-rose-400">
-            {viewModel.enemyForce.totalCurrentHp} / {viewModel.enemyForce.totalMaxHp}
+        {/* Enemy Force HUD */}
+        <div className="rounded border border-rose-900/50 bg-slate-900/60 p-3 space-y-2">
+          <div className="flex items-center justify-between text-slate-300 font-bold border-b border-rose-900/40 pb-1">
+            <span className="text-rose-400 uppercase">QUÂN ĐOÀN THE VOID</span>
+            <span className="text-xs text-slate-400">Tinh thần: {viewModel.enemyForce.morale}/100</span>
           </div>
-          <div className="text-xs text-slate-400">
-            Tỷ lệ: {viewModel.enemyForce.hpPercent}% · Đơn vị hoạt động: {viewModel.enemyForce.activeCount}
+
+          <div>
+            <div className="flex justify-between items-center text-xs mb-1">
+              <span className="text-slate-400">Tổng HP thân vỏ</span>
+              <span className="font-bold text-rose-300">
+                {viewModel.enemyForce.totalCurrentHp} / {viewModel.enemyForce.totalMaxHp} ({viewModel.enemyForce.hpPercent}%)
+              </span>
+            </div>
+            <div className="w-full h-2 bg-slate-950 rounded overflow-hidden border border-slate-800">
+              <div
+                className="h-full bg-rose-500 transition-all duration-300"
+                style={{ width: `${Math.max(0, Math.min(100, viewModel.enemyForce.hpPercent))}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-4 gap-1 text-center text-[11px] pt-1 border-t border-slate-800/60">
+            <div className="bg-slate-950/60 rounded p-1">
+              <div className="text-slate-400 text-[10px]">Tác chiến</div>
+              <div className="font-bold text-rose-400">{viewModel.enemyForce.activeCount}</div>
+            </div>
+            <div className="bg-slate-950/60 rounded p-1">
+              <div className="text-slate-400 text-[10px]">Thoát ly</div>
+              <div className="font-bold text-amber-300">{viewModel.enemyForce.retreatingCount}</div>
+            </div>
+            <div className="bg-slate-950/60 rounded p-1">
+              <div className="text-slate-400 text-[10px]">Đã thoát</div>
+              <div className="font-bold text-slate-400">{viewModel.enemyForce.retreatedCount}</div>
+            </div>
+            <div className="bg-slate-950/60 rounded p-1">
+              <div className="text-slate-400 text-[10px]">Triệt hạ</div>
+              <div className="font-bold text-emerald-400">{viewModel.enemyForce.destroyedCount}</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+            <span>Công hữu hiệu: <strong className="text-rose-300">{viewModel.enemyForce.effectiveOffensivePower}</strong></span>
+            <span>Thủ hữu hiệu: <strong className="text-amber-300">{viewModel.enemyForce.effectiveDefensivePower}</strong></span>
           </div>
         </div>
 
-        <div className="rounded border border-slate-800 bg-slate-900/50 p-2.5">
-          <div className="text-slate-400 text-xs uppercase font-semibold">CHIẾN THUẬT VSS HIỆN TẠI</div>
-          <div className="text-base font-bold text-slate-200 truncate">
-            {COMBAT_V2_STRATEGIES[viewModel.commanderStrategy.currentStrategyId]?.name || "Cân Bằng"}
+        {/* Strategic Command & Support Quick Badge */}
+        <div className="rounded border border-slate-800 bg-slate-900/60 p-3 flex flex-col justify-between">
+          <div>
+            <div className="text-slate-400 text-[10px] uppercase font-bold tracking-wider mb-1.5 border-b border-slate-800 pb-1">
+              CHIẾN THUẬT & HỖ TRỢ HIỆN HÀNH
+            </div>
+            <div className="space-y-1.5">
+              <div>
+                <span className="text-slate-400 text-[11px]">Chiến thuật đang áp dụng:</span>
+                <div className="font-bold text-slate-100 text-sm truncate">
+                  {COMBAT_V2_STRATEGIES[viewModel.commanderStrategy.currentStrategyId]?.name || "Cân Bằng Tiêu Chuẩn"}
+                </div>
+              </div>
+              <div>
+                <span className="text-slate-400 text-[11px]">Xếp hàng cho hiệp sau:</span>
+                <div className="text-xs font-semibold">
+                  {viewModel.commanderStrategy.queuedStrategyId ? (
+                    <span className="text-amber-300 font-bold">
+                      {COMBAT_V2_STRATEGIES[viewModel.commanderStrategy.queuedStrategyId]?.name || viewModel.commanderStrategy.queuedStrategyId} (Hiệp {currentRound + 1})
+                    </span>
+                  ) : (
+                    <span className="text-slate-500 italic">Duy trì chiến thuật hiện tại</span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="text-xs text-slate-400">
-            Xếp hàng: {viewModel.commanderStrategy.queuedStrategyId || "Không có"}
-          </div>
-        </div>
 
-        <div className="rounded border border-slate-800 bg-slate-900/50 p-2.5">
-          <div className="text-slate-400 text-xs uppercase font-semibold">TRẠNG THÁI TỔN THẤT</div>
-          <div className="text-base font-bold text-slate-200">
-            {viewModel.alliedForce.destroyedCount} VSS / {viewModel.enemyForce.destroyedCount} Void
-          </div>
-          <div className="text-xs text-slate-400">
-            Đang rút lui: {viewModel.alliedForce.retreatingCount} · Đã thoát ly: {viewModel.alliedForce.retreatedCount}
+          <div className="border-t border-slate-800/80 pt-2 text-[11px] text-slate-400 flex items-center justify-between">
+            <span>Hỗ trợ thủ công xếp hàng:</span>
+            <span className="font-bold text-cyan-300">
+              {queuedSupportSkillId || "Không có"}
+            </span>
           </div>
         </div>
       </div>
@@ -484,6 +593,8 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
             playerGear={playerGear}
             selectedGear={selectedGear}
             onOrderRetreat={handleOrderRetreat}
+            onOrderForceRetreat={handleOrderForceRetreat}
+            hasCommanderAuthority={snapshot.alliedCommander.hasActiveAuthority}
             disabled={isConcluded}
           />
         )}
@@ -493,6 +604,7 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
             commanderAuthority={snapshot.alliedCommander}
             availableStrategies={viewModel.commanderStrategy.availableStrategies}
             onQueueStrategy={handleQueueStrategy}
+            currentRound={currentRound}
             disabled={isConcluded}
           />
         )}
@@ -502,7 +614,8 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
             supportEntities={snapshot.alliedSupport || []}
             queuedSkillId={queuedSupportSkillId}
             onToggleControlMode={handleToggleSupportControlMode}
-            onQueueSupportSkill={setQueuedSupportSkillId}
+            onQueueSupportSkill={handleQueueSupportSkill}
+            currentRound={currentRound}
             disabled={isConcluded}
           />
         )}

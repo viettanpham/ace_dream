@@ -93,3 +93,124 @@ export function createDefaultSupportEntities(alliedSide: CombatSide = "allied"):
     },
   ]
 }
+
+/**
+ * Chuyển đổi an toàn chế độ Auto / Manual cho một thực thể hỗ trợ
+ * BẢO ĐẢM AN TOÀN HỒI CHIÊU: Không làm thay đổi, đặt lại hay nhân bản chỉ số cooldown hiện có.
+ */
+export function toggleSupportControlMode(entity: CombatSupportEntity): "manual" | "auto" {
+  entity.controlMode = entity.controlMode === "auto" ? "manual" : "auto"
+  return entity.controlMode
+}
+
+/**
+ * Kiểm tra và xếp hàng kỹ năng hỗ trợ thủ công
+ */
+export function queueManualSupportSkill(
+  supportEntities: CombatSupportEntity[],
+  skillId: string | null
+): { success: boolean; message: string } {
+  if (!skillId) {
+    return { success: true, message: "Đã xóa kỹ năng hỗ trợ khỏi hàng đợi." }
+  }
+
+  const def = CANONICAL_SUPPORT_SKILLS[skillId]
+  if (!def) {
+    return { success: false, message: `Không tìm thấy kỹ năng hỗ trợ [${skillId}].` }
+  }
+
+  const matchedEntity = supportEntities.find(
+    (e) => e.activeSkillName === skillId && e.controlMode === "manual"
+  )
+
+  if (!matchedEntity) {
+    return {
+      success: false,
+      message: `Không có thực thể hỗ trợ nào ở chế độ THỦ CÔNG (MANUAL) sở hữu kỹ năng [${def.name}].`,
+    }
+  }
+
+  if (matchedEntity.activeCooldownRemaining > 0) {
+    return {
+      success: false,
+      message: `Kỹ năng [${def.name}] đang trong thời gian hồi chiêu (${matchedEntity.activeCooldownRemaining} hiệp).`,
+    }
+  }
+
+  return {
+    success: true,
+    message: `Đã xếp hàng kỹ năng hỗ trợ [${def.name}] cho hiệp kế tiếp.`,
+  }
+}
+
+export interface SupportRoundExecutionResult {
+  executedSkills: Array<{
+    entityId: string
+    entityName: string
+    skillId: string
+    skillName: string
+    mode: "auto" | "manual"
+    targetSide: "enemy" | "allied" | "all"
+    message: string
+  }>
+}
+
+/**
+ * Thực thi chu kỳ hỗ trợ tại biên hiệp đấu (Round Advance Boundary)
+ * - Tự động giảm hồi chiêu cho các đơn vị đang cooldown
+ * - Thực thi duy nhất 1 lần cho mỗi thực thể (loại trừ xung đột giữa Auto và Manual)
+ * - Đưa kỹ năng vừa kích hoạt vào trạng thái hồi chiêu tối đa
+ */
+export function executeSupportRound(
+  supportEntities: CombatSupportEntity[] = [],
+  queuedSkillId: string | null = null,
+  roundNumber: number
+): SupportRoundExecutionResult {
+  const executedSkills: SupportRoundExecutionResult["executedSkills"] = []
+  let manualSkillConsumed = false
+
+  for (const entity of supportEntities) {
+    // Nếu đang hồi chiêu: giảm 1 hiệp và không kích hoạt ở hiệp này
+    if (entity.activeCooldownRemaining > 0) {
+      entity.activeCooldownRemaining = Math.max(0, entity.activeCooldownRemaining - 1)
+      continue
+    }
+
+    // Đơn vị đã sẵn sàng (cooldown === 0)
+    const skillName = entity.activeSkillName
+    if (!skillName) continue
+    const skillDef = CANONICAL_SUPPORT_SKILLS[skillName]
+    if (!skillDef) continue
+
+    if (entity.controlMode === "manual") {
+      // Chế độ Thủ công: Chỉ kích hoạt nếu người chơi đã xếp hàng đúng kỹ năng này
+      if (!manualSkillConsumed && queuedSkillId === skillName) {
+        entity.activeCooldownRemaining = entity.activeCooldownMax
+        manualSkillConsumed = true
+        executedSkills.push({
+          entityId: entity.id,
+          entityName: entity.name,
+          skillId: skillDef.id,
+          skillName: skillDef.name,
+          mode: "manual",
+          targetSide: skillDef.targetSide,
+          message: `[HỖ TRỢ THỦ CÔNG] ${entity.name} kích hoạt [${skillDef.name}] tại Hiệp ${roundNumber}. (${skillDef.effectSummary})`,
+        })
+      }
+    } else if (entity.controlMode === "auto") {
+      // Chế độ Tự động: AI kích hoạt khi hồi chiêu sẵn sàng
+      entity.activeCooldownRemaining = entity.activeCooldownMax
+      executedSkills.push({
+        entityId: entity.id,
+        entityName: entity.name,
+        skillId: skillDef.id,
+        skillName: skillDef.name,
+        mode: "auto",
+        targetSide: skillDef.targetSide,
+        message: `[HỖ TRỢ TỰ ĐỘNG] ${entity.name} kích hoạt [${skillDef.name}] theo lịch trình AI tại Hiệp ${roundNumber}. (${skillDef.effectSummary})`,
+      })
+    }
+  }
+
+  return { executedSkills }
+}

@@ -144,6 +144,7 @@ export interface CombatV2EncounterSnapshot {
   // Support Entities
   alliedSupport?: CombatSupportEntity[]
   enemySupport?: CombatSupportEntity[]
+  queuedSupportSkillId?: string | null
   // Environment Context
   environmentModifiers?: {
     terrainName?: string
@@ -195,6 +196,20 @@ export interface CombatV2RoundLog {
     factionId: string
     previousStrategyId: string
     newStrategyId: string
+  }>
+  supportEvents?: Array<{
+    entityId: string
+    entityName: string
+    skillId: string
+    skillName: string
+    mode: "auto" | "manual"
+    message: string
+  }>
+  moraleEvents?: Array<{
+    side: CombatSide
+    moraleDelta: number
+    newMorale: number
+    message: string
   }>
   alliedHpRemaining: number
   enemyHpRemaining: number
@@ -275,6 +290,8 @@ export interface CombatV2BattlefieldViewModel {
     queuedStrategyId: string | null
     availableStrategies: CommanderStrategyDefinition[]
   }
+  supportEntities?: CombatSupportEntity[]
+  queuedSupportSkillId?: string | null
   recentLogs: CombatV2RoundLog[]
 }
 
@@ -294,4 +311,6 @@ export interface CombatV2Config {
   defaultMoraleValue: number
   /** CONCEPTUAL EXAMPLE: Conceptual threshold for panic evaluation; not approved gameplay balance */
   moraleThresholdPanic: number
+  /** TEMPORARY TECHNICAL DEFAULT: NPC retreat HP ratio threshold (0.25 = 25% max HP) */
+  npcRetreatHpRatioThreshold?: number
 }

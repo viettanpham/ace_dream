@@ -17,8 +17,14 @@
 | **Phase 6.33_FIX1** | **Localized Locking & Combat Lock Isolation** | **DONE** | `components/game/world/world-map.tsx`, `combat-adapter.ts` |
 | **Phase 6.33_FIX2** | **Settings & UI Scaling Preservation** | **DONE** | `lib/game/ui-settings.ts`, `global-settings-modal.tsx` |
 | **Phase 6.33_FIX3** | **Typography Scaling & Text Overflow Resilience** | **DONE** | `lib/game/ui-settings.ts`, `components/game/world/combat-v2` |
-| **Phase 6.33_FIX4** | **Dispatch Destination UX, Canonical Threat & Threat AdminCP** | **DONE** | `threat-engine.ts`, `quick-dispatch-dock.tsx`, `admin-settings-modal.tsx` |
-| **Phase 6.34** | **Pilot Survival & Rescue** | **DONE** | `docs/WORLD_PILOT_SURVIVAL_RESCUE.md`, `lib/game/world/pilot-survival-engine.ts` |
+| **Phase 6.34** | **Legacy Pilot Survival Baseline** | **DONE** | `docs/WORLD_PILOT_SURVIVAL_RESCUE.md`, `lib/game/world/pilot-survival-engine.ts` |
+| **Phase 6.34A** | **Survival & Rescue Architecture / Re-Planning** | **PLANNING APPROVED** | `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md` |
+| **Phase 6.34B** | Core Survival, Protection & FATAL | PLANNED | `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md` |
+| **Phase 6.34C** | POW Decoupling & MISSING Search | PLANNED | `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md` |
+| **Phase 6.34D** | Rescue Fleet, Personnel & Base Selection | PLANNED | `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md` |
+| **Phase 6.34E** | Route Navigation, Encounters & Checkpoint Repair | PLANNED | `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md` |
+| **Phase 6.34F** | Nano Repair Items, Loot & SRP | PLANNED | `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md` |
+| **Phase 6.34G** | National HUB, Rescue Center & AdminCP UX | PLANNED | `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md` |
 | **Phase 6.35** | GEAR Logistics, Repair & Pilot Recovery | PLANNED / NOT STARTED | `docs/WORLD_GEAR_LOGISTICS_REPAIR.md`, `docs/WORLD_ADMINCP_CONFIG_REFERENCE.md` |
 | **Phase 6.36** | National Population & Personnel Pools | PLANNED / NOT STARTED | `docs/WORLD_NATIONAL_PERSONNEL_TRAINING.md`, `docs/WORLD_NATIONAL_ECONOMY.md` |
 | **Phase 6.37** | FREESKA & NEWHORIZON Training | PLANNED / NOT STARTED | `docs/WORLD_NATIONAL_PERSONNEL_TRAINING.md`, `docs/WORLD_ADMINCP_CONFIG_REFERENCE.md` |
@@ -77,10 +83,38 @@ Temporary heuristics in `lib/game/world/mission-dispatch.ts` (+15% player comman
 - **Prerequisite**: Phase 6.32
 - **Scope**: Player machine skill deployment UI, Commander Strategy selection and queue confirm UI, Player and NPC retreat interaction, Support Call-in Manual/Auto controls, 2D tactical battlefield visualization, live combat logs.
 
-### Phase 6.34 — Pilot Survival & Rescue (DONE)
+### Phase 6.34 — Pilot Survival & Rescue Baseline (DONE)
 - **Primary Documents**: `docs/WORLD_PILOT_SURVIVAL_RESCUE.md`
 - **Prerequisite**: Phase 6.32 (consumes destroyed GEAR candidates)
-- **Scope**: Post-destruction Survival Score calculation (`SAFE`, `PROTECTED`, `CRITICAL`, `KIA`), SAR extraction vs. capture resolution, rescue facility power hooks, dynamic POW hostage rescue mission hooks, AdminCP SAR configuration, National POW Registry, and Combat Conclusion UI integration.
+- **Scope**: Legacy baseline: Post-destruction Survival Score calculation (`SAFE`, `PROTECTED`, `CRITICAL`, `KIA`), SAR extraction vs. capture resolution, rescue facility power hooks, dynamic POW hostage rescue mission hooks, AdminCP SAR configuration, National POW Registry, and Combat Conclusion UI integration.
+
+### Phase 6.34A — Survival & Rescue Architecture / Re-Planning (PLANNING APPROVED)
+- **Primary Documents**: `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md`
+- **Scope**: Umbrella architecture and re-planning baseline for Phase 6.34 enhancement and expansion. Fully approved and frozen in `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md`.
+
+### Phase 6.34B — Core Survival, Protection & FATAL (PLANNED)
+- **Primary Documents**: `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md`
+- **Scope**: CombatEffectivenessRatio (continuous 3-component), Tactical separation, GearArmyAdvantagePoint, SectorSecurityPower, EffectivePower, SurvivalScore, ProtectionCapabilityRatio, FatalityPressureRatio, FATAL migration, focused tests.
+
+### Phase 6.34C — POW Decoupling & MISSING Search (PLANNED)
+- **Primary Documents**: `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md`
+- **Scope**: Remove auto rescue raid, POW persistence, prisoner exchange hooks, MISSING lifecycle, LARGE/STANDARD search, search attempts (max 3), MissingAgeDays decay, 30-day final waiting period, search resolution.
+
+### Phase 6.34D — Rescue Fleet, Personnel & Base Selection (PLANNED)
+- **Primary Documents**: `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md`
+- **Scope**: Rescue Operation state/data, Rescue Fleet composition, Command/Rescue Ships, escort GEAR ratio constraint (>= 1.5x), personnel pools, Commander approval, VSS Rescue Council emergency authority, Rescue Facility capability, nearest eligible Base via Dijkstra, operation snapshots.
+
+### Phase 6.34E — Route Navigation, Encounters & Checkpoint Repair (PLANNED)
+- **Primary Documents**: `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md`
+- **Scope**: PlannedRoute / ActualRoute preservation, checkpoint travel, dynamic route reevaluation, SAFE / THREATENED / CLOSED, reroute, retry (3) / wait / extended retry (5), ETA history, background Combat V2 encounters, GEAR withdraw to hangar, checkpoint repair, readiness thresholds (65% / 85%).
+
+### Phase 6.34F — Nano Repair Items, Loot & SRP (PLANNED)
+- **Primary Documents**: `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md`
+- **Scope**: NanoRepairKit catalog (S/A/B/C), operation inventory, auto-use minimizing waste, sequential loot chain (C->B->A->S), SRP operation budget, return conversion, event SRP, 1M SRP cap, overflow Credits hook.
+
+### Phase 6.34G — National HUB, Rescue Center & AdminCP UX (PLANNED)
+- **Primary Documents**: `docs/PHASE_6_34A_RESCUE_ARCHITECTURE_PLAN.md`
+- **Scope**: National HUB Rescue Summary widget, Rescue Center (5 tabs: Overview, Operations, Fleets, Personnel, Supply/SRP, History), operation detail, route/ETA/history visualization, fleet/personnel/SRP views, Battle Casualty Report, AdminCP 4-group consolidation, final UX integration.
 
 ### Phase 6.35 — GEAR Logistics, Repair & Pilot Recovery
 - **Primary Documents**: `docs/WORLD_GEAR_LOGISTICS_REPAIR.md`
@@ -147,7 +181,28 @@ Phase 6.31 (DONE)
 Phase 6.32 (Combat V2 Core Engine — DONE)
       ├───────────────────────────────┐
       ▼                               ▼
-Phase 6.33 (Combat Command UI — DONE)   Phase 6.34 (Pilot Survival & Rescue — DONE)
+Phase 6.33 (Combat Command UI — DONE)   Phase 6.34 (Legacy Baseline — DONE)
+                                      │
+                                      ▼
+                                 Phase 6.34A (Architecture / Re-Planning — PLANNING APPROVED)
+                                      │
+                                      ▼
+                                 Phase 6.34B (Core Survival, Protection & FATAL — PLANNED)
+                                      │
+                                      ▼
+                                 Phase 6.34C (POW Decoupling & MISSING Search — PLANNED)
+                                      │
+                                      ▼
+                                 Phase 6.34D (Rescue Fleet, Personnel & Base Selection — PLANNED)
+                                      │
+                                      ▼
+                                 Phase 6.34E (Route Navigation, Encounters & Checkpoint Repair — PLANNED)
+                                      │
+                                      ▼
+                                 Phase 6.34F (Nano Repair Items, Loot & SRP — PLANNED)
+                                      │
+                                      ▼
+                                 Phase 6.34G (National HUB, Rescue Center & AdminCP UX — PLANNED)
                                       │
                                       ▼
                                  Phase 6.35 (GEAR Logistics & Repair)

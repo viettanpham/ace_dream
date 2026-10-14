@@ -24,8 +24,18 @@ import {
   Trash2,
   X,
   Zap,
+  LifeBuoy,
+  HeartPulse,
+  UserCheck,
+  Lock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  DEFAULT_SURVIVAL_CONFIG,
+  getSurvivalConfig,
+  validateSurvivalConfig,
+} from "@/lib/game/world/pilot-survival-engine"
+import type { SurvivalConfig } from "@/lib/game/world/pilot-survival-types"
 import { playClickSound, playLevelUpSound, playShieldSound } from "@/lib/game/audio"
 import {
   DEFAULT_SIMULATOR_CONFIG,
@@ -51,7 +61,7 @@ import {
 } from "@/lib/game/world/threat-engine"
 import type { WorldSector, WorldState, WorldThreatConfig } from "@/lib/game/world/types"
 
-export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "threat" | "triggers" | "storage"
+export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "threat" | "survival" | "triggers" | "storage"
 
 export interface AdminSettingsModalProps {
   isOpen: boolean
@@ -127,6 +137,7 @@ export function AdminSettingsModal({
       generator: true,
       policy: true,
       threat: true,
+      survival: true,
       triggers: true,
       storage: true,
     })
@@ -142,6 +153,11 @@ export function AdminSettingsModal({
     return worldState ? getOperationsArchiveConfig(worldState) : { eventArchiveQuota: 60, battleArchiveQuota: 40 }
   })
   const [archiveSavedFeedback, setArchiveSavedFeedback] = useState(false)
+
+  // Survival & Rescue Config Form state (Phase 6.34)
+  const [survivalForm, setSurvivalForm] = useState<SurvivalConfig>(() => getSurvivalConfig(worldState))
+  const [survivalSavedFeedback, setSurvivalSavedFeedback] = useState(false)
+  const [survivalErrors, setSurvivalErrors] = useState<string[]>([])
 
   // Threat Config & Sector Threat Form states (Phase 6.33_FIX4)
   const [threatForm, setThreatForm] = useState<WorldThreatConfig>(() => getWorldThreatConfig(worldState))
@@ -181,6 +197,7 @@ export function AdminSettingsModal({
           updatedThreats[id] = sec.threatLevel
         }
         setSectorThreatsForm(updatedThreats)
+        setSurvivalForm(getSurvivalConfig(worldState))
       }
     }
   }, [isOpen, simulatorConfig, worldState])
@@ -372,6 +389,44 @@ export function AdminSettingsModal({
     }
   }
 
+  // Lưu cấu hình Sinh tồn & Cứu nạn SAR (Phase 6.34)
+  const handleSaveSurvivalConfig = () => {
+    playClickSound()
+    const validation = validateSurvivalConfig(survivalForm)
+    if (!validation.valid) {
+      setSurvivalErrors(validation.errors)
+      return
+    }
+    setSurvivalErrors([])
+    if (worldState) {
+      worldState.survivalConfig = {
+        ...survivalForm,
+        lastModified: Date.now(),
+      }
+      saveWorldState(worldState)
+    }
+    playShieldSound()
+    setSurvivalSavedFeedback(true)
+    setTimeout(() => setSurvivalSavedFeedback(false), 2500)
+  }
+
+  // Khôi phục mặc định cấu hình SAR (Phase 6.34)
+  const handleResetSurvivalToDefault = () => {
+    playClickSound()
+    setSurvivalForm({ ...DEFAULT_SURVIVAL_CONFIG })
+    setSurvivalErrors([])
+    if (worldState) {
+      worldState.survivalConfig = {
+        ...DEFAULT_SURVIVAL_CONFIG,
+        lastModified: Date.now(),
+      }
+      saveWorldState(worldState)
+    }
+    playShieldSound()
+    setSurvivalSavedFeedback(true)
+    setTimeout(() => setSurvivalSavedFeedback(false), 2500)
+  }
+
   // Xác nhận Reset World thông thường
   const handleConfirmResetDialog = () => {
     onConfirmResetWorld()
@@ -458,8 +513,9 @@ export function AdminSettingsModal({
             { id: "generator", label: "2. Bộ Sinh Sự Kiện", icon: Flame },
             { id: "policy", label: "3. Chính Sách Chiến Lược", icon: Sparkles },
             { id: "threat", label: "4. Threat & HP AI", icon: ShieldAlert },
-            { id: "triggers", label: "5. Thử Nghiệm Nhanh", icon: Zap },
-            { id: "storage", label: "6. Lưu Trữ & Reset", icon: Database },
+            { id: "survival", label: "5. Sinh Tồn & SAR", icon: LifeBuoy },
+            { id: "triggers", label: "6. Thử Nghiệm Nhanh", icon: Zap },
+            { id: "storage", label: "7. Lưu Trữ & Reset", icon: Database },
           ].map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -1133,7 +1189,326 @@ export function AdminSettingsModal({
           )}
 
           {/* ================================================================
-              KHỐI 5: KÍCH HOẠT SỰ KIỆN KHẨN CẤP (TRIGGERS)
+              KHỐI 5: CẤU HÌNH SINH TỒN & CỨU HỘ SAR (PILOT SURVIVAL & RESCUE - PHASE 6.34)
+              ================================================================ */}
+          {(activeTab === "all" || activeTab === "survival") && (
+            <div className="rounded border border-cyan-500/50 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">
+              <div
+                onClick={() => toggleSection("survival")}
+                className="flex items-center justify-between border-b border-cyan-900/60 pb-2.5 cursor-pointer hover:text-cyan-300 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  {collapsedSections.survival ? (
+                    <ChevronRight className="size-4 text-zinc-400" />
+                  ) : (
+                    <ChevronDown className="size-4 text-cyan-400" />
+                  )}
+                  <LifeBuoy className="size-4 text-cyan-400" />
+                  <h3 className="text-xs font-bold uppercase text-cyan-300 tracking-wider">
+                    5. Cấu Hình Sinh Tồn & Cứu Hộ SAR // Pilot Survival & Rescue (Phase 6.34)
+                  </h3>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono">
+                  <span className="text-cyan-400 font-bold">
+                    Safe &ge; {survivalForm.thresholdSafe} · Prot &ge; {survivalForm.thresholdProtected} · Crit &ge; {survivalForm.thresholdCritical}
+                  </span>
+                  <span className="text-zinc-500">
+                    {collapsedSections.survival ? "[Thu Gọn]" : "[Mở Rộng]"}
+                  </span>
+                </div>
+              </div>
+
+              {!collapsedSections.survival && (
+                <div className="space-y-4">
+                  {/* Bất biến hệ thống & Thuyết minh cơ chế */}
+                  <div className="rounded border border-cyan-950 bg-cyan-950/20 p-3 text-xs space-y-1.5 text-cyan-200">
+                    <div className="font-bold flex items-center gap-1.5 text-cyan-300">
+                      <HeartPulse className="size-3.5 text-rose-400" />
+                      <span>BẤT BIẾN HỆ THỐNG: TÁCH BIỆT SINH MẠNG PHI CÔNG KHỎI CỖ MÁY GEAR</span>
+                    </div>
+                    <p className="text-zinc-300 leading-relaxed font-mono text-[11px] bg-black/60 p-2 rounded border border-cyan-900/50">
+                      GEAR HP = 0 chỉ xác định cỗ máy bị phá hủy hoàn toàn. Phi công kích hoạt khoang phóng thoát hiểm (Ejection Pod) và được tính điểm sinh tồn (0 - 100) độc lập.
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 font-mono text-[11px]">
+                      <div className="bg-black/50 p-2 rounded border border-emerald-900/50">
+                        <span className="text-emerald-400 font-bold block">SAFE (&ge; {survivalForm.thresholdSafe})</span>
+                        <span className="text-zinc-400 text-[10px]">Thoát hiểm trọn vẹn, định vị chuẩn xác, giải cứu lập tức.</span>
+                      </div>
+                      <div className="bg-black/50 p-2 rounded border border-cyan-900/50">
+                        <span className="text-cyan-400 font-bold block">PROTECTED (&ge; {survivalForm.thresholdProtected})</span>
+                        <span className="text-zinc-400 text-[10px]">Đồng minh che chắn hỏa lực, đảm bảo an toàn tính mạng.</span>
+                      </div>
+                      <div className="bg-black/50 p-2 rounded border border-amber-900/50">
+                        <span className="text-amber-400 font-bold block">CRITICAL (&ge; {survivalForm.thresholdCritical})</span>
+                        <span className="text-zinc-400 text-[10px]">Buồng lái kẹt mảnh vỡ, giải quyết qua xác suất SAR hậu trận.</span>
+                      </div>
+                      <div className="bg-black/50 p-2 rounded border border-rose-900/50">
+                        <span className="text-rose-400 font-bold block">KIA (&lt; {survivalForm.thresholdCritical})</span>
+                        <span className="text-zinc-400 text-[10px]">Lò phản ứng nổ tung, tử trận vĩnh viễn không thể cứu chữa.</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Form điều chỉnh tham số */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Cột 1: Các ngưỡng điểm sinh tồn */}
+                    <div className="space-y-3 rounded border border-zinc-800 bg-black/40 p-3">
+                      <span className="font-bold text-cyan-300 text-xs block border-b border-zinc-800 pb-1">
+                        1. CÁC NGƯỠNG ĐIỂM SINH TỒN (SURVIVAL SCORE THRESHOLDS)
+                      </span>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-zinc-300">Ngưỡng SAFE (Điểm tối thiểu):</span>
+                          <span className="font-mono text-emerald-400 font-bold">{survivalForm.thresholdSafe} điểm</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={55}
+                          max={90}
+                          step={1}
+                          value={survivalForm.thresholdSafe}
+                          onChange={(e) =>
+                            setSurvivalForm({
+                              ...survivalForm,
+                              thresholdSafe: parseInt(e.target.value, 10),
+                            })
+                          }
+                          className="w-full accent-emerald-400 cursor-pointer"
+                        />
+                        <span className="text-[10px] text-zinc-500 block">
+                          Mặc định: 70. Đạt ngưỡng này đảm bảo 100% phi công thoát hiểm an toàn.
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-zinc-300">Ngưỡng PROTECTED (Điểm tối thiểu):</span>
+                          <span className="font-mono text-cyan-400 font-bold">{survivalForm.thresholdProtected} điểm</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={35}
+                          max={65}
+                          step={1}
+                          value={survivalForm.thresholdProtected}
+                          onChange={(e) =>
+                            setSurvivalForm({
+                              ...survivalForm,
+                              thresholdProtected: parseInt(e.target.value, 10),
+                            })
+                          }
+                          className="w-full accent-cyan-400 cursor-pointer"
+                        />
+                        <span className="text-[10px] text-zinc-500 block">
+                          Mặc định: 50. Từ {survivalForm.thresholdProtected} đến {survivalForm.thresholdSafe - 1} điểm.
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-zinc-300">Ngưỡng CRITICAL (Điểm tối thiểu):</span>
+                          <span className="font-mono text-amber-400 font-bold">{survivalForm.thresholdCritical} điểm</span>
+                        </div>
+                        <input
+                          type="range"
+                          min={15}
+                          max={45}
+                          step={1}
+                          value={survivalForm.thresholdCritical}
+                          onChange={(e) =>
+                            setSurvivalForm({
+                              ...survivalForm,
+                              thresholdCritical: parseInt(e.target.value, 10),
+                            })
+                          }
+                          className="w-full accent-amber-400 cursor-pointer"
+                        />
+                        <span className="text-[10px] text-zinc-500 block">
+                          Mặc định: 30. Dưới {survivalForm.thresholdCritical} điểm phi công bị tính là KIA (Tử trận).
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Cột 2: Xác suất cứu hộ & bắt giữ */}
+                    <div className="space-y-3 rounded border border-zinc-800 bg-black/40 p-3">
+                      <span className="font-bold text-cyan-300 text-xs block border-b border-zinc-800 pb-1">
+                        2. XÁC SUẤT GIẢI CỨU & BẮT GIỮ (SAR & CAPTURE PROBABILITIES)
+                      </span>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-zinc-300">Xác Suất Giải Cứu Cơ Sở (Base Rescue):</span>
+                          <span className="font-mono text-emerald-400 font-bold">
+                            {Math.round(survivalForm.baseRescueChance * 100)}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0.05}
+                          max={0.8}
+                          step={0.05}
+                          value={survivalForm.baseRescueChance}
+                          onChange={(e) =>
+                            setSurvivalForm({
+                              ...survivalForm,
+                              baseRescueChance: parseFloat(e.target.value),
+                            })
+                          }
+                          className="w-full accent-emerald-400 cursor-pointer"
+                        />
+                        <span className="text-[10px] text-zinc-500 block">
+                          Mặc định: 30%. Tỷ lệ giải cứu cơ sở của đội SAR tiền phương.
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-zinc-300">Xác Suất Kẻ Địch Bắt Giữ (Base Capture):</span>
+                          <span className="font-mono text-purple-400 font-bold">
+                            {Math.round(survivalForm.baseCaptureChance * 100)}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0.1}
+                          max={0.8}
+                          step={0.05}
+                          value={survivalForm.baseCaptureChance}
+                          onChange={(e) =>
+                            setSurvivalForm({
+                              ...survivalForm,
+                              baseCaptureChance: parseFloat(e.target.value),
+                            })
+                          }
+                          className="w-full accent-purple-400 cursor-pointer"
+                        />
+                        <span className="text-[10px] text-zinc-500 block">
+                          Mặc định: 40%. Tỷ lệ bị The Void bắt giam làm tù binh (POW).
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-zinc-300">Thưởng Cơ Sở SAR Trên Mỗi Cấp:</span>
+                          <span className="font-mono text-cyan-400 font-bold">
+                            +{Math.round(survivalForm.facilityRescuePowerBonusPerTier * 100)}%
+                          </span>
+                        </div>
+                        <input
+                          type="range"
+                          min={0.02}
+                          max={0.25}
+                          step={0.01}
+                          value={survivalForm.facilityRescuePowerBonusPerTier}
+                          onChange={(e) =>
+                            setSurvivalForm({
+                              ...survivalForm,
+                              facilityRescuePowerBonusPerTier: parseFloat(e.target.value),
+                            })
+                          }
+                          className="w-full accent-cyan-400 cursor-pointer"
+                        />
+                        <span className="text-[10px] text-zinc-500 block">
+                          Mặc định: +10% mỗi cấp cơ sở cứu hộ tại Sector.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hiển thị lỗi validation nếu có */}
+                  {survivalErrors.length > 0 && (
+                    <div className="rounded border border-red-500/60 bg-red-950/40 p-2.5 text-xs text-red-300 space-y-1 font-mono">
+                      <div className="font-bold flex items-center gap-1.5">
+                        <AlertTriangle className="size-3.5 text-red-400" />
+                        <span>Lỗi cấu hình SAR:</span>
+                      </div>
+                      <ul className="list-disc pl-5 text-[11px] space-y-0.5">
+                        {survivalErrors.map((err, idx) => (
+                          <li key={idx}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Nút hành động Lưu & Reset */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleResetSurvivalToDefault}
+                        className="rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 px-3 py-1.5 text-xs text-zinc-300 hover:text-white cursor-pointer"
+                      >
+                        Khôi Phục Mặc Định (Defaults)
+                      </button>
+                      {survivalSavedFeedback && (
+                        <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
+                          <CheckCircle2 className="size-3.5" />
+                          <span>Đã lưu cấu hình SAR thành công!</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSaveSurvivalConfig}
+                      className="flex items-center gap-1.5 rounded border border-cyan-500/60 bg-cyan-950/60 px-4 py-1.5 text-xs font-bold text-cyan-200 hover:bg-cyan-900/70 transition-colors cursor-pointer shadow-md shadow-cyan-950/40"
+                    >
+                      <Save className="size-3.5" />
+                      <span>Lưu Cấu Hình Sinh Tồn & SAR</span>
+                    </button>
+                  </div>
+
+                  {/* Sổ Bộ Tù Binh Chiến Tranh Quốc Gia (National POW Registry) */}
+                  <div className="rounded border border-purple-900/60 bg-purple-950/20 p-3 space-y-2">
+                    <div className="flex items-center justify-between border-b border-purple-900/50 pb-1.5">
+                      <div className="flex items-center gap-2 text-purple-300 font-bold text-xs uppercase">
+                        <Lock className="size-3.5 text-purple-400" />
+                        <span>SỔ BỘ TÙ BINH CHIẾN TRANH QUỐC GIA // NATIONAL POW REGISTRY ({worldState?.nationalPowRegistry?.length || 0})</span>
+                      </div>
+                      <span className="text-[11px] text-zinc-400">
+                        Phi công bị The Void bắt giữ • Tự động kích hoạt nhiệm vụ SAR
+                      </span>
+                    </div>
+
+                    {(!worldState?.nationalPowRegistry || worldState.nationalPowRegistry.length === 0) ? (
+                      <div className="py-3 text-center text-zinc-500 text-xs italic">
+                        Hiện tại không có phi công đồng minh nào nằm trong danh sách tù binh của kẻ địch.
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                        {worldState.nationalPowRegistry.map((pow, idx) => (
+                          <div
+                            key={idx}
+                            className="flex flex-wrap items-center justify-between gap-2 p-2 rounded bg-black/50 border border-purple-900/40 text-[11px]"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-200">{pow.pilotName}</span>
+                              <span className="text-zinc-400">({pow.gearName})</span>
+                              <span className="text-zinc-500">• Bị bắt tại Sector {pow.sectorId} (Ngày {pow.capturedAtDay})</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-purple-950 border border-purple-600/50 text-purple-300 font-bold text-[10px]">
+                                {pow.status}
+                              </span>
+                              {pow.rescueDispatchId && (
+                                <span className="text-cyan-400 text-[10px] underline">
+                                  Lệnh điều phối: {pow.rescueDispatchId}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ================================================================
+              KHỐI 6: KÍCH HOẠT SỰ KIỆN KHẨN CẤP (TRIGGERS)
               ================================================================ */}
           {(activeTab === "all" || activeTab === "triggers") && (
             <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">

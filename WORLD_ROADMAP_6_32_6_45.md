@@ -18,7 +18,7 @@
 | **Phase 6.33_FIX2** | **Settings & UI Scaling Preservation** | **DONE** | `lib/game/ui-settings.ts`, `global-settings-modal.tsx` |
 | **Phase 6.33_FIX3** | **Typography Scaling & Text Overflow Resilience** | **DONE** | `lib/game/ui-settings.ts`, `components/game/world/combat-v2` |
 | **Phase 6.33_FIX4** | **Dispatch Destination UX, Canonical Threat & Threat AdminCP** | **DONE** | `threat-engine.ts`, `quick-dispatch-dock.tsx`, `admin-settings-modal.tsx` |
-| **Phase 6.34** | Pilot Survival & Rescue | PLANNED / NOT STARTED | `docs/WORLD_PILOT_SURVIVAL_RESCUE.md`, `docs/WORLD_COMBAT_V2_DESIGN.md` |
+| **Phase 6.34** | **Pilot Survival & Rescue** | **DONE** | `docs/WORLD_PILOT_SURVIVAL_RESCUE.md`, `lib/game/world/pilot-survival-engine.ts` |
 | **Phase 6.35** | GEAR Logistics, Repair & Pilot Recovery | PLANNED / NOT STARTED | `docs/WORLD_GEAR_LOGISTICS_REPAIR.md`, `docs/WORLD_ADMINCP_CONFIG_REFERENCE.md` |
 | **Phase 6.36** | National Population & Personnel Pools | PLANNED / NOT STARTED | `docs/WORLD_NATIONAL_PERSONNEL_TRAINING.md`, `docs/WORLD_NATIONAL_ECONOMY.md` |
 | **Phase 6.37** | FREESKA & NEWHORIZON Training | PLANNED / NOT STARTED | `docs/WORLD_NATIONAL_PERSONNEL_TRAINING.md`, `docs/WORLD_ADMINCP_CONFIG_REFERENCE.md` |
@@ -77,10 +77,10 @@ Temporary heuristics in `lib/game/world/mission-dispatch.ts` (+15% player comman
 - **Prerequisite**: Phase 6.32
 - **Scope**: Player machine skill deployment UI, Commander Strategy selection and queue confirm UI, Player and NPC retreat interaction, Support Call-in Manual/Auto controls, 2D tactical battlefield visualization, live combat logs.
 
-### Phase 6.34 — Pilot Survival & Rescue
+### Phase 6.34 — Pilot Survival & Rescue (DONE)
 - **Primary Documents**: `docs/WORLD_PILOT_SURVIVAL_RESCUE.md`
 - **Prerequisite**: Phase 6.32 (consumes destroyed GEAR candidates)
-- **Scope**: Post-destruction Survival Score calculation (`SAFE`, `PROTECTED`, `CRITICAL`, `KIA`), SAR extraction vs. capture resolution, rescue facility power hooks, dynamic POW hostage rescue mission hooks.
+- **Scope**: Post-destruction Survival Score calculation (`SAFE`, `PROTECTED`, `CRITICAL`, `KIA`), SAR extraction vs. capture resolution, rescue facility power hooks, dynamic POW hostage rescue mission hooks, AdminCP SAR configuration, National POW Registry, and Combat Conclusion UI integration.
 
 ### Phase 6.35 — GEAR Logistics, Repair & Pilot Recovery
 - **Primary Documents**: `docs/WORLD_GEAR_LOGISTICS_REPAIR.md`
@@ -147,7 +147,7 @@ Phase 6.31 (DONE)
 Phase 6.32 (Combat V2 Core Engine — DONE)
       ├───────────────────────────────┐
       ▼                               ▼
-Phase 6.33 (Combat Command UI)   Phase 6.34 (Pilot Survival & Rescue)
+Phase 6.33 (Combat Command UI — DONE)   Phase 6.34 (Pilot Survival & Rescue — DONE)
                                       │
                                       ▼
                                  Phase 6.35 (GEAR Logistics & Repair)

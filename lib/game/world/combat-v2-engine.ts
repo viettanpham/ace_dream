@@ -32,6 +32,8 @@ import type {
 } from "./combat-v2-types"
 import type { CombatResultReceipt, WorldState, CombatResolutionResult } from "./types"
 import { commitCombatResultReceipt } from "./combat-adapter"
+import { processCombatDownedPilots, applyPilotSurvivalToWorldState } from "./pilot-survival-engine"
+import type { SurvivalConfig } from "./pilot-survival-types"
 
 import { executeSupportRound } from "./combat-v2-support"
 
@@ -683,6 +685,7 @@ export function executeCombatV2Simulation(
     maxRounds?: number
     prng?: WorldPRNG
     config?: CombatV2Config
+    survivalConfig?: SurvivalConfig
   }
 ): CombatV2Result {
   const prng = options?.prng || new WorldPRNG(snapshot.seed || 12345)
@@ -739,6 +742,20 @@ export function executeCombatV2Simulation(
 
   const victory = outcome === "allied_victory"
 
+  // Phase 6.34: Xử lý sinh tồn và tìm kiếm cứu nạn phi công (SAR)
+  const pilotSurvivalRecords = processCombatDownedPilots({
+    encounterId: snapshot.encounterId,
+    transactionId: snapshot.transactionId,
+    sectorId: snapshot.sectorId,
+    victory,
+    alliedAggregate: currentAlliedAgg,
+    enemyAggregate: currentEnemyAgg,
+    candidates: downedPilotCandidates,
+    config: options?.survivalConfig,
+    hasActiveSupport: snapshot.alliedSupport && snapshot.alliedSupport.length > 0,
+    prng: () => prng.nextFloat(),
+  })
+
   return {
     encounterId: snapshot.encounterId,
     transactionId: snapshot.transactionId,
@@ -757,6 +774,7 @@ export function executeCombatV2Simulation(
     enemyCommander: snapshot.enemyCommander,
     roundLogs,
     downedPilotCandidates,
+    pilotSurvivalRecords,
   }
 }
 
@@ -836,6 +854,14 @@ export function combatV2ResultToReceipt(result: CombatV2Result): CombatResultRec
     rating = "C"
   }
 
+  let sarText = ""
+  if (result.pilotSurvivalRecords && result.pilotSurvivalRecords.length > 0) {
+    const rescued = result.pilotSurvivalRecords.filter((r) => r.finalStatus === "RESCUED").length
+    const captured = result.pilotSurvivalRecords.filter((r) => r.finalStatus === "CAPTURED").length
+    const kia = result.pilotSurvivalRecords.filter((r) => r.finalStatus === "KIA").length
+    sarText = ` | SAR: ${rescued} Được cứu, ${captured} Bị bắt, ${kia} Tử trận.`
+  }
+
   return {
     transactionId: result.transactionId,
     encounterId: result.encounterId,
@@ -846,7 +872,7 @@ export function combatV2ResultToReceipt(result: CombatV2Result): CombatResultRec
     playerRemainingHpPercent: result.alliedAggregate.hpPercent,
     enemyRemainingHpPercent: result.enemyAggregate.hpPercent,
     tacticalRating: rating,
-    logSummary: `[COMBAT V2] Kết quả: ${result.outcome.toUpperCase()} sau ${result.completedRounds} hiệp. Quân VSS: ${result.alliedAggregate.activeCount} sống sót, ${result.alliedAggregate.destroyedCount} tổn thất.`,
+    logSummary: `[COMBAT V2] Kết quả: ${result.outcome.toUpperCase()} sau ${result.completedRounds} hiệp. Quân VSS: ${result.alliedAggregate.activeCount} sống sót, ${result.alliedAggregate.destroyedCount} tổn thất.${sarText}`,
     completedAtTimestamp: result.completedAtTimestamp,
   }
 }
@@ -859,5 +885,20 @@ export function commitCombatV2Result(
   result: CombatV2Result
 ): CombatResolutionResult {
   const receipt = combatV2ResultToReceipt(result)
-  return commitCombatResultReceipt(state, receipt)
+  const resolution = commitCombatResultReceipt(state, receipt)
+
+  // Phase 6.34: Áp dụng kết quả sinh tồn của phi công vào WorldState một cách an toàn và lũy đẳng
+  if (resolution.applied || resolution.alreadyCommitted) {
+    if (result.pilotSurvivalRecords && result.pilotSurvivalRecords.length > 0) {
+      const sarSummary = applyPilotSurvivalToWorldState(state, result.pilotSurvivalRecords, result.sectorId)
+      resolution.pilotSurvivalSummary = {
+        rescued: sarSummary.rescuedCount,
+        captured: sarSummary.capturedCount,
+        kia: sarSummary.kiaCount,
+        unlockedRescueMissions: sarSummary.unlockedRescueMissions,
+      }
+    }
+  }
+
+  return resolution
 }

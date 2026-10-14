@@ -11,6 +11,7 @@
  */
 
 import type { CombatVersion, FactionId } from "./types"
+import type { PilotSurvivalRecord } from "./pilot-survival-types"
 
 /**
  * The four non-negotiable operational states of a GEAR on the Combat V2 battlefield
@@ -269,6 +270,7 @@ export interface CombatV2Result {
   enemyCommander: CommanderAuthorityState
   roundLogs: CombatV2RoundLog[]
   downedPilotCandidates: DownedPilotCandidate[]
+  pilotSurvivalRecords?: PilotSurvivalRecord[]
 }
 
 /**

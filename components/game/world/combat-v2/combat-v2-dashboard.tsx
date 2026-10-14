@@ -41,6 +41,8 @@ import { PlayerGearCombatPanel } from "./player-gear-combat-panel"
 import { CommanderStrategyPanel } from "./commander-strategy-panel"
 import { SupportPanel } from "./support-panel"
 import { CombatLogViewer } from "./combat-log-viewer"
+import { PilotSurvivalReport } from "./pilot-survival-report"
+import { processCombatDownedPilots, getSurvivalConfig } from "@/lib/game/world/pilot-survival-engine"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -231,11 +233,23 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
           })),
       }
 
-      setCombatResult(finalResult)
-
-      // Thực hiện commit an toàn vào WORLD State
+      // Phase 6.34: Tự động tính toán điểm sinh tồn và kết quả giải cứu SAR
       try {
         const worldRes = loadWorldState()
+        const survConfig = getSurvivalConfig(worldRes.state)
+        finalResult.pilotSurvivalRecords = processCombatDownedPilots({
+          encounterId: snapshot.encounterId,
+          transactionId: snapshot.transactionId,
+          sectorId: snapshot.sectorId,
+          victory: finalResult.victory,
+          alliedAggregate: stepResult.alliedAggregate,
+          enemyAggregate: stepResult.enemyAggregate,
+          candidates: finalResult.downedPilotCandidates,
+          config: survConfig,
+          hasActiveSupport: snapshot.alliedSupport && snapshot.alliedSupport.length > 0,
+        })
+
+        // Thực hiện commit an toàn vào WORLD State
         const resolution = commitCombatV2Result(worldRes.state, finalResult)
         saveWorldState(worldRes.state)
         setCommitResult(resolution)
@@ -243,6 +257,8 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
       } catch (err) {
         console.error("Lỗi commit Combat V2 Result:", err)
       }
+
+      setCombatResult(finalResult)
     }
 
     setSnapshot({ ...snapshot })
@@ -309,10 +325,22 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
         })),
     }
 
-    setCombatResult(finalResult)
-
+    // Phase 6.34: Tự động tính toán điểm sinh tồn và kết quả giải cứu SAR
     try {
       const worldRes = loadWorldState()
+      const survConfig = getSurvivalConfig(worldRes.state)
+      finalResult.pilotSurvivalRecords = processCombatDownedPilots({
+        encounterId: snapshot.encounterId,
+        transactionId: snapshot.transactionId,
+        sectorId: snapshot.sectorId,
+        victory: finalResult.victory,
+        alliedAggregate: finalAlliedAgg,
+        enemyAggregate: finalEnemyAgg,
+        candidates: finalResult.downedPilotCandidates,
+        config: survConfig,
+        hasActiveSupport: snapshot.alliedSupport && snapshot.alliedSupport.length > 0,
+      })
+
       const resolution = commitCombatV2Result(worldRes.state, finalResult)
       saveWorldState(worldRes.state)
       setCommitResult(resolution)
@@ -321,6 +349,7 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
       console.error("Lỗi commit Auto-Resolve Combat V2 Result:", err)
     }
 
+    setCombatResult(finalResult)
     setSnapshot({ ...snapshot })
     setIsProcessing(false)
   }
@@ -675,15 +704,25 @@ export const CombatV2Dashboard: React.FC<CombatV2DashboardProps> = ({
             </div>
 
             <div className="rounded bg-slate-950 p-3 border border-slate-800">
-              <span className="text-slate-400 text-xs block mb-1">ỨNG VIÊN PHI CÔNG CẦN CỨU HỘ</span>
-              <div className="text-sm font-bold text-amber-300">
-                {combatResult.downedPilotCandidates.length} phi công
+              <span className="text-slate-400 text-xs block mb-1">KẾT QUẢ CỨU NẠN SAR (PHASE 6.34)</span>
+              <div className="text-sm font-bold text-cyan-300">
+                {combatResult.pilotSurvivalRecords?.filter((r) => r.finalStatus === "RESCUED").length || 0} ĐÃ CỨU / {combatResult.downedPilotCandidates.length} PHI CÔNG
               </div>
-              <div className="text-xs text-slate-500">
-                Chuyển giao cho Phase 6.34 (Pilot Survival & Rescue)
+              <div className="text-xs text-slate-400">
+                {combatResult.pilotSurvivalRecords?.filter((r) => r.finalStatus === "CAPTURED").length || 0} Tù binh (POW) • {combatResult.pilotSurvivalRecords?.filter((r) => r.finalStatus === "KIA").length || 0} Tử trận
               </div>
             </div>
           </div>
+
+          {/* Detailed Pilot Survival & SAR Report */}
+          {combatResult.pilotSurvivalRecords && combatResult.pilotSurvivalRecords.length > 0 && (
+            <div className="mb-4">
+              <PilotSurvivalReport
+                records={combatResult.pilotSurvivalRecords}
+                victory={combatResult.victory}
+              />
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 border-t border-slate-800 pt-3">
             {onExit && (

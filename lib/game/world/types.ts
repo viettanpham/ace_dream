@@ -5,6 +5,22 @@
 
 export type FactionId = "vss" | "void" | string
 
+import type {
+  SurvivalConfig,
+  PilotSurvivalRecord,
+  CapturedPilotRecord,
+  PilotSurvivalTier,
+  PilotFinalStatus,
+} from "./pilot-survival-types"
+
+export type {
+  SurvivalConfig,
+  PilotSurvivalRecord,
+  CapturedPilotRecord,
+  PilotSurvivalTier,
+  PilotFinalStatus,
+}
+
 export type SectorStage = "normal" | "threatened" | "under_siege" | "lost" | "recovery"
 
 export type SectorSovereignty = "vss" | "void" | "contested" | "neutral"
@@ -262,6 +278,12 @@ export interface CombatResolutionResult {
   }
   message: string
   error?: string
+  pilotSurvivalSummary?: {
+    rescued: number
+    captured: number
+    kia: number
+    unlockedRescueMissions?: string[]
+  }
 }
 
 /**
@@ -697,6 +719,10 @@ export interface WorldState {
   operationsArchiveConfig?: OperationsArchiveConfig
   // Phase 6.33_FIX4: Canonical HP-based Threat & Threat Configuration
   threatConfig?: WorldThreatConfig
+  // Phase 6.34: Pilot Survival, Search-and-Rescue & National POW Registry
+  survivalConfig?: SurvivalConfig
+  pilotSurvivalRegistry?: PilotSurvivalRecord[]
+  nationalPowRegistry?: CapturedPilotRecord[]
 }
 
 /**

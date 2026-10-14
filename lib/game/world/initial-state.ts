@@ -4,6 +4,7 @@ import type {
   WorldSector,
   WorldState,
 } from "./types"
+import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
 
 /**
  * 8 Sector vũ trụ khởi đầu chuẩn hóa theo quy chuẩn thiết kế B.5
@@ -495,5 +496,11 @@ export function createInitialWorldState(customSeed?: number): WorldState {
       threatFormulaMultiplier: 1.0,
       lastModified: now,
     },
+    survivalConfig: {
+      ...DEFAULT_SURVIVAL_CONFIG,
+      lastModified: now,
+    },
+    pilotSurvivalRegistry: [],
+    nationalPowRegistry: [],
   }
 }

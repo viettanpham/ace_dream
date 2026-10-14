@@ -7,6 +7,7 @@ import {
   DEFAULT_THREAT_CONFIG,
   isHeadquartersSector,
 } from "./threat-engine"
+import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
 import type {
   BackupMetadata,
   BackupSlot,
@@ -426,6 +427,32 @@ export function migrateWorldThreatState(state: WorldState): boolean {
 }
 
 /**
+ * Phase 6.34: Tự động khởi tạo và chuẩn hóa Sổ bộ Sinh tồn & Tù binh Phi công (Pilot Survival & Rescue)
+ */
+export function migratePilotSurvivalState(state: WorldState): boolean {
+  if (!state) return false
+  let migrated = false
+
+  if (!state.survivalConfig) {
+    state.survivalConfig = {
+      ...DEFAULT_SURVIVAL_CONFIG,
+      lastModified: Date.now(),
+    }
+    migrated = true
+  }
+  if (!state.pilotSurvivalRegistry) {
+    state.pilotSurvivalRegistry = []
+    migrated = true
+  }
+  if (!state.nationalPowRegistry) {
+    state.nationalPowRegistry = []
+    migrated = true
+  }
+
+  return migrated
+}
+
+/**
  * Nạp trạng thái World State với cơ chế tự động phục hồi khi file chính bị hỏng (Auto-Rescue)
  */
 export function loadWorldState(): LoadWorldResult {
@@ -462,7 +489,8 @@ export function loadWorldState(): LoadWorldResult {
     const migration = migrateWorldStateTo10Sectors(loadedData)
     // Phase 6.33_FIX5: Tự động di chuyển và chuẩn hóa Threat Max (HQ = 100,000,000, Standard = 1,000,000)
     const threatMigrated = migrateWorldThreatState(migration.state)
-    if (migration.migrated || threatMigrated) {
+    const survivalMigrated = migratePilotSurvivalState(migration.state)
+    if (migration.migrated || threatMigrated || survivalMigrated) {
       saveWorldState(migration.state)
     }
 
@@ -540,7 +568,8 @@ export function loadWorldState(): LoadWorldResult {
 
     const migration = migrateWorldStateTo10Sectors(backupData)
     const threatMigrated = migrateWorldThreatState(migration.state)
-    if (migration.migrated || threatMigrated) {
+    const survivalMigrated = migratePilotSurvivalState(migration.state)
+    if (migration.migrated || threatMigrated || survivalMigrated) {
       saveWorldState(migration.state)
     }
     return {

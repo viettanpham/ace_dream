@@ -385,33 +385,80 @@ Bảng đối chiếu toàn diện 13 Core Buildings sang danh mục mục tiêu
 
 ## 5. THIẾT KẾ ĐÃ ĐƯỢC DUYỆT (APPROVED DESIGN DECISIONS)
 
-Phần này ghi nhận đầy đủ các quyết định thiết kế mới về Tình trạng Khí tài (Condition), Cơ chế Bảo trì (Maintenance) và Năng lực Sửa chữa Dùng chung (Shared Repair Capacity).
+Phần này ghi nhận đầy đủ các quyết định thiết kế mới về Tình trạng Khí tài (Condition), Cơ chế Bảo trì (Maintenance), Cổng Điều kiện Chiến đấu (Combat Condition Gate), Sửa chữa Hiện trường & Xưởng, Năng lực Sửa chữa Căn cứ & Chiến hạm (Base & Ship Repair Capacity).
 
-### 5.1. Tình trạng Khí tài (Asset Condition)
+### 5.1. Tình trạng Khí tài & Công thức Sát thương (Asset Condition & Damage Overflow)
 
 Khí tài (GEAR, tàu chiến, thiết bị không gian) được quản lý bởi hai chỉ số song song:
 
 ```text
 HP:
-Thiệt hại thực thể do hỏa lực chiến đấu gây ra (Combat/physical damage).
-Mất khi bị kẻ thù tấn công; đạt 0 thì khí tài bị PHÁ HỦY HOÀN TOÀN (DESTROYED / IRREVOCABLE LOSS).
+Thiệt hại thực thể/vật lý do hỏa lực chiến đấu gây ra (Combat/physical damage).
+Mất khi bị đối phương tấn công; chạm 0 thì khí tài bị PHÁ HỦY HOÀN TOÀN (DESTROYED / IRREVOCABLE LOSS).
 
 ConditionHP:
-Tình trạng kỹ thuật, hao mòn máy móc và độ tin cậy của khí tài sau quá trình vận hành hoặc chiến đấu.
+Tình trạng kỹ thuật, hao mòn máy móc và độ tin cậy cơ khí của khí tài.
 
 ConditionHPMax:
-Mức trần tình trạng kỹ thuật tối đa của khí tài. Mặc định bằng MaxHP của asset.
+Mức trần tình trạng kỹ thuật tối đa của khí tài. Mặc định: ConditionHPMax = MaxHP.
 ```
 
 #### Quy tắc thiết kế (Design Invariant):
 1. **Không suy giảm chỉ số trực tiếp:** Trong thiết kế hiện tại, `ConditionHP` **KHÔNG** làm suy giảm trực tiếp các chỉ số chiến đấu (`Offense`, `Defense`, `Mobility`) của khí tài.
 2. **Khóa triển khai (Deployment Gate):** Khí tài có `ConditionHP` nằm dưới ngưỡng yêu cầu của nhiệm vụ (Mission Condition Requirement) thì **TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP TRIỂN KHAI** xuất kích.
 
+#### Cơ chế Sát thương Chiến đấu & Tràn Sát thương (Combat Damage & Overflow):
+Khi khí tài nhận sát thương từ đòn đánh của đối phương (`IncomingDamage`):
+
+```ts
+HPAfterDamage =
+    CurrentHP - IncomingDamage
+
+RawConditionAfterDamage =
+    CurrentConditionHP - IncomingDamage
+
+ConditionOverflowDamage =
+    Math.max(-RawConditionAfterDamage, 0)
+
+NewConditionHP =
+    Math.max(RawConditionAfterDamage, 0)
+
+NewHP =
+    Math.max(
+        HPAfterDamage - ConditionOverflowDamage,
+        0
+    )
+```
+
+*Ý nghĩa vật lý:* Sát thương chiến đấu làm tổn hại đồng thời cả cấu trúc vật lý (`HP`) lẫn tình trạng kỹ thuật (`ConditionHP`). Khi tình trạng kỹ thuật đã cạn kiệt (`ConditionHP = 0`), phần thiệt hại vượt mức không còn được lớp đệm kỹ thuật hấp thụ sẽ tràn (`overflow`) thành sát thương cấu trúc bổ sung trực tiếp lên điểm `HP`.
+
 ---
 
-### 5.2. Cơ chế Bảo trì Kỹ thuật (Maintenance Triggers)
+### 5.2. Cổng Điều kiện Chiến đấu (Combat Condition Gate)
 
-Hệ thống thiết lập hai ngưỡng tỷ lệ bảo trì chuẩn hóa (có thể cấu hình qua AdminCP):
+```text
+CombatMinimumConditionRatio:
+Ngưỡng Condition tối thiểu để GEAR còn đủ tình trạng kỹ thuật tiếp tục chiến đấu trên chiến trường.
+Default approved: 0.05 (5% MaxConditionHP) — Configurable qua AdminCP / Combat Config.
+```
+
+#### Quy tắc xử lý:
+- Khi một GEAR trong trận đấu có:
+  $$\frac{\text{NewConditionHP}}{\text{ConditionHPMax}} \le \text{CombatMinimumConditionRatio} \quad (\le 0.05)$$
+- Khí tài lập tức rơi vào trạng thái:
+  ```text
+  COMBAT_UNFIT
+  ```
+- **Hành động bắt buộc:** GEAR rơi vào `COMBAT_UNFIT` **phải rút lui** về Mother Ship / Command Ship / Hangar nếu có khả năng thực hiện (sử dụng luồng `orderGearRetreat`).
+- **Ngưỡng Condition riêng theo nhiệm vụ (Mission-Specific Condition Requirement):** Là trường cấu hình riêng biệt cho từng nhiệm vụ xuất kích, có thể yêu cầu cao hơn nhiều so với `CombatMinimumConditionRatio`.
+  - *Ví dụ đã phê chuẩn:* Tàu Cứu Hộ (Rescue Ship) trước khi xuất kích thực hiện Chiến dịch Cứu nạn (Rescue Operation) bắt buộc phải đạt:
+    $$\text{ConditionRatio} = 1.00 \quad (100\%)$$
+
+---
+
+### 5.3. Cơ chế Bảo trì Kỹ thuật (Maintenance Triggers)
+
+Hệ thống thiết lập hai ngưỡng tỷ lệ bảo trì chuẩn hóa (cấu hình qua AdminCP):
 
 ```text
 MaintenanceTriggerMinRatio = 0.50 (50%)
@@ -421,33 +468,149 @@ MaintenanceTriggerMaxRatio = 0.90 (90%)
 #### Quy tắc kích hoạt bảo trì:
 1. **Bắt buộc bảo trì (Compulsory Maintenance):**
    - Khi $\frac{\text{ConditionHP}}{\text{ConditionHPMax}} < \text{MaintenanceTriggerMinRatio}$ ($< 50\%$):
-   - Khí tài rơi vào trạng thái *Kỹ thuật nguy cấp*, **BẮT BUỘC** phải đưa vào xưởng bảo trì.
-   - Không thể gán vào bất kỳ đội hình xuất kích hay nhiệm vụ nào.
+   - Khí tài rơi vào trạng thái *Kỹ thuật nguy cấp*, **BẮT BUỘC** phải đưa vào xưởng bảo trì. Bị cấm hoàn toàn gán vào các đội hình xuất kích.
 2. **Bảo trì tự nguyện (Voluntary / Elective Maintenance):**
    - Khi $\text{MaintenanceTriggerMinRatio} \le \frac{\text{ConditionHP}}{\text{ConditionHPMax}} < \text{MaintenanceTriggerMaxRatio}$ ($50\% - 89\%$):
-   - Khí tài vẫn đủ tiêu chuẩn kỹ thuật thông thường để xuất kích, nhưng người chơi hoặc hệ thống điều phối có thể chủ động đưa vào bảo trì định kỳ để phục hồi về $100\%$.
-3. **Ngưỡng triển khai đặc biệt theo nhiệm vụ (Mission-Specific Threshold):**
-   - Các nhiệm vụ đặc biệt quan trọng (nhiệm vụ hộ tống tổng thống, đột kích Tartarus, tìm kiếm cứu nạn tầm xa) có thể yêu cầu ngưỡng Condition tối thiểu cao hơn `MaintenanceTriggerMinRatio` (ví dụ: yêu cầu $\ge 70\%$ hoặc $\ge 80\%$). Khí tài dù chưa bị cưỡng chế bảo trì nhưng không đạt ngưỡng này cũng không thể tham gia nhiệm vụ.
+   - Khí tài vẫn đủ tiêu chuẩn kỹ thuật thông thường để xuất kích, nhưng người chơi hoặc hệ thống điều phối có thể chủ động đưa vào xưởng bảo trì định kỳ để phục hồi về $100\%$.
 
 ---
 
-### 5.3. Năng lực Sửa chữa Dùng Chung (Shared Repair Capacity)
+### 5.4. Sửa chữa Hiện trường vs. Sửa chữa Toàn diện tại Xưởng (Field vs. Workshop Repair)
 
-Chỉ số `BaseInstallationRepairHpDay` của một căn cứ là **tổng thông lượng sửa chữa dùng chung (Shared Capacity)** cho cả hai nhiệm vụ:
-1. **Combat HP Repair:** Sửa chữa hư hỏng thực thể do chiến đấu gây ra (đưa điểm `HP` bị mất trở lại MaxHP).
-2. **Maintenance Condition HP Restore:** Phục hồi hao mòn kỹ thuật định kỳ (đưa điểm `ConditionHP` trở lại ConditionHPMax).
+#### A. Sửa chữa Hiện trường (Field Repair / Nano Repair Kit):
+- Khi sử dụng Nano Repair Kit hoặc sửa chữa khẩn cấp ngoài thực địa:
+  ```text
+  FieldRepairConditionRecoveryRatio = 0.50 (Approved Default, Configurable)
+  ```
+- Công thức phục hồi Condition ngoài thực địa:
+  ```ts
+  FieldConditionRecovered =
+      Math.ceil(
+          ActualHPRepaired
+          * FieldRepairConditionRecoveryRatio
+      )
+  ```
+- *Ví dụ:* Nano Repair Kit hồi phục thực tế 1.000 HP $\rightarrow$ hồi phục thêm 500 ConditionHP.
+- *Quy tắc:* Sửa chữa hiện trường **KHÔNG BAO GIỜ** tự động đưa `ConditionHP` về $100\%$.
+
+#### B. Sửa chữa Toàn diện tại Xưởng (Workshop Full Repair):
+- Khi việc sửa chữa thiệt hại chiến đấu (Combat Damage Repair) hoàn tất tại:
+  - Căn cứ (Base);
+  - Phân xưởng cơ khí (Workshop);
+  - Nhà chứa (Hangar);
+- Thì tình trạng kỹ thuật được tự động phục hồi trọn vẹn:
+  ```ts
+  ConditionHP = ConditionHPMax
+  ```
+- *Lý do:* Quy trình sửa chữa chính quy tại xưởng bao gồm toàn bộ các bước kiểm chuẩn, cân chỉnh khung gầm và thay thế linh kiện hao mòn kỹ thuật.
+
+---
+
+### 5.5. Năng lực Sửa chữa Dùng Chung tại Căn cứ (Shared Base Repair Capacity)
+
+Chỉ số `BaseInstallationRepairHpDay` là năng lực sửa chữa dùng chung (Shared Capacity) cho cả Combat HP Repair và Maintenance Condition HP Restore:
+
+```ts
+BaseInstallationRepairHpDay =
+    FacilityRepairCapacityPerDay
+    + WorkerRepairCapacityPerDay
+
+WorkerRepairCapacityPerDay =
+    ActiveTechnicalWorkers
+    * TechnicalWorkerRepairHPPerDay
+```
 
 #### Nguyên lý điều phối và ưu tiên:
-- **Ưu tiên 1 (Priority 1 — Combat HP Repair):**
-  - Khí tài bị thương tổn sau chiến đấu luôn được ưu tiên sửa chữa trước để cứu vãn tính mạng khí tài và nhanh chóng phục hồi trạng thái sẵn sàng chiến đấu cơ bản.
-- **Ưu tiên 2 (Priority 2 — Scheduled Maintenance):**
-  - Công tác bảo dưỡng kỹ thuật chỉ hấp thụ phần thông lượng sửa chữa còn dư thừa (`Surplus Capacity`) sau khi toàn bộ khí tài hư hỏng chiến đấu đã được phục hồi xong.
-- **Cơ chế phân bổ theo tỷ lệ (Configurable Allocation Ratio):**
-  - Cho phép người chơi hoặc chỉ huy căn cứ cấu hình phân chia tỷ lệ năng lực qua giao diện AdminCP / Base Management (ví dụ: $70\%$ cho Combat Repair / $30\%$ cho Maintenance) khi căn cứ cần đồng thời duy trì cả hai luồng công việc mà không làm tê liệt hoàn toàn công tác bảo trì phòng ngừa.
+- **Ưu tiên 1 (Priority 1 — Combat HP Repair):** Khí tài bị thương tổn sau chiến đấu luôn được ưu tiên sửa chữa trước.
+- **Ưu tiên 2 (Priority 2 — Scheduled Maintenance):** Bảo trì kỹ thuật chỉ hấp thụ phần thông lượng sửa chữa còn dư thừa (`Surplus Capacity`) sau khi đã hoàn tất Combat Repair.
+- Cấu hình phân chia tỷ lệ năng lực qua AdminCP / Base Management (ví dụ: 70% Combat / 30% Maintenance).
 
 ---
 
-## 6. DANH MỤC THUẬT NGỮ & KHÁI NIỆM ĐÃ PHÊ DUYỆT (APPROVED CONCEPT CATALOG)
+### 5.6. Năng lực Sửa chữa & Bảo trì trên Chiến hạm (Ship Repair & Maintenance Capacity)
+
+Mother Ship, Command Ship và Rescue Ship có thể sở hữu trạm sửa chữa (Repair Modules) và đội ngũ kỹ thuật viên riêng:
+
+```ts
+ShipRepairCapacityPerDay =
+    ShipFacilityRepairCapacityPerDay
+    + ShipWorkerRepairCapacityPerDay
+
+ShipWorkerRepairCapacityPerDay =
+    ActiveShipTechnicalWorkers
+    * TechnicalWorkerRepairHPPerDay
+```
+
+- **Tính kế thừa:** Không xây dựng một repair engine khác; tái sử dụng hoàn toàn semantics và cơ chế của Base.
+- **Hiệu suất bảo trì trên tàu (Ship Maintenance Efficiency):**
+  - Cấu hình độc lập: `ShipMaintenanceEfficiencyRatio = 1.5` (Approved Default).
+  - Không dẫn xuất runtime từ Base ratio. Base và Ship là 2 cấu hình riêng biệt.
+  - Công thức bảo trì kỹ thuật trên tàu:
+    ```ts
+    ShipConditionRepairPerDay =
+        AllocatedShipMaintenanceRepairCapacity
+        * ShipMaintenanceEfficiencyRatio
+    ```
+
+---
+
+## 6. KIỂM TRA ĐÍCH KIẾN TRÚC COMBAT V2 (TARGETED COMBAT V2 INSPECTION)
+
+Thực hiện kiểm tra trực tiếp mã nguồn Combat V2 (`lib/game/world/combat-v2-*`) nhằm chuẩn bị điểm nối (hooks) cho ConditionHP và trạng thái COMBAT_UNFIT:
+
+### 6.1. Vị trí áp sát thương hiện tại (Current HP Damage Application)
+- **File:** `lib/game/world/combat-v2-engine.ts`
+- **Function:** `executeCombatRound(snapshot, roundNumber, config, prng)` (dòng 536–556).
+- **Mã nguồn hiện tại:**
+  ```ts
+  const damage = Math.max(1, Math.round((rawAttack - rawDefense) * variance))
+  target.currentHp = Math.max(0, target.currentHp - damage)
+  if (target.currentHp === 0) {
+    target.state = "DESTROYED"
+    // Tạo destructionEvents, downedPilotCandidates...
+  }
+  ```
+
+### 6.2. Vị trí nối ConditionHP tối ưu nhất (Best Hook Location)
+- Ngay sau khi tính giá trị `damage` tại dòng 536 của `executeCombatRound`.
+- Thay thế đoạn trừ thẳng `target.currentHp` bằng khối logic Combat Damage Overflow:
+  ```ts
+  const rawConditionAfter = (target.conditionHp ?? target.currentHp) - damage
+  const overflow = Math.max(-rawConditionAfter, 0)
+  target.conditionHp = Math.max(rawConditionAfter, 0)
+  target.currentHp = Math.max(0, target.currentHp - damage - overflow)
+  ```
+- Kiểm tra cổng Combat Condition Gate:
+  ```ts
+  const minConditionRatio = config.combatMinimumConditionRatio ?? 0.05
+  const conditionRatio = target.maxHp > 0 ? (target.conditionHp ?? 0) / target.maxHp : 0
+  if (conditionRatio <= minConditionRatio && target.state === "ACTIVE") {
+    // Kích hoạt COMBAT_UNFIT và tự động phát lệnh orderGearRetreat(target)
+  }
+  ```
+
+### 6.3. Luồng Rút lui, Vô hiệu hóa và Tiêu diệt hiện có (Retreat / Destroyed Flow)
+- Đơn vị rút lui được xử lý qua hàm `orderGearRetreat(gear, retreatDurationRounds)`:
+  - Chuyển `gear.state` từ `"ACTIVE"` sang `"RETREATING"`.
+  - Khởi tạo bộ đếm hiệp rút lui: `gear.retreatTurnsRemaining = retreatDurationRounds` (mặc định 2 hiệp).
+  - Ở cuối mỗi hiệp trong `executeCombatRound`, bộ đếm giảm đi 1. Khi chạm 0, `gear.state` chuyển sang `"RETREATED"` và tạo sự kiện `retreatEvents`.
+  - Đơn vị `"RETREATED"` hoàn toàn thoát khỏi vòng lặp tấn công và không thể bị nhắm bắn tiếp.
+- Khi `target.currentHp === 0`, chuyển ngay sang `"DESTROYED"`, tạo `destructionEvents`, và ghi nhận vào danh sách ứng viên phi công thoát hiểm `downedPilotCandidates`.
+
+### 6.4. Trạng thái tái sử dụng cho `COMBAT_UNFIT`
+- `CombatGearState` hiện tại gồm 4 trạng thái: `"ACTIVE" | "RETREATING" | "RETREATED" | "DESTROYED"`.
+- Luồng `orderGearRetreat` hiện có hoàn toàn có thể **TÁI SỬ DỤNG NGAY** cho `COMBAT_UNFIT`: Khi rơi vào `COMBAT_UNFIT`, cỗ máy kích hoạt `orderGearRetreat(gear)` để bắt đầu tiến trình rút lui về tàu mẹ hoặc hangar.
+- Cần mở rộng trường cờ trên `CombatV2Gear`: `isCombatUnfit?: boolean` để UI và battle log nhận diện nguyên nhân rút lui là do kiệt quệ tình trạng kỹ thuật.
+
+### 6.5. Kiểm tra thực thể Mother Ship / Command Ship / Hangar
+- **Trong `lib/game/world/`:** Hiện **CHƯA CÓ** thực thể runtime nào đại diện cho Mother Ship, Command Ship, hay Rescue Ship dưới vai trò là trạm neo đậu có xưởng sửa chữa.
+- "mothership" hiện mới chỉ là một enum `SectorKind` trong Core Game đại diện cho sector boss của kẻ thù.
+- "hangar" hiện mới chỉ là chỉ số công trình cấp 1–30 tại Player Core Base.
+- **Đánh giá mở rộng Model:** Cần mở rộng định nghĩa hạm đội và tàu mẹ (Fleet / Flagship entity) trong Phase 6.34D (Rescue Fleet) và Phase 6.35 (GEAR Logistics) để gán chỉ số `ShipRepairCapacityPerDay`.
+
+---
+
+## 7. DANH MỤC THUẬT NGỮ & KHÁI NIỆM ĐÃ PHÊ DUYỆT (APPROVED CONCEPT CATALOG)
 
 ```text
 BaseInstallationRepairHpDay:
@@ -470,6 +633,24 @@ TechnicalWorkerRepairHPPerDay:
 ConditionHP:
 Điểm đo lường tình trạng hao mòn và kỹ thuật của khí tài ngoài điểm HP chiến đấu.
 
+ConditionHPMax:
+Mức trần tình trạng kỹ thuật tối đa của khí tài. Mặc định bằng MaxHP.
+
+CombatMinimumConditionRatio:
+Ngưỡng Condition tối thiểu để GEAR còn đủ tiêu chuẩn kỹ thuật tiếp tục chiến đấu. Default: 0.05.
+
+COMBAT_UNFIT:
+Trạng thái khí tài mất khả năng duy trì chiến đấu do kiệt quệ kỹ thuật; bắt buộc phải rút lui.
+
+FieldRepairConditionRecoveryRatio:
+Tỷ lệ phục hồi Condition khi sửa chữa ngoài thực địa / dùng Nano Kit. Default: 0.50.
+
+ShipRepairCapacityPerDay:
+Tổng năng lực sửa chữa điểm máu mỗi ngày trên Tàu Mẹ / Soái Hạm. Kế thừa semantics từ Base.
+
+ShipMaintenanceEfficiencyRatio:
+Hệ số hiệu suất bảo trì kỹ thuật trên Tàu Mẹ. Default: 1.5. Độc lập với Base ratio.
+
 MaintenanceTriggerMinRatio:
 Ngưỡng tỷ lệ tối thiểu (mặc định 0.50). Dưới ngưỡng này khí tài bắt buộc phải đưa vào bảo trì và bị cấm triển khai.
 
@@ -479,7 +660,7 @@ Ngưỡng tỷ lệ tối đa (mặc định 0.90). Dưới ngưỡng này khí 
 
 ---
 
-## 7. KẾT LUẬN & KIỂM TRA HỆ THỐNG
+## 8. KẾT LUẬN & KIỂM TRA HỆ THỐNG
 
 1. **An toàn mã nguồn:** Không có bất kỳ thay đổi nào tác động đến production logic code (`lib/game/world/*`, `lib/game/*`).
 2. **Khả năng tương thích:** Toàn bộ 13 công trình và 6 phân khu hiện có được bảo toàn 100%, có lộ trình chuyển tiếp rõ ràng sang các Phase 6.35–6.43 của roadmap thiên hà.
@@ -487,3 +668,4 @@ Ngưỡng tỷ lệ tối đa (mặc định 0.90). Dưới ngưỡng này khí 
 
 ---
 *Tài liệu đối chiếu và phân tích hiện trạng được cập nhật và đóng băng kiến trúc an toàn.*
+

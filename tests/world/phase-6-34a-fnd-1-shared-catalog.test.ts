@@ -33,11 +33,16 @@ import {
   applyUserOverride,
   canSelectForNewInstance,
   containsDerivedFields,
+  defaultCatalogRegistry,
   filterSelectableItems,
+  getCatalog,
+  getItem,
+  getResolvedItems,
   isItemDeprecated,
   isItemRetired,
   loadCatalogTree,
   resetUserOverride,
+  resolveById,
   resolveCatalog,
   stripDerivedFields,
   validateChildPrefix,
@@ -681,4 +686,149 @@ test("Phase 6.34A-FND-1: Shared Catalog Master Data Foundation", async (t) => {
     assert.equal(cat.itemMap.get("DEF_01")?.speed, 50)
     assert.equal(cat.itemMap.get("DEF_01")?.provenance.isOverridden, undefined)
   })
+
+  // 22. Unified Resolved API: getItem, resolveById, getResolvedItems
+  await t.test("22. Unified Resolved API provides clean consumer access without exposing JSON/partitions", () => {
+    const provider = new InMemoryCatalogDataProvider({
+      "system_fleet_ship_definition_data.json": {
+        configFileId: "system_fleet_ship_definition",
+        schemaVersion: 1,
+        dataVersion: 1,
+        mode: "SPLIT",
+        partitions: [{ ref: "system_fleet_ship_definition_combat_data.json" }],
+      },
+      "system_fleet_ship_definition_combat_data.json": {
+        configFileId: "system_fleet_ship_definition_combat",
+        schemaVersion: 1,
+        dataVersion: 1,
+        mode: "INLINE",
+        items: [
+          { id: "SHIP_ACTIVE", name: "Active Ship", baseCrew: 50, speed: 100, lifecycle: "ACTIVE" },
+          { id: "SHIP_OLD", name: "Deprecated Ship", baseCrew: 80, speed: 70, lifecycle: "DEPRECATED" },
+          { id: "SHIP_LEGACY", name: "Retired Ship", baseCrew: 120, speed: 40, lifecycle: "RETIRED" },
+        ],
+      },
+      "user_fleet_ship_definition_data.json": {
+        configFileId: "user_fleet_ship_definition",
+        schemaVersion: 1,
+        dataVersion: 1,
+        overrides: [
+          { targetId: "SHIP_ACTIVE", modifiedData: { speed: 125 }, modifiedAt: "2026-10-17T08:00:00Z" },
+        ],
+        customItems: [
+          { id: "SHIP_USER_CUSTOM", name: "User Custom Ship", baseCrew: 60, speed: 110, lifecycle: "ACTIVE" },
+        ],
+      },
+    })
+
+    const registry = new CatalogRegistry(provider)
+
+    // Direct getItem
+    const activeItem = registry.getItem<TestShipDef>("fleet", "ship_definition", "SHIP_ACTIVE")
+    assert.ok(activeItem)
+    assert.equal(activeItem.name, "Active Ship")
+    assert.equal(activeItem.speed, 125) // override applied
+    assert.equal(activeItem.provenance.isOverridden, true)
+    assert.equal(activeItem._canonical?.speed, 100) // canonical untouched
+
+    // resolveById alias
+    const resolvedById = registry.resolveById<TestShipDef>("fleet", "ship_definition", "SHIP_USER_CUSTOM")
+    assert.ok(resolvedById)
+    assert.equal(resolvedById.provenance.sourceType, "USER")
+    assert.equal(resolvedById.speed, 110)
+
+    // Missing item returns undefined safely (no crash)
+    const missingItem = registry.getItem<TestShipDef>("fleet", "ship_definition", "NON_EXISTENT_ID")
+    assert.equal(missingItem, undefined)
+
+    // getResolvedItems default (all 4 items)
+    const allItems = registry.getResolvedItems<TestShipDef>("fleet", "ship_definition")
+    assert.equal(allItems.length, 4)
+
+    // getResolvedItems with lifecycle filtering (omit RETIRED)
+    const selectableItems = registry.getResolvedItems<TestShipDef>("fleet", "ship_definition", {
+      includeRetired: false,
+    })
+    assert.equal(selectableItems.length, 3)
+    assert.ok(!selectableItems.some((i) => i.id === "SHIP_LEGACY"))
+
+    // getResolvedItems filtered specifically to ACTIVE
+    const onlyActive = registry.getResolvedItems<TestShipDef>("fleet", "ship_definition", {
+      lifecycleFilter: "ACTIVE",
+    })
+    assert.equal(onlyActive.length, 2)
+    assert.ok(onlyActive.every((i) => (i.lifecycle || "ACTIVE") === "ACTIVE"))
+
+    // Verify top-level standalone consumer functions work with defaultCatalogRegistry
+    defaultCatalogRegistry.setDataProvider(provider)
+    const standaloneItem = getItem<TestShipDef>("fleet", "ship_definition", "SHIP_ACTIVE")
+    assert.equal(standaloneItem?.id, "SHIP_ACTIVE")
+    assert.equal(standaloneItem?.speed, 125)
+
+    const standaloneResolved = resolveById<TestShipDef>("fleet", "ship_definition", "SHIP_OLD")
+    assert.equal(standaloneResolved?.id, "SHIP_OLD")
+    assert.equal(standaloneResolved?.lifecycle, "DEPRECATED")
+
+    const standaloneList = getResolvedItems<TestShipDef>("fleet", "ship_definition")
+    assert.equal(standaloneList.length, 4)
+  })
+
+  // 23. Error Behavior: root failure, partition failure, item failure
+  await t.test("23. Robust error behavior: root/partition/item corruption never crashes WORLD", () => {
+    // A. Root missing -> empty catalog, 0 items, WORLD continues
+    const emptyProvider = new InMemoryCatalogDataProvider({})
+    const emptyRegistry = new CatalogRegistry(emptyProvider)
+    const missingCat = emptyRegistry.getCatalog<TestShipDef>("building", "station_definition")
+    assert.equal(missingCat.items.length, 0)
+    assert.ok(missingCat.diagnostics.some((d) => d.code === "ROOT_FILE_MISSING"))
+    assert.equal(emptyRegistry.getItem<TestShipDef>("building", "station_definition", "ANY_ID"), undefined)
+
+    // B. Child partition corrupt -> skipped, valid partition continues
+    const corruptProvider = new InMemoryCatalogDataProvider({
+      "system_gear_weapon_definition_data.json": {
+        configFileId: "system_gear_weapon_definition",
+        schemaVersion: 1,
+        dataVersion: 1,
+        mode: "SPLIT",
+        partitions: [
+          { ref: "system_gear_weapon_definition_valid_data.json" },
+          { ref: "system_gear_weapon_definition_corrupt_data.json" },
+        ],
+      },
+      "system_gear_weapon_definition_valid_data.json": {
+        configFileId: "system_gear_weapon_definition_valid",
+        schemaVersion: 1,
+        dataVersion: 1,
+        mode: "INLINE",
+        items: [{ id: "WEAPON_01", name: "Laser Cannon", baseCrew: 0, speed: 0 }],
+      },
+      "system_gear_weapon_definition_corrupt_data.json": "{ MALFORMED_JSON",
+    })
+    const corruptRegistry = new CatalogRegistry(corruptProvider)
+    const weaponCat = corruptRegistry.getCatalog<TestShipDef>("gear", "weapon_definition")
+    assert.equal(weaponCat.items.length, 1)
+    assert.equal(weaponCat.items[0].id, "WEAPON_01")
+    assert.ok(weaponCat.diagnostics.some((d) => d.code === "PARTITION_FILE_MALFORMED"))
+
+    // C. Item corrupt / missing id -> omitted, valid items load, item contribution = 0 (undefined)
+    const malformedItemProvider = new InMemoryCatalogDataProvider({
+      "system_module_shield_definition_data.json": {
+        configFileId: "system_module_shield_definition",
+        schemaVersion: 1,
+        dataVersion: 1,
+        mode: "INLINE",
+        items: [
+          { id: "SHIELD_OK", name: "Ok Shield", baseCrew: 0, speed: 0 },
+          { name: "Shield without id", baseCrew: 0, speed: 0 }, // missing ID
+          null, // corrupt non-object
+        ],
+      },
+    })
+    const malformedRegistry = new CatalogRegistry(malformedItemProvider)
+    const shieldCat = malformedRegistry.getCatalog<TestShipDef>("module", "shield_definition")
+    assert.equal(shieldCat.items.length, 1)
+    assert.equal(shieldCat.items[0].id, "SHIELD_OK")
+    assert.equal(malformedRegistry.getItem<TestShipDef>("module", "shield_definition", "SHIELD_MISSING"), undefined)
+  })
 })
+

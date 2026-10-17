@@ -14,9 +14,11 @@ import {
   resetUserOverride,
   resolveCatalog,
 } from "./resolver"
+import { filterSelectableItems } from "./lifecycle"
 import { LocalStorageCatalogDataProvider } from "./storage-provider"
 import type {
   CatalogDiagnosticError,
+  CatalogItemLifecycle,
   CatalogLoadOptions,
   ICatalogDataProvider,
   ResolvedCatalog,
@@ -109,6 +111,65 @@ export class CatalogRegistry {
     const key = this.makeKey(domain, catalogName)
     this.resolvedCatalogs.delete(key)
     return this.loadAndResolve<T>(domain, catalogName, options)
+  }
+
+  /**
+   * Retrieves a single resolved item by ID directly from the catalog
+   */
+  getItem<T extends { id: string }>(
+    domain: string,
+    catalogName: string,
+    id: string,
+    options?: CatalogLoadOptions
+  ): ResolvedCatalogItem<T> | undefined {
+    if (!id || typeof id !== "string") return undefined
+    const catalog = this.getCatalog<T>(domain, catalogName, options)
+    return catalog.itemMap.get(id.trim())
+  }
+
+  /**
+   * Alias for getItem — resolves an item by its unique ID
+   */
+  resolveById<T extends { id: string }>(
+    domain: string,
+    catalogName: string,
+    id: string,
+    options?: CatalogLoadOptions
+  ): ResolvedCatalogItem<T> | undefined {
+    return this.getItem<T>(domain, catalogName, id, options)
+  }
+
+  /**
+   * Retrieves all resolved items in a catalog, optionally filtering by lifecycle state
+   */
+  getResolvedItems<T extends { id: string }>(
+    domain: string,
+    catalogName: string,
+    options?: CatalogLoadOptions & {
+      lifecycleFilter?: CatalogItemLifecycle | "ALL"
+      includeDeprecated?: boolean
+      includeRetired?: boolean
+    }
+  ): Array<ResolvedCatalogItem<T>> {
+    const catalog = this.getCatalog<T>(domain, catalogName, options)
+    if (
+      !options?.lifecycleFilter &&
+      options?.includeDeprecated === undefined &&
+      options?.includeRetired === undefined
+    ) {
+      return catalog.items
+    }
+
+    if (options?.lifecycleFilter && options.lifecycleFilter !== "ALL") {
+      return catalog.items.filter(
+        (item) => (item.lifecycle || "ACTIVE") === options.lifecycleFilter
+      )
+    }
+
+    return filterSelectableItems(catalog.items, {
+      includeDeprecated: options?.includeDeprecated,
+      includeRetired: options?.includeRetired,
+    })
   }
 
   /**
@@ -294,3 +355,54 @@ export class CatalogRegistry {
  * Global default registry singleton instance
  */
 export const defaultCatalogRegistry = new CatalogRegistry()
+
+/**
+ * Top-level consumer API: gets or loads a resolved catalog from default registry
+ */
+export function getCatalog<T extends { id: string }>(
+  domain: string,
+  catalogName: string,
+  options?: CatalogLoadOptions
+): ResolvedCatalog<T> {
+  return defaultCatalogRegistry.getCatalog<T>(domain, catalogName, options)
+}
+
+/**
+ * Top-level consumer API: retrieves a resolved item by ID directly from default registry
+ */
+export function getItem<T extends { id: string }>(
+  domain: string,
+  catalogName: string,
+  id: string,
+  options?: CatalogLoadOptions
+): ResolvedCatalogItem<T> | undefined {
+  return defaultCatalogRegistry.getItem<T>(domain, catalogName, id, options)
+}
+
+/**
+ * Top-level consumer API: alias for getItem — resolves an item by its unique ID
+ */
+export function resolveById<T extends { id: string }>(
+  domain: string,
+  catalogName: string,
+  id: string,
+  options?: CatalogLoadOptions
+): ResolvedCatalogItem<T> | undefined {
+  return defaultCatalogRegistry.resolveById<T>(domain, catalogName, id, options)
+}
+
+/**
+ * Top-level consumer API: retrieves all resolved items, optionally filtered by lifecycle
+ */
+export function getResolvedItems<T extends { id: string }>(
+  domain: string,
+  catalogName: string,
+  options?: CatalogLoadOptions & {
+    lifecycleFilter?: CatalogItemLifecycle | "ALL"
+    includeDeprecated?: boolean
+    includeRetired?: boolean
+  }
+): Array<ResolvedCatalogItem<T>> {
+  return defaultCatalogRegistry.getResolvedItems<T>(domain, catalogName, options)
+}
+

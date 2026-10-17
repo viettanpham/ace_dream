@@ -53,6 +53,14 @@ Mỗi catalog có một tệp gốc ổn định. Hỗ trợ 2 chế độ:
 - Không cho phép tham chiếu chéo miền (`fleet` $\rightarrow$ `building`).
 - Bảo vệ chống lặp vô tận bằng `visitedAncestors` (cycle detection) và bộ đếm `maxDepth` (mặc định 16).
 
+### 2.4. Giao diện tiêu thụ thống nhất (Unified Resolved Consumer API):
+Để đảm bảo các hệ thống runtime, UI và logic nghiệp vụ không phải tự nạp JSON, tự ghép USER/SYSTEM, hay quan tâm đến cấu trúc phân vùng tệp:
+- `getCatalog(domain, catalogName, options)`: Lấy toàn bộ Resolved Catalog đã giải quyết đầy đủ.
+- `getItem(domain, catalogName, id)`: Lấy trực tiếp một resolved item theo ID duy nhất.
+- `resolveById(domain, catalogName, id)`: Alias chuẩn hóa cho `getItem`.
+- `getResolvedItems(domain, catalogName, options)`: Lấy mảng resolved items có hỗ trợ lọc theo trạng thái vòng đời (`ACTIVE`, `DEPRECATED`, `RETIRED`).
+- Các hàm trên được cung cấp qua cả đối tượng `CatalogRegistry` (hỗ trợ dependency injection) và các hàm standalone toàn cục (`defaultCatalogRegistry`).
+
 ---
 
 ## 3. CƠ CHẾ GHI ĐÈ & QUẢN TRỊ DỮ LIỆU (OVERRIDE & DATA MERGE RULES)
@@ -113,7 +121,7 @@ Mỗi catalog có một tệp gốc ổn định. Hỗ trợ 2 chế độ:
 ## 6. KẾT QUẢ KIỂM THỬ (TEST SUITE VERIFICATION)
 
 Đã triển khai và thực thi thành công bộ test suite:
-`tests/world/phase-6-34a-fnd-1-shared-catalog.test.ts` (21/21 subtests **PASS 100%**):
+`tests/world/phase-6-34a-fnd-1-shared-catalog.test.ts` (23/23 subtests **PASS 100%**):
 
 1. `INLINE root load` — PASS
 2. `SPLIT root load` — PASS
@@ -136,6 +144,8 @@ Mỗi catalog có một tệp gốc ổn định. Hỗ trợ 2 chế độ:
 19. `Derived fields stripped before persisting` — PASS
 20. `Deterministic resolve result` — PASS
 21. `CatalogRegistry full roundtrip with overrides and custom items` — PASS
+22. `Unified Resolved API: getItem, resolveById, getResolvedItems with lifecycle filtering` — PASS
+23. `Fail-soft error handling: root/partition/item corruption never crashes WORLD` — PASS
 
 ---
 

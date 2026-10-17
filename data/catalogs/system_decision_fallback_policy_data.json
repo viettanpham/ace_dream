@@ -1,0 +1,31 @@
+{
+  "configFileId": "system_decision_fallback_policy",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "AI_REEVALUATE",
+      "name": "AI Re-evaluation",
+      "description": "When timeout expires, domain AI re-evaluates context state and decides to approve, reject, or invalidate.",
+      "isDefault": true
+    },
+    {
+      "id": "KEEP_PENDING",
+      "name": "Keep Pending",
+      "description": "Extends decision lifetime without auto-resolving.",
+      "isDefault": false
+    },
+    {
+      "id": "AUTO_REJECT",
+      "name": "Auto Reject",
+      "description": "Automatically rejects decision on timeout without approval.",
+      "isDefault": false
+    }
+  ],
+  "metadata": {
+    "domain": "decision",
+    "catalog": "fallback_policy",
+    "description": "Canonical fallback policies for decision timeouts."
+  }
+}

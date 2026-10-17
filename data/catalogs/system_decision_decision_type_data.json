@@ -1,0 +1,45 @@
+{
+  "configFileId": "system_decision_decision_type",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "TIER_UPGRADE_RECOMMENDATION",
+      "name": "Tier Upgrade Recommendation",
+      "description": "Progression entity reached tier boundary and requests breakthrough authorization.",
+      "defaultFallback": "AI_REEVALUATE",
+      "defaultPriority": "HIGH",
+      "defaultTimeoutDays": 3
+    },
+    {
+      "id": "STRATEGIC_DEPLOYMENT",
+      "name": "Strategic Deployment",
+      "description": "Authorization to deploy fleet or reserves to high-threat zone.",
+      "defaultFallback": "AUTO_REJECT",
+      "defaultPriority": "CRITICAL",
+      "defaultTimeoutDays": 2
+    },
+    {
+      "id": "RESOURCE_REALLOCATION",
+      "name": "Resource Reallocation",
+      "description": "Emergency requisition or transfer of materials between sectors.",
+      "defaultFallback": "AI_REEVALUATE",
+      "defaultPriority": "NORMAL",
+      "defaultTimeoutDays": 5
+    },
+    {
+      "id": "EMERGENCY_DISPATCH",
+      "name": "Emergency Dispatch",
+      "description": "Emergency response mission dispatch authorization.",
+      "defaultFallback": "AUTO_REJECT",
+      "defaultPriority": "HIGH",
+      "defaultTimeoutDays": 1
+    }
+  ],
+  "metadata": {
+    "domain": "decision",
+    "catalog": "decision_type",
+    "description": "Canonical technical decision types."
+  }
+}

@@ -35,5 +35,7 @@ export * from "./combat-v2-adapter-bridge"
 export * from "./threat-engine"
 export * from "./catalog"
 export * from "./progression"
+export * from "./decision"
+
 
 

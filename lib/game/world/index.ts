@@ -33,3 +33,5 @@ export * from "./combat-v2-engine"
 export * from "./combat-v2-support"
 export * from "./combat-v2-adapter-bridge"
 export * from "./threat-engine"
+export * from "./catalog"
+

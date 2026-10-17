@@ -1,0 +1,94 @@
+{
+  "configFileId": "system_progression_level_effect_profile",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "level_effects_facility_generic",
+      "name": "Generic Facility Level Effects",
+      "description": "Increases base rescue and repair efficiency by 1% per level, with unlocks at intervals and exact milestones.",
+      "basePerLevelMultiplier": 1.0,
+      "basePerLevelBonus": {
+        "rescuePowerPct": 1,
+        "repairHpPct": 1
+      },
+      "effects": [
+        {
+          "id": "eff_interval_capacity",
+          "triggerType": "INTERVAL",
+          "startLevel": 5,
+          "intervalLevels": 5,
+          "statModifiers": {
+            "operationalEfficiencyPct": 3
+          },
+          "moduleSlotUnlocks": 1,
+          "description": "Unlocks +3% operational efficiency and +1 module slot every 5 levels starting at level 5."
+        },
+        {
+          "id": "eff_exact_10_trauma",
+          "triggerType": "EXACT_LEVEL",
+          "level": 10,
+          "unlockedCapabilities": [
+            "TRAUMA_TREATMENT"
+          ],
+          "description": "Unlocks TRAUMA_TREATMENT at level 10."
+        },
+        {
+          "id": "eff_exact_20_surgery",
+          "triggerType": "EXACT_LEVEL",
+          "level": 20,
+          "unlockedCapabilities": [
+            "ADVANCED_SURGERY"
+          ],
+          "description": "Unlocks ADVANCED_SURGERY at level 20."
+        },
+        {
+          "id": "eff_exact_30_icu",
+          "triggerType": "EXACT_LEVEL",
+          "level": 30,
+          "unlockedCapabilities": [
+            "ICU_CAPACITY"
+          ],
+          "description": "Unlocks ICU_CAPACITY at level 30."
+        }
+      ]
+    },
+    {
+      "id": "level_effects_combat_generic",
+      "name": "Generic Combat Unit Level Effects",
+      "description": "Increases attack and defense by 1% per level.",
+      "basePerLevelMultiplier": 1.0,
+      "basePerLevelBonus": {
+        "attackBonusPct": 1,
+        "defenseBonusPct": 1
+      },
+      "effects": [
+        {
+          "id": "eff_combat_interval_speed",
+          "triggerType": "INTERVAL",
+          "startLevel": 5,
+          "intervalLevels": 5,
+          "statModifiers": {
+            "speedBonusPct": 2
+          },
+          "description": "Grants +2% speed every 5 levels."
+        },
+        {
+          "id": "eff_combat_exact_10",
+          "triggerType": "EXACT_LEVEL",
+          "level": 10,
+          "unlockedCapabilities": [
+            "RAPID_TARGETING"
+          ],
+          "description": "Unlocks RAPID_TARGETING at level 10."
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "domain": "progression",
+    "catalog": "level_effect_profile",
+    "description": "Canonical level effect profiles."
+  }
+}

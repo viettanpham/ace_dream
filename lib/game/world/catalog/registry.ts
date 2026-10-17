@@ -57,6 +57,13 @@ export class CatalogRegistry {
   }
 
   /**
+   * Gets the active data provider
+   */
+  getDataProvider(): ICatalogDataProvider {
+    return this.provider
+  }
+
+  /**
    * Generates a stable catalog key from domain and catalogName
    */
   private makeKey(domain: string, catalogName: string): string {

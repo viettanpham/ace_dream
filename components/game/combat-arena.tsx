@@ -2017,25 +2017,25 @@ export function CombatArena({
             )}
 
             {/* Cột 1: Người chơi (Vanguard / Falcon / Aegis) */}
-            <div className={cn("relative overflow-hidden rounded-sm border p-3.5 shadow-xl bg-gradient-to-b", currentTheme.border, currentTheme.bgGradient)}>
+            <div className={cn("relative overflow-hidden rounded-sm border p-3.5 shadow-xl bg-gradient-to-b sf-card", currentTheme.border, currentTheme.bgGradient)}>
               <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-2.5">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={cn("flex size-5 items-center justify-center rounded-xs font-mono text-xs font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                    <span className={cn("flex size-5 items-center justify-center rounded-xs font-mono sf-text-caption font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                       {activeGearDef.name.charAt(0)}
                     </span>
-                    <h3 className={cn("font-display text-base font-bold", currentTheme.textPrimary)}>
+                    <h3 className={cn("font-display sf-title-card font-bold", currentTheme.textPrimary)}>
                       {player.name}
                     </h3>
                     {/* BUỒNG LÁI TRỰC CHIẾN COMPACT PILL */}
-                    <div className={cn("flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-mono border", currentTheme.iconBg, currentTheme.iconBorder)}>
+                    <div className={cn("flex items-center gap-1.5 rounded px-2 py-0.5 sf-text-caption font-mono border", currentTheme.iconBg, currentTheme.iconBorder)}>
                       <Radio className={cn("size-3 animate-pulse", currentTheme.iconColor)} />
                       <span className={cn("font-bold tracking-wider uppercase", currentTheme.textPrimary)}>
                         BUỒNG LÁI {activeGearDef.name.toUpperCase()} TRỰC CHIẾN
                       </span>
                     </div>
                   </div>
-                  <p className={cn("font-mono text-xs", currentTheme.textAccent)}>
+                  <p className={cn("font-mono sf-text-secondary mt-0.5", currentTheme.textAccent)}>
                     {activeGearDef.role} · Cấp {progression.level}
                   </p>
                 </div>
@@ -2044,23 +2044,23 @@ export function CombatArena({
                 <div className="flex flex-wrap gap-1">
                   {player.statusEffects.map((eff) => renderStatusBadge(eff))}
                   {player.statusEffects.length === 0 && (
-                    <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng</span>
+                    <span className="sf-text-caption text-muted-foreground/60">Không có hiệu ứng</span>
                   )}
                 </div>
               </div>
 
               {/* Huy hiệu Kỹ Năng Nội Tại Của Gear */}
-              <div className="mb-2.5 rounded border border-border/60 bg-black/40 p-2 text-[10px] font-mono">
+              <div className="mb-2.5 rounded border border-border/60 bg-black/40 p-2.5 sf-text-caption font-mono">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-bold text-amber-300">
-                    <Sparkles className="size-3 text-amber-400" />
+                    <Sparkles className="size-3.5 text-amber-400" />
                     <span>NỘI TẠI: {activeGearDef.passive.name}</span>
                   </div>
-                  <span className={cn("rounded px-1.5 py-0.2 text-[9px] border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                  <span className={cn("rounded px-2 py-0.5 sf-text-caption border font-bold", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                     BẢN SẮC GEAR
                   </span>
                 </div>
-                <p className="mt-1 text-slate-300 leading-snug">
+                <p className="mt-1 sf-text-body text-slate-200 leading-snug">
                   {activeGearDef.passive.desc}
                 </p>
               </div>
@@ -2068,7 +2068,7 @@ export function CombatArena({
               {/* Thanh HP & SP */}
               <div className="space-y-2.5">
                 <div>
-                  <div className="mb-1 flex justify-between font-mono text-xs">
+                  <div className="mb-1 flex justify-between font-mono sf-text-secondary">
                     <span className="flex items-center gap-1 font-bold text-emerald-400">
                       <Shield className="size-3.5" /> ĐỘ BỀN VỎ GIÁP (HP)
                     </span>
@@ -2085,7 +2085,7 @@ export function CombatArena({
                 </div>
 
                 <div>
-                  <div className="mb-1 flex justify-between font-mono text-xs">
+                  <div className="mb-1 flex justify-between font-mono sf-text-secondary">
                     <span className="flex items-center gap-1 font-bold text-cyan-400">
                       <Zap className="size-3.5" /> LÕI NĂNG LƯỢNG (SP)
                     </span>
@@ -2103,21 +2103,21 @@ export function CombatArena({
               </div>
 
               {/* Chỉ số tác chiến thực tế (Hiển thị chỉ số hiệu dụng 4 cột) */}
-              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono text-xs">
+              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono sf-text-secondary">
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Tấn Công</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Tấn Công</span>
                   <span className="font-bold text-cyan-300">{getEffectiveAttack(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Phòng Thủ</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Phòng Thủ</span>
                   <span className="font-bold text-cyan-300">{getEffectiveDefense(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Tốc Độ</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Tốc Độ</span>
                   <span className="font-bold text-cyan-300">{getEffectiveSpeed(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Né Tránh</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Né Tránh</span>
                   <span className={cn("font-bold", player.gearType === "falcon" ? "text-amber-300" : "text-cyan-300")}>
                     {getEffectiveEvasion(player)}%
                   </span>
@@ -2126,34 +2126,34 @@ export function CombatArena({
             </div>
 
             {/* Cột 2: Kẻ Địch */}
-            <div className="relative overflow-hidden rounded-sm border border-red-500/40 bg-gradient-to-b from-red-950/20 via-panel/80 to-panel p-3.5 shadow-xl">
+            <div className="relative overflow-hidden rounded-sm border border-red-500/40 bg-gradient-to-b from-red-950/20 via-panel/80 to-panel p-3.5 shadow-xl sf-card">
               <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-2.5">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex size-5 items-center justify-center rounded-xs bg-red-500/20 font-mono text-xs font-black text-red-400 border border-red-500/50">
+                    <span className="flex size-5 items-center justify-center rounded-xs bg-red-500/20 font-mono sf-text-caption font-black text-red-400 border border-red-500/50">
                       E
                     </span>
-                    <h3 className="font-display text-base font-bold text-red-200">
+                    <h3 className="font-display sf-title-card font-bold text-red-200">
                       {enemy.name}
                     </h3>
                     {/* MỤC TIÊU ĐANG KHÓA COMPACT PILL */}
-                    <div className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-mono border border-red-500/50 bg-red-950/60 text-red-300">
+                    <div className="flex items-center gap-1.5 rounded px-2 py-0.5 sf-text-caption font-mono border border-red-500/50 bg-red-950/60 text-red-300">
                       <Target className="size-3 text-red-400 animate-spin" style={{ animationDuration: "10s" }} />
                       <span className="font-bold tracking-wider uppercase">MỤC TIÊU ĐANG KHÓA</span>
                     </div>
                     {enemy.bossPhase === 2 && (
-                      <span className="rounded bg-red-500/30 border border-red-400 px-1.5 py-0.5 font-display text-[10px] font-bold text-red-300 animate-pulse">
+                      <span className="rounded bg-red-500/30 border border-red-400 px-2 py-0.5 font-display sf-text-caption font-bold text-red-300 animate-pulse">
                         PHA 2: OVERDRIVE 🔥
                       </span>
                     )}
                   </div>
-                  <p className="font-mono text-xs text-red-400/80">{enemy.title}</p>
+                  <p className="font-mono sf-text-secondary text-red-400/80 mt-0.5">{enemy.title}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-1">
                   {enemy.statusEffects.map((eff) => renderStatusBadge(eff))}
                   {enemy.statusEffects.length === 0 && (
-                    <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng</span>
+                    <span className="sf-text-caption text-muted-foreground/60">Không có hiệu ứng</span>
                   )}
                 </div>
               </div>
@@ -2161,13 +2161,13 @@ export function CombatArena({
               {/* Thanh HP & SP Địch */}
               <div className="space-y-2.5">
                 <div>
-                  <div className="mb-1 flex justify-between font-mono text-xs">
+                  <div className="mb-1 flex justify-between font-mono sf-text-secondary">
                     <span className="flex items-center gap-1 font-bold text-red-400">
                       <ShieldAlert className="size-3.5" /> ĐỘ BỀN VỎ GIÁP (HP)
                     </span>
                     <div className="flex items-center gap-1.5 tabular-nums">
                       {projectedDamage > 0 && (
-                        <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-400/40 animate-pulse">
+                        <span className="rounded bg-amber-500/20 px-2 py-0.5 sf-text-caption font-bold text-amber-300 border border-amber-400/40 animate-pulse">
                           -{projectedDamage} HP {projectedEnemyHp <= 0 ? "⚡ LETHAL" : ""}
                         </span>
                       )}
@@ -2195,7 +2195,7 @@ export function CombatArena({
                 </div>
 
                 <div>
-                  <div className="mb-1 flex justify-between font-mono text-xs">
+                  <div className="mb-1 flex justify-between font-mono sf-text-secondary">
                     <span className="flex items-center gap-1 font-bold text-amber-400">
                       <Zap className="size-3.5" /> NĂNG LƯỢNG KẺ ĐỊCH (SP)
                     </span>
@@ -2213,21 +2213,21 @@ export function CombatArena({
               </div>
 
               {/* Chỉ số tác chiến Địch (Hiển thị chỉ số hiệu dụng 4 cột) */}
-              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono text-xs">
+              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono sf-text-secondary">
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Tấn Công</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Tấn Công</span>
                   <span className="font-bold text-red-300">{getEffectiveAttack(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Phòng Thủ</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Phòng Thủ</span>
                   <span className="font-bold text-red-300">{getEffectiveDefense(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Tốc Độ</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Tốc Độ</span>
                   <span className="font-bold text-red-300">{getEffectiveSpeed(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Né Tránh</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Né Tránh</span>
                   <span className="font-bold text-red-300">{getEffectiveEvasion(enemy)}%</span>
                 </div>
               </div>
@@ -2239,26 +2239,26 @@ export function CombatArena({
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-2">
               <div className="flex items-center gap-2">
                 <Flame className={cn("size-4", currentTheme.textAccent)} />
-                <h4 className={cn("font-display text-xs font-bold uppercase tracking-wider", currentTheme.textPrimary)}>
+                <h4 className={cn("font-display sf-title-card font-bold uppercase tracking-wider", currentTheme.textPrimary)}>
                   BẢNG ĐIỀU KHIỂN KỸ NĂNG {activeGearDef.name.toUpperCase()}
                 </h4>
                 {status === "player-turn" ? (
-                  <span className="rounded bg-emerald-500/20 px-2 py-0.5 font-display text-[10px] font-bold text-emerald-300 border border-emerald-400/50 animate-pulse">
+                  <span className="rounded bg-emerald-500/20 px-2 py-0.5 font-display sf-text-caption font-bold text-emerald-300 border border-emerald-400/50 animate-pulse">
                     ✓ ĐẾN LƯỢT BẠN ({activeGearDef.name.toUpperCase()}) — CHỌN KỸ NĂNG ĐỂ TẤN CÔNG
                   </span>
                 ) : (
-                  <span className="rounded bg-amber-500/20 px-2 py-0.5 font-display text-[10px] text-amber-300 border border-amber-400/40">
+                  <span className="rounded bg-amber-500/20 px-2 py-0.5 font-display sf-text-caption text-amber-300 border border-amber-400/40">
                     ⏳ LƯỢT KẺ ĐỊCH (ĐANG PHẢN KÍCH...)
                   </span>
                 )}
               </div>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono sf-text-secondary text-muted-foreground">
                 SP Hiện Có: <strong className={currentTheme.textPrimary}>{player.sp}</strong> / {player.maxSp}
               </span>
             </div>
 
             {/* 🎯 THANH GIÁM SÁT MỤC TIÊU & HP NỔI BẬT GẮN TRÊN ACTION DECK (DOCKED TARGET STATUS HUD) */}
-            <div className="mb-3 rounded border border-red-500/50 bg-gradient-to-r from-red-950/70 via-black/90 to-panel p-2.5 shadow-md flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+            <div className="mb-3 rounded border border-red-500/50 bg-gradient-to-r from-red-950/70 via-black/90 to-panel p-2.5 shadow-md flex flex-wrap items-center justify-between gap-3 font-mono sf-text-secondary">
               {/* Thông tin định danh đối thủ */}
               <div className="flex items-center gap-2.5">
                 <div className="flex size-7 items-center justify-center rounded-full border border-red-500/60 bg-red-950/80 shadow-[0_0_10px_rgba(239,68,68,0.4)] shrink-0">
@@ -2266,11 +2266,11 @@ export function CombatArena({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase text-red-400 font-bold tracking-wider">MỤC TIÊU ĐANG KHÓA:</span>
-                    <strong className="font-display text-sm text-white font-bold">{enemy.name}</strong>
-                    <span className="text-[10px] text-muted-foreground hidden sm:inline">({enemy.title})</span>
+                    <span className="sf-text-caption uppercase text-red-400 font-bold tracking-wider">MỤC TIÊU ĐANG KHÓA:</span>
+                    <strong className="font-display sf-title-card text-white font-bold">{enemy.name}</strong>
+                    <span className="sf-text-caption text-muted-foreground hidden sm:inline">({enemy.title})</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                  <div className="flex items-center gap-2 sf-text-caption text-muted-foreground mt-0.5">
                     <span>ATK: <strong className="text-red-300">{getEffectiveAttack(enemy)}</strong></span>
                     <span>DEF: <strong className="text-red-300">{getEffectiveDefense(enemy)}</strong></span>
                     <span>SPD: <strong className="text-red-300">{getEffectiveSpeed(enemy)}</strong></span>
@@ -2281,13 +2281,13 @@ export function CombatArena({
 
               {/* HP MỤC TIÊU & THANH SÁT THƯƠNG DỰ TÍNH (GHOST DAMAGE BAR) */}
               <div className="flex-1 max-w-sm min-w-[220px]">
-                <div className="mb-1 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1 font-bold text-red-400 text-[11px]">
+                <div className="mb-1 flex items-center justify-between sf-text-secondary">
+                  <span className="flex items-center gap-1 font-bold text-red-400 sf-text-caption">
                     <ShieldAlert className="size-3 text-red-400" /> HP MỤC TIÊU:
                   </span>
                   <div className="flex items-center gap-1.5 tabular-nums">
                     {projectedDamage > 0 && (
-                      <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-400/40 animate-pulse">
+                      <span className="rounded bg-amber-500/20 px-1.5 py-0.2 sf-text-caption font-bold text-amber-300 border border-amber-400/40 animate-pulse">
                         -{projectedDamage} HP {projectedEnemyHp <= 0 ? "⚡ LETHAL" : ""}
                       </span>
                     )}
@@ -2319,7 +2319,7 @@ export function CombatArena({
               <div className="flex flex-wrap items-center gap-1">
                 {enemy.statusEffects.map((eff) => renderStatusBadge(eff))}
                 {enemy.statusEffects.length === 0 && (
-                  <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng bất lợi</span>
+                  <span className="sf-text-caption text-muted-foreground/60">Không có hiệu ứng bất lợi</span>
                 )}
               </div>
             </div>
@@ -2352,25 +2352,25 @@ export function CombatArena({
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="font-display text-xs font-bold text-foreground group-hover:text-cyan-300">
+                        <span className="font-display sf-text-body font-bold text-foreground group-hover:text-cyan-300">
                           {skill.name}
                         </span>
                         {hasCooldown ? (
-                          <span className="rounded bg-red-950/80 px-1.5 py-0.5 font-mono text-[10px] font-bold text-red-400 border border-red-500/40">
+                          <span className="rounded bg-red-950/80 px-1.5 py-0.5 font-mono sf-text-caption font-bold text-red-400 border border-red-500/40">
                             CD: {cooldown} lượt
                           </span>
                         ) : (
-                          <span className={cn("rounded px-1.5 py-0.5 font-mono text-[10px]", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                          <span className={cn("rounded px-1.5 py-0.5 font-mono sf-text-caption", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                             {skill.spCost > 0 ? `${skill.spCost} SP` : "Hồi +15 SP"}
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                      <p className="mt-1 sf-text-secondary leading-relaxed text-muted-foreground line-clamp-2">
                         {skill.desc}
                       </p>
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-1.5 text-[10px] font-mono">
+                    <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-1.5 sf-text-caption font-mono">
                       <span className="text-muted-foreground/80">{skill.nameEn}</span>
                       <span className={cn("font-bold group-hover:underline", disabled ? "text-muted-foreground" : currentTheme.textAccent)}>
                         {disabled
@@ -2394,20 +2394,20 @@ export function CombatArena({
                   <div className="group relative flex flex-col justify-between rounded-sm border border-purple-500/50 bg-purple-950/20 p-3 text-left">
                     <div>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="font-display text-xs font-bold text-purple-300 flex items-center gap-1 truncate">
+                        <span className="font-display sf-text-body font-bold text-purple-300 flex items-center gap-1 truncate">
                           <Sparkles className="size-3 text-purple-400 shrink-0" />
                           {player.pilotSynergySkill.name}
                         </span>
-                        <span className="rounded bg-purple-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-purple-300 border border-purple-400/40 shrink-0">
+                        <span className="rounded bg-purple-500/20 px-1.5 py-0.5 font-mono sf-text-caption font-bold text-purple-300 border border-purple-400/40 shrink-0">
                           NỘI TẠI
                         </span>
                       </div>
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                      <p className="mt-1 sf-text-secondary leading-relaxed text-muted-foreground line-clamp-2">
                         {player.pilotSynergySkill.description || player.pilotSynergySkill.mainLine?.description || ""}
                       </p>
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-between border-t border-purple-500/30 pt-1.5 text-[10px] font-mono">
+                    <div className="mt-2.5 flex items-center justify-between border-t border-purple-500/30 pt-1.5 sf-text-caption font-mono">
                       <span className="text-purple-300/80">
                         {player.signatureSynergyActive ? "✨ ĐỒNG BỘ 100%" : "Hiệp Đồng Phi Công"}
                       </span>

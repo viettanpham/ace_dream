@@ -467,7 +467,7 @@ export function AdminSettingsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-fadeIn text-xs">
-      <div className="relative flex flex-col w-full max-w-4xl max-h-[92vh] rounded-lg border border-amber-500/60 bg-zinc-950 shadow-2xl shadow-amber-950/60 font-mono text-zinc-200 select-none overflow-hidden text-xs">
+      <div className="relative flex flex-col w-full max-w-4xl max-h-[92vh] rounded-lg border border-amber-500/60 bg-zinc-950 shadow-2xl shadow-amber-950/60 font-mono text-zinc-200 select-none overflow-hidden sf-text-body">
         
         {/* ====================================================================
             HEADER CỐ ĐỊNH CỦA MODAL
@@ -479,14 +479,14 @@ export function AdminSettingsModal({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-sm sm:text-base font-black tracking-wider text-amber-300 uppercase">
+                <h2 className="font-display sf-title-panel font-black tracking-wider text-amber-300 uppercase">
                   CÀI ĐẶT & QUẢN TRỊ VIÊN // ADMIN CP
                 </h2>
-                <span className="rounded bg-black/60 px-1.5 py-0.5 text-xs text-zinc-400 border border-zinc-800">
+                <span className="rounded bg-black/60 px-1.5 py-0.5 sf-text-caption text-zinc-400 border border-zinc-800">
                   ISOLATED SETTINGS
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 hidden sm:block">
+              <p className="sf-text-secondary text-zinc-400 hidden sm:block">
                 Cấu hình nhịp độ thời gian thực, HP-Based Threat, Event/Quest, chính sách chiến lược & bảo trì dữ liệu
               </p>
             </div>
@@ -494,7 +494,7 @@ export function AdminSettingsModal({
 
           <div className="flex items-center gap-2">
             {/* Quick Collapse / Expand Controls */}
-            <div className="flex items-center gap-1 border border-zinc-800 rounded bg-black/60 px-1.5 py-0.5 text-xs">
+            <div className="flex items-center gap-1 border border-zinc-800 rounded bg-black/60 px-2 py-1 sf-text-caption">
               <button
                 type="button"
                 onClick={handleExpandAll}
@@ -514,7 +514,7 @@ export function AdminSettingsModal({
               </button>
             </div>
 
-            <span className="flex items-center gap-1.5 rounded border border-amber-500/40 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-300">
+            <span className="flex items-center gap-1.5 rounded border border-amber-500/40 bg-amber-950/40 px-2.5 py-1 sf-text-caption font-bold text-amber-300">
               <span className="size-2 rounded-full bg-amber-400 animate-ping" />
               <span>{simulatorConfig.isPaused ? "PAUSED" : `${simulatorConfig.speedSeconds}s/Ngày`}</span>
             </span>
@@ -526,7 +526,7 @@ export function AdminSettingsModal({
                 playClickSound()
                 onClose()
               }}
-              className="flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-500 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-white transition-all cursor-pointer"
+              className="flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-500 px-3 py-1.5 sf-text-button text-zinc-300 hover:text-white transition-all cursor-pointer"
               title="Đóng cửa sổ quản trị (Phím ESC)"
             >
               <X className="size-4" />
@@ -538,7 +538,7 @@ export function AdminSettingsModal({
         {/* ====================================================================
             NAVIGATION TABS TRONG MODAL
             ==================================================================== */}
-        <div className="flex flex-wrap items-center gap-1 border-b border-zinc-800 bg-black/40 px-4 py-2 shrink-0 text-xs">
+        <div className="flex flex-wrap items-center gap-1 border-b border-zinc-800 bg-black/40 px-4 py-2 shrink-0 sf-text-secondary">
           {[
             { id: "all", label: "Tất Cả Mục", icon: Sliders },
             { id: "speed", label: "1. Tốc Độ & Thời Gian", icon: Clock },
@@ -560,7 +560,7 @@ export function AdminSettingsModal({
                   setActiveTab(tab.id as AdminModalTab)
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-bold transition-all cursor-pointer",
+                  "flex items-center gap-1.5 rounded px-2.5 py-1.5 sf-text-button font-bold transition-all cursor-pointer",
                   isActive
                     ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-xs"
                     : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
@@ -584,7 +584,7 @@ export function AdminSettingsModal({
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
                 <div className="flex items-center gap-2">
                   <Clock className="size-4 text-cyan-400" />
-                  <span className="font-bold text-xs uppercase text-cyan-300">
+                  <span className="font-bold sf-title-card uppercase text-cyan-300">
                     Trạng Thái Động Cơ Thời Gian Thực (Real-time Engine)
                   </span>
                 </div>
@@ -594,7 +594,7 @@ export function AdminSettingsModal({
                     type="button"
                     onClick={onTogglePause}
                     className={cn(
-                      "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-bold transition-all cursor-pointer",
+                      "flex items-center gap-1.5 rounded px-3 py-1.5 sf-text-button font-bold transition-all cursor-pointer",
                       simulatorConfig.isPaused
                         ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/60"
                         : "bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-950/60"
@@ -616,37 +616,37 @@ export function AdminSettingsModal({
               </div>
 
               {/* Thông tin hiển thị */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sf-text-body">
                 <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
-                  <div className="text-zinc-400 text-xs">Niên Lịch Game</div>
-                  <div className="font-bold text-white text-sm mt-0.5">
+                  <div className="text-zinc-400 sf-text-caption">Niên Lịch Game</div>
+                  <div className="font-bold text-white sf-title-card mt-0.5">
                     Năm {calendarInfo.year}, {calendarInfo.seasonName}
                   </div>
-                  <div className="text-zinc-500 text-xs">{calendarInfo.formattedDate}</div>
+                  <div className="text-zinc-500 sf-text-caption">{calendarInfo.formattedDate}</div>
                 </div>
 
                 <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
-                  <div className="text-zinc-400 text-xs">Tổng Ngày Tích Lũy</div>
-                  <div className="font-bold text-cyan-300 text-sm mt-0.5">
+                  <div className="text-zinc-400 sf-text-caption">Tổng Ngày Tích Lũy</div>
+                  <div className="font-bold text-cyan-300 sf-title-card mt-0.5">
                     Ngày {worldState?.currentDay ?? 1}
                   </div>
-                  <div className="text-zinc-500 text-xs">Đã trôi: {worldState?.totalDaysElapsed ?? 0} ngày</div>
+                  <div className="text-zinc-500 sf-text-caption">Đã trôi: {worldState?.totalDaysElapsed ?? 0} ngày</div>
                 </div>
 
                 <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
-                  <div className="text-zinc-400 text-xs">Đếm Ngược Tick Kế</div>
-                  <div className="font-bold text-amber-300 text-sm mt-0.5 font-mono">
+                  <div className="text-zinc-400 sf-text-caption">Đếm Ngược Tick Kế</div>
+                  <div className="font-bold text-amber-300 sf-title-card mt-0.5 font-mono">
                     {simulatorConfig.isPaused ? "PAUSED" : `${countdownSeconds}s`}
                   </div>
-                  <div className="text-zinc-500 text-xs">Tiến trình: {(dayFraction * 100).toFixed(0)}%</div>
+                  <div className="text-zinc-500 sf-text-caption">Tiến trình: {(dayFraction * 100).toFixed(0)}%</div>
                 </div>
 
                 <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
-                  <div className="text-zinc-400 text-xs">Sự Kiện Đang Chạy</div>
-                  <div className="font-bold text-emerald-300 text-sm mt-0.5">
+                  <div className="text-zinc-400 sf-text-caption">Sự Kiện Đang Chạy</div>
+                  <div className="font-bold text-emerald-300 sf-title-card mt-0.5">
                     {eventTierCounts.total} sự kiện
                   </div>
-                  <div className="text-zinc-500 text-xs">S: {eventTierCounts.small} | M: {eventTierCounts.medium} | L: {eventTierCounts.large}</div>
+                  <div className="text-zinc-500 sf-text-caption">S: {eventTierCounts.small} | M: {eventTierCounts.medium} | L: {eventTierCounts.large}</div>
                 </div>
               </div>
             </div>

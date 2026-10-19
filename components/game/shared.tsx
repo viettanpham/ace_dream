@@ -57,23 +57,23 @@ export function Panel({
   return (
     <section
       className={cn(
-        "relative border border-border/70 bg-panel/80 backdrop-blur-sm",
+        "relative border border-border/70 bg-panel/80 backdrop-blur-sm sf-density-card",
         "shadow-[0_0_0_1px_oklch(0.75_0.15_205_/_6%),inset_0_1px_0_oklch(1_0_0_/_4%)]",
         className,
       )}
     >
       {title != null && (
-        <header className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2">
+        <header className="flex items-center justify-between gap-2 border-b border-border/60 px-3 py-2.5">
           <div className="flex items-center gap-2 text-primary">
             {icon}
-            <h2 className="font-display text-xs font-700 tracking-[0.18em] uppercase text-foreground/90">
+            <h2 className="font-display sf-title-panel uppercase text-foreground tracking-wider font-bold">
               {title}
             </h2>
           </div>
           {action}
         </header>
       )}
-      <div className={cn("p-3", bodyClassName)}>{children}</div>
+      <div className={cn("p-3.5", bodyClassName)}>{children}</div>
     </section>
   )
 }
@@ -92,16 +92,16 @@ export function StatBar({
   const pct = Math.max(0, Math.min(100, (value / max) * 100))
   return (
     <div className="flex items-center gap-2">
-      <span className="w-16 shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground">
+      <span className="w-20 shrink-0 sf-text-caption uppercase tracking-wider text-muted-foreground font-semibold">
         {label}
       </span>
-      <div className="relative h-2 flex-1 overflow-hidden rounded-sm bg-secondary/60">
+      <div className="relative h-2.5 flex-1 overflow-hidden rounded-sm bg-secondary/60">
         <div
           className="h-full rounded-sm transition-all"
           style={{ width: `${pct}%`, backgroundColor: color }}
         />
       </div>
-      <span className="w-12 shrink-0 text-right font-mono text-[11px] tabular-nums text-foreground/90">
+      <span className="w-14 shrink-0 text-right font-mono sf-text-secondary tabular-nums text-foreground/90 font-bold">
         {Math.round(value)}
       </span>
     </div>
@@ -112,8 +112,8 @@ export function RarityBadge({ rarity }: { rarity: Rarity }) {
   const m = RARITY_META[rarity]
   return (
     <span
-      className="inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[9px] font-600 uppercase tracking-widest"
-      style={{ color: m.color, borderColor: m.color, backgroundColor: `color-mix(in oklch, ${m.color} 12%, transparent)` }}
+      className="inline-flex items-center rounded-sm border px-2 py-0.5 sf-text-caption font-bold uppercase tracking-wider shadow-xs"
+      style={{ color: m.color, borderColor: m.color, backgroundColor: `color-mix(in oklch, ${m.color} 15%, transparent)` }}
     >
       {m.label}
     </span>
@@ -135,11 +135,11 @@ export function ResourcePill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 font-mono text-[11px] tabular-nums",
-        insufficient ? "text-destructive" : "text-foreground/90",
+        "inline-flex items-center gap-1.5 font-mono sf-text-secondary tabular-nums font-medium",
+        insufficient ? "text-destructive font-bold" : "text-foreground/90",
       )}
     >
-      <Icon className="size-3" style={{ color: insufficient ? undefined : meta.color }} />
+      <Icon className="size-3.5 shrink-0" style={{ color: insufficient ? undefined : meta.color }} />
       {cost != null ? formatNum(cost) : formatNum(amount ?? 0)}
     </span>
   )

@@ -32,9 +32,18 @@ import {
   UI_SCALE_STEP,
   SUPPORTED_UI_SCALES,
   type SupportedUiScale,
+  type SupportedTextScale,
+  type SupportedLayoutDensity,
+  TEXT_SCALE_OPTIONS,
+  LAYOUT_DENSITY_OPTIONS,
   normalizeUiScale,
   getSavedUiScale,
   saveUiScale,
+  getSavedTextScale,
+  saveTextScale,
+  getSavedLayoutDensity,
+  saveLayoutDensity,
+  applyTextScaleAndDensity,
   getSavedScanlineOverlay,
   getSavedScanlineBeam,
   getSavedVignette,
@@ -51,6 +60,8 @@ export interface GlobalSettingsState {
   vignette: boolean
   cornerBrackets: boolean
   uiScale: SupportedUiScale
+  textScale: SupportedTextScale
+  layoutDensity: SupportedLayoutDensity
 }
 
 interface GlobalSettingsModalProps {
@@ -93,6 +104,10 @@ export function GlobalSettingsModal({
 
   // UI Scale: 100% - 200% with step 25%
   const [uiScale, setUiScaleLocal] = useState<SupportedUiScale>(100)
+  // Global Typography Scale (Phase 6.33 Foundation): 90%, 100%, 115%, 125%
+  const [textScale, setTextScaleLocal] = useState<SupportedTextScale>(100)
+  // Layout Density (Phase 6.33 Foundation): compact, comfortable
+  const [layoutDensity, setLayoutDensityLocal] = useState<SupportedLayoutDensity>("comfortable")
   const [hasChanged, setHasChanged] = useState<boolean>(false)
 
   // Master CRT status: true when scanline overlay or any effect is active
@@ -108,6 +123,8 @@ export function GlobalSettingsModal({
       setVignetteLocal(getSavedVignette())
       setCornerBracketsLocal(getSavedCornerBrackets())
       setUiScaleLocal(getSavedUiScale())
+      setTextScaleLocal(getSavedTextScale())
+      setLayoutDensityLocal(getSavedLayoutDensity())
       setHasChanged(false)
     }
   }, [isOpen])
@@ -124,6 +141,8 @@ export function GlobalSettingsModal({
       vignette: overrides?.vignette ?? vignette,
       cornerBrackets: overrides?.cornerBrackets ?? cornerBrackets,
       uiScale: overrides?.uiScale ?? uiScale,
+      textScale: overrides?.textScale ?? textScale,
+      layoutDensity: overrides?.layoutDensity ?? layoutDensity,
     }
     onUpdateSettings(currentState)
   }
@@ -220,6 +239,22 @@ export function GlobalSettingsModal({
     emitSettings({ uiScale: norm })
   }
 
+  const handleSetTextScale = (val: SupportedTextScale) => {
+    playClickSound()
+    setTextScaleLocal(val)
+    saveTextScale(val)
+    setHasChanged(true)
+    emitSettings({ textScale: val })
+  }
+
+  const handleSetDensity = (val: SupportedLayoutDensity) => {
+    playClickSound()
+    setLayoutDensityLocal(val)
+    saveLayoutDensity(val)
+    setHasChanged(true)
+    emitSettings({ layoutDensity: val })
+  }
+
   const handleResetDefaults = () => {
     playClickSound()
     const defaults = resetGlobalSettingsToDefault()
@@ -230,6 +265,8 @@ export function GlobalSettingsModal({
     setVignetteLocal(defaults.vignette)
     setCornerBracketsLocal(defaults.cornerBrackets)
     setUiScaleLocal(defaults.uiScale)
+    setTextScaleLocal(defaults.textScale)
+    setLayoutDensityLocal(defaults.layoutDensity)
     setHasChanged(true)
     emitSettings(defaults)
   }
@@ -318,9 +355,9 @@ export function GlobalSettingsModal({
             )}
           >
             <Sliders className="size-3.5" />
-            <span>Thu Phóng Giao Diện</span>
+            <span>Giao Diện & Cỡ Chữ</span>
             <span className="text-cyan-300 font-mono text-xs font-bold">
-              [{uiScale}%]
+              [{textScale}% · {layoutDensity === "compact" ? "Gọn" : "Thoải Mái"}]
             </span>
           </button>
         </div>
@@ -587,104 +624,172 @@ export function GlobalSettingsModal({
           </div>
         )}
 
-        {/* Tab 3: UI Scaling Settings (Phase 6.33_FIX3: 100% -> 200%) */}
+        {/* Tab 3: UI Typography Scale & Layout Density (Foundation Phase) */}
         {activeTab === "scale" && (
           <div className="py-4 space-y-4 animate-in fade-in duration-150 text-xs">
-            <div className="rounded border border-zinc-800 bg-zinc-900/60 p-3.5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="font-bold text-zinc-200">
-                  Tỷ Lệ Thu Phóng Giao Diện (UI Scale 100% — 200%)
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold font-mono text-cyan-300 text-base">
-                    {uiScale}%
+            {/* Block 1: Global UI Text Scale */}
+            <div className="rounded border border-cyan-500/40 bg-zinc-900/80 p-4 space-y-3 shadow-md">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="font-bold text-zinc-100 text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-cyan-400 animate-pulse" />
+                    Cỡ Chữ Giao Diện // Global UI Text Scale
                   </span>
-                  {/* Select Dropdown Control */}
-                  <select
-                    value={uiScale}
-                    onChange={(e) => handleSetScale(parseInt(e.target.value, 10))}
-                    className="rounded border border-cyan-500/50 bg-black/80 px-2 py-1 text-xs font-mono font-bold text-cyan-200 focus:outline-none focus:ring-1 focus:ring-cyan-400 cursor-pointer"
-                  >
-                    {SUPPORTED_UI_SCALES.map((scale) => (
-                      <option key={scale} value={scale}>
-                        {scale}% {scale === 100 ? "(Chuẩn)" : scale === 200 ? "(Tối đa)" : ""}
-                      </option>
-                    ))}
-                  </select>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Tác động trực tiếp vào các Semantic Typography Tokens toàn GAME
+                  </p>
                 </div>
+                <span className="font-mono font-bold text-cyan-300 text-sm border border-cyan-500/50 bg-cyan-950/70 px-2.5 py-0.5 rounded">
+                  {textScale}%
+                </span>
               </div>
 
-              {/* Supported Step Quick Visual Marks (100, 110, 120, 130, 140, 150, 175, 200) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5 text-xs">
-                {UI_SCALE_PRESETS.map((preset) => {
-                  const isCurrent = uiScale === preset.value
+              {/* 4 Official Options */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {TEXT_SCALE_OPTIONS.map((opt) => {
+                  const isCurrent = textScale === opt.value
                   return (
                     <button
-                      key={preset.value}
-                      onClick={() => handleSetScale(preset.value)}
+                      key={opt.value}
+                      onClick={() => handleSetTextScale(opt.value)}
                       className={cn(
-                        "flex flex-col items-center justify-center p-2 rounded border text-center transition-all cursor-pointer",
+                        "flex flex-col items-center justify-center p-3 rounded border text-center transition-all cursor-pointer",
                         isCurrent
-                          ? "border-cyan-400 bg-cyan-950/70 text-cyan-200 shadow-md ring-1 ring-cyan-400/50"
+                          ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 shadow-lg ring-1 ring-cyan-400/50"
                           : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white hover:border-zinc-700"
                       )}
                     >
-                      <span className="font-bold font-mono text-xs">{preset.label}</span>
-                      <span className="text-xs text-zinc-400 mt-0.5 truncate max-w-full">
-                        {preset.desc}
+                      <span className="font-bold font-mono text-xs sm:text-sm text-cyan-300">
+                        {opt.label} ({opt.percentage})
+                      </span>
+                      <span className="text-[11px] text-zinc-400 mt-1 line-clamp-2">
+                        {opt.desc}
                       </span>
                     </button>
                   )
                 })}
               </div>
+            </div>
 
-              {/* Step-locked Range Slider (100 to 200 with step 5) */}
-              <div className="pt-2 space-y-2">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSetScale(uiScale - UI_SCALE_STEP)}
-                    disabled={uiScale <= MIN_UI_SCALE}
-                    className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs font-mono font-bold text-zinc-200 hover:border-cyan-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                    title="Giảm 5%"
-                  >
-                    -5%
-                  </button>
-                  <input
-                    type="range"
-                    min={MIN_UI_SCALE}
-                    max={MAX_UI_SCALE}
-                    step={UI_SCALE_STEP}
-                    value={uiScale}
-                    onChange={(e) => handleSetScale(parseInt(e.target.value, 10))}
-                    className="w-full accent-cyan-400 cursor-pointer"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleSetScale(uiScale + UI_SCALE_STEP)}
-                    disabled={uiScale >= MAX_UI_SCALE}
-                    className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs font-mono font-bold text-zinc-200 hover:border-cyan-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-                    title="Tăng 5%"
-                  >
-                    +5%
-                  </button>
+            {/* Block 2: Layout Density */}
+            <div className="rounded border border-zinc-800 bg-zinc-900/80 p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <span className="font-bold text-zinc-100 text-xs sm:text-sm uppercase tracking-wide">
+                    Mật Độ Bố Cục // Layout Density
+                  </span>
+                  <p className="text-xs text-zinc-400 mt-0.5">
+                    Tách biệt độc lập với Cỡ Chữ — điều chỉnh độ thông thoáng của Card và Panel
+                  </p>
                 </div>
-                <div className="flex justify-between text-xs text-zinc-500 font-mono">
-                  <span>100% (Mặc định)</span>
-                  <span>125%</span>
-                  <span>150%</span>
-                  <span>175%</span>
-                  <span>200% (Tối đa)</span>
+                <span className="font-mono font-bold text-cyan-300 text-xs border border-cyan-500/40 bg-cyan-950/60 px-2 py-0.5 rounded">
+                  {layoutDensity === "compact" ? "GỌN" : "THOẢI MÁI"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {LAYOUT_DENSITY_OPTIONS.map((densityOpt) => {
+                  const isCurrent = layoutDensity === densityOpt.value
+                  return (
+                    <button
+                      key={densityOpt.value}
+                      onClick={() => handleSetDensity(densityOpt.value)}
+                      className={cn(
+                        "flex flex-col p-3 rounded border text-left transition-all cursor-pointer",
+                        isCurrent
+                          ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 shadow-md ring-1 ring-cyan-400/50"
+                          : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-white hover:border-zinc-700"
+                      )}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-bold text-xs sm:text-sm text-zinc-100">
+                          {densityOpt.label}
+                        </span>
+                        {isCurrent && <Check className="size-4 text-cyan-400" />}
+                      </div>
+                      <span className="text-[11px] text-zinc-400 mt-1">
+                        {densityOpt.desc}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Block 3: Live Semantic Tokens Preview */}
+            <div className="rounded border border-cyan-500/30 bg-black/60 p-4 space-y-3">
+              <div className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center justify-between border-b border-cyan-500/20 pb-2">
+                <span>Khung Thử Nghiệm Semantic Tokens (Live Preview)</span>
+                <span className="font-mono text-zinc-500 text-[11px]">scale: {textScale}% · {layoutDensity}</span>
+              </div>
+
+              <div className="space-y-2 rounded border border-zinc-800 bg-zinc-950/80 p-3">
+                <div className="sf-title-panel text-cyan-300 font-bold">
+                  BẢNG CHỈ HUY CHIẾN LƯỢC TÁC CHIẾN
+                </div>
+                <div className="sf-title-card text-white">
+                  Kế Hoạch Bảo Vệ Vành Đai Phòng Tuyến Sector Sol HQ
+                </div>
+                <div className="sf-text-body text-zinc-200">
+                  Lực lượng phòng thủ đang duy trì tuyến siêu không gian kết nối Sol HQ và Centauri Mining. Mức độ đe dọa trung bình được duy trì trong ngưỡng an toàn cho phép.
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800/80">
+                  <div className="sf-text-secondary text-zinc-300 font-medium">
+                    Tọa độ: [SOL-HQ] · Tuyến: 12 · Hạm đội: Sẵn sàng
+                  </div>
+                  <div className="sf-text-caption text-zinc-400 font-mono">
+                    ID: EVT-9482 · HẠN: 3 NGÀY
+                  </div>
+                </div>
+                <div className="pt-2">
+                  <span
+                    className="sf-text-button sf-density-btn inline-block rounded bg-cyan-600 hover:bg-cyan-500 text-black font-bold uppercase transition-all shadow-sm cursor-default"
+                  >
+                    Xác Nhận Kế Hoạch Chỉ Huy
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="rounded border border-cyan-500/30 bg-cyan-950/20 p-2.5 text-xs text-cyan-300/90 leading-relaxed space-y-1">
-              <div>
-                💡 <strong>Quy định hiển thị:</strong> Hỗ trợ chính xác các mức từ <strong>100%</strong> tới <strong>200%</strong> (bước nhảy 5%).
+            {/* Block 4: Total UI Scale Zoom (100% — 200%) */}
+            <div className="rounded border border-zinc-800 bg-zinc-900/60 p-3.5 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span className="font-bold text-zinc-300">
+                  Thu Phóng Trực Tiếp Màn Hình (Total UI Zoom 100% — 200%)
+                </span>
+                <span className="font-bold font-mono text-cyan-300 text-sm">
+                  {uiScale}%
+                </span>
               </div>
-              <div className="text-xs text-cyan-400/90 break-words whitespace-normal">
-                Khi tăng scale, toàn bộ font chữ của giao diện (Combat V2, Nhật ký, Bảng điều khiển) phóng to thực sự theo tỷ lệ tương ứng; văn bản dài tự động co dãn hoặc wrap xuống dòng đảm bảo đọc dễ dàng và không bị tràn viền.
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSetScale(uiScale - UI_SCALE_STEP)}
+                  disabled={uiScale <= MIN_UI_SCALE}
+                  className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs font-mono font-bold text-zinc-200 hover:border-cyan-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  title="Giảm 5%"
+                >
+                  -5%
+                </button>
+                <input
+                  type="range"
+                  min={MIN_UI_SCALE}
+                  max={MAX_UI_SCALE}
+                  step={UI_SCALE_STEP}
+                  value={uiScale}
+                  onChange={(e) => handleSetScale(parseInt(e.target.value, 10))}
+                  className="w-full accent-cyan-400 cursor-pointer"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSetScale(uiScale + UI_SCALE_STEP)}
+                  disabled={uiScale >= MAX_UI_SCALE}
+                  className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs font-mono font-bold text-zinc-200 hover:border-cyan-400 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  title="Tăng 5%"
+                >
+                  +5%
+                </button>
               </div>
             </div>
           </div>

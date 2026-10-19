@@ -40,7 +40,41 @@ export const SUPPORTED_UI_SCALES = [
 
 export type SupportedUiScale = (typeof SUPPORTED_UI_SCALES)[number]
 
+/* ========================================================================
+   STARFRONT GLOBAL TYPOGRAPHY & LAYOUT DENSITY (Foundation Phase)
+   ======================================================================== */
+export const SUPPORTED_TEXT_SCALES = [90, 100, 115, 125] as const
+export type SupportedTextScale = (typeof SUPPORTED_TEXT_SCALES)[number]
+export const DEFAULT_TEXT_SCALE: SupportedTextScale = 100
+
+export const TEXT_SCALE_OPTIONS: Array<{
+  value: SupportedTextScale
+  label: string
+  percentage: string
+  desc: string
+}> = [
+  { value: 90, label: "Nhỏ gọn", percentage: "90%", desc: "Hiển thị nhiều thông tin hơn" },
+  { value: 100, label: "Tiêu chuẩn", percentage: "100%", desc: "Mặc định hệ thống" },
+  { value: 115, label: "Chữ lớn", percentage: "115%", desc: "Dễ đọc, phân cấp rõ" },
+  { value: 125, label: "Rất lớn", percentage: "125%", desc: "Tối ưu cho màn hình độ phân giải cao" },
+]
+
+export const SUPPORTED_LAYOUT_DENSITIES = ["compact", "comfortable"] as const
+export type SupportedLayoutDensity = (typeof SUPPORTED_LAYOUT_DENSITIES)[number]
+export const DEFAULT_LAYOUT_DENSITY: SupportedLayoutDensity = "comfortable"
+
+export const LAYOUT_DENSITY_OPTIONS: Array<{
+  value: SupportedLayoutDensity
+  label: string
+  desc: string
+}> = [
+  { value: "compact", label: "Gọn", desc: "Giảm khoảng cách, tăng mật độ thẻ" },
+  { value: "comfortable", label: "Thoải mái", desc: "Khoảng cách chuẩn, thoáng đãng (Mặc định)" },
+]
+
 export const STORAGE_UI_SCALE_KEY = "starfront_ui_scale"
+export const STORAGE_TEXT_SCALE_KEY = "starfront_text_scale"
+export const STORAGE_LAYOUT_DENSITY_KEY = "starfront_layout_density"
 export const STORAGE_SCANLINE_OVERLAY_KEY = "starfront_scanline_overlay"
 export const STORAGE_SCANLINE_BEAM_KEY = "starfront_scanline_beam"
 export const STORAGE_VIGNETTE_KEY = "starfront_vignette"
@@ -48,6 +82,8 @@ export const STORAGE_CORNER_BRACKETS_KEY = "starfront_corner_brackets"
 
 // In-memory fallbacks for SSR, Node.js, and headless tests
 let memoryScale: SupportedUiScale = DEFAULT_UI_SCALE
+let memoryTextScale: SupportedTextScale = DEFAULT_TEXT_SCALE
+let memoryDensity: SupportedLayoutDensity = DEFAULT_LAYOUT_DENSITY
 let memoryOverlay = false
 let memoryBeam = false
 let memoryVignette = false
@@ -211,7 +247,107 @@ export function saveCrtSettings(settings: {
   }
 }
 
-/** Resets all global settings to Phase 6.33_FIX2 official defaults */
+/**
+ * Normalizes any text scale input to [90, 100, 115, 125]
+ */
+export function normalizeTextScale(val: unknown): SupportedTextScale {
+  if (val === null || val === undefined) return DEFAULT_TEXT_SCALE
+  let num = typeof val === "number" ? val : parseFloat(String(val))
+  if (isNaN(num) || !isFinite(num)) return DEFAULT_TEXT_SCALE
+  if (num > 0 && num <= 2.0) {
+    num = Math.round(num * 100)
+  }
+  if (num <= 95) return 90
+  if (num <= 107) return 100
+  if (num <= 120) return 115
+  return 125
+}
+
+/**
+ * Normalizes layout density
+ */
+export function normalizeLayoutDensity(val: unknown): SupportedLayoutDensity {
+  if (val === "compact") return "compact"
+  return "comfortable"
+}
+
+/**
+ * Applies text scale and layout density to document root safely
+ */
+export function applyTextScaleAndDensity(
+  textScalePercent?: number,
+  density?: SupportedLayoutDensity
+): void {
+  if (typeof document !== "undefined") {
+    const scale = normalizeTextScale(textScalePercent ?? getSavedTextScale())
+    const dens = normalizeLayoutDensity(density ?? getSavedLayoutDensity())
+    
+    document.documentElement.style.setProperty("--sf-text-scale", String(scale / 100))
+    document.documentElement.setAttribute("data-density", dens)
+    document.documentElement.style.setProperty(
+      "--sf-density-scale",
+      dens === "compact" ? "0.85" : "1.0"
+    )
+  }
+}
+
+/** Reads saved Text Scale from localStorage or memory */
+export function getSavedTextScale(): SupportedTextScale {
+  const storage = getLocalStorage()
+  if (storage) {
+    try {
+      const saved = storage.getItem(STORAGE_TEXT_SCALE_KEY)
+      if (saved !== null) {
+        return normalizeTextScale(saved)
+      }
+    } catch {}
+  }
+  return memoryTextScale
+}
+
+/** Saves Text Scale to localStorage and applies CSS variable */
+export function saveTextScale(scalePercent: number): SupportedTextScale {
+  const norm = normalizeTextScale(scalePercent)
+  memoryTextScale = norm
+  const storage = getLocalStorage()
+  if (storage) {
+    try {
+      storage.setItem(STORAGE_TEXT_SCALE_KEY, String(norm))
+    } catch {}
+  }
+  applyTextScaleAndDensity(norm, undefined)
+  return norm
+}
+
+/** Reads saved Layout Density from localStorage or memory */
+export function getSavedLayoutDensity(): SupportedLayoutDensity {
+  const storage = getLocalStorage()
+  if (storage) {
+    try {
+      const saved = storage.getItem(STORAGE_LAYOUT_DENSITY_KEY)
+      if (saved !== null) {
+        return normalizeLayoutDensity(saved)
+      }
+    } catch {}
+  }
+  return memoryDensity
+}
+
+/** Saves Layout Density to localStorage and applies data attribute */
+export function saveLayoutDensity(density: SupportedLayoutDensity): SupportedLayoutDensity {
+  const norm = normalizeLayoutDensity(density)
+  memoryDensity = norm
+  const storage = getLocalStorage()
+  if (storage) {
+    try {
+      storage.setItem(STORAGE_LAYOUT_DENSITY_KEY, String(norm))
+    } catch {}
+  }
+  applyTextScaleAndDensity(undefined, norm)
+  return norm
+}
+
+/** Resets all global settings to official defaults */
 export function resetGlobalSettingsToDefault(): {
   audioMuted: boolean
   audioVolume: number
@@ -220,6 +356,8 @@ export function resetGlobalSettingsToDefault(): {
   vignette: boolean
   cornerBrackets: boolean
   uiScale: SupportedUiScale
+  textScale: SupportedTextScale
+  layoutDensity: SupportedLayoutDensity
 } {
   setAudioMuted(true)
   setAudioVolume(0.8)
@@ -230,6 +368,8 @@ export function resetGlobalSettingsToDefault(): {
     cornerBrackets: false,
   })
   saveUiScale(DEFAULT_UI_SCALE)
+  saveTextScale(DEFAULT_TEXT_SCALE)
+  saveLayoutDensity(DEFAULT_LAYOUT_DENSITY)
 
   return {
     audioMuted: true,
@@ -239,5 +379,7 @@ export function resetGlobalSettingsToDefault(): {
     vignette: false,
     cornerBrackets: false,
     uiScale: DEFAULT_UI_SCALE,
+    textScale: DEFAULT_TEXT_SCALE,
+    layoutDensity: DEFAULT_LAYOUT_DENSITY,
   }
 }

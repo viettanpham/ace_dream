@@ -1,0 +1,38 @@
+{
+  "configFileId": "system_decision_decision_source",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "COMMANDER_APPROVED",
+      "name": "Commander Approved",
+      "description": "Manual strategic approval by the Commander."
+    },
+    {
+      "id": "COMMANDER_REJECTED",
+      "name": "Commander Rejected",
+      "description": "Manual strategic rejection by the Commander."
+    },
+    {
+      "id": "AI_TIMEOUT_APPROVED",
+      "name": "AI Timeout Approved",
+      "description": "Automatic approval triggered by AI re-evaluation upon timeout."
+    },
+    {
+      "id": "AI_TIMEOUT_REJECTED",
+      "name": "AI Timeout Rejected",
+      "description": "Automatic rejection triggered by AI re-evaluation upon timeout."
+    },
+    {
+      "id": "INVALIDATED",
+      "name": "Invalidated",
+      "description": "Decision invalidated due to context expiration, missing entity, or supersession."
+    }
+  ],
+  "metadata": {
+    "domain": "decision",
+    "catalog": "decision_source",
+    "description": "Canonical decision sources and resolution triggers."
+  }
+}

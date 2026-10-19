@@ -1,0 +1,218 @@
+{
+  "configFileId": "system_progression_progression_profile",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "profile_standard_100",
+      "name": "Standard 100-Level Progression",
+      "description": "Standard progression profile spanning TIER_I to TIER_X across 100 levels.",
+      "globalMaxLevel": 100,
+      "baseExpPerLevel": 100,
+      "expGrowthFactor": 1.15,
+      "levelEffectProfileId": "level_effects_facility_generic",
+      "tierEffectProfileId": "tier_effects_generic",
+      "defaultPolicy": "MANUAL",
+      "tiers": [
+        {
+          "tierId": "TIER_I",
+          "tierOrder": 1,
+          "minLevel": 1,
+          "maxLevel": 10,
+          "displayName": "Tier I",
+          "description": "Standard operational baseline tier.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 1,
+          "levelEffectMultiplier": 1.0,
+          "nextTierId": "TIER_II"
+        },
+        {
+          "tierId": "TIER_II",
+          "tierOrder": 2,
+          "minLevel": 11,
+          "maxLevel": 20,
+          "displayName": "Tier II",
+          "description": "Refurbished military-grade tier with 2.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 2,
+          "levelEffectMultiplier": 2.0,
+          "nextTierId": "TIER_III"
+        },
+        {
+          "tierId": "TIER_III",
+          "tierOrder": 3,
+          "minLevel": 21,
+          "maxLevel": 30,
+          "displayName": "Tier III",
+          "description": "Advanced tactical tier with 3.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 3,
+          "levelEffectMultiplier": 3.0,
+          "nextTierId": "TIER_IV"
+        },
+        {
+          "tierId": "TIER_IV",
+          "tierOrder": 4,
+          "minLevel": 31,
+          "maxLevel": 40,
+          "displayName": "Tier IV",
+          "description": "Elite capital tier with 4.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 4,
+          "levelEffectMultiplier": 4.0,
+          "nextTierId": "TIER_V"
+        },
+        {
+          "tierId": "TIER_V",
+          "tierOrder": 5,
+          "minLevel": 41,
+          "maxLevel": 50,
+          "displayName": "Tier V",
+          "description": "Deep-space specialized tier (soft auto-transition to Tier VI when level reached).",
+          "needUpgrade": false,
+          "upgradeDurationGameDays": 0,
+          "levelEffectMultiplier": 5.0,
+          "nextTierId": "TIER_VI"
+        },
+        {
+          "tierId": "TIER_VI",
+          "tierOrder": 6,
+          "minLevel": 51,
+          "maxLevel": 60,
+          "displayName": "Tier VI",
+          "description": "Masterwork strategic tier with 6.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 5,
+          "levelEffectMultiplier": 6.0,
+          "nextTierId": "TIER_VII"
+        },
+        {
+          "tierId": "TIER_VII",
+          "tierOrder": 7,
+          "minLevel": 61,
+          "maxLevel": 70,
+          "displayName": "Tier VII",
+          "description": "High command tier with 7.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 6,
+          "levelEffectMultiplier": 7.0,
+          "nextTierId": "TIER_VIII"
+        },
+        {
+          "tierId": "TIER_VIII",
+          "tierOrder": 8,
+          "minLevel": 71,
+          "maxLevel": 80,
+          "displayName": "Tier VIII",
+          "description": "Armada flagship tier with 8.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 7,
+          "levelEffectMultiplier": 8.0,
+          "nextTierId": "TIER_IX"
+        },
+        {
+          "tierId": "TIER_IX",
+          "tierOrder": 9,
+          "minLevel": 81,
+          "maxLevel": 90,
+          "displayName": "Tier IX",
+          "description": "Legendary dreadnought tier with 9.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 8,
+          "levelEffectMultiplier": 9.0,
+          "nextTierId": "TIER_X"
+        },
+        {
+          "tierId": "TIER_X",
+          "tierOrder": 10,
+          "minLevel": 91,
+          "maxLevel": 100,
+          "displayName": "Tier X",
+          "description": "Transcendent apex tier.",
+          "needUpgrade": false,
+          "upgradeDurationGameDays": 0,
+          "levelEffectMultiplier": 10.0
+        }
+      ]
+    },
+    {
+      "id": "profile_compact_50",
+      "name": "Compact 50-Level Truncated Progression",
+      "description": "50-level profile illustrating max-level truncation where TIER_VI+ are unreachable.",
+      "globalMaxLevel": 50,
+      "baseExpPerLevel": 100,
+      "expGrowthFactor": 1.15,
+      "levelEffectProfileId": "level_effects_combat_generic",
+      "tierEffectProfileId": "tier_effects_generic",
+      "defaultPolicy": "AUTO",
+      "tiers": [
+        {
+          "tierId": "TIER_I",
+          "tierOrder": 1,
+          "minLevel": 1,
+          "maxLevel": 10,
+          "displayName": "Tier I",
+          "description": "Standard operational baseline tier.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 1,
+          "levelEffectMultiplier": 1.0,
+          "nextTierId": "TIER_II"
+        },
+        {
+          "tierId": "TIER_II",
+          "tierOrder": 2,
+          "minLevel": 11,
+          "maxLevel": 20,
+          "displayName": "Tier II",
+          "description": "Refurbished military-grade tier with 2.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 2,
+          "levelEffectMultiplier": 2.0,
+          "nextTierId": "TIER_III"
+        },
+        {
+          "tierId": "TIER_III",
+          "tierOrder": 3,
+          "minLevel": 21,
+          "maxLevel": 30,
+          "displayName": "Tier III",
+          "description": "Advanced tactical tier with 3.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 3,
+          "levelEffectMultiplier": 3.0,
+          "nextTierId": "TIER_IV"
+        },
+        {
+          "tierId": "TIER_IV",
+          "tierOrder": 4,
+          "minLevel": 31,
+          "maxLevel": 40,
+          "displayName": "Tier IV",
+          "description": "Elite capital tier with 4.0x level effectiveness.",
+          "needUpgrade": true,
+          "upgradeDurationGameDays": 4,
+          "levelEffectMultiplier": 4.0,
+          "nextTierId": "TIER_V"
+        },
+        {
+          "tierId": "TIER_V",
+          "tierOrder": 5,
+          "minLevel": 41,
+          "maxLevel": 50,
+          "displayName": "Tier V",
+          "description": "Deep-space specialized tier (soft auto-transition to Tier VI when level reached).",
+          "needUpgrade": false,
+          "upgradeDurationGameDays": 0,
+          "levelEffectMultiplier": 5.0,
+          "nextTierId": "TIER_VI"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "domain": "progression",
+    "catalog": "progression_profile",
+    "description": "Canonical progression profile definitions."
+  }
+}

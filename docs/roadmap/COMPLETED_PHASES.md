@@ -60,3 +60,19 @@ Tài liệu tóm tắt ngắn gọn các cột mốc đã hoàn thành và đư�
   - **M5.11**: Pilot/Gear Selection Flow Enhancement (Optional vs Mandatory Gating). Hoàn thiện luồng hoàn thành nhiệm vụ và chọn tổ hợp: Tùy chọn đổi cặp đôi khi hoàn tất 5/5 nhiệm vụ mà không bắt buộc nếu lựa chọn đã hợp lệ; cho phép tiếp tục xuất kích giữ nguyên lựa chọn; bắt buộc chọn khi game vừa reset hoặc thiếu dữ liệu hợp lệ kèm hộp thoại cảnh báo rõ ràng; xác thực chặt chẽ (`isValidPilotGearSelection`), xử lý an toàn dữ liệu lưu trữ bị lỗi/thiếu và bổ sung bộ test tự động (98/98 tests PASS).
   - **M5.12**: Post-Mission Results Screen & D3 Combat Efficiency Visualization. Màn hình báo cáo kết quả sau trận đấu toàn diện: Tính toán kinh nghiệm nhận được (Mech & Pilot EXP với thanh tiến trình và thông báo Level Up), chiến lợi phẩm rơi (Credits, Alloy, Trang bị rơi theo độ hiếm kèm tính năng Trang Bị Ngay / Quick Equip), động cơ tính điểm Hiệu Suất Tác Chiến (Combat Efficiency Score 0-100 với 5 cấp hạng S+/S/A/B/C dựa trên Sát Thương 25%, Sinh Tồn 25%, Tốc Độ 20%, Chuẩn Xác 15%, Kỹ Năng 15%), cùng bộ 3 biểu đồ D3 chuyên sâu (D3 Radar Spider Chart 5 trục, D3 Efficiency Radial Gauge bán nguyệt và D3 Turn Damage Timeline hai cột phân tích từng hiệp đấu). Bộ test tự động 102/102 tests PASS 100%.
 
+---
+
+## Giai Đoạn 6: STARFRONT WORLD — Trung Tâm Chỉ Huy Chiến Lược Vĩ Mô (Phase 6 — Milestones 6.1 đến 6.9)
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (DONE — 100% Exit Criteria Passed, 20/20 Test Suites PASS)**.
+- **Kết quả bàn giao**:
+  - **M6.1**: Nền Tảng Dữ Liệu & Save Cách Ly (`STARFRONT_WORLD_SAVE_V1`). Lưu trữ luân phiên Rotating Backups A/B độc lập hoàn toàn với tiến trình RPG Schema v4.
+  - **M6.2**: Đồ Thị Bản Đồ & Vòng Đời Sector. 8 Sector, 12 Tuyến Siêu Không Gian, thuật toán Dijkstra tìm đường ngắn nhất, máy trạng thái 5 giai đoạn (`stable`, `threatened`, `under_siege`, `lost`, `recovery`).
+  - **M6.3**: Động Cơ Tick Chiến Lược & Mô Phỏng Bắt Kịp Ngoại Tuyến. Chu trình 6 pha tất định, PRNG phân tách hạt giống, mô phỏng catch-up khi người chơi vắng mặt.
+  - **M6.4**: Kinh Tế Chiến Lược, Hậu Cần & Dân Cư Bảo Toàn. 4 Tài nguyên chiến lược, Lương thực thiết yếu riêng biệt, luân chuyển dân số bảo toàn tuyệt đối không sinh dân ảo.
+  - **M6.5**: Lực Lượng Quân Sự, Phe Phái VSS vs The Void & Auto-Resolve. Định luật Lanchester tính toán giao tranh tự động, Threat AI mở rộng lãnh thổ, bảo toàn 100% quân số qua mọi thao tác.
+  - **M6.6**: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng. Adapter trung gian liên kết Đấu Trường, Encounter Snapshot đóng băng đồn trú, chống áp dụng kết quả 2 lần qua Transaction Journal.
+  - **M6.7**: Vòng Đời Sự Kiện 3 Pha (`INIT` -> `PROCESSING` -> `RESULT`) & Đồ Thị Chuỗi Nhiệm Vụ 6 Hình Thái. Tự động khóa phương án mặc định khi hết hạn countdown, khống chế trần `MAX_ACTIVE_MISSION_CHAINS = 8`.
+  - **M6.8**: Giao Diện Operations Center & Trung Tâm Kết Quả Kép. Situation Deck chỉ số vĩ mô, Sector Operations & Inspector, Bến Điều Động Nhanh Quick Dispatch Dock, Dual Results Hub phân tách Event vs Battle results kèm cơ chế Safe Pruning.
+  - **M6.9**: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp E2E. Giao diện `WorldMap` & `WorldFullscreenOverlay` 100vw/100vh với pan/zoom/reticle, tích hợp sâu vào Operations Center và Shell navigation, cùng bộ kiểm thử hồi quy tích hợp E2E 9/9 subtests PASS tuyệt đối.
+
+

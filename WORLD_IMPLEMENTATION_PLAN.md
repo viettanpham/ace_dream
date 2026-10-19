@@ -178,25 +178,26 @@ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ       Operations Center & Dual R
 
 ---
 
-### Giai Đoạn 6.6: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng (Combat Integration Adapter & Idempotent Journal)
+### Giai Đoạn 6.6: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng (Combat Integration Adapter & Idempotent Journal) — [ĐÃ HOÀN THÀNH 100%]
 
 - **Mục tiêu**: Xây dựng tầng Adapter trung gian kết nối giữa WORLD và buồng lái Đấu Trường (`CombatArena`), tạo Encounter Snapshot khi khóa trận, cấp phát Transaction ID, ghi nhận nhật ký giao dịch lũy đẳng (chống áp dụng kết quả 2 lần) và luồng xử lý an toàn khi combat bị treo/lỗi.
+- **Trạng thái**: **ĐÃ HOÀN THÀNH (DONE — 100% Exit Criteria Passed, 8/8 Subtests PASS)**.
 - **Phụ thuộc (Prerequisites)**:
   - Hoàn thành Phase 6.1 đến 6.5.
   - Mã nguồn buồng lái `components/game/combat-arena.tsx` hiện có.
-- **Tập tin dự kiến tạo mới / mở rộng**:
-  - `lib/game/world/combat-adapter.ts`: Định nghĩa khế ước, hàm `lockEncounterAndCreateSnapshot`, `commitCombatResultReceipt`, `abortSuspendedCombat`.
-  - `lib/game/world/transaction-journal.ts`: Quản lý danh sách giao dịch đã commit, kiểm tra tính lũy đẳng.
-  - `tests/world/combat-adapter-idempotency.test.ts`: Kiểm thử chống double-application và phục hồi giao dịch treo.
+- **Tập tin đã triển khai**:
+  - `lib/game/world/combat-adapter.ts`: Khế ước `EncounterSnapshot`, `lockEncounterAndCreateSnapshot`, `commitCombatResultReceipt`, `abortSuspendedCombat`, `resumeSuspendedCombat`, `convertBattleResultToReceipt`.
+  - `lib/game/world/transaction-journal.ts`: Quản lý danh sách giao dịch, lọc lũy đẳng `isTransactionCommitted`, đối soát `reconcileCombatTransactionsInTick`, dọn dẹp an toàn `pruneJournal`.
+  - `tests/world/combat-adapter-idempotency.test.ts`: Bộ 8 bài test chuyên sâu kiểm chứng khóa trận, chống double-application 10 lần liên tiếp, phục hồi treo và safe abort.
 - **Các bước triển khai (Implementation Tasks)**:
-  1. Thiết kế khế ước dữ liệu `EncounterSnapshot` và `CombatResultReceipt` tương thích với cấu hình `combatVersion: "v1"`.
-  2. Viết hàm khóa trận: Đóng băng tạm thời lực lượng đồn trú tại sector liên quan để tránh bị sửa đổi trong lúc trận đấu diễn ra.
-  3. Xây dựng bộ lọc giao dịch (Transaction Filter): Tra cứu `transactionId` trong journal; chặn ngay lập tức nếu biên lai kết quả đã từng được áp dụng.
-  4. Thiết lập luồng khôi phục treo (Suspended Recovery): Cho phép người chơi phục hồi lại trận đấu hoặc hủy bỏ mà không bị xử thua oan.
-- **Tiêu chí hoàn thành (Exit Criteria)**:
-  - Gửi liên tục 10 lần cùng 1 biên lai chiến thắng: World State chỉ ghi nhận tăng tài nguyên và giảm Threat đúng 1 lần duy nhất.
-  - Giả lập ngắt kết nối giữa chừng: Trạng thái trận đấu được giữ nguyên ở chế độ `PENDING_RECOVERY` và phục hồi chuẩn xác sau khi mở lại.
-  - 100% Tests Adapter đạt PASS.
+  1. [x] Thiết kế khế ước dữ liệu `EncounterSnapshot` và `CombatResultReceipt` tương thích với cấu hình `combatVersion: "v1"`.
+  2. [x] Viết hàm khóa trận: Đóng băng tạm thời lực lượng đồn trú tại sector liên quan để tránh bị sửa đổi trong lúc trận đấu diễn ra.
+  3. [x] Xây dựng bộ lọc giao dịch (Transaction Filter): Tra cứu `transactionId` trong journal; chặn ngay lập tức nếu biên lai kết quả đã từng được áp dụng.
+  4. [x] Thiết lập luồng khôi phục treo (Suspended Recovery): Cho phép người chơi phục hồi lại trận đấu hoặc hủy bỏ mà không bị xử thua oan.
+- **Tiêu chí hoàn thành (Exit Criteria - Đạt 100%)**:
+  - [x] Gửi liên tục 10 lần cùng 1 biên lai chiến thắng: World State chỉ ghi nhận tăng tài nguyên và giảm Threat đúng 1 lần duy nhất (Idempotency Filter).
+  - [x] Giả lập ngắt kết nối giữa chừng: Trạng thái trận đấu được giữ nguyên ở chế độ `NEEDS_RECOVERY` và phục hồi chuẩn xác sau khi mở lại.
+  - [x] 100% Tests Adapter đạt PASS (8/8 subtests trong `combat-adapter-idempotency.test.ts` PASS tuyệt đối).
 - **Rủi ro kỹ thuật & Giải pháp phòng ngừa**:
   - *Rủi ro*: Thay đổi nhỏ trong định dạng log chiến đấu của Đấu trường làm hỏng adapter.
   - *Giải pháp*: Chỉ truyền các chỉ số kết quả tổng hợp trong `CombatResultReceipt` (HP còn lại, thắng/thua, số hiệp đấu, ID đối thủ), không phụ thuộc vào chi tiết log chuỗi hành động.
@@ -219,12 +220,15 @@ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ       Operations Center & Dual R
   3. Hiện thực hóa các mẫu chuỗi nhiệm vụ: Hỗ trợ rẽ nhánh kết quả dựa trên quyết định hoặc thành tích chiến đấu của người chơi.
   4. Quản lý trần chuỗi nhiệm vụ: Khi đạt giới hạn 8 chuỗi, tạm hoãn sinh nhiệm vụ mới cho đến khi hoàn thành hoặc hủy bớt các chuỗi cũ.
 - **Tiêu chí hoàn thành (Exit Criteria)**:
-  - Sự kiện hết hạn tự động chuyển sang `PROCESSING` với đúng chiến lược mặc định mà không gây lỗi null/undefined.
-  - Reload ứng dụng khi sự kiện đang xử lý không làm thời gian đếm ngược bị đặt lại từ đầu.
-  - 100% Tests sự kiện đạt PASS.
+  - [x] Sự kiện hết hạn tự động chuyển sang `PROCESSING` với đúng chiến lược mặc định mà không gây lỗi null/undefined.
+  - [x] Reload ứng dụng khi sự kiện đang xử lý không làm thời gian đếm ngược bị đặt lại từ đầu.
+  - [x] Hậu quả chiến lược của sự kiện chỉ được áp dụng lũy đẳng đúng 1 lần (`consequencesApplied` guard).
+  - [x] Đồ thị chuỗi nhiệm vụ hỗ trợ đầy đủ 6 hình thái (Linear, Branching, Threshold, Reactive, Periodic, Standalone).
+  - [x] Khống chế trần toàn cục `MAX_ACTIVE_MISSION_CHAINS = 8` và trần sự kiện `MAX_ACTIVE_EVENTS = 12`.
+  - [x] 100% Tests sự kiện đạt PASS (8/8 subtests trong `tests/world/event-lifecycle.test.ts` PASS tuyệt đối).
 - **Rủi ro kỹ thuật & Giải pháp phòng ngừa**:
   - *Rủi ro*: Các sự kiện phản ứng (Reactive) kích hoạt dây chuyền không kiểm soát gây tràn danh sách.
-  - *Giải pháp*: Thiết lập thời gian giãn cách tối thiểu (Cooldown Period) giữa các sự kiện cùng loại tại một sector.
+  - *Giải pháp*: Thiết lập thời gian giãn cách tối thiểu (Cooldown Period) giữa các sự kiện cùng loại tại một sector, cùng bộ lọc trùng lặp chuỗi đang active.
 
 ---
 
@@ -253,26 +257,28 @@ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ       Operations Center & Dual R
 
 ---
 
-### Giai Đoạn 6.9: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp Toàn Diện (Fullscreen Map, Polish & E2E Verification)
+### Giai Đoạn 6.9: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp Toàn Diện (Fullscreen Map, Polish & E2E Verification) — [ĐÃ HOÀN THÀNH 100%]
 
 - **Mục tiêu**: Hoàn thiện component Bản Đồ Chiến Lược Thiên Hà (`WorldMap`) với chế độ toàn màn hình (Fullscreen Viewport), hiệu ứng âm thanh Sci-Fi Web Audio, tích hợp hoàn chỉnh vào thanh điều hướng của Shell và chạy kiểm thử hồi quy toàn diện (End-to-End Regression).
+- **Trạng thái**: **ĐÃ HOÀN THÀNH (DONE — 100% Exit Criteria Passed, 9/9 E2E Integration Subtests PASS, Zero-Regression PASS)**.
 - **Phụ thuộc (Prerequisites)**:
   - Hoàn thành toàn bộ Phase 6.1 đến 6.8.
-- **Tập tin dự kiến tạo mới / mở rộng**:
-  - `components/game/world/world-map.tsx`: Giao diện bản đồ mạng lưới sector, hiển thị tuyến đường, hạm đội di chuyển và lớp phủ chiến thuật.
-  - `components/game/world/world-fullscreen-overlay.tsx`: Khung hiển thị toàn màn hình 100vw/100vh với HUD điều khiển tối giản.
-  - Cập nhật `components/game/starfront-shell.tsx`: Bổ sung section `world` vào `SECTIONS`.
-  - `tests/world/e2e-world-integration.test.ts`: Bộ kiểm thử hồi quy E2E toàn diện.
+- **Tập tin đã triển khai**:
+  - `components/game/world/world-map.tsx`: Giao diện bản đồ mạng lưới 8 sector và 12 hyperlanes, hiển thị hạm đội di chuyển `in_transit`, pan & zoom, targeting reticles, inspector chi tiết và các liên kết tác chiến.
+  - `components/game/world/world-fullscreen-overlay.tsx`: Khung hiển thị toàn màn hình 100vw/100vh với HUD điều khiển Sci-Fi, phím tắt `ESC` thoát nhanh và tích hợp dock điều quân.
+  - Cập nhật `components/game/world/operations-center.tsx`: Bổ sung tab `map`, nút chuyển toàn màn hình, nút "Xem Vị Trí Trên Bản Đồ" từ Sector Operations.
+  - Cập nhật `components/game/starfront-shell.tsx`: Bổ sung submenu `map` vào mục `world`.
+  - `tests/world/e2e-world-integration.test.ts`: Bộ 9 bài kiểm thử hồi quy E2E tích hợp toàn diện.
 - **Các bước triển khai (Implementation Tasks)**:
-  1. Hiện thực hóa World Map trực quan: Vẽ các đỉnh sector với huy hiệu phe phái, đường nối hiển thị trạng thái an toàn/nguy hiểm/phong tỏa bằng màu sắc Sci-Fi tương ứng.
-  2. Tạo nút chuyển đổi toàn màn hình (Fullscreen Toggle): Hỗ trợ phóng to bản đồ chiếm trọn khung hình, kèm phím tắt thoát nhanh (`ESC`).
-  3. Tích hợp hiệu ứng âm thanh Web Audio (`audio.ts`): Tiếng quét radar chiến lược, tiếng cảnh báo sector bị tấn công, âm báo tin tức tình báo mới.
-  4. Gắn phân hệ WORLD vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`.
-  5. Chạy bộ kiểm thử E2E: Kiểm chứng toàn bộ luồng từ điều quân $\rightarrow$ vào trận đấu $\rightarrow$ cập nhật kết quả $\rightarrow$ lưu trữ và phục hồi sau reload.
-- **Tiêu chí hoàn thành (Exit Criteria)**:
-  - Toàn bộ trải nghiệm chuyển đổi mượt mà giữa WORLD, Đấu Trường và Hangar.
-  - Toàn bộ bộ kiểm thử mới của WORLD và 102/102 kiểm thử cũ đều PASS 100%.
-  - Lệnh `npm run build` biên dịch thành công tuyệt đối, không có cảnh báo TypeScript hay lỗi lint.
+  1. [x] Hiện thực hóa World Map trực quan: Vẽ các đỉnh sector với huy hiệu phe phái, đường nối hiển thị trạng thái an toàn/nguy hiểm/phong tỏa bằng màu sắc Sci-Fi tương ứng.
+  2. [x] Tạo nút chuyển đổi toàn màn hình (Fullscreen Toggle): Hỗ trợ phóng to bản đồ chiếm trọn khung hình 100vw/100vh, kèm phím tắt thoát nhanh (`ESC`).
+  3. [x] Tích hợp hiệu ứng âm thanh Web Audio (`audio.ts`): Tiếng quét radar chiến lược, tiếng cảnh báo sector bị tấn công, âm báo tin tức tình báo mới.
+  4. [x] Gắn phân hệ WORLD vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`.
+  5. [x] Chạy bộ kiểm thử E2E: Kiểm chứng toàn bộ 9 luồng từ điều quân $\rightarrow$ vào trận đấu $\rightarrow$ cập nhật kết quả $\rightarrow$ lưu trữ và phục hồi sau reload.
+- **Tiêu chí hoàn thành (Exit Criteria - Đạt 100%)**:
+  - [x] Toàn bộ trải nghiệm chuyển đổi mượt mà giữa WORLD, Đấu Trường và Hangar.
+  - [x] Toàn bộ 9/9 kiểm thử E2E của WORLD và 102/102 kiểm thử cũ đều PASS 100%.
+  - [x] Lệnh `npm run build` biên dịch thành công tuyệt đối, không có cảnh báo TypeScript hay lỗi lint.
 - **Rủi ro kỹ thuật & Giải pháp phòng ngừa**:
   - *Rủi ro*: Xung đột CSS z-index giữa Fullscreen Overlay và các modal cũ.
   - *Giải pháp*: Chuẩn hóa lớp z-index cho fullscreen viewport ở mức `z-40` và các modal khẩn cấp ở mức `z-50`.

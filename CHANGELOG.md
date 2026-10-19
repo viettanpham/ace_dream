@@ -2,9 +2,916 @@
 
 Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án **STARFRONT** được ghi lại tại đây theo trình tự thời gian đảo ngược (mới nhất lên đầu).
 
+## [Phase 6.31] — STARFRONT WORLD: Điều Phối Nhiệm Vụ & Hộp Lưu Trữ Tác Chiến (Mission Dispatch & Operations Archive)
+
+*Đã hoàn thành 100% Phase 6.31 theo đúng roadmap STARFRONT: Thiết lập hệ thống điều phối nhiệm vụ chiến lược với giới hạn người chơi trực tiếp tham gia tối đa 1 nhiệm vụ tại một thời điểm; cơ chế chuyển giao tự động cho NPC đồn trú (NPC Takeover) khi hết hạn PREPARE; mô phỏng tác chiến NPC-only với kết quả thực tế vào WORLD; cấu trúc mục tiêu chuẩn hóa tái sử dụng cho 6 hình thái tác chiến; kho lưu trữ Operations Archive có hạn ngạch bounded FIFO riêng biệt; nhật ký dòng thời gian Action Timeline xác thực không spam per-tick; giao diện Command Desk & Admin CP trực quan; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (100% tests PASS, compile & lint thành công).*
+
+### Các nâng cấp kỹ thuật & tính năng đã hoàn thành:
+- **1. Phân Định Quyền Chỉ Huy & Giới Hạn Tham Gia Duy Nhất**:
+  * Người chơi chỉ được trực tiếp chỉ huy tối đa **một** nhiệm vụ tại một thời điểm (`activePlayerMissionId`, `canPlayerJoinMission`, `playerJoinMission`, `playerWithdrawMission`).
+  * Ngăn chặn triệt để tình trạng duplicate participation, race condition hoặc ghi nhận chồng chéo vai trò chỉ huy.
+- **2. Vòng Đời PREPARE & Chuyển Giao Tự Động Cho NPC (NPC Takeover)**:
+  * Trong giai đoạn PREPARE, căn cứ có thể tiếp tục điều động bổ sung quân đồn trú chi viện (`assignGarrisonForcesToMission`).
+  * Khi thời gian PREPARE kết thúc mà không có người chơi tham gia, sĩ quan đồn trú cấp phó (`getEligibleNPCCommander`) tự động tiếp quản quyền chỉ huy (`processPrepareExpirationsAndTakeovers`), chuyển trạng thái sang PROCESSING để nhiệm vụ không bị đóng băng.
+- **3. Mô Phỏng Nhiệm Vụ NPC-Only & Kết Quả Thực Tế Vào WORLD**:
+  * Động cơ `simulateAndResolveMission` mô phỏng kết quả tác chiến dựa trên thực lực: ổn định sector, threat, quân số đồn trú và tư cách chỉ huy (bonus +15% khi người chơi trực tiếp dẫn dắt).
+  * Áp dụng biến động thực tế vào Threat Level, Stability, Casualties và Tài nguyên thế giới; giải phóng người chơi khi nhiệm vụ kết thúc; bảo đảm tính lũy đẳng (Idempotency Guard).
+- **4. Cấu Trúc Mục Tiêu Chuẩn Hóa Tái Sử Dụng (6 Hình Thái)**:
+  * Hỗ trợ 6 phân loại tác chiến: Tuần Tra (Patrol), Hộ Tống (Escort), Phòng Thủ (Defend), Đột Kích (Raid), Tiêu Diệt (Eliminate), và Khống Chế Điểm Nóng (Threat Containment) qua `createStandardObjective`.
+  * Mỗi mục tiêu đi kèm mô tả, địa bàn sector, tiến độ 0-100% và tiêu chí thành công minh bạch.
+- **5. Hộp Lưu Trữ Tác Chiến Bounded Operations Archive**:
+  * Lưu trữ bền vững 2 luồng hồ sơ: Kết quả sự kiện / nhiệm vụ (`eventResultsArchive`) và Nhật ký trận đấu buồng lái (`transactionJournal`).
+  * Hạn ngạch quota độc lập có thể cấu hình linh hoạt (mặc định 60 sự kiện, 40 trận đấu) qua `updateOperationsArchiveConfig` và giao diện Admin CP.
+  * Cắt tỉa FIFO an toàn (`enforceOperationsArchiveQuotas`, `pruneOperationsArchiveSafe`), không xóa dữ liệu đang chạy và không bịa đặt timestamp/kết quả giả.
+- **6. Nhật Ký Dòng Thời Gian Xác Thực (Authentic Action Timeline)**:
+  * Ghi nhận chính xác các bước chuyển đổi trạng thái thực: `created`, `participant_joined`, `participant_withdrawn`, `prepare_completed`, `npc_takeover`, `processing_started`, `objective_resolved`, `completed`, `failed`, `aborted`.
+  * Xác định rõ định danh tác nhân (Player, NPC, System), ngày chiến lược (Tick) và thời gian thực tế; loại trừ hoàn toàn log spam per-tick.
+- **7. Tích Hợp UI Command Desk & Admin CP**:
+  * Bổ sung Tab `[ĐIỀU PHỐI (DISPATCH)]` trên bảng chỉ huy `EventsMissionsBoard`, cho phép tiếp quản, rút lui, bổ sung quân, hủy an toàn (`abortMissionDispatch`), xem Action Timeline và thiết lập lệnh điều phối mới.
+  * Tích hợp badge hiển thị dung lượng hạn ngạch Operations Archive trong `DualResultsHub` (`dual-results-hub.tsx`).
+  * Bổ sung bảng cấu hình hạn ngạch lưu trữ trong tab Storage của Admin CP (`admin-settings-modal.tsx`).
+- **8. Kiểm Thử & Kiểm Chứng Hệ Thống**:
+  * Toàn bộ 8/8 bài kiểm thử tự động trong `tests/world/phase-6-31-mission-dispatch-archive.test.ts` đạt 100% PASS.
+  * Build TypeScript và Lint không phát sinh lỗi (`tsc --noEmit` & `npm run build` thành công).
+
 ---
 
-## [Phase 6.4] — STARFRONT WORLD: Kinh Tế Chiến Lược, Mạng Lưới Hậu Cần & Nhân Khẩu Học (Strategic Economy, Logistics Network & Demographics)
+## [Roadmap Planning] — Xác Lập Lộ Trình Tác Chiến Tiếp Theo Sau Phase 6.30 (Phases 6.31, Combat V2 Review, 6.32)
+
+*Cập nhật và hoàn thiện hệ thống tài liệu kế hoạch chiến lược chuẩn bị cho giai đoạn phát triển tiếp theo sau khi Phase 6.30 hoàn thành: xác lập phạm vi kỹ thuật của Phase 6.31 (Mission Dispatch & Operations Archive: giới hạn 1 nhiệm vụ trực tiếp, PREPARE timeout ủy quyền NPC, objective tái sử dụng, Operations Archive authentic logs); khởi tạo tài liệu thiết kế độc lập `docs/roadmap/COMBAT_V2_REVIEW.md` đánh giá kiến trúc Combat V2 (quy mô squad/fleet, quan hệ quân số - HP, mô phỏng NPC, khế ước WORLD); xác lập kế hoạch Phase 6.32 (Route Intelligence & Action Logs FIFO 100 bản ghi cấu hình AdminCP); bảo toàn 100% trạng thái hoàn thành của Phase 6.30, không sửa đổi mã nguồn gameplay hay save schema.*
+
+---
+
+## [Phase 6.30] — STARFRONT WORLD: Nâng Cấp Bản Đồ Thiên Hà Chiến Lược & Trải Nghiệm Điều Khiển (Strategic Galaxy Map & Command UX Enhancement)
+
+*Đã hoàn thành 100% Phase 6.30 theo đúng roadmap STARFRONT: Nâng cấp toàn diện bản đồ thiên hà node-only theo phong cách sci-fi tactical command center với chiều sâu không gian, tinh vân mờ ảo và lưới tọa độ 1000x650 MLY; chuẩn hóa trạng thái hiển thị mặc định của Map Legend (mặc định OFF) và Node Details (mặc định OFF - chế độ Tổng Thể); bổ sung Mouse-Wheel Zoom và Double-Click Zoom trên giới hạn an toàn [0.7x, 2.2x]; tích hợp War Room Strategic Situation Deck và dải cảnh báo P0/P1 có hành động thực tế (tiếp tục trận đấu suspended combat, phê chuẩn sự kiện INIT, focus sector); bảo toàn 100% thuật toán căn chỉnh tọa độ, 10 sectors, Save Schema V1 và RPG Save V4 (100% tests PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Nâng Cấp Giao Diện Bản Đồ Node-Only Chuẩn Sci-Fi Tactical Command**:
+  * Giữ vững kiến trúc sector nodes nối bằng hyperspace routes, không chuyển sang bản đồ địa lý hay hành tinh vẽ chi tiết.
+  * Bổ sung nền không gian có chiều sâu với các radial gradients tinh vân mờ ảo (`#nebula-vss`, `#nebula-void`, `#nebula-center`), hệ thống sao tĩnh mật độ vừa phải không gây nhiễu, cùng lưới tọa độ và radar circles tinh tế.
+  * Phân biệt rõ ràng 4 trạng thái tuyến: Thông suốt (cyan solid), Nguy hiểm (amber dashed), Phong tỏa (red dashed), và Ngoại tuyến (zinc dark).
+  * Tăng cường trực quan 10 sector theo phe phái (VSS, The Void, Tranh chấp, Trung lập) và giai đoạn (under_siege pulse alert ring, threatened dashed ring, recovery bracket) với hover và selected reticle sắc nét.
+- **2. Chuẩn Hóa Trạng Thái Hiển Thị Mặc Định**:
+  * **Map Legend**: Mặc định là **OFF** khi mở bản đồ (thu gọn thành nút `[🧭 Chú Giải]`). Cho phép bật/tắt tự do và ghi nhớ qua `localStorage`, không tự động mở lại khi re-render hoặc click sector.
+  * **Node Details**: Mặc định là **OFF** (chế độ Tổng Thể) để người chơi có tầm nhìn bao quát thiên hà mà không bị che khuất. Nút chuyển đổi `Chế Độ: Tổng Thể / Chi Tiết` trên HUD cho phép bật Inspector và telemetry theo nhu cầu. Khi Inspector đóng, nút nổi `[Mở Bảng: <Sector Name>]` cho phép xem thông tin tức thì.
+- **3. Bổ Sung Các Phương Thức Zoom Linh Hoạt**:
+  * **Mouse-Wheel Zoom**: Cho phép cuộn con lăn chuột trực tiếp trên vùng bản đồ để phóng to / thu nhỏ mượt mà trong giới hạn [0.7x, 2.2x], tự động chặn cuộn trang ngoài và bỏ qua các vùng cuộn nội dung.
+  * **Double-Click Zoom**: Nhấp đúp chuột vào bản đồ hoặc sector để zoom sâu; tự động reset về góc nhìn chuẩn 1.0x khi đã phóng to (>= 1.7x).
+  * **Drag-to-Zoom**: Chủ động bỏ qua để tránh xung đột cử chỉ Pan camera và click chọn sector theo drag threshold 5px.
+- **4. Tích Hợp Tổng Quan Tình Hình Chiến Lược Toàn Cảnh Vào War Room**:
+  * Bổ sung **War Room Strategic Situation Deck** ngay trên thanh Sector Command Ribbon trong tab War Room.
+  * Tận dụng 100% pure helpers từ `global-operations-hub.tsx` (`computeCriticalAlerts`, `computeCombatOperations`), hiển thị 4 nhóm số liệu thực: 10 Sectors kiểm soát & chủ quyền, Threat TB & sector nguy cấp, Quân lực & hành quân, Sự kiện chờ duyệt & trạng thái giao tranh.
+  * Dải cảnh báo khẩn cấp P0/P1 với điều hướng thực tế: Tiếp tục trận đấu dở dang (suspended combat), Phê chuẩn sự kiện INIT, hoặc Focus thẳng vào sector nguy cơ. Hỗ trợ thu gọn/mở rộng linh hoạt.
+- **5. Bảo Toàn Kiến Trúc, Hitbox & Dữ Liệu**:
+  * Bảo toàn 100% Strategic Map Selection Alignment Fix (`transformClientToSVG`, letterbox math, hitbox 140x88px, drag threshold 5px).
+  * Bảo toàn `STARFRONT_WORLD_SAVE_V1`, Checksum CRC32 và RPG Save V4.
+
+---
+
+## [Hotfix] — STARFRONT WORLD: Khắc Phục Lỗi Vòng Chọn Sector & Căn Chỉnh Tọa Độ Bản Đồ Chiến Lược (Strategic Map Selection Alignment Fix)
+
+*Đã hoàn thành 100% việc chuẩn hóa và đồng bộ tọa độ hiển thị, vòng định vị (Selection Reticle) và hệ thống Hit-Testing tại Warzone &rarr; Bản đồ chiến lược (War Room // Galaxy Map) trong `components/game/world/world-map.tsx`: khắc phục triệt để lỗi stuck pointer event lifecycle khiến thao tác kéo bản đồ chặn click chọn sector; bổ sung thuật toán chuyển đổi tọa độ SVG tất định thông qua `getBoundingClientRect` và letterbox viewBox math (`preserveAspectRatio="xMidYMid meet"`) miễn nhiễm với các lỗi CTM trình duyệt khi zoom/pan; hỗ trợ nhận diện hover sector mượt mà và trực quan; bảo toàn 100% World Save Schema V1, Checksum CRC32 và RPG Save V4 (7/7 tests PASS trong `strategic-map-selection-alignment.test.ts`, 39/39 Test Suites PASS toàn dự án).*
+
+---
+
+## [Phase 6.29] — STARFRONT WORLD: Trung Tâm Điều Hành Toàn Cảnh & Tổng Hợp Sự Kiện (Global Operations & Event Hub)
+
+*Đã hoàn thành 100% Phase 6.29 — Xây dựng và tích hợp Trung Tâm Điều Hành Toàn Cảnh (Global Operations & Event Hub) vào tab Overview của Operations Center, giúp người chơi nhanh chóng nắm bắt bức tranh toàn cảnh thiên hà, phát hiện các vấn đề cần xử lý và chuyển thẳng tới màn hình hành động tương ứng; tổng hợp đầy đủ 5 nhóm thông tin chiến lược: Critical Alerts (P0, P1, P2), Active Events (INIT chờ quyết định vs PROCESSING đang triển khai), Combat Operations (suspended combat, locked sectors, kết quả tác chiến), Sector Operations (tình trạng 10 sector, chi viện, vây hãm), và Recent Reports (lối tắt Debriefing Drawer); tích hợp bộ đếm Actionable Counter chống đếm trùng; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (8/8 Phase 6.29 tests PASS, 38/38 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Tích Hợp Global Operations & Event Hub Vào Operations Center**:
+  * Tạo component `GlobalOperationsHub` với thiết kế giao diện sci-fi command center sắc nét, hiện đại và phản ứng tức thì.
+  * Tích hợp thanh Command Bar hiển thị ngày chiến lược, tình trạng 10 sector, bộ đếm Actionable Counter, bộ lọc danh mục con nhanh (Tất Cả, Cảnh Báo, Sự Kiện, Tác Chiến, Sector, Báo Cáo) và nút thực thi chu kỳ "+1 Ngày".
+  * Bảo toàn 100% tầng Macro Situation Deck (Chủ quyền & Lãnh thổ, Threat Visualizer, Quân sự & Hậu cần với Resource Sparklines) của các phase trước.
+- **2. Tổng Hợp 5 Nhóm Thông Tin Chiến Lược Chuyên Biệt**:
+  * **A. Critical Alerts**: Tổng hợp các tình huống tối khẩn theo 3 cấp độ:
+    - **P0 Tối nguy**: Trận đấu dở dang (suspended combat), sector bị vây hãm (`under_siege`), kho lương thực hoặc vật tư hậu cần chạm đáy 0, sự kiện INIT hết hạn hôm nay.
+    - **P1 Nguy cơ**: Sector bị đe dọa (`threatened`), sector có threat cao (`>= 700`), tuyến siêu không gian bị chặn (`blocked`), sự kiện còn 1 ngày hoặc mức độ critical.
+    - **P2 Cảnh báo**: Tuyến đường nguy hiểm (`hazardous`), tồn kho lương thực/tiếp tế dưới ngưỡng an toàn, sự kiện thông thường.
+  * **B. Active Events**: Phân loại chuẩn xác:
+    - **INIT (Chờ Quyết Định)**: Hiển thị tên sự kiện, sector, mức độ, hạn chót và nút hành động *"Phê Chuẩn Chiến Lược &rarr;"* dẫn thẳng vào bảng quyết định.
+    - **PROCESSING (Đang Triển Khai)**: Hiển thị tiến trình, phương án đã chọn, thời gian hoàn tất dự kiến và nút *"Xem Tiến Trình"* (tuyệt đối không xuất hiện nút phê chuẩn hay tạo giao dịch trùng lặp).
+  * **C. Combat Operations**: Theo dõi trận chiến treo dở dang (suspended combat) trích xuất chính xác Transaction ID, quân đồn trú bị đóng băng, kèm nút *"Tiếp Tục Tác Chiến &rarr;"* và *"Hủy Bỏ An Toàn"*; liệt kê danh sách sector đang bị khóa giao tranh và kết quả tác chiến gần nhất.
+  * **D. Sector Operations**: Giám sát toàn bộ 10 sector có biến động; cung cấp bộ ba hành động nhanh: *"Hồ Sơ Intel"* (mở `SectorIntelModal`), *"War Room"* (mở bản đồ tại sector), và *"Điều Quân Nhanh"* (mở dock điều quân).
+  * **E. Recent Reports**: Lối tắt trực tiếp vào `DebriefingDrawer`, liệt kê các kết quả sự kiện và báo cáo tình báo gần nhất từ `eventResultsArchive`.
+- **3. Cơ Chế Ưu Tiên, Sắp Xếp & Chống Đếm Trùng Lặp**:
+  * Các hàm tính toán thuần nhất (`computeCriticalAlerts`, `computeActiveEventsGroups`, `computeCombatOperations`, `computeSectorOperations`, `computeActionableItemsCount`) bảo đảm tính tất định và dễ dàng kiểm thử độc lập.
+  * Cơ chế Deduplication loại bỏ hoàn toàn các cảnh báo trùng lặp cho cùng một thực thể, không gộp mất các hành động riêng biệt nếu cùng một sector có nhiều sự cố khác nhau.
+- **4. Bảo Toàn Dữ Liệu Lưu Trữ & Gameplay Độc Lập**:
+  * Hub hoạt động như một lớp điều phối và hiển thị, không tạo Event Engine hay Mission Engine mới, không lưu trữ bản sao state gây lệch dữ liệu.
+  * Bảo toàn 100% định dạng `STARFRONT_WORLD_SAVE_V1`, Checksum CRC32 và phân hệ RPG Save V4.
+- **5. Kiểm Thử Tự Động & Độ Tin Cậy Mã Nguồn**:
+  * Bổ sung bộ kiểm thử `tests/world/phase6-29-global-operations-event-hub.test.ts` đạt 8/8 tests PASS.
+  * Toàn bộ 38/38 test suites của dự án vượt qua thành công (100% PASS).
+  * Build Next.js 16 và TypeScript linting thành công 100%.
+
+---
+
+## [Phase 6.28] — STARFRONT WORLD: Mở Rộng 10 Sector Thiên Hà & Hồ Sơ Tình Báo Sector Intel (Galaxy Expansion to 10 Sectors & Sector Intel)
+
+*Đã hoàn thành 100% Phase 6.28 — Mở rộng mạng lưới Galaxy Map từ 8 lên 10 sector với topology tối ưu và 16 tuyến đường siêu không gian chuẩn hóa; bổ sung 2 sector chiến lược mới là Thánh Địa Elysium (VSS) và Khe Nứt Vô Tận (The Void); giải quyết triệt để lỗi click lệch vị trí trên Galaxy Map bằng Dedicated Hitbox độc lập 120x82 px và phân tách pointer-events đồ họa; chuẩn hóa cơ chế Drag Threshold (5px) phân biệt rõ ràng giữa Panning camera và Click chọn Sector; xây dựng modal hồ sơ tình báo Sector Intel toàn diện với visual backdrop đặc trưng cho 10 sector, báo cáo hoạt động tác chiến và các thao tác điều hướng nhanh; tự động di chuyển (migration) các file save 8 sector lên 10 sector mà không mất dữ liệu; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (7/7 Phase 6.28 tests PASS, 37/37 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Mở Rộng Galaxy Map từ 8 Lên 10 Sector & Topology 16 Tuyến Đường**:
+  * Bổ sung 2 sector mới:
+    - `elysium_sanctuary` (Thánh Địa Elysium, x=26, y=28): Khu vực trù phú của VSS, trữ lượng lương thực dồi dàu (1,000 Food), căn cứ phục hồi tâm lý phi công và dự trữ hậu cần chiến lược.
+    - `abyssal_rift` (Khe Nứt Vô Tận, x=82, y=60): Cửa ngõ hư không u tối do The Void chiếm đóng (Threat 88, Stage threatened), pháo đài tiền tiêu hắc ám uy hiếp khu vực khai thác titan và lối vào Tartarus.
+  * Mở rộng mạng lưới từ 12 lên 16 tuyến đường siêu không gian: `r_helios_elysium`, `r_elysium_delta`, `r_orion_abyssal`, `r_abyssal_tartarus`, liên kết chặt chẽ và không có tuyến đường cắt chéo gây xung đột trực quan.
+  * Thuật toán tìm đường Dijkstra (`findShortestPath`) và các hàm đồ thị (`getAdjacentSectors`, `findConnectingRoute`) hoạt động chuẩn xác trên toàn bộ 10 sector.
+- **2. Khắc Phục Triệt Để Tương Tác Node Trên Galaxy Map**:
+  * Tách biệt hoàn toàn vùng tương tác (hitbox) khỏi các thành phần đồ họa trang trí (vòng ngắm xoay, pulse, huy hiệu).
+  * Đặt một hình chữ nhật hitbox trong suốt chuyên dụng (`rect` 120x82 px) căn ngay tâm node `(cx, cy)`, phủ kín cả vòng cầu node và nhãn tên.
+  * Toàn bộ hiệu ứng hình ảnh trang trí được đặt trong `<g className="pointer-events-none">` giúp sự kiện click luôn đi thẳng vào hitbox.
+  * Tuyến đường (routes-layer) được vẽ ở lớp dưới của đồ thị SVG, không chặn thao tác click của các sector liền kề.
+  * Ngưỡng phân tách Pan và Click chuẩn hóa (`DRAG_THRESHOLD = 5px`): di chuyển chuột dưới 5px xem là click chọn sector; di chuyển chuột từ 5px trở lên kích hoạt panning camera, ngăn chặn triệt để micro-jitter và click nhầm khi kéo bản đồ.
+- **3. Hồ Sơ Tình Báo Toàn Diện Sector Intel (`SectorIntelModal`)**:
+  * Giao diện modal trực quan, thiết kế backdrop động với gradient màu sắc, họa tiết hạt lượng tử và ánh sáng viền riêng biệt cho từng sector trong số 10 sector.
+  * Hiển thị đầy đủ báo cáo tình báo chiến lược: Tình trạng chủ quyền, cấp độ đe dọa (Threat), độ ổn định (Stability), công sự phòng thủ (Fortifications), dân số, dữ liệu viễn thông chiến thuật, cùng 4 loại tài nguyên kinh tế.
+  * Danh mục hoạt động tại địa phương: Theo dõi sự kiện khẩn cấp đang diễn ra, chiến dịch hành quân (deployments) đến/đi, tình trạng khóa giao tranh (Combat Lock).
+  * Thanh công cụ tác chiến tức thì: Nút mở nhanh trong War Room (`onNavigateToSectorOperations`), điều hướng/focus trên bản đồ, điều quân hỏa tốc (Quick Dispatch), và bộ chuyển sector kế tiếp/trước đó.
+  * Nút mở Sector Intel được tích hợp trực tiếp trên Header của Inspector bản đồ và thẻ danh mục Sector trong War Room.
+- **4. Tự Động Di Chuyển Save Cũ (Migration) & Tương Thích Ngược Tuyệt Đối**:
+  * Tích hợp hàm `migrateWorldStateTo10Sectors` trong `storage.ts` tự động phát hiện các file save cũ 8 sector, bổ sung 2 sector mới và 4 tuyến đường mới mà không làm thay đổi hay ghi đè dữ liệu của 8 sector hiện có.
+  * Cập nhật danh sách kiểm soát phe VSS (`controlledSectorIds`) bao gồm cả `elysium_sanctuary`.
+  * Bảo toàn 100% định dạng `STARFRONT_WORLD_SAVE_V1`, thuật toán Checksum CRC32 và phân hệ RPG Save V4.
+- **5. Kiểm Thử Tự Động & Độ Tin Cậy Mã Nguồn**:
+  * Bộ kiểm thử chuyên biệt `tests/world/phase6-28-galaxy-expansion-sector-intel.test.ts` đạt 7/7 tests PASS.
+  * Toàn bộ 37/37 test suites của dự án vượt qua thành công (100% PASS).
+  * Build Next.js 16 và TypeScript linting thành công 100%.
+
+---
+
+## [Phase 6.27] — STARFRONT WORLD: Bảo Toàn Tính Đúng Đắn Dữ Liệu & Tính Liên Tục Phiên (Strategic Overview Data Integrity & Session Continuity)
+
+*Đã hoàn thành 100% Phase 6.27 — Chuẩn hóa và bảo đảm tính toàn vẹn dữ liệu cho tab Strategic Overview, biểu đồ Threat Visualizer và Resource Sparklines sau mỗi tick, tua nhanh (fast-forward), bắt kịp ngoại tuyến (catch-up) và tải lại trang (reload); đồng bộ 100% điểm dữ liệu ngày hiện tại với số liệu thực tế trên thẻ Strategic Status; bảo đảm chế độ Critical Sector gắn chuẩn xác và tự động chuyển đổi khi sector nguy cấp nhất thay đổi; chế độ Galaxy Average Threat tính toán trung bình từ dữ liệu thực tế và không coi dữ liệu thiếu là Threat = 0; nâng cấp cơ chế tính Delta có khả năng nhận biết độ giãn cách chu kỳ (gap-aware) và loại bỏ trùng ngày (deduplication); chuẩn hóa Session Resource Tracker ghi nhận đúng mốc sau mỗi tick, tua nhanh và catch-up mà không sinh mốc trùng trên re-render/modal/tab switch; trung thực fallback "Chưa đủ dữ liệu lịch sử" khi reload thay vì giả định lưu trữ; bảo toàn tuyệt đối Save Schema V1, Checksum CRC32 và RPG Save V4 (7/7 Phase 6.27 tests PASS, 37/37 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Bảo Đảm Tính Đúng Đắn Của Lịch Sử Threat (Threat Data Integrity)**:
+  * Biểu đồ `ThreatVisualizer` chỉ lấy dữ liệu từ `threatHistory` thực tế, không nội suy, không sinh điểm giả hay tính ngược từ trạng thái hiện tại.
+  * Đồng bộ hóa 100% điểm ngày hiện tại trong lịch sử Điểm Nóng với `threatLevel` thực tế của sector, bảo đảm giá trị trên thẻ Strategic Status và điểm cuối trên biểu đồ luôn khớp tuyệt đối.
+  * Khi Sector nguy cấp nhất thay đổi (ví dụ: sector khác bị tấn công tăng vọt threat), chế độ Điểm Nóng lập tức phản ánh đúng sector mới và toàn bộ lịch sử độc lập của nó.
+  * Chế độ Galaxy Average Threat tính trung bình cộng chính xác cho từng ngày theo số lượng sector thực tế có báo cáo dữ liệu (`dayTotals[day].sum / dayTotals[day].count`), không coi sector thiếu dữ liệu là Threat = 0.
+  * Điểm ngày hiện tại của Galaxy Average Threat khớp chính xác với chỉ số `avgThreat` hiển thị trên thẻ Strategic Status.
+- **2. Tính Toán Delta Chuẩn Xác & Nhận Biết Độ Giãn Cách Chu Kỳ (Gap-Aware Delta)**:
+  * Cả `ThreatVisualizer` và `ResourceSparkline` đều được nâng cấp cơ chế `sanitizedHistory`: làm sạch dữ liệu, loại bỏ trùng ngày (deduplication), sắp xếp theo ngày tăng dần và giới hạn tối đa 10 mốc gần nhất.
+  * Tự động nhận diện khoảng cách chu kỳ (`dayGap = latestDay - previousDay`):
+    - Chu kỳ liên tiếp (`dayGap === 1`): Hiển thị `+X Threat` hoặc `+X /ngày` kèm tooltip 1 chu kỳ.
+    - Chu kỳ cách quãng (`dayGap > 1` do tua nhanh hoặc nhảy chu kỳ): Hiển thị rõ ràng khoảng cách mốc `(N#prev→N#latest)` kèm tooltip giải thích số chu kỳ cách nhau, ngăn chặn ngộ nhận là biến động 1 ngày.
+  * Cơ chế deduplication loại bỏ hoàn toàn rủi ro sinh Delta = 0 giả tạo từ các bản ghi trùng lặp trong cùng một ngày.
+- **3. Session Resource Tracker & Xử Lý Tiến Thời Gian Chuẩn Xác**:
+  * Mỗi ngày chiến lược chỉ ghi nhận duy nhất 1 mốc cho mỗi tài nguyên theo đúng thời điểm cập nhật World State.
+  * React re-renders, mở/đóng modal (`reviewingEvent`) hay chuyển đổi tab không làm tăng số lượng mốc hay nhân bản dữ liệu.
+  * Ghi nhận đầy đủ từng tick thực tế khi:
+    - Tiến 1 ngày (`handleAdvanceTick`): Ghi nhận 1 mốc tài nguyên mới.
+    - Tua nhanh nhiều ngày (`handleFastForwardDays`): Ghi nhận từng mốc tick thực tế ngay sau mỗi lần `executeWorldTick`, sắp xếp theo thời gian và giữ tối đa 10 mốc gần nhất.
+    - Bắt kịp ngoại tuyến (`processOfflineCatchup`): Ghi nhận các mốc tick thực tế phát sinh trong thời gian ngoại tuyến.
+- **4. Tính Trung Thực Khi Reload & Bảo Toàn 100% World Save Schema V1**:
+  * Khi người chơi tải lại trang (reload), lịch sử theo phiên trong bộ nhớ bắt đầu lại từ đầu; giao diện hiển thị trạng thái *"Chưa đủ dữ liệu lịch sử"* trung thực cho đến khi tích lũy đủ từ 2 mốc trở lên.
+  * Tuyệt đối không chèn trường dữ liệu tùy tiện vào `STARFRONT_WORLD_SAVE_V1` chỉ để giữ sparkline qua reload.
+  * Giữ nguyên vẹn toàn bộ cấu trúc Checksum CRC32, Atomic Storage, RPG Save V4 và các động cơ gameplay cốt lõi.
+- **5. Kiểm Thử Tự Động & Độ Tin Cậy Mã Nguồn**:
+  * Bổ sung bộ kiểm thử tự động `tests/world/phase6-27-data-integrity-session-continuity.test.ts` đạt 7/7 tests PASS.
+  * Toàn bộ 37/37 test suites của dự án vượt qua thành công (100% PASS).
+  * Build Next.js 16 và TypeScript linting thành công 100%.
+
+---
+
+## [Phase 6.26] — STARFRONT WORLD: Trực Quan Hóa Xu Hướng Đe Dọa & Dự Trữ Tài Nguyên (Threat & Resource Trend Visualization)
+
+*Đã hoàn thành 100% Phase 6.26 — Nâng cấp toàn diện tab Tình Hình Toàn Cảnh (Overview) với hệ thống trực quan hóa trực quan bằng biểu đồ đường Threat Visualizer (SVG) và micro-sparklines cho tài nguyên thiết yếu (Lương thực dân sự & Vật tư tiếp tế); giúp người chỉ huy phát hiện sớm các nguy cơ leo thang đe dọa hoặc nguy cơ cạn kiệt tài nguyên trước khi khủng hoảng xảy ra; tích hợp 2 chế độ hiển thị Threat (Điểm Nóng Tác Chiến và Trung Bình Toàn Thiên Hà); hiển thị Delta biến động theo chu kỳ ngày thực tế kèm tooltip tương tác; trạng thái Fallback trung thực "Chưa đủ dữ liệu lịch sử" khi có dưới 2 điểm thay vì giả lập số liệu; bảo toàn 100% World Save Schema V1, RPG Save V4, Tick Engine và các ngưỡng cảnh báo hiện có (7/7 Phase 6.26 tests PASS, 36/36 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Component `ThreatVisualizer` (Biểu Đồ Đường Xu Hướng Đe Dọa)** (`threat-visualizer.tsx`):
+  * Dựng biểu đồ đường SVG responsive gọn nhẹ (viewBox 280x52px) thể hiện biến động Threat qua các chu kỳ ngày chiến lược thực tế.
+  * Hỗ trợ 2 chế độ xem linh hoạt qua toggle: **Điểm Nóng Tác Chiến** (Critical Sector) và **Trung Bình Toàn Thiên Hà** (Galaxy Average Threat).
+  * Tự động tính toán Delta (+/- Threat) và chỉ hướng biến động: Tăng (`up` - đỏ), Giảm (`down` - lục), Ổn định (`flat` - xám).
+  * Tương tác mượt mà: Tooltip khi hover hiển thị chi tiết mốc ngày và mức Threat tại từng điểm nút; hiệu ứng sóng lan tỏa tại điểm dữ liệu mới nhất.
+  * Hàng nhãn mốc thời gian ngày chiến lược (N#1..N#10) có thể tương tác chọn điểm.
+  * Fallback trung thực: Hiển thị thông báo *"Chưa đủ dữ liệu lịch sử"* (Cần ít nhất 2 chu kỳ ngày chiến lược) khi dữ liệu `< 2` điểm; không nội suy hay dựng xu hướng giả.
+  * Nút điều hướng nhanh: Cho phép nhảy trực tiếp tới Sector trong War Room từ thẻ Điểm Nóng.
+- **2. Component `ResourceSparkline` (Sparkline Lương Thực & Vật Tư Tiếp Tế)** (`resource-sparkline.tsx`):
+  * Tích hợp micro-sparkline SVG (84x24px) gọn gàng bên cạnh thông tin dự trữ tài nguyên trong Thẻ 1.3 (Quân Sự & Hậu Cần).
+  * Áp dụng cho 2 tài nguyên thiết yếu: **Lương thực dân sự (Civilian Food)** và **Vật tư tiếp tế (Logistics Supplies)**.
+  * Cơ chế ghi nhận lịch sử theo phiên (Session Resource History Tracker) ghi nhận tối đa 10 chu kỳ ngày thực tế trong phiên mà không sửa đổi World Save Schema V1.
+  * Khi phiên có dưới 2 mốc ghi nhận, hiển thị chính xác trạng thái *"Chưa đủ dữ liệu lịch sử"*, không giả lập dữ liệu từ giá trị hiện tại.
+  * Khi có từ 2 mốc trở lên, hiển thị đường xu hướng thu nhỏ kèm biến động Delta (+/- trên ngày) và tooltip khi hover.
+  * Bảo toàn 100% ngưỡng cảnh báo thiết yếu đang sử dụng:
+    - Food: Cạn kiệt (`<= 0`), Thiếu hụt cảnh báo (`< 100`), An toàn (`>= 100`).
+    - Logistics Supplies: Cạn kiệt (`<= 0`), Thiếu hụt cảnh báo (`< 50`), An toàn (`>= 50`).
+- **3. Tích Hợp Vào Strategic Overview & Bảo Toàn Kiến Trúc 3 Tầng** (`operations-center.tsx`):
+  * Tích hợp `ThreatVisualizer` vào Thẻ 1.2 (Threat & Điểm Nóng) và `ResourceSparkline` vào Thẻ 1.3 (Quân Sự & Hậu Cần).
+  * Giữ nguyên cấu trúc 3 tầng: Tầng 1 Strategic Status, Tầng 2 Actionable Situation Triage (P0/P1/P2), Tầng 3 Operational Pulse.
+  * Không làm mất hay che khuất các cảnh báo P0/P1/P2, Quick Review Modal hay Debriefing Drawer.
+- **4. Bảo Toàn Gameplay, Save Schemas & Kiểm Thử Tự Động**:
+  * Giữ nguyên schema `STARFRONT_WORLD_SAVE_V1` và `STARFRONT_SAVE_DATA_V4`.
+  * Bộ kiểm thử tự động `tests/world/phase6-26-threat-resource-trend-visualization.test.ts` đạt 7/7 test cases PASS.
+  * Toàn bộ 36 test suites của dự án đạt 100% PASS tuyệt đối.
+
+---
+
+## [Phase 6.25] — STARFRONT WORLD: Tái Thiết Kế Bàn Chỉ Huy Sự Kiện & Nhiệm Vụ (Events & Missions Command Desk Redesign)
+
+*Đã hoàn thành 100% Phase 6.25 — Tái thiết kế toàn diện tab Events & Missions thành Bàn Chỉ Huy Chiến Lược (Command Desk) 3 chế độ độc lập: Cần Quyết Định [INIT], Đang Triển Khai [PROCESSING] và Chuỗi Nhiệm Vụ [CHAINS]; loại bỏ khối Recent Results Feed trùng lặp khỏi chân trang mà bảo toàn nguyên vẹn kho dữ liệu Event Archive & Debriefing Drawer; chế độ INIT tập trung vào mục tiêu bối cảnh và so sánh 2-3 phương án trực quan, ẩn công thức chi tiết nhưng xem được khi cần, chỉ hiển thị xác suất thực tế; chế độ PROCESSING chuyển sang trạm giám sát tiến độ thực tế không có nút phê chuẩn trùng lặp; chế độ CHAINS nâng cấp thành pipeline stepper toàn diện với 4 trạng thái nút rõ ràng và điều hướng sector trực tiếp; bảo toàn 100% logic engine, validation, concurrency guard và cách ly lưu trữ (7/7 Phase 6.25 tests PASS, 35/35 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Điều Hướng Cấp 1 Với 3 Chế Độ Tác Chiến Chuyên Biệt (`events-missions-board.tsx`)**:
+  - Tách bạch giao diện thành 3 chế độ rõ ràng qua thanh điều phối trên cùng:
+    * **CẦN QUYẾT ĐỊNH [INIT]**: Hàng đợi sự kiện khẩn cấp thu gọn (4 cột) đối chiếu trực tiếp với Decision Panel (8 cột) tập trung vào mục tiêu, bối cảnh và so sánh phương án.
+    * **ĐANG TRIỂN KHAI [PROCESSING]**: Trạm giám sát tiến trình thực thi trực quan với thanh tiến độ % thời gian thực, đích đến ngày game, giải thích nguồn phê chuẩn và lý do lựa chọn.
+    * **CHUỖI NHIỆM VỤ [CHAINS]**: Nâng cấp thành chế độ xem chính độc lập, hiển thị pipeline timeline/stepper toàn màn hình cho các tuyến nhiệm vụ.
+  - Tích hợp thanh tìm kiếm tức thời theo từ khóa, tên sự kiện, sector và danh mục trên từng chế độ.
+- **2. Chế Độ A [INIT] — Decision Panel Tập Trung Tác Động & Chi Phí Thực Tế**:
+  - Trình bày 2–3 phương án đối ứng qua các thẻ so sánh trực quan: tên phương án, biến động Ổn định và Đe dọa thực tế, chi phí tài nguyên và điều kiện quân dự bị (`military.reserves`).
+  - Nút phê chuẩn rõ ràng có kiểm tra thẩm định khả năng chi trả qua `validateStrategyExecution`.
+  - Ẩn điểm số trừu tượng khỏi giao diện chính nhưng cho phép bật mở xem hệ số chi tiết (Explainable Scoring).
+  - Chỉ hiển thị xác suất thành công khi cấu hình template thực sự quy định xác suất có ý nghĩa (`strat.successChance`); không đổi điểm chiến lược thành phần trăm thành công giả.
+  - Bảo toàn nút *"⚡ System Auto Phê Chuẩn Ngay"* sử dụng `evaluateAndApplyEventStrategyPolicy`.
+- **3. Chế Độ B [PROCESSING] — Trạm Giám Sát Tiến Trình Thực Tế**:
+  - Không lặp lại Decision Panel như thể sự kiện đang chờ phê chuẩn.
+  - Hiển thị phương án đang thực thi, sector liên quan, tiến độ hoàn tất thực tế (% và progress bar), ngày bắt đầu và ngày dự kiến kết thúc (`processingCompletesTick`).
+  - Minh bạch nguồn phê chuẩn (`System Auto`, `Tự Động Khóa Mặc Định`, `Chỉ Huy Phê Chuẩn`) và lý do lựa chọn (`selectionReason`).
+  - Cảnh báo trận chiến thực địa nếu sự kiện gắn với `encounterTransactionId`.
+  - Tuyệt đối loại bỏ nút phê chuẩn (Idempotent Guard), ngăn ngừa tạo giao dịch trùng lặp.
+- **4. Chế Độ C [CHAINS] — Pipeline Timeline & Stepper Chuỗi Nhiệm Vụ**:
+  - Hiển thị tiến trình từng bước dạng pipeline stepper đa cột.
+  - Phân biệt rõ 4 trạng thái nút nhiệm vụ: Đã Hoàn Tất (`completed`), Đang Hoạt Động (`active`), Đang Chờ Điều Kiện Sector (`isPendingDispatch` + số ngày hoãn), Chưa Mở Khóa (`locked`).
+  - Hiển thị sector liên kết và hỗ trợ điều hướng trực tiếp sang Galaxy Map / War Room qua nút *"Bản đồ &rarr;"*.
+- **5. Loại Bỏ Nội Dung Trùng Lặp & Bảo Toàn Lưu Trữ**:
+  - Loại bỏ khối Recent Results Feed khỏi cuối trang để tránh trùng lặp với **Khay Báo Cáo Tình Báo** (`DebriefingDrawer`).
+  - Bổ sung nút liên kết mở nhanh *Khay Báo Cáo Tình Báo* tại thanh tiêu đề board.
+  - Bảo toàn 100% kho dữ liệu `eventResultsArchive`, Safe Pruning và tính cách ly tuyệt đối với RPG Save V4.
+- **6. Bộ Kiểm Thử Chuyên Sâu & Độ Tin Cậy Toàn Cục**:
+  - Bổ sung `tests/world/phase6-25-events-missions-command-desk.test.ts` gồm 7 test cases chuyên sâu (100% PASS).
+  - Toàn bộ 35 test suites trong `package.json` (`npm test`) vượt qua thành công.
+  - Next.js build và typecheck thành công tuyệt đối.
+
+---
+
+## [Phase 6.24] — STARFRONT WORLD: Tái Thiết Kế Tình Hình Toàn Cảnh & Điểm Nóng Tác Chiến (Strategic Overview Redesign & Actionable Triage)
+
+*Đã hoàn thành 100% Phase 6.24 — Tái thiết kế toàn diện tab Tình hình toàn cảnh (Overview) trong Operations Center dựa trên kiểm toán UX; thay thế bố cục chiếm dụng diện tích bằng 3 tầng giao diện chuẩn mực: Strategic Status (Chủ quyền VSS, Threat trung bình/điểm nóng, Quân dự bị & Cảnh báo hậu cần), Actionable Situation Triage (Danh sách điểm nóng ưu tiên P0/P1/P2 kèm điều hướng trực tiếp War Room, Quick Dispatch, Events & Missions, Suspended Combat), Operational Pulse (Niên lịch thu gọn & Khay báo cáo tình báo Debriefing Drawer), Modal Xem Đề Xuất & Phê Chuẩn An Toàn có xác nhận từ người chơi; sửa dứt điểm lỗi đồng bộ cờ Tactical Retreat trong Combat Arena (7/7 Phase 6.24 tests PASS, 34/34 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Tầng Đầu — Strategic Status (`operations-center.tsx`)**:
+  - *Chủ quyền & tình trạng thiên hà*: Hiển thị tỷ lệ kiểm soát VSS (`vssRatio%`), phân nhóm chủ quyền (VSS, The Void, Contested, Neutral); số lượng sector Ổn định, Đang bị đe dọa (`threatened`), Đang bị vây hãm (`under_siege`); thống kê số tuyến Hyperlane Bị phong tỏa (`blocked`) và Nguy hiểm (`hazardous`).
+  - *Threat & điểm nóng*: Hiển thị mức Threat trung bình toàn cầu; chỉ rõ Sector nguy cấp nhất (Threat cao nhất) kèm nút điều hướng nhanh sang War Room; tính toán xu hướng Threat tăng/giảm chỉ khi có $\ge 2$ điểm dữ liệu lịch sử thực tế (`threatHistory`), hiển thị trung thực *"Chưa có dữ liệu xu hướng"* nếu thiếu lịch sử.
+  - *Quân sự & hậu cần*: Thống kê quân số dự bị sẵn sàng (`military.reserves`) và lực lượng đang hành quân (`military.deployments` + `activeDeployments.inTransit`); cảnh báo thiếu hụt Lương thực dân sự (Civilian Food) và Quân nhu hậu cần (Supplies) theo đúng ngưỡng quy định của nền kinh tế (`SHORTAGE_THRESHOLD` 50 và `CRITICAL_FOOD_THRESHOLD` 100); cảnh báo rõ ràng khi tài nguyên ở mức nguy cấp.
+- **2. Tầng Hai — Actionable Situation Triage (`operations-center.tsx`)**:
+  - Tổng hợp danh sách điểm nóng sắp xếp theo độ ưu tiên (`P0` Khẩn cấp, `P1` Cảnh báo, `P2` Lưu ý).
+  - Phân loại rõ ràng: Sector bị đe dọa / vây hãm, Trận chiến dở dang (`isSuspendedCombat`), Sự kiện `INIT` sắp hết hạn countdown, Khủng hoảng hậu cần / lương thực.
+  - Nối toàn bộ hành động điều hướng với state thực:
+    * **Xem Tại War Room**: chuyển sang tab `map` và chọn đúng `selectedSectorId`.
+    * **Xuất Kích Nhanh**: mở modal `QuickDispatchDock` với sector được chọn sẵn.
+    * **Xem Sự Kiện / Chi Tiết & Phê Chuẩn**: chuyển sang tab `events` và chọn đúng `selectedEventIdForBoard`.
+    * **Xử Lý Trận Chiến Dở**: kích hoạt `handleDeployCombat` đưa người chơi vào luồng tiếp tục tác chiến hoặc rút lui an toàn.
+- **3. Phê Chuẩn Nhanh Sự Kiện (Quick Review Modal)**:
+  - Cho phép người chơi bấm *"⚡ Xem Đề Xuất"* từ thẻ sự kiện sắp hết hạn trên Overview.
+  - Sử dụng `selectBestStrategyForEvent` và `validateStrategyExecution` từ `event-strategy-policy.ts` để trình bày phương án tối ưu, điểm số, lý do và chi phí tài nguyên/quân sự.
+  - Người chơi phải chủ động bấm *"Xác Nhận Phê Chuẩn"*; hệ thống tuyệt đối không tự động duyệt chỉ vì deadline sắp hết hạn.
+  - Cung cấp liên kết *"Mở Bảng Quyết Định Đầy Đủ"* sang Events & Missions nếu người chơi muốn tùy chỉnh sâu.
+- **4. Tầng Ba — Operational Pulse (`operations-center.tsx`)**:
+  - Thu nhỏ niên lịch thành dải trạng thái gọn: ngày game, chu kỳ mùa/buổi, trạng thái mô phỏng (Đang chạy / Tạm dừng), đếm ngược giây đến tick tiếp theo.
+  - Nhật ký biến động gần nhất: hiển thị log từ tick gần nhất hoặc tóm tắt vòng đời sự kiện; nút mở nhanh **Khay Báo Cáo Tình Báo** (`isDebriefingDrawerOpen = true`) khi có kết quả mới chưa đọc.
+- **5. Khắc Phục Đồng Bộ Cờ Tactical Retreat Trong Combat Arena (`combat-arena.tsx`)**:
+  - Gán `worldCommittedRef.current = true` ngay sau khi commit kết quả rút lui thành công trong `handleConfirmTacticalRetreat`, ngăn chặn việc gọi commit lần thứ hai khi combat state chuyển sang `defeat`.
+- **6. Bộ Kiểm Thử Chuyên Sâu & Độ Tin Cậy Toàn Cục**:
+  - Bổ sung `tests/world/phase6-24-strategic-overview-redesign.test.ts` gồm 7 test cases chuyên sâu (100% PASS).
+  - Toàn bộ 34 test suites trong `package.json` (`npm test`) vượt qua thành công.
+  - Next.js build và typecheck thành công tuyệt đối.
+
+---
+
+## [Phase 6.23] — STARFRONT WORLD: Tích Hợp Ngữ Cảnh Tác Chiến Thực Địa & Kết Nối Combat Arena (WORLD Combat Context & Arena Integration)
+
+*Đã hoàn thành 100% Phase 6.23 — Kết nối toàn diện luồng xuất kích tác chiến từ STARFRONT WORLD sang Combat Arena dựa trên kiến trúc Encounter Snapshot và Transaction Journal hiện có; khóa sector và lưu trạng thái suspended combat trước khi chuyển cảnh; chuyển đổi chính xác thông số địch từ snapshot sang CombatUnit đối thủ thay vì mở scout-drone mặc định; áp dụng chỉ số công sự & sĩ khí lên người chơi; hỗ trợ 2 chế độ rút lui (Hủy Bỏ An Toàn & Rút Lui Thất Bại); commit biên lai kết quả vào World State qua Adapter; hiển thị bảng tổng kết thực địa WorldCombatPostMissionResults và bảo vệ cách ly tuyệt đối 100% RPG Save V4 (8/8 Phase 6.23 tests PASS, 33/33 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Chuẩn Hóa Khóa Sector & Tạo Encounter Snapshot Bất Biến (`operations-center.tsx`, `combat-adapter.ts`)**:
+  - Khi người chơi bấm **Xuất Kích Tác Chiến** tại sector đủ điều kiện:
+    * Kiểm tra an toàn: ngăn chặn xuất kích trùng lặp nếu sector đã bị khóa hoặc đang có trận chiến chưa hoàn tất tại sector khác.
+    * Gọi `lockEncounterAndCreateSnapshot(worldState, { sectorId })`: đóng băng toàn bộ quân đồn trú (`lockedGarrisonPower`), gán mã giao dịch duy nhất `tx-cbt-...` và lưu vào `transactionJournal` với trạng thái `pending`.
+    * Thiết lập `state.isSuspendedCombat = true`, `suspendedEncounterId`, `suspendedSnapshot`.
+    * Lưu nguyên tử vào WORLD save (`STARFRONT_WORLD_SAVE_V1`) qua `saveWorldState` trước khi kích hoạt chuyển đổi giao diện buồng lái.
+- **2. Đóng Gói Ngữ Cảnh Tác Chiến WorldBattleContext (`lib/game/world/types.ts`)**:
+  - Khai báo interface `WorldBattleContext`: `source: "WORLD"`, `transactionId`, `encounterId`, `sectorId`, `sectorName`, `snapshot`, `resumedFromSuspended`.
+  - Truyền context đồng bộ qua `onDeployEncounter` trong `operations-center.tsx`, cập nhật `activeWorldBattle` trong `starfront-shell.tsx` và cấp phát vào `CombatArena`.
+- **3. Chuyển Đổi Dữ Liệu Đối Thủ & Bổ Trợ Người Chơi Thực Thụ (`lib/game/world/combat-adapter.ts`)**:
+  - `buildCombatUnitFromSnapshot(snapshot)`: Chuyển đổi chính xác kẻ thù từ snapshot thành `CombatUnit` đối thủ đầy đủ (HP, Attack, Defense, Speed, Skills, Boss flag) tương ứng với Sector và mức độ đe dọa Void, xóa bỏ hoàn toàn hiện tượng tự động mở `scout-drone` hoặc mission RPG mặc định.
+  - `applyWorldSnapshotPlayerModifiers(playerUnit, snapshot)`: Áp dụng hệ số phòng thủ từ cấp công sự (`defenseMultiplier`) và hệ số tấn công từ sĩ khí (`moraleMultiplier`) lên phi thuyền người chơi.
+  - `buildCombatReceiptFromCombatState(combatState, snapshot, isVictory)`: Trích xuất biên lai `CombatResultReceipt` chuẩn hóa với xếp hạng chiến thuật (S+, S, A, B, C) dựa trên tỷ lệ HP và số lượt giao tranh.
+- **4. Đấu Trường Combat Arena Hỗ Trợ Hai Chế Độ Độc Lập (`components/game/combat-arena.tsx`)**:
+  - **Banner Chiến Sự Thực Địa STARFRONT WORLD**: Hiển thị tên Sector, mã giao dịch, số quân đồn trú đóng băng, cấp công sự (Thủ +X%), sĩ khí (+Y%) và mục tiêu tác chiến.
+  - **Chế Độ Rút Lui Chiến Lược Đa Lựa Chọn (Strategic Retreat Modal)**:
+    * **Hủy Bỏ An Toàn (Safe Abort)**: Mở khóa Sector ngay lập tức, hoàn trả 100% quân đồn trú nguyên vẹn, hủy transaction mà không áp dụng hình phạt.
+    * **Rút Lui Thất Bại (Tactical Retreat)**: Chấp nhận thất bại, trừ ổn định và đồn trú theo quy tắc, mở khóa an toàn và cập nhật kết quả vào World State.
+  - **Màn Hình Kết Quả Thực Địa `WorldCombatPostMissionResults` (`components/game/world-combat-results.tsx`)**:
+    * Hiển thị báo cáo kết quả thực địa với đầy đủ biến động chỉ số: Threat giảm/tăng, Stability phục hồi/suy giảm, tài nguyên thu hồi (Data, Materials, Energy) và tổn thất đồn trú.
+    * Nút *"HOÀN TẤT & TRỞ VỀ SỞ CHỈ HUY"* gọi `onWorldCombatComplete`, xóa `activeWorldBattle` và đưa người chơi trở về War Room.
+- **5. Cách Ly Dữ Liệu Tuyệt Đối & Khôi Phục Sau Reload**:
+  - Khi `worldBattleContext` kích hoạt, toàn bộ logic cộng thưởng (EXP, Credits, Drop Item, Level Up) và trừ phạt của RPG Save V4 bị vô hiệu hóa hoàn toàn, đảm bảo độc lập tuyệt đối 100%.
+  - Hỗ trợ `resumeSuspendedCombat`: Khi người chơi reload trang hoặc mở lại game khi có trận dở dang, hệ thống tự động nhận diện và cho phép tiếp tục trận chiến từ snapshot đã lưu.
+- **6. Bộ Kiểm Thử Chuyên Sâu & Độ Tin Cậy Hệ Thống**:
+  - Bổ sung `tests/world/phase6-23-world-combat-arena-integration.test.ts` gồm 8 test cases chuyên sâu (100% PASS).
+  - Toàn bộ 33 test suites trong `package.json` (`npm test`) vượt qua thành công.
+  - Next.js build và typecheck không phát sinh bất kỳ lỗi nào.
+
+---
+
+## [Phase 6.22] — STARFRONT WORLD: Khắc Phục Hitbox Galaxy Map & Tương Tác Viewport (Galaxy Map Hitbox & Viewport Interaction Fix)
+
+*Đã hoàn thành 100% Phase 6.22 — Khắc phục việc chọn sector khó trên Galaxy Map khi zoom nhỏ hoặc click gần node; phân biệt chính xác click chọn sector với thao tác kéo bản đồ (Pan) bằng movement threshold; bảo đảm trải nghiệm mượt mà, zero micro-jitter và nhất quán hoàn toàn giữa Embedded War Room Map và Fullscreen Overlay (5/5 Phase 6.22 tests PASS, 32/32 Test Suites PASS, build & typecheck thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Hit Area SVG Trong Suốt Chuyên Dụng Cho Từng Sector Node (`components/game/world/world-map.tsx`)**:
+  - Bổ sung hit area hình chữ nhật bo góc trong suốt kích thước lớn ($140 \times 88\text{px}$) riêng biệt cho mỗi sector node: `<rect x={cx - 70} y={cy - 35} width="140" height="88" rx="16" fill="transparent" />`.
+  - Bao trọn vẹn vòng tròn trung tâm node ($cx, cy$), nhãn tên sector ($cy + 30$) và thanh đo Threat ($cy + 42$), xóa bỏ hoàn toàn khoảng chết (deadzone) gây trôi click trước đây.
+  - Phân bố không gian chuẩn xác: khoảng cách tối thiểu giữa các sector canonical $\ge 120\text{px}$, hitbox không bao trùm sang tâm sector lân cận, loại bỏ nguy cơ chọn nhầm.
+  - Gắn `pointer-events-none select-none` cho các nhãn cự ly và rủi ro trên tuyến đường hyperlane, ngăn chặn hoàn toàn việc route label chiếm sự kiện của sector.
+- **2. Phân Biệt Chính Xác Click Chọn Sector Và Pan Bản Đồ (Pointer Drag Threshold)**:
+  - Thiết lập ngưỡng chuyển động `DRAG_THRESHOLD = 5px`:
+    * Khi con trỏ dịch chuyển dưới $5\text{px}$ (click tĩnh hoặc micro-jitter rung tay), giữ nguyên `panOffset`, không làm giật camera và kích hoạt click chọn sector chính xác.
+    * Khi con trỏ dịch chuyển $\ge 5\text{px}$, chuyển sang trạng thái Pan kéo bản đồ (`isDragging = true`).
+  - Khi nhả chuột (`onPointerUp`): cờ `hasExceededDragThreshold` ngăn chặn kích hoạt click chọn sector ở cuối thao tác kéo.
+  - Ứng dụng Pointer Events API (`setPointerCapture` / `releasePointerCapture`), xử lý an toàn ngay cả khi người chơi nhả chuột bên ngoài container bản đồ.
+- **3. Trải Nghiệm Zoom Nhỏ Vượt Trội ($0.7\times$)**:
+  - Nhờ hit area $140 \times 88\text{px}$, khi zoom nhỏ ở mức tối thiểu ($0.7\times$), diện tích bấm trên màn hình thực tế vẫn đạt $\approx 98 \times 61\text{px}$, giúp người chơi click trúng cực kỳ dễ dàng trên cả chuột, trackpad và màn hình cảm ứng mà không cần phóng to hình ảnh đồ họa.
+- **4. Nhất Quán Giữa Embedded Map & Fullscreen Overlay**:
+  - Cả chế độ nhúng trong War Room và chế độ Toàn màn hình (`world-fullscreen-overlay.tsx`) dùng chung 100% logic hitbox và drag threshold.
+  - Thao tác chọn sector đồng bộ tức thì với thanh Sector Command Ribbon và bảng chi tiết Sector Inspector bên phải.
+- **5. Minh Bạch Hóa Trạng Thái Nút Tác Chiến**:
+  - Khi sector ở trạng thái bình thường/ổn định (`normal`, `recovery`), hiển thị thông báo trạng thái rõ ràng: *"Tác chiến: Chưa có giao tranh"* kèm nhãn *"Khu vực ổn định"* hoặc *"Cần giải vây tuyến ngoài"* thay vì biến mất đột ngột.
+  - Giữ nguyên giới hạn an toàn: không tự khởi chạy combat WORLD khi chưa đủ điều kiện.
+- **6. Kiểm Thử & Tương Thích Tuyệt Đối**:
+  - Bổ sung bộ kiểm thử chuyên dụng `tests/world/phase6-22-galaxy-map-hitbox-viewport.test.ts` (5/5 tests PASS).
+  - Toàn bộ 32 test suites của dự án vượt qua thành công (100% PASS).
+  - Next.js build & TypeScript typecheck hoàn hảo.
+
+---
+
+## [Phase 6.20] — STARFRONT WORLD: Khay Báo Cáo Tình Báo & Truy Cập Kết Quả (Debriefing Drawer & Results Access)
+
+*Đã hoàn thành 100% Phase 6.20 — Triển khai hạng mục P1 theo `WORLD_UI_UX_AUDIT.md`: Chuyển Dual Results Hub thành Khay Báo Cáo Debriefing Drawer mở nhanh từ Tactical HUD với huy hiệu đếm số lượng chưa đọc, trượt mượt mà từ cạnh phải màn hình mà không làm gián đoạn hoặc mất trạng thái War Room; tích hợp xem chi tiết kết quả, liên kết nhảy trực tiếp sang Sector trên Galaxy Map, dọn dẹp log an toàn (Safe Pruning) và bảo toàn 100% World Save V1 (10/10 Phase 6.20 tests PASS, 31/31 Test Suites PASS, build & lint thành công).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Khay Báo Cáo Debriefing Drawer (`components/game/world/debriefing-drawer.tsx`)**:
+  - **Mở Nhanh Không Gián Đoạn War Room**:
+    * Nút "Báo Cáo" trên Slim Tactical HUD kết nối trực tiếp với drawer state, mở flyout panel trượt từ cạnh phải mà không thay đổi `activeTab` hay `selectedSectorId`.
+    * Phím tắt `Escape` toàn cục và nút "Đóng [ESC]" cho phép thoát nhanh, hỗ trợ đóng khi nhấp vào backdrop mờ hoặc nút "Quay lại War Room &rarr;".
+    * Thiết kế đáp ứng (Responsive Layout): Rộng cố định trên desktop (`560px` - `720px`) và tự động mở rộng toàn màn hình (`w-screen`) trên thiết bị di động/màn hình hẹp.
+    * Cuộn độc lập nội bộ (`overflow-y-auto`) với scrollbar tối ưu, không ảnh hưởng đến bản đồ nền.
+  - **Huy Hiệu Kết Quả Chưa Đọc (Unread Badge)**:
+    * Tính toán chính xác số lượng báo cáo chưa đọc (`unreadResultsCount`) từ `eventResultsArchive`.
+    * Tự động cập nhật badge khi sự kiện hoàn tất chu trình `PROCESSING`, không tạo thông báo lặp hay tăng số ảo qua các tick mô phỏng.
+- **2. Tích Hợp & Nâng Cấp Dual Results Hub (`components/game/world/dual-results-hub.tsx`)**:
+  - **Phân Tách Rõ Ràng 2 Luồng Báo Cáo**:
+    * **Báo Cáo Sự Kiện & Khủng Hoảng (Event Results)**: Trích xuất từ `eventResultsArchive`, phân định rõ trạng thái `THÀNH CÔNG`, `THẤT BẠI`, `HẾT HẠN (MẶC ĐỊNH)`, nguồn chiến lược (`SYSTEM AUTO`, `DEFAULT FALLBACK`, `CHỈ HUY PHÊ CHUẨN`), biến động Stability, Threat, thương vong và tài nguyên.
+    * **Nhật Ký Trận Đánh Buồng Lái (Battle Results)**: Trích xuất có thẩm quyền từ `transactionJournal` (chỉ các giao dịch combat đã `committed`), hiển thị kết quả, hạng chiến thuật (S/A/B), số hiệp, tỷ lệ HP người chơi/kẻ địch và tóm tắt diễn biến.
+  - **Liên Kết Nhảy Trực Tiếp Sang Sector (Interactive Sector Navigation)**:
+    * Tên Sector trên cả 2 luồng báo cáo trở thành nút liên kết có thể nhấp (`onNavigateToSector`), khi bấm sẽ đưa camera Galaxy Map trực tiếp đến Sector đó, mở Sector Inspector và đóng Drawer mượt mà.
+  - **Bảng Tình Báo Chi Tiết Mở Rộng (Expandable Details Panel)**:
+    * Nút bật/tắt "Chi Tiết" / "Biên Lai" cho từng thẻ kết quả, mở rộng thông tin ID sự kiện, tick hoàn tất, giải trình lựa chọn chiến lược và mã giao dịch TxID.
+  - **Bộ Lọc 4 Chế Độ & Thao Tác Hàng Loạt**:
+    * Lọc theo `Tất Cả`, `Chưa Đọc`, `Thắng / Tốt`, `Thua / Xấu`.
+    * Đánh dấu từng báo cáo đã đọc hoặc đánh dấu toàn bộ với 1 cú nhấp.
+    * Dọn dẹp an toàn (`pruneReadEventResultsSafe`): Xóa các bản ghi đã đọc khỏi danh sách hiển thị, bảo toàn 100% các chỉ số World State và không ảnh hưởng tài nguyên thiên hà.
+- **3. Tích Hợp Vào Operations Center (`components/game/world/operations-center.tsx`)**:
+  - Kết nối nút "Báo Cáo" trên Tactical HUD với drawer toggle.
+  - Cập nhật nút "Dual Results Hub" trong `EventsMissionsBoard` mở trực tiếp Drawer.
+  - Giữ nguyên tab 5 "Trung Tâm Kết Quả" để tương thích ngược 100% với các test suite hiện có.
+- **4. Kiểm Thử Toàn Diện & Tương Thích Tuyệt Đối**:
+  - Viết bộ kiểm thử chuyên dụng `tests/world/phase6-20-debriefing-drawer.test.ts` (10/10 tests PASS).
+  - Toàn bộ 31 test suites của dự án vượt qua thành công (100% PASS).
+  - Next.js build & TypeScript typecheck không có lỗi.
+
+---
+
+## [Phase 6.19] — STARFRONT WORLD: Ma Trận Ra Quyết Định Sự Kiện & Nhiệm Vụ (Events & Missions Decision Matrix)
+
+*Đã hoàn thành 100% Phase 6.19 — Triển khai hạng mục P1 theo `WORLD_UI_UX_AUDIT.md`: Tái cấu trúc `events-missions-board.tsx` thành Ma trận Ra quyết định 2 Cột (Decision Matrix) gồm Urgency Queue bên trái cuộn độc lập và Decision Panel bên phải đối chiếu chiến lược theo thời gian thực; hiển thị minh bạch nguồn phê chuẩn (`System Auto`, `Default Fallback`, `Chờ Chỉ Huy`), score giải thích được, chi phí xác thực và bảo vệ lũy đẳng (100% tests PASS, build thành công, 30/30 test suites PASS tuyệt đối).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Hàng Đợi Khẩn Cấp (Urgency Queue — Cột Trái `events-missions-board.tsx`)**:
+  - **Sắp Xếp 3 Tầng Ưu Tiên Chặt Chẽ**: Ưu tiên 1 theo hạn chót gần nhất (`decisionDeadlineTick - currentDay` ASC), Ưu tiên 2 theo mức độ nghiêm trọng đa tín hiệu (`critical` > `warning` > `info`), Ưu tiên 3 theo độ ưu tiên priority và ID tất định.
+  - **Giới Hạn Chiều Cao & Cuộn Độc Lập**: Khung danh sách có chiều cao giới hạn (`max-h-[680px]`) và thanh cuộn nội bộ độc lập (`overflow-y-auto`), khắc phục triệt để hiện tượng trang bị kéo dài hàng nghìn pixel khi có nhiều sự kiện.
+  - **Thẻ Sự Kiện Cô Đọng (Compact Interactive Cards)**:
+    * Vạch màu trạng thái dọc cạnh trái (đỏ/amber/xanh).
+    * Huy hiệu đếm ngược ngày khẩn cấp (nhấp nháy đỏ khi còn <= 1 ngày hoặc tối nguy).
+    * Phân loại sự kiện (Crisis, Military, Diplomacy, Civil, Anomaly, Logistics, Intel).
+    * Sector / Toàn vũ trụ và nhãn nguồn phê chuẩn (`Chờ Chỉ Huy`, `System Auto`, `PROCESSING`).
+    * Chỉ báo thẻ đang chọn trực quan với viền sáng cyan, ring phát sáng và nhãn "ĐANG XEM".
+  - **Thanh Công Cụ Lọc & Tìm Kiếm Tức Thì**: Bộ lọc 5 chế độ (`Tất Cả`, `Cần Phê Chuẩn [INIT]`, `Đang Triển Khai [PROCESSING]`, `Cây Chuỗi Nhiệm Vụ`, `Báo Cáo Gần Đây`) kèm thanh tìm kiếm theo tên sự kiện và sector.
+- **2. Bảng Phân Tích & Phê Chuẩn Chiến Lược (Decision Panel — Cột Phải `events-missions-board.tsx`)**:
+  - **Tình Báo Tác Chiến & Bối Cảnh Sector**: Hiển thị mô tả đầy đủ, phân cấp quy mô Tier (Small, Medium, Large), hạn chót và thông tin sector (ổn định %, đe dọa, chủ quyền, quân đồn trú, nút tắt xem trên War Room Map).
+  - **So Sánh Đối Chiếu Các Phương Án Đa Chiều**:
+    * Hiển thị song song từng phương án với tỷ lệ thành công (`successChance%`), thời gian thực thi (`processingTicks`), biến động ổn định (`stabilityDelta`) và đe dọa (`threatDelta`).
+    * Thẩm định chi phí thực tế (`validateStrategyExecution`): Kiểm tra từng tài nguyên trong 5 loại và quân dự bị, hiển thị nhãn màu xanh/đỏ tức thì và lý do chi tiết khi thiếu hụt.
+    * Hệ thống chấm điểm minh bạch (`scoreEventStrategy`): Điểm số chiến lược tổng hợp (+/- điểm) kèm nút bật/tắt giải thích chi tiết các hệ số đánh giá (Explainable Scoring).
+    * Nổi bật phương án được System Auto đề xuất (`★ ĐỀ XUẤT SYSTEM AUTO`) và phương án mặc định tự động khóa.
+    * Nút Phê chuẩn thủ công có kiểm tra chi phí và nút Phê chuẩn nhanh 1-click theo System Auto (`⚡ System Auto Phê Chuẩn Ngay`).
+  - **Empty State Trung Thực**: Khi chưa có sự kiện nào được chọn, hiển thị màn hình hướng dẫn thao tác sạch sẽ với biểu tượng Crosshair quân sự, tuyệt đối không tạo dữ liệu giả.
+  - **Bảo Vệ Tính Lũy Đẳng & Phân Định Nguồn Quyết Định**:
+    * Phân biệt rõ các nguồn: `player_choice`, `system_auto`, `default_fallback`, `processing`.
+    * Hiển thị minh bạch nguyên nhân chuyển giao quyền quyết định (`autoSelectionFailureReason`).
+    * Khóa không cho phép phê chuẩn lại hoặc ghi đè phương án khi sự kiện đã bước vào trạng thái `PROCESSING`.
+- **3. Bảo Toàn Chuỗi Nhiệm Vụ & Phân Hệ Kết Quả**:
+  - Giữ nguyên vẹn 100% cấu trúc cây đồ thị chuỗi nhiệm vụ chiến lược (`activeMissionChains`), các trạng thái nút `completed`, `active`, `locked`.
+  - Duy trì cơ chế hoãn điều động `isPendingDispatch` với huy hiệu "Đang chờ điều kiện sector" và đếm số ngày đã hoãn (`dispatchDeferredTicks` / `MAX_DISPATCH_DEFER_TICKS`).
+  - Duy trì bảng tin kết quả gần đây (Recent Results Feed) và liên kết nhanh đến Dual Results Hub.
+- **4. Kiểm Thử Toàn Diện & Tương Thích Tuyệt Đối**:
+  - Viết bộ kiểm thử chuyên dụng `tests/world/phase6-19-decision-matrix.test.ts` (6/6 tests PASS).
+  - 30/30 test suites PASS 100% qua `npm test`.
+  - Next.js build và typecheck thành công hoàn toàn (`compile_applet`, `lint_applet`).
+  - Bảo toàn tuyệt đối `STARFRONT_WORLD_SAVE_V1`, `STARFRONT_WORLD_SIMULATOR_CONFIG` và `STARFRONT_SAVE_DATA_V4`.
+
+---
+
+## [Phase 6.18] — STARFRONT WORLD: Slim Tactical HUD & Cách Ly ADMIN CP (Slim Tactical HUD & ADMIN CP Isolation)
+
+*Đã hoàn thành 100% Phase 6.18 — Triển khai P1 theo `WORLD_UI_UX_AUDIT.md`: Tinh giản header của Operations Center thành thanh Slim Tactical HUD tối ưu không gian cho War Room, cách ly hoàn toàn ADMIN CP khỏi 5 tab tác chiến thường ngày thành Modal Settings Overlay chuyên dụng (`components/game/world/admin-settings-modal.tsx`) mở qua nút bánh răng HUD, bảo toàn quy tắc an toàn đổi tốc độ và Danger Zone reset world (100% tests PASS, build thành công, 29/29 test suites PASS tuyệt đối).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Slim Tactical HUD (`components/game/world/operations-center.tsx`)**:
+  - **Tổ chức 3 Nhóm Chức Năng Rõ Ràng**:
+    * **Nhóm 1: Thời Gian Chiến Lược (Strategic Time)**: Ngày trong game (#N), Niên lịch thiên hà, chu kỳ nhật dạ (Sáng/Chiều/Tối/Đêm), trạng thái RUNNING/PAUSED, đếm ngược giây tick.
+    * **Nhóm 2: 5 Tài Nguyên Cốt Lõi (Core Resources)**: Vật Liệu Công Nghiệp, Năng Lượng Plasma, Vật Tư Hậu Cần, Dữ Liệu Tác Chiến, Lương Thực Dân Sinh; hiển thị trực quan, cảnh báo thiếu hụt nhấp nháy đỏ khi <= 20 (hoặc <= 50 với lương thực), tooltip chú thích đầy đủ.
+    * **Nhóm 3: Thao Tác Nhanh (Quick Actions)**: Thực thi ngày mới (+1 Ngày), Phóng to toàn màn hình (Fullscreen Map), Mở Báo cáo Kết quả (Results Hub), Bến điều quân nhanh (Quick Dispatch), Nút Bánh Răng (Cài Đặt / Settings Overlay), Nút Lưu thủ công an toàn (Storage V1).
+  - **Tối Ưu Chiều Cao Khung Nhìn**: Thu hẹp triệt để chiều cao và độ chiếm dụng của header so với bản cũ, ưu tiên bố cục 1 hàng trên desktop và tự động co giãn thích ứng khi thiếu chiều rộng.
+  - **Đồng Bộ Hoàn Hảo**: Giữ nguyên cơ chế tick và scheduler hiện có, không tạo timer trùng lặp hay làm trôi thời gian.
+- **2. Cách Ly ADMIN CP Thành Modal Settings Overlay (`components/game/world/admin-settings-modal.tsx`)**:
+  - **Khử bỏ Tab Admin Khỏi Thanh Điều Hướng**: Thanh nav Operations Center chỉ giữ đúng 5 tab tác chiến chuyên nghiệp (War Room Bản Đồ, Tình Hình Toàn Cảnh, Sự Kiện & Nhiệm Vụ, Quân Sự & Hậu Cần, Trung Tâm Kết Quả).
+  - **Settings Modal Chuyên Biệt**: Mở thông qua nút bánh răng Cài Đặt trên HUD, hỗ trợ đóng nhanh bằng phím `Escape`, nút `X` hoặc click ra ngoài backdrop.
+  - **Bảo Toàn Toàn Bộ Chức Năng Quản Trị**:
+    * **Tốc Độ Simulator**: Preset 15s/30s/60s/300s, Tùy chỉnh, Tạm dừng/Tiếp tục.
+    * **Quy Tắc Đổi Tốc Độ An Toàn**: Chỉ reset WORLD khi người dùng chủ động tích chọn; bấm Cancel không thay đổi tốc độ và giữ nguyên 100% dữ liệu thế giới.
+    * **Cấu Hình Event Generator 3 Tier**: Tùy biến chu kỳ sinh, thời gian tồn tại và trần active từng tier; hỗ trợ khôi phục mặc định.
+    * **Chính Sách Event Strategy Policy**: Thiết lập ưu tiên theo tier (System Auto / Default Fallback / Player Choice), lưu cấu hình và áp dụng hàng loạt (Batch Apply) cho sự kiện chờ.
+    * **Dev Triggers**: Force spawn 3 tier sự kiện, tua nhanh thời gian (+1, +5, +10, +30 ngày), thực thi từng tick, hiển thị slot lưu trữ Staging A/B và mã kiểm tra CRC32.
+    * **Danger Zone Phân Tách**: Đóng khung cảnh báo viền đỏ, thao tác Reset World độc lập yêu cầu xác nhận kép; reset dữ liệu thế giới về Ngày 1 nhưng bảo toàn 100% cấu hình tốc độ và generator.
+- **3. Kiểm Thử & Độc Lập Dữ Liệu Tuyệt Đối**:
+  - Viết bộ kiểm thử chuyên dụng `tests/world/phase6-18-slim-hud-admin-isolation.test.ts` (14/14 tests PASS).
+  - 29/29 test suites PASS 100% qua `npm test`.
+  - Next.js build và typecheck thành công hoàn toàn (`compile_applet`).
+  - Phân hệ RPG Save `STARFRONT_SAVE_DATA_V4`, World State `STARFRONT_WORLD_SAVE_V1` và Simulator Config `STARFRONT_WORLD_SIMULATOR_CONFIG` cách ly an toàn tuyệt đối.
+
+---
+
+## [Phase 6.17] — STARFRONT WORLD: Tái Cấu Trúc Điều Hướng Chính & Nền Tảng War Room (Primary Navigation & War Room Foundation)
+
+*Đã hoàn thành 100% Phase 6.17 — Triển khai giai đoạn P0 từ Blueprint Phase 6.16: Tái cấu trúc menu Shell đưa STARFRONT WORLD thành mục chỉ huy chiến lược vĩ mô tối cao theo mô hình 3 tầng chỉ huy, hợp nhất hoàn toàn Galaxy Map và Sector Inspector thành War Room trung tâm với Sector Command Ribbon 8 sector, loại bỏ màn hình chữ trùng lặp (100% tests PASS, build thành công, 27/27 test suites PASS tuyệt đối).*
+
+### Các cải tiến UI/UX & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Tái Cấu Trúc Menu Shell & Mô Hình 3 Tầng Chỉ Huy (`components/game/starfront-shell.tsx`)**:
+  - **Tôn vinh STARFRONT WORLD làm trung tâm**: Ghim ở vị trí đầu tiên của Khối 1 với huy hiệu `LIVE GALAXY`, chấm radar nhấp nháy, viền phát sáng cyan và phong cách thẻ chỉ huy quân sự chuyên biệt.
+  - **3 Tầng Chỉ Huy Phân Định Minh Bạch**:
+    * **Khối 1: Tổng Hành Dinh Chiến Lược (Strategic Hub)**: `world` (Chiến Trường Thiên Hà WORLD) và `home` (Tổng Quan Tác Chiến Console).
+    * **Khối 2: Buồng Lái & Tác Chiến (Tactical Mecha)**: `battlefield` (Đấu Trường 2D), `character-gear` (Phi Công & Gear), `gallery` (Pilot Art Gallery).
+    * **Khối 3: Hậu Phương & Khí Tài (Base & Armory)**: `hangar` (Hangar & Kho), `shop` (Chợ Quân Sự), `missions` (Chiến Dịch RPG 12 ải), `mission-logs` (Full Logs).
+  - **Phân định rạch ròi ngữ cảnh**: Làm rõ ranh giới giữa Chiến Dịch Cốt Truyện RPG (12 ải tuần tự) và Sự Kiện Chiến Trường WORLD (Thiên hà động 8 sector).
+  - **Bảo tồn toàn vẹn**: Giữ nguyên trạng thái active, luồng chọn nhân vật, khóa phi công/cơ giáp và các phân hệ mở rộng `OPERATION_SECTIONS` (`pilot`, `fleet`, `base`, `war`).
+- **2. Nền Tảng War Room Trung Tâm & Sector Ribbon (`components/game/world/operations-center.tsx`, `components/game/world/world-map.tsx`)**:
+  - **Galaxy Map là Trọng Tâm Tác Chiến**: Trở thành màn hình mặc định khi bước vào WORLD (`initialTab="map"`), nâng chiều cao khung nhìn lên `680px-780px` (min 580px).
+  - **Thanh Điều Phối Sector Nhanh (Sector Command Ribbon)**: Đặt ngay trên bản đồ, hiển thị 8 sector đồng bộ thời gian thực kèm chấm chủ quyền (VSS/Void/Contested), Threat level, đồn trú và cảnh báo combat lock.
+  - **Đồng bộ hai chiều tức thì**: Bấm chọn sector trên thanh ribbon hoặc trực tiếp trên SVG Map đều lập tức cập nhật `selectedSectorId`, kích hoạt Sector Inspector chi tiết.
+  - **Tích hợp toàn diện thao tác Sector vào Inspector**:
+    * Xem 6 chỉ số vĩ mô + Biểu đồ Threat Sparkline 5 ngày gần nhất kèm delta badge.
+    * Đổi Lệnh Chiến Lược (Cố thủ, tập kết, phản công, hồi phục, bình thường).
+    * Nâng cấp công sự (+50 vật liệu, sửa lỗi kiểm tra tài nguyên).
+    * Mở Quick Dispatch Dock chi viện.
+    * Xuất kích buồng lái can thiệp trực tiếp sang Đấu Trường.
+    * Nút "Tập Trung Góc Nhìn Vào Sector Này" căn chỉnh camera thông minh có bù trừ vị trí Inspector.
+  - **Khử bỏ Tab Sectors Trùng Lặp**: Hợp nhất vào War Room, tự động tương thích và hiển thị banner thông báo nếu truy cập qua liên kết cũ.
+- **3. Kiểm Thử & Xác Thực Toàn Diện**:
+  - `compile_applet` thành công 100%, không phát sinh lỗi biên dịch hay typecheck.
+  - 27/27 test suites PASS 100% qua `npm test`.
+  - Bảo vệ tuyệt đối phân hệ lưu trữ `STARFRONT_SAVE_DATA_V4`, `STARFRONT_WORLD_SAVE_V1` và `STARFRONT_WORLD_SIMULATOR_CONFIG`.
+
+---
+
+## [Phase 6.16] — STARFRONT WORLD: Đánh Giá Toàn Diện UI/UX & Bản Thiết Kế Tái Cấu Trúc (UI/UX Audit & Redesign Blueprint)
+
+*Đã hoàn thành 100% Phase 6.16 — Khảo sát và lập hồ sơ đánh giá UI/UX toàn diện cho STARFRONT WORLD, phê duyệt tài liệu đặc tả `WORLD_UI_UX_AUDIT.md`, thiết lập mô hình 3 tầng chỉ huy và lộ trình P0/P1/P2 không can thiệp mã nguồn.*
+
+---
+
+## [Phase 6.15] — STARFRONT WORLD: Chính Sách Lựa Chọn Chiến Lược & Tự Động Phê Chuẩn (Event Strategy Policy & System Auto Strategy)
+
+*Đã hoàn thành 100% Phase 6.15 — Triển khai cơ chế điều phối và lựa chọn chiến lược sự kiện 3 cấp độ tập trung, minh bạch và tất định cho STARFRONT WORLD: System Auto Strategy (Cấp 1) -> Default Strategy Fallback (Cấp 2) -> Player Choice Fallback (Cấp 3). Tích hợp toàn diện vào Events & Missions Board, Dual Results Hub, ADMIN CP và Tick Engine (100% tests PASS, 27/27 test suites, 0 regression)*
+
+### Các tính năng & nâng cấp kỹ thuật đã hoàn thành:
+- **1. Module Lựa Chọn Chiến Lược Tập Trung (`lib/game/world/event-strategy-policy.ts`, `lib/game/world/index.ts`)**:
+  - **Thẩm định khả thi nghiêm ngặt (`validateStrategyExecution`)**: Kiểm tra đầy đủ tài nguyên (`credits`, `alloys`, `energy`, `minerals`, `food`, ...), quân lực dự bị (`military.reserves`) và ngữ cảnh chiến đấu của sector.
+  - **Hệ thống chấm điểm minh bạch (`scoreEventStrategy`)**:
+    * Tỷ lệ thành công (tối đa +50đ).
+    * Biến động độ ổn định (+3đ/điểm tăng, -2đ/điểm giảm).
+    * Biến động mức đe dọa (+2đ/điểm hạ, -2đ/điểm tăng).
+    * Ngữ cảnh Sector khẩn cấp: Threat >= 500 (+25đ), Stability <= 50 (+20đ).
+    * Chiết khấu tiêu hao tài nguyên (tối đa -30đ) và quân sự (tối đa -25đ).
+    * Ưu tiên thời gian thực thi ngắn (tối đa -15đ).
+    * Tổn thất nhân mạng dân sự/quân sự (tối đa -30đ/mỗi loại) và phần thưởng tài nguyên (+25đ).
+  - **Phá vỡ thế hòa ổn định (`selectBestStrategyForEvent`)**: Tiêu chí tất định theo thứ tự `score DESC -> successChance DESC -> processingTicks ASC -> id ASC`.
+  - **Áp dụng chiến lược an toàn (`applyStrategyToEvent`)**: Khấu trừ tài nguyên, điều động quân số dự bị sang triển khai, khóa Encounter Snapshot nếu yêu cầu combat, cập nhật trạng thái sự kiện sang `PROCESSING`.
+  - **Điều phối 3 cấp độ (`evaluateAndApplyEventStrategyPolicy`)**:
+    * **Cấp 1 — System Auto Strategy**: Tự động chấm điểm và áp dụng phương án tối ưu hợp lệ.
+    * **Cấp 2 — Default Strategy Fallback**: Tự động kích hoạt phương án mặc định an toàn nếu System Auto không tìm được phương án thỏa điều kiện.
+    * **Cấp 3 — Player Choice Fallback**: Chuyển quyền quyết định cho Chỉ Huy kèm lý do cụ thể khi cả 2 cấp trên không khả thi, không crash hay nghẽn simulator.
+  - **Hỗ trợ thực thi hàng loạt (`batchApplyEventStrategyPolicy`)**: Quét và phê chuẩn tức thì cho toàn bộ sự kiện INIT đang chờ.
+- **2. Đồng Bộ Giao Diện & Trải Nghiệm Người Chơi**:
+  - **Events & Missions Board (`components/game/world/events-missions-board.tsx`)**:
+    * Thẻ chiến lược hiển thị điểm số đánh giá, huy hiệu "★ Đề Xuất", "Mặc Định", và hộp phân tích lý do chấm điểm mở rộng.
+    * Nút "System Auto Phê Chuẩn Ngay" cho phép người chơi kích hoạt đánh giá tự động tức thì.
+    * Huy hiệu nguồn gốc chiến lược (`Chờ Chỉ Huy`, `System Auto`, `Default Fallback`) và thông báo nguyên nhân nếu tự động thất bại.
+  - **Dual Results Hub (`components/game/world/dual-results-hub.tsx`)**:
+    * Hiển thị rõ nguồn gốc phê chuẩn (`SYSTEM AUTO`, `DEFAULT FALLBACK`, `CHỈ HUY PHÊ CHUẨN`) và lý do lựa chọn trong lịch sử lưu trữ sự kiện.
+  - **ADMIN CP (`components/game/world/operations-center.tsx`)**:
+    * Bổ sung mục quản trị chính sách chiến lược: Bật/tắt 3 cấp độ toàn cục, cấu hình ưu tiên theo từng Tier (`Small`, `Medium`, `Large`), nút áp dụng cho tất cả sự kiện chờ, khôi phục mặc định và lưu trữ cấu hình.
+- **3. Bộ Kiểm Thử Chuyên Sâu (`tests/world/event-strategy-policy.test.ts`)**:
+  - 13 unit tests bao phủ đầy đủ validation, chấm điểm tất định, phá vỡ thế hòa, 3 cấp độ điều phối, thực thi hàng loạt, khấu trừ tài nguyên và lưu trữ bền vững (13/13 tests PASS).
+  - Đảm bảo 100% không ảnh hưởng hoặc làm sai lệch phân hệ RPG Save V4.
+
+---
+
+## [Phase 6.14] — STARFRONT WORLD: Kiểm Chứng Động Cơ Thời Gian Thực & Độ Tin Cậy Sự Kiện (Real-time Simulator Validation & Event Reliability)
+
+*Đã hoàn thành 100% Phase 6.14 — Kiểm chứng có mục tiêu toàn diện các hệ thống thời gian thực, tự động sinh Event/Quest, tính bền vững sau reload và reset thế giới (100% tests PASS, 26/26 test suites, 0 regression)*
+
+### Các kết quả kiểm chứng & cải tiến kỹ thuật đã thực hiện:
+- **A. Tốc Độ Mô Phỏng & Toàn Vẹn Chu Kỳ Tick (`lib/game/world/simulator-config.ts`, `components/game/world/operations-center.tsx`)**:
+  - Kiểm chứng tự động cả hai tốc độ 15 giây/ngày và 300 giây/ngày; mỗi ngày game chỉ commit duy nhất một lần.
+  - Bổ sung trường `pausedFraction` trong `WorldSimulatorConfig` để bảo toàn chính xác tiến độ phân đoạn trong ngày qua các lần Pause/Resume và Reload trang.
+  - Chống hoàn toàn tick trùng và chạy bù ngoài ý muốn khi đổi tab, unmount/remount component hay tải lại giao diện.
+- **B. Bộ Sinh Event/Quest & Concurrency Guard (`lib/game/world/event-generator.ts`, `components/game/world/operations-center.tsx`)**:
+  - Mô phỏng xuyên suốt 40 ngày game: xác nhận Event/Quest thực sự tự động xuất hiện theo lịch game-time mà không cần thao tác thủ công Force Spawn.
+  - Phát hiện và khắc phục lỗi thiếu kiểm tra giới hạn `maxActive` theo từng Tier trong hàm `forceSpawnEventByTier`.
+  - Khắc phục việc thiếu gọi `checkAndSpawnWorldEvents` khi bấm nút "+1 Ngày Chiến Lược" thủ công trong Operations Center.
+  - Xác nhận tính nhất quán 100% giữa thẻ chỉ số Overview (`countActiveEventsByTier().total`) và danh sách sự kiện trên Events & Missions Board (`getActiveEvents().length`).
+  - Kiểm tra đầy đủ vòng đời: Lifetime, Countdown deadline, Auto-lock phương án mặc định, Resolve kết quả và lưu trữ vào `eventResultsArchive`.
+- **C. Lưu Trữ Bền Vững, Reset & Bảo Vệ RPG Save V4 (`lib/game/world/storage.ts`, `components/game/world/operations-center.tsx`)**:
+  - Xác nhận `nextEventSpawnDay` và `decisionDeadlineTick` được lưu trữ bền vững qua các lần reload mà không bị mất hoặc reset mốc đếm.
+  - Xác nhận hủy đổi tốc độ giữ nguyên WorldState và cấu hình cũ.
+  - Bổ sung tùy chọn checkbox cho phép người dùng chọn Reset World về Ngày 1 khi đổi tốc độ hoặc giữ nguyên tiến độ thế giới.
+  - Xác nhận Reset WORLD độc lập giữ nguyên cấu hình tốc độ và bộ sinh generator, đồng thời hủy bỏ cờ `isTickingRef` để ngăn chặn bất kỳ scheduler cũ nào ghi đè dữ liệu.
+  - Bảo đảm cách ly 100% an toàn cho phân hệ RPG Save V4 (`STARFRONT_SAVE_DATA_V4`) trong mọi kịch bản Reset.
+- **D. Catch-Up Bounded & Niên Lịch Thiên Hà (`lib/game/world/catchup-engine.ts`, `lib/game/world/calendar.ts`)**:
+  - Xác nhận Bounded Catch-up tuân thủ nghiêm ngặt trần an toàn `OFFLINE_CATCHUP_CAP = 360 ticks`.
+  - Bảo đảm tính lũy đẳng: hậu quả của sự kiện không bao giờ bị áp dụng trùng lặp dù hàm được gọi nhiều lần.
+  - Xác nhận niên lịch 4 buổi (Sáng/Chiều/Tối/Đêm), ngày/tháng/mùa/năm tính toán mượt mà và nhất quán qua các điểm chuyển giao ranh giới (Ngày 30->31, 90->91, 360->361).
+  - Tích hợp bộ lọc chống lùi giờ hệ thống: khử giá trị âm bất thường và neo lại mốc thời gian an toàn mà không sinh tick hay event sai lệch.
+- **E. Bộ Test Suite Chuyên Sâu (`tests/world/phase6-14-validation.test.ts`)**:
+  - Bổ sung 15 unit tests chuyên biệt bao phủ toàn bộ 4 kịch bản A, B, C, D (15/15 tests PASS, toàn bộ 26 test suites của STARFRONT PASS 100%).
+
+---
+
+## [Phase 6.13] — STARFRONT WORLD: Động Cơ Thời Gian Thực, Tự Động Sinh Sự Kiện/Nhiệm Vụ & ADMIN CP (Real-time Simulator, Event/Quest Generator & ADMIN CP)
+
+*Đã hoàn thành 100% Phase 6.13 — Khởi động hệ thống mô phỏng thời gian thực cho STARFRONT WORLD: ngày game tự vận hành trôi qua, niên lịch thiên hà 4 buổi (Sáng/Chiều/Tối/Đêm), bộ sinh Event/Quest 3 tier chuẩn hóa theo Ngày Game, trung tâm quản trị ADMIN CP toàn diện cho phép cấu hình tốc độ, tạm dừng/tiếp tục, dev triggers và reset thế giới an toàn (100% tests PASS, 25/25 test suites)*
+
+### Các tính năng & nâng cấp kỹ thuật đã triển khai:
+- **A. Động Cơ Mô Phỏng Thời Gian Thực Tự Vận Hành (`lib/game/world/simulator-config.ts`, `components/game/world/operations-center.tsx`)**:
+  - Tích hợp một scheduler duy nhất cho STARFRONT WORLD, ngày game tự động tăng theo thời gian thực mà không bắt người chơi nhấn `+1 Ngày`.
+  - **Cấu hình tốc độ chuẩn hóa**:
+    * Mặc định: 1 Ngày Game = 300 giây thực (5 phút).
+    * Hỗ trợ các preset: 15 giây (Chế độ test nhanh), 30 giây (Nhanh), 60 giây (1 phút), 300 giây (Chuẩn), cùng tùy chọn số giây bất kỳ hợp lệ (1 – 86,400 giây).
+    * Tốc độ và trạng thái Pause được lưu trữ cách ly trong khóa `STARFRONT_WORLD_SIMULATOR_CONFIG` và tự động khôi phục sau reload.
+  - **Quy tắc chạy an toàn & chống trùng tick**:
+    * Tái sử dụng trọn vẹn `executeWorldTick` và thứ tự 6 phase chuẩn; mỗi ngày game chỉ commit đúng một lần.
+    * Cơ chế Pause / Resume bảo toàn chính xác tiến độ phân đoạn trong ngày. Thay đổi tốc độ điều chỉnh mượt mà nhịp countdown, không gây chạy bù ngoài dự kiến và không làm mất dữ liệu.
+    * Xử lý thời gian ngoại tuyến hoặc tab background bằng Bounded Batch Catch-up có trần an toàn (`OFFLINE_CATCHUP_CAP = 360 ticks`), tự động phát hiện và ngăn chặn gian lận lùi giờ hệ thống.
+- **B. Niên Lịch Thiên Hà & Chu Kỳ Nhật Dạ Trong Ngày (`lib/game/world/calendar.ts`)**:
+  - Xây dựng hệ thống niên lịch nhất quán, tất định 100%:
+    * 1 Ngày Chiến Lược = 24 Giờ trong game (1440 phút).
+    * Chu kỳ 4 buổi: Buổi Sáng (05:00–11:59), Buổi Chiều (12:00–17:59), Buổi Tối (18:00–21:59), Ban Đêm (22:00–04:59).
+    * Niên lịch: 1 Tháng = 30 Ngày, 1 Mùa = 3 Tháng = 90 Ngày, 1 Năm = 4 Mùa = 360 Ngày.
+    * 4 Mùa Thiên Hà: Mùa Khởi Nguyên (🌱), Mùa Bão Lửa (⚡), Mùa Thu Hoạch (🌾), Mùa Băng Tối (❄️).
+  - Trực quan hóa sinh động trên Overview Deck: hiển thị giờ:phút, buổi, icon mùa, thanh tiến trình ngày và đếm ngược thời gian thực tới ngày tiếp theo.
+- **C. Bộ Sinh Sự Kiện & Nhiệm Vụ Tự Động Theo Ngày Game (`lib/game/world/event-generator.ts`)**:
+  - Toàn bộ chu kỳ sinh (interval) và thời gian tồn tại (lifetime) sử dụng **NGÀY GAME (Game Days)** làm đơn vị chuẩn, không dùng giây thực. Khi đổi tốc độ ngày game, nhịp độ gameplay trong vũ trụ vẫn giữ nguyên.
+  - Phân loại chuẩn 20 templates vào 3 Tiers:
+    * **Nhỏ (Small)**: Chu kỳ 0.1–3 ngày, thời gian tồn tại 0.5–15 ngày, max 30 active (8 templates).
+    * **Trung bình (Medium)**: Chu kỳ 1–10 ngày, thời gian tồn tại 5–45 ngày, max 20 active (7 templates).
+    * **Lớn (Large)**: Chu kỳ 10–60 ngày, thời gian tồn tại 15–180 ngày, max 10 active (5 templates).
+    * Trần sự kiện toàn cầu: Mặc định `maxGlobalActive = 100`.
+  - Tích hợp Concurrency Guard: kiểm tra chống trùng templateId trên cùng sector và toàn thiên hà; hỗ trợ hàm kích hoạt tức thời `forceSpawnEventByTier` phục vụ test và ADMIN CP.
+- **D. Bảng Điều Khiển Quản Trị Viên — ADMIN CP (`components/game/world/operations-center.tsx`)**:
+  - Tích hợp tab điều hướng thứ 7 chuyên biệt `ADMIN CP` trên thanh điều hướng Operations Center và Starfront Shell.
+  - **Khối 1 — Tốc Độ & Mô Phỏng**: Lựa chọn 4 preset, nhập số giây tùy chỉnh, nút Pause/Resume, hiển thị đếm ngược kế tiếp.
+  - **Khối 2 — Cấu Hình Generator**: Chỉnh sửa linh hoạt chu kỳ, lifetime, maxActive của từng tier, điều chỉnh trần toàn cầu, kèm tính năng kiểm tra validation (chống số âm, min > max, NaN) và nút khôi phục mặc định.
+  - **Khối 3 — Kích Hoạt Nhanh & Lệnh Phát Triển**: Nút sinh ngay sự kiện Small / Medium / Large; nút điều khiển thời gian +1 ngày, tua nhanh +5 ngày, +10 ngày, +30 ngày (1 tháng).
+  - **Khối 4 — Quản Trị Lưu Trữ & Reset Thế Giới**: Thông tin khóa lưu trữ cách ly Slot A/B, CRC32 Checksum, nút lưu ngay lập tức và Vùng Nguy Hiểm (Danger Zone) với nút Reset Toàn Bộ World về Ngày 1.
+  - **Hộp thoại xác nhận an toàn**: Modal xác nhận đổi tốc độ và Danger Dialog cảnh báo nguy hiểm khi Reset World, khẳng định bảo toàn 100% dữ liệu RPG Save V4.
+- **E. Bộ Kiểm Thử Chất Lượng Toàn Diện (`tests/world/realtime-simulator-admin.test.ts`)**:
+  - 6/6 test cases chuyên sâu kiểm định đầy đủ: Cấu hình simulator & validation, Niên lịch 4 buổi & chu kỳ mùa, Bộ sinh 3 tier theo ngày game, Động cơ step & bounded catch-up 360 ticks, ADMIN CP speed switch & reset world, và Zero-Regression tuyệt đối cho RPG Save V4.
+
+---
+
+## [Phase 6.12] — STARFRONT WORLD: Biểu Đồ Xu Hướng Đe Dọa (Galaxy Map Threat Trendline)
+
+*Đã hoàn thành 100% Phase 6.12 — Bổ sung Sparkline thể hiện lịch sử Threat 5 ngày gần nhất trên Galaxy Map, giúp người chỉ huy nhận diện xu hướng nguy hiểm theo từng sector trong cả chế độ nhúng lẫn toàn màn hình (100% tests PASS, 23/23 test suites)*
+
+### Các tính năng & nâng cấp dữ liệu/giao diện đã triển khai:
+- **A. Cấu Trúc Dữ Liệu & Bảo Toàn Lịch Sử Chiến Lược (`lib/game/world/types.ts`)**:
+  - Bổ sung cấu trúc `SectorThreatHistoryPoint { day: number; threat: number }`.
+  - Mở rộng trường tùy chọn `threatHistory?: SectorThreatHistoryPoint[]` trên thực thể `WorldSector`.
+  - Khởi tạo mốc Ngày 1 trong `createInitialWorldState` với điểm thực tế ban đầu (`{ day: 1, threat: sector.threatLevel }`).
+  - Thiết kế hoàn toàn tương thích ngược với schema `WorldState v1` và hệ thống Save/Load Atomic Envelope; không yêu cầu migration và cách ly 100% khỏi RPG Save V4.
+- **B. Tự Động Thu Thập Qua Chu Kỳ Tick (`lib/game/world/tick-engine.ts`, `lib/game/world/sector-lifecycle.ts`)**:
+  - Xây dựng hàm trợ năng `recordSectorThreatHistoryPoint(sector, day, threat)`.
+  - Tích hợp tại bước kết thúc chu kỳ `executeWorldTick`: tự động ghi nhận mức Threat cuối ngày sau khi áp dụng toàn bộ 6 phase (kinh tế, di dân, tuần tra, ý đồ của Void, hạn chót sự kiện và nhiệm vụ).
+  - Tự động duy trì cơ chế Rolling Window lưu tối đa 5 ngày gần nhất (ngày hiện tại và tối đa 4 ngày trước đó), đẩy các ngày cũ ra ngoài nhằm giữ kích thước lưu trữ siêu gọn nhẹ.
+  - Bảo đảm tính tất định 100%: 2 mô phỏng cùng seed và trạng thái ban đầu sinh chuỗi lịch sử Threat trùng khớp hoàn toàn.
+- **C. Giao Diện Sparkline Trực Quan Trong Sector Inspector (`components/game/world/world-map.tsx`)**:
+  - Tích hợp card "Xu Hướng Threat (5 Ngày)" nằm gọn gàng ngay dưới lưới 6 chỉ số vĩ mô trong Sector Inspector.
+  - **Mức Threat Hiện Tại & Phân Cấp Màu Sắc**: Nhất quán tuyệt đối với thang đo Threat 3 dải trên bản đồ (0-299 Thấp/Emerald, 300-699 Trung bình/Amber, 700+ Cao/Rose).
+  - **Huy Hiệu Biến Động (Delta Badge)**:
+    * Khi đủ từ 2 điểm trở lên: tính toán `delta = điểm_cuối - điểm_đầu`.
+    * Tăng: `+X` màu đỏ/rose kèm icon `TrendingUp` và tag `TĂNG`.
+    * Giảm: `-X` màu xanh/emerald kèm icon `TrendingDown` và tag `GIẢM`.
+    * Giữ nguyên: `0` màu trung tính kèm icon `Minus` và tag `ỔN ĐỊNH`.
+    * Hiển thị tooltip chi tiết lộ trình biến động ngày.
+  - **Đồ Thị Vector SVG Sparkline**:
+    * Đường đa tuyến polyline sắc nét cùng vùng phủ gradient màu bóng mờ (`opacity: 0.35 -> 0.0`).
+    * Điểm nút tròn tại từng mốc ngày; điểm ngày hiện tại có hiệu ứng vòng sáng radar ping nổi bật.
+    * Khi chỉ có 1 ngày: hiển thị node đơn nổi bật kèm nhãn "N.X (Khởi đầu)".
+    * Khi chưa có dữ liệu lịch sử (0 ngày): hiển thị rãnh đứt đoạn sci-fi cùng thông báo "Chờ chu kỳ tick", không sinh dữ liệu giả mạo.
+  - **Dòng Mốc Thời Gian (Timeline Axis)**: Thanh nhãn bên dưới hiển thị rõ từng mốc `N.day: threat_value`, làm nổi bật ngày hiện tại.
+  - **Hoạt Động Toàn Diện**: Tương thích hoàn hảo trong cả giao diện nhúng (Operations Center Tab 2) và chế độ Bản Đồ Toàn Màn Hình (`world-fullscreen-overlay.tsx`), không che khuất HUD hay các nút lệnh tác chiến.
+- **D. Bộ Kiểm Thử Chất Lượng Toàn Diện (`tests/world/threat-trendline.test.ts`)**:
+  - 1. Sector chưa có lịch sử (0 ngày) an toàn, delta = null.
+  - 2. Sector mới có 1–4 ngày lịch sử, không tạo dữ liệu giả.
+  - 3. Sector có đủ 5 ngày lịch sử và cơ chế rolling window cắt tỉa chính xác.
+  - 4. Xu hướng Threat: Tăng, Giảm, Giữ nguyên tính toán chính xác 100%.
+  - 5. Bảo toàn qua Save/Load: phục hồi 100% dữ liệu lịch sử với Checksum CRC32 verified.
+  - 6. Tích hợp Tick Engine xác định chuỗi tiến hóa tất định.
+  - 7. Tính độc lập giữa các sector khi chuyển đổi mục tiêu trên bản đồ.
+
+---
+
+## [Phase 6.11] — STARFRONT WORLD: Tinh Chỉnh Bản Đồ Thiên Hà & Hệ Thống HUD (Galaxy Map & HUD Refinement)
+
+*Đã hoàn thành 100% Phase 6.11 — Nâng cao khả năng quan sát và đọc hiểu Bản đồ Thiên hà, phân cấp thông tin trực quan đa tín hiệu, tinh chỉnh tuyến đường, tối ưu hóa Legend 5 nhóm, HUD toàn cảnh và Sector Inspector (100% tests PASS, 23/23 test suites)*
+
+### Các tính năng & nâng cấp giao diện đã triển khai:
+- **A. Phân Cấp Thông Tin 8 Sector Thiên Hà (`components/game/world/world-map.tsx`)**:
+  - Bảo tồn nguyên vẹn 8 sector và tọa độ canonical chuẩn: Sol Command HQ, Helios Perimeter, Mining Outpost K-7, Asteroid Delta, Nebula Bastion, Waypoint Orion, Shadow Reach, Tartarus Breach.
+  - Phân cấp đa tín hiệu (Multi-Signal Accessibility, không dùng màu sắc làm tín hiệu duy nhất):
+    * **Chủ quyền (Sovereignty)**: Nhận diện rõ 4 phe: Liên Minh VSS (Cyan), Đế Chế The Void (Red), Tranh Chấp (Amber), Trung Lập (Slate) bằng màu sắc kết hợp viền và nhãn hiển thị.
+    * **Thang đo Threat 3 Dải**: Phân loại theo 3 dải nguy cơ rõ rệt: 0–299 (Thấp / An Toàn - Xanh lục), 300–699 (Trung Bình / Cảnh Báo - Vàng), 700–1000 (Cao / Nguy Hiểm - Đỏ), hiển thị bằng thanh đo tỷ lệ trực quan dưới tên sector.
+    * **Giai đoạn vòng đời (Stage Lifecycle)**: Thể hiện bằng các vòng orbital riêng biệt: Bình thường (Normal), Bị đe dọa (Threatened - Vòng đứt vàng), Vây hãm (Under Siege - Vòng đứt đỏ nhấp nháy pulse), Thất thủ (Lost - Vòng tím), Phục hồi (Recovery - Vòng cyan).
+    * **Khóa Giao Tranh (Combat Lock)**: Huy hiệu ổ khóa đỏ nổi bật `🔒` góc trên sector, cảnh báo rõ đồn trú bị đóng băng và ngăn chặn xuất quân trái phép.
+    * **Đích Đến Nhận Chi Viện (Deployment Target)**: Khi có đoàn quân đang hành quân tới sector, xuất hiện huy hiệu chỉ báo đích đến `+NQ` màu cyan góc trên bên trái sector.
+    * **Tâm Ngắm Định Vị (Tactical Reticle)**: Sector được chọn hiển thị tâm ngắm quay chậm kèm 4 vạch ngắm góc chữ thập chính xác.
+- **B. Tinh Chỉnh 12 Tuyến Siêu Không Gian (Hyperlane Routes)**:
+  - Tái sử dụng trọn vẹn 12 tuyến canonical và trạng thái: Thông suốt (Open - Nét liền Cyan), Nguy hiểm (Hazardous - Nét đứt Vàng kèm icon !), Phong tỏa (Blocked - Nét đứt Đỏ kèm icon ✕), Ngoại tuyến (Offline - Nét đứt xám).
+  - Làm sáng rực rỡ và phóng to nét vẽ các tuyến liên kết trực tiếp với sector đang chọn hoặc khi di chuột (hover).
+  - Hiển thị tag thông số thời gian hành quân và mức độ rủi ro (`Xd · Rủi ro Y%`) với nền tối tương phản cao, tránh bị che khuất hoặc chồng lấn.
+- **C. Chú Giải Bản Đồ Thống Nhất 5 Nhóm (Unified Map Legend)**:
+  - Tinh chỉnh legend trực tiếp trong `world-map.tsx` thành bảng điều khiển sci-fi có thể đóng/mở linh hoạt:
+    1. *Chủ Quyền (Sovereignty)*: VSS Coalition, The Void, Tranh Chấp, Trung Lập.
+    2. *Mức Đe Dọa (Threat Level)*: 0–299 Thấp, 300–699 Vừa, 700+ Cao.
+    3. *Tuyến Hyperlane*: Thông suốt, Nguy hiểm (!), Phong tỏa (×), Ngoại tuyến.
+    4. *Giai Đoạn & Khóa Trận*: Bình thường, Bị đe dọa, Vây hãm (Pulse), Khóa combat (🔒).
+    5. *Lực Lượng Hành Quân*: Hạm đội di chuyển (🚚) và Sector nhận chi viện (+NQ).
+- **D. Nâng Cấp HUD & Bộ Điều Khiển Viewport (Map HUD & Controls)**:
+  - Header HUD gọn gàng: Tiêu đề `STARFRONT GALAXY NETWORK`, Ngày chiến lược, số sector & tuyến, tỷ lệ kiểm soát 3 phe, Threat trung bình thiên hà kèm nhãn cấp độ, số lượng đạo quân đang hành quân.
+  - Tích hợp nút bật/tắt hiển thị bảng chi tiết `Chi Tiết` để người chơi có thể quan sát toàn cảnh thiên hà không bị che khuất.
+  - Bộ điều khiển 4 nút tiện ích: Phóng to (+), Thu nhỏ (-), Đặt lại góc nhìn chuẩn (RotateCcw), Căn giữa sector đang chọn (Crosshair).
+- **E. Tinh Chỉnh Sector Inspector Drawer**:
+  - Tích hợp nút đóng `[X]` và nút nổi mở lại thuận tiện khi cần quan sát toàn cảnh.
+  - Hiển thị ngay ở đầu trang: Tên, Phụ đề, Huy hiệu giai đoạn, Banner khóa combat (nếu có), Banner thông báo đạo quân chi viện đang trên đường tới (nếu có).
+  - Lưới 6 chỉ số: Chủ quyền, Công sự phòng thủ, Threat (kèm nhãn mức độ), Stability, Đồn trú, Dân số.
+  - Phân nhóm nút hành động hợp lý theo thứ tự ưu tiên: Xuất Kích Chiến Đấu (nếu khẩn cấp) -> Điều Quân Chi Viện (Quick Dispatch) -> Nâng Cấp Công Sự -> Chi Tiết Tại Sector Operations.
+- **F. Đồng Bộ Chế Độ Toàn Màn Hình (`world-fullscreen-overlay.tsx`)**:
+  - Hoạt động mượt mà ở cả chế độ nhúng (640px) và toàn màn hình (100vw x 100vh).
+  - Phím tắt `ESC` và nút đóng góc trên bên phải được căn chỉnh lề chống đè lấn với thanh HUD.
+- **Bộ Kiểm Thử Mới (`tests/world/galaxy-map-hud-ui.test.ts`)**:
+  - 7/7 test cases chuyên sâu kiểm định đầy đủ: 8 sector & 12 routes canonical, phân cấp Threat 3 dải, trạng thái 4 loại tuyến đường, giai đoạn vòng đời & combat lock, đạo quân hành quân & gán đích đến, tính toán đồng bộ chỉ số HUD, và tính toàn vẹn khi thao tác lệnh/công sự.
+
+
+*Đã hoàn thành 100% Đợt 2 (Phase 6.10) — Nâng cấp toàn diện mục Sự kiện & Nhiệm vụ trong Operations Center, đạt khả năng đọc nhanh, phân biệt rõ các pha vòng đời, trực quan hóa cây nhiệm vụ và tổng hợp biến động chu kỳ tick (100% tests PASS, zero-regression toàn bộ 22 test suites)*
+
+### Các tính năng & nâng cấp giao diện đã triển khai:
+- **Thành Phần Giao Diện Chuyên Biệt (`components/game/world/events-missions-board.tsx`)**:
+  - Tách và module hóa bảng điều phối Sự kiện & Nhiệm vụ thành component độc lập, kết nối mượt mà với `OperationsCenter` và bảo toàn 100% logic gameplay và lưu trữ của Phase 6.7/6.8/Đợt 1.
+  - Tích hợp thanh công cụ Quick Counters: Cần Quyết Định (INIT), Đang Xử Lý (PROCESSING), Chuỗi Nhiệm Vụ Đang Chạy, kèm nút liên kết nhanh sang *Dual Results Hub*.
+  - Bộ lọc danh mục 5 chế độ: `Tất Cả Tổng Hợp`, `Cần Phê Chuẩn [INIT]`, `Đang Triển Khai [PROCESSING]`, `Cây Chuỗi Nhiệm Vụ`, `Báo Cáo Gần Đây`.
+- **A. Sự Kiện Cần Xử Lý (Actionable Events — INIT)**:
+  - *Ưu tiên thị giác cao nhất*: Đặt ở vị trí đầu tiên kèm đếm ngược và phân cấp khẩn cấp đa tín hiệu (không phụ thuộc màu sắc đơn thuần):
+    * Cấp bách (Hết hạn trong 1 ngày / hôm nay hoặc Severity `critical`): Viền nổi bật, hiệu ứng nhịp tim, icon `AlertOctagon`, nhãn "CẤP BÁCH: HẾT HẠN TRONG 1 NGÀY".
+    * Nghiêm trọng (Severity `warning` hoặc còn 2 ngày): Icon `AlertTriangle`, nhãn cảnh báo.
+    * Tiêu chuẩn (Severity `info`): Icon `Clock`.
+  - Hiển thị đầy đủ: Tên sự kiện, Phân loại (`crisis`, `military`, `economic`, `diplomatic`, `anomaly`), Địa bàn Sector hoặc Toàn Cầu, Hạn chót, Diễn biến chi tiết.
+  - Cảnh báo phương án mặc định: Nêu rõ chiến lược sẽ tự động kích hoạt nếu người chơi không can thiệp kịp trước hạn.
+  - Lưới lựa chọn phương án đối ứng: Thẻ chi tiết từng phương án kèm chi phí tài nguyên, thời gian xử lý, tỷ lệ thành công, huy hiệu "Mặc Định", kiểm tra điều kiện chi trả và nút "Phê Chuẩn Phương Án".
+- **B. Sự Kiện Đang Diễn Ra (In-Progress Events — PROCESSING)**:
+  - Phân tách rõ ràng với sự kiện INIT; hiển thị chiến lược đang được thực thi và mô tả chi tiết.
+  - Thanh tiến độ trực quan (Progress Bar): Thể hiện tỷ lệ hoàn thành theo thời gian thực (%), ngày đích đến và số ngày còn lại.
+  - Huy hiệu liên kết Buồng Lái: Nhận diện và hiển thị nếu sự kiện đang chờ kết quả trận đấu can thiệp buồng lái (`encounterTransactionId`).
+- **C. Đồ Thị Cây Chuỗi Nhiệm Vụ (Mission Chain Tree Flow)**:
+  - Thay thế danh sách thẻ phẳng bằng cấu trúc lộ trình trực quan: Thể hiện hình thái nhiệm vụ (`linear`, `branching`, `threshold`, `reactive`, `periodic`, `standalone`), ngày bắt đầu và tỷ lệ bước hoàn thành.
+  - Thẻ các bước (Nodes) phân cấp rõ 4 trạng thái:
+    * **Hoàn Tất (Completed)**: Viền ngọc bích, icon `CheckCircle2`, tóm tắt phần thưởng nhận được.
+    * **Đang Tác Chiến (Active)**: Viền lục lam rực rỡ, vòng quét radar, thông tin sector mục tiêu.
+    * **Chưa Mở Khóa (Locked)**: Gam màu tối giản, icon `Lock`, nêu rõ bước tiên quyết cần hoàn thành.
+    * **Đang Chờ Điều Kiện Sector (Pending Dispatch)**: Huy hiệu cảnh báo màu hổ phách dành riêng cho các node có `isPendingDispatch: true`, nêu rõ nguyên nhân sector đang bận/trùng sự kiện và số ngày đã hoãn/hạn tối đa trước khi tự động giải tỏa.
+- **D. Tổng Hợp Kết Quả Chu Kỳ & Nhật Ký Gần Đây (Events Summary & Recent Feed)**:
+  - Tận dụng `eventsSummary` từ `executeWorldTick`: Hiển thị banner tổng hợp biến động ngày gọn gàng ngay đầu trang, phân tách minh bạch:
+    * *Sự kiện Tự Động Khóa Phương Án Mặc Định*: Danh sách các sự kiện quá hạn tự động chuyển sang PROCESSING theo phương án mặc định.
+    * *Sự kiện Đã Hoàn Tất*: Danh sách sự kiện hoàn tất và áp dụng hậu quả thành công.
+  - Hợp nhất thông báo Toast thành một thông điệp duy nhất có tính bao quát, loại bỏ hiện tượng spam nhiều toast độc lập.
+  - Dải kết quả gần đây (Recent Results Feed): Hiển thị 5 kết quả mới nhất từ Archive kèm trạng thái Thành Công / Mặc Định / Thất Bại, biến động tài nguyên, nút đánh dấu đã đọc và liên kết chuyển đến *Dual Results Hub* để xem toàn bộ lịch sử chi tiết.
+- **Bộ Kiểm Thử Toàn Diện (`tests/world/events-missions-ui.test.ts`)**:
+  - 6/6 test cases kiểm thử tự động toàn diện:
+    1. Phân loại và sắp xếp ưu tiên sự kiện INIT theo hạn chót và mức độ khẩn cấp.
+    2. Chuyển đổi trạng thái sang PROCESSING và tính toán tỷ lệ tiến độ chính xác.
+    3. Nhận diện cờ `isPendingDispatch` và thông số hoãn bước nhiệm vụ.
+    4. Cây nhiệm vụ phân cấp đúng các trạng thái Completed, Active, Locked.
+    5. `executeWorldTick` trả về `eventsSummary` phân tách minh bạch Auto-Locked vs Resolved.
+    6. Lưu và nạp lại bảo toàn nguyên vẹn WorldState, Event Archive và đánh dấu đã đọc.
+
+---
+
+## [Phase 6.8+ / Đợt 1] — STARFRONT WORLD: Event Concurrency Guard & Deadline Resolution
+
+*Đã hoàn thành 100% Đợt 1 — Xử lý xung đột sự kiện trên cùng sector và hoàn thiện cơ chế giải quyết deadline đồng thời (100% tests PASS, zero-regression toàn bộ 21 test suites)*
+
+### Các cơ chế & quy tắc đã triển khai:
+- **Event Concurrency Guard (`canRegisterWorldEvent` trong `lib/game/world/event-engine.ts`)**:
+  - *Chống trùng lặp template trên cùng sector*: Ngăn chặn việc cùng một template sự kiện (ví dụ `evt_void_skirmish_raid`) bị kích hoạt lặp lại nhiều lần trên một sector khi sự kiện trước chưa kết thúc (`INIT` hoặc `PROCESSING`). Tránh hiện tượng dồn ép trừ Stability đột ngột.
+  - *Cho phép sự kiện khác loại cùng tồn tại hợp lý*: Các sự kiện khác `templateId` (ví dụ: Bão Plasma thiên văn `anomaly` + Đình công công nhân `civil` + Đột kích Void `military`) hoàn toàn được phép diễn ra đồng thời trên cùng một sector, không áp đặt giới hạn cơ học cứng nhắc.
+  - *Chống trùng lặp quy mô thiên hà*: Chỉ cho phép tối đa 1 sự kiện `scope: "galaxy"` cùng `templateId` hoạt động đồng thời.
+  - *Chống trùng sự kiện từ cùng mission chain*: Mỗi chuỗi nhiệm vụ chỉ được mở tối đa 1 sự kiện active trên cùng một sector tại một thời điểm.
+- **Cơ Chế Trì Hoãn Có Kiểm Soát & Chống Kẹt Chuỗi Nhiệm Vụ (`isPendingDispatch` & `MAX_DISPATCH_DEFER_TICKS`)**:
+  - Khi một bước trong chuỗi nhiệm vụ (`MissionChainNode`) không thể kích hoạt sự kiện do sector đang bận hoặc đầy trần, node được đánh dấu `isPendingDispatch: true` kèm `pendingEvent` lưu trữ an toàn thay vì bị từ chối làm mồ côi bước.
+  - Tích hợp hàm `retryPendingMissionChainDispatches` vào đầu Phase 6 của Tick Engine: tự động thử kích hoạt lại ngay khi Phase 5 đã giải phóng các sự kiện cũ trên sector.
+  - Cơ chế giải tỏa có kiểm soát (Controlled Fallback): Nếu bước bị hoãn quá `MAX_DISPATCH_DEFER_TICKS = 4` ticks (4 ngày chiến lược), hệ thống tự động giải tỏa bước đó an toàn và chuyển tiếp chuỗi sang bước tiếp theo, bảo đảm chuỗi nhiệm vụ **tuyệt đối không bao giờ bị mắc kẹt vô hạn**.
+- **Giải Quyết Nhiều Deadline Đồng Thời Tất Định (Deterministic Tie-Breaking & Rich Summary)**:
+  - Tinh chỉnh trật tự tie-breaking trong `advanceEventLifecyclesAndDeadlines`: `(priority DESC -> deadline ASC -> createdAtTick ASC -> id ASC)`.
+  - Bổ sung cấu trúc dữ liệu `EventLifecycleSummary` trả về từ Phase 5 chuyển tiếp vào `TickExecutionResult` (`eventsSummary`), cung cấp đầy đủ thông tin phân loại theo category, severity, danh sách sự kiện auto-locked và resolved để phục vụ UI tổng hợp biến động ngày.
+- **Bảo Vệ Tính Lũy Đẳng Tuyệt Đối (Idempotency Guard)**:
+  - Bảo đảm cờ `event.consequencesApplied = true` được kiểm tra chặt chẽ, ngăn chặn áp dụng hậu quả hai lần ngay cả sau khi reload `localStorage` hoặc gọi lặp lại.
+- **Bộ Kiểm Thử Tập Trung (`tests/world/event-concurrency-guard.test.ts`)**:
+  - 6/6 test cases chuyên sâu kiểm chứng đầy đủ các kịch bản:
+    1. Hai sự kiện trùng loại trên cùng sector bị chặn an toàn.
+    2. Hai sự kiện khác loại cùng tồn tại hợp lý đồng thời.
+    3. Sự kiện bị chặn không làm kẹt mission chain (Retry & Controlled Fallback).
+    4. Nhiều deadline trùng nhau xử lý tất định theo tie-breaking.
+    5. Hậu quả không bị áp dụng 2 lần sau reload.
+    6. Sự kiện mới sinh ra từ mission chain không bị resolve nhầm trong cùng tick.
+
+---
+
+## [Phase 6.9] — STARFRONT WORLD: Bản Đồ Toàn Màn Hình, Tinh Chỉnh Thị Giác & Kiểm Thử Tích Hợp Toàn Diện (Fullscreen Map, Polish & E2E Verification)
+
+*Đã hoàn thành 100% Phase 6.9 — Phase cuối cùng trong lộ trình STARFRONT WORLD (100% automated tests PASS, build thành công, 9/9 tests E2E Phase 6.9 PASS, bảo toàn zero-regression toàn bộ hệ thống)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.9:
+- **Bản Đồ Thiên Hà Toàn Màn Hình Chuẩn Sci-Fi Aerospace (`components/game/world/world-map.tsx`)**:
+  - Tích hợp mạng lưới 8 Sector thiên hà và 12 Tuyến Siêu Không Gian (Hyperlanes) lấy trực tiếp từ `WorldState` và graph chuẩn (`INITIAL_WORLD_SECTORS`, `INITIAL_WORLD_ROUTES`), không hardcode.
+  - Hiển thị trực quan chủ quyền lãnh thổ (VSS, The Void, Tranh Chấp, Trung Lập) và 5 giai đoạn vòng đời (`stable`, `threatened`, `under_siege`, `lost`, `recovery`).
+  - Phân cấp trạng thái 12 tuyến đường bằng màu sắc và nét vẽ: Bình Thường (`open`), Nguy Cấp (`hazardous`), Bị Khóa (`blocked`), Mất Kết Nối (`offline`).
+  - Trực quan hóa các cánh quân viễn chinh đang hành quân `in_transit` với điểm xuất phát, đích đến, số quân và số ngày còn lại.
+  - Hiển thị vòng khóa tác chiến màu đỏ xung quanh các sector đang bị khóa combat (`isLockedForCombat`).
+  - Hỗ trợ công cụ điều khiển bản đồ: Phóng to (+), Thu nhỏ (-), Căn giữa (Reset View), Lưới tọa độ chiến thuật Sci-Fi HUD và thông tin phụ trợ.
+  - Bảng điều khiển kiểm tra chi tiết (Sector Inspector Panel):
+    * Xem thông tin dân số, lương thực, tài nguyên, lực lượng đồn trú VSS vs The Void.
+    * Thay đổi Lệnh Chiến Lược Đồn Trú (`normal`, `defend`, `reinforce`, `attack`, `recover`).
+    * Nâng cấp Công Sự Phòng Thủ (0..5 cấp).
+    * Các nút liên kết thao tác nhanh: "Chi Tiết Tại Sector Operations", "Điều Động Chi Viện" (mở Quick Dispatch), "Tham Chiến Khẩn Cấp" (khi có sự kiện combat).
+- **Khung Trực Quan Hóa Toàn Màn Hình 100vw/100vh (`components/game/world/world-fullscreen-overlay.tsx`)**:
+  - Chế độ toàn màn hình không viền chuyên dụng với thanh tiêu đề HUD quân sự, chỉ số vĩ mô tóm tắt (Ngày chiến lược, Threat trung bình, Tỷ lệ kiểm soát VSS).
+  - Hỗ trợ phím tắt bàn phím `ESC` để đóng chế độ toàn màn hình mượt mà, cùng nút thoát trực tiếp trên thanh công cụ.
+  - Tích hợp trực tiếp Bến Điều Động Nhanh (`QuickDispatchDock`) ngay trên bản đồ toàn màn hình.
+- **Tích Hợp Điều Hướng Đa Chiều Trong Operations Center & Starfront Shell**:
+  - Bổ sung tab "Bản Đồ Thiên Hà" (`map`) vào hệ thống Navigation của Operations Center.
+  - Bổ sung nút chuyển đổi Toàn Màn Hình (`Maximize2`) tại tiêu đề Operations Center và thanh công cụ bản đồ.
+  - Bổ sung nút "Xem Vị Trí Trên Bản Đồ" từ thẻ Sector của tab `sectors` chuyển mượt mà sang `map` với sector tương ứng được chọn sẵn.
+  - Cập nhật cây submenu `map` trong mục WORLD của thanh điều hướng chính `starfront-shell.tsx`.
+- **Bộ Kiểm Thử Tích Hợp E2E Toàn Diện (`tests/world/e2e-world-integration.test.ts`)**:
+  - 9/9 subtests E2E kiểm chứng toàn bộ luồng nghiệp vụ thực tế của hệ thống:
+    1. *Nạp bản đồ*: Chuẩn xác 8 sector và 12 tuyến đường từ WorldState.
+    2. *Tương tác Inspector*: Chọn sector, cập nhật lệnh chiến lược và nâng cấp công sự.
+    3. *Định tuyến quân sự*: Điều quân qua tuyến hợp lệ, chặn đứng tuyến Blocked/Offline, bảo toàn tuyệt đối quân số.
+    4. *Cơ chế phòng thủ*: Chặn xuất quân khỏi sector đang bị khóa giao tranh (`isLockedForCombat`).
+    5. *Tiến 1 Ngày (Tick Engine)*: Cập nhật Threat, di chuyển quân đoàn và phản ánh đúng đắn WorldState.
+    6. *Vòng đời sự kiện*: Áp dụng hậu quả chỉ đúng 1 lần (Idempotency Guard).
+    7. *Kết quả chiến đấu*: Commit qua Combat Adapter và chống áp dụng lần 2 qua Transaction Journal.
+    8. *Lưu trữ bền vững*: Lưu và nạp bảo toàn nguyên vẹn WorldState qua `STARFRONT_WORLD_SAVE_V1`.
+    9. *Zero-Regression*: Đảm bảo 100% tiến trình RPG Schema v4 (Phi công, Gear, Trang bị, Nhiệm vụ) độc lập và không suy suyển.
+- **Hoàn Tất Lộ Trình STARFRONT WORLD**:
+  - Toàn bộ 9 sub-phases (Phase 6.1 đến 6.9) của bản đồ chiến lược vĩ mô STARFRONT WORLD đã được triển khai hoàn chỉnh, liên kết chặt chẽ với buồng lái Đấu Trường và giao diện Shell.
+
+---
+
+## [Phase 6.8] — STARFRONT WORLD: Giao Diện Operations Center & Trung Tâm Kết Quả Kép (Operations Center UI & Dual Results Hub)
+
+*Đã hoàn thành 100% Phase 6.8 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.8 PASS, tích hợp trực tiếp vào thanh điều hướng của Shell)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.8:
+- **Giao Diện Tổng Hành Dinh Tác Chiến (`components/game/world/operations-center.tsx`)**:
+  - Tích hợp mục "Chỉ Huy Chiến Lược // WORLD" vào thanh điều hướng cấp cao nhất của `starfront-shell.tsx`, kết nối trực tiếp với tiến trình `WorldState` thực tế.
+  - Hỗ trợ 5 phân khu chức năng:
+    * **Tình Hình Chiến Lược (Situation Deck)**: Hiển thị ngày chiến lược, tỷ lệ kiểm soát thiên hà (VSS vs Contested vs The Void), Threat trung bình, tình trạng dân số, kho dự trữ 4 tài nguyên chiến lược và lương thực riêng. Bảng cảnh báo thời gian thực cảnh báo các sector nguy cấp (`under_siege`, `threatened`) và sự kiện sắp đến hạn chót.
+    * **Mạng Lưới Sector (Sector Operations)**: Danh sách thẻ trực quan và Inspector chi tiết từng sector. Cho phép đổi Lệnh Chiến Lược Đồn Trú (`normal`, `defend`, `reinforce`, `attack`, `recover`), nâng cấp công sự phòng thủ (0..5) và mở can thiệp buồng lái (`CombatArena`) khi sector bị đe dọa.
+    * **Sự Kiện & Nhiệm Vụ (Active Operations Board)**: Hiển thị các sự kiện thời gian thực đang diễn ra; hỗ trợ phê chuẩn các phương án phản ứng (Strategy) khi sự kiện ở trạng thái `INIT`; hiển thị tiến độ các chuỗi nhiệm vụ chiến lược.
+    * **Quân Sự & Hậu Cần (Military & Logistics)**: Trực quan hóa Sổ Cái Lực Lượng Quân Sự Bảo Toàn (5 trạng thái), các đạo quân đang hành quân `in_transit` và mạng lưới tuyến đường siêu không gian (`open`, `hazardous`, `blocked`).
+    * **Trung Tâm Kết Quả Kép (Dual Results Hub)**: Tích hợp phân khu báo cáo 2 luồng.
+  - Các nút hành động chiến lược: Tiến 1 Ngày (`handleAdvanceTick`), Điều Quân Nhanh (`QuickDispatchDock`), Lưu Trạng Thái An Toàn (`saveWorldState`).
+- **Trung Tâm Kết Quả Kép (`components/game/world/dual-results-hub.tsx`)**:
+  - Phân tách rạch ròi 2 luồng báo cáo:
+    * **Tab 1: Báo Cáo Sự Kiện (Event Results)**: Lấy từ `worldState.eventResultsArchive`, hiển thị danh mục, mức độ khẩn cấp, phương án đã chọn, biến động tài nguyên và tóm tắt kết quả.
+    * **Tab 2: Nhật Ký Chiến Đấu (Battle Results)**: Lấy từ `worldState.transactionJournal` (các giao dịch `combat` đã `committed`), hiển thị số hiệp, HP còn lại, xếp hạng chiến thuật và tóm tắt giao tranh.
+  - Huy hiệu thông báo chưa đọc (`Unread Count Badge`) và nút "Đọc Tất Cả".
+  - Bộ lọc theo trạng thái: Tất Cả, Chưa Đọc, Thắng/Tốt, Thua/Xấu.
+  - Cơ chế **Xóa Lịch Sử An Toàn (Safe Pruning)**: Cho phép dọn dẹp các log sự kiện đã đọc mà **tuyệt đối không làm thay đổi bất kỳ chỉ số tài nguyên, quân sự, dân số hay mức Threat nào của World State**.
+- **Bến Điều Động Chi Viện Nhanh (`components/game/world/quick-dispatch-dock.tsx`)**:
+  - Cho phép xuất quân chi viện tức thì từ Kho Dự Bị Trung Ương (Sol Command HQ) hoặc từ đồn trú một sector.
+  - Cơ chế phòng thủ: Chặn tuyệt đối việc điều động quân rời khỏi sector đang bị khóa trong combat (`isLockedForCombat`).
+  - Tự động tính toán lộ trình ngắn nhất qua mạng lưới tuyến đường siêu không gian.
+- **Kiểm Thử Tự Động Toàn Diện (`tests/world/operations-center-ui.test.ts`)**:
+  - 8/8 tests tự động PASS 100%: Situation Deck metrics, Quick Dispatch locking guard, Lệnh chiến lược & Nâng cấp công sự, Phân tách kết quả kép, Safe Pruning bảo toàn chỉ số 100%, Đánh dấu đã đọc/Đọc tất cả, Tiến ngày Tick Engine, Lưu & Nạp bền vững qua Storage V1.
+
+---
+
+## [Phase 6.7] — STARFRONT WORLD: Động Cơ Vòng Đời Sự Kiện & Chuỗi Nhiệm Vụ Chiến Lược (Event Lifecycle Engine & Strategic Mission Chains)
+
+*Đã hoàn thành 100% Phase 6.7 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.7 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.7:
+- **Động Cơ Vòng Đời Sự Kiện 3 Pha (`lib/game/world/event-engine.ts`)**:
+  - Triển khai vòng đời khép kín `INIT` $\rightarrow$ `PROCESSING` $\rightarrow$ `RESULT`:
+    * `INIT`: Sự kiện xuất hiện kèm đồng hồ đếm ngược `decisionDeadlineTick`. Người chơi có thể lựa chọn các phương án phản ứng (Strategy) với chi phí tài nguyên và yêu cầu quân sự rõ ràng.
+    * Tự động khóa phương án mặc định (`autoLockDefaultStrategy`): Khi countdown về 0 mà người chơi chưa chọn lệnh, hệ thống tự động khóa và kích hoạt `defaultStrategyId`, không để sự kiện bị treo lơ lửng.
+    * `PROCESSING`: Đang thực thi theo thời lượng xác định (`processingTicks`); lưu trữ bền vững qua các lần reload trang web và tiếp tục tiến trình qua batch offline catch-up.
+    * `RESULT`: Đánh giá kết quả (thắng/thua, biến động tài nguyên, thương vong), ghi nhận vào kho lưu trữ bền vững `worldEventResultsArchive`.
+  - Bộ lọc chống áp dụng hậu quả 2 lần (`applyEventConsequencesOnce` với guard `consequencesApplied`): Tuyệt đối chỉ áp dụng biến động tài nguyên, quân số, Stability và Threat đúng 1 lần duy nhất.
+  - Phân tách rạch ròi Event Result với Battle Result, hỗ trợ đánh dấu đã đọc (`isRead`) và dọn dẹp an toàn (`pruneReadEventResultsSafe`) không làm thay đổi World State.
+  - Sắp xếp thứ tự thực thi theo quy tắc tie-break tất định: `(priority DESC, createdAtTick ASC, id ASC)`.
+- **Đồ Thị Chuỗi Nhiệm Vụ Chiến Lược 6 Hình Thái (`lib/game/world/mission-chains.ts`)**:
+  - Hỗ trợ đầy đủ 6 cấu trúc chuỗi nhiệm vụ:
+    1. *Linear (Tuyến tính)*: Bước 1 $\rightarrow$ Bước 2 $\rightarrow$ Bước 3 (`chain_linear_void_inquiry`).
+    2. *Branching (Phân nhánh)*: Quyết định/chiến lược mở ra Nhánh Dân Sự hoặc Nhánh Quân Sự (`chain_branching_mining_crisis`).
+    3. *Threshold-based (Theo ngưỡng)*: Tự động kích hoạt khi Threat $\ge 600$ (`chain_threshold_high_threat`).
+    4. *Reactive (Phản ứng)*: Kích hoạt đáp trả khi sector bị vây hãm `under_siege` (`chain_reactive_rescue`).
+    5. *Periodic / Patrol (Tuần hoàn)*: Nhiệm vụ tuần tra lặp lại định kỳ mỗi chu kỳ (`chain_periodic_patrol`) với cơ chế cooldown chống sinh vô hạn trong cùng một tick.
+    6. *Standalone (Độc lập)*: Chiến dịch đặc biệt một lần (`chain_standalone_ancient_cache`).
+  - Khống chế trần toàn cục `MAX_ACTIVE_MISSION_CHAINS = 8` và trần sự kiện `MAX_ACTIVE_EVENTS = 12`.
+- **Bộ Cấu Hình 20 Sự Kiện Mẫu Sci-Fi (`lib/game/world/event-templates.ts`)**:
+  - 20 sự kiện mẫu trải rộng trên 7 danh mục: Khủng hoảng (Crisis), Ngoại giao (Diplomacy), Quân sự (Military), Dị thường (Anomaly), Hậu cần (Logistics), Dân sự (Civil), Tình báo (Intel).
+  - Mỗi sự kiện đều có mô tả lore vũ trụ, mức độ nghiêm trọng, thời hạn đếm ngược, chiến lược mặc định và các phương án xử lý kèm chi phí/hậu quả.
+- **Tích Hợp Tick Engine & Bộ Lưu Trữ Bền Vững**:
+  - Tích hợp vào Phase 5 của Tick Engine: Kiểm tra countdown event, tự động chuyển `INIT` $\rightarrow$ `PROCESSING`, hoàn tất `PROCESSING` $\rightarrow$ `RESULT`, và chuyển tiếp các nút trong chuỗi nhiệm vụ.
+  - Tích hợp vào Phase 6 của Tick Engine: Quét và kích hoạt các chuỗi nhiệm vụ theo ngưỡng (Threshold), phản ứng (Reactive) và tuần hoàn (Periodic).
+  - Tương thích 100% với `STARFRONT_WORLD_SAVE_V1` và cơ chế di chuyển/default an toàn trong `storage.ts`.
+- **Kiểm Thử Đơn Vị Đầy Đủ (`tests/world/event-lifecycle.test.ts`)**:
+  - 8/8 bài kiểm thử chuyên sâu bao phủ trọn vẹn: Vòng đời 3 pha, Deadline online/offline catch-up, Idempotency guard, 6 cấu trúc Mission chain, Trần 8 chuỗi, Reload & Safe pruning, Combat adapter contract, và Deterministic PRNG.
+
+---
+
+## [Phase 6.6] — STARFRONT WORLD: Khế Ước Tích Hợp Chiến Đấu & Nhật Ký Giao Dịch Lũy Đẳng (Combat Integration Adapter & Idempotent Journal)
+
+*Đã hoàn thành 100% Phase 6.6 (100% automated tests PASS, build thành công, 8/8 tests Phase 6.6 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.6:
+- **Tầng Adapter Khế Ước Chiến Đấu (`lib/game/world/combat-adapter.ts`)**:
+  - Tầng trung gian duy nhất kết nối giữa WORLD và buồng lái Đấu Trường (`CombatArena`, `engine.ts`).
+  - Hàm `lockEncounterAndCreateSnapshot`: Khóa sector và đóng băng quân đồn trú (`isLockedForCombat = true`, `lockedGarrisonPower`), ngăn chặn mọi điều động quân và chỉnh sửa trong khi trận diễn ra; tạo bản chụp `EncounterSnapshot` bất biến với chỉ số kẻ địch tính toán theo Threat của sector và các hệ số chiến lược VSS (`friendlyModifiers`).
+  - Cấp phát `transactionId` và `encounterId` duy nhất, ổn định.
+  - Hàm `commitCombatResultReceipt`: Tiếp nhận biên lai `CombatResultReceipt`, chuyển đổi thành hậu quả chiến lược có thẩm quyền trên World State (giảm Threat, tăng Stability, thưởng tài nguyên, hạch toán thương vong bảo toàn quân số).
+  - Hậu quả thất bại theo ngữ cảnh (Contextual Defeat Penalties): Thất bại không mất trắng sector ngay; trừ công sự phòng thủ, sector chuyển sang `under_siege`, bảo toàn quân số qua thương vong và thương binh. Chỉ chuyển giao quyền kiểm soát (`lost` -> `void`) khi phòng tuyến và đồn trú sụp đổ hoàn toàn.
+  - Tự động mở khóa an toàn cho sector sau khi trận chiến hoàn tất (`isLockedForCombat = false`).
+  - Hàm `convertBattleResultToReceipt`: Cầu nối chuyển đổi dữ liệu kết quả trực tiếp từ Combat Engine hiện có thành `CombatResultReceipt` chuẩn hóa.
+- **Sổ Nhật Ký Giao Dịch Lũy Đẳng (`lib/game/world/transaction-journal.ts`)**:
+  - Bộ lọc lũy đẳng (Idempotency Filter): Kiểm tra `isTransactionCommitted` trước khi xử lý biên lai. Gửi liên tục 10 lần cùng một biên lai chiến thắng chỉ áp dụng đúng 1 lần duy nhất, các lần sau từ chối an toàn và giữ nguyên trạng thái.
+  - Quản lý vòng đời giao dịch với 5 trạng thái minh bạch: `pending` -> `awaiting_commit` -> `committed` / `needs_recovery` / `aborted`.
+  - Hàm `reconcileCombatTransactionsInTick`: Tích hợp vào Phase 1 của Tick Engine để tự động đối soát, phát hiện và chuyển các trận chiến bị ngắt quãng/treo sang trạng thái `needs_recovery`.
+  - Cơ chế dọn dẹp an toàn (`pruneJournal`): Cho phép cắt giảm các bản ghi giao dịch đã xong nhưng luôn bảo toàn danh sách `committedTransactionIds` để bộ lọc lũy đẳng hoạt động vĩnh viễn.
+- **Luồng Phục Hồi Treo & Hủy Bỏ An Toàn (Suspended Recovery & Safe Abort)**:
+  - Hàm `resumeSuspendedCombat`: Cho phép buồng lái khôi phục nguyên vẹn trận chiến từ bản chụp bất biến sau khi người chơi reload ứng dụng.
+  - Hàm `abortSuspendedCombat`: Cho phép hủy bỏ trận đấu treo một cách an toàn mà không bị phạt thua oan; hoàn trả đồn trú về trạng thái trước khi khóa trận và mở khóa sector. Chặn hoàn toàn việc commit kết quả sau khi đã abort.
+- **Bảo Vệ Tính Toàn Vẹn Lưu Trữ & Đồng Bộ Save V1**:
+  - Lưu trữ và phục hồi hoàn hảo qua `STARFRONT_WORLD_SAVE_V1` với xác thực Checksum 100%.
+- **Kiểm Thử Đơn Vị Đầy Đủ (`tests/world/combat-adapter-idempotency.test.ts`)**:
+  - 8/8 bài kiểm thử chuyên sâu bao phủ trọn vẹn các kịch bản khóa trận, chống double-application 10 lần, kết quả không hợp lệ, contextual defeat, suspended recovery, safe abort và lưu trữ.
+
+---
+
+## [Phase 6.5] — STARFRONT WORLD: Phe Phái VSS & The Void, Lực Lượng Quân Sự & Auto-Resolve (Factions, Authoritative Military Ledger & Auto-Resolve)
+
+*Đã hoàn thành 100% Phase 6.5 (100% automated tests PASS, 22/22 tests Phase 6.5 PASS)*
+
+### Tính năng & cơ chế đã hoàn thành trong Phase 6.5:
+- **Sổ Cái Quân Lực Có Thẩm Quyền (`lib/game/world/forces-ledger.ts`)**:
+  - Quản lý 5 trạng thái quân đội theo định luật bảo toàn tuyệt đối: `Total Force = Deployed + Reserves + Wounded + Retreating + InTransit + Casualties`.
+  - Kiểm soát điều động quân sự (`dispatchTroopDeployment`, `advanceTroopDeployments`) tôn trọng trạng thái tuyến đường (Dijkstra shortest path).
+  - Chuyển giao quyền kiểm soát sector an toàn (`transferSectorControl`) bảo toàn dân số và tài sản.
+- **Thuật Toán Lanchester Auto-Resolve Cải Tiến (`lib/game/world/auto-resolve.ts`)**:
+  - Tự động hóa các trận chạm trán phụ với tính tất định 100% qua Seeded PRNG.
+  - Phân bổ tổn thất minh bạch: 50% thương vong vĩnh viễn (Casualties) và 50% thương binh điều trị (WoundedOrRepair).
+- **Hành Vi Chiến Lược The Void & Quy Tắc Sol HQ (`lib/game/world/threat-ai.ts`)**:
+  - AI The Void đánh giá điểm yếu phòng tuyến VSS, tổ chức vây hãm và tập kích có thứ tự.
+  - Quy tắc bảo vệ căn cứ Sol Command HQ bất khả xâm phạm khi các chốt chặn tiền tiêu còn đứng vững.
+
+---
 
 *Đã hoàn thành 100% Phase 6.4 (170/170 automated tests passed, build thành công, 21/21 tests Phase 6.4 PASS)*
 

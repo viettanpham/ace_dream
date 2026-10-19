@@ -4,6 +4,7 @@ import type {
   WorldSector,
   WorldState,
 } from "./types"
+import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
 
 /**
  * 8 Sector vũ trụ khởi đầu chuẩn hóa theo quy chuẩn thiết kế B.5
@@ -18,6 +19,7 @@ export const INITIAL_WORLD_SECTORS: Record<string, WorldSector> = {
     y: 78,
     sovereignty: "vss",
     threatLevel: 40,
+    classification: "headquarters",
     stage: "normal",
     industryCapacity: 220,
     garrisonPower: 550,
@@ -172,6 +174,7 @@ export const INITIAL_WORLD_SECTORS: Record<string, WorldSector> = {
     y: 48,
     sovereignty: "void",
     threatLevel: 980,
+    classification: "headquarters",
     stage: "lost",
     industryCapacity: 40,
     garrisonPower: 800,
@@ -185,10 +188,54 @@ export const INITIAL_WORLD_SECTORS: Record<string, WorldSector> = {
     population: 10000,
     stability: 8,
   },
+  elysium_sanctuary: {
+    id: "elysium_sanctuary",
+    name: "Thánh Địa Elysium",
+    subtitle: "Vòm sinh quyển thủy canh & Viện nghiên cứu sinh cơ — Thượng nguồn công nghệ",
+    desc: "Quần thể trạm quỹ đạo sinh quyển thủy canh và phòng thí nghiệm công nghệ vũ trụ tiên tiến. Nơi cung cấp nguồn lương thực dồi dào và lưu trữ dữ liệu chiến thuật then chốt của liên minh VSS.",
+    x: 26,
+    y: 28,
+    sovereignty: "vss",
+    threatLevel: 90,
+    stage: "normal",
+    industryCapacity: 150,
+    garrisonPower: 280,
+    resources: {
+      industrialMaterials: 300,
+      energy: 650,
+      logisticsSupplies: 400,
+      tacticalData: 550,
+      food: 1800,
+    },
+    population: 110000,
+    stability: 92,
+  },
+  abyssal_rift: {
+    id: "abyssal_rift",
+    name: "Vực Thẳm Abyssal Rift",
+    subtitle: "Cụm tàn tích cổ đại & Năng lượng hắc ám — Vùng biên giới dị thường",
+    desc: "Khu vực không gian biến dạng gần hố đen siêu khối lượng, chứa các mỏ khoáng sản tinh thể đen và tàn tích hạm đội cổ xưa. Hiện đang bị The Void thăm dò ráo riết và tranh chấp quyền kiểm soát.",
+    x: 82,
+    y: 24,
+    sovereignty: "contested",
+    threatLevel: 650,
+    stage: "threatened",
+    industryCapacity: 80,
+    garrisonPower: 220,
+    resources: {
+      industrialMaterials: 450,
+      energy: 500,
+      logisticsSupplies: 120,
+      tacticalData: 380,
+      food: 120,
+    },
+    population: 35000,
+    stability: 45,
+  },
 }
 
 /**
- * 12 Tuyến đường siêu không gian kết nối mạng lưới
+ * 16 Tuyến đường siêu không gian kết nối mạng lưới 10 Sector (Phase 6.28)
  */
 export const INITIAL_WORLD_ROUTES: WorldRoute[] = [
   {
@@ -222,6 +269,22 @@ export const INITIAL_WORLD_ROUTES: WorldRoute[] = [
     distance: 1,
     state: "open",
     dangerLevel: 10,
+  },
+  {
+    id: "r_helios_elysium",
+    fromSectorId: "helios_perimeter",
+    toSectorId: "elysium_sanctuary",
+    distance: 2,
+    state: "open",
+    dangerLevel: 12,
+  },
+  {
+    id: "r_elysium_delta",
+    fromSectorId: "elysium_sanctuary",
+    toSectorId: "asteroid_delta",
+    distance: 2,
+    state: "open",
+    dangerLevel: 16,
   },
   {
     id: "r_k7_nebula",
@@ -272,6 +335,22 @@ export const INITIAL_WORLD_ROUTES: WorldRoute[] = [
     dangerLevel: 62,
   },
   {
+    id: "r_orion_abyssal",
+    fromSectorId: "waypoint_orion",
+    toSectorId: "abyssal_rift",
+    distance: 2,
+    state: "hazardous",
+    dangerLevel: 48,
+  },
+  {
+    id: "r_abyssal_tartarus",
+    fromSectorId: "abyssal_rift",
+    toSectorId: "tartarus_breach",
+    distance: 2,
+    state: "blocked",
+    dangerLevel: 88,
+  },
+  {
     id: "r_orion_tartarus",
     fromSectorId: "waypoint_orion",
     toSectorId: "tartarus_breach",
@@ -304,6 +383,7 @@ export const INITIAL_WORLD_FACTIONS: Record<string, WorldFaction> = {
       "mining_outpost_k7",
       "asteroid_delta",
       "nebula_bastion",
+      "elysium_sanctuary",
     ],
     reputation: 100,
   },
@@ -327,9 +407,19 @@ export function createInitialWorldState(customSeed?: number): WorldState {
   // Clone an toàn các object để tránh mutation dữ liệu mẫu
   const sectors: Record<string, WorldSector> = {}
   for (const [id, sector] of Object.entries(INITIAL_WORLD_SECTORS)) {
+    const isHq = id === "sol_command_hq" || id.endsWith("_hq") || id === "tartarus_breach" || sector.classification === "headquarters"
+    const maxThreat = sector.maxThreat ?? (isHq ? 100_000_000 : 1_000_000)
     sectors[id] = {
       ...sector,
+      classification: isHq ? "headquarters" : (sector.classification || "standard"),
+      maxThreat,
       resources: { ...sector.resources },
+      threatHistory: [
+        {
+          day: 1,
+          threat: sector.threatLevel,
+        },
+      ],
     }
   }
 
@@ -340,6 +430,16 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     factions[id] = {
       ...f,
       controlledSectorIds: [...f.controlledSectorIds],
+    }
+  }
+
+  // Tính toán chuẩn xác nhân khẩu học bảo đảm Zero-Sum Conservation cân bằng 100%
+  let nationalTotalPopulation = 0
+  let controlledTerritoryPopulation = 0
+  for (const s of Object.values(sectors)) {
+    nationalTotalPopulation += s.population
+    if (s.sovereignty === "vss") {
+      controlledTerritoryPopulation += s.population
     }
   }
 
@@ -368,8 +468,8 @@ export function createInitialWorldState(customSeed?: number): WorldState {
       casualties: 0,
     },
     demographics: {
-      nationalTotalPopulation: 680000,
-      controlledTerritoryPopulation: 590000,
+      nationalTotalPopulation,
+      controlledTerritoryPopulation,
       refugeesInTransit: 0,
       civilianCasualties: 0,
     },
@@ -377,6 +477,30 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     completedMissionChainIds: [],
     committedTransactionIds: [],
     inFlightTransactions: {},
+    transactionJournal: {},
     isSuspendedCombat: false,
+    events: {},
+    missionChains: {},
+    eventResultsArchive: [],
+    missionDispatches: {},
+    activePlayerMissionId: null,
+    operationsArchiveConfig: {
+      eventArchiveQuota: 60,
+      battleArchiveQuota: 40,
+    },
+    threatConfig: {
+      maxThreatStandard: 1_000_000,
+      maxThreatHQ: 100_000_000,
+      hpPerThreatPoint: 100,
+      winnerRatio: 2,
+      threatFormulaMultiplier: 1.0,
+      lastModified: now,
+    },
+    survivalConfig: {
+      ...DEFAULT_SURVIVAL_CONFIG,
+      lastModified: now,
+    },
+    pilotSurvivalRegistry: [],
+    nationalPowRegistry: [],
   }
 }

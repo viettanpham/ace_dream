@@ -1,6 +1,6 @@
 /**
- * STARFRONT WORLD — Initial Map Configuration (Phase 6.2)
- * Cung cấp thông tin cấu hình bản đồ chuẩn hóa 8 sector và 12 tuyến đường.
+ * STARFRONT WORLD — Initial Map Configuration (Phase 6.28)
+ * Cung cấp thông tin cấu hình bản đồ chuẩn hóa 10 sector và 16 tuyến đường.
  * Tái sử dụng dữ liệu từ initial-state.ts để bảo đảm duy nhất một nguồn dữ liệu (Single Source of Truth).
  */
 
@@ -13,14 +13,14 @@ import type { WorldRoute, WorldSector } from "./types"
 export { INITIAL_WORLD_ROUTES, INITIAL_WORLD_SECTORS }
 
 /**
- * Lấy danh sách 8 sector khởi đầu dưới dạng mảng
+ * Lấy danh sách 10 sector khởi đầu dưới dạng mảng
  */
 export function getInitialSectorsList(): WorldSector[] {
   return Object.values(INITIAL_WORLD_SECTORS)
 }
 
 /**
- * Lấy danh sách 12 tuyến đường siêu không gian khởi đầu
+ * Lấy danh sách 16 tuyến đường siêu không gian khởi đầu
  */
 export function getInitialRoutesList(): WorldRoute[] {
   return [...INITIAL_WORLD_ROUTES]

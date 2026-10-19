@@ -1,0 +1,70 @@
+{
+  "configFileId": "system_progression_tier_effect_profile",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "tier_effect_tier_ii",
+      "tierId": "TIER_II",
+      "statModifiers": {
+        "basePowerMultiplierPct": 15
+      },
+      "capacityModifiers": {
+        "hangarCapacity": 10,
+        "energyOutput": 100
+      },
+      "attributeUnlocks": [
+        "ARMORED_HULL"
+      ],
+      "capabilityUnlocks": [
+        "DEEP_SPACE_PATROL"
+      ],
+      "moduleSlotUnlocks": 1,
+      "description": "Tier II Breakthrough: +15% power, +10 hangar, Armored Hull, Deep Space Patrol."
+    },
+    {
+      "id": "tier_effect_tier_iii",
+      "tierId": "TIER_III",
+      "statModifiers": {
+        "basePowerMultiplierPct": 30
+      },
+      "capacityModifiers": {
+        "hangarCapacity": 25,
+        "energyOutput": 250
+      },
+      "attributeUnlocks": [
+        "SHIELD_REGENERATOR"
+      ],
+      "capabilityUnlocks": [
+        "WARP_INTERCEPTION"
+      ],
+      "moduleSlotUnlocks": 2,
+      "description": "Tier III Breakthrough: +30% power, +25 hangar, Shield Regenerator, Warp Interception."
+    },
+    {
+      "id": "tier_effect_tier_iv",
+      "tierId": "TIER_IV",
+      "statModifiers": {
+        "basePowerMultiplierPct": 50
+      },
+      "capacityModifiers": {
+        "hangarCapacity": 50,
+        "energyOutput": 500
+      },
+      "attributeUnlocks": [
+        "PHASE_CLOAK"
+      ],
+      "capabilityUnlocks": [
+        "HYPERLANE_SURGE"
+      ],
+      "moduleSlotUnlocks": 3,
+      "description": "Tier IV Breakthrough: +50% power, +50 hangar, Phase Cloak, Hyperlane Surge."
+    }
+  ],
+  "metadata": {
+    "domain": "progression",
+    "catalog": "tier_effect_profile",
+    "description": "Canonical tier breakthrough effect definitions."
+  }
+}

@@ -1,4 +1,13 @@
-import { createInitialWorldState } from "./initial-state"
+import {
+  INITIAL_WORLD_ROUTES,
+  INITIAL_WORLD_SECTORS,
+  createInitialWorldState,
+} from "./initial-state"
+import {
+  DEFAULT_THREAT_CONFIG,
+  isHeadquartersSector,
+} from "./threat-engine"
+import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
 import type {
   BackupMetadata,
   BackupSlot,
@@ -300,6 +309,150 @@ export function saveWorldState(state: WorldState): SaveWorldResult {
 }
 
 /**
+ * Phase 6.28: Tự động nâng cấp bản lưu cũ (8 sector) lên mạng lưới 10 sector & 16 routes
+ * - Bổ sung 2 sector mới nếu còn thiếu mà KHÔNG làm thay đổi bất kỳ trạng thái nào của 8 sector cũ.
+ * - Bổ sung các tuyến đường mới kết nối tới 2 sector mới nếu chưa có.
+ * - Cập nhật danh sách controlledSectorIds của phe VSS nếu sector thuộc VSS.
+ */
+export function migrateWorldStateTo10Sectors(state: WorldState): { state: WorldState; migrated: boolean } {
+  if (!state || !state.sectors) return { state, migrated: false }
+  let migrated = false
+
+  // 1. Kiểm tra và bổ sung sector mới
+  for (const [id, defSector] of Object.entries(INITIAL_WORLD_SECTORS)) {
+    if (!state.sectors[id]) {
+      migrated = true
+      state.sectors[id] = {
+        ...defSector,
+        resources: { ...defSector.resources },
+        threatHistory: [
+          {
+            day: state.currentDay || 1,
+            threat: defSector.threatLevel,
+          },
+        ],
+      }
+      // Cập nhật phe kiểm soát nếu là VSS
+      if (defSector.sovereignty === "vss" && state.factions?.vss) {
+        if (!state.factions.vss.controlledSectorIds.includes(id)) {
+          state.factions.vss.controlledSectorIds.push(id)
+        }
+      }
+    }
+  }
+
+  // 2. Kiểm tra và bổ sung các tuyến đường mới
+  if (!Array.isArray(state.routes)) {
+    state.routes = []
+  }
+  const existingRouteIds = new Set(state.routes.map((r) => r.id))
+  for (const defRoute of INITIAL_WORLD_ROUTES) {
+    if (!existingRouteIds.has(defRoute.id)) {
+      migrated = true
+      state.routes.push({ ...defRoute })
+      existingRouteIds.add(defRoute.id)
+    }
+  }
+
+  return { state, migrated }
+}
+
+/**
+ * Phase 6.33_FIX5: Tự động migrate và chuẩn hóa Threat Max (HQ = 100,000,000, Standard = 1,000,000)
+ * - Tự động bổ sung threatConfig nếu save cũ chưa có.
+ * - Nâng cấp các trần đe dọa cũ (<= 1000 hoặc missing/null) lên chuẩn mới:
+ *   HQ (Sol Command HQ, Tartarus Breach, *_hq) -> 100,000,000
+ *   Sector thường -> 1,000,000
+ * - KHÔNG ghi đè cấu hình Admin custom nếu user đã chủ động tinh chỉnh (> 1000).
+ * - Bảo tồn nguyên vẹn currentThreat nếu <= new max.
+ */
+export function migrateWorldThreatState(state: WorldState): boolean {
+  if (!state || !state.sectors) return false
+  let migrated = false
+
+  // 1. Kiểm tra hoặc chuẩn hóa threatConfig
+  if (!state.threatConfig) {
+    state.threatConfig = {
+      ...DEFAULT_THREAT_CONFIG,
+      lastModified: Date.now(),
+    }
+    migrated = true
+  } else {
+    if (!state.threatConfig.maxThreatStandard || state.threatConfig.maxThreatStandard <= 1000) {
+      state.threatConfig.maxThreatStandard = DEFAULT_THREAT_CONFIG.maxThreatStandard
+      migrated = true
+    }
+    if (!state.threatConfig.maxThreatHQ || state.threatConfig.maxThreatHQ <= 1000) {
+      state.threatConfig.maxThreatHQ = DEFAULT_THREAT_CONFIG.maxThreatHQ
+      migrated = true
+    }
+    if (!state.threatConfig.hpPerThreatPoint) {
+      state.threatConfig.hpPerThreatPoint = DEFAULT_THREAT_CONFIG.hpPerThreatPoint
+      migrated = true
+    }
+    if (!state.threatConfig.winnerRatio) {
+      state.threatConfig.winnerRatio = DEFAULT_THREAT_CONFIG.winnerRatio
+      migrated = true
+    }
+  }
+
+  // 2. Chuẩn hóa từng sector
+  for (const [id, sec] of Object.entries(state.sectors)) {
+    const isHq = isHeadquartersSector(sec)
+
+    if (isHq && sec.classification !== "headquarters") {
+      sec.classification = "headquarters"
+      migrated = true
+    } else if (!sec.classification) {
+      sec.classification = "standard"
+      migrated = true
+    }
+
+    // Nếu maxThreat chưa có, null, hoặc mang giá trị legacy <= 1000
+    if (sec.maxThreat === undefined || sec.maxThreat === null || sec.maxThreat <= 1000) {
+      sec.maxThreat = isHq
+        ? state.threatConfig.maxThreatHQ
+        : state.threatConfig.maxThreatStandard
+      migrated = true
+    }
+
+    // Bảo tồn current threat, chỉ clamp nếu vượt quá maxThreat
+    if (sec.threatLevel > sec.maxThreat) {
+      sec.threatLevel = sec.maxThreat
+      migrated = true
+    }
+  }
+
+  return migrated
+}
+
+/**
+ * Phase 6.34: Tự động khởi tạo và chuẩn hóa Sổ bộ Sinh tồn & Tù binh Phi công (Pilot Survival & Rescue)
+ */
+export function migratePilotSurvivalState(state: WorldState): boolean {
+  if (!state) return false
+  let migrated = false
+
+  if (!state.survivalConfig) {
+    state.survivalConfig = {
+      ...DEFAULT_SURVIVAL_CONFIG,
+      lastModified: Date.now(),
+    }
+    migrated = true
+  }
+  if (!state.pilotSurvivalRegistry) {
+    state.pilotSurvivalRegistry = []
+    migrated = true
+  }
+  if (!state.nationalPowRegistry) {
+    state.nationalPowRegistry = []
+    migrated = true
+  }
+
+  return migrated
+}
+
+/**
  * Nạp trạng thái World State với cơ chế tự động phục hồi khi file chính bị hỏng (Auto-Rescue)
  */
 export function loadWorldState(): LoadWorldResult {
@@ -320,8 +473,29 @@ export function loadWorldState(): LoadWorldResult {
   let primaryValidation = parseAndValidateEnvelope(rawPrimary)
 
   if (primaryValidation.valid && primaryValidation.envelope) {
+    const loadedData = primaryValidation.envelope.data
+    if (!loadedData.events) loadedData.events = {}
+    if (!loadedData.missionChains) loadedData.missionChains = {}
+    if (!loadedData.eventResultsArchive) loadedData.eventResultsArchive = []
+    if (!loadedData.activeMissionChains) loadedData.activeMissionChains = []
+    if (!loadedData.completedMissionChainIds) loadedData.completedMissionChainIds = []
+    if (!loadedData.missionDispatches) loadedData.missionDispatches = {}
+    if (loadedData.activePlayerMissionId === undefined) loadedData.activePlayerMissionId = null
+    if (!loadedData.operationsArchiveConfig) {
+      loadedData.operationsArchiveConfig = { eventArchiveQuota: 60, battleArchiveQuota: 40 }
+    }
+
+    // Phase 6.28: Tự động di chuyển lên 10 Sector & 16 Tuyến đường nếu là save cũ
+    const migration = migrateWorldStateTo10Sectors(loadedData)
+    // Phase 6.33_FIX5: Tự động di chuyển và chuẩn hóa Threat Max (HQ = 100,000,000, Standard = 1,000,000)
+    const threatMigrated = migrateWorldThreatState(migration.state)
+    const survivalMigrated = migratePilotSurvivalState(migration.state)
+    if (migration.migrated || threatMigrated || survivalMigrated) {
+      saveWorldState(migration.state)
+    }
+
     return {
-      state: primaryValidation.envelope.data,
+      state: migration.state,
       status: "loaded_primary",
       recoveredFromBackup: false,
       message: `Nạp thành công bản lưu World chính (Checksum: ${primaryValidation.envelope.checksum})`,
@@ -385,8 +559,21 @@ export function loadWorldState(): LoadWorldResult {
     const msg = `Phát hiện lỗi bản lưu chính (${primaryValidation.error || "Hư hại dữ liệu"}); đã tự động phục hồi từ Backup Slot ${chosenBackup.slot} (Lưu lúc ${dateStr})`
     console.warn(`[STARFRONT WORLD] ${msg}`)
 
+    const backupData = chosenBackup.envelope.data
+    if (!backupData.missionDispatches) backupData.missionDispatches = {}
+    if (backupData.activePlayerMissionId === undefined) backupData.activePlayerMissionId = null
+    if (!backupData.operationsArchiveConfig) {
+      backupData.operationsArchiveConfig = { eventArchiveQuota: 60, battleArchiveQuota: 40 }
+    }
+
+    const migration = migrateWorldStateTo10Sectors(backupData)
+    const threatMigrated = migrateWorldThreatState(migration.state)
+    const survivalMigrated = migratePilotSurvivalState(migration.state)
+    if (migration.migrated || threatMigrated || survivalMigrated) {
+      saveWorldState(migration.state)
+    }
     return {
-      state: chosenBackup.envelope.data,
+      state: migration.state,
       status: chosenBackup.slot === "A" ? "recovered_backup_a" : "recovered_backup_b",
       recoveredFromBackup: true,
       message: msg,

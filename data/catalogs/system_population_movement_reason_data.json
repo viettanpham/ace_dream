@@ -1,0 +1,38 @@
+{
+  "configFileId": "system_population_movement_reason",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "MIGRATION",
+      "name": "Di Cư Dân Sự",
+      "description": "Di cư định cư lâu dài sang căn cứ mới."
+    },
+    {
+      "id": "WORKFORCE_TRANSFER",
+      "name": "Điều Động Nhân Lực",
+      "description": "Điều chuyển nhân sự chuyên môn phục vụ sản xuất."
+    },
+    {
+      "id": "EVACUATION",
+      "name": "Sơ Tán Chiến Tranh",
+      "description": "Sơ tán khẩn cấp tránh vùng bị tấn công."
+    },
+    {
+      "id": "HQ_RELOCATION",
+      "name": "Di Chuyển Trụ Sở Hạm Đội",
+      "description": "Hạm đội hoặc Bang hội chuyển trụ sở sang căn cứ khác."
+    },
+    {
+      "id": "EXTERNAL_IMMIGRATION",
+      "name": "Nhập Cư Từ Vùng Ngoài",
+      "description": "Tiếp nhận người tị nạn hoặc dân nhập cư mới."
+    }
+  ],
+  "metadata": {
+    "domain": "population",
+    "catalog": "movement_reason",
+    "description": "Canonical population movement reason definitions."
+  }
+}

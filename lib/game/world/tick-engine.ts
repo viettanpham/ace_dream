@@ -13,10 +13,30 @@
  */
 
 import { WorldPRNG } from "./random"
-import { evaluateSectorStage } from "./sector-lifecycle"
+import { evaluateSectorStage, recordSectorThreatHistoryPoint } from "./sector-lifecycle"
 import { processStrategicEconomyCycle } from "./economy"
 import { processLogisticsCycle } from "./logistics"
 import { processDemographicsCycle } from "./demographics"
+import {
+  advanceTroopDeployments,
+  rallyRetreatingForces,
+  recoverWoundedTroops,
+} from "./forces-ledger"
+import { evaluateVoidStrategicBehavior } from "./threat-ai"
+import { reconcileCombatTransactionsInTick } from "./transaction-journal"
+import {
+  advanceEventLifecyclesAndDeadlines,
+  ensureWorldEventState,
+  type EventLifecycleSummary,
+} from "./event-engine"
+import {
+  advanceMissionChainNode,
+  evaluateMissionChainUnlocks,
+  retryPendingMissionChainDispatches,
+} from "./mission-chains"
+import { advanceMissionDispatches } from "./mission-dispatch"
+import { createEventFromTemplate } from "./event-templates"
+import { getSectorMaxThreat } from "./threat-engine"
 import type {
   InFlightTransaction,
   MilitaryForceLedger,
@@ -68,6 +88,8 @@ export interface TickExecutionResult {
     newStage: string
     threatDelta: number
   }>
+  /** Tóm tắt các sự kiện vừa hết hạn/hoàn tất trong chu kỳ tick */
+  eventsSummary?: EventLifecycleSummary
 }
 
 /**
@@ -114,6 +136,10 @@ function executePhase1RecoveryAndTransactions(
     pendingTxIds.sort()
     for (const txId of pendingTxIds) {
       const tx = state.inFlightTransactions[txId]
+      // Nếu là trận chiến đang treo: KHÔNG tự ý phán quyết thắng/thua hay commit bừa bãi
+      if (tx.type === "combat" && state.isSuspendedCombat) {
+        continue
+      }
       if (tx.status === "pending") {
         tx.status = "committed"
         if (!state.committedTransactionIds.includes(txId)) {
@@ -124,19 +150,20 @@ function executePhase1RecoveryAndTransactions(
     }
   }
 
-  // 1.2. Phục hồi thương binh & sửa chữa cơ giáp:
-  // Mỗi tick phục hồi 5% số quân woundedOrRepair (tối thiểu 10 đơn vị nếu > 0)
+  // 1.1b. Đối soát giao dịch combat đang treo
+  const combatReconcile = reconcileCombatTransactionsInTick(state)
+  for (const cLog of combatReconcile.logs) {
+    log.changesApplied.push(cLog)
+  }
+
+  // 1.2. Phục hồi thương binh & sửa chữa cơ giáp qua Authoritative Forces Ledger
   if (state.military.woundedOrRepair > 0) {
-    const recoveryRate = 0.05
-    const recovered = Math.min(
-      state.military.woundedOrRepair,
-      Math.max(10, Math.floor(state.military.woundedOrRepair * recoveryRate))
-    )
-    state.military.woundedOrRepair -= recovered
-    state.military.reserves += recovered
-    log.changesApplied.push(
-      `Military hospital recovered ${recovered} units from woundedOrRepair to reserves`
-    )
+    const { recovered } = recoverWoundedTroops(state.military)
+    if (recovered > 0) {
+      log.changesApplied.push(
+        `Military hospital recovered ${recovered} units from woundedOrRepair to reserves`
+      )
+    }
   }
 
   // 1.3. Phục hồi hạ tầng cơ sở tại các sector đang Recovery
@@ -229,8 +256,11 @@ function executePhase3EconomyAndDemographics(
 
 /**
  * Phase 4: Quân Sự & Mức Đe Dọa (Military & Threat Dynamics)
- * - Lan truyền Threat có hệ số suy giảm (Damping factor) và trần tăng trưởng tối đa (+50/ngày)
- * - Điểm kết nối tự động điều phối cho Phase 6.5
+ * - Tiến trình hành quân của các đạo quân in-transit
+ * - Tập hợp quân rút lui (Rally retreating forces)
+ * - Đánh giá ý đồ chiến lược của The Void
+ * - Lan truyền Threat có hệ số suy giảm và trần tăng trưởng (+50/ngày)
+ * - Lệnh chiến lược ảnh hưởng tới biến động Threat và Stability
  */
 function executePhase4MilitaryAndThreat(
   state: WorldState,
@@ -243,6 +273,24 @@ function executePhase4MilitaryAndThreat(
     newStage: string
     threatDelta: number
   }> = []
+
+  // 4.0. Cập nhật tiến trình hành quân của các đạo quân (Phase 6.5)
+  const depReport = advanceTroopDeployments(state)
+  for (const depLog of depReport.logs) {
+    log.changesApplied.push(depLog)
+  }
+
+  // Tập hợp quân rút lui (Rally retreating forces)
+  const rallyReport = rallyRetreatingForces(state)
+  for (const rallyLog of rallyReport.logs) {
+    log.changesApplied.push(rallyLog)
+  }
+
+  // Đánh giá ý đồ chiến lược của The Void
+  const voidReport = evaluateVoidStrategicBehavior(state, prng)
+  for (const voidLog of voidReport.logs) {
+    log.changesApplied.push(voidLog)
+  }
 
   // Giới hạn trần tăng trưởng đe dọa tối đa theo thiết kế (+50 Threat/ngày)
   const MAX_THREAT_GROWTH_PER_DAY = 50
@@ -273,10 +321,19 @@ function executePhase4MilitaryAndThreat(
       }
     }
 
+    // Tác động của lệnh chiến lược nếu có
+    if (sector.strategicOrder === "defend") {
+      threatDelta -= 8
+    } else if (sector.strategicOrder === "recover") {
+      threatDelta -= 5
+      sector.stability = Math.min(100, sector.stability + 2)
+    }
+
     // Kẹp chặt threatDelta trong [-50, +50]
     threatDelta = Math.max(-MAX_THREAT_GROWTH_PER_DAY, Math.min(MAX_THREAT_GROWTH_PER_DAY, threatDelta))
 
-    const newThreat = Math.max(0, Math.min(1000, sector.threatLevel + threatDelta))
+    const sectorMax = getSectorMaxThreat(sector, state.threatConfig)
+    const newThreat = Math.max(0, Math.min(sectorMax, sector.threatLevel + threatDelta))
     sector.threatLevel = newThreat
 
     // 4.2. Đánh giá lại vòng đời 5 giai đoạn nếu cần
@@ -310,32 +367,85 @@ function executePhase4MilitaryAndThreat(
 /**
  * Phase 5: Hạn Chót & Kết Quả (Deadlines & Resolutions)
  * - Kiểm tra hạn chót nhiệm vụ hoặc sự kiện đếm ngược
- * - Điểm kết nối cho Auto-Resolve (Phase 6.5) và Combat Adapter Journal (Phase 6.6)
+ * - Tự động khóa chiến lược mặc định khi countdown về 0 (INIT -> PROCESSING)
+ * - Hoàn tất xử lý và áp dụng hậu quả lũy đẳng duy nhất một lần (PROCESSING -> RESULT)
+ * - Cập nhật bước tiếp theo trong đồ thị chuỗi nhiệm vụ nếu sự kiện thuộc về một chuỗi
  */
 function executePhase5DeadlinesAndResolutions(
   state: WorldState,
   prng: WorldPRNG,
   log: TickPhaseLog
-): void {
-  // Điểm kết nối (Integration Hook): Giữ chỗ cho Phase 6.5 & 6.6
-  // Trong Phase 6.3: Duyệt danh sách chuỗi nhiệm vụ active và kiểm tra tính toàn vẹn
+): EventLifecycleSummary {
+  ensureWorldEventState(state)
+
+  // 5.1. Xử lý vòng đời sự kiện (INIT -> PROCESSING -> RESULT)
+  const eventCycleResult = advanceEventLifecyclesAndDeadlines(state, prng)
+
+  for (const l of eventCycleResult.logs) {
+    log.changesApplied.push(l)
+  }
+
+  // 5.2. Chuyển tiếp các nút trong chuỗi nhiệm vụ tương ứng với các sự kiện vừa hoàn tất
+  for (const resolvedId of eventCycleResult.resolvedEvents) {
+    const event = state.events?.[resolvedId]
+    if (event?.missionChainId && event?.nodeId) {
+      const advResult = advanceMissionChainNode(
+        state,
+        event.missionChainId,
+        event.nodeId,
+        event.chosenStrategyId
+      )
+      log.changesApplied.push(`[MISSION CHAIN ADVANCE] ${advResult.message}`)
+    }
+  }
+
+  // 5.3. Xử lý điều phối nhiệm vụ tác chiến (Mission Dispatches & PREPARE / NPC Takeover)
+  const dispatchCycleResult = advanceMissionDispatches(state, prng)
+  for (const l of dispatchCycleResult.logs) {
+    log.changesApplied.push(l)
+  }
+
   log.changesApplied.push(
-    `Deadlines evaluated: ${state.activeMissionChains.length} active chains checked`
+    `Deadlines evaluated: ${eventCycleResult.autoLockedEvents.length} event(s) auto-locked, ${eventCycleResult.resolvedEvents.length} resolved, ${dispatchCycleResult.prepareTakeoversCount} NPC takeover(s), ${dispatchCycleResult.completedCount} mission(s) completed`
   )
+
+  return eventCycleResult.summary
 }
 
 /**
  * Phase 6: Kích Hoạt Mới (New Activations)
- * - Điểm kết nối cho Event Lifecycle Engine & Strategic Mission Chains (Phase 6.7)
- * - Đảm bảo cấu trúc mở rộng không gây null/undefined
+ * - Thử kích hoạt lại các bước chuỗi nhiệm vụ đang bị hoãn (Pending Dispatches)
+ * - Kích hoạt các chuỗi nhiệm vụ theo ngưỡng (Threat >= 600)
+ * - Kích hoạt nhiệm vụ phản ứng khi sector bị vây hãm (Under Siege)
+ * - Khởi tạo tuần tra định kỳ (Periodic Patrol) theo chu kỳ tuần hoàn
+ * - Khống chế trần MAX_ACTIVE_MISSION_CHAINS = 8
  */
 function executePhase6NewActivations(
   state: WorldState,
   prng: WorldPRNG,
   log: TickPhaseLog
 ): void {
-  // Điểm kết nối (Integration Hook): Giữ chỗ cho Phase 6.7
-  log.changesApplied.push("Strategic intel scanned; no anomalous triggers")
+  ensureWorldEventState(state)
+
+  // 6.0. Thử dispatch lại các chuỗi nhiệm vụ bị hoãn trước đó
+  const retryResult = retryPendingMissionChainDispatches(state, prng)
+  for (const rLog of retryResult.logs) {
+    log.changesApplied.push(rLog)
+  }
+
+  // 6.1. Đánh giá mở khóa chuỗi nhiệm vụ mới
+  const missionUnlockResult = evaluateMissionChainUnlocks(state, prng)
+  for (const l of missionUnlockResult.logs) {
+    log.changesApplied.push(l)
+  }
+
+  if (missionUnlockResult.activatedChains.length > 0) {
+    log.changesApplied.push(
+      `Strategic activations: ${missionUnlockResult.activatedChains.length} new mission chain(s) opened`
+    )
+  } else if (retryResult.retriedSuccessCount === 0 && retryResult.fallbackCount === 0) {
+    log.changesApplied.push("Strategic intel scanned; no anomalous triggers")
+  }
 }
 
 // -------------------------------------------------------------
@@ -400,7 +510,7 @@ export function executeWorldTick(
     phaseName: "Hạn Chót & Kết Quả",
     changesApplied: [],
   }
-  executePhase5DeadlinesAndResolutions(state, prng, logP5)
+  const eventsSummary = executePhase5DeadlinesAndResolutions(state, prng, logP5)
   phaseLogs.push(logP5)
 
   // Phase 6
@@ -420,6 +530,16 @@ export function executeWorldTick(
   state.currentDay += 1
   state.totalDaysElapsed += 1
 
+  // 5. Ghi nhận lịch sử Threat cho ngày chiến lược mới (Phase 6.12: tối đa 5 ngày gần nhất)
+  for (const sector of Object.values(state.sectors)) {
+    if (!sector.threatHistory || sector.threatHistory.length === 0) {
+      if (previousDay >= 1) {
+        recordSectorThreatHistoryPoint(sector, previousDay)
+      }
+    }
+    recordSectorThreatHistoryPoint(sector, state.currentDay)
+  }
+
   const now = options?.anchorTimestamp ?? Date.now()
   state.lastTickTimestamp = now
   if (options?.anchorTimestamp !== undefined) {
@@ -436,5 +556,6 @@ export function executeWorldTick(
     resourceDelta,
     militaryDelta: {},
     sectorStateChanges: sectorChanges,
+    eventsSummary,
   }
 }

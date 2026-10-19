@@ -1,0 +1,68 @@
+{
+  "configFileId": "system_building_production_recipe",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "recipe_alloys_smelting",
+      "name": "Chế Luyện Hợp Kim Cường Lực",
+      "description": "Tiêu hao 100 quặng công nghiệp và 50 năng lượng để tạo 80 Hợp kim hoàn thiện.",
+      "inputs": {
+        "industrialMaterials": 100,
+        "energy": 50
+      },
+      "outputs": {
+        "industrialMaterials": 80,
+        "logisticsSupplies": 20
+      },
+      "cycleDays": 2,
+      "requiredCapability": "HEAVY_MANUFACTURING"
+    },
+    {
+      "id": "recipe_food_synthesis",
+      "name": "Tổng Hợp Lương Thực Đậm Đặc",
+      "description": "Tiêu hao 40 năng lượng để tạo ra 100 phần lương thực tiêu chuẩn.",
+      "inputs": {
+        "energy": 40
+      },
+      "outputs": {
+        "food": 100
+      },
+      "cycleDays": 1,
+      "requiredCapability": "FOOD_PRODUCTION"
+    },
+    {
+      "id": "recipe_fuel_refining",
+      "name": "Tinh Chế Nhiên Liệu Vận Tải",
+      "description": "Sản xuất vật tư hậu cần phục vụ di chuyển và tiếp tế hạm đội.",
+      "inputs": {
+        "industrialMaterials": 50,
+        "energy": 80
+      },
+      "outputs": {
+        "logisticsSupplies": 70
+      },
+      "cycleDays": 2,
+      "requiredCapability": "SUPPLY_DISTRIBUTION"
+    },
+    {
+      "id": "recipe_tactical_data_compilation",
+      "name": "Tổng Hợp Ma Trận Dữ Liệu Tác Chiến",
+      "description": "Phân tích tín hiệu chiến trường tạo ra dữ liệu chiến thuật.",
+      "inputs": {
+        "energy": 100
+      },
+      "outputs": {
+        "tacticalData": 50
+      },
+      "cycleDays": 3,
+      "requiredCapability": "TECH_RESEARCH"
+    }
+  ],
+  "metadata": {
+    "domain": "building",
+    "catalog": "production_recipe",
+    "description": "Canonical production recipes."
+  }
+}

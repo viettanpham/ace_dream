@@ -5,6 +5,11 @@ import type {
   WorldState,
 } from "./types"
 import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
+import { bootstrapWorldCatalogs } from "./bootstrap"
+import type { BasePopulationState, BaseType } from "./population/types"
+import type { BaseEntityState, BuildingInstance } from "./building/types"
+import { createBuildingInstance } from "./building/construction-engine"
+import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "./building/seed-data"
 
 /**
  * 8 Sector vũ trụ khởi đầu chuẩn hóa theo quy chuẩn thiết kế B.5
@@ -433,13 +438,237 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     }
   }
 
-  // Tính toán chuẩn xác nhân khẩu học bảo đảm Zero-Sum Conservation cân bằng 100%
+  // Bootstrap all canonical catalogs to ensure registry is 100% warmed up
+  bootstrapWorldCatalogs()
+
+  // Xây dựng bản đồ định nghĩa công trình tra cứu nhanh
+  const defMap = new Map(SYSTEM_DEFAULT_BUILDING_DEFINITIONS.map((d) => [d.id, d]))
+
+  // Cấu hình Căn cứ chuẩn tắc cho 8 Sector khởi đầu
+  const initialBaseConfigs: Record<
+    string,
+    {
+      baseId: string
+      name: string
+      baseType: BaseType
+      slotProfileId: string
+      coreDefIds: string[]
+      activeHubTypes: string[]
+      visitorPop: number
+      workerPop: number
+      capacity: { residential: number; visitor: number; temporaryWorker: number; emergency: number }
+    }
+  > = {
+    sol_command_hq: {
+      baseId: "base_sol_command_hq",
+      name: "Đại Bản Doanh Sol Command",
+      baseType: "CAPITAL",
+      slotProfileId: "slot_profile_capital_citadel",
+      coreDefIds: ["bld_command_center", "bld_strategic_vault", "bld_field_hospital", "bld_sub_power_station", "bld_sar_station"],
+      activeHubTypes: ["COMMAND_HUB", "LOGISTICS_HUB"],
+      visitorPop: 5000,
+      workerPop: 3000,
+      capacity: { residential: 300000, visitor: 20000, temporaryWorker: 15000, emergency: 50000 },
+    },
+    helios_perimeter: {
+      baseId: "base_helios_perimeter",
+      name: "Pháo Đài Vành Đai Helios",
+      baseType: "DEFENSE",
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center", "bld_fortress_bastion", "bld_garrison_barracks", "bld_sub_power_station"],
+      activeHubTypes: ["REPAIR_HUB"],
+      visitorPop: 1500,
+      workerPop: 2000,
+      capacity: { residential: 150000, visitor: 5000, temporaryWorker: 10000, emergency: 25000 },
+    },
+    mining_outpost_k7: {
+      baseId: "base_mining_outpost_k7",
+      name: "Tổ Hợp Khai Khoáng K-7",
+      baseType: "GENERAL",
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center", "bld_heavy_fabricator", "bld_cargo_depot", "bld_sub_power_station"],
+      activeHubTypes: [],
+      visitorPop: 800,
+      workerPop: 8000,
+      capacity: { residential: 90000, visitor: 2000, temporaryWorker: 20000, emergency: 10000 },
+    },
+    asteroid_delta: {
+      baseId: "base_asteroid_delta",
+      name: "Trạm Trung Chuyển Asteroid Delta",
+      baseType: "TRANSPORT_HUB",
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center", "bld_cargo_depot", "bld_sub_power_station"],
+      activeHubTypes: ["TRANSPORT_HUB"],
+      visitorPop: 4000,
+      workerPop: 5000,
+      capacity: { residential: 60000, visitor: 8000, temporaryWorker: 12000, emergency: 10000 },
+    },
+    nebula_bastion: {
+      baseId: "base_nebula_bastion",
+      name: "Căn Cứ Đồn Trú Tinh Vân Bastion",
+      baseType: "MILITARY",
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center", "bld_fortress_bastion", "bld_garrison_barracks", "bld_sub_power_station"],
+      activeHubTypes: ["REPAIR_HUB"],
+      visitorPop: 1000,
+      workerPop: 2000,
+      capacity: { residential: 120000, visitor: 3000, temporaryWorker: 5000, emergency: 20000 },
+    },
+    elysium_sanctuary: {
+      baseId: "base_elysium_sanctuary",
+      name: "Thánh Địa Dân Cư Elysium",
+      baseType: "HABITAT",
+      slotProfileId: "slot_profile_capital_citadel",
+      coreDefIds: ["bld_command_center", "bld_residential_complex", "bld_hydroponic_farm", "bld_field_hospital"],
+      activeHubTypes: ["MEDICAL_HUB"],
+      visitorPop: 8000,
+      workerPop: 1500,
+      capacity: { residential: 220000, visitor: 15000, temporaryWorker: 5000, emergency: 40000 },
+    },
+    shadow_reach: {
+      baseId: "base_shadow_reach",
+      name: "Trạm Khảo Sát Không Gian Sâu Shadow Reach",
+      baseType: "RESEARCH",
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center", "bld_tech_lab", "bld_sub_power_station"],
+      activeHubTypes: [],
+      visitorPop: 500,
+      workerPop: 1200,
+      capacity: { residential: 35000, visitor: 1000, temporaryWorker: 5000, emergency: 5000 },
+    },
+    tartarus_breach: {
+      baseId: "base_tartarus_breach",
+      name: "Tiền Đồn Phong Tỏa Tartarus Breach",
+      baseType: "DEFENSE",
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center", "bld_fortress_bastion"],
+      activeHubTypes: [],
+      visitorPop: 0,
+      workerPop: 0,
+      capacity: { residential: 15000, visitor: 0, temporaryWorker: 0, emergency: 5000 },
+    },
+    waypoint_orion: {
+      baseId: "base_waypoint_orion",
+      name: "Trạm Tiếp Vận Waypoint Orion",
+      baseType: "TRANSPORT_HUB",
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center", "bld_cargo_depot"],
+      activeHubTypes: ["TRANSPORT_HUB"],
+      visitorPop: 2000,
+      workerPop: 1500,
+      capacity: { residential: 60000, visitor: 5000, temporaryWorker: 5000, emergency: 10000 },
+    },
+    abyssal_rift: {
+      baseId: "base_abyssal_rift",
+      name: "Tiền Đồn Thám Hiểm Abyssal Rift",
+      baseType: "RESEARCH",
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center", "bld_tech_lab"],
+      activeHubTypes: [],
+      visitorPop: 300,
+      workerPop: 800,
+      capacity: { residential: 45000, visitor: 1000, temporaryWorker: 2000, emergency: 5000 },
+    },
+  }
+
+  const basePopulationStates: Record<string, BasePopulationState> = {}
+  const bases: Record<string, BaseEntityState> = {}
+
+  for (const [sectorId, sector] of Object.entries(sectors)) {
+    const cfg = initialBaseConfigs[sectorId] || {
+      baseId: `base_${sectorId}`,
+      name: `Căn Cứ ${sector.name}`,
+      baseType: "GENERAL" as BaseType,
+      slotProfileId: "slot_profile_border_outpost",
+      coreDefIds: ["bld_command_center"],
+      activeHubTypes: [],
+      visitorPop: 100,
+      workerPop: 100,
+      capacity: { residential: sector.population * 1.2, visitor: 1000, temporaryWorker: 2000, emergency: 5000 },
+    }
+
+    // 1. Khởi tạo BasePopulationState
+    basePopulationStates[cfg.baseId] = {
+      baseId: cfg.baseId,
+      populationCurrent: sector.population,
+      populationAvailable: sector.population,
+      populationOccupied: 0,
+      visitorPopulation: cfg.visitorPop,
+      externalWorkerPopulation: cfg.workerPop,
+      breakdown: {
+        BUILDING_WORKFORCE: 0,
+        FLEET_CREW: 0,
+        LOGISTICS: 0,
+        TRAINING: 0,
+        RECOVERY: 0,
+        OTHER_ASSIGNMENTS: 0,
+      },
+      capacity: {
+        residentialCapacity: cfg.capacity.residential,
+        visitorCapacity: cfg.capacity.visitor,
+        temporaryWorkerCapacity: cfg.capacity.temporaryWorker,
+        emergencyCapacity: cfg.capacity.emergency,
+        emergencyOverflowAllowed: true,
+        emergencyOverflowLimitRatio: 1.25,
+      },
+      baseType: cfg.baseType,
+      activeHubTypes: [...cfg.activeHubTypes],
+    }
+
+    // 2. Khởi tạo BaseEntityState với các công trình cốt lõi
+    const buildings: Record<string, BuildingInstance> = {}
+    const coreBuildingIds: string[] = []
+
+    for (const defId of cfg.coreDefIds) {
+      const def = defMap.get(defId)
+      if (def) {
+        const instId = `inst_${sectorId}_${defId}`
+        const inst = createBuildingInstance(cfg.baseId, def, instId)
+        buildings[instId] = inst
+        coreBuildingIds.push(instId)
+      }
+    }
+
+    bases[cfg.baseId] = {
+      baseId: cfg.baseId,
+      sectorId,
+      name: cfg.name,
+      baseType: cfg.baseType,
+      tier: 1,
+      maxTierBonusApplied: false,
+      isOrbitalSubBase: false,
+      coreBuildingIds,
+      expansionBuildingIds: [],
+      maxExpansionSlots: cfg.baseType === "CAPITAL" ? 8 : 6,
+      slotProfileId: cfg.slotProfileId,
+      sharedStorage: {
+        industrialMaterials: sector.resources.industrialMaterials,
+        energy: sector.resources.energy,
+        logisticsSupplies: sector.resources.logisticsSupplies,
+        tacticalData: sector.resources.tacticalData,
+        food: sector.resources.food,
+      },
+      storageCapacity: {
+        industrialMaterials: cfg.baseType === "CAPITAL" ? 5000 : 2500,
+        energy: cfg.baseType === "CAPITAL" ? 5000 : 2500,
+        logisticsSupplies: cfg.baseType === "CAPITAL" ? 3000 : 1500,
+        tacticalData: cfg.baseType === "CAPITAL" ? 2000 : 1000,
+        food: cfg.baseType === "CAPITAL" ? 8000 : 3500,
+      },
+      buildings,
+      constructionQueue: [],
+      productionLines: [],
+      activeReservations: [],
+    }
+  }
+
   let nationalTotalPopulation = 0
   let controlledTerritoryPopulation = 0
   for (const s of Object.values(sectors)) {
-    nationalTotalPopulation += s.population
+    const pop = Math.max(0, s.population || 0)
+    nationalTotalPopulation += pop
     if (s.sovereignty === "vss") {
-      controlledTerritoryPopulation += s.population
+      controlledTerritoryPopulation += pop
     }
   }
 
@@ -502,5 +731,43 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     },
     pilotSurvivalRegistry: [],
     nationalPowRegistry: [],
+    // Phase 6.34A-FND-3 & FND-4 Persistence
+    decisions: {
+      pendingDecisions: [],
+      history: [],
+    },
+    inTransitTransfers: [],
+    basePopulationStates,
+    // Phase 6.34A-FND-5 Base Entities & Building Instances
+    bases,
+    worldResetConfig: {
+      cc0Name: "Liên minh VSS",
+      commanderName: "Alviss",
+      resetCount: 0,
+      lastResetTimestamp: now,
+    },
   }
+}
+
+/**
+ * Resets the entire world with a guaranteed fresh random seed.
+ * User-facing reset always produces a fresh seed upon confirmation.
+ * Allows customizing CC0 faction name and Commander name.
+ */
+export function createResetWorldState(
+  previousState?: WorldState,
+  config?: { cc0Name?: string; commanderName?: string }
+): WorldState {
+  const newSeed = Math.floor(Math.random() * 89999999) + 10000000
+  const resetCount = (previousState?.worldResetConfig?.resetCount || 0) + 1
+  const state = createInitialWorldState(newSeed)
+
+  state.worldResetConfig = {
+    cc0Name: config?.cc0Name || previousState?.worldResetConfig?.cc0Name || "Liên minh VSS",
+    commanderName: config?.commanderName || previousState?.worldResetConfig?.commanderName || "Alviss",
+    resetCount,
+    lastResetTimestamp: Date.now(),
+  }
+
+  return state
 }

@@ -120,3 +120,18 @@ floor(
 - **Rounding**: `Math.floor(...)` strictly enforced (no round, no ceil).
 - **Lower Max Warning**: Reducing Max Threat below any sector's Current Threat requires warning modal; confirmation triggers WORLD Year-1 reset while preserving RPG save data and UI preferences.
 
+---
+
+## 7. Cấu Hình Công Trình & Sản Xuất (`buildingProductionConfig`) — Phase 6.34A-FND-5
+
+| Biến Cấu Hình AdminCP | Tên Tiếng Việt | Mô Tả Dễ Hiểu | Đơn Vị | Giá Trị Mặc Định | Giới Hạn Hợp Lệ | Kiểm Tra Hợp Lệ (Validation) | Cảnh Báo Ảnh Hưởng Khi Thay Đổi |
+| :--- | :--- | :--- | :---: | :---: | :---: | :--- | :--- |
+| `maxExpansionSlotsCapital` | Trần Slot Mở Rộng Thủ Phủ | Số lượng công trình mở rộng tối đa mà Thủ Phủ có thể chứa ở Tier I. | Slot | `8` | `[4..32]` | Số nguyên dương, không được nhỏ hơn số công trình hiện có. | Tăng sẽ cho phép xây thêm nhiều công trình; giảm đột ngột dưới mức đã xây có thể khiến công trình bị đình chỉ vận hành. |
+| `maxExpansionSlotsStandard` | Trần Slot Căn Cứ Tiêu Chuẩn | Số lượng công trình mở rộng tối đa mà Căn Cứ tiêu chuẩn có thể chứa ở Tier I. | Slot | `6` | `[2..24]` | Số nguyên dương $\le$ trần của Thủ Phủ. | Ảnh hưởng tới quy mô các đồn tiền tiêu và trạm khai khoáng. |
+| `maxTierStepBonusDefault` | Điểm Thưởng Slot Cấp MK X | Số lượng slot đa năng được cộng thêm một lần duy nhất khi đạt MK X (Tier 10). | Slot | `1` | `[0..5]` | Số nguyên $\ge 0$. | Tăng sẽ kích thích thăng cấp lên MK X; áp dụng lũy đẳng không cộng trùng khi nạp save. |
+| `maintenanceAutoThresholdCondition` | Ngưỡng Tự Động Bảo Trì Condition | Tỷ lệ Tình Trạng Kỹ Thuật (Condition) kích hoạt chế độ bảo dưỡng tự động AUTO. | Tỷ lệ | `0.80` (80%) | `[0.10..0.95]` | Số thực trong khoảng [0.1..0.95]. | Đặt quá cao sẽ gây lãng phí tài nguyên bảo dưỡng liên tục; đặt quá thấp khiến nguy cơ hỏng hóc cao. |
+| `maintenanceEmergencyThresholdHp` | Ngưỡng Sửa Chữa Khẩn Cấp HP | Tỷ lệ HP hoặc Condition kích hoạt sửa chữa cưỡng chế ở chế độ EMERGENCY. | Tỷ lệ | `0.25` (25%) | `[0.05..0.50]` | Số thực trong khoảng [0.05..0.5]. | Khi vượt qua ngưỡng này, hệ thống cảnh báo đỏ và trích lập vật tư cứu hộ khẩn cấp. |
+| `productionCycleMinDays` | Chu Kỳ Tác Chế Tối Thiểu | Số ngày game tối thiểu cần thiết để hoàn thành 1 lô sản xuất. | GAME_DAY | `1` | `[1..30]` | Số nguyên $\ge 1$. | Đặt dưới 1 ngày sẽ vi phạm nguyên tắc mô phỏng theo ngày game (GAME_DAY). |
+| `outputBlockedPolicy` | Chính Sách Khi Đầy Kho Sản Phẩm | Hành vi dây chuyền khi kho đích không còn chỗ tiếp nhận thành phẩm. | Enum | `"OUTPUT_BLOCKED"` | `"OUTPUT_BLOCKED" \| "DISCARD_SURPLUS"` | Bắt buộc là giá trị enum hợp lệ. | Mặc định giữ nguyên thành phẩm và tạm dừng chu kỳ cho tới khi kho được giải phóng; chọn DISCARD sẽ làm mất nguyên liệu. |
+| `historyMaxDetailedEvents` | Trần Lưu Sự Kiện Chi Tiết | Số lượng sự kiện lịch sử đầy đủ tối đa được lưu trữ trước khi kích hoạt nén (compaction). | Sự kiện | `50` | `[10..500]` | Số nguyên dương. | Giúp bảo vệ dung lượng bộ nhớ `localStorage` không bị tràn khi chơi phiên dài hàng nghìn ngày. |
+

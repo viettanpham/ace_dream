@@ -1,0 +1,43 @@
+{
+  "configFileId": "system_building_building_class",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "LIGHT",
+      "name": "Công Trình Hạng Nhẹ",
+      "description": "Quy mô nhỏ, chi phí thấp, xây nhanh."
+    },
+    {
+      "id": "MEDIUM",
+      "name": "Công Trình Tiêu Chuẩn",
+      "description": "Quy mô trung bình, hiệu suất cân bằng."
+    },
+    {
+      "id": "HEAVY",
+      "name": "Công Trình Hạng Nặng",
+      "description": "Quy mô lớn, sản lượng cao, tiêu hao nhiều nhân lực."
+    },
+    {
+      "id": "ORBITAL_OUTPOST",
+      "name": "Trạm Vệ Tinh Quỹ Đạo",
+      "description": "Đóng trên quỹ đạo, phụ thuộc căn cứ hành tinh mẹ."
+    },
+    {
+      "id": "CORE_FACILITY",
+      "name": "Cơ Sở Cốt Lõi",
+      "description": "Công trình mặc định của Căn cứ, không tốn slot mở rộng."
+    },
+    {
+      "id": "ADVANCED",
+      "name": "Cơ Sở Tinh Anh",
+      "description": "Trang bị công nghệ cao, yêu cầu Tier tối thiểu."
+    }
+  ],
+  "metadata": {
+    "domain": "building",
+    "catalog": "building_class",
+    "description": "Canonical building classes."
+  }
+}

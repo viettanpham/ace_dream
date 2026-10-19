@@ -12,6 +12,9 @@ import type {
   PilotSurvivalTier,
   PilotFinalStatus,
 } from "./pilot-survival-types"
+import type { DecisionEngineState } from "./decision/types"
+import type { BasePopulationState, PopulationTransferRecord } from "./population/types"
+import type { BaseEntityState } from "./building/types"
 
 export type {
   SurvivalConfig,
@@ -19,6 +22,10 @@ export type {
   CapturedPilotRecord,
   PilotSurvivalTier,
   PilotFinalStatus,
+  DecisionEngineState,
+  BasePopulationState,
+  PopulationTransferRecord,
+  BaseEntityState,
 }
 
 export type SectorStage = "normal" | "threatened" | "under_siege" | "lost" | "recovery"
@@ -723,6 +730,20 @@ export interface WorldState {
   survivalConfig?: SurvivalConfig
   pilotSurvivalRegistry?: PilotSurvivalRecord[]
   nationalPowRegistry?: CapturedPilotRecord[]
+  // Phase 6.34A-FND-3: Shared Decision Engine State Persistence
+  decisions?: DecisionEngineState
+  // Phase 6.34A-FND-4: National InTransit Transfers & Base Population States
+  inTransitTransfers?: PopulationTransferRecord[]
+  basePopulationStates?: Record<string, BasePopulationState>
+  // Phase 6.34A-FND-5: Base Entities (Buildings, Slots, Production Lines, Queues)
+  bases?: Record<string, BaseEntityState>
+  // World Reset & Commander Identity Configuration
+  worldResetConfig?: {
+    cc0Name: string // Default: "Liên minh VSS"
+    commanderName: string // Default: "Alviss"
+    resetCount: number
+    lastResetTimestamp: number
+  }
 }
 
 /**

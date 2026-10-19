@@ -1,0 +1,98 @@
+{
+  "configFileId": "system_building_base_init_profile",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "base_init_capital",
+      "name": "Thủ Phủ Căn Cứ Liên Minh VSS",
+      "baseType": "CAPITAL",
+      "tier": 1,
+      "slotProfileId": "slot_profile_capital_citadel",
+      "coreBuildingDefinitions": [
+        "bld_command_center",
+        "bld_strategic_vault",
+        "bld_field_hospital",
+        "bld_sub_power_station",
+        "bld_sar_station"
+      ],
+      "initialExpansionSlots": 8,
+      "initialSharedStorage": {
+        "industrialMaterials": 1000,
+        "energy": 800,
+        "logisticsSupplies": 600,
+        "tacticalData": 400,
+        "food": 1500
+      },
+      "storageCapacity": {
+        "industrialMaterials": 5000,
+        "energy": 5000,
+        "logisticsSupplies": 3000,
+        "tacticalData": 2000,
+        "food": 8000
+      }
+    },
+    {
+      "id": "base_init_border_post",
+      "name": "Tiền Tiêu Vành Đai Phòng Thủ",
+      "baseType": "DEFENSE",
+      "tier": 1,
+      "slotProfileId": "slot_profile_border_outpost",
+      "coreBuildingDefinitions": [
+        "bld_command_center",
+        "bld_fortress_bastion",
+        "bld_garrison_barracks",
+        "bld_sub_power_station"
+      ],
+      "initialExpansionSlots": 6,
+      "initialSharedStorage": {
+        "industrialMaterials": 500,
+        "energy": 400,
+        "logisticsSupplies": 300,
+        "tacticalData": 100,
+        "food": 800
+      },
+      "storageCapacity": {
+        "industrialMaterials": 2000,
+        "energy": 2000,
+        "logisticsSupplies": 1500,
+        "tacticalData": 1000,
+        "food": 3000
+      }
+    },
+    {
+      "id": "base_init_mining_colony",
+      "name": "Khu Khai Khoáng & Luyện Kim",
+      "baseType": "GENERAL",
+      "tier": 1,
+      "slotProfileId": "slot_profile_border_outpost",
+      "coreBuildingDefinitions": [
+        "bld_command_center",
+        "bld_heavy_fabricator",
+        "bld_cargo_depot",
+        "bld_sub_power_station"
+      ],
+      "initialExpansionSlots": 6,
+      "initialSharedStorage": {
+        "industrialMaterials": 600,
+        "energy": 200,
+        "logisticsSupplies": 150,
+        "tacticalData": 50,
+        "food": 500
+      },
+      "storageCapacity": {
+        "industrialMaterials": 3000,
+        "energy": 1500,
+        "logisticsSupplies": 1000,
+        "tacticalData": 500,
+        "food": 2000
+      }
+    }
+  ],
+  "metadata": {
+    "domain": "building",
+    "catalog": "base_init_profile",
+    "description": "Canonical base init profiles."
+  }
+}

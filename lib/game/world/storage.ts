@@ -2,6 +2,7 @@ import {
   INITIAL_WORLD_ROUTES,
   INITIAL_WORLD_SECTORS,
   createInitialWorldState,
+  createResetWorldState,
 } from "./initial-state"
 import {
   DEFAULT_THREAT_CONFIG,
@@ -453,6 +454,44 @@ export function migratePilotSurvivalState(state: WorldState): boolean {
 }
 
 /**
+ * Phase 6.34A-FND-5: Tự động khởi tạo và chuẩn hóa Foundation State (Decisions, InTransit, BasePopulation, Bases, ResetConfig)
+ */
+export function migrateFoundationState(state: WorldState): boolean {
+  if (!state) return false
+  let migrated = false
+
+  if (!state.decisions) {
+    state.decisions = { pendingDecisions: [], history: [] }
+    migrated = true
+  }
+  if (!state.inTransitTransfers) {
+    state.inTransitTransfers = []
+    migrated = true
+  }
+  if (!state.basePopulationStates || Object.keys(state.basePopulationStates).length === 0) {
+    const fresh = createInitialWorldState(state.worldSeed)
+    state.basePopulationStates = fresh.basePopulationStates
+    migrated = true
+  }
+  if (!state.bases || Object.keys(state.bases).length === 0) {
+    const fresh = createInitialWorldState(state.worldSeed)
+    state.bases = fresh.bases
+    migrated = true
+  }
+  if (!state.worldResetConfig) {
+    state.worldResetConfig = {
+      cc0Name: "Liên minh VSS",
+      commanderName: "Alviss",
+      resetCount: 0,
+      lastResetTimestamp: Date.now(),
+    }
+    migrated = true
+  }
+
+  return migrated
+}
+
+/**
  * Nạp trạng thái World State với cơ chế tự động phục hồi khi file chính bị hỏng (Auto-Rescue)
  */
 export function loadWorldState(): LoadWorldResult {
@@ -487,10 +526,10 @@ export function loadWorldState(): LoadWorldResult {
 
     // Phase 6.28: Tự động di chuyển lên 10 Sector & 16 Tuyến đường nếu là save cũ
     const migration = migrateWorldStateTo10Sectors(loadedData)
-    // Phase 6.33_FIX5: Tự động di chuyển và chuẩn hóa Threat Max (HQ = 100,000,000, Standard = 1,000,000)
     const threatMigrated = migrateWorldThreatState(migration.state)
     const survivalMigrated = migratePilotSurvivalState(migration.state)
-    if (migration.migrated || threatMigrated || survivalMigrated) {
+    const foundationMigrated = migrateFoundationState(migration.state)
+    if (migration.migrated || threatMigrated || survivalMigrated || foundationMigrated) {
       saveWorldState(migration.state)
     }
 
@@ -598,7 +637,10 @@ export function loadWorldState(): LoadWorldResult {
 /**
  * Xóa sạch dữ liệu phân hệ WORLD (Chỉ xóa các khóa WORLD, KHÔNG ĐỘNG ĐẾN STARFRONT_SAVE_DATA_V4)
  */
-export function resetWorldState(): WorldState {
+export function resetWorldState(
+  previousState?: WorldState,
+  config?: { cc0Name?: string; commanderName?: string }
+): WorldState {
   if (typeof window !== "undefined") {
     try {
       localStorage.removeItem(WORLD_STORAGE_KEY_V1)
@@ -610,7 +652,7 @@ export function resetWorldState(): WorldState {
       console.error("[STARFRONT WORLD] Lỗi khi reset dữ liệu World:", e)
     }
   }
-  const fresh = createInitialWorldState()
+  const fresh = createResetWorldState(previousState, config)
   saveWorldState(fresh)
   return fresh
 }

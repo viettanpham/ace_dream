@@ -15,6 +15,7 @@
 | **6.34A-FND-2** | Shared Progression + Tier Boundary Foundation | [`docs/PHASE_6_34A_FND_2_SHARED_PROGRESSION_TIER_FOUNDATION.md`](./PHASE_6_34A_FND_2_SHARED_PROGRESSION_TIER_FOUNDATION.md) | **DONE** | 28/28 PASS |
 | **6.34A-FND-3** | Shared Decision / Event Interaction Foundation | [`docs/PHASE_6_34A_FND_3_SHARED_DECISION_EVENT_FOUNDATION.md`](./PHASE_6_34A_FND_3_SHARED_DECISION_EVENT_FOUNDATION.md) | **DONE** | 32/32 PASS |
 | **6.34A-FND-4** | Population / Workforce Shared Foundation | [`docs/PHASE_6_34A_FND_4_POPULATION_WORKFORCE_FOUNDATION.md`](./PHASE_6_34A_FND_4_POPULATION_WORKFORCE_FOUNDATION.md) | **DONE** | 23/23 PASS |
+| **6.34A-FND-5** | Foundation Audit Repair + Building / Production Foundation | [`docs/PHASE_6_34A_FND_5_BUILDING_PRODUCTION_FOUNDATION.md`](./PHASE_6_34A_FND_5_BUILDING_PRODUCTION_FOUNDATION.md) | **DONE** | 7/7 World Init PASS + 12/12 Building PASS |
 
 ---
 
@@ -46,15 +47,16 @@
 
 ## 4. KẾ HOẠCH TRIỂN KHAI TIẾP THEO (NEXT PHASES)
 
-1. **Phase 6.34A-FND-5: Foundation Wiring & Fresh World Initialization (Đề xuất)**:
-   - Đóng các GAP Nhóm A ghi nhận trong tài liệu kiểm toán:
-     - Đồng bộ catalog `system_progression_progression_profile_data.json` có đủ 3 items.
-     - Mở rộng `WorldState` lưu trữ `decisions?: DecisionEngineState` và `inTransitLedger?: PopulationTransferRecord[]`.
-     - Tích hợp hàm `bootstrapWorldCatalogs()` chuẩn bị sẵn sàng dữ liệu.
-     - Khởi tạo `BasePopulationState` cho 8 sector khởi đầu trong `createInitialWorldState()`.
-     - Bộ kiểm thử tích hợp `phase-6-34a-fnd-5-world-init.test.ts`.
+1. **Phase 6.34A-FND-5: Foundation Audit Repair + Building / Production Foundation (HOÀN TẤT)**:
+   - Sửa dứt điểm 6 GAP kiến trúc trong tài liệu audit FND-1 → FND-4.
+   - Đồng bộ JSON `system_progression_progression_profile_data.json` có đủ 3 items.
+   - Mở rộng `WorldState` lưu trữ `decisions`, `inTransitTransfers`, `basePopulationStates`, `bases`, `worldResetConfig`.
+   - Cung cấp hàm tập trung `bootstrapWorldCatalogs()` idempotent nạp 20 canonical catalogs.
+   - Khởi tạo đầy đủ `BasePopulationState` và `BaseEntityState` cho tất cả các sector trong `createInitialWorldState()`.
+   - Triển khai toàn bộ nền tảng Building / Production: 19 Building Types, Slot Profiles, 3-Pass Workforce, Building OFF, Condition Overflow, Production Cycles, Construction Queue, History Retention.
+   - Kiểm thử 7/7 World Init Integration + 12/12 Building & Production Unit tests đạt 100% PASS.
 2. **Domain Phases tiếp theo**:
-   - Base Management & Building Staffing (FND-4 + Catalog).
-   - Fleet Management & Crew Recruitment.
+   - Base Management & Building Staffing (FND-4 + FND-5 + Catalog).
+   - Fleet Management & Crew Recruitment (FND-4).
    - Gear Progression & Breakthrough Tech Tree (FND-2 + FND-3).
    - Operations Hub & Event Overhaul (FND-3).

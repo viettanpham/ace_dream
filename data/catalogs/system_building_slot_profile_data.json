@@ -1,0 +1,59 @@
+{
+  "configFileId": "system_building_slot_profile",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "slot_profile_border_outpost",
+      "name": "Cấu Hình Slot Đồn Trú Tiền Tiêu (Border Outpost)",
+      "description": "Cấu hình chuẩn cho đồn tiền tiêu: MK IX = 15; MK X = 16 + 1 (MAX BONUS) = 17 slots.",
+      "baseTypedSlots": {
+        "DEFENSE": 2,
+        "LOGISTICS": 1
+      },
+      "baseGenericSlots": 6,
+      "growthPerTierGeneric": 1,
+      "maxTierStepBonusGeneric": 1
+    },
+    {
+      "id": "slot_profile_orbital_subbase",
+      "name": "Cấu Hình Slot Trạm Vệ Tinh Quỹ Đạo (Orbital Sub-Base)",
+      "description": "MK I = 3; MK III = 4; MK V = 5; MK VII = 6; MK IX = 7; MK X = 8 (bao gồm MAX TIER BONUS).",
+      "baseTypedSlots": {
+        "ORBITAL_DEFENSE": 1
+      },
+      "baseGenericSlots": 2,
+      "growthPerTierGeneric": 0.5,
+      "maxTierStepBonusGeneric": 1
+    },
+    {
+      "id": "slot_profile_capital_citadel",
+      "name": "Cấu Hình Slot Thủ Phủ Tối Cao (Capital Citadel)",
+      "description": "Thủ phủ có quy mô vượt trội, mở khóa nhiều khe cắm hỗ trợ hạm đội liên minh.",
+      "baseTypedSlots": {
+        "COMMAND": 2,
+        "DEFENSE": 3,
+        "SPACEPORT": 2,
+        "STORAGE": 2
+      },
+      "baseGenericSlots": 8,
+      "growthPerTierGeneric": 1.5,
+      "maxTierStepBonusGeneric": 2
+    },
+    {
+      "id": "slot_profile_standard_building",
+      "name": "Cấu Hình Khe Cắm Module Công Trình Tiêu Chuẩn",
+      "description": "Khe cắm dành cho bản thân từng công trình (lắp đặt module nâng cấp).",
+      "baseTypedSlots": {},
+      "baseGenericSlots": 2,
+      "growthPerTierGeneric": 0.5,
+      "maxTierStepBonusGeneric": 1
+    }
+  ],
+  "metadata": {
+    "domain": "building",
+    "catalog": "slot_profile",
+    "description": "Canonical slot growth profiles."
+  }
+}

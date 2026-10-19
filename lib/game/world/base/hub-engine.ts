@@ -78,7 +78,7 @@ export function canActivateHubSpecialization(
   }
 
   // 2. Personnel requirement
-  const availablePersonnel = popState?.workforceAssigned || 0
+  const availablePersonnel = popState?.workforceAssigned ?? popState?.populationOccupied ?? 0
   if (availablePersonnel < def.requiredPersonnel) {
     missingRequirements.push(
       `Thiếu nhân sự vận hành: cần ${def.requiredPersonnel} nhân lực, hiện có ${availablePersonnel}`

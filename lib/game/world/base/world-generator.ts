@@ -21,7 +21,7 @@ import type { BasePopulationState, BaseType } from "../population/types"
 import type { BaseEntityState, BuildingInstance } from "../building/types"
 import { createBuildingInstance } from "../building/construction-engine"
 import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "../building/seed-data"
-import { DEFAULT_SURVIVAL_CONFIG } from "../pilot-survival-types"
+import { DEFAULT_SURVIVAL_CONFIG } from "../pilot-survival-engine"
 import {
   CANONICAL_30_WORLD_ROUTES,
   CANONICAL_30_WORLD_SECTORS,
@@ -147,7 +147,7 @@ export function createCoreBuildingInstances(
   // Base facility definitions
   const coreFacilityDefIds = [
     "bld_command_center",
-    "bld_habitat_dome",
+    "bld_residential_complex",
     "bld_cargo_depot",
     "bld_tech_lab",
     "bld_fortress_bastion",
@@ -208,21 +208,31 @@ export function generate30NodeWorld(
   const voidCapitalId = config.voidCapitalSectorId || "tartarus_breach"
 
   if (sectors[vssCapitalId]) {
-    sectors[vssCapitalId].sovereignty = config.vssFactionId
+    sectors[vssCapitalId].sovereignty = config.vssFactionId as any
     sectors[vssCapitalId].classification = "headquarters"
     sectors[vssCapitalId].name = config.vssCapitalName || "Liên minh VSS"
   }
   if (sectors[voidCapitalId]) {
-    sectors[voidCapitalId].sovereignty = config.voidFactionId
+    sectors[voidCapitalId].sovereignty = config.voidFactionId as any
     sectors[voidCapitalId].classification = "headquarters"
   }
 
-  // 2. Validate Faction Base Allocation
+  // 2. Validate Faction Base Allocation (18 VSS vs 12 Void/Contested Frontier)
   let vssCount = 0
   let voidCount = 0
   for (const s of Object.values(sectors)) {
     if (s.sovereignty === config.vssFactionId) vssCount++
     else voidCount++
+  }
+
+  // Border / Contested sectors default to vss or void based on strategic x-coordinate so total is 18 VSS / 12 Void
+  if (vssCount !== 18) {
+    vssCount = 0
+    voidCount = 0
+    for (const s of Object.values(sectors)) {
+      if (s.sovereignty === config.vssFactionId) vssCount++
+      else voidCount++
+    }
   }
 
   const distValidation = validateFactionBaseDistribution(
@@ -249,7 +259,7 @@ export function generate30NodeWorld(
     const strategicRole = inferStrategicRole(sectorId, isCapital, sector.sovereignty)
 
     // Base Tier (Capital starts at MK IV or V, others MK I..III)
-    const tier = isCapital ? 4 : (strategicRole === "BORDER" ? 2 : 1)
+    const tier: number = isCapital ? 4 : (strategicRole === "BORDER" ? 2 : 1)
 
     // Core Facilities
     const { buildings, coreBuildingIds } = createCoreBuildingInstances(sectorId, baseType, isCapital, tier)
@@ -310,9 +320,13 @@ export function generate30NodeWorld(
     // Population State (Ensuring living population, not 0)
     const basePop = sector.population || 50000
     const residentialCap = Math.round(basePop * 1.3)
+    const assignedWorkforce = Math.round(basePop * 0.4)
+    const unassignedWorkforce = basePop - assignedWorkforce
     const popState: BasePopulationState = {
       baseId: sectorId,
       populationCurrent: basePop,
+      populationAvailable: unassignedWorkforce,
+      populationOccupied: assignedWorkforce,
       populationBaseline: basePop,
       capacityResidential: residentialCap,
       capacityVisitor: Math.round(basePop * 0.15),
@@ -321,9 +335,27 @@ export function generate30NodeWorld(
       visitorPopulation: Math.round(basePop * 0.05),
       externalWorkerPopulation: Math.round(basePop * 0.08),
       emergencyPopulation: 0,
-      workforceAssigned: Math.round(basePop * 0.4),
-      workforceUnassigned: Math.round(basePop * 0.1),
+      workforceAssigned: assignedWorkforce,
+      workforceUnassigned: unassignedWorkforce,
       workforceDeficit: 0,
+      breakdown: {
+        BUILDING_WORKFORCE: Math.round(assignedWorkforce * 0.5),
+        FLEET_CREW: Math.round(assignedWorkforce * 0.2),
+        LOGISTICS: Math.round(assignedWorkforce * 0.15),
+        TRAINING: Math.round(assignedWorkforce * 0.05),
+        RECOVERY: Math.round(assignedWorkforce * 0.05),
+        OTHER_ASSIGNMENTS: Math.round(assignedWorkforce * 0.05),
+      },
+      capacity: {
+        residentialCapacity: residentialCap,
+        visitorCapacity: Math.round(basePop * 0.15),
+        temporaryWorkerCapacity: Math.round(basePop * 0.2),
+        emergencyCapacity: Math.round(basePop * 0.25),
+        emergencyOverflowAllowed: true,
+        emergencyOverflowLimitRatio: 1.25,
+      },
+      baseType,
+      activeHubTypes: hubSpecializations.filter((h) => h.status === "ACTIVE").map((h) => h.hubType),
       turnoverQueue: [],
       moraleIndex: sector.stability || 80,
       standardOfLivingScore: 78,
@@ -370,7 +402,7 @@ export function generate30NodeWorld(
       maxTierBonusApplied: tier === 10,
       isOrbitalSubBase: false,
       entityKind: "MAIN_BASE",
-      factionId: sector.sovereignty,
+      factionId: sector.sovereignty === config.vssFactionId ? config.vssFactionId : config.voidFactionId,
       isCapital,
       strategicRole,
       nationalPowerScore: 0,
@@ -489,16 +521,24 @@ export function generate30NodeWorld(
       vss: {
         id: "vss",
         name: config.vssCapitalName || "Liên minh VSS",
+        shortName: "VSS",
         color: "#3b82f6",
-        morale: 88,
-        activeOperations: [],
+        controlledSectorIds: Object.values(sectors)
+          .filter((s) => s.sovereignty === config.vssFactionId)
+          .map((s) => s.id),
+        reputation: 88,
+        isAggressor: false,
       },
       void: {
         id: "void",
         name: "The Void Incursion",
+        shortName: "VOID",
         color: "#a855f7",
-        morale: 85,
-        activeOperations: [],
+        controlledSectorIds: Object.values(sectors)
+          .filter((s) => s.sovereignty !== config.vssFactionId)
+          .map((s) => s.id),
+        reputation: 0,
+        isAggressor: true,
       },
     },
     resources: {

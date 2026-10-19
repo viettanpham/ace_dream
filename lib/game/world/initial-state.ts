@@ -7,11 +7,12 @@ import type {
 import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
 import { bootstrapWorldCatalogs } from "./bootstrap"
 import type { BasePopulationState, BaseType } from "./population/types"
+import type { BaseEntityState, BuildingInstance } from "./building/types"
 import { createBuildingInstance } from "./building/construction-engine"
 import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "./building/seed-data"
 import { generate30NodeWorld } from "./base/world-generator"
 import { evaluateFleetCapacities } from "./base/fleet-capacity"
-import { DEFAULT_WORLD_GENERATION_CONFIG, type WorldGenerationConfig } from "./base/types"
+import { DEFAULT_WORLD_GENERATION_CONFIG, type ExtendedBaseEntityState, type WorldGenerationConfig } from "./base/types"
 
 /**
  * 8 Sector vũ trụ khởi đầu chuẩn hóa theo quy chuẩn thiết kế B.5
@@ -581,7 +582,7 @@ export function createInitialWorldState(
   }
 
   const basePopulationStates: Record<string, BasePopulationState> = {}
-  const bases: Record<string, BaseEntityState> = {}
+  const bases: Record<string, ExtendedBaseEntityState> = {}
 
   for (const [sectorId, sector] of Object.entries(sectors)) {
     const cfg = initialBaseConfigs[sectorId] || {

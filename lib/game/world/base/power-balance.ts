@@ -65,13 +65,13 @@ export function calculateBasePowerScore(
     garrisonPower?: number
     stability?: number
     industryCapacity?: number
-    resources?: Record<string, number>
+    resources?: Record<string, number> | object
   }
 ): BasePowerBreakdown {
   // 1. Building Power
   let buildingPower = 0
   for (const b of Object.values(base.buildings || {})) {
-    if (b.isOffline || b.operationalState === "DESTROYED") continue
+    if (b.isOffline || (b.operationalState as string) === "DESTROYED") continue
     const eff = b.operationalEfficiency || 1.0
     const hpFactor = (b.currentHp || 1000) / 20
     const levelFactor = (b.currentLevel || 1) * 30

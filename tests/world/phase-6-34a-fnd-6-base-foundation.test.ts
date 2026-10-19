@@ -23,6 +23,8 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+  addExpansionBuildingToOrbitalSubBase,
+  bootstrapWorldCatalogs,
   calculateBaseEconomyForecast,
   calculateBasePowerScore,
   calculateMaxHubSlots,
@@ -39,16 +41,23 @@ import {
   executeWorldResetStep,
   generate30NodeWorld,
   getDefaultDockingPortsForBase,
+  getValidAutoSaveSlots,
   isCommanderOverrideActive,
+  loadWorldStateFromDevFile,
   migrateFoundationState,
   migrateWorldStateTo30Sectors,
+  recoverFromLatestValidAutoSave,
   reEvaluateHubSpecializations,
+  saveAutoSaveSlotRecord,
+  saveWorldStateToDevFile,
   setBaseCommanderOverride,
   SYSTEM_HUB_SPECIALIZATION_DEFINITIONS,
   SYSTEM_ORBITAL_SUB_BASE_DEFINITIONS,
+  upgradeOrbitalSubBaseTier,
   validateFactionBaseDistribution,
   validateNationalPowerBalance,
 } from "../../lib/game/world"
+import { getMasterRegistry } from "../../lib/game/world/catalog/registry"
 
 test("1. 30 Sector / Main Base Nodes generation & 54 interconnected routes", () => {
   const world = generate30NodeWorld(12345678)
@@ -465,3 +474,98 @@ test("14. Dual-interval auto-save (7 game days / 10 real minutes) & Save/Load V1
   assert.equal(migrated30.sectors["sol_command_hq"].name, "Custom Sol Name")
   assert.equal(migrated30.sectors["sol_command_hq"].garrisonPower, 999)
 })
+
+test("15. Orbital Sub-Base expansion slots invariant & tier upgrades", () => {
+  const subBase = createOrbitalSubBase("sol_command_hq", "DEFENSE_GRID", 1)
+  assert.ok(subBase.coreBuildingIds.length > 0, "Orbital Sub-Base must have Core Facilities")
+  assert.equal(subBase.expansionBuildingIds.length, 0, "No expansion buildings initially")
+  const initialMaxSlots = subBase.maxExpansionSlots
+  assert.ok(initialMaxSlots > 0, "Must have valid slot count evaluated from slot profile")
+
+  // Add expansion building
+  const addResult = addExpansionBuildingToOrbitalSubBase(subBase, "bld_cargo_depot")
+  assert.equal(addResult.success, true, "Should successfully add expansion building")
+  assert.equal(subBase.expansionBuildingIds.length, 1)
+  assert.ok(subBase.buildings[addResult.instanceId!], "Instance must exist in subBase.buildings")
+  // Core facilities are untouched and NEVER consume expansion slots
+  assert.equal(subBase.expansionBuildingIds.includes(subBase.coreBuildingIds[0]), false)
+
+  // Upgrade Tier
+  const tierUpgrade = upgradeOrbitalSubBaseTier(subBase, 2)
+  assert.equal(tierUpgrade.tier, 2)
+  assert.equal(subBase.tier, 2)
+  assert.ok(subBase.maxExpansionSlots >= initialMaxSlots, "Max expansion slots must not decrease")
+})
+
+test("16. 3-Slot Auto-Save ring buffer rotation, checksum validation, and corruption recovery fallback", () => {
+  // Clear any existing slots in memory
+  if (typeof window !== "undefined") {
+    window.localStorage?.clear()
+  }
+
+  const worldState = generate30NodeWorld(44556677)
+
+  // Save 4 times to verify ring buffer retains exactly 3 most recent valid slots
+  const slot1 = saveAutoSaveSlotRecord(worldState, 1, 100)
+  assert.ok(slot1.success)
+  const slot2 = saveAutoSaveSlotRecord(worldState, 2, 200)
+  assert.ok(slot2.success)
+  const slot3 = saveAutoSaveSlotRecord(worldState, 3, 300)
+  assert.ok(slot3.success)
+  const slot4 = saveAutoSaveSlotRecord(worldState, 4, 400)
+  assert.ok(slot4.success)
+
+  const slots = getValidAutoSaveSlots()
+  assert.equal(slots.length, 3, "Buffer must contain exactly 3 slots")
+  assert.equal(slots[0].currentDay, 4, "Slot 0 must be most recent day 4")
+  assert.equal(slots[1].currentDay, 3, "Slot 1 must be day 3")
+  assert.equal(slots[2].currentDay, 2, "Slot 2 must be day 2")
+
+  // Test recovery fallback
+  const recovery = recoverFromLatestValidAutoSave()
+  assert.equal(recovery.recovered, true)
+  assert.equal(recovery.state?.worldSeed, 44556677)
+})
+
+test("17. DEV Mode project file save & load roundtrip", async () => {
+  const worldState = generate30NodeWorld(99887766)
+  worldState.currentDay = 42
+
+  const saveRes = await saveWorldStateToDevFile(worldState)
+  assert.equal(saveRes.success, true, "Saving to DEV directory must succeed")
+
+  const loadRes = await loadWorldStateFromDevFile()
+  assert.equal(loadRes.success, true, "Loading from DEV directory must succeed")
+  assert.equal(loadRes.state?.worldSeed, 99887766)
+  assert.equal(loadRes.state?.currentDay, 42)
+})
+
+test("18. Master Catalog Registry resolution for all 4 FND-6 base catalogs", () => {
+  const bootstrapRes = bootstrapWorldCatalogs()
+  assert.equal(bootstrapRes.success, true)
+  assert.ok(bootstrapRes.baseCatalogsRegistered >= 4, "Must register at least 4 base catalogs")
+
+  const registry = getMasterRegistry()
+  const baseClasses = registry.getResolvedItems("base", "base_class")
+  assert.ok(baseClasses.length >= 3, "Must resolve base_class items")
+
+  const baseTypes = registry.getResolvedItems("base", "base_type")
+  assert.ok(baseTypes.length >= 6, "Must resolve base_type items")
+
+  const hubSpecs = registry.getResolvedItems("base", "hub_specialization")
+  assert.ok(hubSpecs.length >= 5, "Must resolve hub_specialization items")
+
+  const worldSeeds = registry.getResolvedItems("base", "world_seed_profile")
+  assert.ok(worldSeeds.length >= 3, "Must resolve world_seed_profile items")
+})
+
+test("19. Performance benchmark for 30 Sector Galaxy generation, power balancing, and economy forecasting", () => {
+  const startTime = performance.now()
+  const world = generate30NodeWorld(1337)
+  const elapsedMs = performance.now() - startTime
+
+  assert.equal(Object.keys(world.sectors).length, 30)
+  assert.equal(Object.keys(world.bases || {}).length, 30)
+  assert.ok(elapsedMs < 300, `World generation took ${elapsedMs.toFixed(2)}ms, well under acceptable SLA (<300ms)`)
+})
+

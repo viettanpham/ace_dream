@@ -698,7 +698,7 @@ export const SYSTEM_ORBITAL_SUB_BASE_DEFINITIONS: Record<
     baseCrewRequired: 80,
     baseDefenseRating: 150,
     defaultStorage: { industrialMaterials: 500, energy: 500, logisticsSupplies: 400, food: 600 },
-    coreFacilities: ["bld_command_center", "bld_cargo_depot"],
+    coreFacilities: ["bld_command_center", "bld_residential_complex", "bld_orbital_spaceport", "bld_fortress_bastion"],
   },
   DEFENSE_PLATFORM: {
     type: "DEFENSE_PLATFORM",
@@ -708,7 +708,7 @@ export const SYSTEM_ORBITAL_SUB_BASE_DEFINITIONS: Record<
     baseCrewRequired: 120,
     baseDefenseRating: 600,
     defaultStorage: { energy: 800, tacticalData: 300 },
-    coreFacilities: ["bld_command_center", "bld_fortress_bastion"],
+    coreFacilities: ["bld_command_center", "bld_residential_complex", "bld_orbital_spaceport", "bld_orbital_cannon"],
   },
   MINING_RIG: {
     type: "MINING_RIG",
@@ -718,7 +718,7 @@ export const SYSTEM_ORBITAL_SUB_BASE_DEFINITIONS: Record<
     baseCrewRequired: 60,
     baseDefenseRating: 100,
     defaultStorage: { industrialMaterials: 1000, energy: 300 },
-    coreFacilities: ["bld_command_center", "bld_heavy_fabricator"],
+    coreFacilities: ["bld_command_center", "bld_residential_complex", "bld_orbital_spaceport", "bld_heavy_fabricator"],
   },
   RESEARCH_SANCTUARY: {
     type: "RESEARCH_SANCTUARY",
@@ -728,7 +728,7 @@ export const SYSTEM_ORBITAL_SUB_BASE_DEFINITIONS: Record<
     baseCrewRequired: 70,
     baseDefenseRating: 80,
     defaultStorage: { tacticalData: 800, food: 800 },
-    coreFacilities: ["bld_command_center", "bld_tech_lab"],
+    coreFacilities: ["bld_command_center", "bld_residential_complex", "bld_orbital_spaceport", "bld_tech_lab"],
   },
   SHIPYARD_ANNEX: {
     type: "SHIPYARD_ANNEX",
@@ -738,7 +738,7 @@ export const SYSTEM_ORBITAL_SUB_BASE_DEFINITIONS: Record<
     baseCrewRequired: 150,
     baseDefenseRating: 300,
     defaultStorage: { industrialMaterials: 800, logisticsSupplies: 800, energy: 600 },
-    coreFacilities: ["bld_command_center", "bld_cargo_depot"],
+    coreFacilities: ["bld_command_center", "bld_residential_complex", "bld_orbital_spaceport", "bld_cargo_depot"],
   },
 }
 

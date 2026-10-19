@@ -1,0 +1,101 @@
+{
+  "configFileId": "system_base_hub_specialization",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "COMMAND_HUB",
+      "hubType": "COMMAND_HUB",
+      "name": "Trung Tâm Chỉ Huy Chiến Lược",
+      "description": "Tăng cường bán kính liên lạc, tăng sức chứa chỉ huy hạm đội +3 và giảm thời gian ra quyết định.",
+      "unlockedAtTier": 1,
+      "baseBonusPercent": 25,
+      "requiredBuildingTypes": ["COMMAND"],
+      "requiredPersonnel": 200,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "LOGISTICS_HUB",
+      "hubType": "LOGISTICS_HUB",
+      "name": "Trung Tâm Hậu Cần & Kho Vận",
+      "description": "Tối ưu hóa luồng điều vận, giảm 30% tiêu hao nhiên liệu trên tuyến và mở rộng 50% kho đệm.",
+      "unlockedAtTier": 2,
+      "baseBonusPercent": 20,
+      "requiredBuildingTypes": ["LOGISTICS", "STORAGE"],
+      "requiredPersonnel": 350,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "TRANSPORT_HUB",
+      "hubType": "TRANSPORT_HUB",
+      "name": "Đầu Mối Giao Thông Siêu Không Gian",
+      "description": "Tăng tốc độ di chuyển của hạm đội và đoàn xe vận tải qua nút thêm +1 bước nhảy mỗi ngày.",
+      "unlockedAtTier": 2,
+      "baseBonusPercent": 20,
+      "requiredBuildingTypes": ["SPACEPORT", "LOGISTICS"],
+      "requiredPersonnel": 300,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "MEDICAL_HUB",
+      "hubType": "MEDICAL_HUB",
+      "name": "Trung Tâm Y Tế & Phục Hồi Sinh Lực",
+      "description": "Tăng 50% tốc độ bình phục thương binh, mở rộng sức chứa cấp cứu và phục hồi tâm lý phi công.",
+      "unlockedAtTier": 3,
+      "baseBonusPercent": 30,
+      "requiredBuildingTypes": ["MEDICAL"],
+      "requiredPersonnel": 250,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "REPAIR_HUB",
+      "hubType": "REPAIR_HUB",
+      "name": "Trung Tâm Bảo Dưỡng & Sửa Chữa Hạm Đội",
+      "description": "Tăng gấp đôi tốc độ sửa chữa thân vỏ tàu và cỗ máy GEAR, giảm 25% chi phí hợp kim phục hồi.",
+      "unlockedAtTier": 3,
+      "baseBonusPercent": 35,
+      "requiredBuildingTypes": ["INDUSTRY", "SUPPORT"],
+      "requiredPersonnel": 400,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "RESEARCH_HUB",
+      "hubType": "RESEARCH_HUB",
+      "name": "Tổ Hợp Nghiên Cứu Đột Phá Lượng Tử",
+      "description": "Tăng 40% sản lượng dữ liệu tác chiến và gia tốc mở khóa công nghệ thế hệ mới.",
+      "unlockedAtTier": 4,
+      "baseBonusPercent": 30,
+      "requiredBuildingTypes": ["RESEARCH"],
+      "requiredPersonnel": 300,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "INDUSTRIAL_HUB",
+      "hubType": "INDUSTRIAL_HUB",
+      "name": "Khu Phức Hợp Chế Tạo Hạng Nặng",
+      "description": "Tăng 35% sản lượng chế luyện hợp kim và hoàn thành dây chuyền sản xuất nhanh hơn 1 ngày.",
+      "unlockedAtTier": 4,
+      "baseBonusPercent": 35,
+      "requiredBuildingTypes": ["INDUSTRY"],
+      "requiredPersonnel": 500,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FINANCIAL_HUB",
+      "hubType": "FINANCIAL_HUB",
+      "name": "Trung Tâm Ngân Khố & Thị Trường Tự Do",
+      "description": "Cải thiện 15 điểm chỉ số Ổn định (Stability) toàn căn cứ và gia tăng 30% doanh thu thuế má.",
+      "unlockedAtTier": 5,
+      "baseBonusPercent": 25,
+      "requiredBuildingTypes": ["FINANCE"],
+      "requiredPersonnel": 200,
+      "lifecycle": "ACTIVE"
+    }
+  ],
+  "metadata": {
+    "domain": "base",
+    "catalog": "hub_specialization",
+    "description": "Canonical 8 Hub Specializations for FND-6."
+  }
+}

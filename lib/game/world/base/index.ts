@@ -11,3 +11,5 @@ export * from "./government-ai"
 export * from "./hub-engine"
 export * from "./auto-save"
 export * from "./world-generator"
+export * from "./registry-integration"
+

@@ -16,12 +16,14 @@ import { registerProgressionCatalogs } from "./progression/registry-integration"
 import { registerDecisionCatalogs } from "./decision/registry-integration"
 import { registerPopulationCatalogs } from "./population/registry-integration"
 import { registerBuildingCatalogs } from "./building/registry-integration"
+import { registerBaseCatalogs } from "./base/registry-integration"
 
 let isBootstrapped = false
 
 export interface BootstrapResult {
   success: boolean
   catalogsRegistered: number
+  baseCatalogsRegistered: number
   totalCanonicalItems: number
   isRebootstrap: boolean
 }
@@ -47,6 +49,9 @@ export function bootstrapWorldCatalogs(
 
   // 4. Register FND-5 Building & Production Catalogs
   registerBuildingCatalogs(registry, provider)
+
+  // 5. Register FND-6 Base, Hub & Seed Profile Catalogs
+  registerBaseCatalogs(registry, provider)
 
   isBootstrapped = true
 
@@ -74,8 +79,15 @@ export function bootstrapWorldCatalogs(
     ["building", "base_init_profile"],
   ]
 
+  const baseCatalogList = [
+    ["base", "base_class"],
+    ["base", "base_type"],
+    ["base", "hub_specialization"],
+    ["base", "world_seed_profile"],
+  ]
+
   let totalItems = 0
-  for (const [domain, name] of catalogList) {
+  for (const [domain, name] of [...catalogList, ...baseCatalogList]) {
     try {
       const items = registry.getResolvedItems(domain, name)
       totalItems += items.length
@@ -87,6 +99,7 @@ export function bootstrapWorldCatalogs(
   return {
     success: true,
     catalogsRegistered: catalogList.length,
+    baseCatalogsRegistered: baseCatalogList.length,
     totalCanonicalItems: totalItems,
     isRebootstrap,
   }

@@ -9,6 +9,7 @@
  * 5. Autonomous Construction & Maintenance planning based on local personality and priorities.
  */
 
+import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "../building/seed-data"
 import type { BuildingDefinition, BuildingInstance } from "../building/types"
 import type { BasePopulationState } from "../population/types"
 import type {
@@ -60,14 +61,63 @@ export function setBaseCommanderOverride(
 }
 
 /**
+ * High-level helper: applies a Commander Base Override to an ExtendedBaseEntityState
+ */
+export function applyCommanderBaseOverride(
+  base: ExtendedBaseEntityState,
+  overrideType: CommanderBaseOverride["overrideType"],
+  durationDays: number,
+  currentDay: number,
+  reason: string
+): void {
+  setBaseCommanderOverride(
+    base.governmentState,
+    {
+      isLocked: true,
+      overrideType,
+      expiresAtGameDay: currentDay + durationDays,
+      overrideReason: reason,
+    },
+    currentDay
+  )
+}
+
+/**
+ * Clears any active Commander Override on a base and logs the event
+ */
+export function clearCommanderBaseOverride(base: ExtendedBaseEntityState): void {
+  if (base.governmentState.commanderOverride) {
+    base.governmentState.actionLogs.push(
+      `Commander Override (${base.governmentState.commanderOverride.overrideType}) đã được dỡ bỏ thủ công.`
+    )
+    delete base.governmentState.commanderOverride
+  }
+}
+
+/**
  * Calculates Economy Forecast for a base over a 7-day planning horizon
  */
+export const evaluateBaseEconomyForecast = calculateBaseEconomyForecast
 export function calculateBaseEconomyForecast(
   base: ExtendedBaseEntityState,
   popState: BasePopulationState,
-  definitions: Map<string, BuildingDefinition>,
-  currentGameDay: number
+  definitions?: Map<string, BuildingDefinition> | BuildingDefinition[] | Record<string, BuildingDefinition> | null,
+  currentGameDay: number = 1
 ): BaseEconomyForecast {
+  const defMap = new Map<string, BuildingDefinition>()
+  for (const d of SYSTEM_DEFAULT_BUILDING_DEFINITIONS) {
+    defMap.set(d.id, d)
+  }
+  if (definitions) {
+    if (definitions instanceof Map) {
+      for (const [k, v] of definitions.entries()) defMap.set(k, v)
+    } else if (Array.isArray(definitions)) {
+      for (const d of definitions) defMap.set(d.id, d)
+    } else if (typeof definitions === "object") {
+      for (const [k, v] of Object.entries(definitions)) defMap.set(k, v)
+    }
+  }
+
   const productionPerDay: Record<string, number> = {
     industrialMaterials: 0,
     energy: 0,
@@ -85,16 +135,16 @@ export function calculateBaseEconomyForecast(
   }
 
   // 1. Food Consumption: 150 food/day per 100,000 population (Phase 6.4 invariant)
-  const totalPop = popState.populationCurrent + popState.visitorPopulation + popState.externalWorkerPopulation
+  const totalPop = (popState?.populationCurrent || 0) + (popState?.visitorPopulation || 0) + (popState?.externalWorkerPopulation || 0)
   const dailyFoodNeeded = Math.ceil((totalPop / 100000) * 150)
   consumptionPerDay.food = dailyFoodNeeded
 
   // 2. Production & Consumption from active building instances
-  for (const b of Object.values(base.buildings)) {
+  for (const b of Object.values(base.buildings || {})) {
     if (b.operationalState !== "ACTIVE" || b.operationalEfficiency <= 0) continue
 
     const eff = b.operationalEfficiency
-    const def = definitions.get(b.definitionId)
+    const def = defMap.get(b.definitionId)
     if (!def) continue
 
     // Maintenance energy consumption

@@ -50,6 +50,20 @@ import type {
   StrategicOrder,
   TroopDeployment,
 } from "@/lib/game/world/types"
+import {
+  DEFAULT_WORLD_GENERATION_CONFIG,
+  SYSTEM_HUB_SPECIALIZATION_DEFINITIONS,
+  SYSTEM_ORBITAL_SUB_BASE_DEFINITIONS,
+  applyCommanderBaseOverride,
+  clearCommanderBaseOverride,
+  createOrbitalSubBase,
+  evaluateBaseEconomyForecast,
+  evaluateFleetCapacities,
+  type ExtendedBaseEntityState,
+  type OrbitalSubBaseState,
+} from "@/lib/game/world/base"
+import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "@/lib/game/world/building/seed-data"
+import { saveWorldState } from "@/lib/game/world/storage"
 
 export interface SectorIntelTheme {
   codeName: string
@@ -212,7 +226,8 @@ export function SectorIntelModal({
   onDeployCombat,
   onUpdateStrategicOrder,
 }: SectorIntelModalProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "operations" | "resources">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "operations" | "resources" | "base_fnd6">("overview")
+  const [, setLocalMutationTick] = useState(0)
 
   const sectorsList = useMemo(() => Object.values(worldState.sectors || {}), [worldState.sectors])
 
@@ -285,6 +300,39 @@ export function SectorIntelModal({
   }, [worldState.routes, sector])
 
   if (!isOpen || !sector) return null
+
+  const baseEntity = (worldState.bases?.[sector.id] as ExtendedBaseEntityState | undefined)
+  const popState = worldState.basePopulationStates?.[sector.id]
+  const attachedSubBases: OrbitalSubBaseState[] = (baseEntity?.orbitalSubBaseIds || [])
+    .map((id) => worldState.orbitalSubBases?.[id])
+    .filter((sb): sb is OrbitalSubBaseState => Boolean(sb))
+
+  const economyForecast =
+    baseEntity?.economyForecast ||
+    (baseEntity
+      ? evaluateBaseEconomyForecast(
+          baseEntity,
+          popState,
+          SYSTEM_DEFAULT_BUILDING_DEFINITIONS,
+          worldState.currentDay || 1
+        )
+      : undefined)
+
+  const fleetCaps =
+    baseEntity?.fleetCapacities ||
+    (baseEntity
+      ? evaluateFleetCapacities(
+          sector.id,
+          baseEntity.baseType,
+          Boolean(baseEntity.isCapital),
+          baseEntity.tier || 1,
+          baseEntity.buildings || {},
+          attachedSubBases,
+          baseEntity.hubSpecializations || []
+        )
+      : undefined)
+
+  const buildingDefMap = new Map(SYSTEM_DEFAULT_BUILDING_DEFINITIONS.map((d) => [d.id, d]))
 
   const maxThreat = getSectorMaxThreat(sector, worldState.threatConfig)
   const threatRatio = maxThreat > 0 ? sector.threatLevel / maxThreat : 0
@@ -437,6 +485,18 @@ export function SectorIntelModal({
                 {threatBadge.label} ({sector.threatLevel.toLocaleString()} / {maxThreat.toLocaleString()})
               </span>
 
+              {baseEntity && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold border border-cyan-500/60 bg-cyan-950/70 text-cyan-200 uppercase shrink-0">
+                  {baseEntity.isCapital ? "👑 CC0 CAPITAL" : baseEntity.entityKind} · MK {baseEntity.tier} · {baseEntity.baseType}
+                </span>
+              )}
+
+              {baseEntity && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold border border-indigo-500/50 bg-indigo-950/60 text-indigo-200 uppercase shrink-0">
+                  ⚡ {baseEntity.nationalPowerScore?.toLocaleString() || 0} PWR ({baseEntity.nationalPowerSharePercent || 0}%)
+                </span>
+              )}
+
               {sector.isLockedForCombat && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-bold border border-red-500/80 bg-red-950/80 text-red-300 uppercase shrink-0 flex items-center gap-1">
                   <Lock className="size-3" />
@@ -451,11 +511,11 @@ export function SectorIntelModal({
           </div>
         </div>
 
-        {/* 10-SECTOR QUICK SELECTOR RIBBON */}
+        {/* 30-SECTOR QUICK SELECTOR RIBBON */}
         <div className="bg-zinc-900/80 border-b border-zinc-800 px-3 py-1.5 flex items-center gap-1 overflow-x-auto text-[10px] scrollbar-thin">
           <span className="text-zinc-500 font-bold uppercase shrink-0 pr-1 text-[9px] flex items-center gap-1">
             <Compass className="size-3 text-cyan-400" />
-            10 Sector:
+            {sectorsList.length} Sector:
           </span>
           {sectorsList.map((s) => {
             const isSel = s.id === sector.id
@@ -531,7 +591,20 @@ export function SectorIntelModal({
             )}
           >
             <Boxes className="size-3.5" />
-            <span>Kinh Tế & Kho Tiếp Tế</span>
+            <span>Kinh Tế & Dự Báo</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("base_fnd6")}
+            className={cn(
+              "py-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5",
+              activeTab === "base_fnd6"
+                ? "border-cyan-400 text-cyan-300"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
+            )}
+          >
+            <Building className="size-3.5" />
+            <span>Căn Cứ, Hub & Quỹ Đạo (FND-6)</span>
           </button>
         </div>
 
@@ -917,6 +990,441 @@ export function SectorIntelModal({
                       {sector.resources.logisticsSupplies.toLocaleString()}
                     </div>
                     <div className="text-[9px] text-zinc-500">Đạn dược & Sơ tán</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* FND-6 Base Economy Forecast (Production/Day, Consumption/Day, Net/Day, Days of Supply) */}
+              {economyForecast && (
+                <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-3">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                    <span className="text-cyan-400 font-bold uppercase text-[11px] flex items-center gap-1.5">
+                      <Activity className="size-3.5" />
+                      Dự Báo Tự Cung Tự Cấp & Chuỗi Tiếp Vận (Base Economy Forecast)
+                    </span>
+                    <span className="text-[10px] text-zinc-500">
+                      Cập nhật Ngày {economyForecast.calculatedAtGameDay}
+                    </span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-[11px]">
+                      <thead>
+                        <tr className="border-b border-zinc-800 text-zinc-400 uppercase text-[10px]">
+                          <th className="py-1.5 px-2">Tài Nguyên</th>
+                          <th className="py-1.5 px-2 text-right">Tồn Kho</th>
+                          <th className="py-1.5 px-2 text-right">Sản Xuất / Ngày</th>
+                          <th className="py-1.5 px-2 text-right">Tiêu Thụ / Ngày</th>
+                          <th className="py-1.5 px-2 text-right">Ròng (Net/Day)</th>
+                          <th className="py-1.5 px-2 text-right">Số Ngày Đủ Dùng</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-800/60 font-mono">
+                        {(["food", "energy", "industrialMaterials", "logisticsSupplies", "tacticalData"] as const).map(
+                          (resKey) => {
+                            const labelMap: Record<string, string> = {
+                              food: "Lương Thực (Food)",
+                              energy: "Năng Lượng (Energy)",
+                              industrialMaterials: "Vật Liệu CN (Materials)",
+                              logisticsSupplies: "Vật Tư Hậu Cần (Supplies)",
+                              tacticalData: "Dữ Liệu Chiến Thuật (Data)",
+                            }
+                            const stock = (baseEntity?.sharedStorage?.[resKey] ?? (sector.resources as any)[resKey]) || 0
+                            const prod = economyForecast.productionPerDay[resKey] || 0
+                            const cons = economyForecast.consumptionPerDay[resKey] || 0
+                            const net = economyForecast.netPerDay[resKey] || 0
+                            const days = economyForecast.daysOfSupply[resKey] ?? 999
+
+                            return (
+                              <tr key={resKey} className="hover:bg-zinc-900/50">
+                                <td className="py-1.5 px-2 font-sans font-bold text-zinc-200">{labelMap[resKey]}</td>
+                                <td className="py-1.5 px-2 text-right text-zinc-300">{stock.toLocaleString()}</td>
+                                <td className="py-1.5 px-2 text-right text-emerald-400">+{prod}</td>
+                                <td className="py-1.5 px-2 text-right text-rose-400">-{cons}</td>
+                                <td
+                                  className={cn(
+                                    "py-1.5 px-2 text-right font-bold",
+                                    net > 0 ? "text-emerald-400" : net < 0 ? "text-amber-400" : "text-zinc-400"
+                                  )}
+                                >
+                                  {net >= 0 ? `+${net}` : net}
+                                </td>
+                                <td className="py-1.5 px-2 text-right">
+                                  <span
+                                    className={cn(
+                                      "px-1.5 py-0.5 rounded text-[10px] font-bold",
+                                      days >= 999
+                                        ? "bg-emerald-950/60 text-emerald-300"
+                                        : days <= 5
+                                        ? "bg-red-950/80 text-red-300"
+                                        : "bg-amber-950/70 text-amber-300"
+                                    )}
+                                  >
+                                    {days >= 999 ? "Ổn định (∞)" : `${days} ngày`}
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          }
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Deficit Warnings */}
+                  {economyForecast.deficitsPredicted.length > 0 && (
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[10px] font-bold uppercase text-amber-400 block">
+                        Cảnh Báo Thiếu Hụt Dự Báo ({economyForecast.deficitsPredicted.length}):
+                      </span>
+                      {economyForecast.deficitsPredicted.map((warn, idx) => (
+                        <div
+                          key={idx}
+                          className={cn(
+                            "p-2 rounded border text-[11px] flex items-center justify-between",
+                            warn.severity === "CRITICAL"
+                              ? "border-red-500/50 bg-red-950/30 text-red-200"
+                              : "border-amber-500/40 bg-amber-950/20 text-amber-200"
+                          )}
+                        >
+                          <span>{warn.message}</span>
+                          <span className="font-bold uppercase text-[10px] px-1.5 py-0.5 rounded bg-black/40">
+                            {warn.severity} · Còn {warn.daysRemaining} ngày
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: FND-6 BASE, HUB, CAPITAL & ORBITAL INFRASTRUCTURE */}
+          {activeTab === "base_fnd6" && baseEntity && (
+            <div className="space-y-4">
+              {/* 1. Base Identity, Fleet Capacities & Expansion Slots Summary */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Base Classification Card */}
+                <div className="rounded border border-cyan-500/40 bg-cyan-950/15 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-cyan-400 font-bold uppercase">
+                    <span>Phân Hạng Căn Cứ (FND-6)</span>
+                    <span>{baseEntity.entityKind}</span>
+                  </div>
+                  <div className="text-sm font-black text-white">
+                    {baseEntity.isCapital ? "👑 Thủ Phủ Tối Cao (CC0)" : `Căn Cứ ${baseEntity.baseType}`}
+                  </div>
+                  <div className="text-[11px] text-zinc-300 space-y-0.5 font-sans">
+                    <div>Vai trò chiến lược: <strong className="text-cyan-300">{baseEntity.strategicRole}</strong></div>
+                    <div>Cấp bậc công nghệ: <strong className="text-amber-300">MK {baseEntity.tier}</strong> {baseEntity.maxTierBonusApplied ? "(MAX TIER BONUS)" : ""}</div>
+                    <div>Điểm sức mạnh QG: <strong className="text-indigo-300">{baseEntity.nationalPowerScore.toLocaleString()} ({baseEntity.nationalPowerSharePercent}%)</strong></div>
+                  </div>
+                </div>
+
+                {/* Fleet Capacities Card */}
+                {fleetCaps && (
+                  <div className="rounded border border-indigo-500/40 bg-indigo-950/15 p-3 space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] text-indigo-400 font-bold uppercase">
+                      <span>Năng Lực Hạm Đội Độc Lập</span>
+                      <span>3 Trục Tách Biệt</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 pt-1 text-center">
+                      <div className="rounded bg-black/40 p-1.5 border border-zinc-800">
+                        <div className="text-sm font-black text-cyan-300">{fleetCaps.fleetCommandCapacity}</div>
+                        <div className="text-[9px] text-zinc-400">Chỉ Huy</div>
+                      </div>
+                      <div className="rounded bg-black/40 p-1.5 border border-zinc-800">
+                        <div className="text-sm font-black text-emerald-300">{fleetCaps.fleetStationingCapacity}</div>
+                        <div className="text-[9px] text-zinc-400">Đồn Trú</div>
+                      </div>
+                      <div className="rounded bg-black/40 p-1.5 border border-zinc-800">
+                        <div className="text-sm font-black text-amber-300">{fleetCaps.fleetDockingCapacity}</div>
+                        <div className="text-[9px] text-zinc-400">Cập Cảng</div>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-zinc-400 pt-0.5 flex items-center justify-between">
+                      <span>Dock gốc: <strong className="text-zinc-200">{fleetCaps.baseDockingPorts}</strong> (2..8)</span>
+                      <span>Mở rộng: <strong className="text-zinc-200">+{fleetCaps.expansionDockingPorts}</strong></span>
+                      <span>Quỹ đạo: <strong className="text-cyan-300">+{fleetCaps.subBaseDockingPorts}</strong></span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Core vs Expansion Slots Invariant Card */}
+                <div className="rounded border border-emerald-500/40 bg-emerald-950/15 p-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-emerald-400 font-bold uppercase">
+                    <span>Quỹ Đất & Slot Công Trình</span>
+                    <span>Zero Double-Count</span>
+                  </div>
+                  <div className="flex items-baseline justify-between pt-0.5">
+                    <div>
+                      <span className="text-lg font-black text-emerald-300">
+                        {baseEntity.expansionBuildingIds.length} / {baseEntity.maxExpansionSlots}
+                      </span>
+                      <span className="text-[10px] text-zinc-400 ml-1">Slot Mở Rộng</span>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-[10px] text-emerald-300 font-bold">
+                      {baseEntity.coreBuildingIds.length} Core (0 Slot)
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-zinc-400 font-sans">
+                    Core Facilities là BuildingInstance thực tế nhưng <strong className="text-emerald-300">không tiêu thụ</strong> Slot mở rộng.
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Core Facilities & Expansion Buildings List */}
+              <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2.5">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+                  <span className="text-cyan-300 font-bold uppercase text-[11px] flex items-center gap-1.5">
+                    <Factory className="size-3.5 text-cyan-400" />
+                    Tổ Hợp Công Trình Cốt Lõi & Mở Rộng ({Object.keys(baseEntity.buildings || {}).length} Công Trình)
+                  </span>
+                  <span className="text-[10px] text-zinc-400">
+                    Profile: {baseEntity.slotProfileId}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {Object.values(baseEntity.buildings || {}).map((bld) => {
+                    const def = buildingDefMap.get(bld.definitionId)
+                    const isCore = baseEntity.coreBuildingIds.includes(bld.instanceId) || Boolean(def?.isCoreFacility)
+                    return (
+                      <div
+                        key={bld.instanceId}
+                        className={cn(
+                          "rounded border p-2.5 flex items-center justify-between gap-2",
+                          isCore
+                            ? "border-cyan-500/30 bg-cyan-950/15"
+                            : "border-zinc-800 bg-zinc-950/60"
+                        )}
+                      >
+                        <div className="space-y-0.5 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-zinc-100 text-xs truncate">
+                              {def?.name || bld.definitionId}
+                            </span>
+                            <span
+                              className={cn(
+                                "px-1.5 py-0.2 rounded text-[9px] font-bold uppercase shrink-0",
+                                isCore
+                                  ? "bg-cyan-950 text-cyan-300 border border-cyan-500/40"
+                                  : "bg-amber-950 text-amber-300 border border-amber-500/40"
+                              )}
+                            >
+                              {isCore ? "CORE (0 SLOT)" : "EXPANSION"}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-zinc-400 font-mono">
+                            Lv.{bld.currentLevel} · MK {bld.currentTier} · HP {bld.currentHp}/{bld.maxHp} · Nhân sự: {bld.assignedPersonnel}
+                          </div>
+                        </div>
+                        <span className="px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-[10px] font-bold shrink-0">
+                          {bld.operationalState}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* 3. Orbital Sub-Base Network */}
+              <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
+                  <div>
+                    <span className="text-indigo-300 font-bold uppercase text-[11px] flex items-center gap-1.5">
+                      <Globe2 className="size-3.5 text-indigo-400" />
+                      Mạng Lưới Căn Cứ Vệ Tinh Quỹ Đạo (Orbital Sub-Bases: {attachedSubBases.length} / {baseEntity.maxOrbitalSlots} Slots)
+                    </span>
+                    <span className="text-[10px] text-zinc-400 block font-sans">
+                      {baseEntity.isCapital
+                        ? "Thủ phủ CC0 mở rộng từ MK I = 2 đến MK X = 12 (gồm +1 MAX TIER BONUS). Không tính vào 30 Main Base Nodes."
+                        : "Căn cứ thường giới hạn tối đa 3 Orbital Sub-Base Slots."}
+                    </span>
+                  </div>
+
+                  {attachedSubBases.length < baseEntity.maxOrbitalSlots && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound()
+                        const newSub = createOrbitalSubBase(
+                          sector.id,
+                          "DEFENSE_PLATFORM",
+                          `Pháo Đài Quỹ Đạo ${sector.name} #${attachedSubBases.length + 1}`,
+                          baseEntity.tier
+                        )
+                        if (!worldState.orbitalSubBases) worldState.orbitalSubBases = {}
+                        worldState.orbitalSubBases[newSub.subBaseId] = newSub
+                        baseEntity.orbitalSubBaseIds.push(newSub.subBaseId)
+                        baseEntity.fleetCapacities = evaluateFleetCapacities(
+                          sector.id,
+                          baseEntity.baseType,
+                          baseEntity.isCapital,
+                          baseEntity.tier,
+                          baseEntity.buildings,
+                          [...attachedSubBases, newSub],
+                          baseEntity.hubSpecializations
+                        )
+                        saveWorldState(worldState)
+                        setLocalMutationTick((t) => t + 1)
+                      }}
+                      className="px-2.5 py-1 rounded bg-indigo-600/40 hover:bg-indigo-600/60 border border-indigo-400/60 text-indigo-100 text-[10px] font-bold uppercase cursor-pointer"
+                    >
+                      + Triển Khai Trạm Quỹ Đạo Mới
+                    </button>
+                  )}
+                </div>
+
+                {attachedSubBases.length === 0 ? (
+                  <div className="p-3 rounded border border-dashed border-zinc-800 text-center text-zinc-500 text-xs">
+                    Chưa có trạm vệ tinh quỹ đạo nào được triển khai quanh căn cứ này.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {attachedSubBases.map((sb) => {
+                      const sbDef = SYSTEM_ORBITAL_SUB_BASE_DEFINITIONS[sb.subBaseType]
+                      return (
+                        <div
+                          key={sb.subBaseId}
+                          className="rounded border border-indigo-500/40 bg-indigo-950/15 p-3 space-y-1.5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-indigo-200 text-xs">{sb.name}</span>
+                            <span className="px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-500/40 text-indigo-300 text-[9px] font-bold uppercase">
+                              SUB_BASE · MK {sb.tier}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-zinc-300 font-sans">
+                            {sbDef?.name || sb.subBaseType} — Dock riêng: <strong className="text-cyan-300">+{sb.dockingCapacity}</strong> · Phòng thủ: <strong className="text-amber-300">{sb.defenseRating}</strong>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-indigo-900/40">
+                            <span>Core Facilities: <strong className="text-emerald-300">{sb.coreBuildingIds.length} (0 Slot)</strong></span>
+                            <span>Expansion Slots: <strong className="text-indigo-200">{sb.expansionBuildingIds.length} / {sb.maxExpansionSlots}</strong></span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Hub Specializations & Local Government AI */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Hub Specializations */}
+                <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
+                    <span className="text-amber-300 font-bold uppercase text-[11px] flex items-center gap-1.5">
+                      <Sparkles className="size-3.5 text-amber-400" />
+                      Chuyên Môn Hóa Hub ({baseEntity.hubSpecializations.length} / {baseEntity.maxHubSlots} Slots)
+                    </span>
+                  </div>
+
+                  {baseEntity.hubSpecializations.length === 0 ? (
+                    <div className="text-zinc-500 text-xs py-2">
+                      Căn cứ chưa kích hoạt Hub chuyên môn hóa.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {baseEntity.hubSpecializations.map((hub) => {
+                        const hubDef = SYSTEM_HUB_SPECIALIZATION_DEFINITIONS[hub.hubType]
+                        return (
+                          <div
+                            key={hub.hubType}
+                            className="rounded border border-amber-500/30 bg-amber-950/15 p-2.5 space-y-1"
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-amber-200 text-xs">
+                                {hubDef?.name || hub.hubType}
+                              </span>
+                              <span
+                                className={cn(
+                                  "px-1.5 py-0.5 rounded text-[9px] font-bold uppercase",
+                                  hub.status === "ACTIVE"
+                                    ? "bg-emerald-950 text-emerald-300 border border-emerald-500/40"
+                                    : "bg-zinc-900 text-zinc-400 border border-zinc-700"
+                                )}
+                              >
+                                {hub.status} (+{hub.activeBonusPercent}%)
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-zinc-300 font-sans">
+                              {hubDef?.description}
+                            </p>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Local Government AI & Commander Override */}
+                <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
+                  <div className="flex items-center justify-between border-b border-zinc-800 pb-1.5">
+                    <span className="text-emerald-300 font-bold uppercase text-[11px] flex items-center gap-1.5">
+                      <Shield className="size-3.5 text-emerald-400" />
+                      Chính Quyền Tự Chủ AI ({baseEntity.governmentState.aiPersonality})
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound()
+                        if (baseEntity.governmentState.commanderOverride?.isLocked) {
+                          clearCommanderBaseOverride(baseEntity)
+                        } else {
+                          applyCommanderBaseOverride(
+                            baseEntity,
+                            "PRIORITY_SHIFT",
+                            14,
+                            worldState.currentDay || 1,
+                            "Chỉ huy Alviss khóa ưu tiên quốc phòng & hậu cần"
+                          )
+                        }
+                        saveWorldState(worldState)
+                        setLocalMutationTick((t) => t + 1)
+                      }}
+                      className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-bold uppercase cursor-pointer border",
+                        baseEntity.governmentState.commanderOverride?.isLocked
+                          ? "bg-amber-950 border-amber-500/60 text-amber-200"
+                          : "bg-zinc-900 border-zinc-700 text-zinc-300 hover:border-cyan-400"
+                      )}
+                    >
+                      {baseEntity.governmentState.commanderOverride?.isLocked
+                        ? "🔒 Đang Khóa Override (Mở Khóa)"
+                        : "🔓 Khóa Lệnh Tư Lệnh (14 Ngày)"}
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="p-1.5 rounded bg-black/40 border border-zinc-800 flex justify-between">
+                      <span className="text-zinc-400">An Ninh Lương Thực:</span>
+                      <strong className="text-emerald-300">{baseEntity.governmentState.localPriorities.foodSecurity}%</strong>
+                    </div>
+                    <div className="p-1.5 rounded bg-black/40 border border-zinc-800 flex justify-between">
+                      <span className="text-zinc-400">Sẵn Sàng Quân Sự:</span>
+                      <strong className="text-cyan-300">{baseEntity.governmentState.localPriorities.militaryReadiness}%</strong>
+                    </div>
+                    <div className="p-1.5 rounded bg-black/40 border border-zinc-800 flex justify-between">
+                      <span className="text-zinc-400">Sản Lượng Công Nghiệp:</span>
+                      <strong className="text-amber-300">{baseEntity.governmentState.localPriorities.industrialOutput}%</strong>
+                    </div>
+                    <div className="p-1.5 rounded bg-black/40 border border-zinc-800 flex justify-between">
+                      <span className="text-zinc-400">Mở Rộng Hạ Tầng:</span>
+                      <strong className="text-indigo-300">{baseEntity.governmentState.localPriorities.infrastructureGrowth}%</strong>
+                    </div>
+                  </div>
+
+                  {baseEntity.governmentState.commanderOverride?.isLocked && (
+                    <div className="p-2 rounded border border-amber-500/40 bg-amber-950/20 text-[10px] text-amber-200">
+                      <strong>Lệnh Tư Lệnh Đang Khóa:</strong> {baseEntity.governmentState.commanderOverride.overrideReason} (Hết hạn Ngày {baseEntity.governmentState.commanderOverride.expiresAtGameDay})
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-zinc-400 space-y-0.5 max-h-20 overflow-y-auto pt-1 border-t border-zinc-800/80">
+                    {baseEntity.governmentState.actionLogs.slice(-3).map((log, i) => (
+                      <div key={i} className="truncate">&bull; {log}</div>
+                    ))}
                   </div>
                 </div>
               </div>

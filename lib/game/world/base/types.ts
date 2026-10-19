@@ -229,6 +229,8 @@ export interface WorldGenerationConfig {
   maxNonCapitalOrbitalSlots: number                     // Mặc định: 3
   autoSaveIntervalGameDays: number                      // Mặc định: 7
   autoSaveIntervalRealMinutes: number                   // Mặc định: 10
+  vssBaseTargetCount?: number                           // Tùy chọn phân bổ số căn cứ VSS (VD: 15, 18, 21, 24)
+  voidBaseTargetCount?: number                          // Tùy chọn phân bổ số căn cứ Void (VD: 15, 12, 9, 6)
 }
 
 /**

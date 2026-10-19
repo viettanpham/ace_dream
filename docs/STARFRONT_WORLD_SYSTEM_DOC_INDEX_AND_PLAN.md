@@ -16,6 +16,7 @@
 | **6.34A-FND-3** | Shared Decision / Event Interaction Foundation | [`docs/PHASE_6_34A_FND_3_SHARED_DECISION_EVENT_FOUNDATION.md`](./PHASE_6_34A_FND_3_SHARED_DECISION_EVENT_FOUNDATION.md) | **DONE** | 32/32 PASS |
 | **6.34A-FND-4** | Population / Workforce Shared Foundation | [`docs/PHASE_6_34A_FND_4_POPULATION_WORKFORCE_FOUNDATION.md`](./PHASE_6_34A_FND_4_POPULATION_WORKFORCE_FOUNDATION.md) | **DONE** | 23/23 PASS |
 | **6.34A-FND-5** | Foundation Audit Repair + Building / Production Foundation | [`docs/PHASE_6_34A_FND_5_BUILDING_PRODUCTION_FOUNDATION.md`](./PHASE_6_34A_FND_5_BUILDING_PRODUCTION_FOUNDATION.md) | **DONE** | 7/7 World Init PASS + 12/12 Building PASS |
+| **6.34A-FND-6** | Base / Hub / Capital / Orbital Sub-Base Foundation | [`docs/PHASE_6_34A_FND_6_BASE_FOUNDATION_ACCEPTANCE.md`](./PHASE_6_34A_FND_6_BASE_FOUNDATION_ACCEPTANCE.md) | **DONE** | 19/19 FND-6 PASS (142/142 All FNDs PASS) |
 
 ---
 

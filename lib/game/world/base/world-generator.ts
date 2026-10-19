@@ -20,8 +20,13 @@ import type { WorldRoute, WorldSector, WorldState } from "../types"
 import type { BasePopulationState, BaseType } from "../population/types"
 import type { BaseEntityState, BuildingInstance } from "../building/types"
 import { createBuildingInstance } from "../building/construction-engine"
-import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "../building/seed-data"
+import { calculateSlots } from "../building/slot-engine"
+import {
+  SYSTEM_DEFAULT_BUILDING_DEFINITIONS,
+  SYSTEM_DEFAULT_SLOT_PROFILES,
+} from "../building/seed-data"
 import { DEFAULT_SURVIVAL_CONFIG } from "../pilot-survival-engine"
+import { evaluateBaseEconomyForecast } from "./government-ai"
 import {
   CANONICAL_30_WORLD_ROUTES,
   CANONICAL_30_WORLD_SECTORS,
@@ -217,22 +222,41 @@ export function generate30NodeWorld(
     sectors[voidCapitalId].classification = "headquarters"
   }
 
-  // 2. Validate Faction Base Allocation (18 VSS vs 12 Void/Contested Frontier)
+  // 2. Apply configurable or seeded Faction Base Allocation (supports 18/12 default, 15/15, 21/9, 24/6, etc.)
+  const targetVssCount = config.vssBaseTargetCount
+  if (targetVssCount !== undefined) {
+    const minBases = Math.ceil((config.totalMainBaseNodes * config.minimumFactionBaseSharePercent) / 100)
+    const targetVoidCount = config.totalMainBaseNodes - targetVssCount
+    const preCheck = validateFactionBaseDistribution(
+      targetVssCount,
+      targetVoidCount,
+      config.totalMainBaseNodes,
+      config.minimumFactionBaseSharePercent
+    )
+    if (!preCheck.isValid) {
+      throw new Error(`[WORLD_INIT_ERROR] ${preCheck.error}`)
+    }
+
+    // Sort non-capital sectors by x coordinate ascending (left = VSS backline, right = Void backline)
+    const nonCapitals = Object.values(sectors)
+      .filter((s) => s.id !== vssCapitalId && s.id !== voidCapitalId)
+      .sort((a, b) => a.x - b.x || a.id.localeCompare(b.id))
+
+    const neededVssNonCap = Math.max(0, targetVssCount - 1)
+    nonCapitals.forEach((sec, idx) => {
+      if (idx < neededVssNonCap) {
+        sec.sovereignty = config.vssFactionId as any
+      } else {
+        sec.sovereignty = config.voidFactionId as any
+      }
+    })
+  }
+
   let vssCount = 0
   let voidCount = 0
   for (const s of Object.values(sectors)) {
     if (s.sovereignty === config.vssFactionId) vssCount++
     else voidCount++
-  }
-
-  // Border / Contested sectors default to vss or void based on strategic x-coordinate so total is 18 VSS / 12 Void
-  if (vssCount !== 18) {
-    vssCount = 0
-    voidCount = 0
-    for (const s of Object.values(sectors)) {
-      if (s.sovereignty === config.vssFactionId) vssCount++
-      else voidCount++
-    }
   }
 
   const distValidation = validateFactionBaseDistribution(
@@ -257,6 +281,15 @@ export function generate30NodeWorld(
     const isCapital = sectorId === vssCapitalId || sectorId === voidCapitalId
     const baseType = inferBaseTypeForSector(sector, isCapital)
     const strategicRole = inferStrategicRole(sectorId, isCapital, sector.sovereignty)
+
+    // Apply deterministic seeded variation to non-capital base population and resources when enabled
+    if (config.enableSeededVariation && !isCapital) {
+      const popJitter = 0.92 + rand() * 0.16 // +/- 8% deterministic variation
+      sector.population = Math.round((sector.population || 50000) * popJitter)
+      const resJitter = 0.9 + rand() * 0.2
+      sector.resources.industrialMaterials = Math.round(sector.resources.industrialMaterials * resJitter)
+      sector.resources.energy = Math.round(sector.resources.energy * resJitter)
+    }
 
     // Base Tier (Capital starts at MK IV or V, others MK I..III)
     const tier: number = isCapital ? 4 : (strategicRole === "BORDER" ? 2 : 1)
@@ -393,7 +426,13 @@ export function generate30NodeWorld(
       actionLogs: [`Khởi tạo chính quyền cơ sở cho căn cứ ${sector.name} (${strategicRole})`],
     }
 
-    bases[sectorId] = {
+    const slotProfileId = isCapital ? "slot_profile_capital_citadel" : "slot_profile_border_outpost"
+    const slotProfile = SYSTEM_DEFAULT_SLOT_PROFILES.find((p) => p.id === slotProfileId)
+    const evaluatedSlots = slotProfile
+      ? calculateSlots(slotProfile, tier, tier === 10)
+      : { totalSlots: isCapital ? 17 : 9 }
+
+    const baseEntity: ExtendedBaseEntityState = {
       baseId: sectorId,
       sectorId,
       name: sector.name,
@@ -415,8 +454,8 @@ export function generate30NodeWorld(
       governmentState,
       coreBuildingIds,
       expansionBuildingIds: [],
-      maxExpansionSlots: isCapital ? 8 : 6,
-      slotProfileId: isCapital ? "profile_capital" : "profile_standard",
+      maxExpansionSlots: evaluatedSlots.totalSlots,
+      slotProfileId,
       sharedStorage: { ...sector.resources },
       storageCapacity: {
         industrialMaterials: isCapital ? 6000 : 3000,
@@ -430,6 +469,9 @@ export function generate30NodeWorld(
       productionLines: [],
       activeReservations: [],
     }
+
+    baseEntity.economyForecast = evaluateBaseEconomyForecast(baseEntity, popState, [], 1)
+    bases[sectorId] = baseEntity
   }
 
   // 4. Calculate Real Power Scores & Balance National Budget
@@ -477,18 +519,44 @@ export function generate30NodeWorld(
   }
 
   // Validate difference <= 10 percentage points
-  const powerBalanceCheck = validateNationalPowerBalance(
+  let powerBalanceCheck = validateNationalPowerBalance(
     vssTotalPower,
     voidTotalPower,
     config.maximumFactionPowerDifferencePercentagePoints
   )
   if (!powerBalanceCheck.isValid) {
-    // Re-adjust via high-tier assets on the trailing faction to fulfill FND-6 contract
-    const deficitFaction = vssTotalPower < voidTotalPower ? "vss" : "void"
+    // Re-adjust via high-tier assets and concentrated fleet/defense on the trailing faction to fulfill FND-6 contract
+    const deficitFaction = vssTotalPower < voidTotalPower ? config.vssFactionId : config.voidFactionId
+    const neededPower = Math.ceil(Math.abs(vssTotalPower - voidTotalPower) * 0.85)
+    const deficitBases = Object.values(bases).filter((b) => b.factionId === deficitFaction)
+    const perBaseBoost = deficitBases.length > 0 ? Math.ceil(neededPower / deficitBases.length) : 0
+
+    vssTotalPower = 0
+    voidTotalPower = 0
+    vssBasesForBalancing.length = 0
+    voidBasesForBalancing.length = 0
+
     for (const b of Object.values(bases)) {
-      if (b.factionId === deficitFaction && b.isCapital) {
-        b.tier = Math.min(10, b.tier + 1)
-        b.nationalPowerScore += 2500
+      if (b.factionId === deficitFaction) {
+        b.tier = Math.min(10, b.tier + (b.isCapital ? 2 : 1))
+        b.nationalPowerScore += perBaseBoost
+      }
+      if (b.factionId === config.vssFactionId) {
+        vssTotalPower += b.nationalPowerScore
+        vssBasesForBalancing.push({
+          baseId: b.baseId,
+          isCapital: b.isCapital,
+          strategicRole: b.strategicRole,
+          rawPower: b.nationalPowerScore,
+        })
+      } else {
+        voidTotalPower += b.nationalPowerScore
+        voidBasesForBalancing.push({
+          baseId: b.baseId,
+          isCapital: b.isCapital,
+          strategicRole: b.strategicRole,
+          rawPower: b.nationalPowerScore,
+        })
       }
     }
   }
@@ -634,17 +702,24 @@ export function executeWorldResetStep(
   }
 
   // Step 2: 30-Node Galaxy & Faction Allocation Check
-  let vssCount = 0
-  let voidCount = 0
-  for (const s of Object.values(CANONICAL_30_WORLD_SECTORS)) {
-    if (s.sovereignty === config.vssFactionId) vssCount++
-    else voidCount++
+  let vssCount = config.vssBaseTargetCount ?? 0
+  let voidCount = config.voidBaseTargetCount ?? 0
+  if (!config.vssBaseTargetCount) {
+    vssCount = 0
+    voidCount = 0
+    for (const s of Object.values(CANONICAL_30_WORLD_SECTORS)) {
+      if (s.sovereignty === config.vssFactionId) vssCount++
+      else voidCount++
+    }
+  } else {
+    voidCount = config.totalMainBaseNodes - vssCount
   }
-  const vssShare = (vssCount / 30) * 100
-  const voidShare = (voidCount / 30) * 100
+  const vssShare = (vssCount / config.totalMainBaseNodes) * 100
+  const voidShare = (voidCount / config.totalMainBaseNodes) * 100
 
-  if (vssCount < 6 || voidCount < 6) {
-    validationErrors.push("Một trong hai phe sở hữu dưới 6 căn cứ, vi phạm giới hạn tối thiểu 20%.")
+  const minAllowedBases = Math.ceil((config.totalMainBaseNodes * config.minimumFactionBaseSharePercent) / 100)
+  if (vssCount < minAllowedBases || voidCount < minAllowedBases) {
+    validationErrors.push(`Một trong hai phe sở hữu dưới ${minAllowedBases} căn cứ, vi phạm giới hạn tối thiểu ${config.minimumFactionBaseSharePercent}%.`)
   }
 
   // Step 3: Capital Backline Placement Check

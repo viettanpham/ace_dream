@@ -58,7 +58,7 @@ test("2. GAP 3: bootstrapWorldCatalogs() is idempotent and registers all 20 cata
 })
 
 test("3. GAP 4: createInitialWorldState() initializes BasePopulationState for all 10 sectors", () => {
-  const state = createInitialWorldState(99887766)
+  const state = createInitialWorldState(99887766, { totalMainBaseNodes: 10 })
 
   assert.ok(state.basePopulationStates, "basePopulationStates must exist on WorldState")
   const basePopKeys = Object.keys(state.basePopulationStates)
@@ -87,7 +87,7 @@ test("3. GAP 4: createInitialWorldState() initializes BasePopulationState for al
 })
 
 test("4. GAP 5: createInitialWorldState() initializes BaseEntityState with Core Facilities", () => {
-  const state = createInitialWorldState(99887766)
+  const state = createInitialWorldState(99887766, { totalMainBaseNodes: 10 })
 
   assert.ok(state.bases, "bases must exist on WorldState")
   const baseKeys = Object.keys(state.bases)

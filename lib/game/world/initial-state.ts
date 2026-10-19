@@ -12,7 +12,14 @@ import { createBuildingInstance } from "./building/construction-engine"
 import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "./building/seed-data"
 import { generate30NodeWorld } from "./base/world-generator"
 import { evaluateFleetCapacities } from "./base/fleet-capacity"
-import { DEFAULT_WORLD_GENERATION_CONFIG, type ExtendedBaseEntityState, type WorldGenerationConfig } from "./base/types"
+import {
+  DEFAULT_WORLD_GENERATION_CONFIG,
+  DEFAULT_WORLD_SEED_CONFIG,
+  type ExtendedBaseEntityState,
+  type WorldGenerationConfig,
+} from "./base/types"
+
+export { DEFAULT_WORLD_SEED_CONFIG }
 
 /**
  * 8 Sector vũ trụ khởi đầu chuẩn hóa theo quy chuẩn thiết kế B.5
@@ -412,7 +419,8 @@ export function createInitialWorldState(
   customSeed?: number,
   generationConfig?: Partial<WorldGenerationConfig>
 ): WorldState {
-  if (generationConfig?.totalMainBaseNodes === 30) {
+  const targetNodes = generationConfig?.totalMainBaseNodes ?? 30
+  if (targetNodes === 30) {
     return generate30NodeWorld(customSeed, generationConfig)
   }
 

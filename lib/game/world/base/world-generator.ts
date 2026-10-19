@@ -203,7 +203,16 @@ export function generate30NodeWorld(
   // 1. Deep clone canonical 30 sectors and 54 routes
   const sectors: Record<string, WorldSector> = {}
   for (const [id, s] of Object.entries(CANONICAL_30_WORLD_SECTORS)) {
-    sectors[id] = JSON.parse(JSON.stringify(s))
+    const sec = JSON.parse(JSON.stringify(s)) as WorldSector
+    if (!sec.threatHistory || sec.threatHistory.length === 0) {
+      sec.threatHistory = [
+        {
+          day: 1,
+          threat: sec.threatLevel ?? 0,
+        },
+      ]
+    }
+    sectors[id] = sec
   }
 
   const routes: WorldRoute[] = CANONICAL_30_WORLD_ROUTES.map((r) => ({ ...r }))

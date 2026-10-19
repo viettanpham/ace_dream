@@ -58,6 +58,7 @@ import {
   loadWorldState,
   saveWorldState,
   resetWorldState,
+  createPreResetBackup,
 } from "@/lib/game/world/storage"
 import { executeWorldTick } from "@/lib/game/world/tick-engine"
 import {
@@ -358,7 +359,7 @@ export function OperationsCenter({
 
     if (resetWorld) {
       // Đổi tốc độ kèm reset World theo yêu cầu người dùng
-      const freshState = resetWorldState()
+      const freshState = resetWorldState(worldState || undefined)
       setWorldState(freshState)
       lastTickTimeRef.current = Date.now()
       setDayFraction(0)
@@ -452,18 +453,25 @@ export function OperationsCenter({
   }
 
   // Xác nhận Reset World độc lập
-  const handleConfirmResetWorld = () => {
+  const handleConfirmResetWorld = (customFreshState?: WorldState) => {
     playClickSound()
     isTickingRef.current = false
-    const freshState = resetWorldState()
+    if (customFreshState) {
+      createPreResetBackup(worldState || undefined)
+    }
+    const freshState = customFreshState || resetWorldState(worldState || undefined)
     setWorldState(freshState)
+    setSelectedSectorId(freshState.worldGenerationConfig?.vssCapitalSectorId || "sol_command_hq")
     setSessionResourceHistory([])
 
     lastTickTimeRef.current = Date.now()
     setDayFraction(0)
     setCountdownSeconds(simulatorConfig.speedSeconds)
     playLevelUpSound()
-    showToast(`Đã RESET toàn bộ dữ liệu STARFRONT WORLD về Ngày 1! (Tốc độ ${simulatorConfig.speedSeconds}s giữ nguyên)`, "success")
+    showToast(
+      `Đã RESET toàn bộ dữ liệu STARFRONT WORLD với Thiên Hà 30 Sector! (Seed: ${freshState.worldSeed})`,
+      "success"
+    )
   }
 
   // Lưu cấu hình Generator từ form
@@ -1891,7 +1899,7 @@ export function OperationsCenter({
             <div className="flex items-center justify-between text-[11px] pb-1.5 mb-1.5 border-b border-zinc-800/80">
               <div className="flex items-center gap-1.5 text-zinc-300 font-bold uppercase tracking-wide">
                 <Compass className="size-3.5 text-cyan-400" />
-                <span>Mạng Lưới 10 Sector Thiên Hà — Điều Phối & Soi Tức Thì</span>
+                <span>Mạng Lưới {sectorsList.length} Sector Thiên Hà — Điều Phối & Soi Tức Thì</span>
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -1904,7 +1912,7 @@ export function OperationsCenter({
                   title="Mở hồ sơ chi tiết Sector Intel"
                 >
                   <Radio className="size-3 text-cyan-400" />
-                  <span>Hồ Sơ Intel</span>
+                  <span>Hồ Sơ Intel ({sectorsList.length})</span>
                 </button>
                 <span className="text-[10px] text-zinc-400 hidden sm:inline">
                   Đồng bộ tự động giữa Bản Đồ và Inspector bên phải
@@ -1912,7 +1920,7 @@ export function OperationsCenter({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">
+            <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-10 gap-1.5 max-h-[220px] overflow-y-auto scrollbar-thin p-0.5">
               {sectorsList.map((sector) => {
                 const isSelected = selectedSectorId === sector.id
                 const isLocked = isEntityCombatLocked(sector, worldState)

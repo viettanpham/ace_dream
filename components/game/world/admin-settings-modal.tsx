@@ -51,7 +51,7 @@ import {
   getOperationsArchiveConfig,
   updateOperationsArchiveConfig,
 } from "@/lib/game/world/operations-archive"
-import { saveWorldState } from "@/lib/game/world/storage"
+import { saveWorldState, createPreResetBackup } from "@/lib/game/world/storage"
 import {
   DEFAULT_THREAT_CONFIG,
   getWorldThreatConfig,
@@ -88,7 +88,7 @@ export interface AdminSettingsModalProps {
   // Handler callbacks
   onTogglePause: () => void
   onConfirmSpeedChange: (newSpeed: number, resetWorld: boolean) => void
-  onConfirmResetWorld: () => void
+  onConfirmResetWorld: (customWorld?: WorldState) => void
   onSaveGeneratorConfig: (genConfig: typeof DEFAULT_SIMULATOR_CONFIG.generator) => void
   onResetGeneratorToDefault: () => void
   onSaveStrategyPolicy: (policyConfig: EventStrategyPolicyConfig) => void
@@ -1856,10 +1856,13 @@ export function AdminSettingsModal({
                             disabled={!fnd6PreviewResult.isValid}
                             onClick={() => {
                               playLevelUpSound()
+                              if (worldState) {
+                                createPreResetBackup(worldState)
+                              }
                               const newWorld = generate30NodeWorld(fnd6SeedInput, fnd6ConfigForm)
                               saveWorldState(newWorld)
                               performAutoSave(newWorld)
-                              onConfirmResetWorld()
+                              onConfirmResetWorld(newWorld)
                             }}
                             className="rounded border border-cyan-400 bg-cyan-600/40 hover:bg-cyan-600/60 px-3 py-1 text-xs font-bold text-cyan-100 cursor-pointer"
                           >

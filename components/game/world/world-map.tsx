@@ -66,6 +66,7 @@ import type {
   RouteState,
   StrategicOrder,
   TroopDeployment,
+  ExtendedBaseEntityState,
 } from "@/lib/game/world/types"
 
 interface WorldMapProps {
@@ -1820,6 +1821,78 @@ export function WorldMap({
                 </div>
               </div>
             </div>
+
+            {/* BASE HUD // THÔNG TIN CĂN CỨ CHÍNH (PHASE 6.34A-FND-6) */}
+            {(() => {
+              const baseEntity = (
+                worldState.bases?.[selectedSector.id] ||
+                worldState.bases?.[`base_${selectedSector.id}`] ||
+                Object.values(worldState.bases || {}).find((b) => b.sectorId === selectedSector.id)
+              ) as ExtendedBaseEntityState | undefined
+              const popState =
+                worldState.basePopulationStates?.[selectedSector.id] ||
+                worldState.basePopulationStates?.[`base_${selectedSector.id}`] ||
+                (baseEntity ? worldState.basePopulationStates?.[baseEntity.baseId] : null)
+
+              if (!baseEntity) return null
+
+              return (
+                <div className="bg-zinc-900/70 p-2.5 rounded border border-cyan-500/30 space-y-2">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-cyan-300">
+                      <Boxes className="size-3.5 text-cyan-400" />
+                      <span>Căn Cứ Chính // Base HUD</span>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
+                      {baseEntity.isCapital ? "THỦ PHỦ (CAPITAL)" : baseEntity.baseType} · CẤP {baseEntity.tier || 1}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="bg-zinc-950/70 p-1.5 rounded border border-zinc-800/80">
+                      <span className="text-zinc-500 block text-[9px] uppercase">Cảng Neo Hạm Đội</span>
+                      <strong className="text-cyan-300 font-mono text-xs">
+                        {baseEntity.fleetCapacities?.fleetDockingCapacity ?? baseEntity.fleetCapacities?.baseDockingPorts ?? 3} Cảng
+                      </strong>
+                    </div>
+                    <div className="bg-zinc-950/70 p-1.5 rounded border border-zinc-800/80">
+                      <span className="text-zinc-500 block text-[9px] uppercase">Sub-Base Quỹ Đạo</span>
+                      <strong className="text-indigo-300 font-mono text-xs">
+                        {baseEntity.orbitalSubBaseIds?.length || 0} / {baseEntity.maxOrbitalSlots || 3} Slots
+                      </strong>
+                    </div>
+                    <div className="bg-zinc-950/70 p-1.5 rounded border border-zinc-800/80">
+                      <span className="text-zinc-500 block text-[9px] uppercase">Sức Chỉ Huy / Đồn Trú</span>
+                      <strong className="text-amber-300 font-mono text-xs">
+                        {baseEntity.fleetCapacities?.fleetCommandCapacity || 3} Cmd · {baseEntity.fleetCapacities?.fleetStationingCapacity || 4} Stn
+                      </strong>
+                    </div>
+                    <div className="bg-zinc-950/70 p-1.5 rounded border border-zinc-800/80">
+                      <span className="text-zinc-500 block text-[9px] uppercase">Dân Số Đang Sống</span>
+                      <strong className="text-emerald-400 font-mono text-xs">
+                        {(popState?.populationCurrent || selectedSector.population || 0).toLocaleString()}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/60">
+                    <span className="truncate">
+                      Chính quyền AI: <strong className="text-zinc-300">{baseEntity.governmentState?.aiPersonality || "BALANCED"}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound()
+                        setIsSectorIntelOpen(true)
+                      }}
+                      className="text-cyan-400 hover:text-cyan-200 underline font-bold text-[10px] cursor-pointer shrink-0"
+                    >
+                      Chi Tiết Căn Cứ &rsaquo;
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* THREAT TRENDLINE SPARKLINE (PHASE 6.12) */}
             <div className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800 space-y-2">

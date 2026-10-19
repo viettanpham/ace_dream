@@ -265,6 +265,11 @@ export const DEFAULT_WORLD_GENERATION_CONFIG: WorldGenerationConfig = {
 }
 
 /**
+ * Canonical Default World Seed & Generation Configuration alias
+ */
+export const DEFAULT_WORLD_SEED_CONFIG: WorldGenerationConfig = DEFAULT_WORLD_GENERATION_CONFIG
+
+/**
  * Stepper Steps for 7-Step World Reset Preview
  */
 export type WorldResetStep = 1 | 2 | 3 | 4 | 5 | 6 | 7

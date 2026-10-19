@@ -36,6 +36,7 @@ export * from "./threat-engine"
 export * from "./catalog"
 export * from "./progression"
 export * from "./decision"
+export * from "./population"
 
 
 

@@ -1,0 +1,37 @@
+{
+  "configFileId": "system_population_population_bucket",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "RESIDENT",
+      "name": "Cư Dân Thường Trú",
+      "description": "Công dân đăng ký hộ tịch và cư trú lâu dài tại căn cứ.",
+      "isPermanent": true
+    },
+    {
+      "id": "VISITOR_TOURIST",
+      "name": "Khách Du Lịch / Khách Vãng Lai",
+      "description": "Du khách, thương nhân hoặc người ghé thăm tạm thời.",
+      "isPermanent": false
+    },
+    {
+      "id": "EXTERNAL_WORKER",
+      "name": "Chuyên Gia / Nhân Công Ngoại Tỉnh",
+      "description": "Lao động có hợp đồng ngắn hạn, không đăng ký hộ khẩu thường trú.",
+      "isPermanent": false
+    },
+    {
+      "id": "IN_TRANSIT",
+      "name": "Người Đang Di Chuyển",
+      "description": "Nhân sự hoặc người dân đang di chuyển giữa các căn cứ theo sổ cái quốc gia.",
+      "isPermanent": false
+    }
+  ],
+  "metadata": {
+    "domain": "population",
+    "catalog": "population_bucket",
+    "description": "Canonical population bucket definitions."
+  }
+}

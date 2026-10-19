@@ -15,6 +15,12 @@ import type {
 import type { DecisionEngineState } from "./decision/types"
 import type { BasePopulationState, PopulationTransferRecord } from "./population/types"
 import type { BaseEntityState } from "./building/types"
+import type {
+  ExtendedBaseEntityState,
+  OrbitalSubBaseState,
+  WorldGenerationConfig,
+  NationalSupportRequest,
+} from "./base/types"
 
 export type {
   SurvivalConfig,
@@ -26,6 +32,10 @@ export type {
   BasePopulationState,
   PopulationTransferRecord,
   BaseEntityState,
+  ExtendedBaseEntityState,
+  OrbitalSubBaseState,
+  WorldGenerationConfig,
+  NationalSupportRequest,
 }
 
 export type SectorStage = "normal" | "threatened" | "under_siege" | "lost" | "recovery"
@@ -735,8 +745,14 @@ export interface WorldState {
   // Phase 6.34A-FND-4: National InTransit Transfers & Base Population States
   inTransitTransfers?: PopulationTransferRecord[]
   basePopulationStates?: Record<string, BasePopulationState>
-  // Phase 6.34A-FND-5: Base Entities (Buildings, Slots, Production Lines, Queues)
-  bases?: Record<string, BaseEntityState>
+  // Phase 6.34A-FND-5 & FND-6: Base Entities (Buildings, Slots, Hubs, Government, Fleet Capacities)
+  bases?: Record<string, ExtendedBaseEntityState | BaseEntityState>
+  // Phase 6.34A-FND-6: Orbital Sub-Bases, Auto-Save & Generation Config
+  orbitalSubBases?: Record<string, OrbitalSubBaseState>
+  worldGenerationConfig?: WorldGenerationConfig
+  nationalSupportRequests?: NationalSupportRequest[]
+  lastAutoSaveGameDay?: number
+  lastAutoSaveTimestamp?: number
   // World Reset & Commander Identity Configuration
   worldResetConfig?: {
     cc0Name: string // Default: "Liên minh VSS"

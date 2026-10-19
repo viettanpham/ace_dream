@@ -9,6 +9,12 @@ import {
   isHeadquartersSector,
 } from "./threat-engine"
 import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
+import {
+  DEFAULT_WORLD_GENERATION_CONFIG,
+  CANONICAL_30_WORLD_SECTORS,
+  CANONICAL_30_WORLD_ROUTES,
+  getDefaultDockingPortsForBase,
+} from "./base"
 import type {
   BackupMetadata,
   BackupSlot,
@@ -454,7 +460,8 @@ export function migratePilotSurvivalState(state: WorldState): boolean {
 }
 
 /**
- * Phase 6.34A-FND-5: Tự động khởi tạo và chuẩn hóa Foundation State (Decisions, InTransit, BasePopulation, Bases, ResetConfig)
+ * Phase 6.34A-FND-5 & FND-6: Tự động khởi tạo và chuẩn hóa Foundation State
+ * (Decisions, InTransit, BasePopulation, Bases, OrbitalSubBases, ResetConfig, AutoSave)
  */
 export function migrateFoundationState(state: WorldState): boolean {
   if (!state) return false
@@ -478,6 +485,22 @@ export function migrateFoundationState(state: WorldState): boolean {
     state.bases = fresh.bases
     migrated = true
   }
+  if (!state.orbitalSubBases) {
+    state.orbitalSubBases = {}
+    migrated = true
+  }
+  if (!state.worldGenerationConfig) {
+    state.worldGenerationConfig = { ...DEFAULT_WORLD_GENERATION_CONFIG }
+    migrated = true
+  }
+  if (state.lastAutoSaveGameDay === undefined) {
+    state.lastAutoSaveGameDay = state.currentDay || 1
+    migrated = true
+  }
+  if (state.lastAutoSaveTimestamp === undefined) {
+    state.lastAutoSaveTimestamp = state.realTimeAnchor || Date.now()
+    migrated = true
+  }
   if (!state.worldResetConfig) {
     state.worldResetConfig = {
       cc0Name: "Liên minh VSS",
@@ -488,7 +511,99 @@ export function migrateFoundationState(state: WorldState): boolean {
     migrated = true
   }
 
+  // Ensure every base instance conforms to FND-6 contracts
+  if (state.bases) {
+    for (const [baseId, b] of Object.entries(state.bases)) {
+      const ext = b as any
+      if (!ext.entityKind) {
+        ext.entityKind = "MAIN_BASE"
+        migrated = true
+      }
+      if (!ext.hubSpecializations) {
+        ext.hubSpecializations = []
+        migrated = true
+      }
+      if (ext.maxHubSlots === undefined) {
+        ext.maxHubSlots = ext.isCapital ? 8 : 4
+        migrated = true
+      }
+      if (!ext.orbitalSubBaseIds) {
+        ext.orbitalSubBaseIds = []
+        migrated = true
+      }
+      if (ext.maxOrbitalSlots === undefined) {
+        ext.maxOrbitalSlots = ext.isCapital ? 6 : 3
+        migrated = true
+      }
+      if (!ext.fleetCapacities) {
+        const defaultPorts = getDefaultDockingPortsForBase(b.baseType, b.baseType === "CAPITAL")
+        ext.fleetCapacities = {
+          fleetCommandCapacity: b.baseType === "CAPITAL" ? 6 : 3,
+          fleetStationingCapacity: b.baseType === "CAPITAL" ? 8 : 4,
+          fleetDockingCapacity: defaultPorts,
+          baseDockingPorts: defaultPorts,
+          expansionDockingPorts: 0,
+          subBaseDockingPorts: 0,
+        }
+        migrated = true
+      }
+      if (!ext.governmentState) {
+        ext.governmentState = {
+          aiPersonality: "BALANCED",
+          localPriorities: {
+            foodSecurity: 80,
+            militaryReadiness: 70,
+            industrialOutput: 70,
+            infrastructureGrowth: 70,
+          },
+          pendingSupportRequests: [],
+          actionLogs: [`Khởi tạo chính quyền cơ sở cho căn cứ ${b.name}`],
+        }
+        migrated = true
+      }
+    }
+  }
+
   return migrated
+}
+
+/**
+ * Phase 6.34A-FND-6: Tự động nâng cấp Galaxy từ 10 Sector lên 30 Sector & 54 Tuyến đường
+ * Bảo toàn 100% dữ liệu đã thay đổi của người chơi trên 10 Sector cũ.
+ */
+export function migrateWorldStateTo30Sectors(state: WorldState): { state: WorldState; migrated: boolean } {
+  if (!state) return { state, migrated: false }
+
+  const currentSectorCount = Object.keys(state.sectors || {}).length
+  if (currentSectorCount >= 30) {
+    return { state, migrated: false }
+  }
+
+  let migrated = false
+  if (!state.sectors) state.sectors = {}
+
+  // 1. Bổ sung các sector còn thiếu từ CANONICAL_30_WORLD_SECTORS
+  for (const [id, defSector] of Object.entries(CANONICAL_30_WORLD_SECTORS)) {
+    if (!state.sectors[id]) {
+      state.sectors[id] = JSON.parse(JSON.stringify(defSector))
+      migrated = true
+    }
+  }
+
+  // 2. Bổ sung các routes còn thiếu từ CANONICAL_30_WORLD_ROUTES
+  if (!state.routes) state.routes = []
+  const existingRouteIds = new Set(state.routes.map((r) => r.id))
+  for (const defRoute of CANONICAL_30_WORLD_ROUTES) {
+    if (!existingRouteIds.has(defRoute.id)) {
+      state.routes.push({ ...defRoute })
+      migrated = true
+    }
+  }
+
+  // 3. Chuẩn hóa Foundation state
+  migrateFoundationState(state)
+
+  return { state, migrated }
 }
 
 /**

@@ -38,6 +38,7 @@ export * from "./progression"
 export * from "./decision"
 export * from "./population"
 export * from "./building"
+export * from "./base"
 export * from "./bootstrap"
 
 

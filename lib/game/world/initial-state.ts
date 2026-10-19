@@ -7,9 +7,11 @@ import type {
 import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
 import { bootstrapWorldCatalogs } from "./bootstrap"
 import type { BasePopulationState, BaseType } from "./population/types"
-import type { BaseEntityState, BuildingInstance } from "./building/types"
 import { createBuildingInstance } from "./building/construction-engine"
 import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "./building/seed-data"
+import { generate30NodeWorld } from "./base/world-generator"
+import { evaluateFleetCapacities } from "./base/fleet-capacity"
+import { DEFAULT_WORLD_GENERATION_CONFIG, type WorldGenerationConfig } from "./base/types"
 
 /**
  * 8 Sector vũ trụ khởi đầu chuẩn hóa theo quy chuẩn thiết kế B.5
@@ -403,9 +405,16 @@ export const INITIAL_WORLD_FACTIONS: Record<string, WorldFaction> = {
 }
 
 /**
- * Khởi tạo trạng thái World State mặc định chuẩn hóa cho Phase 6.1
+ * Khởi tạo trạng thái World State mặc định chuẩn hóa cho Phase 6.1 (10 Sector) và FND-6 (30 Sector)
  */
-export function createInitialWorldState(customSeed?: number): WorldState {
+export function createInitialWorldState(
+  customSeed?: number,
+  generationConfig?: Partial<WorldGenerationConfig>
+): WorldState {
+  if (generationConfig?.totalMainBaseNodes === 30) {
+    return generate30NodeWorld(customSeed, generationConfig)
+  }
+
   const now = typeof Date !== "undefined" ? Date.now() : 1773000000000
   const seed = customSeed ?? 10839217
 
@@ -629,6 +638,9 @@ export function createInitialWorldState(customSeed?: number): WorldState {
       }
     }
 
+    const isCap = cfg.baseType === "CAPITAL"
+    const defaultPorts = isCap ? 8 : (cfg.baseType === "MILITARY" ? 5 : (cfg.baseType === "INDUSTRY" ? 4 : 3))
+
     bases[cfg.baseId] = {
       baseId: cfg.baseId,
       sectorId,
@@ -637,6 +649,35 @@ export function createInitialWorldState(customSeed?: number): WorldState {
       tier: 1,
       maxTierBonusApplied: false,
       isOrbitalSubBase: false,
+      entityKind: "MAIN_BASE",
+      factionId: sector.sovereignty,
+      isCapital: isCap,
+      strategicRole: isCap ? "CAPITAL" : (sector.threatLevel >= 400 ? "BORDER" : "INTERIOR"),
+      nationalPowerScore: 0,
+      nationalPowerSharePercent: 0,
+      orbitalSubBaseIds: [],
+      maxOrbitalSlots: isCap ? 6 : 3,
+      hubSpecializations: [],
+      maxHubSlots: isCap ? 8 : 4,
+      fleetCapacities: {
+        fleetCommandCapacity: isCap ? 6 : 3,
+        fleetStationingCapacity: isCap ? 8 : 4,
+        fleetDockingCapacity: defaultPorts,
+        baseDockingPorts: defaultPorts,
+        expansionDockingPorts: 0,
+        subBaseDockingPorts: 0,
+      },
+      governmentState: {
+        aiPersonality: "BALANCED",
+        localPriorities: {
+          foodSecurity: 80,
+          militaryReadiness: 70,
+          industrialOutput: 70,
+          infrastructureGrowth: 70,
+        },
+        pendingSupportRequests: [],
+        actionLogs: [`Khởi tạo chính quyền cơ sở cho căn cứ ${cfg.name}`],
+      },
       coreBuildingIds,
       expansionBuildingIds: [],
       maxExpansionSlots: cfg.baseType === "CAPITAL" ? 8 : 6,
@@ -740,6 +781,13 @@ export function createInitialWorldState(customSeed?: number): WorldState {
     basePopulationStates,
     // Phase 6.34A-FND-5 Base Entities & Building Instances
     bases,
+    orbitalSubBases: {},
+    worldGenerationConfig: {
+      ...DEFAULT_WORLD_GENERATION_CONFIG,
+      totalMainBaseNodes: 10,
+    },
+    lastAutoSaveGameDay: 1,
+    lastAutoSaveTimestamp: now,
     worldResetConfig: {
       cc0Name: "Liên minh VSS",
       commanderName: "Alviss",
@@ -751,16 +799,24 @@ export function createInitialWorldState(customSeed?: number): WorldState {
 
 /**
  * Resets the entire world with a guaranteed fresh random seed.
- * User-facing reset always produces a fresh seed upon confirmation.
+ * User-facing reset produces a fresh seed upon confirmation and defaults to the 30-Node Galaxy (Phase 6.34A-FND-6).
  * Allows customizing CC0 faction name and Commander name.
  */
 export function createResetWorldState(
   previousState?: WorldState,
-  config?: { cc0Name?: string; commanderName?: string }
+  config?: { cc0Name?: string; commanderName?: string; totalNodes?: number }
 ): WorldState {
   const newSeed = Math.floor(Math.random() * 89999999) + 10000000
   const resetCount = (previousState?.worldResetConfig?.resetCount || 0) + 1
-  const state = createInitialWorldState(newSeed)
+
+  const totalNodes = config?.totalNodes ?? 30
+  const state = totalNodes === 30
+    ? generate30NodeWorld(newSeed, {
+        vssCapitalName: config?.cc0Name || previousState?.worldResetConfig?.cc0Name || "Liên minh VSS",
+        commanderName: config?.commanderName || previousState?.worldResetConfig?.commanderName || "Alviss",
+        totalMainBaseNodes: 30,
+      })
+    : createInitialWorldState(newSeed)
 
   state.worldResetConfig = {
     cc0Name: config?.cc0Name || previousState?.worldResetConfig?.cc0Name || "Liên minh VSS",

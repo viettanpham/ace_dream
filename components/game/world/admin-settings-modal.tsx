@@ -28,6 +28,8 @@ import {
   HeartPulse,
   UserCheck,
   Lock,
+  Compass,
+  Award,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -72,8 +74,11 @@ import {
   type WorldResetPreviewResult,
   type WorldResetStep,
 } from "@/lib/game/world/base"
+import { ensureWorldFleetsInitialized } from "@/lib/game/world/fleet/fleet-entity"
+import { NationalFleetRegistry } from "@/lib/game/world/fleet/fleet-registry"
+import { awardFramePoints, calculateAnnualFrameDecay } from "@/lib/game/world/fleet/fleet-frame-engine"
 
-export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "threat" | "survival" | "triggers" | "storage"
+export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "threat" | "survival" | "triggers" | "storage" | "fleets"
 
 export interface AdminSettingsModalProps {
   isOpen: boolean
@@ -165,6 +170,7 @@ export function AdminSettingsModal({
     return worldState ? getOperationsArchiveConfig(worldState) : { eventArchiveQuota: 60, battleArchiveQuota: 40 }
   })
   const [archiveSavedFeedback, setArchiveSavedFeedback] = useState(false)
+  const [fleetAdminMessage, setFleetAdminMessage] = useState<string | null>(null)
 
   // Survival & Rescue Config Form state (Phase 6.34)
   const [survivalForm, setSurvivalForm] = useState<SurvivalConfig>(() => getSurvivalConfig(worldState))
@@ -548,6 +554,7 @@ export function AdminSettingsModal({
             { id: "survival", label: "5. Sinh Tồn & SAR", icon: LifeBuoy },
             { id: "triggers", label: "6. Thử Nghiệm Nhanh", icon: Zap },
             { id: "storage", label: "7. Lưu Trữ & Reset", icon: Database },
+            { id: "fleets", label: "8. Hạm Đội & Sổ Cái (FND-7)", icon: Compass },
           ].map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -1987,6 +1994,178 @@ export function AdminSettingsModal({
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ====================================================================
+              TAB 8: HẠM ĐỘI, SỔ BỘ QUỐC GIA & KIỂM TOÁN FRAME (PHASE 7.7 FND-7)
+              ==================================================================== */}
+          {(activeTab === "all" || activeTab === "fleets") && worldState && (
+            <div className="rounded border border-cyan-500/40 bg-zinc-900/60 p-4 space-y-4 shadow-md">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <Compass className="size-4 text-cyan-400" />
+                  <h3 className="text-xs font-bold uppercase text-cyan-200 tracking-wider">
+                    8. Bộ Tư Lệnh Hạm Đội, Sổ Cái FRAME & Kiểm Toán Toàn Vẹn (FND-7)
+                  </h3>
+                </div>
+                <span className="rounded bg-cyan-950 px-2 py-0.5 text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
+                  NATIONAL FLEET REGISTRY · FRAME AUDIT
+                </span>
+              </div>
+
+              {/* Status Message */}
+              {fleetAdminMessage && (
+                <div className="rounded border border-emerald-500/50 bg-emerald-950/40 p-2 text-xs font-mono text-emerald-200 flex items-center justify-between">
+                  <span>✓ {fleetAdminMessage}</span>
+                  <button
+                    type="button"
+                    onClick={() => setFleetAdminMessage(null)}
+                    className="text-zinc-400 hover:text-white"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {(() => {
+                const activeFleets = Object.values(ensureWorldFleetsInitialized(worldState))
+                const totalShips = activeFleets.reduce((acc, f) => acc + Object.keys(f.ships || {}).length, 0)
+                const totalAssignedCrew = activeFleets.reduce((acc, f) => acc + (f.personnel?.crewPool?.crewAssigned || 0), 0)
+                const totalTreasuryCredits = activeFleets.reduce((acc, f) => acc + (f.treasury?.credits || 0), 0)
+                const totalAvailableFrame = activeFleets.reduce((acc, f) => acc + (f.frameState?.availableFrame || 0), 0)
+                const totalLifetimeFrame = activeFleets.reduce((acc, f) => acc + (f.frameState?.totalFrame || 0), 0)
+
+                // Integrity Invariant Checks
+                const invariant1 = activeFleets.every((f) => f.frameState.totalFrame >= 0)
+                const invariant2 = activeFleets.every((f) => f.frameState.availableFrame >= 0)
+                const invariant3 = activeFleets.every((f) => Object.values(f.ships || {}).every((s) => s.assignedFleetId === f.fleetId || (s as any).fleetId === f.fleetId))
+
+                return (
+                  <div className="space-y-4">
+                    {/* Stat KPI Grid */}
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-mono">
+                      <div className="p-2.5 rounded border border-zinc-800 bg-black/40">
+                        <span className="text-zinc-500 block text-[10px]">HẠM ĐỘI QUỐC GIA</span>
+                        <span className="font-bold text-cyan-300 text-sm mt-0.5 block">{activeFleets.length}</span>
+                      </div>
+                      <div className="p-2.5 rounded border border-zinc-800 bg-black/40">
+                        <span className="text-zinc-500 block text-[10px]">TỔNG CHIẾN HẠM</span>
+                        <span className="font-bold text-amber-300 text-sm mt-0.5 block">{totalShips} Tàu</span>
+                      </div>
+                      <div className="p-2.5 rounded border border-zinc-800 bg-black/40">
+                        <span className="text-zinc-500 block text-[10px]">THỦY THỦ ĐOÀN</span>
+                        <span className="font-bold text-emerald-300 text-sm mt-0.5 block">{totalAssignedCrew} Quân</span>
+                      </div>
+                      <div className="p-2.5 rounded border border-zinc-800 bg-black/40">
+                        <span className="text-zinc-500 block text-[10px]">TÍN DỤNG TÁC CHIẾN</span>
+                        <span className="font-bold text-purple-300 text-sm mt-0.5 block">{totalTreasuryCredits.toLocaleString()} Cr</span>
+                      </div>
+                      <div className="p-2.5 rounded border border-zinc-800 bg-black/40">
+                        <span className="text-zinc-500 block text-[10px]">FRAME TÍCH LŨY</span>
+                        <span className="font-bold text-yellow-300 text-sm mt-0.5 block">{totalAvailableFrame} Avail / {totalLifetimeFrame} Tot</span>
+                      </div>
+                    </div>
+
+                    {/* Ledger Integrity Audit */}
+                    <div className="rounded border border-zinc-800 bg-black/30 p-3 space-y-2 text-xs font-mono">
+                      <span className="font-bold text-zinc-300 uppercase block text-[11px] flex items-center gap-1.5">
+                        <CheckCircle2 className="size-3.5 text-emerald-400" />
+                        Kiểm Tra Tính Toàn Vẹn Bất Biến Sổ Cái (Audit Invariants):
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                        <div className="flex items-center gap-2 p-1.5 rounded bg-zinc-900 border border-zinc-800">
+                          <span className={cn("size-2 rounded-full", invariant1 ? "bg-emerald-400" : "bg-red-500")} />
+                          <span>Total FRAME &ge; 0: <strong className={invariant1 ? "text-emerald-300" : "text-red-400"}>{invariant1 ? "PASSED" : "FAILED"}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2 p-1.5 rounded bg-zinc-900 border border-zinc-800">
+                          <span className={cn("size-2 rounded-full", invariant2 ? "bg-emerald-400" : "bg-red-500")} />
+                          <span>Available FRAME &ge; 0: <strong className={invariant2 ? "text-emerald-300" : "text-red-400"}>{invariant2 ? "PASSED" : "FAILED"}</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2 p-1.5 rounded bg-zinc-900 border border-zinc-800">
+                          <span className={cn("size-2 rounded-full", invariant3 ? "bg-emerald-400" : "bg-red-500")} />
+                          <span>Ship Ownership Decoupling: <strong className={invariant3 ? "text-emerald-300" : "text-red-400"}>{invariant3 ? "PASSED" : "FAILED"}</strong></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Admin Action Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 pt-1 text-xs">
+                      {/* Action 1: Award 500 FRAME */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound()
+                          for (const f of activeFleets) {
+                            awardFramePoints(f.frameState, 500, "Thưởng Chiến Công Quản Trị Viên (Admin CP)", worldState.currentDay || 1)
+                          }
+                          onManualSave()
+                          setFleetAdminMessage(`Đã thưởng +500 FRAME cho toàn bộ ${activeFleets.length} hạm đội quốc gia!`)
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded border border-purple-500/50 bg-purple-950/40 p-2.5 font-bold text-purple-200 hover:bg-purple-900/50 transition-colors cursor-pointer"
+                      >
+                        <Award className="size-3.5 text-purple-400" />
+                        <span>Thưởng 500 FRAME</span>
+                      </button>
+
+                      {/* Action 2: Trigger Annual Decay */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound()
+                          const decayYear = Math.max(1, Math.floor((worldState.currentDay || 1) / 360))
+                          let totalDecayed = 0
+                          for (const f of activeFleets) {
+                            const res = calculateAnnualFrameDecay(f, f.frameState, 600, decayYear)
+                            totalDecayed += res.deductedFrame
+                          }
+                          onManualSave()
+                          setFleetAdminMessage(`Đã thực thi suy giảm niên độ ${decayYear}: Khấu trừ tổng cộng ${totalDecayed} FRAME.`)
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded border border-amber-500/50 bg-amber-950/40 p-2.5 font-bold text-amber-200 hover:bg-amber-900/50 transition-colors cursor-pointer"
+                      >
+                        <RotateCcw className="size-3.5 text-amber-400" />
+                        <span>Khấu Trừ Decay 360d</span>
+                      </button>
+
+                      {/* Action 3: Refill Logistics */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound()
+                          for (const f of activeFleets) {
+                            f.cargo.food = 3500
+                            f.cargo.energy = 5000
+                            f.cargo.logisticsSupplies = 1000
+                            f.isStarvation = false
+                            f.isStranded = false
+                          }
+                          onManualSave()
+                          setFleetAdminMessage(`Đã nạp đầy Lương thực (3500), Plasma (5000) và Tiếp tế (1000) cho toàn bộ hạm đội!`)
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded border border-emerald-500/50 bg-emerald-950/40 p-2.5 font-bold text-emerald-200 hover:bg-emerald-900/50 transition-colors cursor-pointer"
+                      >
+                        <Zap className="size-3.5 text-emerald-400" />
+                        <span>Tiếp Tế Hậu Cần Đầy Đủ</span>
+                      </button>
+
+                      {/* Action 4: Rebuild Registry */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          playClickSound()
+                          NationalFleetRegistry.getInstance().rebuildIndex(activeFleets)
+                          setFleetAdminMessage(`Đã tái lập chỉ mục O(1) Sổ bộ Hạm đội Quốc gia (${activeFleets.length} Hạm đội)!`)
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 p-2.5 font-bold text-cyan-200 hover:bg-cyan-900/50 transition-colors cursor-pointer"
+                      >
+                        <Compass className="size-3.5 text-cyan-400" />
+                        <span>Tái Lập Chỉ Mục Sổ Bộ O(1)</span>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
           )}
 

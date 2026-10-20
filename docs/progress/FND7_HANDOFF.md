@@ -1,76 +1,98 @@
 # STARFRONT WORLD — FND-7 HANDOFF DOCUMENTATION
-## TÀI LIỆU BÀN GIAO TIẾN ĐỘ & CHECKPOINT FND-7 (SHIP / FLEET FOUNDATION)
+## TÀI LIỆU BÀN GIAO TOÀN DIỆN NỀN TẢNG HẠM ĐỘI & TÀU CHIẾN (FND-7 SHIP / FLEET FOUNDATION)
 
-> **Mã bàn giao:** FND7-HANDOFF-PHASE-7.3  
+> **Mã bàn giao:** FND7-HANDOFF-FINAL-COMPLETION  
 > **Thời điểm lập:** 20/10/2026  
-> **Chế độ thực thi:** IMPLEMENT ONE PHASE ONLY  
-> **Trạng thái:** PHASE 7.3 HOÀN TẤT XÁC MINH (VERIFIED & TESTED)  
-> **Độ sẵn sàng:** 100% Sẵn sàng để triển khai Phase 7.4  
+> **Chế độ thực thi:** AUTONOMOUS SEQUENTIAL IMPLEMENTATION  
+> **Trạng thái:** HOÀN THÀNH TOÀN DIỆN 7 GIAI ĐOẠN (ALL 7 PHASES VERIFIED & COMPLETED)  
+> **Độ sẵn sàng:** 100% Production Ready  
 
 ---
 
-### 1. CHECKPOINT HIỆN TẠI
+### 1. TỔNG QUAN KẾT QUẢ FND-7
 
-- **Phase cuối đã hoàn thành:** **Phase 7.3: Hybrid Workforce, Academy & Crew Pool** (15/15 Unit tests PASS, Regression tests Phase 7.1 & 7.2 PASS, Build thành công).
-- **Phase đang chờ triển khai tiếp:** **Phase 7.4: Fleet Entity, Treasury & Logistics Supply**.
-- **Công việc đã code & verify trong Phase 7.3:**
-  * Module nhân sự hạm đội `lib/game/world/fleet/fleet-personnel.ts`: Phân định rõ ràng giữa cá thể Named Pilot và quỹ nhân lực tập thể `FleetCrewPool`.
-  * Quản lý chức danh lãnh đạo: Thuyền trưởng Hạm đội (`appointFleetCaptain`, `relieveFleetCaptain`), Sĩ quan Thuyền phó (`appointFleetExecutiveOfficer`, `relieveFleetExecutiveOfficer`), và Thuyền trưởng từng tàu (`appointShipCaptain`, `relieveShipCaptain`).
-  * Cơ chế Biệt phái Tạm thời (`assignPilotDetachedDuty`, `processDetachedDutyReturns`) có kỳ hạn và tự động hồi hương khi hết hạn ngày game.
-  * Thuật toán phân bổ nhân lực 3 vòng (`allocateFleetCrewToShips`):
-    - Pass 1 (Minimum Staffing): Cấp đủ `minimumCrew` cho mọi tàu hoạt động (`canOperate = true`), ưu tiên Soái hạm.
-    - Pass 2 (Target Staffing): Cấp tiếp lên `targetCrew` (100% operational efficiency = 1.0).
-    - Pass 3 (Maximum Buff Staffing): Cấp tiếp lên `maximumCrew` cho tàu ưu tiên (125% buff efficiency).
-  * Đào tạo thủy thủ tại Học viện Hải quân Căn cứ (`startNavalAcademyTraining`, `processNavalAcademyGraduation`), bảo toàn tuyệt đối số lượng dân số Base (`populationAvailable` giảm đúng bằng số lượng học viên).
-  * Catalog chuẩn `system_fleet_academy_training_profile_data.json` và đăng ký trong Registry.
-  * Điều chuyển nhân sự không dịch chuyển tức thời (`dispatchPersonnelTransfer`, `processPersonnelArrival`) với thời gian hành trình thực tế theo tuyến Hyperlane.
-  * Khấu trừ thương vong chiến trận (`applyFleetBattleCasualties`) và thủ tục giải ngũ về Base (`dischargeCrewToBase`).
-  * Bộ kiểm thử độc lập 15 mục tại `tests/world/phase-7-3-fleet-workforce.test.ts`.
-- **Lỗi mở (Open Issues / Bugs):** `0` (Không có lỗi).
-- **Trạng thái Typecheck & Build:**
-  * `tsc --noEmit`: 0 lỗi.
-  * Production Next.js build: Succeeded.
+Toàn bộ 7 phase của **FND-7 (Ship & Fleet Foundation)** đã được triển khai hoàn chỉnh, tuần tự, tuân thủ nghiêm ngặt các nguyên tắc kiến trúc:
+- **Phase 7.1: Master Data Catalogs & Schemas**: 8 danh mục catalog JSON chuẩn, 6 Fleet Types, 3600-day Protection, TypeScript types, tích hợp CatalogRegistry.
+- **Phase 7.2: Ship Entity & Progression Engine**: Thực thể tàu `ShipInstance`, nâng cấp MK I–X theo FND-2, hệ số nhân lực `crewEfficiencyRatio`, độ hao mòn `condition`, đại tu docking port, max tier bonus.
+- **Phase 7.3: Hybrid Workforce & Crew Pool**: Hệ thống nhân lực lai hai luồng (Named Pilots cá nhân hóa vs Thủy thủ đoàn `FLEET_CREW`), Học viện Hải quân `NAVAL_ACADEMY`, thuật toán phân bổ 3 vòng (3-Pass Ship Crew Allocator), điều chuyển quân số Hyperlane không dịch chuyển tức thời.
+- **Phase 7.4: Fleet Entity, Treasury & Logistics Supply**: Thực thể hạm đội `FleetEntityState`, chủ quyền 3 bên, ngân khố độc lập, Sổ cái tín dụng, khoang tiếp tế 5 tài nguyên, chuỗi tiêu hao ngày, AI Persona tự chủ (Defensive, Aggressive, Balanced, Logistic, Recon).
+- **Phase 7.5: Fleet FRAME Engine & Annual Decay Policies**: 3 số dư FRAME (`cycleFrame`, `availableFrame`, `totalFrame`), suy giảm thường niên 360 ngày ($BaseDecay = Avg/2$, trần 50%), chính sách bảo vệ bang hội mới `NEW_GUILD_PROTECTION` (10 Game Years), trợ cấp bảo trì hạm đội theo đường cong degressive.
+- **Phase 7.6: WorldState Integration, Combat V2 & Reports**: Mở rộng `WorldState.fleets`, facade `NationalFleetRegistry` $O(1)$, adapter tác chiến Combat V2 (`CombatSupportEntity`), giải quyết chiến trận, báo cáo định kỳ 7/30 ngày & Autosave Checkpoint.
+- **Phase 7.7: UI Fleet Command, Sector Intel & AdminCP**: Giao diện chỉ huy toàn diện `FleetCommandModal`, tab hạm đội đồn trú trong `SectorIntelModal`, tab thanh tra sổ cái & debug trong `AdminSettingsModal`, phím tắt thao tác nhanh trong `OperationsCenter`.
 
 ---
 
-### 2. DANH SÁCH FILE ĐÃ THAY ĐỔI TRONG CHECKPOINT NÀY
+### 2. DANH SÁCH FILE VÀ COMPONENT ĐƯỢC BỔ SUNG & HOÀN THIỆN TRONG FND-7
 
-| Đường Dẫn Tệp | Loại Thao Tác | Nội Dung & Mục Đích Nghiệp Vụ |
-| :--- | :---: | :--- |
-| `lib/game/world/fleet/fleet-personnel.ts` | **Tạo mới** | Module cốt lõi Hybrid Workforce, 3-Pass Allocator, Naval Academy, In-Transit Transfers, Casualties và Discharge. |
-| `lib/game/world/fleet/index.ts` | **Tạo mới** | Re-export các thành phần của domain fleet (`catalog-types`, `registry-integration`, `fleet-personnel`). |
-| `lib/game/world/index.ts` | **Cập nhật** | Re-export domain `fleet` và `ship` tại điểm xuất khẩu tập trung của `lib/game/world`. |
-| `lib/game/world/fleet/catalog-types.ts` | **Cập nhật** | Thêm interface `AcademyTrainingProfile` định nghĩa các khóa đào tạo học viện. |
-| `data/catalogs/system_fleet_academy_training_profile_data.json` | **Tạo mới** | Catalog 4 khóa đào tạo chính quy của Học viện Hải quân. |
-| `lib/game/world/fleet/registry-integration.ts` | **Cập nhật** | Đăng ký catalog `academy_training_profile`, seed data và query helper `getAcademyTrainingProfile`. |
-| `lib/game/world/bootstrap.ts` | **Cập nhật** | Bổ sung `academy_training_profile` vào danh sách `fleetCatalogList` khi bootstrap thế giới. |
-| `tests/world/phase-7-3-fleet-workforce.test.ts` | **Tạo mới** | Bộ kiểm thử 15/15 mục toàn diện cho Phase 7.3. |
-| `tests/world/phase-7-1-fleet-catalogs.test.ts` | **Cập nhật** | Cập nhật điều kiện kiểm thử tương thích khi số lượng danh mục fleet mở rộng. |
-| `docs/progress/FND7_PROGRESS.md` | **Cập nhật** | Bảng theo dõi tiến độ chi tiết của Phase 7.3 (DONE) và Phase 7.4 (READY). |
-| `docs/progress/FND7_HANDOFF.md` | **Cập nhật** | Tài liệu bàn giao checkpoint Phase 7.3 này. |
+1. **Catalogs & Data**:
+   - `data/catalogs/system_fleet_fleet_type_data.json`
+   - `data/catalogs/system_fleet_fleet_class_data.json`
+   - `data/catalogs/system_fleet_ship_hull_type_data.json`
+   - `data/catalogs/system_fleet_ship_hull_class_data.json`
+   - `data/catalogs/system_fleet_ship_definition_data.json`
+   - `data/catalogs/system_fleet_frame_award_matrix_data.json`
+   - `data/catalogs/system_fleet_subsidy_policy_data.json`
+   - `data/catalogs/system_fleet_academy_training_profile_data.json`
+
+2. **Core Domain Logic (`lib/game/world/fleet/` & `ship/`)**:
+   - `lib/game/world/fleet/catalog-types.ts`
+   - `lib/game/world/fleet/registry-integration.ts`
+   - `lib/game/world/ship/types.ts`
+   - `lib/game/world/ship/ship-entity.ts`
+   - `lib/game/world/ship/ship-progression.ts`
+   - `lib/game/world/ship/index.ts`
+   - `lib/game/world/fleet/fleet-personnel.ts`
+   - `lib/game/world/fleet/fleet-entity.ts`
+   - `lib/game/world/fleet/fleet-treasury.ts`
+   - `lib/game/world/fleet/fleet-logistics.ts`
+   - `lib/game/world/fleet/fleet-ai-command.ts`
+   - `lib/game/world/fleet/fleet-frame-engine.ts`
+   - `lib/game/world/fleet/fleet-registry.ts`
+   - `lib/game/world/fleet/fleet-combat-adapter.ts`
+   - `lib/game/world/fleet/fleet-reports.ts`
+   - `lib/game/world/fleet/index.ts`
+
+3. **User Interface Components**:
+   - `components/game/world/fleet-command-modal.tsx`: Modal chỉ huy hạm đội 4 tab (Chiến hạm, Thủy thủ đoàn, Ngân khố & FRAME, Hậu cần).
+   - `components/game/world/sector-intel-modal.tsx`: Tích hợp tab `fleets_fnd7` hiển thị hạm đội cập cảng/đồn trú.
+   - `components/game/world/admin-settings-modal.tsx`: Tích hợp tab `fleets` thanh tra toàn vẹn sổ cái, debug FRAME, refill logistics và rebuild index.
+   - `components/game/world/operations-center.tsx`: Nút mở Hạm Đội Quốc Gia trên header Quick Actions.
+
+4. **Integration Tests (96 Test Cases, 100% PASS)**:
+   - `tests/world/phase-7-1-fleet-catalogs.test.ts` (12 tests)
+   - `tests/world/phase-7-2-ship-progression.test.ts` (15 tests)
+   - `tests/world/phase-7-3-fleet-workforce.test.ts` (15 tests)
+   - `tests/world/phase-7-4-fleet-entity-treasury.test.ts` (16 tests)
+   - `tests/world/phase-7-5-fleet-frame-policies.test.ts` (16 tests)
+   - `tests/world/phase-7-6-fleet-world-integration.test.ts` (11 tests)
+   - `tests/world/phase-7-7-fleet-ui-integration.test.ts` (11 tests)
 
 ---
 
-### 3. CÁC FILE CẦN THỰC HIỆN Ở PHASE TIẾP THEO (PHASE 7.4)
+### 3. HƯỚNG DẪN KIỂM TRA & VẬN HÀNH
 
-Khi bắt đầu lượt tiếp theo, kỹ sư / AI Studio sẽ triển khai **Phase 7.4: Fleet Entity, Treasury & Logistics Supply**:
-
-1. **`lib/game/world/fleet/fleet-entity.ts`**:
-   - Quản lý thực thể Hạm đội (`FleetEntityState`), danh sách biên chế tàu (`ships`), neo đậu cảng (`currentLocation`, `status`).
-   - Liên kết với `FleetPersonnelState` từ Phase 7.3 và `ShipInstance` từ Phase 7.2.
-2. **`lib/game/world/fleet/fleet-treasury.ts`**:
-   - Ngân khố độc lập (`credits`, `supplyCredits`, `ledgerHistory`), thu chi lương bổng thủy thủ đoàn (`Crew Payroll`), xử lý thâm hụt tài chính (chế độ `AUSTERE_MODE`).
-3. **`lib/game/world/fleet/fleet-logistics.ts`**:
-   - Khoang tiếp tế thực thể chứa 5 nhóm tài nguyên (`food`, `energy`, `logisticsSupplies`, `industrialMaterials`, `tacticalData`).
-   - Tiêu hao hàng ngày theo tick game: Lương thực theo số quân, Năng lượng theo động cơ và di chuyển.
-4. **`lib/game/world/fleet/fleet-ai-command.ts`**:
-   - Trí tuệ chỉ huy Hạm đội (`FleetAIPersona`), tự động tuần tra/rút lui chiến thuật, cơ chế tiếp nhận Lệnh Khẩn Cấp Quốc Gia (National Emergency Command).
-5. **`tests/world/phase-7-4-fleet-entity-treasury.test.ts`**:
-   - Kiểm thử độc lập thực thể hạm đội, chuỗi tiêu hao tiếp tế, độc lập tài chính và AI chỉ huy.
+- **Chạy toàn bộ test suite của FND-7**:
+  ```bash
+  npx tsx tests/world/phase-7-1-fleet-catalogs.test.ts && \
+  npx tsx tests/world/phase-7-2-ship-progression.test.ts && \
+  npx tsx tests/world/phase-7-3-fleet-workforce.test.ts && \
+  npx tsx tests/world/phase-7-4-fleet-entity-treasury.test.ts && \
+  npx tsx tests/world/phase-7-5-fleet-frame-policies.test.ts && \
+  npx tsx tests/world/phase-7-6-fleet-world-integration.test.ts && \
+  npx tsx tests/world/phase-7-7-fleet-ui-integration.test.ts
+  ```
+- **Kiểm tra linter và type check**:
+  ```bash
+  npm run lint
+  ```
+- **Xây dựng ứng dụng**:
+  ```bash
+  npm run build
+  ```
 
 ---
 
-### 4. NGUYÊN TẮC BẢO VỆ TOÀN VẸN HỆ THỐNG
-- **Không Reset WORLD**: Giữ nguyên toàn bộ save game và tiến trình đang chơi.
-- **Không tạo Engine song song**: Tái sử dụng triệt để `FleetCrewPool` của FND-4, `ProgressionEntity` của FND-2 và `CatalogRegistry` của FND-1.
-- **Tiếp tục theo đúng hợp đồng**: Mọi logic đã được đặc tả trong `docs/foundations/FND7_SHIP_FLEET_FEATURE.md`.
+### 4. KẾT LUẬN & BÀN GIAO TIẾP THEO
+
+- Nền tảng **FND-7 (Ship & Fleet Foundation)** đã hoàn tất 100% mục tiêu thiết kế và sẵn sàng cho các tính năng vĩ mô tiếp theo.
+- Tuân thủ quy định: **Không tự động triển khai FND-8** khi FND-7 kết thúc.

@@ -13,10 +13,7 @@
 
 import type { CatalogItemLifecycle } from "../catalog/types"
 
-/**
- * 1. Fleet Type Definition (Mục đích tác chiến chiến lược của Hạm đội)
- */
-export type FleetStrategicRole = "OFFENSIVE" | "DEFENSIVE" | "SUPPORT" | "LOGISTICS" | "RECON"
+export type FleetStrategicRole = "OFFENSIVE" | "DEFENSIVE" | "SUPPORT" | "LOGISTICS" | "RECON" | "ESCORT"
 
 export interface FleetTypeDefinition {
   id: string

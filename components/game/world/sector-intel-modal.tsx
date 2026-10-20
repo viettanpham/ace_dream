@@ -5,6 +5,7 @@ import {
   Activity,
   AlertOctagon,
   AlertTriangle,
+  Anchor,
   ArrowLeft,
   ArrowRight,
   Boxes,
@@ -64,6 +65,7 @@ import {
 } from "@/lib/game/world/base"
 import { SYSTEM_DEFAULT_BUILDING_DEFINITIONS } from "@/lib/game/world/building/seed-data"
 import { saveWorldState } from "@/lib/game/world/storage"
+import { ensureWorldFleetsInitialized } from "@/lib/game/world/fleet/fleet-entity"
 
 export interface SectorIntelTheme {
   codeName: string
@@ -212,6 +214,7 @@ interface SectorIntelModalProps {
   onOpenQuickDispatch?: (sectorId: string) => void
   onDeployCombat?: (sectorId: string) => void
   onUpdateStrategicOrder?: (sectorId: string, order: StrategicOrder) => void
+  onOpenFleetCommand?: (fleetId: string) => void
 }
 
 export function SectorIntelModal({
@@ -225,8 +228,9 @@ export function SectorIntelModal({
   onOpenQuickDispatch,
   onDeployCombat,
   onUpdateStrategicOrder,
+  onOpenFleetCommand,
 }: SectorIntelModalProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "operations" | "resources" | "base_fnd6">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "operations" | "resources" | "base_fnd6" | "fleets_fnd7">("overview")
   const [, setLocalMutationTick] = useState(0)
 
   const sectorsList = useMemo(() => Object.values(worldState.sectors || {}), [worldState.sectors])
@@ -234,6 +238,14 @@ export function SectorIntelModal({
   const sector = useMemo(() => {
     return worldState.sectors[sectorId] || sectorsList[0] || null
   }, [worldState.sectors, sectorId, sectorsList])
+
+  const sectorFleets = useMemo(() => {
+    if (!sector) return []
+    const allFleets = worldState.fleets && Object.keys(worldState.fleets).length > 0
+      ? Object.values(worldState.fleets)
+      : Object.values(ensureWorldFleetsInitialized(worldState))
+    return allFleets.filter((f) => f.currentLocation.sectorId === sector.id)
+  }, [worldState.fleets, worldState, sector])
 
   const theme = useMemo(() => {
     if (!sector) return SECTOR_INTEL_THEMES.sol_command_hq
@@ -605,6 +617,19 @@ export function SectorIntelModal({
           >
             <Building className="size-3.5" />
             <span>Căn Cứ, Hub & Quỹ Đạo (FND-6)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("fleets_fnd7")}
+            className={cn(
+              "py-2.5 px-3 border-b-2 transition-colors cursor-pointer flex items-center gap-1.5",
+              activeTab === "fleets_fnd7"
+                ? "border-cyan-400 text-cyan-300"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
+            )}
+          >
+            <Compass className="size-3.5 text-cyan-400" />
+            <span>Hạm Đội Đồn Trú & Cập Cảng ({sectorFleets.length})</span>
           </button>
         </div>
 
@@ -1428,6 +1453,169 @@ export function SectorIntelModal({
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 5: FLEETS DEPLOYED & DOCKED (PHASE 7.7 FND-7) */}
+          {activeTab === "fleets_fnd7" && (
+            <div className="space-y-4">
+              {/* Header Banner */}
+              <div className="rounded-md border border-cyan-500/40 bg-cyan-950/20 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded bg-cyan-950/80 border border-cyan-500/40 text-cyan-400">
+                    <Compass className="size-4 text-cyan-300" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xs sm:text-sm text-cyan-200">
+                      LỰC LƯỢNG HẠM ĐỘI ĐỒN TRÚ & CẬP CẢNG ({sectorFleets.length})
+                    </h3>
+                    <p className="text-[11px] text-zinc-400">
+                      Tọa độ chiến lược: <strong className="text-zinc-200">{sector.name} ({sector.id})</strong>
+                    </p>
+                  </div>
+                </div>
+
+                {onOpenFleetCommand && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      playClickSound()
+                      onClose()
+                      onOpenFleetCommand(sectorFleets[0]?.fleetId || "")
+                    }}
+                    className="px-3 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition-colors cursor-pointer shadow-md shadow-cyan-950 flex items-center gap-1.5 shrink-0"
+                  >
+                    <ExternalLink className="size-3.5" />
+                    <span>Mở Bộ Tư Lệnh Hạm Đội</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Fleets List or Empty State */}
+              {sectorFleets.length === 0 ? (
+                <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-8 text-center space-y-3">
+                  <Anchor className="size-8 mx-auto text-zinc-600 opacity-60" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-zinc-300">
+                      Không Có Hạm Đội Nào Tại Khu Vực Này
+                    </p>
+                    <p className="text-xs text-zinc-500 max-w-md mx-auto">
+                      Hiện không có hạm đội nào đang đồn trú tuần tra không phận hoặc cập cảng căn cứ tại {sector.name}.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+                  {sectorFleets.map((fleet) => {
+                    const shipsArray = Object.values(fleet.ships || {})
+                    return (
+                      <div
+                        key={fleet.fleetId}
+                        className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3.5 space-y-3 hover:border-cyan-500/50 transition-colors"
+                      >
+                        {/* Fleet Header */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-sm text-cyan-200">{fleet.name}</span>
+                              {fleet.customCallsign && (
+                                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                                  "{fleet.customCallsign}"
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-zinc-400 font-mono mt-0.5">
+                              {fleet.fleetClassId} &bull; Persona: <span className="text-amber-300">{fleet.aiPersona}</span>
+                            </div>
+                          </div>
+
+                          <span
+                            className={cn(
+                              "px-2 py-0.5 rounded text-[10px] font-bold font-mono border",
+                              fleet.operationalStatus === "DOCKED"
+                                ? "bg-emerald-950/70 border-emerald-500/50 text-emerald-300"
+                                : fleet.operationalStatus === "IN_TRANSIT"
+                                ? "bg-amber-950/70 border-amber-500/50 text-amber-300"
+                                : "bg-cyan-950/70 border-cyan-500/50 text-cyan-300"
+                            )}
+                          >
+                            {fleet.operationalStatus}
+                          </span>
+                        </div>
+
+                        {/* Metrics Bar */}
+                        <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono">
+                          <div className="p-1.5 rounded bg-black/40 border border-zinc-800">
+                            <span className="text-zinc-500 block">CHIẾN HẠM</span>
+                            <span className="font-bold text-cyan-300 text-xs">{shipsArray.length} Tàu</span>
+                          </div>
+                          <div className="p-1.5 rounded bg-black/40 border border-zinc-800">
+                            <span className="text-zinc-500 block">THỦY THỦ ĐOÀN</span>
+                            <span className="font-bold text-emerald-300 text-xs">
+                              {fleet.personnel?.crewPool?.crewAssigned ?? 0} Quân
+                            </span>
+                          </div>
+                          <div className="p-1.5 rounded bg-black/40 border border-zinc-800">
+                            <span className="text-zinc-500 block">SĨ KHÍ</span>
+                            <span className="font-bold text-purple-300 text-xs">{fleet.personnel?.morale ?? 100}%</span>
+                          </div>
+                        </div>
+
+                        {/* Cargo & Treasury Overview */}
+                        <div className="flex items-center justify-between text-[11px] font-mono p-2 rounded bg-black/30 border border-zinc-800/80">
+                          <div className="flex items-center gap-2">
+                            <span className="text-zinc-400">Lương thực: <b className="text-emerald-400">{fleet.cargo?.food ?? 0}</b></span>
+                            <span className="text-zinc-600">&bull;</span>
+                            <span className="text-zinc-400">Plasma: <b className="text-amber-400">{fleet.cargo?.energy ?? 0}</b></span>
+                          </div>
+                          <div className="text-cyan-300 font-bold">
+                            {fleet.treasury?.credits?.toLocaleString() ?? 0} Cr
+                          </div>
+                        </div>
+
+                        {/* Ship Roster Mini Preview */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-zinc-500 font-mono uppercase block">
+                            Chiến Hạm Thuộc Biên Chế:
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {shipsArray.map((ship) => (
+                              <span
+                                key={ship.instanceId}
+                                className={cn(
+                                  "text-[10px] font-mono px-2 py-0.5 rounded border",
+                                  fleet.flagshipInstanceId === ship.instanceId
+                                    ? "bg-amber-950/40 border-amber-500/50 text-amber-200 font-bold"
+                                    : "bg-zinc-800/60 border-zinc-700/60 text-zinc-300"
+                                )}
+                              >
+                                {fleet.flagshipInstanceId === ship.instanceId ? "👑 " : ""}{ship.customName || ship.instanceId} ({ship.condition}%)
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        {onOpenFleetCommand && (
+                          <div className="pt-2 border-t border-zinc-800/80 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                playClickSound()
+                                onClose()
+                                onOpenFleetCommand(fleet.fleetId)
+                              }}
+                              className="text-[11px] text-cyan-400 hover:text-cyan-200 underline font-semibold cursor-pointer"
+                            >
+                              Điều Hành Hạm Đội Này &rarr;
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -123,7 +123,9 @@ export interface ShipInstance {
   // Independent Ownership & Dynamic Location
   ownerRef: ShipOwnerRef
   assignedFleetId?: string // Decoupled: can be unassigned, stationed, or under refit
+  fleetId?: string // Compatibility alias
   currentBaseId?: string
+  dockedBaseId?: string // Compatibility alias
   currentSectorId: string
   currentDockId?: string
   
@@ -176,7 +178,7 @@ export interface CreateShipParams {
   ownerRef: ShipOwnerRef
   assignedFleetId?: string
   currentBaseId?: string
-  currentSectorId: string
+  currentSectorId?: string
   currentDockId?: string
   assignedCrewCount?: number
   assignedPilotId?: string

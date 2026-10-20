@@ -19,7 +19,7 @@
         "sectorThreatLevelCutoff": 85,
         "minFleetReadinessPercent": 60
       },
-      "newGuildProtectionDays": 360,
+      "newGuildProtectionDays": 3600,
       "exchangeRateFrameToCredits": 150,
       "lifecycle": "ACTIVE"
     }

@@ -61,7 +61,7 @@ test("1. bootstrapWorldCatalogs registers all 7 Fleet master catalogs", () => {
   const policies = defaultCatalogRegistry.getResolvedItems<FleetPolicyProfile>("fleet", "policy_profile")
   const frameAwards = defaultCatalogRegistry.getResolvedItems<FrameAwardDefinition>("fleet", "frame_award_catalog")
 
-  assert.strictEqual(fleetTypes.length, 4)
+  assert.strictEqual(fleetTypes.length, 6)
   assert.strictEqual(fleetClasses.length, 5)
   assert.strictEqual(shipTypes.length, 7)
   assert.ok(shipClasses.length >= 5)
@@ -118,7 +118,7 @@ test("4. Fleet Types schema & parameter validation", () => {
     assert.ok(type.id.startsWith("FLEET_TYPE_"))
     assert.ok(type.name.length > 0)
     assert.ok(type.description.length > 0)
-    assert.ok(["OFFENSIVE", "DEFENSIVE", "SUPPORT", "LOGISTICS", "RECON"].includes(type.strategicRole))
+    assert.ok(["OFFENSIVE", "DEFENSIVE", "SUPPORT", "LOGISTICS", "RECON", "ESCORT"].includes(type.strategicRole))
     assert.ok(type.baseSpeedMultiplier > 0)
     assert.ok(type.baseMaintenanceCostMultiplier > 0)
     assert.ok(type.defaultAIPersona.length > 0)
@@ -243,8 +243,8 @@ test("10. Fleet Policy Profile conforms to approved financial & decay rules", ()
   assert.strictEqual(policy.subsidyFullRateLimit, 3)
   assert.strictEqual(policy.frontlineWarExceptionEnabled, true)
 
-  // New guild protection & exchange rate
-  assert.strictEqual(policy.newGuildProtectionDays, 360)
+  // New guild protection & exchange rate (10 Game Years = 3600 days)
+  assert.strictEqual(policy.newGuildProtectionDays, 3600)
   assert.strictEqual(policy.exchangeRateFrameToCredits, 150)
 
   // Emergency command thresholds

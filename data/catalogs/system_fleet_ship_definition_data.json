@@ -1,0 +1,188 @@
+{
+  "configFileId": "system_fleet_ship_definition",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "SHIP_DEF_SOL_VALIANT_CORVETTE",
+      "typeId": "SHIP_TYPE_CORVETTE",
+      "classId": "SHIP_CLASS_MK1_STANDARD",
+      "name": "Sol Valiant Corvette",
+      "faction": "vss",
+      "description": "Chiến hạm trinh sát tiêu chuẩn của Liên minh VSS, độ cơ động tuyệt hảo trên các tuyến tuần tra.",
+      "baseStats": {
+        "maxHp": 3200,
+        "maxShield": 1800,
+        "attack": 280,
+        "defense": 150,
+        "speed": 135
+      },
+      "crewRequirements": {
+        "minimumCrew": 8,
+        "targetCrew": 16,
+        "maximumCrew": 24
+      },
+      "slotsLayout": [
+        { "slotId": "slot_wpn_1", "slotType": "WEAPON", "size": "LIGHT" },
+        { "slotId": "slot_eng_1", "slotType": "ENGINE", "size": "LIGHT" },
+        { "slotId": "slot_shd_1", "slotType": "SHIELD", "size": "LIGHT" },
+        { "slotId": "slot_utl_1", "slotType": "UTILITY", "size": "LIGHT" }
+      ],
+      "cargoCapacity": 120,
+      "fuelCapacity": 450,
+      "buildCost": {
+        "industrialMaterials": 450,
+        "energy": 200,
+        "credits": 1200,
+        "buildDays": 5
+      },
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_DEF_AEGIS_LINE_CRUISER",
+      "typeId": "SHIP_TYPE_CRUISER",
+      "classId": "SHIP_CLASS_MK2_REINFORCED",
+      "name": "Aegis Vanguard Line Cruiser",
+      "faction": "vss",
+      "description": "Tuần dương hạm chủ lực hạng nặng, bệ đỡ phòng thủ của mọi hạm đội viễn chinh.",
+      "baseStats": {
+        "maxHp": 14500,
+        "maxShield": 9800,
+        "attack": 1250,
+        "defense": 820,
+        "speed": 75
+      },
+      "crewRequirements": {
+        "minimumCrew": 45,
+        "targetCrew": 90,
+        "maximumCrew": 135
+      },
+      "slotsLayout": [
+        { "slotId": "slot_wpn_1", "slotType": "WEAPON", "size": "HEAVY" },
+        { "slotId": "slot_wpn_2", "slotType": "WEAPON", "size": "MEDIUM" },
+        { "slotId": "slot_shd_1", "slotType": "SHIELD", "size": "HEAVY" },
+        { "slotId": "slot_eng_1", "slotType": "ENGINE", "size": "HEAVY" },
+        { "slotId": "slot_hgr_1", "slotType": "HANGAR", "size": "MEDIUM" },
+        { "slotId": "slot_utl_1", "slotType": "UTILITY", "size": "MEDIUM" }
+      ],
+      "cargoCapacity": 850,
+      "fuelCapacity": 1800,
+      "buildCost": {
+        "industrialMaterials": 2400,
+        "energy": 1200,
+        "credits": 6800,
+        "buildDays": 18
+      },
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_DEF_HYPERION_CARRIER",
+      "typeId": "SHIP_TYPE_CARRIER",
+      "classId": "SHIP_CLASS_MK3_ADVANCED",
+      "name": "Hyperion Fleet Dread Carrier",
+      "faction": "vss",
+      "description": "Hàng không mẫu hạm tinh anh mang theo phi đội GEAR, bệ phóng tác chiến viễn chinh.",
+      "baseStats": {
+        "maxHp": 28000,
+        "maxShield": 16500,
+        "attack": 1850,
+        "defense": 1200,
+        "speed": 65
+      },
+      "crewRequirements": {
+        "minimumCrew": 120,
+        "targetCrew": 240,
+        "maximumCrew": 360
+      },
+      "slotsLayout": [
+        { "slotId": "slot_hgr_1", "slotType": "HANGAR", "size": "CAPITAL" },
+        { "slotId": "slot_hgr_2", "slotType": "HANGAR", "size": "CAPITAL" },
+        { "slotId": "slot_wpn_1", "slotType": "WEAPON", "size": "MEDIUM" },
+        { "slotId": "slot_shd_1", "slotType": "SHIELD", "size": "HEAVY" },
+        { "slotId": "slot_eng_1", "slotType": "ENGINE", "size": "HEAVY" },
+        { "slotId": "slot_utl_1", "slotType": "UTILITY", "size": "HEAVY" }
+      ],
+      "cargoCapacity": 2500,
+      "fuelCapacity": 4000,
+      "buildCost": {
+        "industrialMaterials": 5800,
+        "energy": 3200,
+        "credits": 16500,
+        "buildDays": 32
+      },
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_DEF_HERMES_SUPPLY_TENDER",
+      "typeId": "SHIP_TYPE_FREIGHTER",
+      "classId": "SHIP_CLASS_MK1_STANDARD",
+      "name": "Hermes Heavy Supply Tender",
+      "faction": "vss",
+      "description": "Tàu hậu cần tiếp vận chuyên chở khối lượng lớn lương thực, đạn dược và nhiên liệu.",
+      "baseStats": {
+        "maxHp": 7500,
+        "maxShield": 4200,
+        "attack": 120,
+        "defense": 350,
+        "speed": 60
+      },
+      "crewRequirements": {
+        "minimumCrew": 20,
+        "targetCrew": 40,
+        "maximumCrew": 60
+      },
+      "slotsLayout": [
+        { "slotId": "slot_crg_1", "slotType": "CARGO", "size": "CAPITAL" },
+        { "slotId": "slot_crg_2", "slotType": "CARGO", "size": "CAPITAL" },
+        { "slotId": "slot_shd_1", "slotType": "SHIELD", "size": "MEDIUM" },
+        { "slotId": "slot_eng_1", "slotType": "ENGINE", "size": "MEDIUM" },
+        { "slotId": "slot_utl_1", "slotType": "UTILITY", "size": "MEDIUM" }
+      ],
+      "cargoCapacity": 6000,
+      "fuelCapacity": 5000,
+      "buildCost": {
+        "industrialMaterials": 1800,
+        "energy": 900,
+        "credits": 4200,
+        "buildDays": 12
+      },
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_DEF_ASCLEPIUS_SAR_CUTTER",
+      "typeId": "SHIP_TYPE_CORVETTE",
+      "classId": "SHIP_CLASS_MK2_REINFORCED",
+      "name": "Asclepius Emergency SAR Cutter",
+      "faction": "vss",
+      "description": "Chiến hạm cứu hộ siêu tốc, trang bị buồng hồi sức dã chiến chuyên tìm kiếm cứu nạn phi công.",
+      "baseStats": {
+        "maxHp": 4200,
+        "maxShield": 2800,
+        "attack": 320,
+        "defense": 240,
+        "speed": 145
+      },
+      "crewRequirements": {
+        "minimumCrew": 12,
+        "targetCrew": 24,
+        "maximumCrew": 36
+      },
+      "slotsLayout": [
+        { "slotId": "slot_wpn_1", "slotType": "WEAPON", "size": "LIGHT" },
+        { "slotId": "slot_eng_1", "slotType": "ENGINE", "size": "MEDIUM" },
+        { "slotId": "slot_shd_1", "slotType": "SHIELD", "size": "LIGHT" },
+        { "slotId": "slot_utl_1", "slotType": "UTILITY", "size": "HEAVY" }
+      ],
+      "cargoCapacity": 300,
+      "fuelCapacity": 800,
+      "buildCost": {
+        "industrialMaterials": 850,
+        "energy": 450,
+        "credits": 2400,
+        "buildDays": 7
+      },
+      "lifecycle": "ACTIVE"
+    }
+  ]
+}

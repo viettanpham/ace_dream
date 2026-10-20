@@ -2,17 +2,17 @@
   "label": "dev_save",
   "tick": 0,
   "currentDay": 42,
-  "savedAt": "2026-10-19T16:13:48.338Z",
+  "savedAt": "2026-10-20T11:45:41.004Z",
   "schemaVersion": 1,
-  "timestamp": 1792426428338,
-  "checksum": "bc089d78",
+  "timestamp": 1792496741004,
+  "checksum": "cf90e50c",
   "data": {
     "version": 1,
     "worldSeed": 99887766,
     "currentDay": 42,
     "totalDaysElapsed": 0,
-    "realTimeAnchor": 1792426428290,
-    "lastTickTimestamp": 1792426428290,
+    "realTimeAnchor": 1792496740966,
+    "lastTickTimestamp": 1792496740966,
     "sectors": {
       "sol_command_hq": {
         "id": "sol_command_hq",
@@ -1384,7 +1384,7 @@
       "hpPerThreatPoint": 100,
       "winnerRatio": 2,
       "threatFormulaMultiplier": 1,
-      "lastModified": 1792426428290
+      "lastModified": 1792496740966
     },
     "survivalConfig": {
       "thresholdSafe": 70,
@@ -1394,7 +1394,7 @@
       "baseCaptureChance": 0.4,
       "facilityRescuePowerBonusPerTier": 0.1,
       "alliedVictoryRescueBonus": 0.35,
-      "lastModified": 1792426428290
+      "lastModified": 1792496740966
     },
     "pilotSurvivalRegistry": [],
     "nationalPowRegistry": [],
@@ -10938,12 +10938,12 @@
       "autoSaveIntervalRealMinutes": 10
     },
     "lastAutoSaveGameDay": 42,
-    "lastAutoSaveTimestamp": 1792426428293,
+    "lastAutoSaveTimestamp": 1792496740968,
     "worldResetConfig": {
       "cc0Name": "Liên minh VSS",
       "commanderName": "Alviss",
       "resetCount": 0,
-      "lastResetTimestamp": 1792426428290
+      "lastResetTimestamp": 1792496740966
     }
   }
 }

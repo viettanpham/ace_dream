@@ -10,7 +10,11 @@ export const metadata: Metadata = {
     description:
       'Original browser-based 2D sci-fi turn-based RPG inspired by the gameplay atmosphere of ACE Online.',
   },
-}
+  icons: {
+    icon: '/icon.svg',
+    apple: '/icon.svg',
+  },
+};
 
 export default function RootLayout({
   children,

@@ -292,7 +292,7 @@ export function StarfrontHome({
             {["marcus", "valentine", "alviss", "lyra", "kaelen"].map((id) => (
               <img
                 key={id}
-                src={`/images/${id}-portrait.png`}
+                src={`/images/${id}-portrait.webp`}
                 alt={id}
                 className="inline-block size-10 rounded-full ring-2 ring-cyan-500/80 object-cover object-top shadow-md"
               />
@@ -367,7 +367,7 @@ export function StarfrontHome({
             {/* Ảnh Mecha Concept Art Hero Showcase */}
             <div className="mt-3 relative w-full h-44 sm:h-52 overflow-hidden rounded-sm border border-cyan-500/30 bg-black/80 flex items-center justify-center group shadow-md">
               <img
-                src={activeGearDef.illustration || `/images/${activeGearId}-gear.jpg`}
+                src={activeGearDef.illustration || `/images/${activeGearId}-gear.webp`}
                 alt={activeGearDef.name}
                 className="w-full h-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-transform duration-500 group-hover:scale-105"
               />

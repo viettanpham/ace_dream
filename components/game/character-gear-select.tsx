@@ -457,11 +457,11 @@ export function CharacterGearSelect({
   const pilotExpPct = Math.min(100, Math.round((activePilotProg.exp / pilotExpReq) * 100))
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sf-text-body font-mono">
       {/* ====================================================================
           1. HEADER BANNER: THU NHỎ / MỞ RỘNG TÙY CHỌN GHÉP ĐÔI (COLLAPSIBLE BAR)
           ==================================================================== */}
-      <section className="relative overflow-hidden rounded-sm border border-cyan-500/40 bg-panel/90 p-3.5 shadow-lg backdrop-blur-md">
+      <section className="relative overflow-hidden rounded-sm border border-cyan-500/40 bg-panel/90 p-3.5 shadow-lg backdrop-blur-md sf-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Trái: Tên Phân Hệ & Huy hiệu Cặp Đôi Đang Hoạt Động */}
           <div className="flex items-center gap-3">
@@ -475,21 +475,21 @@ export function CharacterGearSelect({
                 alt={activePilotDef.name}
                 className="size-full object-cover object-top"
               />
-              <span className="absolute bottom-0 right-0 bg-cyan-950/90 px-1 font-mono text-[8px] font-bold text-cyan-300">
+              <span className="absolute bottom-0 right-0 bg-cyan-950/90 px-1 font-mono sf-text-caption font-bold text-cyan-300">
                 L{activePilotProg.level}
               </span>
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-display text-sm font-black tracking-wider text-white uppercase">
+                <h1 className="font-display sf-title-panel font-black tracking-wider text-white uppercase">
                   NHÂN VẬT & CƠ GIÁP (CHARACTER & GEAR)
                 </h1>
-                <span className="rounded bg-cyan-950 px-1.5 py-0.5 text-[9px] font-mono font-bold text-cyan-300 border border-cyan-500/40">
+                <span className="rounded bg-cyan-950 px-1.5 py-0.5 sf-text-caption font-mono font-bold text-cyan-300 border border-cyan-500/40">
                   PHASE 5.8
                 </span>
               </div>
-              <div className="flex items-center gap-2 mt-0.5 text-xs font-mono">
+              <div className="flex items-center gap-2 mt-0.5 sf-text-secondary font-mono">
                 <button
                   type="button"
                   onClick={() => handleOpenPilotSpotlight(activePilotId)}
@@ -511,21 +511,21 @@ export function CharacterGearSelect({
                   />
                   <span>{activeGearDef.name}</span>
                 </button>
-                <span className="text-[10px] text-muted-foreground">({activeGearDef.role})</span>
+                <span className="sf-text-caption text-muted-foreground">({activeGearDef.role})</span>
               </div>
             </div>
           </div>
 
           {/* Giữa: Trạng Thái Khóa & Tiến Độ Mở Khóa (Phân biệt Rõ Mandatory vs Optional) */}
-          <div className="flex items-center gap-2 font-mono text-xs">
+          <div className="flex items-center gap-2 font-mono sf-text-secondary">
             {isMandatory ? (
-              <div className="flex items-center gap-2 rounded border border-amber-500/70 bg-amber-950/60 px-3 py-1 text-amber-300 shadow-sm animate-pulse">
-                <AlertTriangle className="size-3.5 text-amber-400 shrink-0" />
+              <div className="flex items-center gap-2 rounded border border-amber-500/70 bg-amber-950/60 px-3 py-1.5 text-amber-300 shadow-sm animate-pulse">
+                <AlertTriangle className="size-4 text-amber-400 shrink-0" />
                 <span className="font-bold">BẮT BUỘC: CHƯA CÓ TỔ HỢP PHI CÔNG & CƠ GIÁP</span>
               </div>
             ) : isLocked ? (
-              <div className="flex items-center gap-2 rounded border border-amber-500/60 bg-amber-950/40 px-3 py-1 text-amber-300 shadow-sm">
-                <Lock className="size-3.5 text-amber-400 shrink-0 animate-pulse" />
+              <div className="flex items-center gap-2 rounded border border-amber-500/60 bg-amber-950/40 px-3 py-1.5 text-amber-300 shadow-sm">
+                <Lock className="size-4 text-amber-400 shrink-0 animate-pulse" />
                 <div>
                   <span className="font-bold">ĐANG KHÓA XUẤT KÍCH:</span>
                   <span className="ml-1.5 text-white font-semibold">
@@ -534,8 +534,8 @@ export function CharacterGearSelect({
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 rounded border border-emerald-500/60 bg-emerald-950/40 px-3 py-1 text-emerald-300 shadow-sm">
-                <Unlock className="size-3.5 text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-2 rounded border border-emerald-500/60 bg-emerald-950/40 px-3 py-1.5 text-emerald-300 shadow-sm">
+                <Unlock className="size-4 text-emerald-400 shrink-0" />
                 <span className="font-bold">ĐÃ MỞ KHÓA · TÙY CHỌN ĐỔI HOẶC TIẾP TỤC</span>
               </div>
             )}
@@ -547,7 +547,7 @@ export function CharacterGearSelect({
             {isOptional && (
               <button
                 onClick={handleSkipOptionalSelection}
-                className="flex items-center gap-1.5 rounded border border-emerald-500/60 bg-emerald-950/70 hover:bg-emerald-900/80 px-3 py-1.5 font-display text-xs font-bold uppercase tracking-wider text-emerald-200 transition-all cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                className="flex items-center gap-1.5 rounded border border-emerald-500/60 bg-emerald-950/70 hover:bg-emerald-900/80 px-3.5 py-1.5 font-display sf-text-button sf-density-btn font-bold uppercase tracking-wider text-emerald-200 transition-all cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.25)]"
                 title="Bỏ qua thay đổi và tiếp tục xuất kích với tổ hợp hiện tại"
               >
                 <span>Tiếp Tục (Giữ Nguyên)</span>
@@ -557,7 +557,7 @@ export function CharacterGearSelect({
 
             {isLocked ? (
               <div
-                className="flex items-center gap-1.5 rounded border border-amber-500/60 bg-amber-950/60 px-3 py-1.5 font-display text-xs font-bold text-amber-300 shadow-sm cursor-not-allowed select-none"
+                className="flex items-center gap-1.5 rounded border border-amber-500/60 bg-amber-950/60 px-3.5 py-1.5 font-display sf-text-button sf-density-btn font-bold text-amber-300 shadow-sm cursor-not-allowed select-none"
                 title={`Đang khóa chiến dịch (${completedMissions}/5 Nhiệm Vụ · ${wonBattles}/5 Trận Thắng). Không thể thay đổi nhân vật hoặc cơ giáp!`}
               >
                 <Lock className="size-3.5 text-amber-400" />
@@ -565,7 +565,7 @@ export function CharacterGearSelect({
               </div>
             ) : isMandatory ? (
               <div
-                className="flex items-center gap-1.5 rounded border border-amber-500/70 bg-amber-950/70 px-3 py-1.5 font-display text-xs font-bold text-amber-300 shadow-sm"
+                className="flex items-center gap-1.5 rounded border border-amber-500/70 bg-amber-950/70 px-3.5 py-1.5 font-display sf-text-button sf-density-btn font-bold text-amber-300 shadow-sm"
               >
                 <AlertTriangle className="size-3.5 text-amber-400" />
                 <span>BẮT BUỘC CHỌN (BƯỚC 1 - 3)</span>
@@ -577,7 +577,7 @@ export function CharacterGearSelect({
                   setIsSelectionFlowCollapsed(!isSelectionFlowCollapsed)
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded border px-3 py-1.5 font-display text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm",
+                  "flex items-center gap-1.5 rounded border px-3.5 py-1.5 font-display sf-text-button sf-density-btn font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm",
                   isSelectionFlowCollapsed
                     ? "border-cyan-500/50 bg-cyan-950/60 text-cyan-300 hover:bg-cyan-900/60"
                     : "border-border/60 bg-black/40 text-muted-foreground hover:text-white",
@@ -600,7 +600,7 @@ export function CharacterGearSelect({
             {onNavigateToPilotStatus && (
               <button
                 onClick={onNavigateToPilotStatus}
-                className="flex items-center gap-1.5 rounded border border-cyan-500/60 bg-cyan-950/40 px-2.5 py-1.5 text-xs text-cyan-300 hover:bg-cyan-900/50 hover:text-white transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded border border-cyan-500/60 bg-cyan-950/40 px-3 py-1.5 sf-text-button sf-density-btn text-cyan-300 hover:bg-cyan-900/50 hover:text-white transition-colors cursor-pointer font-bold"
                 title="Mở Bảng Trạng Thái Phi Công (Pilot Status Dashboard)"
               >
                 <Activity className="size-3.5 text-cyan-400" />
@@ -611,7 +611,7 @@ export function CharacterGearSelect({
             {onNavigateToHangar && (
               <button
                 onClick={onNavigateToHangar}
-                className="hidden sm:flex items-center gap-1.5 rounded border border-border/60 bg-black/40 px-2.5 py-1.5 text-xs text-muted-foreground hover:text-white hover:border-cyan-500/40 transition-colors cursor-pointer"
+                className="hidden sm:flex items-center gap-1.5 rounded border border-border/60 bg-black/40 px-3 py-1.5 sf-text-button sf-density-btn text-muted-foreground hover:text-white hover:border-cyan-500/40 transition-colors cursor-pointer"
                 title="Mở Hangar & Kho Đồ"
               >
                 <Boxes className="size-3.5 text-cyan-400" />
@@ -623,19 +623,19 @@ export function CharacterGearSelect({
 
         {/* Thông báo khóa an toàn khi đã khóa (UI chọn nhân vật không được phép enable) */}
         {isLocked && (
-          <div className="mt-3.5 border-t border-border/50 pt-3 flex flex-wrap items-center justify-between gap-3 rounded bg-black/50 p-3 border border-amber-500/30 font-mono text-xs text-amber-300">
+          <div className="mt-3.5 border-t border-border/50 pt-3 flex flex-wrap items-center justify-between gap-3 rounded bg-black/50 p-3.5 border border-amber-500/30 font-mono sf-text-secondary text-amber-300">
             <div className="flex items-center gap-2.5">
               <Lock className="size-4 text-amber-400 shrink-0" />
               <div>
-                <span className="font-bold text-white uppercase">GIAO DIỆN CHỌN NHÂN VẬT ĐÃ ĐƯỢC KHÓA AN TOÀN</span>
-                <p className="text-[11px] text-muted-foreground mt-0.5">
+                <span className="font-bold text-white uppercase sf-title-card block">GIAO DIỆN CHỌN NHÂN VẬT ĐÃ ĐƯỢC KHÓA AN TOÀN</span>
+                <p className="sf-text-body text-zinc-300 mt-0.5">
                   Tổ hợp phi công <strong className="text-cyan-300">{activePilotDef.name}</strong> & cơ giáp <strong className="text-white">{activeGearDef.name}</strong> đang làm nhiệm vụ chiến đấu. Không thể thay đổi nhân vật/cơ giáp cho đến khi hoàn thành đủ 5 nhiệm vụ hoặc 5 trận thắng.
                 </p>
               </div>
             </div>
-            <div className="rounded bg-black/70 px-2.5 py-1 border border-amber-500/40 text-right">
-              <span className="text-[10px] text-muted-foreground uppercase block">Mở khóa sau</span>
-              <span className="font-bold text-amber-300">{Math.max(0, 5 - completedMissions)} Q hoặc {Math.max(0, 5 - wonBattles)} Trận Thắng</span>
+            <div className="rounded bg-black/70 px-3 py-1.5 border border-amber-500/40 text-right">
+              <span className="sf-text-caption text-muted-foreground uppercase block">Mở khóa sau</span>
+              <span className="font-bold text-amber-300 sf-text-body">{Math.max(0, 5 - completedMissions)} Q hoặc {Math.max(0, 5 - wonBattles)} Trận Thắng</span>
             </div>
           </div>
         )}
@@ -647,29 +647,29 @@ export function CharacterGearSelect({
           <div className="mt-4 border-t border-border/50 pt-3.5 animate-in fade-in duration-200">
             {/* Banner hướng dẫn: Phân biệt rõ Bắt Buộc vs Tùy Chọn */}
             {isMandatory ? (
-              <div className="mb-3 rounded border border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-black/80 to-amber-950/70 p-3 text-xs font-mono text-amber-200 flex items-center gap-2.5 shadow-md">
-                <AlertTriangle className="size-4 text-amber-400 shrink-0 animate-pulse" />
+              <div className="mb-3 rounded border border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-black/80 to-amber-950/70 p-3.5 sf-text-secondary font-mono text-amber-200 flex items-center gap-2.5 shadow-md">
+                <AlertTriangle className="size-4.5 text-amber-400 shrink-0 animate-pulse" />
                 <div>
-                  <strong className="text-white uppercase">YÊU CẦU BẮT BUỘC KHỞI ĐẦU:</strong>
-                  <p className="text-[11px] text-amber-200/90 mt-0.5">
+                  <strong className="text-white uppercase sf-title-card block">YÊU CẦU BẮT BUỘC KHỞI ĐẦU:</strong>
+                  <p className="sf-text-body text-amber-200/90 mt-0.5">
                     Hệ thống chưa có tổ hợp Phi Công & Cơ Giáp hợp lệ. Vui lòng hoàn tất Bước 1 (Chọn Phi Công), Bước 2 (Chọn Cơ Giáp) và bấm <strong>"XÁC NHẬN GHÉP ĐÔI & KHÓA XUẤT KÍCH"</strong> ở Bước 3 để kích hoạt toàn bộ hệ thống trò chơi.
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="mb-3 rounded border border-cyan-500/60 bg-gradient-to-r from-cyan-950/80 via-black/80 to-cyan-950/70 p-3 text-xs font-mono text-cyan-200 flex flex-wrap items-center justify-between gap-3 shadow-md">
+              <div className="mb-3 rounded border border-cyan-500/60 bg-gradient-to-r from-cyan-950/80 via-black/80 to-cyan-950/70 p-3.5 sf-text-secondary font-mono text-cyan-200 flex flex-wrap items-center justify-between gap-3 shadow-md">
                 <div className="flex items-center gap-2.5">
-                  <Sparkles className="size-4 text-cyan-400 shrink-0 animate-pulse" />
+                  <Sparkles className="size-4.5 text-cyan-400 shrink-0 animate-pulse" />
                   <div>
-                    <strong className="text-white uppercase">TÙY CHỌN THAY ĐỔI CẶP ĐÔI (OPTIONAL):</strong>
-                    <p className="text-[11px] text-cyan-200/90 mt-0.5">
+                    <strong className="text-white uppercase sf-title-card block">TÙY CHỌN THAY ĐỔI CẶP ĐÔI (OPTIONAL):</strong>
+                    <p className="sf-text-body text-cyan-200/90 mt-0.5">
                       Tổ hợp hiện tại ({activePilotDef.name} + {activeGearDef.name}) đã hoàn tất chỉ tiêu ({completedMissions}/5 Q · {wonBattles}/5 B). Bạn có thể chọn tổ hợp mới để khóa 5 nhiệm vụ tiếp theo, HOẶC bấm nút bên phải để giữ nguyên tổ hợp này.
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={handleSkipOptionalSelection}
-                  className="flex items-center gap-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white px-3.5 py-1.5 font-display text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.3)] border border-cyan-400/60"
+                  className="flex items-center gap-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 font-display sf-text-button sf-density-btn font-bold uppercase tracking-wider transition-all cursor-pointer shadow-[0_0_12px_rgba(6,182,212,0.3)] border border-cyan-400/60"
                 >
                   <span>Tiếp Tục (Giữ Nguyên)</span>
                   <ArrowRight className="size-3.5" />
@@ -862,11 +862,11 @@ export function CharacterGearSelect({
                 <div className="flex items-center justify-between border-b border-border/40 pb-2">
                   <div className="flex items-center gap-2">
                     <Cpu className="size-4 text-cyan-400" />
-                    <span className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+                    <span className="font-display sf-text-secondary font-bold uppercase tracking-wider text-cyan-300">
                       CHỌN CƠ GIÁP PHÙ HỢP // PHI CÔNG ĐANG CHỌN: {flowPilotDef.name.toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-cyan-300/80">
+                  <span className="sf-text-caption font-mono text-cyan-300/80">
                     Bấm vào bất kỳ cơ giáp nào để mở HỒ SƠ NỔI BẬT (3D Concept Art, Thông Số & Hiệp Đồng) và xác nhận chọn
                   </span>
                 </div>
@@ -882,7 +882,7 @@ export function CharacterGearSelect({
                         key={gId}
                         onClick={() => handleOpenGearSpotlight(gId)}
                         className={cn(
-                          "group relative flex flex-col justify-between rounded-sm border p-3.5 transition-all cursor-pointer",
+                          "group relative flex flex-col justify-between rounded-sm border p-3.5 transition-all cursor-pointer sf-card",
                           isSelected
                             ? "border-cyan-400 bg-cyan-950/70 shadow-[0_0_15px_rgba(34,211,238,0.25)] ring-1 ring-cyan-400/50"
                             : "border-border/60 bg-panel/50 opacity-85 hover:opacity-100 hover:border-cyan-500/50 hover:bg-panel/90 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)]",
@@ -896,11 +896,11 @@ export function CharacterGearSelect({
                                   className="size-2.5 rounded-full"
                                   style={{ backgroundColor: def.color }}
                                 />
-                                <span className="font-display text-sm font-bold text-white group-hover:text-cyan-300">
+                                <span className="font-display sf-title-card font-bold text-white group-hover:text-cyan-300">
                                   {def.name}
                                 </span>
                               </div>
-                              <span className="text-[10px] text-cyan-300 font-mono block mt-0.5">
+                              <span className="sf-text-caption text-cyan-300 font-mono block mt-0.5">
                                 {def.role}
                               </span>
                             </div>
@@ -910,7 +910,7 @@ export function CharacterGearSelect({
                               style={{ borderColor: `${def.color}70` }}
                             >
                               <img
-                                src={def.illustration || `/images/${gId}-gear.jpg`}
+                                src={def.illustration || `/images/${gId}-gear.webp`}
                                 alt={def.name}
                                 className="size-full object-cover object-center"
                               />
@@ -918,23 +918,23 @@ export function CharacterGearSelect({
                           </div>
 
                           {isSynergy && (
-                            <div className="mt-2 rounded bg-amber-500/20 border border-amber-500/50 p-1.5 text-[9.5px] font-mono text-amber-300 flex items-center gap-1 font-bold">
+                            <div className="mt-2 rounded bg-amber-500/20 border border-amber-500/50 p-1.5 sf-text-caption font-mono text-amber-300 flex items-center gap-1 font-bold">
                               <Sparkles className="size-3 text-amber-400 shrink-0" />
                               <span>Gợi ý hiệp đồng với {flowPilotDef.name.split(" ")[0]}!</span>
                             </div>
                           )}
 
-                          <p className="mt-2 text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+                          <p className="mt-2 sf-text-secondary text-muted-foreground line-clamp-2 leading-relaxed">
                             {def.desc}
                           </p>
 
-                          <div className="mt-2 rounded bg-black/50 p-1.5 border border-border/40 text-[9.5px] font-mono">
+                          <div className="mt-2 rounded bg-black/50 p-2 border border-border/40 sf-text-caption font-mono">
                             <span className="text-amber-300 font-bold block">{def.passive.name}</span>
-                            <span className="text-muted-foreground text-[9px] line-clamp-1">{def.passive.shortDesc}</span>
+                            <span className="text-muted-foreground line-clamp-1">{def.passive.shortDesc}</span>
                           </div>
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 text-[10px] font-mono">
+                        <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2 sf-text-caption font-mono">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -962,14 +962,14 @@ export function CharacterGearSelect({
                 <div className="flex items-center justify-between pt-2">
                   <button
                     onClick={handlePrevStep}
-                    className="flex items-center gap-1.5 rounded border border-border/60 bg-black/40 px-3.5 py-1.5 font-display text-xs text-muted-foreground hover:text-white cursor-pointer"
+                    className="flex items-center gap-1.5 rounded border border-border/60 bg-black/40 px-3.5 py-1.5 font-display sf-text-button sf-density-btn text-muted-foreground hover:text-white cursor-pointer"
                   >
                     <ArrowLeft className="size-3.5" />
                     <span>Quay Lại Bước 1</span>
                   </button>
                   <button
                     onClick={handleNextStep}
-                    className="flex items-center gap-1.5 rounded bg-cyan-600 hover:bg-cyan-500 px-4 py-2 font-display text-xs font-bold text-white uppercase tracking-wider cursor-pointer shadow-md"
+                    className="flex items-center gap-1.5 rounded bg-cyan-600 hover:bg-cyan-500 px-4 py-2 font-display sf-text-button sf-density-btn font-bold text-white uppercase tracking-wider cursor-pointer shadow-md"
                   >
                     <span>Tiếp Theo: Đánh Giá & Xác Nhận</span>
                     <ArrowRight className="size-3.5" />
@@ -981,12 +981,12 @@ export function CharacterGearSelect({
             {/* BƯỚC 3: ĐÁNH GIÁ & XÁC NHẬN GHÉP ĐÔI */}
             {currentStep === 3 && (
               <div className="space-y-4">
-                <div className="rounded-sm border border-cyan-500/50 bg-black/60 p-4">
+                <div className="rounded-sm border border-cyan-500/50 bg-black/60 p-4 sf-card">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     {/* Phi công */}
                     <div
                       onClick={() => handleOpenPilotSpotlight(flowPilotDef.id)}
-                      className="flex items-center gap-3 cursor-pointer group p-2 rounded border border-cyan-500/30 bg-black/40 hover:bg-cyan-950/60 hover:border-cyan-400 transition-colors"
+                      className="flex items-center gap-3 cursor-pointer group p-2.5 rounded border border-cyan-500/30 bg-black/40 hover:bg-cyan-950/60 hover:border-cyan-400 transition-colors"
                       title="Bấm để mở hồ sơ nổi bật hoặc đổi phi công"
                     >
                       <div className="size-16 overflow-hidden rounded-sm border border-cyan-400 bg-black/60 shrink-0">
@@ -998,23 +998,23 @@ export function CharacterGearSelect({
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-display text-base font-bold text-white group-hover:text-cyan-300">{flowPilotDef.name}</span>
-                          <span className="text-[10px] text-cyan-400 font-mono">(Xem / Đổi)</span>
+                          <span className="font-display sf-title-card font-bold text-white group-hover:text-cyan-300">{flowPilotDef.name}</span>
+                          <span className="sf-text-caption text-cyan-400 font-mono">(Xem / Đổi)</span>
                         </div>
-                        <span className="block text-xs text-cyan-300 font-mono">{flowPilotDef.callsign} · Cấp {flowPilotProg.level}</span>
-                        <span className="text-[10px] text-muted-foreground font-mono">{flowPilotDef.specialty}</span>
+                        <span className="block sf-text-secondary text-cyan-300 font-mono">{flowPilotDef.callsign} · Cấp {flowPilotProg.level}</span>
+                        <span className="sf-text-caption text-muted-foreground font-mono">{flowPilotDef.specialty}</span>
                       </div>
                     </div>
 
                     <div className="text-center font-mono">
-                      <span className="text-xs text-muted-foreground block">DỰ KIẾN LỰC CHIẾN</span>
-                      <strong className="text-xl font-display font-black text-amber-300">{flowCombatRating}</strong>
+                      <span className="sf-text-caption text-muted-foreground block uppercase font-bold">DỰ KIẾN LỰC CHIẾN</span>
+                      <strong className="text-2xl font-display font-black text-amber-300">{flowCombatRating}</strong>
                     </div>
 
                     {/* Cơ giáp */}
                     <div
                       onClick={() => handleOpenGearSpotlight(selectedGearId)}
-                      className="flex items-center gap-3 cursor-pointer group p-2 rounded border border-cyan-500/30 bg-black/40 hover:bg-cyan-950/60 hover:border-cyan-400 transition-colors"
+                      className="flex items-center gap-3 cursor-pointer group p-2.5 rounded border border-cyan-500/30 bg-black/40 hover:bg-cyan-950/60 hover:border-cyan-400 transition-colors"
                       title="Bấm để mở hồ sơ nổi bật hoặc đổi cơ giáp"
                     >
                       <div className="size-16 p-1 rounded-sm border border-cyan-400 bg-black/60 shrink-0">
@@ -1026,17 +1026,17 @@ export function CharacterGearSelect({
                       </div>
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="font-display text-base font-bold text-white group-hover:text-cyan-300">{flowGearDef.name}</span>
-                          <span className="text-[10px] text-cyan-400 font-mono">(Xem / Đổi)</span>
+                          <span className="font-display sf-title-card font-bold text-white group-hover:text-cyan-300">{flowGearDef.name}</span>
+                          <span className="sf-text-caption text-cyan-400 font-mono">(Xem / Đổi)</span>
                         </div>
-                        <span className="block text-xs text-cyan-300 font-mono">{flowGearDef.role} · Cấp {progression.level}</span>
-                        <span className="text-[10px] text-muted-foreground font-mono">{flowGearDef.passive.name}</span>
+                        <span className="block sf-text-secondary text-cyan-300 font-mono">{flowGearDef.role} · Cấp {progression.level}</span>
+                        <span className="sf-text-caption text-muted-foreground font-mono">{flowGearDef.passive.name}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Cảnh báo khóa xuất kích */}
-                  <div className="mt-4 rounded bg-amber-950/40 border border-amber-500/50 p-2.5 text-xs font-mono text-amber-300 flex items-center justify-between">
+                  <div className="mt-4 rounded bg-amber-950/40 border border-amber-500/50 p-3 sf-text-secondary font-mono text-amber-300 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Lock className="size-4 text-amber-400 shrink-0" />
                       <span>
@@ -1044,7 +1044,7 @@ export function CharacterGearSelect({
                       </span>
                     </div>
                     {isLocked && (
-                      <span className="text-[10px] text-amber-400/80">
+                      <span className="sf-text-caption text-amber-400/80">
                         (Cặp đôi hiện tại đang bị khóa: {completedMissions}/5 Q · {wonBattles}/5 B)
                       </span>
                     )}
@@ -1054,7 +1054,7 @@ export function CharacterGearSelect({
                 <div className="flex items-center justify-between">
                   <button
                     onClick={handlePrevStep}
-                    className="flex items-center gap-1.5 rounded border border-border/60 bg-black/40 px-3.5 py-1.5 font-display text-xs text-muted-foreground hover:text-white cursor-pointer"
+                    className="flex items-center gap-1.5 rounded border border-border/60 bg-black/40 px-3.5 py-1.5 font-display sf-text-button sf-density-btn text-muted-foreground hover:text-white cursor-pointer"
                   >
                     <ArrowLeft className="size-3.5" />
                     <span>Quay Lại Bước 2</span>
@@ -1062,7 +1062,7 @@ export function CharacterGearSelect({
 
                   <button
                     onClick={handleConfirmPairing}
-                    className="flex items-center gap-2 rounded bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 px-5 py-2.5 font-display text-xs font-black text-white uppercase tracking-wider cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.4)] border border-cyan-400/60"
+                    className="flex items-center gap-2 rounded bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 px-5 py-2.5 font-display sf-text-button sf-density-btn font-black text-white uppercase tracking-wider cursor-pointer shadow-[0_0_20px_rgba(34,211,238,0.4)] border border-cyan-400/60"
                   >
                     <Check className="size-4" />
                     <span>XÁC NHẬN GHÉP ĐÔI & KHÓA XUẤT KÍCH</span>
@@ -1114,11 +1114,11 @@ export function CharacterGearSelect({
             <div className="flex items-center justify-between border-b border-border/50 pb-2.5">
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-display text-base font-black tracking-wider text-white">
+                  <h2 className="font-display sf-title-panel font-black tracking-wider text-white">
                     {activePilotDef.name.toUpperCase()}
                   </h2>
                   <span className={cn(
-                    "rounded px-1.5 py-0.5 text-[9px] font-mono font-bold border",
+                    "rounded px-2 py-0.5 sf-text-caption font-mono font-bold border",
                     activePilotDef.gender === "Nữ"
                       ? "bg-pink-950/80 text-pink-300 border-pink-500/50"
                       : "bg-blue-950/80 text-blue-300 border-blue-500/50",
@@ -1126,16 +1126,16 @@ export function CharacterGearSelect({
                     {activePilotDef.gender} · {activePilotDef.age}T
                   </span>
                 </div>
-                <span className="font-mono text-xs text-cyan-400 font-bold block mt-0.5">
+                <span className="font-mono sf-text-secondary text-cyan-400 font-bold block mt-0.5">
                   CALLSIGN: {activePilotDef.callsign}
                 </span>
               </div>
 
               <div className="text-right font-mono">
-                <span className="rounded bg-cyan-500/20 px-2 py-0.5 text-xs font-bold text-cyan-300 border border-cyan-400/50 block">
+                <span className="rounded bg-cyan-500/20 px-2.5 py-1 sf-text-secondary font-bold text-cyan-300 border border-cyan-400/50 block">
                   CẤP {activePilotProg.level}
                 </span>
-                <span className="text-[10px] text-muted-foreground mt-0.5 block">
+                <span className="sf-text-caption text-muted-foreground mt-0.5 block">
                   {activePilotProg.availablePoints} Điểm Khả Dụng
                 </span>
               </div>
@@ -1159,21 +1159,21 @@ export function CharacterGearSelect({
               />
 
               {/* Tag Đang Ghép Đôi Xuất Kích */}
-              <div className="absolute left-3 top-3 rounded bg-black/80 px-2.5 py-1 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 backdrop-blur-sm">
+              <div className="absolute left-3 top-3 rounded bg-black/80 px-3 py-1.5 border border-cyan-500/50 font-mono sf-text-caption text-cyan-300 backdrop-blur-sm">
                 <span>GHÉP ĐÔI: </span>
                 <strong className="text-white">{activeGearDef.name}</strong>
               </div>
 
               {/* Tag Lực Chiến */}
-              <div className="absolute right-3 top-3 rounded bg-black/80 px-2.5 py-1 border border-amber-500/50 font-mono text-[10px] text-amber-300 backdrop-blur-sm">
+              <div className="absolute right-3 top-3 rounded bg-black/80 px-3 py-1.5 border border-amber-500/50 font-mono sf-text-caption text-amber-300 backdrop-blur-sm">
                 <span>LỰC CHIẾN: </span>
                 <strong className="text-amber-400 font-bold">{activeCombatRating}</strong>
               </div>
             </div>
 
             {/* Thanh Tiến Trình EXP Phi Công */}
-            <div className="space-y-1 font-mono text-xs">
-              <div className="flex items-center justify-between text-[11px]">
+            <div className="space-y-1 font-mono sf-text-secondary">
+              <div className="flex items-center justify-between sf-text-caption">
                 <span className="text-muted-foreground">Kinh Nghiệm (EXP):</span>
                 <span className="text-cyan-300 font-bold">
                   {activePilotProg.exp.toLocaleString("vi-VN")} / {pilotExpReq.toLocaleString("vi-VN")} ({pilotExpPct}%)
@@ -1189,24 +1189,24 @@ export function CharacterGearSelect({
 
             {/* Trích Dẫn Thoại (Voice Quote) */}
             {activePilotDef.quote && (
-              <div className="mt-3 rounded bg-black/60 p-2.5 border border-cyan-500/30 text-xs font-mono text-cyan-200/90 italic flex items-start gap-2">
-                <Quote className="size-3.5 text-cyan-400 shrink-0 mt-0.5" />
+              <div className="mt-3 rounded bg-black/60 p-3 border border-cyan-500/30 sf-text-secondary font-mono text-cyan-200/90 italic flex items-start gap-2.5">
+                <Quote className="size-4 text-cyan-400 shrink-0 mt-0.5" />
                 <span>"{activePilotDef.quote}"</span>
               </div>
             )}
 
             {/* ĐẶC TRƯNG / TRAIL NHÂN VẬT (TRAITS TAGS) */}
             <div className="mt-3">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase block mb-1.5">
+              <span className="sf-text-caption font-mono text-muted-foreground uppercase block mb-1.5">
                 ĐẶC TRƯNG CHIẾN BINH (PILOT TRAITS & TRAIL):
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {activePilotDef.traits.map((trait, idx) => (
                   <span
                     key={idx}
-                    className="inline-flex items-center gap-1 rounded bg-cyan-950/70 border border-cyan-500/40 px-2 py-0.5 text-[10.5px] font-mono font-medium text-cyan-200"
+                    className="inline-flex items-center gap-1 rounded bg-cyan-950/70 border border-cyan-500/40 px-2.5 py-1 sf-text-caption font-mono font-medium text-cyan-200"
                   >
-                    <Sparkles className="size-2.5 text-cyan-400" />
+                    <Sparkles className="size-3 text-cyan-400" />
                     <span>{trait}</span>
                   </span>
                 ))}
@@ -1214,7 +1214,7 @@ export function CharacterGearSelect({
             </div>
 
             {/* Tiểu Sử (Bio) */}
-            <p className="mt-3 text-xs text-muted-foreground leading-relaxed line-clamp-3">
+            <p className="mt-3 sf-text-secondary text-muted-foreground leading-relaxed line-clamp-3">
               {activePilotDef.bio}
             </p>
           </div>
@@ -1222,22 +1222,22 @@ export function CharacterGearSelect({
           {/* ==================================================================
               KHU VỰC PHÂN BỔ ĐIỂM THUỘC TÍNH & KỸ NĂNG NỘI TẠI PHI CÔNG
               ================================================================== */}
-          <div className="rounded-sm border border-cyan-500/40 bg-panel/90 p-4 shadow-xl">
+          <div className="rounded-sm border border-cyan-500/40 bg-panel/90 p-4 shadow-xl sf-card">
             <div className="flex items-center justify-between border-b border-border/50 pb-2.5 mb-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-cyan-400" />
-                <h3 className="font-display text-xs font-bold uppercase tracking-wider text-cyan-300">
+                <h3 className="font-display sf-title-card font-bold uppercase tracking-wider text-cyan-300">
                   ĐIỂM THUỘC TÍNH PHI CÔNG (+5 ĐIỂM/CẤP)
                 </h3>
               </div>
 
-              <span className="rounded bg-cyan-500/20 px-2 py-0.5 text-xs font-mono font-bold text-cyan-300 border border-cyan-400/50">
+              <span className="rounded bg-cyan-500/20 px-2.5 py-1 sf-text-secondary font-mono font-bold text-cyan-300 border border-cyan-400/50">
                 {activePilotProg.availablePoints} Điểm Sẵn Sàng
               </span>
             </div>
 
             {/* 5 Nhánh Thuộc Tính */}
-            <div className="space-y-2 font-mono text-xs">
+            <div className="space-y-2 font-mono sf-text-secondary">
               {[
                 { key: "attack" as PilotAttributeKey, label: "TẤN CÔNG (ATK)", effect: "+2.0 ATK / Điểm", color: "text-red-400" },
                 { key: "defense" as PilotAttributeKey, label: "PHÒNG NGỰ (DEF)", effect: "+1.5 DEF / Điểm", color: "text-blue-400" },
@@ -1251,14 +1251,14 @@ export function CharacterGearSelect({
                 return (
                   <div
                     key={key}
-                    className="flex items-center justify-between rounded bg-black/40 p-2 border border-border/40"
+                    className="flex items-center justify-between rounded bg-black/40 p-2.5 border border-border/40"
                   >
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className={cn("font-bold text-xs", color)}>{label}</span>
-                        <span className="text-[10px] text-muted-foreground font-normal">({effect})</span>
+                        <span className={cn("font-bold sf-text-secondary", color)}>{label}</span>
+                        <span className="sf-text-caption text-muted-foreground font-normal">({effect})</span>
                       </div>
-                      <span className="text-[11px] text-white font-bold">
+                      <span className="sf-text-caption text-white font-bold">
                         +{currentAllocated} điểm đã cộng
                       </span>
                     </div>
@@ -1267,14 +1267,14 @@ export function CharacterGearSelect({
                       disabled={!canAdd}
                       onClick={() => handleAllocatePoint(activePilotId, key)}
                       className={cn(
-                        "size-7 rounded flex items-center justify-center font-bold text-xs transition-all cursor-pointer",
+                        "size-7 rounded flex items-center justify-center font-bold sf-text-button transition-all cursor-pointer",
                         canAdd
                           ? "bg-cyan-500 text-black hover:bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.5)]"
                           : "bg-black/60 text-muted-foreground border border-border/40 cursor-not-allowed opacity-50",
                       )}
                       title="Cộng +1 điểm"
                     >
-                      <Plus className="size-3.5" />
+                      <Plus className="size-4" />
                     </button>
                   </div>
                 )
@@ -1282,35 +1282,35 @@ export function CharacterGearSelect({
             </div>
 
             {/* Nút Tẩy Điểm (Reset Points) */}
-            <div className="mt-3.5 flex items-center justify-between border-t border-border/40 pt-2.5 text-xs font-mono">
-              <span className="text-muted-foreground text-[11px]">
+            <div className="mt-3.5 flex items-center justify-between border-t border-border/40 pt-2.5 sf-text-secondary font-mono">
+              <span className="text-muted-foreground sf-text-caption">
                 Chi phí tẩy điểm: <strong className="text-amber-300">200 Credits</strong>
               </span>
 
               <button
                 onClick={() => handleResetPoints(activePilotId)}
-                className="flex items-center gap-1.5 rounded border border-border/60 bg-black/40 px-2.5 py-1 text-[11px] font-mono text-muted-foreground hover:text-amber-300 hover:border-amber-500/50 transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 rounded border border-border/60 bg-black/40 px-3 py-1.5 sf-text-caption font-mono text-muted-foreground hover:text-amber-300 hover:border-amber-500/50 transition-colors cursor-pointer"
               >
-                <RotateCcw className="size-3" />
+                <RotateCcw className="size-3.5" />
                 <span>Tẩy Điểm Phi Công</span>
               </button>
             </div>
 
             {/* THẺ KỸ NĂNG NỘI TẠI PHI CÔNG (PILOT PASSIVE) */}
-            <div className="mt-4 rounded border border-amber-500/50 bg-amber-950/20 p-3">
+            <div className="mt-4 rounded border border-amber-500/50 bg-amber-950/20 p-3.5 sf-card">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 font-display text-xs font-bold text-amber-300">
-                  <Sparkles className="size-3.5 text-amber-400" />
+                <div className="flex items-center gap-1.5 font-display sf-title-card font-bold text-amber-300">
+                  <Sparkles className="size-4 text-amber-400" />
                   <span>NỘI TẠI PHI CÔNG: {activePilotDef.passive.name.toUpperCase()}</span>
                 </div>
-                <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-mono text-amber-300 border border-amber-500/40">
+                <span className="rounded bg-amber-500/20 px-2 py-0.5 sf-text-caption font-mono text-amber-300 border border-amber-500/40">
                   {activePilotDef.passive.nameEn}
                 </span>
               </div>
-              <p className="mt-1.5 text-xs text-slate-200 leading-relaxed">
+              <p className="mt-1.5 sf-text-body text-slate-200 leading-relaxed">
                 {activePilotDef.passive.desc}
               </p>
-              <div className="mt-2 rounded bg-black/50 p-1.5 border border-amber-500/30 text-[10.5px] font-mono text-amber-200/90">
+              <div className="mt-2 rounded bg-black/50 p-2 border border-amber-500/30 sf-text-secondary font-mono text-amber-200/90">
                 <span className="text-amber-400 font-bold">Hiệp đồng {activePilotDef.recommendedGear.toUpperCase()}: </span>
                 {activePilotDef.synergyBonus}
               </div>
@@ -1324,20 +1324,20 @@ export function CharacterGearSelect({
         <div className="lg:col-span-7 flex flex-col gap-4">
           {/* Thanh Tab Chuyển Đổi: Buồng Lái & Trang Bị vs 5 Mô-Đun Kỹ Năng */}
           <div className="flex items-center justify-between border-b border-border/60 pb-2">
-            <div className="flex items-center gap-1 p-1 bg-black/40 rounded-sm border border-border/50">
+            <div className="flex items-center gap-1.5 p-1 bg-black/40 rounded-sm border border-border/50">
               <button
                 onClick={() => {
                   playClickSound()
                   setCockpitTab("equipment")
                 }}
                 className={cn(
-                  "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
+                  "px-4 py-2 font-display sf-text-button sf-density-btn uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-2",
                   cockpitTab === "equipment"
                     ? "bg-cyan-500 text-black font-bold shadow-[0_0_10px_rgba(6,182,212,0.4)]"
                     : "text-muted-foreground hover:text-white",
                 )}
               >
-                <Cpu className="size-3.5" />
+                <Cpu className="size-4" />
                 <span>Buồng Lái & Trang Bị (3 Ô)</span>
               </button>
 
@@ -1347,7 +1347,7 @@ export function CharacterGearSelect({
                   setCockpitTab("skills")
                 }}
                 className={cn(
-                  "px-3.5 py-1.5 font-display text-xs uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-1.5",
+                  "px-4 py-2 font-display sf-text-button sf-density-btn uppercase tracking-wider rounded-xs transition-all cursor-pointer flex items-center gap-2",
                   cockpitTab === "skills"
                     ? "bg-cyan-500 text-black font-bold shadow-[0_0_10px_rgba(6,182,212,0.4)]"
                     : "text-muted-foreground hover:text-white",
@@ -1423,7 +1423,7 @@ export function CharacterGearSelect({
                 {/* Ảnh 3D Concept Art Cơ Giáp Trung Tâm */}
                 <div className="relative my-2 w-full max-w-md h-44 sm:h-52 rounded-sm overflow-hidden border border-cyan-500/40 bg-black/70 shadow-lg flex items-center justify-center group">
                   <img
-                    src={activeGearDef.illustration || `/images/${activeGearId}-gear.jpg`}
+                    src={activeGearDef.illustration || `/images/${activeGearId}-gear.webp`}
                     alt={activeGearDef.name}
                     className="size-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-transform duration-500 group-hover:scale-105"
                   />
@@ -2301,7 +2301,7 @@ export function CharacterGearSelect({
                           }}
                         >
                           <img
-                            src={gDef.illustration || `/images/${inspectGearId}-gear.jpg`}
+                            src={gDef.illustration || `/images/${inspectGearId}-gear.webp`}
                             alt={gDef.name}
                             className="size-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] transition-transform duration-500 group-hover:scale-105"
                           />

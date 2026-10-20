@@ -2,12 +2,20 @@ import {
   INITIAL_WORLD_ROUTES,
   INITIAL_WORLD_SECTORS,
   createInitialWorldState,
+  createResetWorldState,
 } from "./initial-state"
 import {
   DEFAULT_THREAT_CONFIG,
   isHeadquartersSector,
 } from "./threat-engine"
 import { DEFAULT_SURVIVAL_CONFIG } from "./pilot-survival-engine"
+import {
+  DEFAULT_WORLD_GENERATION_CONFIG,
+  CANONICAL_30_WORLD_SECTORS,
+  CANONICAL_30_WORLD_ROUTES,
+  getDefaultDockingPortsForBase,
+  generate30NodeWorld,
+} from "./base"
 import type {
   BackupMetadata,
   BackupSlot,
@@ -15,6 +23,7 @@ import type {
   SaveWorldResult,
   WorldSaveEnvelope,
   WorldState,
+  WorldRoute,
 } from "./types"
 
 /**
@@ -25,6 +34,7 @@ export const WORLD_BACKUP_KEY_A = "STARFRONT_WORLD_BACKUP_A"
 export const WORLD_BACKUP_KEY_B = "STARFRONT_WORLD_BACKUP_B"
 export const WORLD_BACKUP_META_KEY = "STARFRONT_WORLD_BACKUP_META"
 export const WORLD_STAGING_KEY = "STARFRONT_WORLD_STAGING"
+export const WORLD_BACKUP_PRE_RESET_KEY = "STARFRONT_WORLD_BACKUP_PRE_RESET"
 
 // Bảng tra cứu CRC32 chuẩn 0xEDB88320
 const CRC_TABLE: Uint32Array = (() => {
@@ -453,6 +463,229 @@ export function migratePilotSurvivalState(state: WorldState): boolean {
 }
 
 /**
+ * Phase 6.34A-FND-5 & FND-6: Tự động khởi tạo và chuẩn hóa Foundation State
+ * (Decisions, InTransit, BasePopulation, Bases, OrbitalSubBases, ResetConfig, AutoSave)
+ */
+export function migrateFoundationState(state: WorldState): boolean {
+  if (!state) return false
+  let migrated = false
+
+  if (!state.decisions) {
+    state.decisions = { pendingDecisions: [], history: [] }
+    migrated = true
+  }
+  if (!state.inTransitTransfers) {
+    state.inTransitTransfers = []
+    migrated = true
+  }
+  if (!state.basePopulationStates || Object.keys(state.basePopulationStates).length === 0) {
+    const fresh = createInitialWorldState(state.worldSeed)
+    state.basePopulationStates = fresh.basePopulationStates
+    migrated = true
+  }
+  if (!state.bases || Object.keys(state.bases).length === 0) {
+    const fresh = createInitialWorldState(state.worldSeed)
+    state.bases = fresh.bases
+    migrated = true
+  }
+  if (!state.orbitalSubBases) {
+    state.orbitalSubBases = {}
+    migrated = true
+  }
+  if (!state.worldGenerationConfig) {
+    state.worldGenerationConfig = { ...DEFAULT_WORLD_GENERATION_CONFIG }
+    migrated = true
+  }
+  if (state.lastAutoSaveGameDay === undefined) {
+    state.lastAutoSaveGameDay = state.currentDay || 1
+    migrated = true
+  }
+  if (state.lastAutoSaveTimestamp === undefined) {
+    state.lastAutoSaveTimestamp = state.realTimeAnchor || Date.now()
+    migrated = true
+  }
+  if (!state.worldResetConfig) {
+    state.worldResetConfig = {
+      cc0Name: "Liên minh VSS",
+      commanderName: "Alviss",
+      resetCount: 0,
+      lastResetTimestamp: Date.now(),
+    }
+    migrated = true
+  }
+
+  // Ensure every base instance conforms to FND-6 contracts
+  if (state.bases) {
+    for (const [baseId, b] of Object.entries(state.bases)) {
+      const ext = b as any
+      if (!ext.entityKind) {
+        ext.entityKind = "MAIN_BASE"
+        migrated = true
+      }
+      if (!ext.hubSpecializations) {
+        ext.hubSpecializations = []
+        migrated = true
+      }
+      if (ext.maxHubSlots === undefined) {
+        ext.maxHubSlots = ext.isCapital ? 8 : 4
+        migrated = true
+      }
+      if (!ext.orbitalSubBaseIds) {
+        ext.orbitalSubBaseIds = []
+        migrated = true
+      }
+      if (ext.maxOrbitalSlots === undefined) {
+        ext.maxOrbitalSlots = ext.isCapital ? 6 : 3
+        migrated = true
+      }
+      if (!ext.fleetCapacities) {
+        const defaultPorts = getDefaultDockingPortsForBase(b.baseType, b.baseType === "CAPITAL")
+        ext.fleetCapacities = {
+          fleetCommandCapacity: b.baseType === "CAPITAL" ? 6 : 3,
+          fleetStationingCapacity: b.baseType === "CAPITAL" ? 8 : 4,
+          fleetDockingCapacity: defaultPorts,
+          baseDockingPorts: defaultPorts,
+          expansionDockingPorts: 0,
+          subBaseDockingPorts: 0,
+        }
+        migrated = true
+      }
+      if (!ext.governmentState) {
+        ext.governmentState = {
+          aiPersonality: "BALANCED",
+          localPriorities: {
+            foodSecurity: 80,
+            militaryReadiness: 70,
+            industrialOutput: 70,
+            infrastructureGrowth: 70,
+          },
+          pendingSupportRequests: [],
+          actionLogs: [`Khởi tạo chính quyền cơ sở cho căn cứ ${b.name}`],
+        }
+        migrated = true
+      }
+    }
+  }
+
+  return migrated
+}
+
+/**
+ * Phase 6.34A-FND-6: Tự động nâng cấp Galaxy từ 10 Sector lên 30 Sector & 54 Tuyến đường
+ * Bảo toàn 100% dữ liệu đã thay đổi của người chơi trên 10 Sector cũ.
+ */
+export function migrateWorldStateTo30Sectors(state: WorldState): { state: WorldState; migrated: boolean } {
+  if (!state) return { state, migrated: false }
+
+  const currentSectorCount = Object.keys(state.sectors || {}).length
+  if (currentSectorCount >= 30) {
+    return { state, migrated: false }
+  }
+
+  let migrated = false
+  if (!state.sectors) state.sectors = {}
+
+  // 1. Bổ sung các sector còn thiếu từ CANONICAL_30_WORLD_SECTORS
+  for (const [id, defSector] of Object.entries(CANONICAL_30_WORLD_SECTORS)) {
+    if (!state.sectors[id]) {
+      state.sectors[id] = JSON.parse(JSON.stringify(defSector))
+      migrated = true
+    }
+  }
+
+  // 2. Chuẩn hóa 54 tuyến đường canonical, bảo tồn trạng thái (open/blocked) của người chơi
+  const existingRouteMap = new Map((state.routes || []).map((r) => [r.id, r]))
+  const existingEndpointsMap = new Map(
+    (state.routes || []).map((r) => [`${r.fromSectorId}->${r.toSectorId}`, r])
+  )
+
+  const upgradedRoutes: WorldRoute[] = []
+  for (const defRoute of CANONICAL_30_WORLD_ROUTES) {
+    const existing =
+      existingRouteMap.get(defRoute.id) ||
+      existingEndpointsMap.get(`${defRoute.fromSectorId}->${defRoute.toSectorId}`) ||
+      existingEndpointsMap.get(`${defRoute.toSectorId}->${defRoute.fromSectorId}`)
+    if (existing) {
+      upgradedRoutes.push({
+        ...defRoute,
+        state: existing.state,
+      })
+    } else {
+      upgradedRoutes.push({ ...defRoute })
+      migrated = true
+    }
+  }
+  state.routes = upgradedRoutes
+
+  // 3. Chuẩn hóa Foundation state & tạo bases/population cho các sector mới
+  if (!state.bases) state.bases = {}
+  if (!state.basePopulationStates) state.basePopulationStates = {}
+  if (!state.orbitalSubBases) state.orbitalSubBases = {}
+
+  // Chuẩn hóa và chuyển đổi các khóa cũ có tiền tố base_ (Phase 6.34A-FND-5) sang canonical sector ID (FND-6)
+  const legacyBaseKeys = Object.keys(state.bases).filter((k) => k.startsWith("base_"))
+  for (const lk of legacyBaseKeys) {
+    const secId = lk.replace(/^base_/, "")
+    if (CANONICAL_30_WORLD_SECTORS[secId]) {
+      if (!state.bases[secId]) {
+        state.bases[secId] = {
+          ...state.bases[lk],
+          baseId: secId,
+        }
+      }
+      delete state.bases[lk]
+      migrated = true
+    }
+  }
+
+  const legacyPopKeys = Object.keys(state.basePopulationStates).filter((k) => k.startsWith("base_"))
+  for (const lk of legacyPopKeys) {
+    const secId = lk.replace(/^base_/, "")
+    if (CANONICAL_30_WORLD_SECTORS[secId]) {
+      if (!state.basePopulationStates[secId]) {
+        state.basePopulationStates[secId] = {
+          ...state.basePopulationStates[lk],
+          baseId: secId,
+        }
+      }
+      delete state.basePopulationStates[lk]
+      migrated = true
+    }
+  }
+
+  const fresh30 = generate30NodeWorld(state.worldSeed || 77722211)
+
+  for (const [baseId, freshBase] of Object.entries(fresh30.bases)) {
+    if (!state.bases[baseId]) {
+      state.bases[baseId] = JSON.parse(JSON.stringify(freshBase))
+      migrated = true
+    }
+  }
+
+  for (const [popId, freshPop] of Object.entries(fresh30.basePopulationStates)) {
+    if (!state.basePopulationStates[popId]) {
+      state.basePopulationStates[popId] = JSON.parse(JSON.stringify(freshPop))
+      migrated = true
+    }
+  }
+
+  for (const [subId, freshSub] of Object.entries(fresh30.orbitalSubBases || {})) {
+    if (!state.orbitalSubBases[subId]) {
+      state.orbitalSubBases[subId] = JSON.parse(JSON.stringify(freshSub))
+      migrated = true
+    }
+  }
+
+  if (state.worldGenerationConfig) {
+    state.worldGenerationConfig.totalMainBaseNodes = 30
+  }
+
+  migrateFoundationState(state)
+
+  return { state, migrated }
+}
+
+/**
  * Nạp trạng thái World State với cơ chế tự động phục hồi khi file chính bị hỏng (Auto-Rescue)
  */
 export function loadWorldState(): LoadWorldResult {
@@ -485,12 +718,12 @@ export function loadWorldState(): LoadWorldResult {
       loadedData.operationsArchiveConfig = { eventArchiveQuota: 60, battleArchiveQuota: 40 }
     }
 
-    // Phase 6.28: Tự động di chuyển lên 10 Sector & 16 Tuyến đường nếu là save cũ
-    const migration = migrateWorldStateTo10Sectors(loadedData)
-    // Phase 6.33_FIX5: Tự động di chuyển và chuẩn hóa Threat Max (HQ = 100,000,000, Standard = 1,000,000)
+    // Phase 6.34A-FND-6: Tự động di chuyển lên 30 Sector & 54 Tuyến đường nếu là save cũ
+    const migration = migrateWorldStateTo30Sectors(loadedData)
     const threatMigrated = migrateWorldThreatState(migration.state)
     const survivalMigrated = migratePilotSurvivalState(migration.state)
-    if (migration.migrated || threatMigrated || survivalMigrated) {
+    const foundationMigrated = migrateFoundationState(migration.state)
+    if (migration.migrated || threatMigrated || survivalMigrated || foundationMigrated) {
       saveWorldState(migration.state)
     }
 
@@ -566,10 +799,11 @@ export function loadWorldState(): LoadWorldResult {
       backupData.operationsArchiveConfig = { eventArchiveQuota: 60, battleArchiveQuota: 40 }
     }
 
-    const migration = migrateWorldStateTo10Sectors(backupData)
+    const migration = migrateWorldStateTo30Sectors(backupData)
     const threatMigrated = migrateWorldThreatState(migration.state)
     const survivalMigrated = migratePilotSurvivalState(migration.state)
-    if (migration.migrated || threatMigrated || survivalMigrated) {
+    const foundationMigrated = migrateFoundationState(migration.state)
+    if (migration.migrated || threatMigrated || survivalMigrated || foundationMigrated) {
       saveWorldState(migration.state)
     }
     return {
@@ -596,21 +830,58 @@ export function loadWorldState(): LoadWorldResult {
 }
 
 /**
- * Xóa sạch dữ liệu phân hệ WORLD (Chỉ xóa các khóa WORLD, KHÔNG ĐỘNG ĐẾN STARFRONT_SAVE_DATA_V4)
+ * Tạo bản sao lưu dự phòng STARFRONT_WORLD_BACKUP_PRE_RESET trước bất kỳ thao tác Reset hoặc Tái tạo Thiên Hà nào
  */
-export function resetWorldState(): WorldState {
+export function createPreResetBackup(previousState?: WorldState): boolean {
+  if (typeof window === "undefined") return false
+  try {
+    const rawCurrent = localStorage.getItem(WORLD_STORAGE_KEY_V1)
+    if (rawCurrent) {
+      localStorage.setItem(WORLD_BACKUP_PRE_RESET_KEY, rawCurrent)
+      return true
+    } else if (previousState) {
+      localStorage.setItem(
+        WORLD_BACKUP_PRE_RESET_KEY,
+        JSON.stringify({
+          schemaVersion: 1,
+          timestamp: Date.now(),
+          checksum: calculateChecksum(JSON.stringify(previousState)),
+          data: previousState,
+        })
+      )
+      return true
+    }
+  } catch (e) {
+    console.error("[STARFRONT WORLD] Lỗi khi tạo bản sao lưu pre-reset:", e)
+  }
+  return false
+}
+
+/**
+ * Xóa sạch dữ liệu phân hệ WORLD và tạo mới 30 Node (Phase 6.34A-FND-6)
+ * - Tự động tạo bản sao lưu bảo vệ STARFRONT_WORLD_BACKUP_PRE_RESET trước khi Reset.
+ * - Bảo toàn nguyên vẹn Backup Slot A/B, Catalog Registry và RPG Save V4.
+ * - Mặc định tạo Thiên hà 30 Node cân bằng thế lực phe phái theo chuẩn FND-6.
+ */
+export function resetWorldState(
+  previousState?: WorldState,
+  config?: { cc0Name?: string; commanderName?: string; totalNodes?: number }
+): WorldState {
   if (typeof window !== "undefined") {
+    // 1. Sao lưu bảo vệ dữ liệu WORLD hiện tại trước khi Reset
+    createPreResetBackup(previousState)
     try {
-      localStorage.removeItem(WORLD_STORAGE_KEY_V1)
-      localStorage.removeItem(WORLD_BACKUP_KEY_A)
-      localStorage.removeItem(WORLD_BACKUP_KEY_B)
-      localStorage.removeItem(WORLD_BACKUP_META_KEY)
+      // Dọn staging cũ nhưng TUYỆT ĐỐI KHÔNG xóa Backup Slot A/B, Backup Meta hay Catalog
       localStorage.removeItem(WORLD_STAGING_KEY)
     } catch (e) {
-      console.error("[STARFRONT WORLD] Lỗi khi reset dữ liệu World:", e)
+      console.error("[STARFRONT WORLD] Lỗi dọn dẹp staging:", e)
     }
   }
-  const fresh = createInitialWorldState()
+  const fresh = createResetWorldState(previousState, {
+    totalNodes: config?.totalNodes ?? 30,
+    cc0Name: config?.cc0Name,
+    commanderName: config?.commanderName,
+  })
   saveWorldState(fresh)
   return fresh
 }

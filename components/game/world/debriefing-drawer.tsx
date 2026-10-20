@@ -87,22 +87,22 @@ export function DebriefingDrawer({
               DRAWER HEADER (STICKY TOP)
               ================================================================ */}
           <header className="flex items-center justify-between border-b border-zinc-800 bg-zinc-900/90 px-4 py-3 shrink-0 backdrop-blur-md">
-            <div className="flex items-center gap-2.5">
-              <div className="rounded border border-cyan-500/40 bg-cyan-950/60 p-1.5 text-cyan-300">
-                <FileText className="size-4 text-cyan-400" />
+            <div className="flex items-center gap-3">
+              <div className="rounded border border-cyan-500/40 bg-cyan-950/60 p-2 text-cyan-300">
+                <FileText className="size-4.5 text-cyan-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-100">
+                  <h2 className="text-sm sm:text-base font-bold uppercase tracking-wider text-zinc-100">
                     KHAY BÁO CÁO TÌNH BÁO // DEBRIEFING DRAWER
                   </h2>
                   {unreadCount > 0 && (
-                    <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-500/50 animate-pulse">
+                    <span className="rounded bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-300 border border-amber-500/50 animate-pulse font-mono">
                       {unreadCount} Mới
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-zinc-400">
+                <p className="text-xs text-zinc-300">
                   Lưu trữ minh bạch kết quả sự kiện thiên hà & giao tranh buồng lái
                 </p>
               </div>
@@ -116,11 +116,11 @@ export function DebriefingDrawer({
                   playClickSound()
                   onClose()
                 }}
-                className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-800/90 px-2.5 py-1 text-xs font-bold text-zinc-200 hover:border-cyan-500 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-sm"
+                className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-800/90 px-3 py-1.5 text-xs sm:text-[13px] font-bold text-zinc-200 hover:border-cyan-500 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer shadow-sm"
                 title="Đóng ngăn kéo báo cáo (Phím Escape)"
               >
-                <X className="size-3.5 text-zinc-400" />
-                <span className="hidden sm:inline font-mono text-[11px]">Đóng [ESC]</span>
+                <X className="size-4 text-zinc-300" />
+                <span className="hidden sm:inline font-mono text-xs">Đóng [ESC]</span>
               </button>
             </div>
           </header>
@@ -128,7 +128,7 @@ export function DebriefingDrawer({
           {/* ================================================================
               DRAWER BODY (SCROLLABLE DUAL RESULTS CONTENT)
               ================================================================ */}
-          <div className="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-3 scrollbar-thin">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 scrollbar-thin">
             <DualResultsHub
               worldState={worldState}
               onStateUpdated={onStateUpdated}
@@ -140,15 +140,15 @@ export function DebriefingDrawer({
           {/* ================================================================
               DRAWER FOOTER (STICKY BOTTOM)
               ================================================================ */}
-          <footer className="border-t border-zinc-800 bg-zinc-900/80 px-4 py-2.5 shrink-0 flex items-center justify-between text-[11px] text-zinc-400">
+          <footer className="border-t border-zinc-800 bg-zinc-900/90 px-5 py-3 shrink-0 flex items-center justify-between text-xs sm:text-[13px] text-zinc-300">
             <div className="flex items-center gap-2">
-              <span className="text-zinc-500 font-mono">
-                Tổng lưu trữ: {totalResults} sự kiện · {battleCount} trận đánh
+              <span className="text-zinc-400 font-mono">
+                Tổng lưu trữ: <strong className="text-zinc-200">{totalResults}</strong> sự kiện · <strong className="text-cyan-300">{battleCount}</strong> trận đánh
               </span>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-zinc-500 italic hidden sm:inline">
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs text-zinc-400 italic hidden sm:inline">
                 * Dữ liệu bảo toàn tuyệt đối theo Save V1
               </span>
               <button
@@ -157,7 +157,7 @@ export function DebriefingDrawer({
                   playClickSound()
                   onClose()
                 }}
-                className="text-xs text-cyan-400 hover:text-cyan-200 underline cursor-pointer font-bold"
+                className="text-xs sm:text-sm text-cyan-400 hover:text-cyan-200 underline cursor-pointer font-bold"
               >
                 Quay lại War Room &rarr;
               </button>

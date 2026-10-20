@@ -88,6 +88,41 @@
 
   --radius: 0.4rem;
   --ui-scale: 1;
+
+  /* STARFRONT Global Typography Framework & UI Scale (Phase 6.33 Foundation) */
+  --sf-text-scale: 1; /* 0.90, 1.00, 1.15, 1.25 */
+  --sf-density-scale: 1; /* 0.85 (compact), 1.00 (comfortable) */
+
+  /* Base Semantic Tokens scaled by --sf-text-scale */
+  --sf-text-caption: calc(13px * var(--sf-text-scale, 1));
+  --sf-text-secondary: calc(14px * var(--sf-text-scale, 1));
+  --sf-text-body: calc(16px * var(--sf-text-scale, 1));
+  --sf-text-card-title: calc(17px * var(--sf-text-scale, 1));
+  --sf-text-panel-title: calc(19px * var(--sf-text-scale, 1));
+  --sf-text-page-title: calc(23px * var(--sf-text-scale, 1));
+  --sf-text-button: calc(15px * var(--sf-text-scale, 1));
+
+  /* Layout Density spacing tokens */
+  --sf-density-card-p: 1rem;
+  --sf-density-card-gap: 0.875rem;
+  --sf-density-btn-px: 0.875rem;
+  --sf-density-btn-py: 0.45rem;
+}
+
+:root[data-density="compact"], [data-density="compact"] {
+  --sf-density-scale: 0.85;
+  --sf-density-card-p: 0.625rem;
+  --sf-density-card-gap: 0.5rem;
+  --sf-density-btn-px: 0.625rem;
+  --sf-density-btn-py: 0.3rem;
+}
+
+:root[data-density="comfortable"], [data-density="comfortable"] {
+  --sf-density-scale: 1;
+  --sf-density-card-p: 1rem;
+  --sf-density-card-gap: 0.875rem;
+  --sf-density-btn-px: 0.875rem;
+  --sf-density-btn-py: 0.45rem;
 }
 
 @layer base {
@@ -110,6 +145,57 @@
 @layer utilities {
   .font-display {
     font-family: var(--font-display);
+  }
+
+  /* ========================================================================
+     STARFRONT GLOBAL TYPOGRAPHY UTILITIES
+     Semantic scale responsive to user configured --sf-text-scale
+     ======================================================================== */
+  .sf-text-caption {
+    font-size: var(--sf-text-caption);
+    line-height: 1.45;
+  }
+  .sf-text-secondary {
+    font-size: var(--sf-text-secondary);
+    line-height: 1.5;
+  }
+  .sf-text-body {
+    font-size: var(--sf-text-body);
+    line-height: 1.55;
+  }
+  .sf-title-card {
+    font-size: var(--sf-text-card-title);
+    font-weight: 700;
+    line-height: 1.35;
+  }
+  .sf-title-panel {
+    font-size: var(--sf-text-panel-title);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .sf-title-page {
+    font-size: var(--sf-text-page-title);
+    font-weight: 800;
+    line-height: 1.25;
+  }
+  .sf-text-button {
+    font-size: var(--sf-text-button);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  /* ========================================================================
+     STARFRONT LAYOUT DENSITY UTILITIES
+     ======================================================================== */
+  .sf-density-card {
+    padding: var(--sf-density-card-p);
+    gap: var(--sf-density-card-gap);
+  }
+  .sf-density-btn {
+    padding-left: var(--sf-density-btn-px);
+    padding-right: var(--sf-density-btn-px);
+    padding-top: var(--sf-density-btn-py);
+    padding-bottom: var(--sf-density-btn-py);
   }
   .clip-corner {
     clip-path: polygon(

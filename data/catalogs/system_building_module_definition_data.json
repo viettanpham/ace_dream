@@ -1,0 +1,56 @@
+{
+  "configFileId": "system_building_module_definition",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "mod_plasma_turret",
+      "name": "Tháp Pháo Plasma Hạng Nặng",
+      "slotType": "DEFENSE",
+      "description": "Gia tăng sát thương phòng thủ căn cứ khi bị kẻ địch tấn công.",
+      "isDetachable": true,
+      "statModifiers": {
+        "defensePower": 300
+      },
+      "powerConsumption": 50
+    },
+    {
+      "id": "mod_expanded_bunkers",
+      "name": "Khoang Hầm Trú Ẩn Mở Rộng",
+      "slotType": "GENERIC",
+      "description": "Gia tăng sức chứa cư dân khẩn cấp thêm 500 người.",
+      "isDetachable": true,
+      "statModifiers": {
+        "emergencyCapacity": 500
+      },
+      "powerConsumption": 20
+    },
+    {
+      "id": "mod_automated_assembly",
+      "name": "Dây Chuyền Tự Động Hóa AI",
+      "slotType": "PRODUCTION_LINE",
+      "description": "Tăng 15% hiệu suất tác chế sản phẩm công nghiệp.",
+      "isDetachable": true,
+      "statModifiers": {
+        "operationalEfficiencyPct": 15
+      },
+      "powerConsumption": 40
+    },
+    {
+      "id": "cap_deep_core_drill",
+      "name": "Năng Lực Khoan Địa Tầng Sâu",
+      "slotType": "GENERIC",
+      "description": "Khả năng kỹ thuật lõi tích hợp, không thể tháo rời.",
+      "isDetachable": false,
+      "capabilities": [
+        "DEEP_CORE_MINING"
+      ]
+    }
+  ],
+  "metadata": {
+    "domain": "building",
+    "catalog": "module_definition",
+    "description": "Canonical module definitions."
+  }
+}

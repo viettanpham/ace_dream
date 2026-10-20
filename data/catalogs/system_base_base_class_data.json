@@ -1,0 +1,93 @@
+{
+  "configFileId": "system_base_base_class",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "SOVEREIGN_CAPITAL",
+      "baseClass": "SOVEREIGN_CAPITAL",
+      "name": "Thủ Phủ Tối Cao (Sovereign Capital / CC0)",
+      "description": "Trung tâm chỉ huy quốc gia tối cao, đặt tại hậu phương chiến lược với mạng lưới quỹ đạo 2..12 slots.",
+      "entityKind": "MAIN_BASE",
+      "defaultTier": 4,
+      "defaultDockingPorts": 8,
+      "maxOrbitalSlotsRange": [2, 12],
+      "maxHubSlots": 8,
+      "slotProfileId": "slot_profile_capital_citadel",
+      "coreBuildingDefIds": [
+        "bld_command_center",
+        "bld_residential_complex",
+        "bld_cargo_depot",
+        "bld_tech_lab",
+        "bld_fortress_bastion",
+        "bld_garrison_barracks"
+      ],
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "MAJOR_HUB",
+      "baseClass": "MAJOR_HUB",
+      "name": "Trung Tâm Trọng Điểm (Major Hub)",
+      "description": "Căn cứ đô thị hoặc tổ hợp chuyên môn hóa quy mô lớn trên trục giao thông chính.",
+      "entityKind": "MAIN_BASE",
+      "defaultTier": 2,
+      "defaultDockingPorts": 6,
+      "maxOrbitalSlotsRange": [1, 3],
+      "maxHubSlots": 5,
+      "slotProfileId": "slot_profile_border_outpost",
+      "coreBuildingDefIds": [
+        "bld_command_center",
+        "bld_residential_complex",
+        "bld_cargo_depot",
+        "bld_tech_lab",
+        "bld_fortress_bastion"
+      ],
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "REGIONAL_BASE",
+      "baseClass": "REGIONAL_BASE",
+      "name": "Căn Cứ Khu Vực / Tiền Tiêu (Regional Base)",
+      "description": "Căn cứ chính tiêu chuẩn kiểm soát khu vực nội địa hoặc biên giới chiến lược.",
+      "entityKind": "MAIN_BASE",
+      "defaultTier": 1,
+      "defaultDockingPorts": 4,
+      "maxOrbitalSlotsRange": [1, 3],
+      "maxHubSlots": 4,
+      "slotProfileId": "slot_profile_border_outpost",
+      "coreBuildingDefIds": [
+        "bld_command_center",
+        "bld_residential_complex",
+        "bld_cargo_depot",
+        "bld_tech_lab",
+        "bld_fortress_bastion"
+      ],
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "ORBITAL_STATION",
+      "baseClass": "ORBITAL_STATION",
+      "name": "Trạm Quỹ Đạo / Căn Cứ Phụ (Orbital Sub-Base)",
+      "description": "Căn cứ vệ tinh xoay quanh Main Base, sử dụng chung Shared Base Framework nhưng không tính vào 30 Main Base Nodes.",
+      "entityKind": "SUB_BASE",
+      "defaultTier": 1,
+      "defaultDockingPorts": 4,
+      "maxOrbitalSlotsRange": [0, 0],
+      "maxHubSlots": 1,
+      "slotProfileId": "slot_profile_orbital_subbase",
+      "coreBuildingDefIds": [
+        "bld_command_center",
+        "bld_residential_complex",
+        "bld_orbital_spaceport",
+        "bld_fortress_bastion"
+      ],
+      "lifecycle": "ACTIVE"
+    }
+  ],
+  "metadata": {
+    "domain": "base",
+    "catalog": "base_class",
+    "description": "Canonical FND-6 Base Classes (Main Base & Orbital Sub-Base)."
+  }
+}

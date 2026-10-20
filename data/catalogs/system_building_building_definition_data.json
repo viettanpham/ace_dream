@@ -1,0 +1,536 @@
+{
+  "configFileId": "system_building_building_definition",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "bld_residential_complex",
+      "name": "Cư Xá Đô Thị VSS",
+      "type": "RESIDENTIAL",
+      "class": "MEDIUM",
+      "description": "Khu nhà ở phức hợp cung cấp chỗ ở cho 2,500 cư dân.",
+      "baseCost": {
+        "industrialMaterials": 300,
+        "energy": 150
+      },
+      "buildDurationGameDays": 2,
+      "maxHp": 2000,
+      "initialCondition": 2000,
+      "workforceDemands": {
+        "minimumPersonnel": 20,
+        "targetPersonnel": 50,
+        "maximumPersonnel": 80,
+        "priority": 80
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "RESIDENTIAL_HOUSING"
+      ],
+      "storageCapacity": {
+        "food": 500
+      }
+    },
+    {
+      "id": "bld_field_hospital",
+      "name": "Bệnh Viện Quân Dân Y Sol",
+      "type": "MEDICAL",
+      "class": "MEDIUM",
+      "description": "Cơ sở y tế điều trị thương binh và phục hồi tâm lý phi công sống sót.",
+      "baseCost": {
+        "industrialMaterials": 400,
+        "energy": 250,
+        "logisticsSupplies": 100
+      },
+      "buildDurationGameDays": 3,
+      "maxHp": 2500,
+      "initialCondition": 2500,
+      "workforceDemands": {
+        "minimumPersonnel": 50,
+        "targetPersonnel": 100,
+        "maximumPersonnel": 150,
+        "priority": 95
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "TRAUMA_TREATMENT",
+        "PILOT_RECOVERY"
+      ],
+      "effects": [
+        {
+          "id": "eff_med_heal",
+          "name": "Hồi phục sức khỏe",
+          "scope": "BASE",
+          "targetMetric": "recoverySpeedPct",
+          "modifierType": "PERCENT",
+          "value": 20
+        }
+      ]
+    },
+    {
+      "id": "bld_hydroponic_farm",
+      "name": "Nông Trang Thủy Canh Helios",
+      "type": "AGRICULTURE",
+      "class": "LIGHT",
+      "description": "Sản xuất lương thực dinh dưỡng cao từ năng lượng và vi sinh.",
+      "baseCost": {
+        "industrialMaterials": 250,
+        "energy": 200
+      },
+      "buildDurationGameDays": 2,
+      "maxHp": 1800,
+      "initialCondition": 1800,
+      "workforceDemands": {
+        "minimumPersonnel": 30,
+        "targetPersonnel": 60,
+        "maximumPersonnel": 100,
+        "priority": 75
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "FOOD_PRODUCTION"
+      ],
+      "productionRecipeIds": [
+        "recipe_food_synthesis"
+      ]
+    },
+    {
+      "id": "bld_heavy_fabricator",
+      "name": "Xưởng Luyện Kim & Chế Tạo Nặng",
+      "type": "INDUSTRY",
+      "class": "HEAVY",
+      "description": "Chế luyện quặng thô thành Hợp kim Titan và linh kiện máy bay.",
+      "baseCost": {
+        "industrialMaterials": 600,
+        "energy": 400,
+        "logisticsSupplies": 200
+      },
+      "buildDurationGameDays": 4,
+      "maxHp": 4000,
+      "initialCondition": 4000,
+      "workforceDemands": {
+        "minimumPersonnel": 80,
+        "targetPersonnel": 150,
+        "maximumPersonnel": 250,
+        "priority": 70
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "HEAVY_MANUFACTURING"
+      ],
+      "productionRecipeIds": [
+        "recipe_alloys_smelting"
+      ]
+    },
+    {
+      "id": "bld_strategic_vault",
+      "name": "Kho Dự Trữ Chiến Lược",
+      "type": "STORAGE",
+      "class": "HEAVY",
+      "description": "Hầm chứa ngầm gia cố chịu bom đạn, tăng dung tích kho toàn căn cứ.",
+      "baseCost": {
+        "industrialMaterials": 500,
+        "energy": 100
+      },
+      "buildDurationGameDays": 3,
+      "maxHp": 5000,
+      "initialCondition": 5000,
+      "workforceDemands": {
+        "minimumPersonnel": 15,
+        "targetPersonnel": 30,
+        "maximumPersonnel": 50,
+        "priority": 60
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "MASS_STORAGE"
+      ],
+      "storageCapacity": {
+        "industrialMaterials": 2000,
+        "energy": 2000,
+        "logisticsSupplies": 1000,
+        "food": 3000
+      }
+    },
+    {
+      "id": "bld_cargo_depot",
+      "name": "Trạm Tiếp Vận Đoàn Xe Hậu Cần",
+      "type": "LOGISTICS",
+      "class": "MEDIUM",
+      "description": "Điều phối đoàn xe tiếp tế liên khu vực và chuẩn bị vật tư vận tải.",
+      "baseCost": {
+        "industrialMaterials": 350,
+        "energy": 150,
+        "logisticsSupplies": 150
+      },
+      "buildDurationGameDays": 2,
+      "maxHp": 2200,
+      "initialCondition": 2200,
+      "workforceDemands": {
+        "minimumPersonnel": 40,
+        "targetPersonnel": 80,
+        "maximumPersonnel": 120,
+        "priority": 85
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "SUPPLY_DISTRIBUTION"
+      ],
+      "productionRecipeIds": [
+        "recipe_fuel_refining"
+      ]
+    },
+    {
+      "id": "bld_tech_lab",
+      "name": "Viện Nghiên Cứu Lượng Tử Sol",
+      "type": "RESEARCH",
+      "class": "ADVANCED",
+      "description": "Phát triển công nghệ radar, tinh chỉnh vũ khí và giải mã dữ liệu Void.",
+      "baseCost": {
+        "industrialMaterials": 450,
+        "energy": 350,
+        "tacticalData": 200
+      },
+      "buildDurationGameDays": 4,
+      "maxHp": 2000,
+      "initialCondition": 2000,
+      "workforceDemands": {
+        "minimumPersonnel": 50,
+        "targetPersonnel": 100,
+        "maximumPersonnel": 160,
+        "priority": 90
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "TECH_RESEARCH"
+      ],
+      "productionRecipeIds": [
+        "recipe_tactical_data_compilation"
+      ]
+    },
+    {
+      "id": "bld_central_bank",
+      "name": "Kho Bạc & Ngân Hàng Liên Minh",
+      "type": "FINANCE",
+      "class": "MEDIUM",
+      "description": "Điều phối tín dụng chiến dịch, cân đối ngân sách và thu thuế định kỳ.",
+      "baseCost": {
+        "industrialMaterials": 300,
+        "energy": 200
+      },
+      "buildDurationGameDays": 3,
+      "maxHp": 2500,
+      "initialCondition": 2500,
+      "workforceDemands": {
+        "minimumPersonnel": 30,
+        "targetPersonnel": 60,
+        "maximumPersonnel": 90,
+        "priority": 65
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "FINANCIAL_CLEARING"
+      ]
+    },
+    {
+      "id": "bld_morale_hub",
+      "name": "Quảng Trường Văn Hóa & Phục Hồi",
+      "type": "ENTERTAINMENT",
+      "class": "LIGHT",
+      "description": "Tăng độ ổn định xã hội, giảm căng thẳng chiến tranh cho cư dân.",
+      "baseCost": {
+        "industrialMaterials": 200,
+        "energy": 100,
+        "food": 100
+      },
+      "buildDurationGameDays": 2,
+      "maxHp": 1500,
+      "initialCondition": 1500,
+      "workforceDemands": {
+        "minimumPersonnel": 20,
+        "targetPersonnel": 40,
+        "maximumPersonnel": 60,
+        "priority": 50
+      },
+      "defaultMaintenancePolicy": "MANUAL",
+      "capabilities": [
+        "STABILITY_BOOST"
+      ],
+      "effects": [
+        {
+          "id": "eff_ent_stab",
+          "name": "Cải thiện ổn định",
+          "scope": "BASE",
+          "targetMetric": "stabilityBonus",
+          "modifierType": "FLAT",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "id": "bld_sub_power_station",
+      "name": "Lò Phản Ứng Plasma Phụ Trợ",
+      "type": "SUPPORT",
+      "class": "MEDIUM",
+      "description": "Trạm điện bổ sung năng lượng vận hành khiên chắn và phân xưởng.",
+      "baseCost": {
+        "industrialMaterials": 350,
+        "energy": 100
+      },
+      "buildDurationGameDays": 2,
+      "maxHp": 2800,
+      "initialCondition": 2800,
+      "workforceDemands": {
+        "minimumPersonnel": 25,
+        "targetPersonnel": 50,
+        "maximumPersonnel": 75,
+        "priority": 88
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "POWER_GENERATION"
+      ]
+    },
+    {
+      "id": "bld_command_center",
+      "name": "Trung Tâm Chỉ Huy Tác Chiến",
+      "type": "COMMAND",
+      "class": "CORE_FACILITY",
+      "description": "Bộ chỉ huy tối cao của Căn cứ, quản lý mọi hệ thống và slot công trình.",
+      "isCoreFacility": true,
+      "baseCost": {
+        "industrialMaterials": 1000,
+        "energy": 800,
+        "tacticalData": 500
+      },
+      "buildDurationGameDays": 5,
+      "maxHp": 10000,
+      "initialCondition": 10000,
+      "workforceDemands": {
+        "minimumPersonnel": 100,
+        "targetPersonnel": 200,
+        "maximumPersonnel": 300,
+        "priority": 100
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "BASE_ADMINISTRATION",
+        "SECTOR_COMMAND"
+      ]
+    },
+    {
+      "id": "bld_fortress_bastion",
+      "name": "Pháo Đài Công Sự Kiên Cố",
+      "type": "DEFENSE",
+      "class": "HEAVY",
+      "description": "Tường thành kiên cố và trận địa pháo tăng mức phòng thủ khu vực.",
+      "baseCost": {
+        "industrialMaterials": 700,
+        "energy": 300
+      },
+      "buildDurationGameDays": 4,
+      "maxHp": 8000,
+      "initialCondition": 8000,
+      "workforceDemands": {
+        "minimumPersonnel": 60,
+        "targetPersonnel": 120,
+        "maximumPersonnel": 180,
+        "priority": 92
+      },
+      "defaultMaintenancePolicy": "EMERGENCY",
+      "capabilities": [
+        "FORTIFICATION",
+        "SIEGE_RESISTANCE"
+      ]
+    },
+    {
+      "id": "bld_missile_battery",
+      "name": "Trận Địa Tên Lửa Phòng Không",
+      "type": "OFFENSE",
+      "class": "HEAVY",
+      "description": "Hệ thống ống phóng hỏa tiễn tầm xa tiêu diệt tàu tuần tra đối phương.",
+      "baseCost": {
+        "industrialMaterials": 650,
+        "energy": 350,
+        "logisticsSupplies": 150
+      },
+      "buildDurationGameDays": 3,
+      "maxHp": 4500,
+      "initialCondition": 4500,
+      "workforceDemands": {
+        "minimumPersonnel": 50,
+        "targetPersonnel": 100,
+        "maximumPersonnel": 150,
+        "priority": 85
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "TACTICAL_STRIKE"
+      ]
+    },
+    {
+      "id": "bld_garrison_barracks",
+      "name": "Doanh Trại Lực Lượng Đồn Trú",
+      "type": "MILITARY",
+      "class": "MEDIUM",
+      "description": "Cơ sở sinh hoạt và đồn trú của binh sĩ chính quy VSS.",
+      "baseCost": {
+        "industrialMaterials": 400,
+        "energy": 200,
+        "food": 300
+      },
+      "buildDurationGameDays": 2,
+      "maxHp": 3500,
+      "initialCondition": 3500,
+      "workforceDemands": {
+        "minimumPersonnel": 40,
+        "targetPersonnel": 80,
+        "maximumPersonnel": 120,
+        "priority": 82
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "GARRISON_HOUSING"
+      ]
+    },
+    {
+      "id": "bld_orbital_spaceport",
+      "name": "Cảng Hàng Không Vũ Trụ Quỹ Đạo",
+      "type": "SPACEPORT",
+      "class": "ADVANCED",
+      "description": "Đón nhận tàu vận tải cỡ lớn và xuất khẩu tài nguyên liên khu vực.",
+      "baseCost": {
+        "industrialMaterials": 800,
+        "energy": 500,
+        "logisticsSupplies": 300
+      },
+      "buildDurationGameDays": 5,
+      "maxHp": 6000,
+      "initialCondition": 6000,
+      "workforceDemands": {
+        "minimumPersonnel": 70,
+        "targetPersonnel": 140,
+        "maximumPersonnel": 220,
+        "priority": 84
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "INTERSTELLAR_DOCKING"
+      ]
+    },
+    {
+      "id": "bld_orbital_cannon",
+      "name": "Pháo Quỹ Đạo Phản Đòn",
+      "type": "ORBITAL_DEFENSE",
+      "class": "ORBITAL_OUTPOST",
+      "description": "Khẩu pháo siêu trường đặt trên quỹ đạo, bắn hạ tàu chiến Void tiếp cận.",
+      "baseCost": {
+        "industrialMaterials": 900,
+        "energy": 600,
+        "tacticalData": 300
+      },
+      "buildDurationGameDays": 5,
+      "maxHp": 5000,
+      "initialCondition": 5000,
+      "workforceDemands": {
+        "minimumPersonnel": 40,
+        "targetPersonnel": 80,
+        "maximumPersonnel": 120,
+        "priority": 89
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "ORBITAL_INTERCEPTION"
+      ]
+    },
+    {
+      "id": "bld_guild_hall",
+      "name": "Tổng Bộ Hiệp Hội Bang Hội",
+      "type": "GUILD",
+      "class": "MEDIUM",
+      "description": "Đại bản doanh điều phối hợp đồng tác chiến và liên minh hạm đội độc lập.",
+      "baseCost": {
+        "industrialMaterials": 350,
+        "energy": 200
+      },
+      "buildDurationGameDays": 3,
+      "maxHp": 3000,
+      "initialCondition": 3000,
+      "workforceDemands": {
+        "minimumPersonnel": 25,
+        "targetPersonnel": 50,
+        "maximumPersonnel": 75,
+        "priority": 62
+      },
+      "defaultMaintenancePolicy": "MANUAL",
+      "capabilities": [
+        "GUILD_MANAGEMENT"
+      ]
+    },
+    {
+      "id": "bld_sar_station",
+      "name": "Trạm Tìm Kiếm Cứu Nạn Khẩn Cấp",
+      "type": "RESCUE",
+      "class": "MEDIUM",
+      "description": "Bến đậu tàu cứu nạn, radar trinh sát định vị tín hiệu phi công rơi.",
+      "baseCost": {
+        "industrialMaterials": 400,
+        "energy": 300,
+        "logisticsSupplies": 150
+      },
+      "buildDurationGameDays": 3,
+      "maxHp": 3000,
+      "initialCondition": 3000,
+      "workforceDemands": {
+        "minimumPersonnel": 30,
+        "targetPersonnel": 60,
+        "maximumPersonnel": 100,
+        "priority": 96
+      },
+      "defaultMaintenancePolicy": "AUTO",
+      "capabilities": [
+        "SAR_DISPATCH",
+        "CRASH_BEACON_TRACKING"
+      ],
+      "effects": [
+        {
+          "id": "eff_sar_bonus",
+          "name": "Tăng tốc cứu nạn",
+          "scope": "NETWORK",
+          "targetMetric": "sarSuccessRatePct",
+          "modifierType": "PERCENT",
+          "value": 15
+        }
+      ]
+    },
+    {
+      "id": "bld_modular_facility",
+      "name": "Khu Hạ Tầng Tiêu Chuẩn Đa Năng",
+      "type": "GENERIC",
+      "class": "LIGHT",
+      "description": "Khung nhà xưởng tiêu chuẩn có thể gắn linh hoạt các module chức năng.",
+      "baseCost": {
+        "industrialMaterials": 200,
+        "energy": 100
+      },
+      "buildDurationGameDays": 1,
+      "maxHp": 1500,
+      "initialCondition": 1500,
+      "workforceDemands": {
+        "minimumPersonnel": 10,
+        "targetPersonnel": 20,
+        "maximumPersonnel": 30,
+        "priority": 40
+      },
+      "defaultMaintenancePolicy": "MANUAL",
+      "capabilities": [
+        "FLEXIBLE_EXPANSION"
+      ]
+    }
+  ],
+  "metadata": {
+    "domain": "building",
+    "catalog": "building_definition",
+    "description": "Canonical building definitions."
+  }
+}

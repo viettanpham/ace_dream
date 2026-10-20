@@ -117,18 +117,18 @@ Mỗi phi công trong danh sách 8 nhân vật chính thức của STARFRONT **b
    - **Mục đích sử dụng**: Hồ sơ phi công (Dossier / Pilot Profile), màn hình chọn phi công (character-selection), nâng cấp trong Hangar, tổng kết nhiệm vụ, bộ sưu tập Pilot Gallery.
    - **Trọng tâm hình ảnh**: Trọn vẹn trang phục chiến đấu, giáp chân, thắt lưng phụ kiện, bao súng, vũ khí cầm tay và tư thế chiến đấu đặc trưng với độ chi tiết thị giác cao.
 
-### 4.1. Bảng Phân Bổ 16 Image Assets Cho 8 Phi Công Canonical
+### 4.1. Bảng Phân Bổ 16 Image Assets Cho 8 Phi Công Canonical (Định dạng WebP Chuẩn Hóa)
 
-| STT | Mã Phi Công | Họ Tên & Biệt Danh | Giới Tính & Vai Trò | Hệ GEAR & Màu Năng Lượng | File Chân Dung (Portrait 1:1) | File Toàn Thân (Full-Body 9:16) |
+| STT | Mã Phi Công | Họ Tên & Biệt Danh | Giới Tính & Vai Trò | Hệ GEAR & Màu Năng Lượng | File Chân Dung (Portrait 1:1, 512×512) | File Toàn Thân (Full-Body 9:16, 1080×1920 Full HD) |
 |:---:|---|---|---|---|---|---|
-| 1 | `marcus` | **Marcus Thorne**<br>`WAR DOG / IRONCLAD` | Nam (30 tuổi)<br>Chỉ Huy Tuyến Đầu | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/marcus-portrait.png` | `/public/images/marcus-fullbody.png` |
-| 2 | `valentine` | **Valentine Vance**<br>`AEGIS ANGEL` | Nữ (22 tuổi)<br>Chuyên Viên Khiên Nano | **Aegis GEAR**<br>Amber Gold (`#f59e0b`) | `/public/images/valentine-portrait.png` | `/public/images/valentine-fullbody.png` |
-| 3 | `alviss` | **Alviss Drake**<br>`GHOSTFIRE` | Nam (26 tuổi)<br>Phi Công Siêu Thanh | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/alviss-portrait.png` | `/public/images/alviss-fullbody.png` |
-| 4 | `eric` | **Eric Brandt**<br>`BUNKER BREAKER` | Nam (28 tuổi)<br>Pháo Thủ Hạng Nặng | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/eric-portrait.png` | `/public/images/eric-fullbody.png` |
-| 5 | `lyra` | **Lyra Vance**<br>`VALKYRIE` | Nữ (24 tuổi)<br>Nữ Kiếm Sĩ Cơ Động | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/lyra-portrait.png` | `/public/images/lyra-fullbody.png` |
-| 6 | `kaelen` | **Kaelen Voss**<br>`CIPHER` | Nữ (25 tuổi)<br>Hacker Tác Chiến Điện Tử | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/kaelen-portrait.png` | `/public/images/kaelen-fullbody.png` |
-| 7 | `selena` | **Selena Cross**<br>`SOLARIS` | Nữ (27 tuổi)<br>Sĩ Quan Chùm Năng Lượng | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/selena-portrait.png` | `/public/images/selena-fullbody.png` |
-| 8 | `victor` | **Victor Stone**<br>`BASTION` | Nam (34 tuổi)<br>Vệ Binh Pháo Đài Thép | **Aegis GEAR**<br>Amber Gold (`#f59e0b`) | `/public/images/victor-portrait.png` | `/public/images/victor-fullbody.png` |
+| 1 | `marcus` | **Marcus Thorne**<br>`WAR DOG / IRONCLAD` | Nam (30 tuổi)<br>Chỉ Huy Tuyến Đầu | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/marcus-portrait.webp` | `/public/images/marcus-fullbody.webp` |
+| 2 | `valentine` | **Valentine Vance**<br>`AEGIS ANGEL` | Nữ (22 tuổi)<br>Chuyên Viên Khiên Nano | **Aegis GEAR**<br>Amber Gold (`#f59e0b`) | `/public/images/valentine-portrait.webp` | `/public/images/valentine-fullbody.webp` |
+| 3 | `alviss` | **Alviss Drake**<br>`GHOSTFIRE` | Nam (26 tuổi)<br>Phi Công Siêu Thanh | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/alviss-portrait.webp` | `/public/images/alviss-fullbody.webp` |
+| 4 | `eric` | **Eric Brandt**<br>`BUNKER BREAKER` | Nam (28 tuổi)<br>Pháo Thủ Hặng Nặng | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/eric-portrait.webp` | `/public/images/eric-fullbody.webp` |
+| 5 | `lyra` | **Lyra Vance**<br>`VALKYRIE` | Nữ (24 tuổi)<br>Nữ Kiếm Sĩ Cơ Động | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/lyra-portrait.webp` | `/public/images/lyra-fullbody.webp` |
+| 6 | `kaelen` | **Kaelen Voss**<br>`CIPHER` | Nữ (25 tuổi)<br>Hacker Tác Chiến Điện Tử | **Falcon GEAR**<br>Cyber Violet (`#a855f7`) | `/public/images/kaelen-portrait.webp` | `/public/images/kaelen-fullbody.webp` |
+| 7 | `selena` | **Selena Cross**<br>`SOLARIS` | Nữ (27 tuổi)<br>Sĩ Quan Chùm Năng Lượng | **Vanguard GEAR**<br>Tactical Cyan (`#06b6d4`) | `/public/images/selena-portrait.webp` | `/public/images/selena-fullbody.webp` |
+| 8 | `victor` | **Victor Stone**<br>`BASTION` | Nam (34 tuổi)<br>Vệ Binh Pháo Đài Thép | **Aegis GEAR**<br>Amber Gold (`#f59e0b`) | `/public/images/victor-portrait.webp` | `/public/images/victor-fullbody.webp` |
 
 *Ghi chú về thiết lập nhân vật: Alviss Drake bắt buộc là NAM (phi công siêu thanh ngạo nghễ, tài hoa). Tỉ lệ giới tính 8 phi công cân bằng tuyệt đối: 4 Nam : 4 Nữ.*
 
@@ -140,29 +140,27 @@ Mỗi phi công trong danh sách 8 nhân vật chính thức của STARFRONT **b
 - **Thư mục lưu trữ gốc**: `/public/images/`
 - **Đường dẫn truy cập Web/Client**: `/images/{tên-file}`
 - **Quy tắc đặt tên file**:
-  - Chân dung: `{mã-phi-công}-portrait.png` (Ví dụ: `marcus-portrait.png`)
-  - Toàn thân: `{mã-phi-công}-fullbody.png` (Ví dụ: `marcus-fullbody.png`)
-- **Định dạng file gốc**: 32-bit PNG (RGBA với kênh alpha trong suốt hoặc phông nền xưởng cơ khí/hangar sci-fi ánh sáng điện ảnh).
+  - Chân dung: `{mã-phi-công}-portrait.webp` (Ví dụ: `marcus-portrait.webp`)
+  - Toàn thân: `{mã-phi-công}-fullbody.webp` (Ví dụ: `marcus-fullbody.webp`)
+- **Định dạng file phân phối**: WebP (hỗ trợ đầy đủ kênh Alpha trong suốt, chất lượng nén Q92 sắc nét).
 - **Mã hóa màu**: sRGB, 8-bit per channel color depth.
 
 ### 5.2. Tiêu Chuẩn Phân Giải, Kích Thước Tệp & Tối Ưu Hóa (Image Asset Resolution & File Size Standards)
 
 #### A. Full-body Character Images
-- **Target Resolution**: **900 × 1600 px** (tỉ lệ 9:16).
-- **Target File Size**: **≤ 1200 KB per image**.
-- **Yêu cầu bảo toàn hình thể**: Giữ trọn vẹn đường nét dáng người nhân vật (complete character silhouette) và các vũ khí, trang thiết bị quan trọng.
-- **Chi tiết hiển thị**: Duy trì đầy đủ độ chi tiết thị giác sắc nét cho màn hình chọn phi công (character-selection) và màn hình hồ sơ phi công (character-profile screens).
+- **Target Resolution**: **1080 × 1920 px** (Full HD, tỉ lệ 9:16).
+- **Target File Size**: **≤ 350 KB per image (WebP Q92)**.
+- **Yêu cầu bảo toàn hình thể**: Giữ trọn vẹn đường nét dáng người nhân vật (complete character silhouette) và các vũ khí, trang thiết bị quan trọng với thuật toán fit contain bảo toàn tỷ lệ khung hình.
+- **Chi tiết hiển thị**: Duy trì độ nét Full HD vượt trội cho màn hình chọn phi công (character-selection) và Pilot Art Gallery.
 
 #### B. Character Portrait Images
 - **Target Resolution**: **512 × 512 px** (tỉ lệ 1:1).
-- **Target File Size**: **≤ 500 KB per image**.
+- **Target File Size**: **≤ 75 KB per image (WebP Q92)**.
 - **Khung hình**: Cận cảnh rõ nét khuôn mặt và phần vai trên (frame the face and upper shoulders clearly).
 - **Yêu cầu nhận diện**: Bảo toàn tuyệt đối danh tính nhân vật, kiểu tóc, thiết kế giáp và bảng màu đặc trưng (signature color palette).
 
 #### C. Định Dạng & Tối Ưu Hóa Phân Phối (Format and Optimization)
-- **Ưu tiên WebP**: Ưu tiên sử dụng định dạng WebP cho việc phân phối tối ưu (optimized delivery) khi ứng dụng và asset pipeline hiện tại hỗ trợ.
-- **Giữ nguyên PNG**: Giữ nguyên định dạng PNG khi quy trình hiện tại của dự án yêu cầu hoặc khi việc chuyển đổi sang WebP làm suy giảm chất lượng hình ảnh mong muốn.
-- **Bảo toàn tham chiếu & đuôi tệp**: Tuyệt đối không thay đổi phần mở rộng tệp (file extensions), tham chiếu code hoặc đường dẫn asset hiện có mà không kiểm tra và cập nhật rõ ràng toàn bộ các tham chiếu phụ thuộc trong toàn bộ dự án.
+- **Chuẩn WebP chính thức**: Toàn bộ hệ thống asset đồ họa STARFRONT sử dụng định dạng WebP cho việc phân phối tối ưu (optimized delivery), giúp tải tức thì và tiết kiệm 90% băng thông so với PNG gốc.
 - **Giới hạn dung lượng là mục tiêu tối ưu (Optimization Targets)**: Xem các mức giới hạn file-size (`≤ 1200 KB` cho Full-body, `≤ 500 KB` cho Portrait) là mục tiêu tối ưu hóa. Nếu một hình ảnh không thể đạt mục tiêu dung lượng mà không bị suy giảm chất lượng rõ rệt (noticeable quality loss), phải bảo toàn chất lượng thị giác và ghi nhận trường hợp ngoại lệ.
 - **Điều chỉnh kích thước đúng quy cách (Resize Oversized Images)**: Giảm kích thước các ảnh quá khổ về đúng độ phân giải mục tiêu (`900 × 1600 px` hoặc `512 × 512 px`), bảo toàn tỉ lệ khung hình (aspect ratio) và tránh phóng đại (upscaling) không cần thiết.
 - **Nén & Kiểm định trực quan trước khi thay thế**: Sử dụng thông số nén phù hợp và bắt buộc kiểm tra trực quan chất lượng kết quả tối ưu trước khi thay thế các asset hiện có.

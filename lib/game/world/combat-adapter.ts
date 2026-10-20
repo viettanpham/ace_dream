@@ -259,6 +259,16 @@ export function commitCombatResultReceipt(
     }
   }
 
+  // Chặn nếu phiên bản combatVersion của biên lai không khớp với snapshot của giao dịch
+  if (entry.snapshot && entry.snapshot.combatVersion && entry.snapshot.combatVersion !== receipt.combatVersion) {
+    return {
+      applied: false,
+      transactionId: receipt.transactionId,
+      error: `Phiên bản combatVersion "${receipt.combatVersion}" không được hỗ trợ cho trận đấu đã ghi nhận (yêu cầu "${entry.snapshot.combatVersion}").`,
+      message: "Từ chối áp dụng do phiên bản combat không tương thích với encounter.",
+    }
+  }
+
   // Chặn không cho phép commit giao dịch đã bị hủy bỏ (Aborted)
   if (entry.status === "aborted") {
     return {

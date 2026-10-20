@@ -13,6 +13,9 @@ import {
 import {
   applyUiScale,
   getSavedUiScale,
+  getSavedTextScale,
+  getSavedLayoutDensity,
+  applyTextScaleAndDensity,
   getSavedScanlineOverlay,
   getSavedScanlineBeam,
   getSavedVignette,
@@ -400,6 +403,10 @@ export function StarfrontShell() {
       const savedScale = getSavedUiScale()
       setUiScale(savedScale)
       applyUiScale(savedScale)
+
+      const savedTextScale = getSavedTextScale()
+      const savedDensity = getSavedLayoutDensity()
+      applyTextScaleAndDensity(savedTextScale, savedDensity)
     } catch {
       // ignore local storage errors
     }
@@ -448,6 +455,7 @@ export function StarfrontShell() {
     setCornerBracketsEnabled(s.cornerBrackets)
     setUiScale(s.uiScale)
     applyUiScale(s.uiScale)
+    applyTextScaleAndDensity(s.textScale, s.layoutDensity)
   }
 
   // Lưu tự động mỗi khi có thay đổi tiến trình

@@ -364,6 +364,13 @@ export class CatalogRegistry {
 export const defaultCatalogRegistry = new CatalogRegistry()
 
 /**
+ * Returns the active default master catalog registry singleton
+ */
+export function getMasterRegistry(): CatalogRegistry {
+  return defaultCatalogRegistry
+}
+
+/**
  * Top-level consumer API: gets or loads a resolved catalog from default registry
  */
 export function getCatalog<T extends { id: string }>(

@@ -1,0 +1,138 @@
+{
+  "configFileId": "system_base_base_type",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "CAPITAL",
+      "name": "Thủ Phủ Liên Minh (Capital / CC0)",
+      "description": "Đầu não chính trị, quân sự và khoa học tối cao của quốc gia.",
+      "baseClassId": "SOVEREIGN_CAPITAL",
+      "defaultStrategicRole": "CAPITAL",
+      "defaultDockingPorts": 8,
+      "defaultHubType": "COMMAND_HUB",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "MILITARY",
+      "name": "Pháo Đài Quân Sự (Military Fortress)",
+      "description": "Căn cứ tác chiến tiền phương tập trung đồn trú và chỉ huy hạm đội.",
+      "baseClassId": "MAJOR_HUB",
+      "defaultStrategicRole": "BORDER",
+      "defaultDockingPorts": 5,
+      "defaultHubType": "COMMAND_HUB",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "DEFENSE",
+      "name": "Thành Trì Phòng Thủ (Defense Bastion)",
+      "description": "Chốt chặn phòng thủ biên giới với công sự dày đặc và lưới lửa phòng không.",
+      "baseClassId": "REGIONAL_BASE",
+      "defaultStrategicRole": "BORDER",
+      "defaultDockingPorts": 5,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "INDUSTRY",
+      "name": "Tổ Hợp Công Nghiệp Nặng (Industrial Hub)",
+      "description": "Trung tâm luyện kim, chế tạo cơ giới và sản xuất vật liệu chiến lược.",
+      "baseClassId": "MAJOR_HUB",
+      "defaultStrategicRole": "SPECIALIZED",
+      "defaultDockingPorts": 4,
+      "defaultHubType": "INDUSTRIAL_HUB",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "RESEARCH",
+      "name": "Tổ Hợp Nghiên Cứu Lượng Tử (Research Nexus)",
+      "description": "Viện nghiên cứu công nghệ cao và phân tích dữ liệu chiến thuật.",
+      "baseClassId": "REGIONAL_BASE",
+      "defaultStrategicRole": "SPECIALIZED",
+      "defaultDockingPorts": 2,
+      "defaultHubType": "RESEARCH_HUB",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "TRANSPORT_HUB",
+      "name": "Đầu Mối Giao Thông Liên Sao (Transport Hub)",
+      "description": "Cảng trung chuyển hạm đội, bến tàu và cửa ngõ siêu không gian.",
+      "baseClassId": "MAJOR_HUB",
+      "defaultStrategicRole": "INTERIOR",
+      "defaultDockingPorts": 5,
+      "defaultHubType": "TRANSPORT_HUB",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "LOGISTICS",
+      "name": "Trung Tâm Tiếp Vận Hậu Cần (Logistics Center)",
+      "description": "Kho dự trữ chiến lược và trạm điều phối đoàn vận tải liên khu vực.",
+      "baseClassId": "REGIONAL_BASE",
+      "defaultStrategicRole": "INTERIOR",
+      "defaultDockingPorts": 5,
+      "defaultHubType": "LOGISTICS_HUB",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "MINING",
+      "name": "Thuộc Địa Khai Khoáng (Mining Colony)",
+      "description": "Khu khai thác quặng sâu và tinh thể năng lượng vùng vành đai.",
+      "baseClassId": "REGIONAL_BASE",
+      "defaultStrategicRole": "BORDER",
+      "defaultDockingPorts": 2,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "AGRICULTURAL",
+      "name": "Vòm Nông Sinh Thái (Agricultural Dome)",
+      "description": "Tổ hợp nông trang thủy canh cung cấp lương thực cho toàn thiên hà.",
+      "baseClassId": "REGIONAL_BASE",
+      "defaultStrategicRole": "SPECIALIZED",
+      "defaultDockingPorts": 3,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "MEDICAL",
+      "name": "Trung Tâm Quân Dân Y (Medical Sanctuary)",
+      "description": "Tổ hợp bệnh viện điều trị thương binh, phục hồi phi công và nghiên cứu sinh học.",
+      "baseClassId": "REGIONAL_BASE",
+      "defaultStrategicRole": "SPECIALIZED",
+      "defaultDockingPorts": 3,
+      "defaultHubType": "MEDICAL_HUB",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FINANCIAL",
+      "name": "Sàn Giao Dịch & Ngân Khố (Financial Exchange)",
+      "description": "Trung tâm thương mại, ngân khố dự trữ và điều phối tài chính.",
+      "baseClassId": "MAJOR_HUB",
+      "defaultStrategicRole": "SPECIALIZED",
+      "defaultDockingPorts": 4,
+      "defaultHubType": "FINANCIAL_HUB",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "HABITAT",
+      "name": "Đại Đô Thị Cư Dân (Habitat Megapolis)",
+      "description": "Quần thể đô thị vòm kính mật độ dân cư cao và trung tâm văn hóa.",
+      "baseClassId": "MAJOR_HUB",
+      "defaultStrategicRole": "INTERIOR",
+      "defaultDockingPorts": 6,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "GENERAL",
+      "name": "Căn Cứ Đa Năng Tiêu Chuẩn (General Base)",
+      "description": "Căn cứ hành tinh cân bằng giữa dân sinh, hậu cần và phòng thủ.",
+      "baseClassId": "REGIONAL_BASE",
+      "defaultStrategicRole": "INTERIOR",
+      "defaultDockingPorts": 3,
+      "lifecycle": "ACTIVE"
+    }
+  ],
+  "metadata": {
+    "domain": "base",
+    "catalog": "base_type",
+    "description": "Canonical FND-6 Base Types."
+  }
+}

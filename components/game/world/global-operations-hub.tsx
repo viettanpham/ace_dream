@@ -607,39 +607,39 @@ export function GlobalOperationsHub({
   }, [worldState.eventResultsArchive])
 
   return (
-    <div className="space-y-4 font-mono text-xs animate-fadeIn" data-testid="global-operations-hub">
+    <div className="space-y-4 font-mono sf-text-body animate-fadeIn" data-testid="global-operations-hub">
       {/* ====================================================================
           HEADER: HUB COMMAND BAR (SCI-FI OPERATIONS CENTER HEADER)
           ==================================================================== */}
-      <div className="rounded border border-cyan-500/50 bg-gradient-to-r from-zinc-950 via-slate-950 to-cyan-950/40 p-3.5 shadow-lg shadow-cyan-950/30 flex flex-wrap items-center justify-between gap-3">
+      <div className="rounded border border-cyan-500/50 bg-gradient-to-r from-zinc-950 via-slate-950 to-cyan-950/40 p-4 shadow-lg shadow-cyan-950/30 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="size-9 rounded-lg bg-cyan-950 border border-cyan-400 flex items-center justify-center text-cyan-300 shadow-md shadow-cyan-500/30">
-              <Crosshair className="size-5 animate-pulse" />
+            <div className="size-10 rounded-lg bg-cyan-950 border border-cyan-400 flex items-center justify-center text-cyan-300 shadow-md shadow-cyan-500/30">
+              <Crosshair className="size-5.5 animate-pulse" />
             </div>
             {actionableCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-black text-white shadow-sm ring-2 ring-zinc-950 animate-bounce">
+              <span className="absolute -top-1.5 -right-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-red-500 px-1 sf-text-caption font-black text-white shadow-sm ring-2 ring-zinc-950 animate-bounce">
                 {actionableCount}
               </span>
             )}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-cyan-200">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="sf-title-panel font-bold uppercase tracking-wider text-cyan-200">
                 Trung Tâm Điều Hành Toàn Cảnh
               </h2>
-              <span className="rounded bg-cyan-900/60 border border-cyan-500/40 px-1.5 py-0.2 text-[9px] font-bold text-cyan-300">
+              <span className="rounded bg-cyan-900/60 border border-cyan-500/40 px-2 py-0.5 sf-text-caption font-bold text-cyan-300">
                 Phase 6.29 Hub
               </span>
             </div>
-            <div className="text-[11px] text-zinc-400 flex items-center gap-2 mt-0.5">
+            <div className="sf-text-secondary text-zinc-300 flex items-center gap-2 mt-0.5 flex-wrap">
               <span>
                 Ngày chiến lược: <strong className="text-cyan-300 font-mono">#{worldState.currentDay}</strong>
               </span>
               <span>&bull;</span>
               <span>
-                10 Sector Thiên Hà (<span className="text-emerald-400">{vssCount} VSS</span>,{" "}
-                <span className="text-red-400">{voidCount} Void</span>)
+                10 Sector Thiên Hà (<span className="text-emerald-400 font-bold">{vssCount} VSS</span>,{" "}
+                <span className="text-red-400 font-bold">{voidCount} Void</span>)
               </span>
             </div>
           </div>
@@ -649,14 +649,14 @@ export function GlobalOperationsHub({
         <div className="flex flex-wrap items-center gap-2">
           <div
             className={cn(
-              "flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-bold border",
+              "flex items-center gap-2 rounded px-3 py-1.5 sf-text-secondary font-bold border",
               actionableCount > 0
                 ? "bg-amber-950/60 border-amber-500/60 text-amber-200 shadow-sm"
                 : "bg-emerald-950/40 border-emerald-500/40 text-emerald-300"
             )}
             title="Số lượng sự việc và tình huống cần người chơi xử lý"
           >
-            <AlertCircle className="size-3.5" />
+            <AlertCircle className="size-4 shrink-0" />
             <span>
               {actionableCount > 0 ? `${actionableCount} Việc Cần Can Thiệp` : "Hệ Thống Ổn Định"}
             </span>
@@ -668,13 +668,13 @@ export function GlobalOperationsHub({
               playClickSound()
               onOpenDebriefingDrawer()
             }}
-            className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors cursor-pointer text-xs"
+            className="flex items-center gap-2 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 sf-text-button sf-density-btn text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors cursor-pointer"
             title="Mở toàn bộ khay báo cáo tình báo và lưu trữ"
           >
-            <FileText className="size-3.5 text-cyan-400" />
+            <FileText className="size-4 text-cyan-400" />
             <span>Báo Cáo</span>
             {unreadResultsCount > 0 && (
-              <span className="rounded bg-amber-500 text-black px-1 py-0.2 text-[9px] font-black">
+              <span className="rounded bg-amber-500 text-black px-1.5 py-0.5 sf-text-caption font-black">
                 {unreadResultsCount} Mới
               </span>
             )}
@@ -688,10 +688,10 @@ export function GlobalOperationsHub({
                 onAdvanceTick()
               }}
               disabled={isTickAdvancing}
-              className="flex items-center gap-1.5 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-3 py-1 text-xs cursor-pointer transition-colors shadow-md shadow-cyan-500/30 disabled:opacity-50"
+              className="flex items-center gap-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold px-3.5 py-1.5 sf-text-button sf-density-btn cursor-pointer transition-colors shadow-md shadow-cyan-500/30 disabled:opacity-50 uppercase"
               title="Tiến 1 ngày chiến lược"
             >
-              <Play className="size-3.5 fill-current" />
+              <Play className="size-4 fill-current" />
               <span>{isTickAdvancing ? "Đang tính..." : "+1 Ngày"}</span>
             </button>
           )}
@@ -701,7 +701,7 @@ export function GlobalOperationsHub({
       {/* ====================================================================
           CATEGORY SUB-NAVIGATION TABS
           ==================================================================== */}
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-zinc-800 pb-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-2.5">
         {[
           { id: "all", label: "Tất Cả Mục", count: criticalAlerts.length + eventGroups.initEvents.length + eventGroups.processingEvents.length },
           { id: "alerts", label: "Cảnh Báo Nguy Cấp", count: criticalAlerts.length, badgeColor: "text-red-400" },
@@ -720,9 +720,9 @@ export function GlobalOperationsHub({
                 setActiveCategory(tab.id as HubFilterCategory)
               }}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded text-[11px] font-bold uppercase transition-all cursor-pointer",
+                "flex items-center gap-2 px-3.5 py-2 rounded sf-text-button sf-density-btn uppercase transition-all cursor-pointer font-bold",
                 isActive
-                  ? "bg-cyan-950/80 text-cyan-300 border border-cyan-500/60 shadow-sm"
+                  ? "bg-cyan-950/80 text-cyan-300 border border-cyan-500/60 shadow-sm ring-1 ring-cyan-500/30"
                   : "bg-zinc-900/60 text-zinc-400 border border-zinc-800/80 hover:bg-zinc-900 hover:text-zinc-200"
               )}
             >
@@ -730,7 +730,7 @@ export function GlobalOperationsHub({
               {tab.count > 0 && (
                 <span
                   className={cn(
-                    "rounded px-1.5 py-0.2 text-[9px] font-mono",
+                    "rounded px-1.5 py-0.5 sf-text-caption font-mono font-bold",
                     isActive ? "bg-cyan-900 text-cyan-200" : "bg-black/60 text-zinc-400"
                   )}
                 >
@@ -748,19 +748,19 @@ export function GlobalOperationsHub({
       {(activeCategory === "all" || activeCategory === "alerts") && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-3.5">
           {/* Macro 1: Chủ Quyền & Lãnh Thổ */}
-          <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3.5 space-y-2.5 shadow-md flex flex-col justify-between">
+          <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3 shadow-md flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                <span className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-zinc-300">
-                  <Globe2 className="size-3.5 text-cyan-400" />
+                <span className="flex items-center gap-2 font-bold uppercase sf-title-card text-zinc-200">
+                  <Globe2 className="size-4 text-cyan-400" />
                   Chủ Quyền & Lãnh Thổ
                 </span>
-                <span className="font-bold text-emerald-400 font-mono text-xs">
+                <span className="font-bold text-emerald-400 font-mono sf-text-secondary">
                   {Math.round((vssCount / sectorsList.length) * 100)}% VSS
                 </span>
               </div>
 
-              <div className="flex h-2 w-full rounded-full overflow-hidden bg-zinc-900 mt-2.5">
+              <div className="flex h-2.5 w-full rounded-full overflow-hidden bg-zinc-900 mt-3">
                 <div
                   style={{ width: `${(vssCount / sectorsList.length) * 100}%` }}
                   className="bg-emerald-500"
@@ -778,35 +778,35 @@ export function GlobalOperationsHub({
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[10px] text-zinc-400 mt-1">
+              <div className="flex items-center justify-between sf-text-caption text-zinc-300 mt-2">
                 <span className="text-emerald-400 font-bold">{vssCount} VSS</span>
                 <span className="text-amber-400 font-bold">{contestedCount} Tranh Chấp</span>
                 <span className="text-red-400 font-bold">{voidCount} The Void</span>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-zinc-800/60 flex items-center justify-between text-[10px] text-zinc-400">
+            <div className="pt-2.5 border-t border-zinc-800/60 flex items-center justify-between sf-text-caption text-zinc-300">
               <span>Mạng lưới siêu không gian:</span>
-              <span className="font-mono text-zinc-200">
+              <span className="font-mono text-cyan-300 font-bold">
                 {worldState.routes.length} Tuyến đường
               </span>
             </div>
           </div>
 
           {/* Macro 2: Threat Visualizer */}
-          <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3.5 space-y-2.5 shadow-md flex flex-col justify-between">
+          <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3 shadow-md flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                <span className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-zinc-300">
-                  <ShieldAlert className="size-3.5 text-amber-400" />
+                <span className="flex items-center gap-2 font-bold uppercase sf-title-card text-zinc-200">
+                  <ShieldAlert className="size-4 text-amber-400" />
                   Threat & Điểm Nóng
                 </span>
-                <span className="font-bold text-cyan-400 font-mono text-xs">
+                <span className="font-bold text-cyan-400 font-mono sf-text-secondary">
                   TB {avgThreat.toLocaleString()} / {avgMaxThreat.toLocaleString()}
                 </span>
               </div>
 
-              <div className="h-2 w-full rounded-full bg-zinc-900 overflow-hidden mt-2.5">
+              <div className="h-2.5 w-full rounded-full bg-zinc-900 overflow-hidden mt-3">
                 <div
                   className={cn(
                     "h-full transition-all duration-500",
@@ -820,7 +820,7 @@ export function GlobalOperationsHub({
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[10px] text-zinc-500 mt-1">
+              <div className="flex items-center justify-between sf-text-caption text-zinc-400 mt-2">
                 <span>An Toàn [&lt;30%]</span>
                 <span>Báo Động [30–69%]</span>
                 <span>Nguy Cấp [&ge;70%]</span>
@@ -842,28 +842,28 @@ export function GlobalOperationsHub({
           </div>
 
           {/* Macro 3: Quân Sự & Resource Sparklines */}
-          <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3.5 space-y-2.5 shadow-md flex flex-col justify-between">
+          <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3 shadow-md flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2">
-                <span className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-zinc-300">
-                  <Swords className="size-3.5 text-indigo-400" />
+                <span className="flex items-center gap-2 font-bold uppercase sf-title-card text-zinc-200">
+                  <Swords className="size-4 text-indigo-400" />
                   Quân Sự & Hậu Cần
                 </span>
-                <span className="font-bold text-cyan-300 font-mono text-xs">
+                <span className="font-bold text-cyan-300 font-mono sf-text-secondary">
                   Dự bị: {worldState.military.reserves.toLocaleString()}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5 mt-2.5 text-[10px]">
-                <div className="rounded bg-zinc-900/60 p-1.5 border border-zinc-800">
-                  <div className="text-[9px] text-zinc-500 uppercase">Trực Chiến</div>
-                  <div className="font-bold text-zinc-200 font-mono text-xs mt-0.5">
+              <div className="grid grid-cols-2 gap-2 mt-3 sf-text-secondary">
+                <div className="rounded bg-zinc-900/60 p-2 border border-zinc-800">
+                  <div className="sf-text-caption text-zinc-400 uppercase font-semibold">Trực Chiến</div>
+                  <div className="font-bold text-zinc-100 font-mono sf-text-secondary mt-0.5">
                     {worldState.military.deployed.toLocaleString()}
                   </div>
                 </div>
-                <div className="rounded bg-zinc-900/60 p-1.5 border border-zinc-800">
-                  <div className="text-[9px] text-zinc-500 uppercase">Hành Quân</div>
-                  <div className="font-bold text-indigo-300 font-mono text-xs mt-0.5">
+                <div className="rounded bg-zinc-900/60 p-2 border border-zinc-800">
+                  <div className="sf-text-caption text-zinc-400 uppercase font-semibold">Hành Quân</div>
+                  <div className="font-bold text-indigo-300 font-mono sf-text-secondary mt-0.5">
                     {(worldState.activeDeployments || []).length} Đội
                   </div>
                 </div>
@@ -898,35 +898,35 @@ export function GlobalOperationsHub({
           GROUP A: CRITICAL ALERTS (CẢNH BÁO CHIẾN LƯỢC TỐI KHẨN)
           ==================================================================== */}
       {(activeCategory === "all" || activeCategory === "alerts") && (
-        <section className="rounded border border-red-500/40 bg-zinc-950/90 p-3.5 space-y-3 shadow-lg shadow-red-950/10">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
+        <section className="rounded border border-red-500/40 bg-zinc-950/90 p-4 space-y-3 shadow-lg shadow-red-950/10">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2.5">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="size-4 text-amber-400" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300">
+              <AlertTriangle className="size-4.5 text-amber-400" />
+              <h3 className="sf-title-panel font-bold uppercase tracking-wider text-amber-300">
                 A. Cảnh Báo Chiến Lược Tối Khẩn (Critical Alerts)
               </h3>
             </div>
-            <span className="rounded bg-black/60 px-2 py-0.5 text-[10px] text-zinc-400 border border-zinc-800 font-mono">
+            <span className="rounded bg-black/60 px-2.5 py-1 sf-text-caption text-zinc-300 border border-zinc-800 font-mono font-bold">
               {criticalAlerts.length} Cảnh Báo
             </span>
           </div>
 
           {criticalAlerts.length === 0 ? (
-            <div className="rounded border border-emerald-500/30 bg-emerald-950/10 p-4 text-center text-emerald-400 space-y-1">
-              <div className="font-bold uppercase tracking-wide">
+            <div className="rounded border border-emerald-500/30 bg-emerald-950/10 p-5 text-center text-emerald-400 space-y-1.5">
+              <div className="sf-title-card uppercase font-bold tracking-wide">
                 Phòng Tuyến An Toàn — Không Có Cảnh Báo Cấp Bách
               </div>
-              <div className="text-[11px] text-zinc-400">
+              <div className="sf-text-secondary text-zinc-300">
                 Không có sector nào đang bị vây hãm, sự kiện sắp hết hạn hoặc khủng hoảng hậu cần.
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {criticalAlerts.map((item) => (
                 <div
                   key={item.id}
                   className={cn(
-                    "rounded p-2.5 border flex flex-col justify-between gap-2 transition-all",
+                    "rounded p-3.5 border flex flex-col justify-between gap-2.5 transition-all shadow-sm",
                     item.priority === "P0"
                       ? "border-red-500/70 bg-red-950/20 text-red-200"
                       : item.priority === "P1"
@@ -936,14 +936,14 @@ export function GlobalOperationsHub({
                   data-alert-id={item.id}
                   data-priority={item.priority}
                 >
-                  <div>
-                    <div className="flex flex-wrap items-center justify-between gap-1 pb-1">
-                      <span className="font-bold uppercase text-[11px] truncate max-w-[240px]">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 pb-1">
+                      <span className="font-bold uppercase sf-title-card truncate max-w-full">
                         {item.title}
                       </span>
                       <span
                         className={cn(
-                          "rounded px-1.5 py-0.2 text-[9px] font-bold border shrink-0",
+                          "rounded px-2 py-0.5 sf-text-caption font-bold border shrink-0",
                           item.priority === "P0"
                             ? "bg-red-500/20 text-red-300 border-red-500/40 animate-pulse"
                             : item.priority === "P1"
@@ -954,13 +954,13 @@ export function GlobalOperationsHub({
                         {item.urgencyBadge}
                       </span>
                     </div>
-                    <p className="text-[10px] text-zinc-400 leading-relaxed line-clamp-2">
+                    <p className="sf-text-body text-zinc-200 leading-relaxed">
                       {item.description}
                     </p>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-wrap items-center justify-end gap-1.5 pt-1.5 border-t border-zinc-800/60">
+                  <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-zinc-800/60">
                     {item.type === "suspended_combat" && (
                       <>
                         <button
@@ -969,7 +969,7 @@ export function GlobalOperationsHub({
                             playClickSound()
                             if (item.sectorId) onDeployCombat(item.sectorId)
                           }}
-                          className="rounded bg-amber-500 hover:bg-amber-400 text-black px-2.5 py-1 text-[10px] font-bold cursor-pointer transition-colors"
+                          className="rounded bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 sf-text-button sf-density-btn font-bold cursor-pointer transition-colors shadow-sm"
                         >
                           Tiếp Tục Tác Chiến &rarr;
                         </button>
@@ -980,7 +980,7 @@ export function GlobalOperationsHub({
                               playClickSound()
                               onAbortSuspendedCombat()
                             }}
-                            className="rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 px-2 py-1 text-[10px] cursor-pointer transition-colors"
+                            className="rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 px-2.5 py-1.5 sf-text-button sf-density-btn cursor-pointer transition-colors"
                           >
                             Hủy Bỏ An Toàn
                           </button>
@@ -996,7 +996,7 @@ export function GlobalOperationsHub({
                             playClickSound()
                             onOpenSectorIntel(item.sectorId!)
                           }}
-                          className="rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
+                          className="rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 px-2.5 py-1.5 sf-text-button sf-density-btn font-bold cursor-pointer transition-colors"
                         >
                           Hồ Sơ Intel
                         </button>
@@ -1006,7 +1006,7 @@ export function GlobalOperationsHub({
                             playClickSound()
                             onNavigateToSector(item.sectorId!)
                           }}
-                          className="rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
+                          className="rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 px-2.5 py-1.5 sf-text-button sf-density-btn font-bold cursor-pointer transition-colors"
                         >
                           War Room
                         </button>
@@ -1016,7 +1016,7 @@ export function GlobalOperationsHub({
                             playClickSound()
                             onQuickDispatch(item.sectorId!)
                           }}
-                          className="rounded bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
+                          className="rounded bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 px-2.5 py-1.5 sf-text-button sf-density-btn font-bold cursor-pointer transition-colors"
                         >
                           Điều Quân Nhanh
                         </button>
@@ -1030,7 +1030,7 @@ export function GlobalOperationsHub({
                           playClickSound()
                           onNavigateToSector(sectorsList[0]?.id || "sol_command_hq")
                         }}
-                        className="rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
+                        className="rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 px-3 py-1.5 sf-text-button sf-density-btn font-bold cursor-pointer transition-colors"
                       >
                         Kiểm Tra Bản Đồ &rarr;
                       </button>
@@ -1044,7 +1044,7 @@ export function GlobalOperationsHub({
                             playClickSound()
                             onNavigateToEvent(item.eventId!, "init")
                           }}
-                          className="rounded bg-cyan-500 hover:bg-cyan-400 text-black px-2.5 py-1 text-[10px] font-bold cursor-pointer transition-colors"
+                          className="rounded bg-cyan-500 hover:bg-cyan-400 text-black px-3 py-1.5 sf-text-button sf-density-btn font-bold cursor-pointer transition-colors shadow-sm"
                         >
                           Phê Chuẩn Sự Kiện &rarr;
                         </button>
@@ -1055,7 +1055,7 @@ export function GlobalOperationsHub({
                               playClickSound()
                               onReviewEventModal(item.eventRef!)
                             }}
-                            className="rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 px-2 py-1 text-[10px] font-bold cursor-pointer transition-colors"
+                            className="rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 px-2.5 py-1.5 sf-text-button sf-density-btn font-bold cursor-pointer transition-colors"
                           >
                             ⚡ Xem Nhanh
                           </button>
@@ -1070,7 +1070,7 @@ export function GlobalOperationsHub({
                           playClickSound()
                           onNavigateToMilitary?.()
                         }}
-                        className="rounded bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 px-2.5 py-1 text-[10px] font-bold cursor-pointer transition-colors"
+                        className="rounded bg-indigo-950/70 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 px-3 py-1.5 sf-text-button sf-density-btn font-bold cursor-pointer transition-colors"
                       >
                         Quản Lý Hậu Cần &rarr;
                       </button>

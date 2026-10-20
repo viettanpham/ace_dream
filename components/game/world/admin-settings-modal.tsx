@@ -51,7 +51,7 @@ import {
   getOperationsArchiveConfig,
   updateOperationsArchiveConfig,
 } from "@/lib/game/world/operations-archive"
-import { saveWorldState } from "@/lib/game/world/storage"
+import { saveWorldState, createPreResetBackup } from "@/lib/game/world/storage"
 import {
   DEFAULT_THREAT_CONFIG,
   getWorldThreatConfig,
@@ -60,6 +60,18 @@ import {
   isHeadquartersSector,
 } from "@/lib/game/world/threat-engine"
 import type { WorldSector, WorldState, WorldThreatConfig } from "@/lib/game/world/types"
+import {
+  DEFAULT_WORLD_GENERATION_CONFIG,
+  executeWorldResetStep,
+  generate30NodeWorld,
+  getValidAutoSaveSlots,
+  loadWorldStateFromDevFile,
+  performAutoSave,
+  saveWorldStateToDevFile,
+  type WorldGenerationConfig,
+  type WorldResetPreviewResult,
+  type WorldResetStep,
+} from "@/lib/game/world/base"
 
 export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "threat" | "survival" | "triggers" | "storage"
 
@@ -76,7 +88,7 @@ export interface AdminSettingsModalProps {
   // Handler callbacks
   onTogglePause: () => void
   onConfirmSpeedChange: (newSpeed: number, resetWorld: boolean) => void
-  onConfirmResetWorld: () => void
+  onConfirmResetWorld: (customWorld?: WorldState) => void
   onSaveGeneratorConfig: (genConfig: typeof DEFAULT_SIMULATOR_CONFIG.generator) => void
   onResetGeneratorToDefault: () => void
   onSaveStrategyPolicy: (policyConfig: EventStrategyPolicyConfig) => void
@@ -184,6 +196,17 @@ export function AdminSettingsModal({
   // Sub-dialog xác nhận Reset World thông thường
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
 
+  // Phase 6.34A-FND-6: World Generation Config, 7-Step Preview & DEV File Save states
+  const [fnd6SeedInput, setFnd6SeedInput] = useState<number>(() => worldState?.worldSeed || 77722211)
+  const [fnd6ConfigForm, setFnd6ConfigForm] = useState<WorldGenerationConfig>(() => ({
+    ...DEFAULT_WORLD_GENERATION_CONFIG,
+    ...(worldState?.worldGenerationConfig || {}),
+  }))
+  const [fnd6ResetStep, setFnd6ResetStep] = useState<WorldResetStep>(7)
+  const [fnd6PreviewResult, setFnd6PreviewResult] = useState<WorldResetPreviewResult | null>(null)
+  const [devSaveStatusMsg, setDevSaveStatusMsg] = useState<string>("")
+  const [autoSaveSlotsCount, setAutoSaveSlotsCount] = useState<number>(0)
+
   // Đồng bộ form khi modal mở hoặc simulatorConfig / worldState thay đổi
   useEffect(() => {
     if (isOpen) {
@@ -198,6 +221,15 @@ export function AdminSettingsModal({
         }
         setSectorThreatsForm(updatedThreats)
         setSurvivalForm(getSurvivalConfig(worldState))
+        setFnd6SeedInput(worldState.worldSeed || 77722211)
+        setFnd6ConfigForm({
+          ...DEFAULT_WORLD_GENERATION_CONFIG,
+          ...(worldState.worldGenerationConfig || {}),
+        })
+        setFnd6PreviewResult(
+          executeWorldResetStep(7, worldState.worldSeed || 77722211, worldState.worldGenerationConfig)
+        )
+        setAutoSaveSlotsCount(getValidAutoSaveSlots().length)
       }
     }
   }, [isOpen, simulatorConfig, worldState])
@@ -435,7 +467,7 @@ export function AdminSettingsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-fadeIn text-xs">
-      <div className="relative flex flex-col w-full max-w-4xl max-h-[92vh] rounded-lg border border-amber-500/60 bg-zinc-950 shadow-2xl shadow-amber-950/60 font-mono text-zinc-200 select-none overflow-hidden text-xs">
+      <div className="relative flex flex-col w-full max-w-4xl max-h-[92vh] rounded-lg border border-amber-500/60 bg-zinc-950 shadow-2xl shadow-amber-950/60 font-mono text-zinc-200 select-none overflow-hidden sf-text-body">
         
         {/* ====================================================================
             HEADER CỐ ĐỊNH CỦA MODAL
@@ -447,14 +479,14 @@ export function AdminSettingsModal({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-display text-sm sm:text-base font-black tracking-wider text-amber-300 uppercase">
+                <h2 className="font-display sf-title-panel font-black tracking-wider text-amber-300 uppercase">
                   CÀI ĐẶT & QUẢN TRỊ VIÊN // ADMIN CP
                 </h2>
-                <span className="rounded bg-black/60 px-1.5 py-0.5 text-xs text-zinc-400 border border-zinc-800">
+                <span className="rounded bg-black/60 px-1.5 py-0.5 sf-text-caption text-zinc-400 border border-zinc-800">
                   ISOLATED SETTINGS
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 hidden sm:block">
+              <p className="sf-text-secondary text-zinc-400 hidden sm:block">
                 Cấu hình nhịp độ thời gian thực, HP-Based Threat, Event/Quest, chính sách chiến lược & bảo trì dữ liệu
               </p>
             </div>
@@ -462,7 +494,7 @@ export function AdminSettingsModal({
 
           <div className="flex items-center gap-2">
             {/* Quick Collapse / Expand Controls */}
-            <div className="flex items-center gap-1 border border-zinc-800 rounded bg-black/60 px-1.5 py-0.5 text-xs">
+            <div className="flex items-center gap-1 border border-zinc-800 rounded bg-black/60 px-2 py-1 sf-text-caption">
               <button
                 type="button"
                 onClick={handleExpandAll}
@@ -482,7 +514,7 @@ export function AdminSettingsModal({
               </button>
             </div>
 
-            <span className="flex items-center gap-1.5 rounded border border-amber-500/40 bg-amber-950/40 px-2.5 py-1 text-xs font-bold text-amber-300">
+            <span className="flex items-center gap-1.5 rounded border border-amber-500/40 bg-amber-950/40 px-2.5 py-1 sf-text-caption font-bold text-amber-300">
               <span className="size-2 rounded-full bg-amber-400 animate-ping" />
               <span>{simulatorConfig.isPaused ? "PAUSED" : `${simulatorConfig.speedSeconds}s/Ngày`}</span>
             </span>
@@ -494,7 +526,7 @@ export function AdminSettingsModal({
                 playClickSound()
                 onClose()
               }}
-              className="flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-500 px-2.5 py-1.5 text-xs text-zinc-300 hover:text-white transition-all cursor-pointer"
+              className="flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 hover:border-zinc-500 px-3 py-1.5 sf-text-button text-zinc-300 hover:text-white transition-all cursor-pointer"
               title="Đóng cửa sổ quản trị (Phím ESC)"
             >
               <X className="size-4" />
@@ -506,7 +538,7 @@ export function AdminSettingsModal({
         {/* ====================================================================
             NAVIGATION TABS TRONG MODAL
             ==================================================================== */}
-        <div className="flex flex-wrap items-center gap-1 border-b border-zinc-800 bg-black/40 px-4 py-2 shrink-0 text-xs">
+        <div className="flex flex-wrap items-center gap-1 border-b border-zinc-800 bg-black/40 px-4 py-2 shrink-0 sf-text-secondary">
           {[
             { id: "all", label: "Tất Cả Mục", icon: Sliders },
             { id: "speed", label: "1. Tốc Độ & Thời Gian", icon: Clock },
@@ -528,7 +560,7 @@ export function AdminSettingsModal({
                   setActiveTab(tab.id as AdminModalTab)
                 }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-bold transition-all cursor-pointer",
+                  "flex items-center gap-1.5 rounded px-2.5 py-1.5 sf-text-button font-bold transition-all cursor-pointer",
                   isActive
                     ? "bg-amber-500/20 text-amber-300 border border-amber-500/50 shadow-xs"
                     : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
@@ -552,7 +584,7 @@ export function AdminSettingsModal({
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
                 <div className="flex items-center gap-2">
                   <Clock className="size-4 text-cyan-400" />
-                  <span className="font-bold text-xs uppercase text-cyan-300">
+                  <span className="font-bold sf-title-card uppercase text-cyan-300">
                     Trạng Thái Động Cơ Thời Gian Thực (Real-time Engine)
                   </span>
                 </div>
@@ -562,7 +594,7 @@ export function AdminSettingsModal({
                     type="button"
                     onClick={onTogglePause}
                     className={cn(
-                      "flex items-center gap-1.5 rounded px-3 py-1 text-xs font-bold transition-all cursor-pointer",
+                      "flex items-center gap-1.5 rounded px-3 py-1.5 sf-text-button font-bold transition-all cursor-pointer",
                       simulatorConfig.isPaused
                         ? "bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-950/60"
                         : "bg-amber-600 hover:bg-amber-500 text-white shadow-md shadow-amber-950/60"
@@ -584,37 +616,37 @@ export function AdminSettingsModal({
               </div>
 
               {/* Thông tin hiển thị */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sf-text-body">
                 <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
-                  <div className="text-zinc-400 text-xs">Niên Lịch Game</div>
-                  <div className="font-bold text-white text-sm mt-0.5">
+                  <div className="text-zinc-400 sf-text-caption">Niên Lịch Game</div>
+                  <div className="font-bold text-white sf-title-card mt-0.5">
                     Năm {calendarInfo.year}, {calendarInfo.seasonName}
                   </div>
-                  <div className="text-zinc-500 text-xs">{calendarInfo.formattedDate}</div>
+                  <div className="text-zinc-500 sf-text-caption">{calendarInfo.formattedDate}</div>
                 </div>
 
                 <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
-                  <div className="text-zinc-400 text-xs">Tổng Ngày Tích Lũy</div>
-                  <div className="font-bold text-cyan-300 text-sm mt-0.5">
+                  <div className="text-zinc-400 sf-text-caption">Tổng Ngày Tích Lũy</div>
+                  <div className="font-bold text-cyan-300 sf-title-card mt-0.5">
                     Ngày {worldState?.currentDay ?? 1}
                   </div>
-                  <div className="text-zinc-500 text-xs">Đã trôi: {worldState?.totalDaysElapsed ?? 0} ngày</div>
+                  <div className="text-zinc-500 sf-text-caption">Đã trôi: {worldState?.totalDaysElapsed ?? 0} ngày</div>
                 </div>
 
                 <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
-                  <div className="text-zinc-400 text-xs">Đếm Ngược Tick Kế</div>
-                  <div className="font-bold text-amber-300 text-sm mt-0.5 font-mono">
+                  <div className="text-zinc-400 sf-text-caption">Đếm Ngược Tick Kế</div>
+                  <div className="font-bold text-amber-300 sf-title-card mt-0.5 font-mono">
                     {simulatorConfig.isPaused ? "PAUSED" : `${countdownSeconds}s`}
                   </div>
-                  <div className="text-zinc-500 text-xs">Tiến trình: {(dayFraction * 100).toFixed(0)}%</div>
+                  <div className="text-zinc-500 sf-text-caption">Tiến trình: {(dayFraction * 100).toFixed(0)}%</div>
                 </div>
 
                 <div className="rounded bg-black/40 p-2.5 border border-zinc-800">
-                  <div className="text-zinc-400 text-xs">Sự Kiện Đang Chạy</div>
-                  <div className="font-bold text-emerald-300 text-sm mt-0.5">
+                  <div className="text-zinc-400 sf-text-caption">Sự Kiện Đang Chạy</div>
+                  <div className="font-bold text-emerald-300 sf-title-card mt-0.5">
                     {eventTierCounts.total} sự kiện
                   </div>
-                  <div className="text-zinc-500 text-xs">S: {eventTierCounts.small} | M: {eventTierCounts.medium} | L: {eventTierCounts.large}</div>
+                  <div className="text-zinc-500 sf-text-caption">S: {eventTierCounts.small} | M: {eventTierCounts.medium} | L: {eventTierCounts.large}</div>
                 </div>
               </div>
             </div>
@@ -1618,23 +1650,230 @@ export function AdminSettingsModal({
                   <div className="space-y-3">
                     <div className="space-y-1 text-xs text-zinc-400 font-mono">
                       <div>&bull; Khóa dữ liệu: <strong className="text-cyan-300">STARFRONT_WORLD_SAVE_V1</strong></div>
-                      <div>&bull; Khóa cấu hình: <strong className="text-cyan-300">STARFRONT_WORLD_SIMULATOR_CONFIG</strong></div>
-                      <div>&bull; Cơ chế sao lưu: <span className="text-emerald-400 font-bold">A/B Rotating Slot (Slot A / Slot B)</span></div>
-                      <div>&bull; Kiểm tra toàn vẹn: <span className="text-emerald-400 font-bold">CRC32 Checksum Verified</span></div>
-                      <div>&bull; Cách ly RPG Save V4: <span className="text-cyan-300 font-bold">100% Độc Lập</span></div>
+                      <div>&bull; Khóa Auto-Save 3 Bản: <strong className="text-emerald-400">STARFRONT_WORLD_AUTOSAVE_SLOTS_V1 ({autoSaveSlotsCount}/3 bản hợp lệ)</strong></div>
+                      <div>&bull; Chu kỳ Auto-Save kép: <span className="text-amber-300 font-bold">{fnd6ConfigForm.autoSaveIntervalGameDays} GAME_DAY hoặc {fnd6ConfigForm.autoSaveIntervalRealMinutes} phút thực</span></div>
+                      <div>&bull; Lưu File DEV Dự Án: <span className="text-cyan-300 font-bold">.starfront-saves/dev/ (Tự động giữ 3 bản hợp lệ + Recovery)</span></div>
+                      <div>&bull; Kiểm tra toàn vẹn: <span className="text-emerald-400 font-bold">CRC32 Checksum Verified · Cách ly 100% RPG Save V4</span></div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={onManualSave}
-                      className="mt-2 w-full flex items-center justify-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 p-2.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 transition-colors cursor-pointer"
-                    >
-                      <Save className="size-3.5" />
-                      <span>Lưu Trạng Thái Thế Giới Ngay Bây Giờ (Force Save)</span>
-                    </button>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onManualSave()
+                          if (worldState) {
+                            const res = performAutoSave(worldState)
+                            setAutoSaveSlotsCount(res.retainedSlots.length)
+                            setDevSaveStatusMsg(`Đã tạo Auto-Save #${res.slot?.sequence} (${res.retainedSlots.length}/3 bản hợp lệ)`)
+                          }
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 p-2 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 transition-colors cursor-pointer"
+                      >
+                        <Save className="size-3.5" />
+                        <span>Lưu & Tạo Auto-Save (3 Bản)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          playClickSound()
+                          if (!worldState) return
+                          const res = await saveWorldStateToDevFile(worldState, "admin_dev_save")
+                          setAutoSaveSlotsCount(getValidAutoSaveSlots().length)
+                          setDevSaveStatusMsg(res.message)
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded border border-emerald-500/50 bg-emerald-950/40 p-2 text-xs font-bold text-emerald-300 hover:bg-emerald-900/50 transition-colors cursor-pointer"
+                      >
+                        <Database className="size-3.5" />
+                        <span>Lưu File DEV (.starfront-saves)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          playClickSound()
+                          const res = await loadWorldStateFromDevFile()
+                          if (res.success && res.state) {
+                            saveWorldState(res.state)
+                            setDevSaveStatusMsg(`${res.message} — Đã đồng bộ vào Primary Save!`)
+                          } else {
+                            setDevSaveStatusMsg(res.message)
+                          }
+                        }}
+                        className="flex items-center justify-center gap-1.5 rounded border border-amber-500/50 bg-amber-950/40 p-2 text-xs font-bold text-amber-300 hover:bg-amber-900/50 transition-colors cursor-pointer"
+                      >
+                        <RotateCcw className="size-3.5" />
+                        <span>Khôi Phục Từ File DEV / Auto-Save</span>
+                      </button>
+                    </div>
+
+                    {devSaveStatusMsg && (
+                      <div className="rounded border border-emerald-500/40 bg-emerald-950/30 p-2 text-[11px] text-emerald-200 font-mono">
+                        ✓ {devSaveStatusMsg}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+
+              {/* Phase 6.34A-FND-6: Cấu Hình Khởi Tạo 30 Sector, Cân Bằng Sức Mạnh & 7-Step Reset Preview */}
+              {!collapsedSections.storage && (
+                <div className="rounded border border-cyan-500/40 bg-cyan-950/15 p-4 space-y-3.5 shadow-md">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-800/60 pb-2">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="size-4 text-cyan-400" />
+                      <h3 className="text-xs font-bold uppercase text-cyan-200 tracking-wider">
+                        Khởi Tạo Thiên Hà 30 Sector, Cân Bằng Quốc Gia & 7-Step Reset Preview (FND-6)
+                      </h3>
+                    </div>
+                    <span className="rounded bg-cyan-950 px-2 py-0.5 text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
+                      30 MAIN BASES · MIN 20% SHARE · MAX 10% POWER DIFF
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="rounded border border-zinc-800 bg-zinc-950/70 p-2.5 space-y-1">
+                      <label className="text-zinc-400 font-bold block text-[11px]">World Seed (Ngẫu nhiên định sẵn):</label>
+                      <input
+                        type="number"
+                        value={fnd6SeedInput}
+                        onChange={(e) => setFnd6SeedInput(Number(e.target.value) || 77722211)}
+                        className="w-full rounded border border-zinc-700 bg-black px-2 py-1 text-cyan-300 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div className="rounded border border-zinc-800 bg-zinc-950/70 p-2.5 space-y-1">
+                      <label className="text-zinc-400 font-bold block text-[11px]">Phân Bổ Căn Cứ Chính (Tối thiểu 20% = 6 Base):</label>
+                      <select
+                        value={fnd6ConfigForm.vssBaseTargetCount ?? 18}
+                        onChange={(e) => {
+                          const vssCount = Number(e.target.value)
+                          const updated = {
+                            ...fnd6ConfigForm,
+                            vssBaseTargetCount: vssCount,
+                            voidBaseTargetCount: 30 - vssCount,
+                          }
+                          setFnd6ConfigForm(updated)
+                          setFnd6PreviewResult(executeWorldResetStep(fnd6ResetStep, fnd6SeedInput, updated))
+                        }}
+                        className="w-full rounded border border-zinc-700 bg-black px-2 py-1 text-amber-300 font-mono text-xs"
+                      >
+                        <option value={18}>18 VSS (60%) / 12 Void (40%) — Chuẩn Mặc Định</option>
+                        <option value={15}>15 VSS (50%) / 15 Void (50%) — Đối Xứng Tuyệt Đối</option>
+                        <option value={21}>21 VSS (70%) / 9 Void (30%) — Ưu Thế Liên Minh</option>
+                        <option value={24}>24 VSS (80%) / 6 Void Elite (20% Min) — Tinh Anh Void</option>
+                        <option value={6}>6 VSS Elite (20% Min) / 24 Void (80%) — Tử Chiến Sinh Tồn</option>
+                      </select>
+                    </div>
+
+                    <div className="rounded border border-zinc-800 bg-zinc-950/70 p-2.5 space-y-1">
+                      <label className="text-zinc-400 font-bold block text-[11px]">Biến Thiên Theo Seed (+/- 8% Dân & Kho):</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = {
+                            ...fnd6ConfigForm,
+                            enableSeededVariation: !fnd6ConfigForm.enableSeededVariation,
+                          }
+                          setFnd6ConfigForm(updated)
+                          setFnd6PreviewResult(executeWorldResetStep(fnd6ResetStep, fnd6SeedInput, updated))
+                        }}
+                        className={cn(
+                          "w-full rounded border px-2 py-1 text-xs font-bold cursor-pointer",
+                          fnd6ConfigForm.enableSeededVariation
+                            ? "border-emerald-500/60 bg-emerald-950/50 text-emerald-300"
+                            : "border-zinc-700 bg-zinc-900 text-zinc-400"
+                        )}
+                      >
+                        {fnd6ConfigForm.enableSeededVariation ? "ĐANG BẬT (Seeded Variation ON)" : "ĐANG TẮT (Canonical Fixed)"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 7-Step Stepper Selector & Preview Summary */}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                      <span className="text-zinc-300 font-bold">Kiểm tra 7 Bước Khởi Tạo & Reset (7-Step Preview):</span>
+                      <div className="flex items-center gap-1">
+                        {([1, 2, 3, 4, 5, 6, 7] as WorldResetStep[]).map((st) => (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => {
+                              setFnd6ResetStep(st)
+                              setFnd6PreviewResult(executeWorldResetStep(st, fnd6SeedInput, fnd6ConfigForm))
+                            }}
+                            className={cn(
+                              "px-2 py-0.5 rounded border text-[10px] font-bold cursor-pointer",
+                              fnd6ResetStep === st
+                                ? "border-cyan-400 bg-cyan-900/60 text-white"
+                                : "border-zinc-800 bg-zinc-900 text-zinc-400"
+                            )}
+                          >
+                            B{st}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {fnd6PreviewResult && (
+                      <div className="rounded border border-zinc-800 bg-black/60 p-3 space-y-2 text-[11px] font-mono">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <div>
+                            <span className="text-zinc-500 block">Phân bổ Base:</span>
+                            <strong className="text-cyan-300">
+                              {fnd6PreviewResult.factionDistribution.vss.baseCount} VSS ({fnd6PreviewResult.factionDistribution.vss.baseSharePercent.toFixed(0)}%) / {fnd6PreviewResult.factionDistribution.void.baseCount} Void ({fnd6PreviewResult.factionDistribution.void.baseSharePercent.toFixed(0)}%)
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-zinc-500 block">Chênh lệch Sức Mạnh:</span>
+                            <strong className="text-emerald-400">
+                              {fnd6PreviewResult.factionDistribution.powerDifferencePercentagePoints.toFixed(1)}% (≤ 10%)
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-zinc-500 block">Thủ phủ CC0 Hậu phương:</span>
+                            <strong className="text-amber-300">
+                              VSS {fnd6PreviewResult.capitals.vss.powerShare}% · Void {fnd6PreviewResult.capitals.void.powerShare}% (≤ 35%)
+                            </strong>
+                          </div>
+                          <div>
+                            <span className="text-zinc-500 block">Quy mô Hạ tầng:</span>
+                            <strong className="text-indigo-300">
+                              {fnd6PreviewResult.previewSummary.totalBuildings} Bld · {fnd6PreviewResult.previewSummary.totalOrbitalSubBases} Orbital · {fnd6PreviewResult.previewSummary.totalRoutes} Routes
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800">
+                          <span className={cn("font-bold", fnd6PreviewResult.isValid ? "text-emerald-400" : "text-red-400")}>
+                            {fnd6PreviewResult.isValid
+                              ? "✓ Hợp lệ 100% — Bảo toàn Source, SYSTEM Catalog & RPG Save V4"
+                              : `✕ Lỗi: ${fnd6PreviewResult.validationErrors.join(", ")}`}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={!fnd6PreviewResult.isValid}
+                            onClick={() => {
+                              playLevelUpSound()
+                              if (worldState) {
+                                createPreResetBackup(worldState)
+                              }
+                              const newWorld = generate30NodeWorld(fnd6SeedInput, fnd6ConfigForm)
+                              saveWorldState(newWorld)
+                              performAutoSave(newWorld)
+                              onConfirmResetWorld(newWorld)
+                            }}
+                            className="rounded border border-cyan-400 bg-cyan-600/40 hover:bg-cyan-600/60 px-3 py-1 text-xs font-bold text-cyan-100 cursor-pointer"
+                          >
+                            Áp Dụng Cấu Hình & Tái Tạo Thiên Hà 30 Sector
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Cấu hình hạn ngạch Operations Archive */}
               {!collapsedSections.storage && (
@@ -1727,10 +1966,10 @@ export function AdminSettingsModal({
 
                 <div className="space-y-1 text-xs text-zinc-300">
                   <p className="leading-relaxed">
-                    Hành động Reset World sẽ đưa toàn bộ trạng thái thiên hà (8 sectors, quân lực, tài nguyên và sự kiện) quay về <strong>Ngày 1 / Year 1</strong>.
+                    Hành động Reset World sẽ đưa toàn bộ trạng thái thiên hà (<strong>30 Main Base Sectors & 54 Tuyến đường</strong>, quân lực, tài nguyên và sự kiện) quay về <strong>Ngày 1 / Year 1</strong>.
                   </p>
                   <p className="text-emerald-400 font-bold text-xs">
-                    ✓ Bảo toàn tuyệt đối: Tiến trình RPG (Phi công, Cấp độ, Trang bị, Kho đồ, Chiến dịch 12 ải) KHÔNG bị ảnh hưởng.
+                    ✓ Bảo toàn tuyệt đối: Source code, SYSTEM Catalog JSON, Save Backup và Tiến trình RPG (Phi công, Cấp độ, Trang bị, Kho đồ, Chiến dịch 12 ải) KHÔNG bị ảnh hưởng.
                   </p>
                 </div>
 
@@ -1851,7 +2090,7 @@ export function AdminSettingsModal({
                 Bạn có chắc chắn muốn đặt lại toàn bộ thế giới STARFRONT WORLD về Ngày 1 / Year 1?
               </p>
               <div className="rounded bg-red-950/30 p-2.5 border border-red-500/30 space-y-1 text-xs text-zinc-300">
-                <div>&bull; Toàn bộ 8 sector sẽ trở về chủ quyền & đồn trú ban đầu.</div>
+                <div>&bull; Toàn bộ 30 Main Base Sectors & 54 Routes sẽ trở về chủ quyền & đồn trú ban đầu.</div>
                 <div>&bull; Toàn bộ sự kiện đang chạy và chuỗi nhiệm vụ sẽ bị xóa.</div>
                 <div>&bull; Các đạo quân đang hành quân sẽ bị hủy an toàn.</div>
               </div>

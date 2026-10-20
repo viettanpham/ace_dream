@@ -383,18 +383,18 @@ export function EventsMissionsBoard({
   }
 
   return (
-    <div className="space-y-3.5 font-mono text-xs">
+    <div className="space-y-4 font-mono text-sm leading-normal">
       {/* ====================================================================
           1. HEADER BÀN CHỈ HUY CHIẾN LƯỢC & ĐIỀU HƯỚNG 3 CHẾ ĐỘ
           ==================================================================== */}
-      <div className="rounded border border-zinc-800 bg-zinc-950/90 p-3.5 backdrop-blur-md shadow-lg shadow-zinc-950/50">
+      <div className="rounded border border-zinc-800 bg-zinc-950/90 p-4 sm:p-4.5 backdrop-blur-md shadow-lg shadow-zinc-950/50">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 text-cyan-400 font-bold uppercase tracking-wider text-sm">
-              <Crosshair className="size-4 text-cyan-400" />
+            <div className="flex items-center gap-2.5 text-cyan-400 font-bold uppercase tracking-wider text-base sm:text-lg">
+              <Crosshair className="size-5 text-cyan-400" />
               <span>BÀN CHỈ HUY SỰ KIỆN & NHIỆM VỤ // COMMAND DESK</span>
             </div>
-            <p className="mt-0.5 text-zinc-400 text-[11px] leading-relaxed">
+            <p className="mt-1 text-zinc-300 text-xs sm:text-sm leading-relaxed max-w-4xl">
               Trung tâm chỉ huy tác chiến 3 chế độ: Phê chuẩn khẩn cấp [INIT], Giám sát tiến độ [PROCESSING] và Điều phối tuyến nhiệm vụ [CHAINS].
             </p>
           </div>
@@ -404,20 +404,20 @@ export function EventsMissionsBoard({
             <button
               type="button"
               onClick={() => onNavigateToResults?.()}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border border-purple-500/40 bg-purple-950/30 text-purple-200 hover:text-white hover:border-purple-400 transition-colors cursor-pointer text-[11px] font-semibold"
+              className="flex items-center gap-2 px-3 py-2 rounded border border-purple-500/40 bg-purple-950/30 text-purple-200 hover:text-white hover:border-purple-400 transition-colors cursor-pointer text-xs sm:text-[13px] font-semibold"
               title="Mở Khay Báo Cáo Tình Báo / Debriefing Drawer"
             >
-              <Layers className="size-3 text-purple-400" />
+              <Layers className="size-4 text-purple-400" />
               <span>Khay Báo Cáo Tình Báo</span>
-              <ExternalLink className="size-2.5 ml-0.5 text-zinc-400" />
+              <ExternalLink className="size-3 ml-0.5 text-zinc-400" />
             </button>
           </div>
         </div>
 
         {/* Thanh Điều Hướng Cấp 1: 3 Chế Độ (Tabs) + Tìm Kiếm */}
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 border-t border-zinc-800/80 pt-2.5 text-[11px]">
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-800/80 pt-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-zinc-500 font-bold uppercase mr-1 text-[10px]">Chế độ chỉ huy:</span>
+            <span className="text-zinc-400 font-bold uppercase mr-1 text-xs">Chế độ chỉ huy:</span>
 
             {/* TAB 1: Cần Quyết Định [INIT] */}
             <button
@@ -427,17 +427,17 @@ export function EventsMissionsBoard({
                 setCommandMode("init")
               }}
               className={cn(
-                "px-3 py-1.5 rounded border transition-all cursor-pointer flex items-center gap-2 text-[11px] font-bold",
+                "px-3.5 py-2 rounded border transition-all cursor-pointer flex items-center gap-2 text-xs sm:text-[13px] font-bold",
                 commandMode === "init"
                   ? "border-amber-400 bg-amber-950/70 text-amber-200 shadow-md shadow-amber-950/40 ring-1 ring-amber-400/50"
                   : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
               )}
             >
-              <AlertCircle className={cn("size-3.5", initEvents.length > 0 ? "text-amber-400 animate-pulse" : "text-zinc-500")} />
+              <AlertCircle className={cn("size-4", initEvents.length > 0 ? "text-amber-400 animate-pulse" : "text-zinc-500")} />
               <span>CẦN QUYẾT ĐỊNH [INIT]</span>
               <span
                 className={cn(
-                  "px-1.5 py-0.2 rounded text-[10px] font-mono",
+                  "px-2 py-0.5 rounded text-xs font-mono font-bold",
                   initEvents.length > 0
                     ? "bg-amber-500/20 text-amber-300 border border-amber-500/40"
                     : "bg-zinc-800 text-zinc-500"
@@ -455,17 +455,17 @@ export function EventsMissionsBoard({
                 setCommandMode("processing")
               }}
               className={cn(
-                "px-3 py-1.5 rounded border transition-all cursor-pointer flex items-center gap-2 text-[11px] font-bold",
+                "px-3.5 py-2 rounded border transition-all cursor-pointer flex items-center gap-2 text-xs sm:text-[13px] font-bold",
                 commandMode === "processing"
                   ? "border-cyan-400 bg-cyan-950/70 text-cyan-200 shadow-md shadow-cyan-950/40 ring-1 ring-cyan-400/50"
                   : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
               )}
             >
-              <Clock className={cn("size-3.5", processingEvents.length > 0 ? "text-cyan-400" : "text-zinc-500")} />
+              <Clock className={cn("size-4", processingEvents.length > 0 ? "text-cyan-400" : "text-zinc-500")} />
               <span>ĐANG TRIỂN KHAI [PROCESSING]</span>
               <span
                 className={cn(
-                  "px-1.5 py-0.2 rounded text-[10px] font-mono",
+                  "px-2 py-0.5 rounded text-xs font-mono font-bold",
                   processingEvents.length > 0
                     ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
                     : "bg-zinc-800 text-zinc-500"
@@ -483,15 +483,15 @@ export function EventsMissionsBoard({
                 setCommandMode("chains")
               }}
               className={cn(
-                "px-3 py-1.5 rounded border transition-all cursor-pointer flex items-center gap-2 text-[11px] font-bold",
+                "px-3.5 py-2 rounded border transition-all cursor-pointer flex items-center gap-2 text-xs sm:text-[13px] font-bold",
                 commandMode === "chains"
                   ? "border-indigo-400 bg-indigo-950/70 text-indigo-200 shadow-md shadow-indigo-950/40 ring-1 ring-indigo-400/50"
                   : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
               )}
             >
-              <GitBranch className="size-3.5 text-indigo-400" />
+              <GitBranch className="size-4 text-indigo-400" />
               <span>CHUỖI NHIỆM VỤ [CHAINS]</span>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
+              <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
                 {activeMissionChains.length}/8
               </span>
             </button>
@@ -504,15 +504,15 @@ export function EventsMissionsBoard({
                 setCommandMode("dispatches")
               }}
               className={cn(
-                "px-3 py-1.5 rounded border transition-all cursor-pointer flex items-center gap-2 text-[11px] font-bold",
+                "px-3.5 py-2 rounded border transition-all cursor-pointer flex items-center gap-2 text-xs sm:text-[13px] font-bold",
                 commandMode === "dispatches"
                   ? "border-amber-400 bg-amber-950/70 text-amber-200 shadow-md shadow-amber-950/40 ring-1 ring-amber-400/50"
                   : "border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
               )}
             >
-              <Crosshair className="size-3.5 text-amber-400" />
+              <Crosshair className="size-4 text-amber-400" />
               <span>ĐIỀU PHỐI [DISPATCH]</span>
-              <span className="px-1.5 py-0.2 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
                 {dispatchesList.length}
               </span>
               {activePlayerMission && (
@@ -523,21 +523,21 @@ export function EventsMissionsBoard({
 
           {/* Quick Search */}
           <div className="relative flex items-center">
-            <Search className="size-3 text-zinc-500 absolute left-2 pointer-events-none" />
+            <Search className="size-3.5 text-zinc-400 absolute left-2.5 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Lọc sự kiện, sector, từ khóa..."
-              className="rounded border border-zinc-800 bg-zinc-900/80 pl-7 pr-2 py-1 text-[11px] text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-cyan-500 w-44 sm:w-56"
+              className="rounded border border-zinc-800 bg-zinc-900/80 pl-8 pr-3 py-1.5 text-xs sm:text-[13px] text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-cyan-500 w-48 sm:w-64"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-1.5 text-zinc-400 hover:text-white"
+                className="absolute right-2 text-zinc-400 hover:text-white"
               >
-                <X className="size-2.5" />
+                <X className="size-3" />
               </button>
             )}
           </div>
@@ -550,43 +550,43 @@ export function EventsMissionsBoard({
       {lastEventsSummary &&
         dismissedTickSummary !== worldState.currentDay &&
         (lastEventsSummary.autoLockedCount > 0 || lastEventsSummary.resolvedCount > 0) && (
-          <div className="rounded border border-indigo-500/50 bg-indigo-950/40 p-3 space-y-2 animate-fadeIn">
+          <div className="rounded border border-indigo-500/50 bg-indigo-950/40 p-3.5 space-y-2.5 animate-fadeIn">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="flex size-2 rounded-full bg-indigo-400 animate-pulse" />
-                <span className="font-bold text-indigo-200 text-xs uppercase tracking-wide">
+              <div className="flex items-center gap-2.5">
+                <span className="flex size-2.5 rounded-full bg-indigo-400 animate-pulse" />
+                <span className="font-bold text-indigo-200 text-xs sm:text-sm uppercase tracking-wide">
                   TỔNG HỢP BIẾN ĐỘNG VÒNG ĐỜI SỰ KIỆN TẠI NGÀY #{worldState.currentDay}
                 </span>
-                <span className="rounded bg-indigo-900/60 px-1.5 py-0.2 text-[10px] text-indigo-300 border border-indigo-600/40">
+                <span className="rounded bg-indigo-900/60 px-2 py-0.5 text-xs text-indigo-300 border border-indigo-600/40 font-semibold">
                   {lastEventsSummary.resolvedCount} Hoàn Tất · {lastEventsSummary.autoLockedCount} Tự Động Khóa
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setDismissedTickSummary(worldState.currentDay)}
-                className="text-zinc-400 hover:text-white"
+                className="text-zinc-400 hover:text-white cursor-pointer"
                 title="Đóng thông báo"
               >
-                <X className="size-3.5" />
+                <X className="size-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
-              <div className="rounded border border-amber-500/30 bg-amber-950/20 p-2 space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-amber-300 text-[10px] uppercase">
-                  <Clock className="size-3 text-amber-400" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs sm:text-[13px]">
+              <div className="rounded border border-amber-500/30 bg-amber-950/20 p-2.5 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-amber-300 text-xs uppercase">
+                  <Clock className="size-3.5 text-amber-400" />
                   <span>Sự Kiện Tự Động Khóa Phương Án Mặc Định ({lastEventsSummary.autoLockedCount})</span>
                 </div>
                 {lastEventsSummary.autoLockedEvents.length === 0 ? (
-                  <div className="text-zinc-500 text-[10px]">Không có sự kiện nào bị quá hạn tự động khóa.</div>
+                  <div className="text-zinc-400 text-xs">Không có sự kiện nào bị quá hạn tự động khóa.</div>
                 ) : (
                   lastEventsSummary.autoLockedEvents.map((evt) => (
                     <div
                       key={evt.id}
-                      className="flex items-center justify-between bg-zinc-900/60 p-1.5 rounded border border-zinc-800/80 text-[10px]"
+                      className="flex items-center justify-between bg-zinc-900/60 p-2 rounded border border-zinc-800/80 text-xs sm:text-[13px]"
                     >
                       <span className="font-semibold text-zinc-200 truncate mr-2">{evt.title}</span>
-                      <span className="text-amber-400 shrink-0 font-mono">
+                      <span className="text-amber-400 shrink-0 font-mono font-bold">
                         {evt.strategyId}
                       </span>
                     </div>
@@ -594,23 +594,23 @@ export function EventsMissionsBoard({
                 )}
               </div>
 
-              <div className="rounded border border-emerald-500/30 bg-emerald-950/20 p-2 space-y-1">
-                <div className="flex items-center gap-1.5 font-bold text-emerald-300 text-[10px] uppercase">
-                  <CheckCircle2 className="size-3 text-emerald-400" />
+              <div className="rounded border border-emerald-500/30 bg-emerald-950/20 p-2.5 space-y-1.5">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-300 text-xs uppercase">
+                  <CheckCircle2 className="size-3.5 text-emerald-400" />
                   <span>Sự Kiện Đã Giải Quyết Xong ({lastEventsSummary.resolvedCount})</span>
                 </div>
                 {lastEventsSummary.resolvedEvents.length === 0 ? (
-                  <div className="text-zinc-500 text-[10px]">Không có sự kiện nào vừa hoàn tất trong tick này.</div>
+                  <div className="text-zinc-400 text-xs">Không có sự kiện nào vừa hoàn tất trong tick này.</div>
                 ) : (
                   lastEventsSummary.resolvedEvents.map((evt) => (
                     <div
                       key={evt.id}
-                      className="flex items-center justify-between bg-zinc-900/60 p-1.5 rounded border border-zinc-800/80 text-[10px]"
+                      className="flex items-center justify-between bg-zinc-900/60 p-2 rounded border border-zinc-800/80 text-xs sm:text-[13px]"
                     >
                       <span className="font-semibold text-zinc-200 truncate mr-2">{evt.title}</span>
                       <span
                         className={cn(
-                          "px-1.5 py-0.2 rounded font-bold uppercase text-[9px] shrink-0 border",
+                          "px-2 py-0.5 rounded font-bold uppercase text-xs shrink-0 border",
                           evt.status === "success"
                             ? "border-emerald-500/40 bg-emerald-950/60 text-emerald-300"
                             : evt.status === "expired_default"
@@ -633,27 +633,27 @@ export function EventsMissionsBoard({
           ==================================================================== */}
       {commandMode === "init" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
-          {/* CỘT TRÁI (4 CỘT): Hàng Đợi Sự Kiện Khẩn Cấp (Thu gọn hợp lý để dành không gian cho Decision Panel) */}
-          <div className="lg:col-span-4 flex flex-col rounded border border-zinc-800 bg-zinc-950/90 shadow-xl overflow-hidden min-h-[540px] max-h-[720px]">
-            <div className="flex items-center justify-between px-3.5 py-2.5 bg-zinc-900/70 border-b border-zinc-800 shrink-0">
+          {/* CỘT TRÁI (4 CỘT): Hàng Đợi Sự Kiện Khẩn Cấp */}
+          <div className="lg:col-span-4 flex flex-col rounded border border-zinc-800 bg-zinc-950/90 shadow-xl overflow-hidden min-h-[540px] max-h-[760px]">
+            <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/70 border-b border-zinc-800 shrink-0">
               <div className="flex items-center gap-2">
-                <AlertCircle className="size-3.5 text-amber-400" />
-                <span className="font-bold uppercase tracking-wider text-zinc-200 text-xs">
+                <AlertCircle className="size-4 text-amber-400" />
+                <span className="font-bold uppercase tracking-wider text-zinc-200 text-xs sm:text-sm">
                   SỰ KIỆN CHỜ PHÊ CHUẨN
                 </span>
-                <span className="rounded bg-black/60 px-1.5 py-0.2 text-[10px] text-amber-300 border border-zinc-700 font-mono">
+                <span className="rounded bg-black/60 px-2 py-0.5 text-xs text-amber-300 border border-zinc-700 font-mono font-bold">
                   {filteredInitEvents.length}
                 </span>
               </div>
-              <span className="text-[10px] text-zinc-500">Hạn chót gần nhất</span>
+              <span className="text-xs text-zinc-400">Hạn chót gần nhất</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2.5 space-y-2 pr-1.5 scrollbar-thin">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2.5 pr-2 scrollbar-thin">
               {filteredInitEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-500 space-y-2">
-                  <CheckCircle2 className="size-8 text-emerald-500/50" />
-                  <div className="font-bold text-zinc-300">Không có sự kiện nào cần quyết định.</div>
-                  <p className="text-[10px] text-zinc-500 max-w-xs">
+                <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-400 space-y-2.5">
+                  <CheckCircle2 className="size-9 text-emerald-500/60" />
+                  <div className="font-bold text-zinc-200 text-sm">Không có sự kiện nào cần quyết định.</div>
+                  <p className="text-xs text-zinc-400 max-w-xs leading-relaxed">
                     Tất cả sự kiện đều đã được xử lý hoặc đang trong tiến trình triển khai an toàn.
                   </p>
                 </div>
@@ -672,7 +672,7 @@ export function EventsMissionsBoard({
                         onSelectEvent?.(event.id)
                       }}
                       className={cn(
-                        "rounded border p-2.5 transition-all cursor-pointer relative text-left group",
+                        "rounded border p-3.5 transition-all cursor-pointer relative text-left group",
                         isSelected
                           ? "border-amber-400 bg-amber-950/30 ring-1 ring-amber-500/60 shadow-md shadow-amber-950/40"
                           : urgency.isUrgent
@@ -682,7 +682,7 @@ export function EventsMissionsBoard({
                     >
                       <div
                         className={cn(
-                          "absolute left-0 top-0 bottom-0 w-1 rounded-l transition-colors",
+                          "absolute left-0 top-0 bottom-0 w-1.5 rounded-l transition-colors",
                           isSelected
                             ? "bg-amber-400"
                             : urgency.isUrgent
@@ -691,16 +691,16 @@ export function EventsMissionsBoard({
                         )}
                       />
 
-                      <div className="pl-1.5 space-y-1.5">
-                        <div className="flex flex-wrap items-center justify-between gap-1 text-[10px]">
-                          <span className="flex items-center gap-1 font-bold text-zinc-300 uppercase">
+                      <div className="pl-2 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                          <span className="flex items-center gap-1.5 font-bold text-zinc-300 uppercase">
                             {getCategoryIcon(event.category)}
                             <span>{event.category}</span>
                           </span>
 
                           <span
                             className={cn(
-                              "flex items-center gap-1 px-1.5 py-0.2 rounded text-[9px] border",
+                              "flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold border",
                               urgency.classes
                             )}
                           >
@@ -709,39 +709,39 @@ export function EventsMissionsBoard({
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-start justify-between gap-1.5">
                           <span
                             className={cn(
-                              "font-bold text-xs truncate",
+                              "font-bold text-sm sm:text-[15px] leading-snug line-clamp-2",
                               isSelected ? "text-amber-200" : "text-zinc-100 group-hover:text-amber-300"
                             )}
                           >
                             {event.title}
                           </span>
                           {isSelected && (
-                            <span className="text-[9px] text-amber-400 uppercase font-black shrink-0 flex items-center gap-0.5">
+                            <span className="text-xs text-amber-400 uppercase font-black shrink-0 flex items-center gap-0.5 mt-0.5">
                               <span>ĐANG XEM</span>
-                              <ChevronRight className="size-2.5" />
+                              <ChevronRight className="size-3" />
                             </span>
                           )}
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] text-zinc-400 pt-0.5">
-                          <div className="flex items-center gap-1 truncate max-w-[160px]">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs text-zinc-300 pt-0.5 border-t border-zinc-800/60">
+                          <div className="flex items-center gap-1.5 truncate max-w-[180px]">
                             {targetSector ? (
                               <>
-                                <MapPin className="size-2.5 text-zinc-500 shrink-0" />
-                                <span className="truncate">{targetSector.name}</span>
+                                <MapPin className="size-3 text-cyan-400 shrink-0" />
+                                <span className="truncate font-medium">{targetSector.name}</span>
                               </>
                             ) : (
                               <>
-                                <Globe2 className="size-2.5 text-zinc-500 shrink-0" />
+                                <Globe2 className="size-3 text-zinc-400 shrink-0" />
                                 <span>Toàn Vũ Trụ</span>
                               </>
                             )}
                           </div>
 
-                          <span className="font-mono text-[9px] text-zinc-400">
+                          <span className="font-mono text-xs text-zinc-300 font-semibold">
                             Hạn: Ngày #{event.decisionDeadlineTick}
                           </span>
                         </div>
@@ -754,32 +754,32 @@ export function EventsMissionsBoard({
           </div>
 
           {/* CỘT PHẢI (8 CỘT): DECISION PANEL TẬP TRUNG MỤC TIÊU & SO SÁNH 2-3 PHƯƠNG ÁN */}
-          <div className="lg:col-span-8 flex flex-col rounded border border-zinc-800 bg-zinc-950/90 shadow-xl overflow-hidden min-h-[540px] max-h-[720px]">
-            <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/70 border-b border-zinc-800 shrink-0">
+          <div className="lg:col-span-8 flex flex-col rounded border border-zinc-800 bg-zinc-950/90 shadow-xl overflow-hidden min-h-[540px] max-h-[760px]">
+            <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/70 border-b border-zinc-800 shrink-0">
               <div className="flex items-center gap-2">
-                <Sparkles className="size-3.5 text-amber-400" />
-                <span className="font-bold uppercase tracking-wider text-zinc-200 text-xs">
+                <Sparkles className="size-4 text-amber-400" />
+                <span className="font-bold uppercase tracking-wider text-zinc-100 text-xs sm:text-sm">
                   BẢNG QUYẾT ĐỊNH & PHÊ CHUẨN CHIẾN LƯỢC // DECISION PANEL
                 </span>
               </div>
               {activeSelectedInitEvent && (
-                <span className="font-mono text-[10px] text-zinc-400">
+                <span className="font-mono text-xs text-zinc-300 font-semibold">
                   MÃ SỰ KIỆN: {activeSelectedInitEvent.id}
                 </span>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 pr-2.5 scrollbar-thin">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 pr-3 scrollbar-thin">
               {!activeSelectedInitEvent ? (
                 <div className="flex flex-col items-center justify-center h-full min-h-[420px] text-center p-8 space-y-3">
-                  <div className="rounded-full bg-zinc-900 p-4 border border-zinc-800 text-zinc-600">
-                    <Crosshair className="size-10 text-zinc-500" />
+                  <div className="rounded-full bg-zinc-900 p-4 border border-zinc-800 text-zinc-500">
+                    <Crosshair className="size-10 text-zinc-400" />
                   </div>
-                  <div className="space-y-1">
-                    <div className="font-bold text-zinc-300 text-sm tracking-wide">
+                  <div className="space-y-1.5">
+                    <div className="font-bold text-zinc-200 text-base tracking-wide">
                       CHƯA CHỌN SỰ KIỆN NÀO
                     </div>
-                    <p className="text-[11px] text-zinc-500 max-w-sm leading-relaxed">
+                    <p className="text-xs sm:text-sm text-zinc-400 max-w-sm leading-relaxed">
                       Chọn một sự kiện từ danh sách bên trái để xem mục tiêu, bối cảnh và so sánh các phương án đối ứng.
                     </p>
                   </div>
@@ -787,12 +787,12 @@ export function EventsMissionsBoard({
               ) : (
                 <>
                   {/* Khối Bối Cảnh & Mục Tiêu */}
-                  <div className="space-y-2.5 rounded border border-zinc-800 bg-zinc-900/50 p-3.5">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
+                  <div className="space-y-3 rounded border border-zinc-800 bg-zinc-900/50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-zinc-800/80 pb-2.5">
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={cn(
-                            "px-2 py-0.5 rounded text-[10px] font-bold uppercase border",
+                            "px-2.5 py-1 rounded text-xs font-bold uppercase border",
                             activeSelectedInitEvent.severity === "critical"
                               ? "border-red-500 bg-red-950/70 text-red-200 animate-pulse"
                               : activeSelectedInitEvent.severity === "warning"
@@ -807,20 +807,20 @@ export function EventsMissionsBoard({
                             : "THÔNG TIN"}
                         </span>
 
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 text-[10px] font-bold uppercase">
+                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800 border border-zinc-700 text-zinc-200 text-xs font-bold uppercase">
                           {getCategoryIcon(activeSelectedInitEvent.category)}
                           <span>{activeSelectedInitEvent.category}</span>
                         </span>
 
                         {activeSelectedInitEvent.tier && (
-                          <span className="px-2 py-0.5 rounded bg-black/60 border border-zinc-700 text-cyan-300 text-[10px] font-mono uppercase">
+                          <span className="px-2.5 py-1 rounded bg-black/60 border border-zinc-700 text-cyan-300 text-xs font-mono font-bold uppercase">
                             Quy Mô: {activeSelectedInitEvent.tier}
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-950/40 border border-amber-500/50 text-amber-300 text-[10px]">
-                        <Clock className="size-3 text-amber-400" />
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/40 border border-amber-500/50 text-amber-300 text-xs font-semibold">
+                        <Clock className="size-3.5 text-amber-400" />
                         <span>
                           Hạn chót: Ngày #{activeSelectedInitEvent.decisionDeadlineTick} (Còn{" "}
                           {Math.max(0, activeSelectedInitEvent.decisionDeadlineTick - worldState.currentDay)} ngày)
@@ -828,9 +828,11 @@ export function EventsMissionsBoard({
                       </div>
                     </div>
 
-                    <div>
-                      <h3 className="text-sm font-bold text-zinc-100">{activeSelectedInitEvent.title}</h3>
-                      <p className="mt-1 text-[11px] text-zinc-300 leading-relaxed bg-black/40 p-2.5 rounded border border-zinc-800">
+                    <div className="space-y-1.5">
+                      <h3 className="text-base sm:text-lg font-bold text-zinc-100 leading-snug">
+                        {activeSelectedInitEvent.title}
+                      </h3>
+                      <p className="text-sm text-zinc-200 leading-relaxed bg-black/40 p-3 rounded border border-zinc-800">
                         {activeSelectedInitEvent.description}
                       </p>
                     </div>
@@ -840,22 +842,22 @@ export function EventsMissionsBoard({
                         const sec = worldState.sectors[activeSelectedInitEvent.sectorId]
                         const secMaxThreat = getSectorMaxThreat(sec, worldState.threatConfig)
                         return (
-                          <div className="flex flex-wrap items-center justify-between gap-2 bg-zinc-950/60 p-2 rounded border border-zinc-800/80 text-[10px]">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="size-3 text-cyan-400 shrink-0" />
-                              <span>Sector: <strong className="text-zinc-200">{sec.name}</strong></span>
-                              <span className="text-zinc-500">·</span>
-                              <span>Chủ quyền: <strong className="text-cyan-300">{sec.sovereignty}</strong></span>
-                              <span className="text-zinc-500">·</span>
+                          <div className="flex flex-wrap items-center justify-between gap-2 bg-zinc-950/60 p-2.5 rounded border border-zinc-800/80 text-xs text-zinc-300">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <MapPin className="size-3.5 text-cyan-400 shrink-0" />
+                              <span>Sector: <strong className="text-zinc-100">{sec.name}</strong></span>
+                              <span className="text-zinc-600">·</span>
+                              <span>Chủ quyền: <strong className="text-cyan-300 uppercase">{sec.sovereignty}</strong></span>
+                              <span className="text-zinc-600">·</span>
                               <span>Ổn định: <strong className="text-emerald-400">{sec.stability}%</strong></span>
-                              <span className="text-zinc-500">·</span>
+                              <span className="text-zinc-600">·</span>
                               <span>Đe dọa: <strong className="text-amber-400">{sec.threatLevel.toLocaleString()} / {secMaxThreat.toLocaleString()}</strong></span>
                             </div>
 
                             <button
                               type="button"
                               onClick={() => onNavigateToSector?.(sec.id)}
-                              className="text-cyan-400 hover:text-cyan-200 underline cursor-pointer text-[10px]"
+                              className="text-cyan-400 hover:text-cyan-200 underline cursor-pointer text-xs font-bold"
                             >
                               Xem trên bản đồ &rarr;
                             </button>
@@ -871,9 +873,9 @@ export function EventsMissionsBoard({
                       )
                       if (!defStrat) return null
                       return (
-                        <div className="flex items-start gap-2 rounded bg-amber-950/20 border border-amber-500/30 p-2 text-[10px] text-amber-200">
-                          <AlertTriangle className="size-3.5 text-amber-400 shrink-0 mt-0.5" />
-                          <div className="leading-tight">
+                        <div className="flex items-start gap-2.5 rounded bg-amber-950/20 border border-amber-500/30 p-2.5 text-xs sm:text-[13px] text-amber-200">
+                          <AlertTriangle className="size-4 text-amber-400 shrink-0 mt-0.5" />
+                          <div className="leading-relaxed">
                             <span className="font-bold text-amber-300">CẢNH BÁO TỰ ĐỘNG KHÓA:</span> Nếu không phê chuẩn trước hạn chót, hệ thống sẽ tự động kích hoạt phương án mặc định:{" "}
                             <strong className="text-amber-100 underline">[{defStrat.name}]</strong>.
                           </div>
@@ -883,10 +885,10 @@ export function EventsMissionsBoard({
                   </div>
 
                   {/* So Sánh 2-3 Phương Án Chiến Lược */}
-                  <div className="space-y-3 pt-1">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
-                      <span className="font-bold text-cyan-400 uppercase tracking-wide flex items-center gap-1.5 text-[11px]">
-                        <Zap className="size-3.5 text-cyan-400" />
+                  <div className="space-y-3.5 pt-1">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2.5">
+                      <span className="font-bold text-cyan-400 uppercase tracking-wide flex items-center gap-2 text-xs sm:text-sm">
+                        <Zap className="size-4 text-cyan-400" />
                         <span>SO SÁNH CÁC PHƯƠNG ÁN CHIẾN LƯỢC ({activeSelectedInitEvent.availableStrategies.length})</span>
                       </span>
 
@@ -900,10 +902,10 @@ export function EventsMissionsBoard({
                             onStateUpdated?.()
                           }
                         }}
-                        className="flex items-center gap-1.5 rounded bg-cyan-950/80 border border-cyan-500/60 px-2.5 py-1 text-[10px] text-cyan-300 hover:bg-cyan-900 transition-colors cursor-pointer font-bold shadow-sm shadow-cyan-950"
+                        className="flex items-center gap-1.5 rounded bg-cyan-950/80 border border-cyan-500/60 px-3 py-1.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900 transition-colors cursor-pointer shadow-sm shadow-cyan-950"
                         title="Tự động phê chuẩn theo System Auto Strategy"
                       >
-                        <Sparkles className="size-3 text-cyan-400" />
+                        <Sparkles className="size-3.5 text-cyan-400" />
                         <span>⚡ System Auto Phê Chuẩn Ngay</span>
                       </button>
                     </div>
@@ -912,7 +914,7 @@ export function EventsMissionsBoard({
                       const bestCandidate = selectBestStrategyForEvent(worldState, activeSelectedInitEvent)
 
                       return (
-                        <div className="space-y-3">
+                        <div className="space-y-3.5">
                           {activeSelectedInitEvent.availableStrategies.map((strat) => {
                             const isDefault = strat.id === activeSelectedInitEvent.defaultStrategyId
                             const isBest = bestCandidate?.strategy.id === strat.id
@@ -927,7 +929,7 @@ export function EventsMissionsBoard({
                               <div
                                 key={strat.id}
                                 className={cn(
-                                  "rounded border p-3.5 space-y-3 transition-all text-left",
+                                  "rounded border p-4 space-y-3.5 transition-all text-left",
                                   isBest
                                     ? "border-cyan-500/70 bg-cyan-950/20 shadow-md shadow-cyan-950/40 ring-1 ring-cyan-500/40"
                                     : isDefault
@@ -936,38 +938,38 @@ export function EventsMissionsBoard({
                                 )}
                               >
                                 {/* Header Phương Án */}
-                                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-bold text-zinc-100 text-xs sm:text-sm">{strat.name}</span>
+                                    <span className="font-bold text-zinc-100 text-sm sm:text-base">{strat.name}</span>
                                     {isBest && (
-                                      <span className="text-[9px] text-cyan-300 uppercase font-black bg-cyan-950/80 border border-cyan-400 px-1.5 py-0.2 rounded">
+                                      <span className="text-xs text-cyan-300 uppercase font-black bg-cyan-950/80 border border-cyan-400 px-2 py-0.5 rounded">
                                         ★ ĐỀ XUẤT SYSTEM AUTO
                                       </span>
                                     )}
                                     {isDefault && (
-                                      <span className="text-[9px] text-amber-300 uppercase font-bold bg-amber-950/70 border border-amber-500/60 px-1.5 py-0.2 rounded">
+                                      <span className="text-xs text-amber-300 uppercase font-bold bg-amber-950/70 border border-amber-500/60 px-2 py-0.5 rounded">
                                         MẶC ĐỊNH
                                       </span>
                                     )}
                                   </div>
 
                                   {/* Thời gian thực thi */}
-                                  <span className="text-zinc-400 font-mono text-[10px]">
+                                  <span className="text-zinc-300 font-mono text-xs sm:text-[13px]">
                                     Thời gian: <strong className="text-cyan-300">{strat.processingTicks} ngày</strong>
                                   </span>
                                 </div>
 
-                                <p className="text-[11px] text-zinc-300 leading-relaxed bg-black/30 p-2.5 rounded border border-zinc-800/80">
+                                <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed bg-black/30 p-3 rounded border border-zinc-800/80">
                                   {strat.description}
                                 </p>
 
                                 {/* Bảng Tác Động Chiến Lược Thực Tế */}
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] bg-zinc-950/70 p-2.5 rounded border border-zinc-800">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs bg-zinc-950/80 p-3 rounded border border-zinc-800">
                                   <div>
-                                    <span className="text-zinc-500 block">Độ ổn định:</span>
+                                    <span className="text-zinc-400 text-xs block mb-0.5">Độ ổn định:</span>
                                     <span
                                       className={cn(
-                                        "font-bold",
+                                        "font-bold text-sm",
                                         (strat.consequences?.stabilityDelta ?? 0) > 0
                                           ? "text-emerald-400"
                                           : (strat.consequences?.stabilityDelta ?? 0) < 0
@@ -981,10 +983,10 @@ export function EventsMissionsBoard({
                                   </div>
 
                                   <div>
-                                    <span className="text-zinc-500 block">Mức đe dọa:</span>
+                                    <span className="text-zinc-400 text-xs block mb-0.5">Mức đe dọa:</span>
                                     <span
                                       className={cn(
-                                        "font-bold",
+                                        "font-bold text-sm",
                                         (strat.consequences?.threatDelta ?? 0) < 0
                                           ? "text-emerald-400"
                                           : (strat.consequences?.threatDelta ?? 0) > 0
@@ -997,12 +999,11 @@ export function EventsMissionsBoard({
                                     </span>
                                   </div>
 
-                                  {/* Hiển thị tỷ lệ thành công chỉ khi template thực sự định nghĩa xác suất có ý nghĩa */}
                                   <div>
-                                    <span className="text-zinc-500 block">Xác suất thành công:</span>
+                                    <span className="text-zinc-400 text-xs block mb-0.5">Xác suất thành công:</span>
                                     <span
                                       className={cn(
-                                        "font-bold",
+                                        "font-bold text-sm",
                                         strat.successChance !== undefined && strat.successChance < 100
                                           ? strat.successChance >= 70
                                             ? "text-emerald-400"
@@ -1015,17 +1016,17 @@ export function EventsMissionsBoard({
                                   </div>
 
                                   <div>
-                                    <span className="text-zinc-500 block">Yêu cầu tác chiến:</span>
-                                    <span className="font-bold text-zinc-300">
+                                    <span className="text-zinc-400 text-xs block mb-0.5">Yêu cầu tác chiến:</span>
+                                    <span className="font-bold text-zinc-200 text-sm">
                                       {strat.requiresCombat ? "Buồng Lái Arena" : "Tự Động Hóa"}
                                     </span>
                                   </div>
                                 </div>
 
                                 {/* Chi Phí & Điều Kiện Quân Dự Bị */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] pt-1">
-                                  <div className="flex flex-wrap items-center gap-1.5">
-                                    <span className="text-zinc-400">Chi phí & Lực lượng:</span>
+                                <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="text-zinc-300 font-medium">Chi phí & Lực lượng:</span>
                                     {!hasCost && (!strat.militaryCost || strat.militaryCost === 0) ? (
                                       <span className="text-emerald-400 font-bold">Không tiêu hao</span>
                                     ) : (
@@ -1038,7 +1039,7 @@ export function EventsMissionsBoard({
                                               <span
                                                 key={k}
                                                 className={cn(
-                                                  "px-1.5 py-0.5 rounded border font-mono font-bold",
+                                                  "px-2 py-0.5 rounded border font-mono font-bold text-xs",
                                                   enough
                                                     ? "border-zinc-700 bg-zinc-800 text-amber-300"
                                                     : "border-red-500/60 bg-red-950/60 text-red-300 animate-pulse"
@@ -1052,7 +1053,7 @@ export function EventsMissionsBoard({
                                         {strat.militaryCost && strat.militaryCost > 0 && (
                                           <span
                                             className={cn(
-                                              "px-1.5 py-0.5 rounded border font-mono font-bold",
+                                              "px-2 py-0.5 rounded border font-mono font-bold text-xs",
                                               worldState.military.reserves >= strat.militaryCost
                                                 ? "border-amber-700/60 bg-amber-950/40 text-amber-300"
                                                 : "border-red-500/60 bg-red-950/60 text-red-300 animate-pulse"
@@ -1066,7 +1067,7 @@ export function EventsMissionsBoard({
                                     )}
                                   </div>
 
-                                  {/* Nút Xem Công Thức / Điểm Số (Ẩn khỏi giao diện chính nhưng vẫn xem được khi cần) */}
+                                  {/* Nút Xem Công Thức / Điểm Số */}
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -1075,9 +1076,9 @@ export function EventsMissionsBoard({
                                         [reasonKey]: !prev[reasonKey],
                                       }))
                                     }
-                                    className="text-zinc-400 hover:text-cyan-300 transition-colors flex items-center gap-1 text-[10px] cursor-pointer"
+                                    className="text-zinc-300 hover:text-cyan-300 transition-colors flex items-center gap-1.5 text-xs cursor-pointer font-medium"
                                   >
-                                    <Info className="size-3 text-cyan-400" />
+                                    <Info className="size-3.5 text-cyan-400" />
                                     <span>
                                       {isExpanded
                                         ? "Ẩn công thức chấm điểm"
@@ -1088,13 +1089,13 @@ export function EventsMissionsBoard({
 
                                 {/* Chi Tiết Điểm Số Nếu Bật */}
                                 {isExpanded && (
-                                  <div className="rounded bg-black/60 p-2.5 border border-zinc-800 text-[10px] space-y-1 text-zinc-300 animate-fadeIn">
-                                    <div className="font-bold text-cyan-400 uppercase text-[9px] flex items-center justify-between">
+                                  <div className="rounded bg-black/60 p-3 border border-zinc-800 text-xs space-y-1.5 text-zinc-300 animate-fadeIn">
+                                    <div className="font-bold text-cyan-400 uppercase text-xs flex items-center justify-between border-b border-zinc-800/80 pb-1">
                                       <span>Hệ số đánh giá chiến lược:</span>
-                                      <span className="font-mono text-cyan-300">{scoreInfo.score} Điểm</span>
+                                      <span className="font-mono text-cyan-300 font-bold">{scoreInfo.score} Điểm</span>
                                     </div>
                                     {scoreInfo.reasons.map((r, rIdx) => (
-                                      <div key={rIdx} className="leading-tight text-zinc-400">
+                                      <div key={rIdx} className="leading-relaxed text-zinc-300">
                                         • {r}
                                       </div>
                                     ))}
@@ -1103,14 +1104,14 @@ export function EventsMissionsBoard({
 
                                 {/* Lỗi thiếu tài nguyên/quân */}
                                 {!canAfford && validation.reason && (
-                                  <div className="text-[10px] text-red-400 bg-red-950/40 p-2 rounded border border-red-500/40 flex items-center gap-1.5">
-                                    <AlertOctagon className="size-3 text-red-400 shrink-0" />
+                                  <div className="text-xs sm:text-[13px] text-red-300 bg-red-950/40 p-2.5 rounded border border-red-500/40 flex items-center gap-2">
+                                    <AlertOctagon className="size-4 text-red-400 shrink-0" />
                                     <span>{validation.reason}</span>
                                   </div>
                                 )}
 
                                 {/* Nút Phê Chuẩn */}
-                                <div className="pt-1">
+                                <div className="pt-1.5">
                                   <button
                                     type="button"
                                     disabled={!canAfford}
@@ -1119,11 +1120,11 @@ export function EventsMissionsBoard({
                                       onChooseStrategy(activeSelectedInitEvent.id, strat.id)
                                     }}
                                     className={cn(
-                                      "w-full py-2.5 px-4 rounded text-xs font-bold transition-all text-center cursor-pointer",
+                                      "w-full py-3 px-4 rounded text-xs sm:text-sm font-bold transition-all text-center cursor-pointer tracking-wide shadow-md",
                                       !canAfford
                                         ? "border border-zinc-800 bg-zinc-900 text-zinc-500 cursor-not-allowed"
                                         : isBest
-                                        ? "border border-cyan-400 bg-cyan-600/30 text-cyan-200 hover:bg-cyan-600/50 hover:text-white shadow-md shadow-cyan-950/60"
+                                        ? "border border-cyan-400 bg-cyan-600/30 text-cyan-200 hover:bg-cyan-600/50 hover:text-white shadow-cyan-950/60"
                                         : isDefault
                                         ? "border border-amber-500/80 bg-amber-950/60 text-amber-200 hover:bg-amber-900/60 hover:text-white"
                                         : "border border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700 hover:text-white"
@@ -1156,26 +1157,26 @@ export function EventsMissionsBoard({
       {commandMode === "processing" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
           {/* CỘT TRÁI (4 CỘT): Danh sách sự kiện đang thực thi */}
-          <div className="lg:col-span-4 flex flex-col rounded border border-cyan-500/30 bg-zinc-950/90 shadow-xl overflow-hidden min-h-[540px] max-h-[720px]">
-            <div className="flex items-center justify-between px-3.5 py-2.5 bg-zinc-900/70 border-b border-zinc-800 shrink-0">
+          <div className="lg:col-span-4 flex flex-col rounded border border-cyan-500/30 bg-zinc-950/90 shadow-xl overflow-hidden min-h-[540px] max-h-[760px]">
+            <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/70 border-b border-zinc-800 shrink-0">
               <div className="flex items-center gap-2">
-                <Clock className="size-3.5 text-cyan-400" />
-                <span className="font-bold uppercase tracking-wider text-cyan-200 text-xs">
+                <Clock className="size-4 text-cyan-400" />
+                <span className="font-bold uppercase tracking-wider text-cyan-200 text-xs sm:text-sm">
                   SỰ KIỆN ĐANG TRIỂN KHAI
                 </span>
-                <span className="rounded bg-black/60 px-1.5 py-0.2 text-[10px] text-cyan-300 border border-zinc-700 font-mono">
+                <span className="rounded bg-black/60 px-2 py-0.5 text-xs text-cyan-300 border border-zinc-700 font-mono font-bold">
                   {filteredProcessingEvents.length}
                 </span>
               </div>
-              <span className="text-[10px] text-zinc-500">Giám sát tiến độ</span>
+              <span className="text-xs text-zinc-400">Giám sát tiến độ</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2.5 space-y-2 pr-1.5 scrollbar-thin">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2.5 pr-2 scrollbar-thin">
               {filteredProcessingEvents.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-500 space-y-2">
-                  <Clock className="size-8 text-zinc-600" />
-                  <div className="font-bold text-zinc-300">Không có sự kiện nào đang xử lý.</div>
-                  <p className="text-[10px] text-zinc-500 max-w-xs">
+                <div className="flex flex-col items-center justify-center p-8 text-center text-zinc-400 space-y-2.5">
+                  <Clock className="size-9 text-zinc-600" />
+                  <div className="font-bold text-zinc-200 text-sm">Không có sự kiện nào đang xử lý.</div>
+                  <p className="text-xs text-zinc-400 max-w-xs leading-relaxed">
                     Hiện không có phương án chiến lược nào đang chạy trong thiên hà.
                   </p>
                 </div>
@@ -1198,7 +1199,7 @@ export function EventsMissionsBoard({
                         setSelectedProcessingEventId(event.id)
                       }}
                       className={cn(
-                        "rounded border p-2.5 transition-all cursor-pointer relative text-left group",
+                        "rounded border p-3.5 transition-all cursor-pointer relative text-left group",
                         isSelected
                           ? "border-cyan-400 bg-cyan-950/40 ring-1 ring-cyan-500/60 shadow-md shadow-cyan-950/40"
                           : "border-zinc-800/80 bg-zinc-900/40 hover:border-zinc-700 hover:bg-zinc-900/70"
@@ -1206,53 +1207,53 @@ export function EventsMissionsBoard({
                     >
                       <div
                         className={cn(
-                          "absolute left-0 top-0 bottom-0 w-1 rounded-l transition-colors",
+                          "absolute left-0 top-0 bottom-0 w-1.5 rounded-l transition-colors",
                           isSelected ? "bg-cyan-400" : "bg-cyan-600/70"
                         )}
                       />
 
-                      <div className="pl-1.5 space-y-1.5">
-                        <div className="flex flex-wrap items-center justify-between gap-1 text-[10px]">
-                          <span className="flex items-center gap-1 font-bold text-zinc-300 uppercase">
+                      <div className="pl-2 space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs">
+                          <span className="flex items-center gap-1.5 font-bold text-zinc-300 uppercase">
                             {getCategoryIcon(event.category)}
                             <span>{event.category}</span>
                           </span>
 
-                          <span className="rounded bg-cyan-950/80 border border-cyan-500/60 px-1.5 py-0.2 text-[9px] text-cyan-300 font-bold font-mono">
+                          <span className="rounded bg-cyan-950/80 border border-cyan-500/60 px-2 py-0.5 text-xs text-cyan-300 font-bold font-mono">
                             {progressPct}% · Ngày #{completeTick}
                           </span>
                         </div>
 
-                        <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-start justify-between gap-1.5">
                           <span
                             className={cn(
-                              "font-bold text-xs truncate",
+                              "font-bold text-sm sm:text-[15px] leading-snug line-clamp-2",
                               isSelected ? "text-cyan-200" : "text-zinc-100 group-hover:text-cyan-300"
                             )}
                           >
                             {event.title}
                           </span>
                           {isSelected && (
-                            <span className="text-[9px] text-cyan-400 uppercase font-black shrink-0 flex items-center gap-0.5">
+                            <span className="text-xs text-cyan-400 uppercase font-black shrink-0 flex items-center gap-0.5 mt-0.5">
                               <span>ĐANG THEO DÕI</span>
-                              <ChevronRight className="size-2.5" />
+                              <ChevronRight className="size-3" />
                             </span>
                           )}
                         </div>
 
                         {/* Thanh mini progress */}
-                        <div className="h-1.5 w-full rounded bg-zinc-800 overflow-hidden">
+                        <div className="h-2 w-full rounded bg-zinc-800 overflow-hidden">
                           <div
                             className="h-full bg-cyan-400 transition-all duration-300 rounded"
                             style={{ width: `${progressPct}%` }}
                           />
                         </div>
 
-                        <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] text-zinc-400 pt-0.5">
-                          <span className="truncate max-w-[140px]">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 text-xs text-zinc-300 pt-0.5 border-t border-zinc-800/60">
+                          <span className="truncate max-w-[150px] font-medium">
                             {targetSector ? targetSector.name : "Toàn Vũ Trụ"}
                           </span>
-                          <span className="truncate max-w-[140px] text-zinc-300 font-semibold">
+                          <span className="truncate max-w-[160px] text-cyan-300 font-semibold font-mono">
                             {chosenStrat?.name || event.chosenStrategyId}
                           </span>
                         </div>
@@ -1265,32 +1266,32 @@ export function EventsMissionsBoard({
           </div>
 
           {/* CỘT PHẢI (8 CỘT): BẢNG GIÁM SÁT TIẾN TRÌNH & THỰC THI (KHÔNG CÓ NÚT PHÊ CHUẨN) */}
-          <div className="lg:col-span-8 flex flex-col rounded border border-cyan-500/30 bg-zinc-950/90 shadow-xl overflow-hidden min-h-[540px] max-h-[720px]">
-            <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900/70 border-b border-zinc-800 shrink-0">
+          <div className="lg:col-span-8 flex flex-col rounded border border-cyan-500/30 bg-zinc-950/90 shadow-xl overflow-hidden min-h-[540px] max-h-[760px]">
+            <div className="flex items-center justify-between px-4 py-3 bg-zinc-900/70 border-b border-zinc-800 shrink-0">
               <div className="flex items-center gap-2">
-                <Clock className="size-3.5 text-cyan-400" />
-                <span className="font-bold uppercase tracking-wider text-cyan-200 text-xs">
+                <Clock className="size-4 text-cyan-400" />
+                <span className="font-bold uppercase tracking-wider text-cyan-200 text-xs sm:text-sm">
                   TRẠM THEO DÕI TIẾN TRÌNH CHIẾN LƯỢC // EXECUTION MONITOR
                 </span>
               </div>
               {activeSelectedProcessingEvent && (
-                <span className="font-mono text-[10px] text-zinc-400">
+                <span className="font-mono text-xs text-zinc-300 font-semibold">
                   MÃ SỰ KIỆN: {activeSelectedProcessingEvent.id}
                 </span>
               )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 pr-2.5 scrollbar-thin">
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 pr-3 scrollbar-thin">
               {!activeSelectedProcessingEvent ? (
                 <div className="flex flex-col items-center justify-center h-full min-h-[420px] text-center p-8 space-y-3">
-                  <div className="rounded-full bg-zinc-900 p-4 border border-zinc-800 text-zinc-600">
-                    <Clock className="size-10 text-zinc-500" />
+                  <div className="rounded-full bg-zinc-900 p-4 border border-zinc-800 text-zinc-500">
+                    <Clock className="size-10 text-zinc-400" />
                   </div>
-                  <div className="space-y-1">
-                    <div className="font-bold text-zinc-300 text-sm tracking-wide">
+                  <div className="space-y-1.5">
+                    <div className="font-bold text-zinc-200 text-base tracking-wide">
                       CHƯA CHỌN SỰ KIỆN ĐANG TRIỂN KHAI
                     </div>
-                    <p className="text-[11px] text-zinc-500 max-w-sm leading-relaxed">
+                    <p className="text-xs sm:text-sm text-zinc-400 max-w-sm leading-relaxed">
                       Chọn một sự kiện từ danh sách bên trái để theo dõi tiến độ thực thi, dự kiến hoàn tất và các tác động chiến lược.
                     </p>
                   </div>
@@ -1311,12 +1312,12 @@ export function EventsMissionsBoard({
                     <div className="space-y-4">
                       {/* Thẻ Header */}
                       <div className="rounded border border-cyan-500/40 bg-zinc-900/60 p-4 space-y-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-zinc-800 pb-2.5">
                           <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase border border-cyan-500/50 bg-cyan-950/70 text-cyan-200">
+                            <span className="px-2.5 py-1 rounded text-xs font-bold uppercase border border-cyan-500/50 bg-cyan-950/70 text-cyan-200">
                               ĐANG TRIỂN KHAI (PROCESSING)
                             </span>
-                            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-black/60 border border-zinc-700 text-zinc-300">
+                            <span className="text-xs uppercase font-mono font-semibold px-2.5 py-1 rounded bg-black/60 border border-zinc-700 text-zinc-300">
                               {event.strategySource === "system_auto"
                                 ? "Nguồn: System Auto"
                                 : event.strategySource === "default_fallback"
@@ -1325,33 +1326,33 @@ export function EventsMissionsBoard({
                             </span>
                           </div>
 
-                          <span className="font-mono text-cyan-300 text-xs font-bold">
+                          <span className="font-mono text-cyan-300 text-xs sm:text-[13px] font-bold">
                             Hoàn tất vào Ngày #{completeTick} (Còn {remainingTicks} ngày)
                           </span>
                         </div>
 
-                        <div>
-                          <h3 className="text-sm font-bold text-zinc-100">{event.title}</h3>
-                          <p className="mt-1 text-[11px] text-zinc-300 leading-relaxed bg-black/40 p-2.5 rounded border border-zinc-800">
+                        <div className="space-y-1.5">
+                          <h3 className="text-base sm:text-lg font-bold text-zinc-100 leading-snug">{event.title}</h3>
+                          <p className="text-sm text-zinc-200 leading-relaxed bg-black/40 p-3 rounded border border-zinc-800">
                             {event.description}
                           </p>
                         </div>
 
                         {targetSector && (
-                          <div className="flex flex-wrap items-center justify-between gap-2 bg-zinc-950/60 p-2 rounded border border-zinc-800/80 text-[10px]">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="size-3 text-cyan-400 shrink-0" />
-                              <span>Sector: <strong className="text-zinc-200">{targetSector.name}</strong></span>
-                              <span className="text-zinc-500">·</span>
+                          <div className="flex flex-wrap items-center justify-between gap-2 bg-zinc-950/60 p-2.5 rounded border border-zinc-800/80 text-xs text-zinc-300">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <MapPin className="size-3.5 text-cyan-400 shrink-0" />
+                              <span>Sector: <strong className="text-zinc-100">{targetSector.name}</strong></span>
+                              <span className="text-zinc-600">·</span>
                               <span>Ổn định: <strong className="text-emerald-400">{targetSector.stability}%</strong></span>
-                              <span className="text-zinc-500">·</span>
+                              <span className="text-zinc-600">·</span>
                               <span>Đe dọa: <strong className="text-amber-400">{targetSector.threatLevel.toLocaleString()} / {getSectorMaxThreat(targetSector, worldState.threatConfig).toLocaleString()}</strong></span>
                             </div>
 
                             <button
                               type="button"
                               onClick={() => onNavigateToSector?.(targetSector.id)}
-                              className="text-cyan-400 hover:text-cyan-200 underline cursor-pointer text-[10px]"
+                              className="text-cyan-400 hover:text-cyan-200 underline cursor-pointer text-xs font-bold"
                             >
                               Xem trên bản đồ &rarr;
                             </button>
@@ -1361,9 +1362,9 @@ export function EventsMissionsBoard({
 
                       {/* Tiến Trình Thực Thi Thực Tế */}
                       <div className="rounded border border-zinc-800 bg-zinc-900/40 p-4 space-y-3">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-zinc-300 uppercase">Tiến Độ Xử Lý Thực Tế:</span>
-                          <span className="font-mono font-bold text-cyan-300">{progressPct}% Hoàn Tất</span>
+                        <div className="flex items-center justify-between text-xs sm:text-sm">
+                          <span className="font-bold text-zinc-200 uppercase">Tiến Độ Xử Lý Thực Tế:</span>
+                          <span className="font-mono font-bold text-cyan-300 text-sm">{progressPct}% Hoàn Tất</span>
                         </div>
 
                         <div className="h-3 w-full rounded bg-zinc-800 overflow-hidden p-0.5 border border-zinc-700">
@@ -1373,51 +1374,51 @@ export function EventsMissionsBoard({
                           />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 text-center text-[10px] pt-1">
-                          <div className="bg-black/40 p-2 rounded border border-zinc-800">
-                            <span className="text-zinc-500 block">Bắt đầu:</span>
-                            <span className="font-mono text-zinc-200 font-bold">Ngày #{startTick}</span>
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                          <div className="bg-black/40 p-2.5 rounded border border-zinc-800">
+                            <span className="text-zinc-400 text-xs block mb-0.5">Bắt đầu:</span>
+                            <span className="font-mono text-zinc-100 font-bold text-xs sm:text-[13px]">Ngày #{startTick}</span>
                           </div>
-                          <div className="bg-black/40 p-2 rounded border border-zinc-800">
-                            <span className="text-zinc-500 block">Thời gian xử lý:</span>
-                            <span className="font-mono text-cyan-300 font-bold">{totalTicks} Ngày</span>
+                          <div className="bg-black/40 p-2.5 rounded border border-zinc-800">
+                            <span className="text-zinc-400 text-xs block mb-0.5">Thời gian xử lý:</span>
+                            <span className="font-mono text-cyan-300 font-bold text-xs sm:text-[13px]">{totalTicks} Ngày</span>
                           </div>
-                          <div className="bg-black/40 p-2 rounded border border-zinc-800">
-                            <span className="text-zinc-500 block">Dự kiến kết thúc:</span>
-                            <span className="font-mono text-emerald-400 font-bold">Ngày #{completeTick}</span>
+                          <div className="bg-black/40 p-2.5 rounded border border-zinc-800">
+                            <span className="text-zinc-400 text-xs block mb-0.5">Dự kiến kết thúc:</span>
+                            <span className="font-mono text-emerald-400 font-bold text-xs sm:text-[13px]">Ngày #{completeTick}</span>
                           </div>
                         </div>
                       </div>
 
                       {/* Phương Án Đang Được Thực Thi & Hậu Quả Dự Kiến */}
                       <div className="rounded border border-zinc-800 bg-zinc-900/40 p-4 space-y-3">
-                        <div className="font-bold uppercase text-zinc-300 text-xs flex items-center gap-1.5">
-                          <Zap className="size-3.5 text-cyan-400" />
+                        <div className="font-bold uppercase text-zinc-200 text-xs sm:text-sm flex items-center gap-2">
+                          <Zap className="size-4 text-cyan-400" />
                           <span>Phương Án Đang Thực Thi: {chosenStrat?.name || event.chosenStrategyId}</span>
                         </div>
 
-                        <p className="text-[11px] text-zinc-300 leading-relaxed bg-black/40 p-2.5 rounded border border-zinc-800">
+                        <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed bg-black/40 p-3 rounded border border-zinc-800">
                           {chosenStrat?.description}
                         </p>
 
                         {event.selectionReason && (
-                          <div className="rounded bg-cyan-950/30 border border-cyan-500/30 p-2.5 text-[10px] text-cyan-200">
+                          <div className="rounded bg-cyan-950/30 border border-cyan-500/30 p-3 text-xs sm:text-[13px] text-cyan-200 leading-relaxed">
                             <strong>Lý do lựa chọn:</strong> {event.selectionReason}
                           </div>
                         )}
 
                         {event.encounterTransactionId && (
-                          <div className="rounded bg-amber-950/40 border border-amber-500/50 p-2.5 text-[10px] text-amber-200 flex items-center gap-2">
-                            <Swords className="size-4 text-amber-400 shrink-0" />
-                            <div>
-                              <strong className="block text-amber-300">Yêu cầu can thiệp chiến thuật:</strong>
+                          <div className="rounded bg-amber-950/40 border border-amber-500/50 p-3 text-xs sm:text-[13px] text-amber-200 flex items-center gap-2.5">
+                            <Swords className="size-5 text-amber-400 shrink-0" />
+                            <div className="leading-relaxed">
+                              <strong className="block text-amber-300 font-bold mb-0.5">Yêu cầu can thiệp chiến thuật:</strong>
                               Sự kiện đang gắn với một trận đánh thực địa (TxID: {event.encounterTransactionId}). Hãy chuyển sang buồng lái Đấu Trường để giải quyết trận đấu.
                             </div>
                           </div>
                         )}
 
                         {/* Không hiển thị bất kỳ nút phê chuẩn nào - Bảo vệ lũy đẳng */}
-                        <div className="rounded bg-zinc-950 p-3 border border-zinc-800 text-zinc-400 text-[10px] flex items-center gap-2">
+                        <div className="rounded bg-zinc-950 p-3 border border-zinc-800 text-zinc-300 text-xs sm:text-[13px] flex items-center gap-2.5 leading-relaxed">
                           <Shield className="size-4 text-cyan-400 shrink-0" />
                           <span>
                             Sự kiện này đang trong giai đoạn triển khai tự động và được bảo vệ lũy đẳng (Idempotent Guard). Không thể phê chuẩn lại hoặc can thiệp kép để tránh trùng lặp giao dịch.
@@ -1436,14 +1437,17 @@ export function EventsMissionsBoard({
       {/* ====================================================================
           5. CHẾ ĐỘ C: CHUỖI NHIỆM VỤ [CHAINS] (TIMELINE & PIPELINE CHIẾN LƯỢC TOÀN DIỆN)
           ==================================================================== */}
+      {/* ====================================================================
+          5. CHẾ ĐỘ C: CHUỖI NHIỆM VỤ [CHAINS] (TIMELINE & PIPELINE CHIẾN LƯỢC TOÀN DIỆN)
+          ==================================================================== */}
       {commandMode === "chains" && (
         <div className="space-y-4">
           {/* Header & Danh Sách Tuyến Nhiệm Vụ */}
           {filteredChains.length === 0 ? (
-            <div className="rounded border border-dashed border-zinc-800 bg-zinc-950/60 p-12 text-center text-zinc-500 space-y-2">
-              <GitBranch className="size-8 mx-auto text-zinc-600" />
-              <div className="font-bold text-zinc-300 text-sm">Không có chuỗi nhiệm vụ nào đang hoạt động.</div>
-              <p className="text-[11px] text-zinc-500 max-w-sm mx-auto">
+            <div className="rounded border border-dashed border-zinc-800 bg-zinc-950/60 p-12 text-center text-zinc-400 space-y-2.5">
+              <GitBranch className="size-9 mx-auto text-zinc-600" />
+              <div className="font-bold text-zinc-200 text-sm">Không có chuỗi nhiệm vụ nào đang hoạt động.</div>
+              <p className="text-xs text-zinc-400 max-w-sm mx-auto leading-relaxed">
                 Các chuỗi nhiệm vụ chiến lược sẽ tự động mở khóa theo tiến trình ngày thiên hà và các sự kiện then chốt.
               </p>
             </div>
@@ -1459,40 +1463,40 @@ export function EventsMissionsBoard({
                 return (
                   <div
                     key={chain.id}
-                    className="rounded border border-indigo-500/40 bg-zinc-950/90 p-4 space-y-4 shadow-xl"
+                    className="rounded border border-indigo-500/40 bg-zinc-950/90 p-4 sm:p-5 space-y-4 shadow-xl"
                   >
                     {/* Header Chuỗi Nhiệm Vụ */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="rounded bg-indigo-950/80 px-2.5 py-1 text-[10px] text-indigo-300 border border-indigo-500/60 uppercase font-black">
+                      <div className="flex items-center gap-3">
+                        <span className="rounded bg-indigo-950/80 px-3 py-1 text-xs text-indigo-300 border border-indigo-500/60 uppercase font-black tracking-wide">
                           {chain.topology}
                         </span>
                         <div>
-                          <h3 className="font-bold text-zinc-100 text-sm">{chain.title}</h3>
-                          <span className="text-[10px] text-zinc-500">Mã chuỗi: {chain.id} · Bắt đầu: Ngày #{chain.startedAtTick}</span>
+                          <h3 className="font-bold text-zinc-100 text-sm sm:text-base">{chain.title}</h3>
+                          <span className="text-xs text-zinc-400 font-mono">Mã chuỗi: {chain.id} · Bắt đầu: Ngày #{chain.startedAtTick}</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3 text-[11px]">
-                        <span className="text-zinc-400">Tiến trình:</span>
-                        <span className="rounded bg-indigo-950/60 px-2 py-0.5 border border-indigo-500/40 font-mono font-bold text-cyan-300">
+                      <div className="flex items-center gap-3 text-xs sm:text-[13px]">
+                        <span className="text-zinc-400 font-medium">Tiến trình:</span>
+                        <span className="rounded bg-indigo-950/60 px-2.5 py-1 border border-indigo-500/40 font-mono font-bold text-cyan-300">
                           {progressFraction} Bước ({progressPct}%)
                         </span>
                       </div>
                     </div>
 
-                    <p className="text-[11px] text-zinc-300 leading-relaxed bg-black/30 p-2.5 rounded border border-zinc-800/80">
+                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed bg-black/30 p-3 rounded border border-zinc-800/80">
                       {chain.description}
                     </p>
 
                     {/* Timeline / Horizontal Stepper Pipeline */}
-                    <div className="space-y-2">
-                      <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide flex items-center justify-between">
+                    <div className="space-y-2.5">
+                      <div className="text-xs font-bold text-zinc-300 uppercase tracking-wide flex items-center justify-between">
                         <span>LỘ TRÌNH TỪNG BƯỚC (MISSION PIPELINE TIMELINE):</span>
-                        <span className="text-zinc-500">{nodesList.length} Nút Chiến Thuật</span>
+                        <span className="text-zinc-400">{nodesList.length} Nút Chiến Thuật</span>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                         {nodesList.map((node, idx) => {
                           const isActive = node.status === "active"
                           const isCompleted = node.status === "completed"
@@ -1504,7 +1508,7 @@ export function EventsMissionsBoard({
                             <div
                               key={node.id}
                               className={cn(
-                                "rounded border p-3.5 flex flex-col justify-between space-y-3 transition-all relative",
+                                "rounded border p-4 flex flex-col justify-between space-y-3.5 transition-all relative",
                                 isCompleted
                                   ? "border-emerald-500/50 bg-emerald-950/20 text-emerald-200"
                                   : isActive
@@ -1514,55 +1518,55 @@ export function EventsMissionsBoard({
                                   : "border-zinc-800 bg-zinc-900/30 text-zinc-500 opacity-70"
                               )}
                             >
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between gap-1 text-[10px]">
+                              <div className="space-y-2.5">
+                                <div className="flex items-center justify-between gap-1.5 text-xs">
                                   <span className="font-bold uppercase text-zinc-400 font-mono">
                                     Bước {idx + 1} / {nodesList.length}
                                   </span>
 
                                   {isCompleted && (
-                                    <span className="flex items-center gap-1 text-emerald-300 font-bold uppercase text-[9px] bg-emerald-950/80 border border-emerald-500/50 px-1.5 py-0.2 rounded">
-                                      <CheckCircle2 className="size-3 text-emerald-400" />
+                                    <span className="flex items-center gap-1.5 text-emerald-300 font-bold uppercase text-xs bg-emerald-950/80 border border-emerald-500/50 px-2 py-0.5 rounded">
+                                      <CheckCircle2 className="size-3.5 text-emerald-400" />
                                       Đã Hoàn Tất
                                     </span>
                                   )}
                                   {isActive && !isPending && (
-                                    <span className="flex items-center gap-1 text-cyan-300 font-bold uppercase text-[9px] bg-cyan-950/80 border border-cyan-500/60 px-1.5 py-0.2 rounded animate-pulse">
-                                      <span className="size-1.5 rounded-full bg-cyan-400 animate-ping" />
+                                    <span className="flex items-center gap-1.5 text-cyan-300 font-bold uppercase text-xs bg-cyan-950/80 border border-cyan-500/60 px-2 py-0.5 rounded animate-pulse">
+                                      <span className="size-2 rounded-full bg-cyan-400 animate-ping" />
                                       Đang Hoạt Động
                                     </span>
                                   )}
                                   {isPending && (
-                                    <span className="flex items-center gap-1 text-amber-300 font-bold uppercase text-[9px] bg-amber-950/80 border border-amber-500/70 px-1.5 py-0.2 rounded animate-pulse">
-                                      <Clock className="size-3 text-amber-400" />
+                                    <span className="flex items-center gap-1.5 text-amber-300 font-bold uppercase text-xs bg-amber-950/80 border border-amber-500/70 px-2 py-0.5 rounded animate-pulse">
+                                      <Clock className="size-3.5 text-amber-400" />
                                       Đang Chờ Điều Kiện
                                     </span>
                                   )}
                                   {isLocked && (
-                                    <span className="flex items-center gap-1 text-zinc-500 font-bold uppercase text-[9px]">
-                                      <Lock className="size-3" />
+                                    <span className="flex items-center gap-1.5 text-zinc-400 font-bold uppercase text-xs">
+                                      <Lock className="size-3.5" />
                                       Chưa Mở Khóa
                                     </span>
                                   )}
                                 </div>
 
-                                <div className="font-bold text-zinc-100 text-xs">{node.title}</div>
-                                <p className="text-[10px] text-zinc-400 line-clamp-2 leading-relaxed">
+                                <div className="font-bold text-zinc-100 text-sm sm:text-[15px] leading-snug">{node.title}</div>
+                                <p className="text-xs sm:text-[13px] text-zinc-300 leading-relaxed line-clamp-3">
                                   {node.description}
                                 </p>
                               </div>
 
-                              <div className="border-t border-zinc-800/80 pt-2.5 space-y-2 text-[10px]">
+                              <div className="border-t border-zinc-800/80 pt-3 space-y-2 text-xs">
                                 {targetSector && (
-                                  <div className="flex items-center justify-between gap-1 text-zinc-400">
-                                    <div className="flex items-center gap-1">
-                                      <MapPin className="size-3 text-cyan-400 shrink-0" />
-                                      <span>Sector: <strong className="text-zinc-200">{targetSector.name}</strong></span>
+                                  <div className="flex items-center justify-between gap-1.5 text-zinc-300">
+                                    <div className="flex items-center gap-1.5">
+                                      <MapPin className="size-3.5 text-cyan-400 shrink-0" />
+                                      <span>Sector: <strong className="text-zinc-100">{targetSector.name}</strong></span>
                                     </div>
                                     <button
                                       type="button"
                                       onClick={() => onNavigateToSector?.(targetSector.id)}
-                                      className="text-cyan-400 hover:text-cyan-200 underline cursor-pointer text-[9px]"
+                                      className="text-cyan-400 hover:text-cyan-200 underline cursor-pointer text-xs font-bold"
                                     >
                                       Bản đồ &rarr;
                                     </button>
@@ -1570,12 +1574,12 @@ export function EventsMissionsBoard({
                                 )}
 
                                 {isPending && (
-                                  <div className="rounded bg-amber-950/40 border border-amber-500/40 p-2 text-[10px] text-amber-200 space-y-1">
-                                    <div className="flex items-center gap-1 font-bold text-amber-300">
-                                      <AlertTriangle className="size-3 text-amber-400" />
+                                  <div className="rounded bg-amber-950/40 border border-amber-500/40 p-2.5 text-xs text-amber-200 space-y-1">
+                                    <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                                      <AlertTriangle className="size-3.5 text-amber-400" />
                                       <span>Đang chờ giải tỏa điều kiện</span>
                                     </div>
-                                    <p className="text-[9px] text-zinc-300 leading-tight">
+                                    <p className="text-xs text-zinc-300 leading-relaxed">
                                       {node.dispatchDeferredTicks !== undefined ? (
                                         <span>Đã chờ {node.dispatchDeferredTicks}/{MAX_DISPATCH_DEFER_TICKS} ngày trước khi tự động giải tỏa.</span>
                                       ) : (
@@ -1586,14 +1590,14 @@ export function EventsMissionsBoard({
                                 )}
 
                                 {node.rewardSummary && (
-                                  <div className="text-[9px] text-emerald-400 font-semibold flex items-center gap-1">
-                                    <Sparkles className="size-2.5 text-emerald-400 shrink-0" />
+                                  <div className="text-xs text-emerald-400 font-semibold flex items-center gap-1.5">
+                                    <Sparkles className="size-3 text-emerald-400 shrink-0" />
                                     <span>Thưởng: {node.rewardSummary}</span>
                                   </div>
                                 )}
 
                                 {isLocked && node.requiredPreviousNodeIds && (
-                                  <div className="text-[9px] text-zinc-500 italic">
+                                  <div className="text-xs text-zinc-400 italic">
                                     Yêu cầu: Hoàn tất các bước tiền đề trước
                                   </div>
                                 )}
@@ -1612,32 +1616,32 @@ export function EventsMissionsBoard({
       )}
 
       {/* ====================================================================
-          5. CHẾ ĐỘ D: ĐIỀU PHỐI TÁC CHIẾN [DISPATCH] (PHASE 6.31)
+          6. CHẾ ĐỘ D: ĐIỀU PHỐI TÁC CHIẾN [DISPATCH] (PHASE 6.31)
           ==================================================================== */}
       {commandMode === "dispatches" && (
-        <div className="space-y-3 font-mono text-xs">
-          {/* 5.1. THANH CHỈ HUY TRỰC TIẾP & TẠO LỆNH ĐIỀU PHỐI */}
-          <div className="rounded border border-border/80 bg-zinc-950/90 p-3 shadow-md backdrop-blur-md">
+        <div className="space-y-3.5 font-mono text-sm leading-normal">
+          {/* 6.1. THANH CHỈ HUY TRỰC TIẾP & TẠO LỆNH ĐIỀU PHỐI */}
+          <div className="rounded border border-border/80 bg-zinc-950/90 p-4 shadow-md backdrop-blur-md">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Crosshair className="size-4 text-amber-400" />
-                  <span className="font-bold text-amber-300 uppercase tracking-wide text-sm">
+                  <Crosshair className="size-4.5 text-amber-400" />
+                  <span className="font-bold text-amber-300 uppercase tracking-wide text-sm sm:text-base">
                     ĐIỀU PHỐI CHIẾN DỊCH & LƯU TRỮ TÁC CHIẾN // MISSION DISPATCH
                   </span>
                 </div>
                 {activePlayerMission ? (
-                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-300">
-                    <span className="flex items-center gap-1 rounded bg-cyan-950/80 px-2 py-0.5 text-cyan-300 border border-cyan-500/50 font-bold">
-                      <UserCheck className="size-3 text-cyan-400" />
+                  <div className="flex flex-wrap items-center gap-2 text-xs sm:text-[13px] text-zinc-200">
+                    <span className="flex items-center gap-1.5 rounded bg-cyan-950/80 px-2.5 py-1 text-cyan-300 border border-cyan-500/50 font-bold">
+                      <UserCheck className="size-3.5 text-cyan-400" />
                       ĐANG CHỈ HUY: &quot;{activePlayerMission.title}&quot;
                     </span>
                     <span className="text-zinc-500">·</span>
-                    <span className="text-zinc-400">
+                    <span className="text-zinc-300">
                       Sector: {worldState.sectors[activePlayerMission.sectorId]?.name}
                     </span>
                     <span className="text-zinc-500">·</span>
-                    <span className="text-amber-400 font-bold">
+                    <span className="text-amber-400 font-bold font-mono">
                       {activePlayerMission.status === "PREPARE"
                         ? `Còn ${Math.max(0, activePlayerMission.prepareDeadlineTick - worldState.currentDay)} ngày PREPARE`
                         : `Đang tác chiến (Xong ngày #${activePlayerMission.processingCompletesTick})`}
@@ -1654,7 +1658,7 @@ export function EventsMissionsBoard({
                             onStateUpdated?.()
                           }
                         }}
-                        className="ml-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors cursor-pointer"
+                        className="ml-1 rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors cursor-pointer font-medium"
                         title="Bàn giao lại quyền chỉ huy về đồn trú"
                       >
                         Rút Lui Chỉ Huy
@@ -1662,7 +1666,7 @@ export function EventsMissionsBoard({
                     )}
                   </div>
                 ) : (
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-xs sm:text-[13px] text-zinc-300 leading-relaxed">
                     <span className="text-emerald-400 font-bold">✓ Sẵn sàng nhận nhiệm vụ</span>: Bạn chưa chỉ huy nhiệm vụ nào. Người chơi có thể tiếp quản chỉ huy tối đa 1 nhiệm vụ tại một thời điểm.
                   </p>
                 )}
@@ -1675,9 +1679,9 @@ export function EventsMissionsBoard({
                     playClickSound()
                     setIsCreateDispatchOpen(!isCreateDispatchOpen)
                   }}
-                  className="flex items-center gap-1.5 rounded border border-amber-500/60 bg-amber-950/60 px-3 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-900/60 hover:text-white transition-all cursor-pointer shadow-sm"
+                  className="flex items-center gap-2 rounded border border-amber-500/60 bg-amber-950/60 px-3.5 py-2 text-xs sm:text-sm font-bold text-amber-200 hover:bg-amber-900/60 hover:text-white transition-all cursor-pointer shadow-sm"
                 >
-                  <Crosshair className="size-3.5 text-amber-400" />
+                  <Crosshair className="size-4 text-amber-400" />
                   <span>+ Mở Lệnh Điều Phối Mới</span>
                 </button>
               </div>
@@ -1685,51 +1689,51 @@ export function EventsMissionsBoard({
 
             {/* Thông báo phản hồi tác vụ */}
             {dispatchFeedback && (
-              <div className="mt-2.5 flex items-center justify-between rounded border border-amber-500/40 bg-amber-950/40 p-2 text-[11px] text-amber-200 animate-fadeIn">
+              <div className="mt-3 flex items-center justify-between rounded border border-amber-500/40 bg-amber-950/40 p-2.5 text-xs sm:text-[13px] text-amber-200 animate-fadeIn">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="size-3.5 text-amber-400 shrink-0" />
+                  <CheckCircle2 className="size-4 text-amber-400 shrink-0" />
                   <span>{dispatchFeedback}</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setDispatchFeedback(null)}
-                  className="text-zinc-400 hover:text-white"
+                  className="text-zinc-400 hover:text-white cursor-pointer"
                 >
-                  <X className="size-3" />
+                  <X className="size-3.5" />
                 </button>
               </div>
             )}
           </div>
 
-          {/* 5.2. HỘP THOẠI / FORM TẠO LỆNH ĐIỀU PHỐI MỚI (DISPATCH CREATION FORM) */}
+          {/* 6.2. HỘP THOẠI / FORM TẠO LỆNH ĐIỀU PHỐI MỚI */}
           {isCreateDispatchOpen && (
-            <div className="rounded border border-amber-500/50 bg-zinc-950/95 p-3.5 space-y-3 shadow-lg animate-fadeIn">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
+            <div className="rounded border border-amber-500/50 bg-zinc-950/95 p-4 sm:p-5 space-y-3.5 shadow-lg animate-fadeIn">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                 <div className="flex items-center gap-2">
                   <Crosshair className="size-4 text-amber-400" />
-                  <span className="font-bold text-amber-300 uppercase text-xs">
+                  <span className="font-bold text-amber-300 uppercase text-xs sm:text-sm">
                     THIẾT LẬP LỆNH ĐIỀU PHỐI MỚI (6 HÌNH THÁI MỤC TIÊU)
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsCreateDispatchOpen(false)}
-                  className="text-zinc-400 hover:text-white"
+                  className="text-zinc-400 hover:text-white cursor-pointer"
                 >
-                  <X className="size-3.5" />
+                  <X className="size-4" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs sm:text-[13px]">
                 {/* 1. Chọn hình thái mục tiêu */}
-                <div className="space-y-1">
-                  <label className="text-[11px] text-zinc-400 font-bold block">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-zinc-300 font-bold block">
                     Hình Thái Mục Tiêu (Objective Category):
                   </label>
                   <select
                     value={newDispatchCategory}
                     onChange={(e) => setNewDispatchCategory(e.target.value as MissionObjectiveCategory)}
-                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 focus:border-amber-400 focus:outline-none cursor-pointer"
+                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs sm:text-[13px] text-zinc-200 focus:border-amber-400 focus:outline-none cursor-pointer"
                   >
                     <option value="patrol">Tuần Tra Tuyến Phòng Ngự (Patrol)</option>
                     <option value="escort">Hộ Tống Đoàn Vận Tải (Escort)</option>
@@ -1741,14 +1745,14 @@ export function EventsMissionsBoard({
                 </div>
 
                 {/* 2. Chọn Sector */}
-                <div className="space-y-1">
-                  <label className="text-[11px] text-zinc-400 font-bold block">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-zinc-300 font-bold block">
                     Sector Địa Bàn Tác Chiến:
                   </label>
                   <select
                     value={newDispatchSectorId}
                     onChange={(e) => setNewDispatchSectorId(e.target.value)}
-                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 focus:border-amber-400 focus:outline-none cursor-pointer"
+                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs sm:text-[13px] text-zinc-200 focus:border-amber-400 focus:outline-none cursor-pointer"
                   >
                     {Object.values(worldState.sectors).map((s) => (
                       <option key={s.id} value={s.id}>
@@ -1759,11 +1763,11 @@ export function EventsMissionsBoard({
                 </div>
 
                 {/* 3. Thời gian chuẩn bị (PREPARE duration) */}
-                <div className="space-y-1">
-                  <label className="text-[11px] text-zinc-400 font-bold block">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-zinc-300 font-bold block">
                     Thời Gian Chuẩn Bị (PREPARE Duration):
                   </label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <input
                       type="range"
                       min={1}
@@ -1772,18 +1776,18 @@ export function EventsMissionsBoard({
                       onChange={(e) => setNewDispatchDuration(Number(e.target.value))}
                       className="flex-1 accent-amber-400 cursor-pointer"
                     />
-                    <span className="font-mono text-amber-300 font-bold w-16 text-right">
+                    <span className="font-mono text-amber-300 font-bold w-20 text-right text-xs sm:text-sm">
                       {newDispatchDuration} ngày
                     </span>
                   </div>
-                  <p className="text-[10px] text-zinc-500">
+                  <p className="text-xs text-zinc-400 leading-relaxed">
                     Khi hết {newDispatchDuration} ngày mà người chơi không trực tiếp tham gia, NPC đồn trú sẽ tự động tiếp quản chỉ huy để nhiệm vụ không bị đóng băng.
                   </p>
                 </div>
 
                 {/* 4. Tiêu đề tùy chỉnh */}
-                <div className="space-y-1">
-                  <label className="text-[11px] text-zinc-400 font-bold block">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-zinc-300 font-bold block">
                     Tiêu Đề Tùy Chỉnh (Tùy chọn):
                   </label>
                   <input
@@ -1791,32 +1795,32 @@ export function EventsMissionsBoard({
                     value={newDispatchTitle}
                     onChange={(e) => setNewDispatchTitle(e.target.value)}
                     placeholder="Để trống để sử dụng tiêu đề chuẩn..."
-                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:border-amber-400 focus:outline-none"
+                    className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs sm:text-[13px] text-zinc-200 placeholder-zinc-500 focus:border-amber-400 focus:outline-none"
                   />
                 </div>
               </div>
 
               {/* Xem trước mục tiêu chuẩn */}
               {worldState.sectors[newDispatchSectorId] && (
-                <div className="rounded border border-zinc-800 bg-zinc-900/50 p-2 text-[11px] space-y-1">
+                <div className="rounded border border-zinc-800 bg-zinc-900/50 p-3 text-xs sm:text-[13px] space-y-1.5">
                   <div className="flex items-center justify-between text-zinc-400">
-                    <span className="font-bold text-zinc-300 uppercase">Xem Trước Mục Tiêu Chuẩn Hóa:</span>
-                    <span className="text-amber-400 uppercase font-mono">{newDispatchCategory}</span>
+                    <span className="font-bold text-zinc-200 uppercase">Xem Trước Mục Tiêu Chuẩn Hóa:</span>
+                    <span className="text-amber-400 uppercase font-mono font-bold">{newDispatchCategory}</span>
                   </div>
-                  <div className="text-zinc-200 font-bold">
+                  <div className="text-zinc-100 font-bold text-sm">
                     {createStandardObjective(newDispatchCategory, worldState.sectors[newDispatchSectorId]).title}
                   </div>
-                  <div className="text-emerald-400">
+                  <div className="text-emerald-400 font-medium">
                     Tiêu chí thành công: {createStandardObjective(newDispatchCategory, worldState.sectors[newDispatchSectorId]).successCriteriaText}
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800">
+              <div className="flex items-center justify-end gap-2.5 pt-2.5 border-t border-zinc-800">
                 <button
                   type="button"
                   onClick={() => setIsCreateDispatchOpen(false)}
-                  className="rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 hover:text-white cursor-pointer"
+                  className="rounded border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs sm:text-[13px] text-zinc-300 hover:text-white cursor-pointer"
                 >
                   Hủy Bỏ
                 </button>
@@ -1851,7 +1855,7 @@ export function EventsMissionsBoard({
                       setDispatchFeedback(res.error || "Không thể khởi tạo lệnh điều phối.")
                     }
                   }}
-                  className="rounded border border-amber-400 bg-amber-600/40 px-3.5 py-1.5 text-xs font-bold text-amber-200 hover:bg-amber-600/60 hover:text-white transition-all cursor-pointer shadow-md"
+                  className="rounded border border-amber-400 bg-amber-600/40 px-4 py-2 text-xs sm:text-sm font-bold text-amber-200 hover:bg-amber-600/60 hover:text-white transition-all cursor-pointer shadow-md"
                 >
                   Xác Nhận Thiết Lập Điều Phối
                 </button>
@@ -1859,9 +1863,9 @@ export function EventsMissionsBoard({
             </div>
           )}
 
-          {/* 5.3. BỘ LỌC TRẠNG THÁI NHIỆM VỤ */}
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2">
-            <div className="flex items-center gap-1">
+          {/* 6.3. BỘ LỌC TRẠNG THÁI NHIỆM VỤ */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-zinc-800 pb-2.5">
+            <div className="flex items-center gap-1.5">
               {(
                 [
                   { key: "all", label: "Tất Cả", count: dispatchesList.length },
@@ -1892,7 +1896,7 @@ export function EventsMissionsBoard({
                     setDispatchFilterMode(key)
                   }}
                   className={cn(
-                    "px-2.5 py-1 rounded border transition-colors cursor-pointer text-[10px] font-bold uppercase",
+                    "px-3 py-1.5 rounded border transition-colors cursor-pointer text-xs font-bold uppercase",
                     dispatchFilterMode === key
                       ? "border-amber-400 bg-amber-950/70 text-amber-200 shadow-xs"
                       : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200"
@@ -1903,24 +1907,24 @@ export function EventsMissionsBoard({
               ))}
             </div>
 
-            <div className="text-[11px] text-zinc-500 font-mono">
+            <div className="text-xs text-zinc-400 font-mono">
               Hiển thị: {filteredDispatches.length} / {dispatchesList.length} nhiệm vụ
             </div>
           </div>
 
-          {/* 5.4. BỐ CỤC 2 CỘT: DANH SÁCH & CHI TIẾT ĐIỀU PHỐI */}
+          {/* 6.4. BỐ CỤC 2 CỘT: DANH SÁCH & CHI TIẾT ĐIỀU PHỐI */}
           {filteredDispatches.length === 0 ? (
-            <div className="rounded border border-dashed border-zinc-800 p-8 text-center text-zinc-500 space-y-2">
-              <Crosshair className="size-8 mx-auto text-zinc-600" />
-              <div className="font-bold text-zinc-300">Không có lệnh điều phối nào trong bộ lọc này</div>
-              <p className="text-[11px] text-zinc-500 max-w-md mx-auto">
+            <div className="rounded border border-dashed border-zinc-800 p-8 text-center text-zinc-400 space-y-2.5">
+              <Crosshair className="size-9 mx-auto text-zinc-600" />
+              <div className="font-bold text-zinc-200 text-sm">Không có lệnh điều phối nào trong bộ lọc này</div>
+              <p className="text-xs text-zinc-400 max-w-md mx-auto leading-relaxed">
                 Bấm &quot;+ Mở Lệnh Điều Phối Mới&quot; ở trên để triển khai nhiệm vụ tuần tra, hộ tống, phòng thủ, đột kích, tiêu diệt mục tiêu hoặc khống chế đe dọa.
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
               {/* CỘT TRÁI: DANH SÁCH CARDS (5/12) */}
-              <div className="lg:col-span-5 space-y-2 max-h-[640px] overflow-y-auto pr-1">
+              <div className="lg:col-span-5 space-y-2.5 max-h-[680px] overflow-y-auto pr-1.5 scrollbar-thin">
                 {filteredDispatches.map((dispatch) => {
                   const isSelected = selectedDispatchId === dispatch.id
                   const sector = worldState.sectors[dispatch.sectorId]
@@ -1935,24 +1939,24 @@ export function EventsMissionsBoard({
                         setSelectedDispatchId(dispatch.id)
                       }}
                       className={cn(
-                        "rounded border p-2.5 space-y-2 cursor-pointer transition-all",
+                        "rounded border p-3.5 space-y-2.5 cursor-pointer transition-all",
                         isSelected
                           ? "border-amber-400/80 bg-amber-950/30 ring-1 ring-amber-400/50 shadow-md"
                           : "border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:bg-zinc-900/80"
                       )}
                     >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-0.5 min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="rounded bg-zinc-800 px-1.5 py-0.2 text-[9px] font-bold uppercase text-amber-300 border border-zinc-700">
+                      <div className="flex items-start justify-between gap-2.5">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs font-bold uppercase text-amber-300 border border-zinc-700">
                               {dispatch.category}
                             </span>
-                            <span className="font-bold text-zinc-200 text-xs truncate">
+                            <span className="font-bold text-zinc-100 text-sm truncate">
                               {dispatch.title}
                             </span>
                           </div>
-                          <div className="text-[10px] text-zinc-400 flex items-center gap-1">
-                            <MapPin className="size-2.5 text-cyan-400" />
+                          <div className="text-xs text-zinc-300 flex items-center gap-1.5">
+                            <MapPin className="size-3 text-cyan-400" />
                             <span>{sector?.name || dispatch.sectorId}</span>
                           </div>
                         </div>
@@ -1960,7 +1964,7 @@ export function EventsMissionsBoard({
                         {/* Status Badge */}
                         <span
                           className={cn(
-                            "px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 border",
+                            "px-2 py-0.5 rounded text-xs font-bold uppercase shrink-0 border",
                             dispatch.status === "PREPARE"
                               ? "bg-amber-950/80 text-amber-300 border-amber-500/50"
                               : dispatch.status === "PROCESSING"
@@ -1985,16 +1989,16 @@ export function EventsMissionsBoard({
                       </div>
 
                       {/* Commander Tag & Timers */}
-                      <div className="flex items-center justify-between text-[10px] pt-1 border-t border-zinc-800/60">
+                      <div className="flex items-center justify-between text-xs pt-1.5 border-t border-zinc-800/60">
                         <div className="flex items-center gap-1.5">
                           {isPlayerLeading ? (
                             <span className="flex items-center gap-1 text-cyan-300 font-bold">
-                              <User className="size-3 text-cyan-400" />
+                              <User className="size-3.5 text-cyan-400" />
                               Chỉ Huy Trực Tiếp
                             </span>
                           ) : isNPCLeading ? (
                             <span className="flex items-center gap-1 text-indigo-300 font-semibold">
-                              <Shield className="size-3 text-indigo-400" />
+                              <Shield className="size-3.5 text-indigo-400" />
                               NPC Tiếp Quản
                             </span>
                           ) : (
@@ -2002,14 +2006,14 @@ export function EventsMissionsBoard({
                           )}
                         </div>
 
-                        <div className="font-mono text-[10px]">
+                        <div className="font-mono text-xs">
                           {dispatch.status === "PREPARE" && (
-                            <span className="text-amber-400">
+                            <span className="text-amber-400 font-semibold">
                               Hạn: Ngày #{dispatch.prepareDeadlineTick} (Còn {Math.max(0, dispatch.prepareDeadlineTick - worldState.currentDay)} ngày)
                             </span>
                           )}
                           {dispatch.status === "PROCESSING" && (
-                            <span className="text-cyan-400">
+                            <span className="text-cyan-400 font-semibold">
                               Xong: Ngày #{dispatch.processingCompletesTick} (Còn {Math.max(0, (dispatch.processingCompletesTick || 0) - worldState.currentDay)} ngày)
                             </span>
                           )}
@@ -2026,20 +2030,20 @@ export function EventsMissionsBoard({
               {/* CỘT PHẢI: CHI TIẾT NHIỆM VỤ ĐƯỢC CHỌN (7/12) */}
               <div className="lg:col-span-7">
                 {activeSelectedDispatch ? (
-                  <div className="rounded border border-zinc-800 bg-zinc-950/80 p-3.5 space-y-3.5 shadow-md">
+                  <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 sm:p-5 space-y-4 shadow-md">
                     {/* Header nhiệm vụ */}
-                    <div className="flex items-start justify-between gap-3 border-b border-zinc-800 pb-2.5">
-                      <div className="space-y-1">
+                    <div className="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3">
+                      <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
-                          <span className="rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300 border border-amber-500/40">
+                          <span className="rounded bg-amber-500/20 px-2.5 py-1 text-xs font-bold uppercase text-amber-300 border border-amber-500/40">
                             {activeSelectedDispatch.category}
                           </span>
-                          <span className="font-mono text-zinc-500 text-[10px]">ID: {activeSelectedDispatch.id}</span>
+                          <span className="font-mono text-zinc-400 text-xs">ID: {activeSelectedDispatch.id}</span>
                         </div>
-                        <h3 className="font-bold text-zinc-100 text-sm">
+                        <h3 className="font-bold text-zinc-100 text-base sm:text-lg leading-snug">
                           {activeSelectedDispatch.title}
                         </h3>
-                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                        <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
                           {activeSelectedDispatch.description}
                         </p>
                       </div>
@@ -2051,37 +2055,37 @@ export function EventsMissionsBoard({
                             playClickSound()
                             onNavigateToSector(activeSelectedDispatch.sectorId)
                           }}
-                          className="shrink-0 flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] text-zinc-300 hover:text-cyan-300 hover:border-cyan-500 cursor-pointer"
+                          className="shrink-0 flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-200 hover:text-cyan-300 hover:border-cyan-500 cursor-pointer font-medium"
                           title="Xem Sector trên Galaxy Map"
                         >
-                          <MapPin className="size-3 text-cyan-400" />
+                          <MapPin className="size-3.5 text-cyan-400" />
                           <span>Galaxy Map</span>
                         </button>
                       )}
                     </div>
 
                     {/* Khung điều khiển Chỉ Huy & Lực Lượng */}
-                    <div className="rounded border border-zinc-800/80 bg-zinc-900/60 p-3 space-y-2.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-zinc-300 uppercase tracking-wide">
+                    <div className="rounded border border-zinc-800/80 bg-zinc-900/60 p-3.5 space-y-3">
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <span className="font-bold text-zinc-200 uppercase tracking-wide">
                           Phân Định Quyền Chỉ Huy & Lực Lượng:
                         </span>
-                        <span className="font-mono text-[10px] text-zinc-400">
+                        <span className="font-mono text-xs text-zinc-400">
                           Trạng Thái: <strong className="text-amber-300 uppercase">{activeSelectedDispatch.status}</strong>
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                        <div className="rounded border border-zinc-800 bg-black/40 p-2 space-y-1">
-                          <span className="text-zinc-500 block text-[10px]">CHỈ HUY HIỆN TẠI:</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs sm:text-[13px]">
+                        <div className="rounded border border-zinc-800 bg-black/40 p-2.5 space-y-1">
+                          <span className="text-zinc-400 block text-xs">CHỈ HUY HIỆN TẠI:</span>
                           {activeSelectedDispatch.participant?.type === "player" ? (
                             <div className="font-bold text-cyan-300 flex items-center gap-1.5">
-                              <UserCheck className="size-3.5 text-cyan-400" />
+                              <UserCheck className="size-4 text-cyan-400" />
                               <span>{activeSelectedDispatch.participant.name} (Người Chơi Trực Tiếp)</span>
                             </div>
                           ) : activeSelectedDispatch.participant?.type === "npc" ? (
                             <div className="font-bold text-indigo-300 flex items-center gap-1.5">
-                              <Shield className="size-3.5 text-indigo-400" />
+                              <Shield className="size-4 text-indigo-400" />
                               <span>{activeSelectedDispatch.participant.name} (NPC Tiếp Quản)</span>
                             </div>
                           ) : (
@@ -2091,9 +2095,9 @@ export function EventsMissionsBoard({
                           )}
                         </div>
 
-                        <div className="rounded border border-zinc-800 bg-black/40 p-2 space-y-1">
-                          <span className="text-zinc-500 block text-[10px]">LỰC LƯỢNG ĐỒN TRÚ ĐIỀU ĐỘNG:</span>
-                          <div className="font-bold text-zinc-200">
+                        <div className="rounded border border-zinc-800 bg-black/40 p-2.5 space-y-1">
+                          <span className="text-zinc-400 block text-xs">LỰC LƯỢNG ĐỒN TRÚ ĐIỀU ĐỘNG:</span>
+                          <div className="font-bold text-zinc-100 text-sm font-mono">
                             {(activeSelectedDispatch.assignedForces?.garrisonTroops || 0).toLocaleString()} quân
                           </div>
                         </div>
@@ -2101,7 +2105,7 @@ export function EventsMissionsBoard({
 
                       {/* Tác vụ trong giai đoạn PREPARE */}
                       {activeSelectedDispatch.status === "PREPARE" && (
-                        <div className="pt-2 border-t border-zinc-800 space-y-2">
+                        <div className="pt-2.5 border-t border-zinc-800 space-y-2.5">
                           <div className="flex flex-wrap items-center gap-2">
                             {/* Nút Tiếp Quản hoặc Rút Lui */}
                             {activeSelectedDispatch.participant?.type === "player" ? (
@@ -2116,7 +2120,7 @@ export function EventsMissionsBoard({
                                     onStateUpdated?.()
                                   }
                                 }}
-                                className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-300 hover:text-white cursor-pointer"
+                                className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs sm:text-[13px] font-bold text-zinc-300 hover:text-white cursor-pointer"
                               >
                                 <UserMinus className="size-3.5 text-zinc-400" />
                                 <span>Rút Lui Khỏi Vị Trí Chỉ Huy</span>
@@ -2143,14 +2147,14 @@ export function EventsMissionsBoard({
                                       }
                                     }}
                                     className={cn(
-                                      "flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-bold transition-all",
+                                      "flex items-center gap-1.5 rounded border px-3.5 py-2 text-xs sm:text-[13px] font-bold transition-all",
                                       check.allowed
                                         ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 hover:bg-cyan-900 hover:text-white cursor-pointer shadow-md shadow-cyan-950/40"
                                         : "border-zinc-800 bg-zinc-900/50 text-zinc-500 cursor-not-allowed"
                                     )}
                                     title={check.reason}
                                   >
-                                    <UserCheck className="size-3.5 text-cyan-400" />
+                                    <UserCheck className="size-4 text-cyan-400" />
                                     <span>Tiếp Quản Chỉ Huy Trực Tiếp</span>
                                   </button>
                                 )
@@ -2182,7 +2186,7 @@ export function EventsMissionsBoard({
                                   setDispatchFeedback(res.message)
                                 }
                               }}
-                              className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900/80 px-2.5 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer"
+                              className="flex items-center gap-1.5 rounded border border-zinc-700 bg-zinc-900/80 px-3 py-1.5 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white cursor-pointer"
                               title="Tăng cường thêm quân đồn trú từ căn cứ"
                             >
                               <Shield className="size-3.5 text-zinc-400" />
@@ -2205,7 +2209,7 @@ export function EventsMissionsBoard({
                                   onStateUpdated?.()
                                 }
                               }}
-                              className="ml-auto rounded border border-red-900/50 bg-red-950/30 px-2.5 py-1.5 text-xs text-red-300 hover:bg-red-900/40 cursor-pointer"
+                              className="ml-auto rounded border border-red-900/50 bg-red-950/30 px-3 py-1.5 text-xs text-red-300 hover:bg-red-900/40 cursor-pointer font-medium"
                             >
                               Hủy Nhiệm Vụ
                             </button>
@@ -2213,7 +2217,7 @@ export function EventsMissionsBoard({
 
                           {!canPlayerJoinMission(worldState, activeSelectedDispatch.id).allowed &&
                             activeSelectedDispatch.participant?.type !== "player" && (
-                              <p className="text-[10px] text-amber-400">
+                              <p className="text-xs text-amber-400">
                                 ⚠ {canPlayerJoinMission(worldState, activeSelectedDispatch.id).reason}
                               </p>
                             )}
@@ -2221,29 +2225,29 @@ export function EventsMissionsBoard({
                       )}
                     </div>
 
-                    {/* Khung Mục Tiêu Chuẩn Hóa (Standard Reusable Objective) */}
-                    <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3 space-y-2">
-                      <div className="flex items-center justify-between text-xs font-bold">
-                        <span className="text-zinc-200">MỤC TIÊU CHIẾN DỊCH:</span>
+                    {/* Khung Mục Tiêu Chuẩn Hóa */}
+                    <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3.5 space-y-2.5">
+                      <div className="flex items-center justify-between text-xs sm:text-sm font-bold">
+                        <span className="text-zinc-100 uppercase">MỤC TIÊU CHIẾN DỊCH:</span>
                         <span className="text-emerald-400 font-mono">
                           Tiến Độ: {activeSelectedDispatch.objective.currentProgress || 0}%
                         </span>
                       </div>
-                      <div className="text-xs font-semibold text-zinc-300">
+                      <div className="text-xs sm:text-sm font-semibold text-zinc-200">
                         {activeSelectedDispatch.objective.title}
                       </div>
-                      <div className="text-[11px] text-zinc-400">
+                      <div className="text-xs sm:text-[13px] text-zinc-300 leading-relaxed">
                         {activeSelectedDispatch.objective.description}
                       </div>
 
                       {/* Tiêu chí thành công */}
-                      <div className="rounded bg-emerald-950/30 border border-emerald-500/30 p-2 text-[11px] text-emerald-300 space-y-0.5">
-                        <div className="font-bold text-[10px] uppercase text-emerald-400">Tiêu Chí Hoàn Tất Tác Chiến:</div>
-                        <div>{activeSelectedDispatch.objective.successCriteriaText}</div>
+                      <div className="rounded bg-emerald-950/30 border border-emerald-500/30 p-2.5 text-xs text-emerald-300 space-y-1">
+                        <div className="font-bold text-xs uppercase text-emerald-400">Tiêu Chí Hoàn Tất Tác Chiến:</div>
+                        <div className="leading-relaxed">{activeSelectedDispatch.objective.successCriteriaText}</div>
                       </div>
 
                       {/* Thanh tiến độ */}
-                      <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                      <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
                         <div
                           className="bg-emerald-400 h-full transition-all duration-300"
                           style={{ width: `${Math.min(100, activeSelectedDispatch.objective.currentProgress || 0)}%` }}
@@ -2253,11 +2257,11 @@ export function EventsMissionsBoard({
 
                     {/* Tóm tắt kết quả nếu đã giải quyết */}
                     {activeSelectedDispatch.resultSummary && (
-                      <div className="rounded border border-indigo-500/30 bg-indigo-950/20 p-2.5 text-xs space-y-1">
-                        <div className="font-bold text-indigo-300 text-[11px] uppercase">
+                      <div className="rounded border border-indigo-500/30 bg-indigo-950/20 p-3 text-xs sm:text-[13px] space-y-1.5">
+                        <div className="font-bold text-indigo-300 text-xs uppercase">
                           KẾT QUẢ ĐÃ LƯU TRỮ (OPERATIONS ARCHIVE):
                         </div>
-                        <div className="text-zinc-300 text-[11px]">
+                        <div className="text-zinc-200 leading-relaxed">
                           {activeSelectedDispatch.resultSummary}
                         </div>
                         {onNavigateToResults && (
@@ -2267,7 +2271,7 @@ export function EventsMissionsBoard({
                               playClickSound()
                               onNavigateToResults()
                             }}
-                            className="text-[10px] text-cyan-400 hover:text-cyan-200 underline cursor-pointer"
+                            className="text-xs text-cyan-400 hover:text-cyan-200 underline cursor-pointer font-bold inline-block pt-1"
                           >
                             Xem chi tiết trong Trung Tâm Kết Quả Kép &rarr;
                           </button>
@@ -2276,30 +2280,30 @@ export function EventsMissionsBoard({
                     )}
 
                     {/* DÒNG THỜI GIAN HÀNH ĐỘNG THỰC TẾ (AUTHENTIC ACTION TIMELINE) */}
-                    <div className="space-y-2 pt-2 border-t border-zinc-800">
-                      <div className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-1.5 font-bold text-zinc-300 uppercase">
-                          <Clock className="size-3.5 text-zinc-400" />
+                    <div className="space-y-2.5 pt-2 border-t border-zinc-800">
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
+                        <div className="flex items-center gap-1.5 font-bold text-zinc-200 uppercase">
+                          <Clock className="size-4 text-zinc-400" />
                           <span>NHẬT KÝ DÒNG THỜI GIAN THỰC TẾ // ACTION TIMELINE</span>
                         </div>
-                        <span className="font-mono text-[10px] text-zinc-500">
+                        <span className="font-mono text-xs text-zinc-400">
                           {activeSelectedDispatch.actionTimeline.length} bản ghi
                         </span>
                       </div>
 
-                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-1.5 scrollbar-thin">
                         {activeSelectedDispatch.actionTimeline.map((entry, idx) => (
                           <div
                             key={entry.id || idx}
-                            className="rounded border border-zinc-800/80 bg-black/40 p-2 text-[10px] font-mono space-y-1"
+                            className="rounded border border-zinc-800/80 bg-black/40 p-2.5 text-xs font-mono space-y-1.5"
                           >
-                            <div className="flex items-center justify-between text-zinc-400">
-                              <span className="font-bold text-zinc-200">{entry.title}</span>
+                            <div className="flex items-center justify-between text-zinc-300">
+                              <span className="font-bold text-zinc-100 text-xs sm:text-[13px]">{entry.title}</span>
                               <div className="flex items-center gap-2">
-                                <span className="text-zinc-500">Ngày #{entry.tick}</span>
+                                <span className="text-zinc-400 text-xs">Ngày #{entry.tick}</span>
                                 <span
                                   className={cn(
-                                    "px-1 py-0.2 rounded font-bold uppercase text-[9px] border",
+                                    "px-2 py-0.5 rounded font-bold uppercase text-xs border",
                                     entry.actor.type === "player"
                                       ? "border-cyan-500/50 bg-cyan-950/60 text-cyan-300"
                                       : entry.actor.type === "npc"
@@ -2311,7 +2315,7 @@ export function EventsMissionsBoard({
                                 </span>
                               </div>
                             </div>
-                            <p className="text-zinc-400 text-[10px] font-sans leading-relaxed">
+                            <p className="text-zinc-300 text-xs font-sans leading-relaxed">
                               {entry.description}
                             </p>
                           </div>
@@ -2320,7 +2324,7 @@ export function EventsMissionsBoard({
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded border border-dashed border-zinc-800 p-8 text-center text-zinc-500">
+                  <div className="rounded border border-dashed border-zinc-800 p-8 text-center text-zinc-400">
                     Chọn một nhiệm vụ từ danh sách bên trái để xem chi tiết và nhật ký điều phối.
                   </div>
                 )}

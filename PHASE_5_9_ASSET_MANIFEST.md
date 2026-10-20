@@ -52,12 +52,20 @@
   - `INTEGRATED AS FALLBACK` (Đang tích hợp trong UI dưới dạng vector SVG an toàn): **7/11 items** (3 Gear SVGs, 4 Full-body wrapper SVGs).
   - `PENDING` (Đang chờ công cụ sinh ảnh hồi phục quota để sinh ảnh độ phân giải cao thay thế hoàn toàn fallback): **7/11 items** (3 Gear Mecha Artworks, 4 Full-Body Pilot Artworks).
 
----
+## 5. Cập Nhật Phase 6.0: Hoàn Thành Chuẩn Hóa WebP & Dọn Dẹp Toàn Diện (Completed)
 
-## 4. Kế Hoạch Thay Thế Khi Hồi Phục Quota
+*Ngày hoàn thành: 20/10/2026*
 
-Ngay khi quota của công cụ `generate_image` được cấp lại:
-1. Sinh 3 ảnh Gear 16:9: `vanguard_gear.png`, `falcon_gear.png`, `aegis_gear.png` lưu vào `/public/images/`.
-2. Sinh 4 ảnh Full-Body 9:16: `marcus_fullbody.png`, `valentine_fullbody.png`, `levi_fullbody.png`, `eric_fullbody.png` lưu vào `/public/images/`.
-3. Cập nhật trường `illustration` trong `lib/game/data.ts: STARFRONT_GEAR_DEFS` và trường `fullBodyAvatar` trong `STARFRONT_PILOTS`.
-4. Chạy kiểm tra hiển thị trên `CharacterGearSelect` và `CombatArena`.
+1. **Chuẩn Hóa WebP Tối Ưu**:
+   - Toàn bộ 8 phi công chính thức (16 assets: 8 chân dung 512×512 + 8 toàn thân 1080×1920 Full HD) đã được chuẩn hóa sang định dạng `.webp` với chất lượng Q92 và giữ nguyên 100% kênh trong suốt Alpha.
+   - Thêm tệp chân dung `levi-portrait.webp` (512×512).
+   - 3 Mech Gear artworks (`vanguard-gear.webp`, `falcon-gear.webp`, `aegis-gear.webp`) đạt chuẩn sắc nét tối ưu.
+2. **Dọn Dẹp Triệt Để Tài Nguyên Cũ (Cleanup)**:
+   - Xóa bỏ **21 tệp SVG cũ** không còn sử dụng.
+   - Xóa bỏ **26 tệp PNG/JPG cũ** sau khi đã chuyển đổi sang WebP.
+   - Giải phóng **~25.3 MB** dung lượng lưu trữ (tổng dung lượng asset giảm từ 28 MB xuống chỉ còn 2.3 MB - giảm 91.8%).
+3. **Mã Nguồn Đã Đồng Bộ**:
+   - `lib/game/data.ts`: Toàn bộ `PILOT_PROFILES`, `STARFRONT_PILOTS`, `STARFRONT_GEAR_DEFS`, `INITIAL_COMBAT_UNIT` đều trỏ chính xác về `.webp`.
+   - `components/game/pilot-gallery.tsx`: Đồng bộ thông số kỹ thuật (Portrait: 512×512, Full-body: 1080×1920 Full HD) và liên kết tệp `.webp`.
+   - `components/game/character-gear-select.tsx`: Đồng bộ hiển thị mech gear và pilot avatar sang `.webp`.
+

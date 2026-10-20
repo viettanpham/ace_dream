@@ -66,6 +66,7 @@ import type {
   RouteState,
   StrategicOrder,
   TroopDeployment,
+  ExtendedBaseEntityState,
 } from "@/lib/game/world/types"
 
 interface WorldMapProps {
@@ -1696,18 +1697,18 @@ export function WorldMap({
 
         {/* 5. PANEL CHI TIẾT SECTOR (SECTOR INSPECTOR DRAWER) */}
         {showInspector && selectedSector && (
-          <div className="absolute top-3 right-3 bottom-3 w-80 sm:w-96 z-30 flex flex-col rounded-sm border border-cyan-500/50 bg-zinc-950/95 backdrop-blur-md p-4 shadow-2xl font-mono text-xs overflow-y-auto space-y-3.5 animate-in fade-in slide-in-from-right-4 duration-150">
+          <div className="absolute top-3 right-3 bottom-3 w-84 sm:w-96 max-w-full z-30 flex flex-col rounded-sm border border-cyan-500/50 bg-zinc-950/95 backdrop-blur-md p-4 shadow-2xl font-mono sf-text-body overflow-y-auto space-y-3.5 animate-in fade-in slide-in-from-right-4 duration-150 sf-card">
             {/* Header Inspector kèm nút đóng */}
             <div className="border-b border-zinc-800 pb-2.5">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-display text-sm font-black uppercase text-cyan-300 truncate">
+                    <span className="font-display sf-title-card font-black uppercase text-cyan-300 truncate">
                       {selectedSector.name}
                     </span>
                     <span
                       className={cn(
-                        "rounded px-1.5 py-0.2 text-[9px] font-bold uppercase border shrink-0",
+                        "rounded px-2 py-0.5 sf-text-caption font-bold uppercase border shrink-0",
                         STAGE_CONFIG[selectedSector.stage]?.badgeBg,
                         STAGE_CONFIG[selectedSector.stage]?.text,
                         STAGE_CONFIG[selectedSector.stage]?.badgeBorder
@@ -1716,7 +1717,7 @@ export function WorldMap({
                       {STAGE_CONFIG[selectedSector.stage]?.label}
                     </span>
                   </div>
-                  <div className="text-[10px] text-zinc-400 mt-0.5 truncate">{selectedSector.subtitle}</div>
+                  <div className="sf-text-secondary text-zinc-400 mt-0.5 truncate">{selectedSector.subtitle}</div>
                 </div>
 
                 {/* Nút mở nhanh Sector Intel Modal */}
@@ -1725,38 +1726,38 @@ export function WorldMap({
                     playClickSound()
                     setIsSectorIntelOpen(true)
                   }}
-                  className="px-2 py-1 flex items-center gap-1 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 text-[10px] font-bold uppercase transition-colors cursor-pointer shrink-0 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
+                  className="px-2.5 py-1 flex items-center gap-1 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 sf-text-button sf-density-btn font-bold uppercase transition-colors cursor-pointer shrink-0 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
                   title="Mở hồ sơ tình báo chi tiết Sector Intel"
                 >
-                  <Radio className="size-3 text-cyan-400" />
+                  <Radio className="size-3.5 text-cyan-400" />
                   <span className="hidden sm:inline">Intel</span>
                 </button>
 
                 {/* Nút đóng Inspector */}
                 <button
                   onClick={() => setShowInspector(false)}
-                  className="size-6 flex items-center justify-center rounded border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0"
+                  className="size-7 flex items-center justify-center rounded border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white transition-colors cursor-pointer shrink-0"
                   title="Đóng bảng chi tiết"
                 >
-                  <X className="size-3.5" />
+                  <X className="size-4" />
                 </button>
               </div>
-              <p className="mt-2 text-[11px] text-zinc-400/90 leading-relaxed font-sans">
+              <p className="mt-2 sf-text-secondary text-zinc-300 leading-relaxed font-sans">
                 {selectedSector.desc}
               </p>
             </div>
 
             {/* Banner Cảnh Báo Khóa Giao Tranh nếu có */}
             {isEntityCombatLocked(selectedSector, worldState) && (
-              <div className="rounded border border-red-500/60 bg-red-950/40 p-2.5 text-[11px] text-red-300 space-y-1">
+              <div className="rounded border border-red-500/60 bg-red-950/40 p-3 sf-text-secondary text-red-300 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
-                  <Lock className="size-3.5 text-red-400" />
-                  <span className="rounded bg-red-900/80 px-1.5 py-0.5 text-[9px] text-red-100 border border-red-500/60 uppercase font-mono">
+                  <Lock className="size-4 text-red-400" />
+                  <span className="rounded bg-red-900/80 px-2 py-0.5 sf-text-caption text-red-100 border border-red-500/60 uppercase font-mono">
                     IN COMBAT
                   </span>
-                  <span>ĐANG TRỰC CHIẾN GIAO TRANH</span>
+                  <span className="sf-title-card">ĐANG TRỰC CHIẾN GIAO TRANH</span>
                 </div>
-                <p className="text-[10px] text-red-300/80 leading-normal font-sans">
+                <p className="sf-text-body text-red-300/90 leading-normal font-sans">
                   Khu vực này đang diễn ra tác chiến trực tiếp. Lực lượng đồn trú đang tham chiến và không thể điều động rời đi. Bạn vẫn có thể tra cứu toàn bộ hồ sơ tình báo, dân số và tài nguyên tại đây.
                 </p>
               </div>
@@ -1764,12 +1765,12 @@ export function WorldMap({
 
             {/* Banner Thông Báo Đang Có Đạo Quân Tiến Tới (Deployment Target) */}
             {incomingToSelected.length > 0 && (
-              <div className="rounded border border-cyan-500/50 bg-cyan-950/40 p-2 text-[11px] text-cyan-300 space-y-1">
+              <div className="rounded border border-cyan-500/50 bg-cyan-950/40 p-2.5 sf-text-secondary text-cyan-300 space-y-1">
                 <div className="flex items-center gap-1.5 font-bold">
-                  <Truck className="size-3.5 text-cyan-400" />
+                  <Truck className="size-4 text-cyan-400" />
                   <span>ĐANG NHẬN CHI VIỆN (+{totalIncomingTroopsToSelected} QUÂN)</span>
                 </div>
-                <div className="text-[10px] text-cyan-200/80 space-y-0.5 font-sans">
+                <div className="sf-text-caption text-cyan-200/90 space-y-0.5 font-sans">
                   {incomingToSelected.map((d) => (
                     <div key={d.deploymentId}>
                       · {d.troopCount} quân từ {worldState.sectors[d.fromSectorId]?.name || d.fromSectorId} (Còn {d.remainingDays} ngày)
@@ -1780,46 +1781,118 @@ export function WorldMap({
             )}
 
             {/* Lưới 6 Chỉ Số Vĩ Mô Của Sector */}
-            <div className="grid grid-cols-2 gap-2 text-[11px] bg-zinc-900/50 p-2.5 rounded border border-zinc-800">
+            <div className="grid grid-cols-2 gap-2 sf-text-secondary bg-zinc-900/50 p-3 rounded border border-zinc-800">
               <div>
-                <span className="text-zinc-400 text-[10px]">Chủ quyền:</span>
+                <span className="text-zinc-400 sf-text-caption">Chủ quyền:</span>
                 <div className="font-bold uppercase flex items-center gap-1 mt-0.5" style={{ color: SOVEREIGNTY_CONFIG[selectedSector.sovereignty]?.color }}>
-                  <span className="size-1.5 rounded-full" style={{ backgroundColor: SOVEREIGNTY_CONFIG[selectedSector.sovereignty]?.color }} />
+                  <span className="size-2 rounded-full" style={{ backgroundColor: SOVEREIGNTY_CONFIG[selectedSector.sovereignty]?.color }} />
                   {SOVEREIGNTY_CONFIG[selectedSector.sovereignty]?.label}
                 </div>
               </div>
               <div>
-                <span className="text-zinc-400 text-[10px]">Công sự phòng thủ:</span>
+                <span className="text-zinc-400 sf-text-caption">Công sự phòng thủ:</span>
                 <div className="font-bold text-amber-400 mt-0.5">
                   Cấp {selectedSector.fortificationLevel ?? 1}/5
                 </div>
               </div>
               <div>
-                <span className="text-zinc-400 text-[10px]">Mức Đe Dọa (Threat):</span>
+                <span className="text-zinc-400 sf-text-caption">Mức Đe Dọa (Threat):</span>
                 <div className="font-bold mt-0.5 flex items-center gap-1" style={{ color: selectedThreatInfo.color }}>
                   <span>{selectedSector.threatLevel.toLocaleString()} / {selectedSectorMaxThreat.toLocaleString()}</span>
-                  <span className="text-[9px] opacity-80">({selectedThreatInfo.label})</span>
+                  <span className="sf-text-caption opacity-80">({selectedThreatInfo.label})</span>
                 </div>
               </div>
               <div>
-                <span className="text-zinc-400 text-[10px]">Độ Ổn Định (Stability):</span>
+                <span className="text-zinc-400 sf-text-caption">Độ Ổn Định (Stability):</span>
                 <div className="font-bold text-emerald-400 mt-0.5">
                   {selectedSector.stability}/100
                 </div>
               </div>
               <div>
-                <span className="text-zinc-400 text-[10px]">Lực lượng Đồn Trú:</span>
+                <span className="text-zinc-400 sf-text-caption">Lực lượng Đồn Trú:</span>
                 <div className="font-bold text-cyan-300 mt-0.5">
                   {selectedSector.garrisonPower} quân
                 </div>
               </div>
               <div>
-                <span className="text-zinc-400 text-[10px]">Dân số khu vực:</span>
+                <span className="text-zinc-400 sf-text-caption">Dân số khu vực:</span>
                 <div className="font-bold text-zinc-200 mt-0.5">
                   {selectedSector.population.toLocaleString()} dân
                 </div>
               </div>
             </div>
+
+            {/* BASE HUD // THÔNG TIN CĂN CỨ CHÍNH (PHASE 6.34A-FND-6) */}
+            {(() => {
+              const baseEntity = (
+                worldState.bases?.[selectedSector.id] ||
+                worldState.bases?.[`base_${selectedSector.id}`] ||
+                Object.values(worldState.bases || {}).find((b) => b.sectorId === selectedSector.id)
+              ) as ExtendedBaseEntityState | undefined
+              const popState =
+                worldState.basePopulationStates?.[selectedSector.id] ||
+                worldState.basePopulationStates?.[`base_${selectedSector.id}`] ||
+                (baseEntity ? worldState.basePopulationStates?.[baseEntity.baseId] : null)
+
+              if (!baseEntity) return null
+
+              return (
+                <div className="bg-zinc-900/70 p-2.5 rounded border border-cyan-500/30 space-y-2">
+                  <div className="flex items-center justify-between text-[10px]">
+                    <div className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-cyan-300">
+                      <Boxes className="size-3.5 text-cyan-400" />
+                      <span>Căn Cứ Chính // Base HUD</span>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded font-mono font-bold uppercase bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
+                      {baseEntity.isCapital ? "THỦ PHỦ (CAPITAL)" : baseEntity.baseType} · CẤP {baseEntity.tier || 1}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="bg-zinc-950/70 p-1.5 rounded border border-zinc-800/80">
+                      <span className="text-zinc-500 block text-[9px] uppercase">Cảng Neo Hạm Đội</span>
+                      <strong className="text-cyan-300 font-mono text-xs">
+                        {baseEntity.fleetCapacities?.fleetDockingCapacity ?? baseEntity.fleetCapacities?.baseDockingPorts ?? 3} Cảng
+                      </strong>
+                    </div>
+                    <div className="bg-zinc-950/70 p-1.5 rounded border border-zinc-800/80">
+                      <span className="text-zinc-500 block text-[9px] uppercase">Sub-Base Quỹ Đạo</span>
+                      <strong className="text-indigo-300 font-mono text-xs">
+                        {baseEntity.orbitalSubBaseIds?.length || 0} / {baseEntity.maxOrbitalSlots || 3} Slots
+                      </strong>
+                    </div>
+                    <div className="bg-zinc-950/70 p-1.5 rounded border border-zinc-800/80">
+                      <span className="text-zinc-500 block text-[9px] uppercase">Sức Chỉ Huy / Đồn Trú</span>
+                      <strong className="text-amber-300 font-mono text-xs">
+                        {baseEntity.fleetCapacities?.fleetCommandCapacity || 3} Cmd · {baseEntity.fleetCapacities?.fleetStationingCapacity || 4} Stn
+                      </strong>
+                    </div>
+                    <div className="bg-zinc-950/70 p-1.5 rounded border border-zinc-800/80">
+                      <span className="text-zinc-500 block text-[9px] uppercase">Dân Số Đang Sống</span>
+                      <strong className="text-emerald-400 font-mono text-xs">
+                        {(popState?.populationCurrent || selectedSector.population || 0).toLocaleString()}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-zinc-400 pt-1 border-t border-zinc-800/60">
+                    <span className="truncate">
+                      Chính quyền AI: <strong className="text-zinc-300">{baseEntity.governmentState?.aiPersonality || "BALANCED"}</strong>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        playClickSound()
+                        setIsSectorIntelOpen(true)
+                      }}
+                      className="text-cyan-400 hover:text-cyan-200 underline font-bold text-[10px] cursor-pointer shrink-0"
+                    >
+                      Chi Tiết Căn Cứ &rsaquo;
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* THREAT TRENDLINE SPARKLINE (PHASE 6.12) */}
             <div className="bg-zinc-900/60 p-2.5 rounded border border-zinc-800 space-y-2">
@@ -2024,8 +2097,8 @@ export function WorldMap({
 
             {/* Kho tài nguyên địa phương */}
             <div className="bg-zinc-900/30 p-2 rounded border border-zinc-800/80 space-y-1">
-              <span className="text-[10px] font-bold text-zinc-400 uppercase">Kho Dự Trữ Tại Chỗ</span>
-              <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+              <span className="sf-text-caption font-bold text-zinc-300 uppercase">Kho Dự Trữ Tại Chỗ</span>
+              <div className="grid grid-cols-3 gap-1.5 sf-text-secondary">
                 <div className="text-emerald-300">
                   🌾 Lương thực: <strong>{selectedSector.resources.food}</strong>
                 </div>
@@ -2040,10 +2113,10 @@ export function WorldMap({
 
             {/* Đổi Lệnh Chiến Lược */}
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-zinc-300 uppercase">
+              <label className="sf-text-caption font-bold text-zinc-300 uppercase">
                 Lệnh Chiến Lược Đồn Trú
               </label>
-              <div className="grid grid-cols-3 gap-1 text-[10px]">
+              <div className="grid grid-cols-3 gap-1 sf-text-secondary">
                 {(["defend", "reinforce", "attack", "recover", "normal"] as StrategicOrder[]).map(
                   (order) => {
                     const isCurrent = (selectedSector.strategicOrder || "normal") === order
@@ -2055,7 +2128,7 @@ export function WorldMap({
                         disabled={isSectorLocked}
                         title={isSectorLocked ? "Không thể đổi lệnh khi sector đang trực chiến [IN COMBAT]" : undefined}
                         className={cn(
-                          "rounded py-1 px-1.5 border text-center uppercase font-bold transition-colors cursor-pointer",
+                          "rounded py-1.5 px-2 border text-center uppercase font-bold transition-colors cursor-pointer sf-text-caption",
                           isCurrent
                             ? "border-cyan-400 bg-cyan-950/60 text-cyan-300"
                             : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:text-white hover:border-zinc-700",
@@ -2073,18 +2146,18 @@ export function WorldMap({
             {/* Các sự kiện đang active tại sector này */}
             {sectorEvents.length > 0 && (
               <div className="space-y-1.5 border-t border-zinc-800 pt-2">
-                <span className="text-[10px] font-bold text-amber-400 uppercase flex items-center gap-1">
-                  <AlertOctagon className="size-3 text-amber-400" />
+                <span className="sf-text-caption font-bold text-amber-400 uppercase flex items-center gap-1">
+                  <AlertOctagon className="size-3.5 text-amber-400" />
                   Sự Kiện Đang Diễn Ra ({sectorEvents.length})
                 </span>
                 <div className="space-y-1">
                   {sectorEvents.map((evt) => (
                     <div
                       key={evt.id}
-                      className="rounded border border-amber-500/40 bg-amber-950/20 p-2 text-[10px] space-y-0.5"
+                      className="rounded border border-amber-500/40 bg-amber-950/20 p-2.5 sf-text-secondary space-y-0.5"
                     >
-                      <div className="font-bold text-amber-300">{evt.title}</div>
-                      <div className="text-zinc-400 text-[9px]">
+                      <div className="font-bold text-amber-300 sf-title-card">{evt.title}</div>
+                      <div className="text-zinc-300 sf-text-caption">
                         Trạng thái: [{evt.status}] · Hạn chót: Tick {evt.decisionDeadlineTick}
                       </div>
                     </div>
@@ -2105,9 +2178,9 @@ export function WorldMap({
                       playClickSound()
                       onDeployCombat(selectedSector.id)
                     }}
-                    className="w-full flex items-center justify-center gap-2 rounded bg-red-950/50 hover:bg-red-900/60 border border-red-500/70 hover:border-red-400 text-red-200 py-2 px-3 font-display text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.25)]"
+                    className="w-full flex items-center justify-center gap-2 rounded bg-red-950/50 hover:bg-red-900/60 border border-red-500/70 hover:border-red-400 text-red-200 py-2.5 px-3.5 font-display sf-text-button sf-density-btn uppercase tracking-wider font-bold transition-colors cursor-pointer shadow-[0_0_12px_rgba(239,68,68,0.25)]"
                   >
-                    <Swords className="size-3.5 text-red-400" />
+                    <Swords className="size-4 text-red-400" />
                     <span>
                       {isEntityCombatLocked(selectedSector, worldState)
                         ? "Vào Lại Trận Chiến (IN COMBAT)"
@@ -2116,14 +2189,14 @@ export function WorldMap({
                   </button>
                 ) : (
                   <div
-                    className="w-full flex items-center justify-between rounded bg-zinc-900/40 border border-zinc-800/80 px-2.5 py-1.5 text-[10px] text-zinc-500 font-mono"
+                    className="w-full flex items-center justify-between rounded bg-zinc-900/40 border border-zinc-800/80 px-3 py-2 sf-text-caption text-zinc-400 font-mono"
                     title="Sector đang trong tầm kiểm soát an toàn, chưa phát hiện hạm đội thù địch xâm nhập hoặc bao vây"
                   >
                     <span className="flex items-center gap-1.5">
-                      <Swords className="size-3 text-zinc-600" />
+                      <Swords className="size-3.5 text-zinc-500" />
                       <span>Tác chiến: Chưa có giao tranh</span>
                     </span>
-                    <span className="text-[9px] text-zinc-600 uppercase font-sans">
+                    <span className="sf-text-caption text-zinc-500 uppercase font-sans">
                       {selectedSector.stage === "lost" ? "Cần giải vây tuyến ngoài" : "Khu vực ổn định"}
                     </span>
                   </div>
@@ -2144,11 +2217,11 @@ export function WorldMap({
                   disabled={isEntityCombatLocked(selectedSector, worldState)}
                   title={isEntityCombatLocked(selectedSector, worldState) ? "Sector đang trực chiến [IN COMBAT], không thể điều quân rời đi" : undefined}
                   className={cn(
-                    "w-full flex items-center justify-center gap-2 rounded bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer",
+                    "w-full flex items-center justify-center gap-2 rounded bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 py-2 px-3.5 sf-text-button sf-density-btn uppercase tracking-wider font-bold transition-colors cursor-pointer",
                     isEntityCombatLocked(selectedSector, worldState) && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <Truck className="size-3.5 text-cyan-400" />
+                  <Truck className="size-4 text-cyan-400" />
                   <span>Điều Quân Chi Viện (Quick Dispatch)</span>
                 </button>
               )}
@@ -2163,14 +2236,14 @@ export function WorldMap({
                 }
                 title={isEntityCombatLocked(selectedSector, worldState) ? "Không thể nâng cấp công sự khi đang trực chiến [IN COMBAT]" : undefined}
                 className={cn(
-                  "w-full flex items-center justify-center gap-2 rounded bg-amber-950/30 hover:bg-amber-900/40 border border-amber-500/40 hover:border-amber-400 text-amber-200 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer",
+                  "w-full flex items-center justify-center gap-2 rounded bg-amber-950/30 hover:bg-amber-900/40 border border-amber-500/40 hover:border-amber-400 text-amber-200 py-2 px-3.5 sf-text-button sf-density-btn uppercase tracking-wider font-bold transition-colors cursor-pointer",
                   (isEntityCombatLocked(selectedSector, worldState) ||
                     (selectedSector.fortificationLevel ?? 1) >= 5 ||
                     worldState.resources.industrialMaterials < 50) &&
                     "opacity-50 cursor-not-allowed"
                 )}
               >
-                <Hammer className="size-3.5 text-amber-400" />
+                <Hammer className="size-4 text-amber-400" />
                 <span>Nâng Cấp Công Sự (+50 Vật Liệu)</span>
               </button>
 
@@ -2181,9 +2254,9 @@ export function WorldMap({
                     handleCenterSelected()
                     onNavigateToSectorOperations(selectedSector.id)
                   }}
-                  className="w-full flex items-center justify-center gap-2 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-cyan-500/50 text-zinc-300 py-1.5 px-3 text-xs uppercase tracking-wider font-bold transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 rounded bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-cyan-500/50 text-zinc-300 py-2 px-3.5 sf-text-button sf-density-btn uppercase tracking-wider font-bold transition-colors cursor-pointer"
                 >
-                  <Crosshair className="size-3.5 text-cyan-400" />
+                  <Crosshair className="size-4 text-cyan-400" />
                   <span>Tập Trung Góc Nhìn Vào Sector Này</span>
                   <ArrowRight className="size-3 text-zinc-400" />
                 </button>

@@ -34,6 +34,11 @@ export type BaseType =
   | "DEFENSE"
   | "RESEARCH"
   | "FINANCIAL"
+  | "INDUSTRY"
+  | "MEDICAL"
+  | "AGRICULTURAL"
+  | "LOGISTICS"
+  | "MINING"
   | "MEDICAL_HUB"
   | "FINANCIAL_HUB"
   | "REPAIR_HUB"
@@ -110,6 +115,27 @@ export interface BasePopulationState {
   // Multi-Hub configuration
   baseType: BaseType
   activeHubTypes: string[]
+
+  // Optional FND-6 summary / convenience fields
+  populationBaseline?: number
+  capacityResidential?: number
+  capacityVisitor?: number
+  capacityExternalWorker?: number
+  capacityEmergency?: number
+  emergencyPopulation?: number
+  workforceAssigned?: number
+  workforceUnassigned?: number
+  workforceDeficit?: number
+  turnoverQueue?: any[]
+  moraleIndex?: number
+  standardOfLivingScore?: number
+  welfareStatus?: string
+  rationPolicy?: string
+  medicalAccessLevel?: string
+  housingStatus?: string
+  quarantineActive?: boolean
+  civilUnrestTier?: string
+  unrestScore?: number
 
   metadata?: Record<string, any>
 }

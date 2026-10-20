@@ -1,0 +1,127 @@
+{
+  "configFileId": "system_building_building_type",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "RESIDENTIAL",
+      "name": "Khu Dân Sinh",
+      "description": "Cung cấp chỗ ở và dịch vụ sinh hoạt cho công dân.",
+      "category": "CIVIL"
+    },
+    {
+      "id": "MEDICAL",
+      "name": "Bệnh Viện & Cấp Cứu",
+      "description": "Hồi phục sức khỏe, điều trị thương binh và phi công.",
+      "category": "MEDICAL"
+    },
+    {
+      "id": "AGRICULTURE",
+      "name": "Nông Trang Thủy Canh",
+      "description": "Sản xuất lương thực và dinh dưỡng sinh học.",
+      "category": "INDUSTRIAL"
+    },
+    {
+      "id": "INDUSTRY",
+      "name": "Nhà Máy Chế Tạo",
+      "description": "Chế tạo linh kiện, vũ khí và hợp kim nặng.",
+      "category": "INDUSTRIAL"
+    },
+    {
+      "id": "STORAGE",
+      "name": "Kho Chiến Lược",
+      "description": "Lưu trữ tài nguyên công nghiệp, năng lượng và vật tư.",
+      "category": "LOGISTICS"
+    },
+    {
+      "id": "LOGISTICS",
+      "name": "Trạm Trung Chuyển",
+      "description": "Điều phối vận tải, tiếp vận và bốc dỡ hàng hóa.",
+      "category": "LOGISTICS"
+    },
+    {
+      "id": "RESEARCH",
+      "name": "Viện Nghiên Cứu",
+      "description": "Phát triển công nghệ mới và phân tích dữ liệu chiến thuật.",
+      "category": "SPECIAL"
+    },
+    {
+      "id": "FINANCE",
+      "name": "Ngân Khố Trung Ương",
+      "description": "Quản lý dòng tiền, thu thuế và giao dịch tài chính.",
+      "category": "ECONOMIC"
+    },
+    {
+      "id": "ENTERTAINMENT",
+      "name": "Khu Phức Hợp Văn Hóa",
+      "description": "Nâng cao tinh thần và ổn định tâm lý dân sự.",
+      "category": "CIVIL"
+    },
+    {
+      "id": "SUPPORT",
+      "name": "Trạm Phát Điện Phụ Trợ",
+      "description": "Cung cấp năng lượng dự phòng và ổn định mạng lưới.",
+      "category": "INFRASTRUCTURE"
+    },
+    {
+      "id": "COMMAND",
+      "name": "Sở Chỉ Huy Căn Cứ",
+      "description": "Trung tâm điều hành tối cao, chỉ huy mạng lưới phòng thủ.",
+      "category": "COMMAND"
+    },
+    {
+      "id": "DEFENSE",
+      "name": "Pháo Đài Phòng Thủ",
+      "description": "Hệ thống pháo cao xạ, tháp năng lượng và tường thành.",
+      "category": "DEFENSE"
+    },
+    {
+      "id": "OFFENSE",
+      "name": "Trận Địa Tên Lửa",
+      "description": "Bệ phóng hỏa tiễn chiến lược tầm xa.",
+      "category": "MILITARY"
+    },
+    {
+      "id": "MILITARY",
+      "name": "Doanh Trại Đồn Trú",
+      "description": "Huấn luyện tân binh, đồn trú lực lượng quân sự địa phương.",
+      "category": "MILITARY"
+    },
+    {
+      "id": "SPACEPORT",
+      "name": "Cảng Không Gian",
+      "description": "Bến đỗ tàu vận tải, tiếp đón đoàn di cư và thương nhân.",
+      "category": "LOGISTICS"
+    },
+    {
+      "id": "ORBITAL_DEFENSE",
+      "name": "Pháo Quỹ Đạo",
+      "description": "Pháo hạt nhân và đài quan sát không gian sâu.",
+      "category": "DEFENSE"
+    },
+    {
+      "id": "GUILD",
+      "name": "Trụ Sở Bang Hội",
+      "description": "Nơi tập hợp các hạm đội độc lập và hiệp hội thợ săn.",
+      "category": "SPECIAL"
+    },
+    {
+      "id": "RESCUE",
+      "name": "Trung Tâm Tìm Kiếm Cứu Nạn (SAR)",
+      "description": "Cứu hộ phi công thoát hiểm và ứng cứu khẩn cấp.",
+      "category": "RESCUE"
+    },
+    {
+      "id": "GENERIC",
+      "name": "Cơ Sở Hạ Tầng Tiêu Chuẩn",
+      "description": "Công trình đa dụng thích ứng với nhiều mục đích.",
+      "category": "INFRASTRUCTURE"
+    }
+  ],
+  "metadata": {
+    "domain": "building",
+    "catalog": "building_type",
+    "description": "Canonical 19 building types."
+  }
+}

@@ -84,8 +84,8 @@ test("STARFRONT Phase 6.30 — Strategic Galaxy Map & Command UX Verification", 
   })
 
   await t.test("4. War Room Strategic Situation Deck — Tính toán dữ liệu thực từ WORLD state", () => {
-    // Clone world state chuẩn V1
-    const worldState = createInitialWorldState()
+    // Clone world state chuẩn V1 (10 sectors cho Phase 6.30 test)
+    const worldState = createInitialWorldState(undefined, { totalMainBaseNodes: 10 })
 
     const sectors = Object.values(worldState.sectors)
     assert.equal(sectors.length, 10, "Phải có đúng 10 sectors")

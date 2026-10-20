@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   Check,
   ChevronLeft,
@@ -10,14 +10,18 @@ import {
   Eye,
   Filter,
   Flame,
+  Hand,
   Layers,
   Lock,
   Maximize2,
   Minimize2,
+  Move,
   Radio,
+  RotateCcw,
   Search,
   Shield,
   ShieldAlert,
+  Smartphone,
   Sparkles,
   Swords,
   UserCheck,
@@ -350,9 +354,66 @@ export function PilotGallery({
   const [gearFilter, setGearFilter] = useState<GearFilter>("all")
   const [searchQuery, setSearchQuery] = useState("")
 
-  // Modal Lightbox
+  // Modal Lightbox & Pan/Zoom Gesture Engine
   const [lightboxArtwork, setLightboxArtwork] = useState<ArtworkMeta | null>(null)
   const [zoomLevel, setZoomLevel] = useState<number>(1)
+  const [panOffset, setPanOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+
+  const dragStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const panStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const hasDraggedRef = useRef(false)
+  const lastTapTimeRef = useRef<number>(0)
+  const pinchDistanceRef = useRef<number | null>(null)
+  const initialZoomRef = useRef<number>(1)
+
+  const clampPan = useCallback((x: number, y: number, zoom: number) => {
+    if (zoom <= 1) return { x: 0, y: 0 }
+    const maxPanX = Math.max(80, (zoom - 1) * 380)
+    const maxPanY = Math.max(120, (zoom - 1) * 580)
+    return {
+      x: Math.max(-maxPanX, Math.min(maxPanX, x)),
+      y: Math.max(-maxPanY, Math.min(maxPanY, y)),
+    }
+  }, [])
+
+  const resetZoomAndPan = useCallback(() => {
+    setZoomLevel(1)
+    setPanOffset({ x: 0, y: 0 })
+    setIsDragging(false)
+  }, [])
+
+  const handleZoomIn = useCallback(() => {
+    playClickSound()
+    setZoomLevel((prev) => {
+      const next = Math.min(4, Number((prev + 0.5).toFixed(1)))
+      return next
+    })
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    playClickSound()
+    setZoomLevel((prev) => {
+      const next = Math.max(1, Number((prev - 0.5).toFixed(1)))
+      if (next === 1) {
+        setPanOffset({ x: 0, y: 0 })
+      } else {
+        setPanOffset((cur) => clampPan(cur.x, cur.y, next))
+      }
+      return next
+    })
+  }, [clampPan])
+
+  const setSpecificZoom = useCallback((targetZoom: number) => {
+    playClickSound()
+    const next = Math.max(1, Math.min(4, targetZoom))
+    setZoomLevel(next)
+    if (next === 1) {
+      setPanOffset({ x: 0, y: 0 })
+    } else {
+      setPanOffset((cur) => clampPan(cur.x, cur.y, next))
+    }
+  }, [clampPan])
 
   // Inspector selected pilot
   const [inspectorPilotId, setInspectorPilotId] = useState<string>("marcus")
@@ -404,15 +465,15 @@ export function PilotGallery({
   const openLightbox = (art: ArtworkMeta) => {
     playClickSound()
     setLightboxArtwork(art)
-    setZoomLevel(1)
+    resetZoomAndPan()
   }
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setLightboxArtwork(null)
-    setZoomLevel(1)
-  }
+    resetZoomAndPan()
+  }, [resetZoomAndPan])
 
-  const nextLightbox = () => {
+  const nextLightbox = useCallback(() => {
     if (!lightboxArtwork) return
     playClickSound()
     const currentIndex = ARTWORK_METAS.findIndex(
@@ -420,10 +481,10 @@ export function PilotGallery({
     )
     const nextIndex = (currentIndex + 1) % ARTWORK_METAS.length
     setLightboxArtwork(ARTWORK_METAS[nextIndex])
-    setZoomLevel(1)
-  }
+    resetZoomAndPan()
+  }, [lightboxArtwork, resetZoomAndPan])
 
-  const prevLightbox = () => {
+  const prevLightbox = useCallback(() => {
     if (!lightboxArtwork) return
     playClickSound()
     const currentIndex = ARTWORK_METAS.findIndex(
@@ -431,7 +492,157 @@ export function PilotGallery({
     )
     const prevIndex = (currentIndex - 1 + ARTWORK_METAS.length) % ARTWORK_METAS.length
     setLightboxArtwork(ARTWORK_METAS[prevIndex])
-    setZoomLevel(1)
+    resetZoomAndPan()
+  }, [lightboxArtwork, resetZoomAndPan])
+
+  // Keyboard navigation when Lightbox is active
+  useEffect(() => {
+    if (!lightboxArtwork) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox()
+      else if (e.key === "ArrowRight") nextLightbox()
+      else if (e.key === "ArrowLeft") prevLightbox()
+      else if (e.key === "+" || e.key === "=") handleZoomIn()
+      else if (e.key === "-") handleZoomOut()
+      else if (e.key === "0" || e.key === "r" || e.key === "R") resetZoomAndPan()
+    }
+    window.addEventListener("keydown", handleKeyDown)
+    return () => window.removeEventListener("keydown", handleKeyDown)
+  }, [lightboxArtwork, nextLightbox, prevLightbox, handleZoomIn, handleZoomOut, resetZoomAndPan, closeLightbox])
+
+  // Mouse pan handlers
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return
+    dragStartRef.current = { x: e.clientX, y: e.clientY }
+    panStartRef.current = { ...panOffset }
+    setIsDragging(true)
+    hasDraggedRef.current = false
+  }
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return
+    const dx = e.clientX - dragStartRef.current.x
+    const dy = e.clientY - dragStartRef.current.y
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      hasDraggedRef.current = true
+    }
+    if (zoomLevel > 1) {
+      setPanOffset(clampPan(panStartRef.current.x + dx, panStartRef.current.y + dy, zoomLevel))
+    } else {
+      setPanOffset({ x: dx * 0.35, y: 0 })
+    }
+  }
+
+  const handleMouseUp = () => {
+    if (!isDragging) return
+    setIsDragging(false)
+    if (zoomLevel === 1) {
+      const dx = panOffset.x
+      if (dx < -50) {
+        nextLightbox()
+      } else if (dx > 50) {
+        prevLightbox()
+      }
+      setPanOffset({ x: 0, y: 0 })
+    }
+  }
+
+  // Wheel zoom
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY < 0 ? 0.3 : -0.3
+    setZoomLevel((prev) => {
+      const next = Math.max(1, Math.min(4, Number((prev + delta).toFixed(2))))
+      if (next === 1) {
+        setPanOffset({ x: 0, y: 0 })
+      } else {
+        setPanOffset((cur) => clampPan(cur.x, cur.y, next))
+      }
+      return next
+    })
+  }
+
+  // Touch gesture handlers (swipe at 1x, pan when zoomed, pinch to zoom)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      pinchDistanceRef.current = Math.hypot(dx, dy)
+      initialZoomRef.current = zoomLevel
+      return
+    }
+    if (e.touches.length === 1) {
+      const touch = e.touches[0]
+      dragStartRef.current = { x: touch.clientX, y: touch.clientY }
+      panStartRef.current = { ...panOffset }
+      setIsDragging(true)
+      hasDraggedRef.current = false
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && pinchDistanceRef.current !== null) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const currentDist = Math.hypot(dx, dy)
+      const factor = currentDist / pinchDistanceRef.current
+      const newZoom = Math.max(1, Math.min(4, Number((initialZoomRef.current * factor).toFixed(2))))
+      setZoomLevel(newZoom)
+      if (newZoom === 1) {
+        setPanOffset({ x: 0, y: 0 })
+      } else {
+        setPanOffset((cur) => clampPan(cur.x, cur.y, newZoom))
+      }
+      return
+    }
+
+    if (e.touches.length === 1 && isDragging) {
+      const touch = e.touches[0]
+      const dx = touch.clientX - dragStartRef.current.x
+      const dy = touch.clientY - dragStartRef.current.y
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        hasDraggedRef.current = true
+      }
+      if (zoomLevel > 1) {
+        setPanOffset(clampPan(panStartRef.current.x + dx, panStartRef.current.y + dy, zoomLevel))
+      } else {
+        setPanOffset({ x: dx * 0.45, y: 0 })
+      }
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (pinchDistanceRef.current !== null) {
+      pinchDistanceRef.current = null
+    }
+    if (!isDragging) return
+    setIsDragging(false)
+    if (zoomLevel === 1) {
+      const dx = panOffset.x
+      if (dx < -50) {
+        nextLightbox()
+      } else if (dx > 50) {
+        prevLightbox()
+      }
+      setPanOffset({ x: 0, y: 0 })
+    }
+  }
+
+  const handleImageClick = () => {
+    if (hasDraggedRef.current) return
+    const now = Date.now()
+    if (now - lastTapTimeRef.current < 320) {
+      // Double tap toggle
+      if (zoomLevel > 1) {
+        resetZoomAndPan()
+      } else {
+        setZoomLevel(2.2)
+        setPanOffset({ x: 0, y: 0 })
+      }
+      lastTapTimeRef.current = 0
+    } else {
+      lastTapTimeRef.current = now
+    }
   }
 
   const handleSelectPilotAsActive = (pilotId: string) => {
@@ -474,11 +685,11 @@ export function PilotGallery({
                   HÀNH LANG DANH VỌNG PHI CÔNG // PILOT ART GALLERY
                 </h1>
                 <span className="rounded bg-cyan-950 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
-                  16 REAL PNG ASSETS
+                  16 WEBP FULL HD ASSETS
                 </span>
               </div>
               <p className="mt-1 font-mono text-xs text-slate-300">
-                Toàn bộ 16 tác phẩm nghệ thuật raster cao cấp: 8 Chân Dung (1:1 Square 1024×1024) và 8 Tranh Toàn Thân (9:16 Poster 900×1600).
+                Toàn bộ 16 tác phẩm nghệ thuật chuẩn hóa: 8 Chân Dung (1:1 Square 512×512) và 8 Tranh Toàn Thân (9:16 Poster 1080×1920 Full HD).
               </p>
             </div>
           </div>
@@ -487,7 +698,7 @@ export function PilotGallery({
           <div className="flex flex-wrap items-center gap-2">
             <div className="rounded border border-border/80 bg-black/60 px-3 py-1.5 font-mono text-xs">
               <span className="text-muted-foreground">Tác phẩm: </span>
-              <strong className="text-cyan-300 font-bold">16 / 16 PNG Thật</strong>
+              <strong className="text-cyan-300 font-bold">16 / 16 WebP Sắc Nét</strong>
             </div>
             <div className="rounded border border-border/80 bg-black/60 px-3 py-1.5 font-mono text-xs">
               <span className="text-muted-foreground">Phân bổ: </span>
@@ -733,7 +944,7 @@ export function PilotGallery({
                       </div>
 
                       <div className="flex items-center justify-between font-mono text-[9px] text-muted-foreground px-0.5">
-                        <span>1024×1024 PNG</span>
+                        <span>512×512 WebP</span>
                         <span>{portraitMeta?.fileSize}</span>
                       </div>
                     </div>
@@ -751,7 +962,7 @@ export function PilotGallery({
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity flex items-end p-2">
                           <span className="text-[10px] font-mono text-purple-300 flex items-center gap-1">
-                            <Maximize2 className="size-3" /> Phóng to (900×1600)
+                            <Maximize2 className="size-3" /> Phóng to (1080×1920 Full HD)
                           </span>
                         </div>
                         <div className="absolute top-1 left-1 bg-black/80 px-1.5 py-0.5 font-mono text-[8.5px] text-purple-300 border border-purple-500/30">
@@ -760,7 +971,7 @@ export function PilotGallery({
                       </div>
 
                       <div className="flex items-center justify-between font-mono text-[9px] text-muted-foreground px-0.5">
-                        <span>900×1600 PNG</span>
+                        <span>1080×1920 WebP Full HD</span>
                         <span>{fullbodyMeta?.fileSize}</span>
                       </div>
                     </div>
@@ -913,7 +1124,7 @@ export function PilotGallery({
 
                 {/* Footer Info */}
                 <div className="p-2.5 bg-black/70 border-t border-border/50 flex items-center justify-between text-[10px] font-mono text-muted-foreground">
-                  <span className="text-slate-300">{art.fileSize} · PNG RGBA</span>
+                  <span className="text-slate-300">{art.fileSize} · WebP RGBA</span>
                   <a
                     href={art.url}
                     download
@@ -986,11 +1197,11 @@ export function PilotGallery({
 
                 <div className="absolute top-3 left-3 rounded bg-black/80 px-2.5 py-1 border border-cyan-500/50 font-mono text-[10px] text-cyan-300 backdrop-blur-sm">
                   <span>CONCEPT ART: </span>
-                  <strong className="text-white">900 × 1600 (9:16)</strong>
+                  <strong className="text-white">1080 × 1920 (9:16 Full HD)</strong>
                 </div>
 
                 <div className="absolute bottom-3 inset-x-3 rounded bg-black/80 p-2.5 border border-border/80 backdrop-blur-sm flex items-center justify-between text-xs font-mono">
-                  <span className="text-slate-300">File raster PNG RGBA chất lượng cao</span>
+                  <span className="text-slate-300">File raster WebP Full HD chất lượng cao</span>
                   <span className="text-cyan-400 flex items-center gap-1">
                     <Maximize2 className="size-3.5" /> Bấm để phóng to
                   </span>
@@ -1136,43 +1347,70 @@ export function PilotGallery({
         </div>
       )}
 
-      {/* 6. LIGHTBOX / HIGH-RES MODAL PREVIEW */}
+      {/* 6. LIGHTBOX / HIGH-RES MODAL PREVIEW WITH MOBILE PAN & PINCH ZOOM */}
       {lightboxArtwork && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-2 sm:p-4 backdrop-blur-md"
           onClick={closeLightbox}
         >
           <div
-            className="relative flex flex-col max-h-[95vh] w-full max-w-5xl overflow-hidden rounded-sm border border-cyan-500/60 bg-panel shadow-2xl"
+            className="relative flex flex-col h-[94vh] max-h-[95vh] w-full max-w-5xl overflow-hidden rounded-sm border border-cyan-500/60 bg-panel shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-border/60 bg-black/80 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <div className="font-display text-sm font-bold text-white uppercase tracking-wider">
+            <div className="flex flex-wrap items-center justify-between border-b border-border/60 bg-black/90 px-3 py-2.5 sm:px-4 sm:py-3 gap-2">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="font-display text-xs sm:text-sm font-bold text-white uppercase tracking-wider truncate">
                   {lightboxArtwork.title}
                 </div>
-                <span className="rounded bg-cyan-950 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
+                <span className="hidden sm:inline-block rounded bg-cyan-950 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/40 shrink-0">
                   {lightboxArtwork.dimensions} · {lightboxArtwork.fileSize}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                {/* Zoom toggle */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {/* Zoom out button */}
                 <button
-                  onClick={() => setZoomLevel((z) => (z >= 2 ? 1 : z + 0.5))}
-                  className="rounded border border-border/60 bg-black/60 px-2 py-1 font-mono text-xs text-slate-300 hover:text-white flex items-center gap-1 cursor-pointer"
-                  title="Phóng to"
+                  onClick={handleZoomOut}
+                  disabled={zoomLevel <= 1}
+                  className="rounded border border-border/60 bg-black/60 p-1.5 font-mono text-xs text-slate-300 hover:text-white hover:border-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  title="Thu nhỏ (-)"
+                >
+                  <ZoomOut className="size-3.5" />
+                </button>
+
+                {/* Current Zoom & Click to reset */}
+                <button
+                  onClick={resetZoomAndPan}
+                  className={cn(
+                    "rounded border px-2 py-1 font-mono text-xs transition-colors cursor-pointer flex items-center gap-1",
+                    zoomLevel > 1
+                      ? "border-cyan-400 bg-cyan-950 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.3)]"
+                      : "border-border/60 bg-black/60 text-slate-300 hover:text-white",
+                  )}
+                  title="Bấm để đặt lại 1.0x (hoặc bấm R/0)"
+                >
+                  <span>{Math.round(zoomLevel * 100)}%</span>
+                  {zoomLevel > 1 && <RotateCcw className="size-3 text-cyan-400" />}
+                </button>
+
+                {/* Zoom in button */}
+                <button
+                  onClick={handleZoomIn}
+                  disabled={zoomLevel >= 4}
+                  className="rounded border border-border/60 bg-black/60 p-1.5 font-mono text-xs text-slate-300 hover:text-white hover:border-cyan-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                  title="Phóng to (+)"
                 >
                   <ZoomIn className="size-3.5" />
-                  <span>{zoomLevel}x</span>
                 </button>
+
+                <div className="h-4 w-px bg-border/60 mx-0.5 hidden sm:block" />
 
                 <a
                   href={lightboxArtwork.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white"
+                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white transition-colors"
                   title="Mở ảnh gốc trong tab mới"
                 >
                   <ExternalLink className="size-3.5" />
@@ -1181,7 +1419,7 @@ export function PilotGallery({
                 <a
                   href={lightboxArtwork.url}
                   download
-                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white"
+                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white transition-colors"
                   title="Tải ảnh gốc về máy"
                 >
                   <Download className="size-3.5" />
@@ -1189,65 +1427,140 @@ export function PilotGallery({
 
                 <button
                   onClick={closeLightbox}
-                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white cursor-pointer"
+                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white hover:border-red-400 cursor-pointer transition-colors"
+                  title="Đóng (ESC)"
                 >
                   <X className="size-4" />
                 </button>
               </div>
             </div>
 
-            {/* Modal Body / Image Viewport */}
-            <div className="relative flex-1 overflow-auto bg-black p-4 flex items-center justify-center min-h-[400px] max-h-[72vh]">
+            {/* Modal Body / Image Viewport with Pan, Drag, Touch Gestures */}
+            <div
+              className="relative flex-1 overflow-hidden bg-black p-2 sm:p-4 flex items-center justify-center min-h-[350px] select-none touch-none cursor-grab active:cursor-grabbing"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
+              onWheel={handleWheel}
+            >
               {/* Prev / Next buttons */}
               <button
-                onClick={prevLightbox}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-20 rounded-full border border-border/60 bg-black/80 p-2 text-white hover:bg-cyan-950 hover:border-cyan-400 cursor-pointer shadow-lg transition-colors"
-                title="Tác phẩm trước"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  prevLightbox()
+                }}
+                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 rounded-full border border-border/60 bg-black/80 p-2 text-white hover:bg-cyan-950 hover:border-cyan-400 cursor-pointer shadow-lg transition-all active:scale-95"
+                title="Tác phẩm trước (Mũi tên trái / Vuốt phải)"
               >
-                <ChevronLeft className="size-6" />
+                <ChevronLeft className="size-5 sm:size-6" />
               </button>
 
               <button
-                onClick={nextLightbox}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-20 rounded-full border border-border/60 bg-black/80 p-2 text-white hover:bg-cyan-950 hover:border-cyan-400 cursor-pointer shadow-lg transition-colors"
-                title="Tác phẩm tiếp theo"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  nextLightbox()
+                }}
+                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 rounded-full border border-border/60 bg-black/80 p-2 text-white hover:bg-cyan-950 hover:border-cyan-400 cursor-pointer shadow-lg transition-all active:scale-95"
+                title="Tác phẩm tiếp theo (Mũi tên phải / Vuốt trái)"
               >
-                <ChevronRight className="size-6" />
+                <ChevronRight className="size-5 sm:size-6" />
               </button>
 
+              {/* Transformable Canvas with Pan Offset & Zoom */}
               <div
-                className="transition-transform duration-200"
-                style={{ transform: `scale(${zoomLevel})` }}
+                onClick={handleImageClick}
+                className="flex items-center justify-center max-h-full max-w-full"
+                style={{
+                  transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel})`,
+                  transition: isDragging ? "none" : "transform 220ms cubic-bezier(0.16, 1, 0.3, 1)",
+                  willChange: "transform",
+                }}
               >
                 <img
                   src={lightboxArtwork.url}
                   alt={lightboxArtwork.title}
+                  draggable={false}
                   className={cn(
-                    "max-h-[68vh] object-contain rounded-xs shadow-2xl",
-                    lightboxArtwork.type === "portrait" ? "max-w-[68vh]" : "max-w-full",
+                    "max-h-[62vh] sm:max-h-[68vh] object-contain rounded-xs shadow-2xl pointer-events-none select-none",
+                    lightboxArtwork.type === "portrait" ? "max-w-[62vh] sm:max-w-[68vh]" : "max-w-full",
                   )}
                 />
+              </div>
+
+              {/* Floating Quick Zoom & Gesture Bar */}
+              <div className="absolute bottom-3 inset-x-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+                {/* Gesture hint */}
+                <div className="rounded-full bg-black/85 px-3 py-1 border border-border/70 backdrop-blur-md text-[10px] sm:text-[11px] font-mono text-slate-300 flex items-center gap-1.5 shadow-lg">
+                  {zoomLevel > 1 ? (
+                    <>
+                      <Move className="size-3 text-cyan-400 animate-pulse" />
+                      <span>
+                        Đang phóng to <strong>{Math.round(zoomLevel * 100)}%</strong> · Kéo/vuốt để di chuyển vị trí xem · Chạm 2 lần để thu nhỏ
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Smartphone className="size-3 text-cyan-400" />
+                      <span>
+                        Vuốt ngang để chuyển tác phẩm · Kẹp 2 ngón hoặc nhấp đúp để phóng to
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* Quick Zoom presets */}
+                <div className="flex items-center gap-1 bg-black/85 p-1 rounded-full border border-border/70 backdrop-blur-md pointer-events-auto shadow-lg">
+                  {[1, 1.5, 2.2, 3].map((z) => (
+                    <button
+                      key={z}
+                      onClick={() => setSpecificZoom(z)}
+                      className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-all cursor-pointer",
+                        Math.abs(zoomLevel - z) < 0.15
+                          ? "bg-cyan-500 text-black font-black shadow-sm"
+                          : "text-slate-300 hover:text-white hover:bg-white/10",
+                      )}
+                    >
+                      {z}x
+                    </button>
+                  ))}
+                  {zoomLevel > 1 && (
+                    <button
+                      onClick={resetZoomAndPan}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-500/50 hover:bg-cyan-900 cursor-pointer flex items-center gap-1"
+                      title="Đặt lại về 1.0x"
+                    >
+                      <RotateCcw className="size-2.5" /> Reset
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Modal Footer info */}
-            <div className="border-t border-border/60 bg-black/80 p-3 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-              <div className="text-slate-300">
-                <strong>Đường dẫn asset:</strong>{" "}
-                <code className="text-cyan-300 bg-black px-1.5 py-0.5 rounded border border-cyan-500/30">
+            <div className="border-t border-border/60 bg-black/90 p-2.5 sm:p-3 flex flex-wrap items-center justify-between gap-2.5 text-xs font-mono">
+              <div className="text-slate-300 flex items-center gap-2">
+                <span className="hidden sm:inline font-bold">Asset:</span>{" "}
+                <code className="text-cyan-300 bg-black px-1.5 py-0.5 rounded border border-cyan-500/30 text-[11px]">
                   {lightboxArtwork.url}
                 </code>
+                <span className="text-emerald-400 font-bold text-[11px] hidden md:inline">
+                  ✓ WebP Full HD Sắc Nét
+                </span>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="text-emerald-400 font-bold">
-                  ✓ File PNG Raster Thực Sự (8-bit RGBA)
-                </span>
+              <div className="flex items-center gap-2 sm:gap-3">
                 <button
                   onClick={() => handleSelectPilotAsActive(lightboxArtwork.pilotId)}
-                  className="rounded bg-cyan-600 hover:bg-cyan-500 px-3 py-1 font-bold text-white transition-colors cursor-pointer"
+                  className="rounded bg-cyan-600 hover:bg-cyan-500 px-3 py-1 font-bold text-white text-xs transition-colors cursor-pointer flex items-center gap-1 shadow-md"
                 >
-                  Chọn Phi Công Này
+                  <Check className="size-3.5" />
+                  <span>Chọn Phi Công Này</span>
                 </button>
               </div>
             </div>

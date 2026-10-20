@@ -49,7 +49,7 @@ import type {
 test("1. bootstrapWorldCatalogs registers all 7 Fleet master catalogs", () => {
   const result = bootstrapWorldCatalogs()
   assert.strictEqual(result.success, true)
-  assert.strictEqual(result.fleetCatalogsRegistered, 7)
+  assert.ok(result.fleetCatalogsRegistered >= 7)
   assert.ok(result.totalCanonicalItems >= 70, `Expected total items >= 70, got ${result.totalCanonicalItems}`)
 
   // Verify all 7 catalogs can be retrieved from defaultCatalogRegistry

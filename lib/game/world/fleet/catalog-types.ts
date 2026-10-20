@@ -163,3 +163,22 @@ export interface FrameAwardDefinition {
   description: string
   lifecycle?: CatalogItemLifecycle
 }
+
+/**
+ * 8. Academy Training Profile (Các khóa đào tạo học viện hải quân)
+ */
+export interface AcademyTrainingProfile {
+  id: string
+  name: string
+  description: string
+  courseType: "BASIC_SEAMANSHIP" | "COMBAT_OPERATIONS" | "ENGINEERING" | "OFFICER_CADET"
+  durationDays: number
+  costPerTrainee: {
+    credits: number
+    food: number
+    logisticsSupplies: number
+  }
+  graduatedQualityRating: number
+  lifecycle?: CatalogItemLifecycle
+}
+

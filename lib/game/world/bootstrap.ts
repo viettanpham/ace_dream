@@ -99,6 +99,7 @@ export function bootstrapWorldCatalogs(
     ["fleet", "ship_definition"],
     ["fleet", "policy_profile"],
     ["fleet", "frame_award_catalog"],
+    ["fleet", "academy_training_profile"],
   ]
 
   let totalItems = 0

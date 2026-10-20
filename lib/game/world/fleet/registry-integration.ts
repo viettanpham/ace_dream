@@ -15,6 +15,7 @@
 import { CatalogRegistry, defaultCatalogRegistry } from "../catalog/registry"
 import type { CatalogNodeFile, ICatalogDataProvider, ResolvedCatalogItem } from "../catalog/types"
 import type {
+  AcademyTrainingProfile,
   FleetClassDefinition,
   FleetPolicyProfile,
   FleetTypeDefinition,
@@ -577,6 +578,68 @@ export const SYSTEM_DEFAULT_FRAME_AWARDS: FrameAwardDefinition[] = [
 ]
 
 /**
+ * 8. Canonical Default Academy Training Profiles
+ */
+export const SYSTEM_DEFAULT_ACADEMY_TRAINING_PROFILES: AcademyTrainingProfile[] = [
+  {
+    id: "ACADEMY_COURSE_BASIC_CREW",
+    name: "Khóa Huấn Luyện Thủy Thủ Đoàn Cơ Bản",
+    description: "Đào tạo nghiệp vụ thủy thủ phổ thông, trực ban hoa tiêu, và cứu nạn sinh tồn.",
+    courseType: "BASIC_SEAMANSHIP",
+    durationDays: 14,
+    costPerTrainee: {
+      credits: 10,
+      food: 2,
+      logisticsSupplies: 1,
+    },
+    graduatedQualityRating: 1.0,
+    lifecycle: "ACTIVE",
+  },
+  {
+    id: "ACADEMY_COURSE_COMBAT_CREW",
+    name: "Khóa Huấn Luyện Thủy Thủ Tác Chiến Chuyên Sâu",
+    description: "Đào tạo xạ thủ pháo động năng, điều khiển radar điều phối hỏa lực, và kiểm soát hư hại chiến trường.",
+    courseType: "COMBAT_OPERATIONS",
+    durationDays: 21,
+    costPerTrainee: {
+      credits: 25,
+      food: 4,
+      logisticsSupplies: 2,
+    },
+    graduatedQualityRating: 1.2,
+    lifecycle: "ACTIVE",
+  },
+  {
+    id: "ACADEMY_COURSE_ENGINEERING",
+    name: "Khóa Kỹ Thuật Viên Động Lực Học Lượng Tử",
+    description: "Đào tạo kỹ sư chuyên trách lò phản ứng siêu không gian, nạp khiên lượng tử và sửa chữa tại xưởng cạn.",
+    courseType: "ENGINEERING",
+    durationDays: 28,
+    costPerTrainee: {
+      credits: 40,
+      food: 5,
+      logisticsSupplies: 4,
+    },
+    graduatedQualityRating: 1.35,
+    lifecycle: "ACTIVE",
+  },
+  {
+    id: "ACADEMY_COURSE_OFFICER_CADET",
+    name: "Khóa Đào Tạo Sĩ Quan Chỉ Huy Dự Bị",
+    description: "Đào tạo sĩ quan tham mưu tác chiến, thuyền phó dự bị, và trưởng ban điều phối hạm đội.",
+    courseType: "OFFICER_CADET",
+    durationDays: 45,
+    costPerTrainee: {
+      credits: 80,
+      food: 8,
+      logisticsSupplies: 5,
+    },
+    graduatedQualityRating: 1.5,
+    lifecycle: "ACTIVE",
+  },
+]
+
+/**
  * Helper to wrap array into standard CatalogNodeFile structure
  */
 function toNodeFile<T>(configFileId: string, items: T[]): CatalogNodeFile<T> {
@@ -598,6 +661,7 @@ export function seedFleetCatalogData(provider: ICatalogDataProvider): void {
     "system_fleet_ship_definition_data.json": toNodeFile("system_fleet_ship_definition", SYSTEM_DEFAULT_SHIP_DEFINITIONS),
     "system_fleet_policy_profile_data.json": toNodeFile("system_fleet_policy_profile", SYSTEM_DEFAULT_FLEET_POLICY_PROFILES),
     "system_fleet_frame_award_catalog_data.json": toNodeFile("system_fleet_frame_award_catalog", SYSTEM_DEFAULT_FRAME_AWARDS),
+    "system_fleet_academy_training_profile_data.json": toNodeFile("system_fleet_academy_training_profile", SYSTEM_DEFAULT_ACADEMY_TRAINING_PROFILES),
   }
 
   for (const [filename, nodeFile] of Object.entries(files)) {
@@ -608,7 +672,7 @@ export function seedFleetCatalogData(provider: ICatalogDataProvider): void {
 }
 
 /**
- * Seeds and registers all 7 Fleet master catalogs into the target CatalogRegistry
+ * Seeds and registers all Fleet master catalogs into the target CatalogRegistry
  */
 export function registerFleetCatalogs(
   registry: CatalogRegistry = defaultCatalogRegistry,
@@ -668,6 +732,13 @@ export function registerFleetCatalogs(
     rootFilename: "system_fleet_frame_award_catalog_data.json",
     schemaVersion: 1,
   })
+
+  registry.registerCatalog<AcademyTrainingProfile>({
+    domain: "fleet",
+    catalogName: "academy_training_profile",
+    rootFilename: "system_fleet_academy_training_profile_data.json",
+    schemaVersion: 1,
+  })
 }
 
 // Strongly typed query helpers
@@ -698,3 +769,8 @@ export function getFleetPolicyProfile(id: string, registry: CatalogRegistry = de
 export function getFrameAward(id: string, registry: CatalogRegistry = defaultCatalogRegistry): ResolvedCatalogItem<FrameAwardDefinition> | undefined {
   return registry.getItem<FrameAwardDefinition>("fleet", "frame_award_catalog", id)
 }
+
+export function getAcademyTrainingProfile(id: string, registry: CatalogRegistry = defaultCatalogRegistry): ResolvedCatalogItem<AcademyTrainingProfile> | undefined {
+  return registry.getItem<AcademyTrainingProfile>("fleet", "academy_training_profile", id)
+}
+

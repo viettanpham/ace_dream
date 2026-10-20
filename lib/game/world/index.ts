@@ -40,6 +40,5 @@ export * from "./population"
 export * from "./building"
 export * from "./base"
 export * from "./bootstrap"
-
-
-
+export * from "./ship"
+export * from "./fleet"

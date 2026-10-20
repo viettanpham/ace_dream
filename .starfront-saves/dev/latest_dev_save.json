@@ -2,17 +2,17 @@
   "label": "dev_save",
   "tick": 0,
   "currentDay": 42,
-  "savedAt": "2026-10-20T11:45:41.004Z",
+  "savedAt": "2026-10-20T12:22:07.237Z",
   "schemaVersion": 1,
-  "timestamp": 1792496741004,
-  "checksum": "cf90e50c",
+  "timestamp": 1792498927237,
+  "checksum": "e4f8d67c",
   "data": {
     "version": 1,
     "worldSeed": 99887766,
     "currentDay": 42,
     "totalDaysElapsed": 0,
-    "realTimeAnchor": 1792496740966,
-    "lastTickTimestamp": 1792496740966,
+    "realTimeAnchor": 1792498927206,
+    "lastTickTimestamp": 1792498927206,
     "sectors": {
       "sol_command_hq": {
         "id": "sol_command_hq",
@@ -1384,7 +1384,7 @@
       "hpPerThreatPoint": 100,
       "winnerRatio": 2,
       "threatFormulaMultiplier": 1,
-      "lastModified": 1792496740966
+      "lastModified": 1792498927206
     },
     "survivalConfig": {
       "thresholdSafe": 70,
@@ -1394,7 +1394,7 @@
       "baseCaptureChance": 0.4,
       "facilityRescuePowerBonusPerTier": 0.1,
       "alliedVictoryRescueBonus": 0.35,
-      "lastModified": 1792496740966
+      "lastModified": 1792498927206
     },
     "pilotSurvivalRegistry": [],
     "nationalPowRegistry": [],
@@ -10910,6 +10910,189 @@
         "defenseRating": 600
       }
     },
+    "ships": {
+      "ship_vss_valiant_lead": {
+        "instanceId": "ship_vss_valiant_lead",
+        "definitionId": "SHIP_DEF_SOL_VALIANT_CORVETTE",
+        "serialNumber": "VSS-COR-0001",
+        "customName": "VSS Valiant Alpha",
+        "ownerRef": {
+          "ownerType": "NATIONAL",
+          "ownerId": "vss_high_command",
+          "ownerName": "Liên minh VSS",
+          "factionId": "vss"
+        },
+        "currentBaseId": "base_sol_command_hq",
+        "currentSectorId": "sol_command_hq",
+        "status": "OPERATIONAL",
+        "hullHp": 3200,
+        "maxHullHp": 3200,
+        "shieldHp": 1800,
+        "maxShieldHp": 1800,
+        "condition": 100,
+        "maintenancePolicy": "AUTO",
+        "assignedCrewCount": 16,
+        "installedModules": {
+          "slot_wpn_1": {
+            "slotId": "slot_wpn_1",
+            "slotType": "WEAPON",
+            "size": "LIGHT",
+            "moduleId": "mod_stock_slot_wpn_1",
+            "name": "Stock WEAPON System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_eng_1": {
+            "slotId": "slot_eng_1",
+            "slotType": "ENGINE",
+            "size": "LIGHT",
+            "moduleId": "mod_stock_slot_eng_1",
+            "name": "Stock ENGINE System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_shd_1": {
+            "slotId": "slot_shd_1",
+            "slotType": "SHIELD",
+            "size": "LIGHT",
+            "moduleId": "mod_stock_slot_shd_1",
+            "name": "Stock SHIELD System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_utl_1": {
+            "slotId": "slot_utl_1",
+            "slotType": "UTILITY",
+            "size": "LIGHT",
+            "moduleId": "mod_stock_slot_utl_1",
+            "name": "Stock UTILITY System",
+            "condition": 100,
+            "isOperational": true
+          }
+        },
+        "unlockedModuleSlotsCount": 4,
+        "unlockedGenericSlotsCount": 0,
+        "unlockedTypedSlots": {
+          "WEAPON": 1,
+          "ENGINE": 1,
+          "SHIELD": 1,
+          "UTILITY": 1
+        },
+        "progression": {
+          "entityId": "ship_vss_valiant_lead",
+          "profileId": "profile_standard_100",
+          "currentLevel": 1,
+          "currentExp": 0,
+          "currentTierId": "TIER_I",
+          "state": "PROGRESSING",
+          "upgradePolicy": "MANUAL",
+          "levelHistory": {
+            "TIER_I": 1
+          },
+          "milestones": []
+        },
+        "mileageKm": 0,
+        "battlesCount": 0,
+        "killsCount": 0,
+        "commissionedGameDay": 1,
+        "lastMaintenanceGameDay": 1
+      },
+      "ship_vss_hermes_01": {
+        "instanceId": "ship_vss_hermes_01",
+        "definitionId": "SHIP_DEF_HERMES_SUPPLY_TENDER",
+        "serialNumber": "VSS-LOG-0002",
+        "customName": "VSS Hermes Resupply 01",
+        "ownerRef": {
+          "ownerType": "NATIONAL",
+          "ownerId": "vss_high_command",
+          "ownerName": "Liên minh VSS",
+          "factionId": "vss"
+        },
+        "currentBaseId": "base_sol_command_hq",
+        "currentSectorId": "sol_command_hq",
+        "status": "OPERATIONAL",
+        "hullHp": 7500,
+        "maxHullHp": 7500,
+        "shieldHp": 4200,
+        "maxShieldHp": 4200,
+        "condition": 100,
+        "maintenancePolicy": "AUTO",
+        "assignedCrewCount": 40,
+        "installedModules": {
+          "slot_crg_1": {
+            "slotId": "slot_crg_1",
+            "slotType": "CARGO",
+            "size": "CAPITAL",
+            "moduleId": "mod_stock_slot_crg_1",
+            "name": "Stock CARGO System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_crg_2": {
+            "slotId": "slot_crg_2",
+            "slotType": "CARGO",
+            "size": "CAPITAL",
+            "moduleId": "mod_stock_slot_crg_2",
+            "name": "Stock CARGO System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_shd_1": {
+            "slotId": "slot_shd_1",
+            "slotType": "SHIELD",
+            "size": "MEDIUM",
+            "moduleId": "mod_stock_slot_shd_1",
+            "name": "Stock SHIELD System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_eng_1": {
+            "slotId": "slot_eng_1",
+            "slotType": "ENGINE",
+            "size": "MEDIUM",
+            "moduleId": "mod_stock_slot_eng_1",
+            "name": "Stock ENGINE System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_utl_1": {
+            "slotId": "slot_utl_1",
+            "slotType": "UTILITY",
+            "size": "MEDIUM",
+            "moduleId": "mod_stock_slot_utl_1",
+            "name": "Stock UTILITY System",
+            "condition": 100,
+            "isOperational": true
+          }
+        },
+        "unlockedModuleSlotsCount": 5,
+        "unlockedGenericSlotsCount": 0,
+        "unlockedTypedSlots": {
+          "CARGO": 2,
+          "SHIELD": 1,
+          "ENGINE": 1,
+          "UTILITY": 1
+        },
+        "progression": {
+          "entityId": "ship_vss_hermes_01",
+          "profileId": "profile_standard_100",
+          "currentLevel": 1,
+          "currentExp": 0,
+          "currentTierId": "TIER_I",
+          "state": "PROGRESSING",
+          "upgradePolicy": "MANUAL",
+          "levelHistory": {
+            "TIER_I": 1
+          },
+          "milestones": []
+        },
+        "mileageKm": 0,
+        "battlesCount": 0,
+        "killsCount": 0,
+        "commissionedGameDay": 1,
+        "lastMaintenanceGameDay": 1
+      }
+    },
     "worldGenerationConfig": {
       "totalMainBaseNodes": 30,
       "minimumFactionBaseSharePercent": 20,
@@ -10938,12 +11121,12 @@
       "autoSaveIntervalRealMinutes": 10
     },
     "lastAutoSaveGameDay": 42,
-    "lastAutoSaveTimestamp": 1792496740968,
+    "lastAutoSaveTimestamp": 1792498927209,
     "worldResetConfig": {
       "cc0Name": "Liên minh VSS",
       "commanderName": "Alviss",
       "resetCount": 0,
-      "lastResetTimestamp": 1792496740966
+      "lastResetTimestamp": 1792498927206
     }
   }
 }

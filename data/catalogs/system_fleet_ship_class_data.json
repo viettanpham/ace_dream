@@ -47,11 +47,62 @@
     {
       "id": "SHIP_CLASS_MK5_DREAD",
       "tierOrder": 5,
-      "displayName": "Chuẩn Công Nghệ MK V - Tuyệt Tác Tối Thượng",
+      "displayName": "Chuẩn Công Nghệ MK V - Tuyệt Tác Tác Chiến",
       "hullMultiplier": 3.6,
       "shieldMultiplier": 3.2,
       "moduleSlotBonus": 5,
       "maintenanceFactor": 2.8,
+      "hasCapstoneBonus": true,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_CLASS_MK6_SUPER_ALLOY",
+      "tierOrder": 6,
+      "displayName": "Chuẩn Công Nghệ MK VI - Cấu Trúc Siêu Hợp Kim",
+      "hullMultiplier": 4.8,
+      "shieldMultiplier": 4.2,
+      "moduleSlotBonus": 6,
+      "maintenanceFactor": 3.5,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_CLASS_MK7_PARTICLE",
+      "tierOrder": 7,
+      "displayName": "Chuẩn Công Nghệ MK VII - Khiên Hạt Lượng Tử",
+      "hullMultiplier": 6.2,
+      "shieldMultiplier": 5.5,
+      "moduleSlotBonus": 7,
+      "maintenanceFactor": 4.2,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_CLASS_MK8_ARMADA",
+      "tierOrder": 8,
+      "displayName": "Chuẩn Công Nghệ MK VIII - Thống Nhất Hạm Đội",
+      "hullMultiplier": 8.0,
+      "shieldMultiplier": 7.0,
+      "moduleSlotBonus": 8,
+      "maintenanceFactor": 5.0,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_CLASS_MK9_CITADEL",
+      "tierOrder": 9,
+      "displayName": "Chuẩn Công Nghệ MK IX - Pháo Đài Di Động",
+      "hullMultiplier": 10.5,
+      "shieldMultiplier": 9.0,
+      "moduleSlotBonus": 9,
+      "maintenanceFactor": 6.0,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_CLASS_MK10_TRANSCENDENT",
+      "tierOrder": 10,
+      "displayName": "Chuẩn Công Nghệ MK X - Kỳ Hạm Tối Thượng Apex",
+      "hullMultiplier": 14.0,
+      "shieldMultiplier": 12.0,
+      "moduleSlotBonus": 10,
+      "maintenanceFactor": 7.5,
       "hasCapstoneBonus": true,
       "lifecycle": "ACTIVE"
     }

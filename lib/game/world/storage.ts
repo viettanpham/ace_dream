@@ -16,6 +16,7 @@ import {
   getDefaultDockingPortsForBase,
   generate30NodeWorld,
 } from "./base"
+import { createDefaultStartingShips } from "./ship"
 import type {
   BackupMetadata,
   BackupSlot,
@@ -511,6 +512,10 @@ export function migrateFoundationState(state: WorldState): boolean {
       resetCount: 0,
       lastResetTimestamp: Date.now(),
     }
+    migrated = true
+  }
+  if (!state.ships || Object.keys(state.ships).length === 0) {
+    state.ships = createDefaultStartingShips()
     migrated = true
   }
 

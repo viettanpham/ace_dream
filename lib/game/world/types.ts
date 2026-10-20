@@ -21,6 +21,7 @@ import type {
   WorldGenerationConfig,
   NationalSupportRequest,
 } from "./base/types"
+import type { ShipInstance } from "./ship/types"
 
 export type {
   SurvivalConfig,
@@ -36,6 +37,7 @@ export type {
   OrbitalSubBaseState,
   WorldGenerationConfig,
   NationalSupportRequest,
+  ShipInstance,
 }
 
 export type SectorStage = "normal" | "threatened" | "under_siege" | "lost" | "recovery"
@@ -753,6 +755,8 @@ export interface WorldState {
   nationalSupportRequests?: NationalSupportRequest[]
   lastAutoSaveGameDay?: number
   lastAutoSaveTimestamp?: number
+  // Phase 7.2: Ship Entities (Individually addressable MK I..X Ships)
+  ships?: Record<string, ShipInstance>
   // World Reset & Commander Identity Configuration
   worldResetConfig?: {
     cc0Name: string // Default: "Liên minh VSS"

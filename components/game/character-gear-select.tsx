@@ -910,7 +910,7 @@ export function CharacterGearSelect({
                               style={{ borderColor: `${def.color}70` }}
                             >
                               <img
-                                src={def.illustration || `/images/${gId}-gear.jpg`}
+                                src={def.illustration || `/images/${gId}-gear.webp`}
                                 alt={def.name}
                                 className="size-full object-cover object-center"
                               />
@@ -1423,7 +1423,7 @@ export function CharacterGearSelect({
                 {/* Ảnh 3D Concept Art Cơ Giáp Trung Tâm */}
                 <div className="relative my-2 w-full max-w-md h-44 sm:h-52 rounded-sm overflow-hidden border border-cyan-500/40 bg-black/70 shadow-lg flex items-center justify-center group">
                   <img
-                    src={activeGearDef.illustration || `/images/${activeGearId}-gear.jpg`}
+                    src={activeGearDef.illustration || `/images/${activeGearId}-gear.webp`}
                     alt={activeGearDef.name}
                     className="size-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-transform duration-500 group-hover:scale-105"
                   />
@@ -2301,7 +2301,7 @@ export function CharacterGearSelect({
                           }}
                         >
                           <img
-                            src={gDef.illustration || `/images/${inspectGearId}-gear.jpg`}
+                            src={gDef.illustration || `/images/${inspectGearId}-gear.webp`}
                             alt={gDef.name}
                             className="size-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] transition-transform duration-500 group-hover:scale-105"
                           />

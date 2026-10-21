@@ -11,7 +11,6 @@ const PILOTS = [
   'kaelen',
   'selena',
   'victor',
-  'levi',
 ];
 
 const GEARS = [

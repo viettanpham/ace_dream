@@ -94,6 +94,26 @@ export function PilotProfileV2({
     setIsViewerOpen(true)
   }
 
+  // Artwork navigation handlers
+  const currentArtworkIndex = activeCharacter.artworks.findIndex(
+    (a) => a.id === viewerArtwork?.id || a.path === viewerArtwork?.path
+  )
+  const hasPrevArtwork = currentArtworkIndex > 0
+  const hasNextArtwork =
+    currentArtworkIndex >= 0 && currentArtworkIndex < activeCharacter.artworks.length - 1
+
+  const handlePrevArtwork = () => {
+    if (hasPrevArtwork) {
+      setViewerArtwork(activeCharacter.artworks[currentArtworkIndex - 1])
+    }
+  }
+
+  const handleNextArtwork = () => {
+    if (hasNextArtwork) {
+      setViewerArtwork(activeCharacter.artworks[currentArtworkIndex + 1])
+    }
+  }
+
   return (
     <div className="sf-v2-pilot-profile w-full min-h-screen bg-[#070A12] text-[#F1F5F9]">
       {/* RENDER DESKTOP OR MOBILE ACCORDING TO VIEWPORT */}
@@ -143,6 +163,10 @@ export function PilotProfileV2({
           description={viewerArtwork.description}
           tags={[activeCharacter.callsign, activeCharacter.roleCategory, viewerArtwork.category]}
           isAvailableOnDisk={viewerArtwork.isAvailableOnDisk}
+          hasPrev={hasPrevArtwork}
+          hasNext={hasNextArtwork}
+          onPrev={handlePrevArtwork}
+          onNext={handleNextArtwork}
         />
       )}
     </div>

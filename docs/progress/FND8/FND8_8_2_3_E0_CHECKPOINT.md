@@ -34,18 +34,19 @@
 
 ---
 
-## 3. Giới Hạn Của Art Viewer & Lộ Trình Chuyển Đổi Sang Shared Art Viewer
+## 3. Hoàn Tất Toàn Diện Shared Art Viewer (Phase 2B)
 
-- **Khả năng hiện tại:**
-  - Hỗ trợ đầy đủ phóng to thu nhỏ từ 1x đến 3x qua nút bấm hoặc phím tắt `+` / `-` / `0`.
-  - Hỗ trợ kéo chuột (mouse drag) và cảm ứng vuốt (touch move) để pan khung ảnh khi phóng to $> 1x$.
-  - Phím `Escape` đóng modal, phím mũi tên điều hướng.
-  - Vùng chạm đóng và nút điều khiển tối thiểu $44 \times 44\text{px}$.
-  - Chống vỡ ảnh: Tự động phát hiện ảnh chưa có file và hiển thị thẻ thông tin lưu trữ danh mục.
-- **Giới hạn chưa triển khai:**
-  - Cử chỉ 2 ngón tay chụm mở (native touch pinch-to-zoom) đang dùng chế độ chạm double-tap và thanh công cụ nổi thay vì gesture listener đa điểm phức tạp để đảm bảo độ ổn định cao trên mọi trình duyệt.
-- **Điểm thay thế sang Shared Art Viewer:**
-  - Component được xây dựng trực tiếp tại `components/game/v2/ui/art-viewer.tsx` với interface chuẩn. Khi dự án bước sang Phase 2 của UI Foundation, chỉ cần nâng cấp trực tiếp file này mà không phải sửa đổi bất kỳ component nào trong `pilot-profile/`.
+- **Trạng thái:** `HOÀN THÀNH & KIỂM CHỨNG` (Phase 2B).
+- **Khả năng đã được bổ sung và hoàn thiện:**
+  - Cử chỉ pinch-to-zoom 2 ngón tay trên màn hình cảm ứng di động.
+  - Kéo rê (pan) 1 ngón khi zoom $> 1x$ kèm thuật toán kẹp biên an toàn (mathematical boundary clamping) chống trôi mất ảnh khỏi màn hình.
+  - Nút bấm thu phóng (+ / - / Reset 1x) và phím tắt (+ / - / 0) trong giới hạn an toàn 1x–3x.
+  - Thao tác chạm đúp (double-tap trên mobile) / click đúp (double-click trên desktop) chuyển nhanh giữa 1x và 2x.
+  - Nút đóng $X$ luôn hiển thị rõ ràng, diện tích chạm tối thiểu $44 \times 44\text{px}$.
+  - Phím `Escape` đóng viewer; điều hướng Previous/Next khi duyệt danh mục ảnh.
+  - Tự động đặt lại trạng thái zoom/pan (`zoom = 1`, `pan = {0,0}`) khi chuyển sang ảnh khác hoặc đóng/mở lại viewer.
+  - Khóa cuộn trang nền (`document.body.style.overflow = 'hidden'`) và xử lý safe-area trên mobile (`env(safe-area-inset-top)`, `env(safe-area-inset-bottom)`).
+  - Giữ vững chính sách Zero Broken Images / Zero 404 qua khung Thẻ Lưu Trữ Danh Mục (Archive Pending Card).
 
 ---
 

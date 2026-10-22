@@ -1,21 +1,25 @@
 # UI V2 Foundation — Progress / Checkpoint / Handoff
 Ngày cập nhật: 2026-10-22  
-Trạng thái: `RESPONSIVE_STATUS_RECONCILED / UX_CONTRACT_LOCKED / READY_FOR_PHASE_2`
+Trạng thái: `PHASE_2_COMPLETED / SHARED_ART_VIEWER_VERIFIED / READY_FOR_PHASE_3_SHELL`
 
 ## 1. Trạng Thái Thực Tế Đã Xác Minh (Verified Reality)
 - **Phase 1 (Core UI Primitives)**: Đã hoàn tất, ổn định tại `components/game/v2/ui/`.
-- **Version Control Bridge**: Hoạt động hai chiều giữa V1 (`/`) và V2 Preview (`/ui-v2-preview`), có chốt an toàn `process.env.NODE_ENV !== 'production'`.
-- **Đối chiếu 5 Responsive Defects**: Đã đối chiếu trực tiếp mã nguồn thực tế và kiểm thử; toàn bộ **5/5 lỗi responsive đều mang trạng thái `FIXED`**:
-  - DEFECT-01 (Multi-column grid crush): `FIXED` (`app/ui-v2-preview/page.tsx` dòng 59–76).
-  - DEFECT-02 (Button overflow): `FIXED` (`components/game/v2/ui/button.tsx` dòng 43, 63, 73–82).
-  - DEFECT-03 (Tabs overflow): `FIXED` (`components/game/v2/ui/tabs.tsx` dòng 83–124, 144–150).
-  - DEFECT-04 (Header preview quá tải): `FIXED` (`app/ui-v2-preview/page.tsx` dòng 83–161).
-  - DEFECT-05 (Tooltip trên cảm ứng): `FIXED` (`components/game/v2/ui/tooltip.tsx` dòng 46–131).
-- **UX Contract & Smart UI State**: Đã khóa toàn diện tại `docs/UI_v2/07_UI_V2_UX_CONTRACT_AND_RESPONSIVE_SPEC.md`:
-  - Desktop: Global Left Menu (Full 240px / Mini 64px) và Pilot Roster (Full 260px / Mini 72px) độc lập tuyệt đối. Main Content flex-1 co giãn.
-  - Mobile: Hamburger Drawer cho Global Menu, Horizontal Avatar Rail + Bottom Sheet cho Pilot Roster; bố cục chia rõ **Artwork View** (tranh toàn màn hình) và **Info View** (thông số & story) theo concept đã duyệt.
-  - UI State: Tách biệt Persistent UI state (`sf_v2_ui_prefs`) khỏi gameplay save data; modal/drawer/tooltip/viewer là ephemeral state không lưu sau F5.
-- **Bảo toàn V1**: Giao diện V1 (`/`), cơ chế lưu trữ và gameplay giữ nguyên 100%.
+- **Version Control Bridge**: Hoạt động hai chiều giữa V1 (`/`) và V2 Preview (`/ui-v2-preview`), an toàn trong môi trường phát triển.
+- **5 Responsive Defects**: Toàn bộ **5/5 lỗi responsive** trên `/ui-v2-preview` đều mang trạng thái `FIXED` và hoạt động ổn định.
+- **Phase 2 (Shared Art Viewer Completion)**: **`COMPLETE & VERIFIED`** tại `components/game/v2/ui/art-viewer.tsx`.
+  - Cử chỉ pinch-to-zoom 2 ngón mượt mà trên màn hình cảm ứng di động.
+  - Kéo rê (pan) 1 ngón khi zoom $> 1x$ kèm thuật toán kẹp biên an toàn (mathematical boundary clamping) chống trôi mất ảnh khỏi màn hình.
+  - Thu phóng bằng nút bấm (+ / - / Reset 1x) và phím tắt (+ / - / 0) trong giới hạn cấu hình an toàn (minZoom 1, maxZoom 3).
+  - Thao tác chạm đúp (double-tap trên mobile) / click đúp (double-click trên desktop) để chuyển đổi nhanh giữa 1x và 2x.
+  - Nút đóng $X$ luôn hiển thị rõ ràng, diện tích chạm tối thiểu $44 \times 44\text{px}$.
+  - Phím `Escape` đóng viewer; điều hướng Previous/Next qua mũi tên bàn phím hoặc nút điều hướng khi có nhiều tác phẩm.
+  - Tự động đặt lại trạng thái zoom/pan (`zoom = 1`, `pan = {0,0}`) khi chuyển sang ảnh khác hoặc đóng/mở lại viewer.
+  - Khóa cuộn trang nền (`document.body.style.overflow = 'hidden'`) và xử lý safe-area trên mobile (`env(safe-area-inset-top)`, `env(safe-area-inset-bottom)`).
+  - Giữ vững chính sách Zero Broken Images / Zero 404 qua khung Thẻ Lưu Trữ (Archive Pending Card) kèm đầy đủ metadata danh mục.
+- **Tích Hợp Pilot Profile V2 (FND-8 / 8.2.3.E.0)**:
+  - Call-sites trong `components/game/v2/pilot-profile/` đã được kết nối hoàn chỉnh, hỗ trợ duyệt tranh trước/sau mượt mà.
+  - Môi trường thử nghiệm `/ui-v2-preview` đã bổ sung Section 07 để kiểm thử trực tiếp Art Viewer (cả chế độ ảnh thật WebP và thẻ archive).
+- **Bảo toàn V1**: Toàn bộ mã nguồn V1 (`/`), cơ chế lưu trữ và gameplay giữ nguyên 100%.
 
 ## 2. Phase Status Matrix & Lộ Trình Kế Tiếp
 | Phase | Status | Ghi chú |
@@ -25,34 +29,27 @@ Trạng thái: `RESPONSIVE_STATUS_RECONCILED / UX_CONTRACT_LOCKED / READY_FOR_PH
 | 1.Bridge — Dev Preview Access & Bridge | `COMPLETE` | Nút dev `V2 PREVIEW` & `QUAY LẠI V1` |
 | 1.Fix — Preview Responsive Fixes | `COMPLETE & VERIFIED` | Toàn bộ 5 defect đã `FIXED` trong mã nguồn |
 | 1.UXLock — UX Contract & Smart UI State | `LOCKED` | Khóa hợp đồng tại `07_UI_V2_UX_CONTRACT_AND_RESPONSIVE_SPEC.md` |
-| **2 — Shared Art Viewer** | **`PROPOSED_NEXT`** | Fullscreen art viewer (zoom, pan, drag, touch, close) |
-| 3 — V2 Shell, Navigation & Version Switch | `NOT_STARTED` | Shell 4 tầng, UI Preference Store, Settings switch |
-| 4 — Pilot Category/Profile V2 | `NOT_STARTED` | Dựng lại trang Valentine theo concept desktop/mobile đã duyệt |
+| **2 — Shared Art Viewer** | **`COMPLETE & VERIFIED`** | Fullscreen art viewer (pinch 2 ngón, pan có giới hạn biên, touch targets $\ge 44\text{px}$, Esc, Zero 404) |
+| **3 — V2 Shell, Navigation & Version Switch** | **`PROPOSED_NEXT`** | Shell 4 tầng, UI Preference Store, Settings switch V1/V2, Navigation Registry |
+| 4 — Pilot Category/Profile V2 Integration | `READY_FOR_SHELL_MOUNT` | Module Profile V2 đã dựng sạch, sẵn sàng gắn vào Shell V2 |
 
-## 3. Nội Dung UX Đã Chốt vs Còn Mở
-- **Đã Chốt (Locked)**:
-  - Bảng màu & tokens Modern Aerospace Sci-Fi V2.
-  - Cấu trúc 4 tầng logic (Top Bar, Left Menu, System Selector, Main Content).
-  - Khả năng co giãn độc lập của Left Menu và Pilot Roster (Full/Mini).
-  - Ưu tiên mặc định trên Desktop cho Pilot Category là Global Menu Mini và Pilot Roster Mini.
-  - Bố cục Mobile: Hamburger Drawer + Horizontal Avatar Rail + phân định Artwork View vs Info View.
-  - Nguyên tắc lưu trữ: UI State độc lập với Gameplay Save.
-  - Touch targets $\ge 44 \times 44\text{px}$, body text $16\text{px}$, story $17$–$18\text{px}$.
-- **Còn Mở Cho Phase Sau (Open)**:
-  - Cấu hình mức zoom tối đa và độ nhạy kéo pan của Shared Art Viewer (Phase 2).
-  - Danh sách đăng ký các phân hệ tiếp theo ngoài Pilot Category vào Shell (Phase 3).
-  - Interface TypeScript chi tiết của `UIPreferenceStore` (Phase 3).
+## 3. Nội Dung Kỹ Thuật Đã Chốt vs Giới Hạn Còn Lại Của Phase 2
+- **Đã Hoàn Thành & Kiểm Chứng (Verified)**:
+  - Thu phóng đa cấp (1x, 1.5x, 2x, 2.5x, 3x) và pinch-to-zoom mượt mà.
+  - Giới hạn kéo rê an toàn (không bị kéo văng mất tranh khỏi khung nhìn).
+  - Double-tap toggle zoom (1x ↔ 2x).
+  - Background scroll lock và safe-area padding.
+  - Không phát sinh lỗi 404 cho 28 tác phẩm đang chờ đóng gói file WebP.
+  - 100% build pass (`compile_applet` passed) và lint pass (`tsc --noEmit` 0 lỗi).
+- **Giới Hạn Thực Tế Cần Lưu Ý**:
+  - Khả năng cảm ứng 2 ngón (pinch-to-zoom) được tính toán dựa trên sự kiện touch đa điểm chuẩn HTML5 (`e.touches.length === 2`), hoạt động trên thiết bị di động thật hoặc công cụ mô phỏng hỗ trợ touch đa điểm. Môi trường desktop giả lập qua chuột thông thường chỉ kích hoạt được 1 điểm chạm (pan) và zoom qua nút / phím tắt / click đúp.
 
-## 4. Danh Sách Tài Liệu Đã Cập Nhật Trong Phiên Này
-1. `docs/UI_v2/07_UI_V2_UX_CONTRACT_AND_RESPONSIVE_SPEC.md`: Cập nhật bảng đối chiếu 5 defect với mã nguồn thực tế, bổ sung chi tiết hợp đồng UX Desktop/Mobile và Smart UI State matrix.
-2. `docs/UI_v2/06_UI_V2_PROGRESS_CHECKPOINT_HANDOFF.md`: Cập nhật trạng thái reconciliation và đề xuất task tiếp theo.
+## 4. Danh Sách Tệp Đã Chỉnh Sửa Trong Phase Này
+1. `components/game/v2/ui/art-viewer.tsx`: Hoàn thiện toàn diện 10 tính năng của Shared Art Viewer.
+2. `components/game/v2/pilot-profile/pilot-profile-v2.tsx`: Tích hợp logic Previous/Next artwork và chuyển tiếp an toàn.
+3. `app/ui-v2-preview/page.tsx`: Bổ sung Section 07 Shared Art Viewer và các nút demo thực nghiệm.
+4. `docs/UI_v2/06_UI_V2_PROGRESS_CHECKPOINT_HANDOFF.md`: Cập nhật tiến độ hoàn thành Phase 2.
 
 ## 5. Đề Xuất Task IMPLEMENT Tiếp Theo Duy Nhất
-- **Tên nhiệm vụ**: `STARFRONT WORLD V2 — IMPLEMENT PHASE 2: SHARED ART VIEWER`
-- **Mục tiêu**: Xây dựng component `components/game/v2/ui/art-viewer.tsx` phục vụ xem tranh phóng to/thu nhỏ toàn màn hình, hỗ trợ zoom, drag/pan, touch pinch, nút đóng $X$ $\ge 44\text{px}$, phím Escape, và fallback container chống broken image.
-- **Tiêu chí nghiệm thu**: Tích hợp mục thử nghiệm Art Viewer vào `/ui-v2-preview`, kiểm thử mượt mà trên cả desktop và mobile, không phát sinh lỗi build/lint.
-
-## 6. Xác Nhận Tuân Thủ Giới Hạn
-- **Chế độ**: `PLAN / DEFINE ONLY`.
-- **Mã nguồn**: **KHÔNG CÓ DÒNG CODE SOURCE HAY GAMEPLAY NÀO BỊ THAY ĐỔI** trong phiên làm việc này.
-- **Tiến độ**: Phase 2 (Shared Art Viewer), Phase 3 (V2 Shell) và Phase 4 (Pilot Category/Profile) **CHƯA ĐƯỢC BẮT ĐẦU** (`NOT_STARTED`).
+- **Tên nhiệm vụ**: `STARFRONT WORLD V2 — IMPLEMENT PHASE 3: V2 SHELL, NAVIGATION & VERSION SWITCH`
+- **Mục tiêu**: Xây dựng App Shell V2 chính thức với cấu trúc 4 tầng logic (Top Bar, Left Navigation Menu Mini/Full, Subsystem Rail, Main Content Host), tích hợp cơ chế lưu UI Preference độc lập (`sf_v2_ui_prefs`), chuyển đổi giao diện trong Settings, đặt V2 làm mặc định cho người dùng mới và bảo toàn 100% dữ liệu game V1.

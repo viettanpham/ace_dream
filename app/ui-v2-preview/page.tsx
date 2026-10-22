@@ -49,6 +49,7 @@ import {
   EmptyState,
   ErrorState,
   SuccessState,
+  ArtViewer,
 } from '@/components/game/v2/ui'
 
 export default function UIV2PreviewPage() {
@@ -58,6 +59,8 @@ export default function UIV2PreviewPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
   const [buttonLoading, setButtonLoading] = useState(false)
   const [feedbackDemo, setFeedbackDemo] = useState<'loading' | 'empty' | 'error' | 'success'>('loading')
+  const [isArtViewerDemoOpen, setIsArtViewerDemoOpen] = useState(false)
+  const [artViewerDemoType, setArtViewerDemoType] = useState<'real' | 'archive'>('real')
 
   const isSimulatedMobile = viewportMode === 'mobile'
   const isSimulatedTablet = viewportMode === 'tablet'
@@ -655,6 +658,63 @@ export default function UIV2PreviewPage() {
               />
             )}
           </div>
+        </section>
+
+        {/* 07. SHARED ART VIEWER (PHASE 2) */}
+        <section className="space-y-4">
+          <div className="border-b border-[#26384D] pb-3">
+            <h3 className="text-lg sm:text-xl font-semibold text-[#F1F5F9]">
+              07. Trình Xem Tranh Dùng Chung (Shared Art Viewer — Phase 2)
+            </h3>
+            <p className="text-xs sm:text-sm text-[#A7B6C8] mt-0.5">
+              Hỗ trợ pinch-to-zoom 2 ngón, pan 1 ngón có giới hạn biên an toàn, nút thu phóng, phím Escape, scroll lock, safe area và archive fallback chống lỗi 404.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="primary"
+              onClick={() => {
+                setArtViewerDemoType('real')
+                setIsArtViewerDemoOpen(true)
+              }}
+            >
+              Mở Thử Nghiệm Art Viewer (Ảnh Thật WebP)
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setArtViewerDemoType('archive')
+                setIsArtViewerDemoOpen(true)
+              }}
+            >
+              Mở Thử Nghiệm Fallback (Thẻ Archive Metadata)
+            </Button>
+          </div>
+
+          <ArtViewer
+            isOpen={isArtViewerDemoOpen}
+            onClose={() => setIsArtViewerDemoOpen(false)}
+            imageSrc={
+              artViewerDemoType === 'real'
+                ? '/images/valentine-fullbody.webp'
+                : '/images/valentine-outfit-001.webp'
+            }
+            title={
+              artViewerDemoType === 'real'
+                ? 'Valentine — Tranh Toàn Thân Chiến Trường'
+                : 'Phi Công Valentine Trong Buồng Lái Vũ Trụ'
+            }
+            subtitle="Valentine Aurelia Vance · Mercy Wing"
+            category={artViewerDemoType === 'real' ? 'base' : 'flight-suit'}
+            description={
+              artViewerDemoType === 'real'
+                ? 'Artwork chính thức độ phân giải cao được tối ưu hóa WebP. Hỗ trợ zoom 1x-3x, pan chuột, pinch 2 ngón trên mobile và phím Escape.'
+                : 'Tác phẩm đang ở trạng thái danh mục chờ đồng bộ tệp WebP. Hệ thống hiển thị thẻ metadata lưu trữ mà không phát sinh lỗi HTTP 404.'
+            }
+            tags={['Combat Medic', 'Elysia', 'V2 Artwork']}
+            isAvailableOnDisk={artViewerDemoType === 'real'}
+          />
         </section>
       </main>
       )}

@@ -302,3 +302,26 @@
     }
   }
 }
+
+/* ========================================================================
+   STARFRONT UI V2 SCOPED FOUNDATION TOKENS (.sf-v2-root)
+   Modern Aerospace Sci-Fi — completely isolated from V1
+   ======================================================================== */
+.sf-v2-root {
+  --sf-v2-canvas: #070A12;
+  --sf-v2-panel: #0F172A;
+  --sf-v2-panel-raised: #142338;
+  --sf-v2-border: #26384D;
+  --sf-v2-text: #F1F5F9;
+  --sf-v2-text-muted: #A7B6C8;
+  --sf-v2-accent-cyan: #06B6D4;
+  --sf-v2-accent-teal: #14B8A6;
+  --sf-v2-warning: #FBBF24;
+  --sf-v2-danger: #F87171;
+  --sf-v2-success: #34D399;
+
+  background-color: var(--sf-v2-canvas);
+  color: var(--sf-v2-text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+

@@ -15,7 +15,9 @@ import {
   Tablet,
   Monitor,
   Sparkles,
+  User,
 } from 'lucide-react'
+import { PilotProfileV2 } from '@/components/game/v2/pilot-profile/pilot-profile-v2'
 import {
   Button,
   IconButton,
@@ -50,6 +52,7 @@ import {
 } from '@/components/game/v2/ui'
 
 export default function UIV2PreviewPage() {
+  const [previewSection, setPreviewSection] = useState<'profile' | 'primitives'>('profile')
   const [viewportMode, setViewportMode] = useState<'responsive' | 'mobile' | 'tablet' | 'desktop'>('responsive')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -177,8 +180,45 @@ export default function UIV2PreviewPage() {
         </div>
       </header>
 
-      {/* Main Preview Harness Area */}
-      <main className={`py-6 sm:py-8 space-y-10 ${viewportContainerStyles}`}>
+      {/* Sub-header Navigation between Pilot Profile V2 and UI Primitives Harness */}
+      <div className="sticky top-[57px] z-30 bg-[#0F172A] border-b border-[#26384D] px-3 sm:px-6 py-2 flex items-center justify-between gap-2 overflow-x-auto">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPreviewSection('profile')}
+            className={`min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              previewSection === 'profile'
+                ? 'bg-[#06B6D4] text-[#070A12] shadow-sm shadow-cyan-500/20'
+                : 'bg-[#142338] text-[#A7B6C8] hover:text-[#F1F5F9] border border-[#26384D]'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>HỒ SƠ PHI CÔNG V2 (E.0-REBUILD-1)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPreviewSection('primitives')}
+            className={`min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              previewSection === 'primitives'
+                ? 'bg-[#06B6D4] text-[#070A12] shadow-sm shadow-cyan-500/20'
+                : 'bg-[#142338] text-[#A7B6C8] hover:text-[#F1F5F9] border border-[#26384D]'
+            }`}
+          >
+            <Sliders className="w-4 h-4" />
+            <span>UI PRIMITIVES HARNESS</span>
+          </button>
+        </div>
+        <div className="text-xs font-mono text-[#06B6D4] hidden sm:block">
+          {previewSection === 'profile' ? 'FND-8 / 8.2.3.E.0' : 'UI Foundation Phase 1'}
+        </div>
+      </div>
+
+      {previewSection === 'profile' ? (
+        <div className={viewportContainerStyles}>
+          <PilotProfileV2 />
+        </div>
+      ) : (
+        <main className={`py-6 sm:py-8 space-y-10 ${viewportContainerStyles}`}>
         {/* Version Control Informational Status Banner (No duplicate button) */}
         <section className="p-4 sm:p-5 rounded-xl bg-[#0F172A] border border-[#26384D] shadow-sm">
           <div className="flex items-start sm:items-center gap-3">
@@ -617,6 +657,7 @@ export default function UIV2PreviewPage() {
           </div>
         </section>
       </main>
+      )}
     </div>
   )
 }

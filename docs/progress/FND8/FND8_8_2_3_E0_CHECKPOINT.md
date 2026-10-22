@@ -1,58 +1,61 @@
 # STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# ĐIỂM KIỂM SOÁT THỰC ĐỊA (CHECKPOINT REPORT — DEFINE / PLAN COMPLETED)
+# ĐIỂM KIỂM SOÁT THỰC ĐỊA (CHECKPOINT REPORT — E.0-REBUILD-1 COMPLETED)
 
 **Thời điểm ghi nhận:** 2026-10-22  
-**Giai đoạn:** DEFINE / PLAN ONLY — Rà Soát Thực Địa, Khóa Hợp Đồng Kiến Trúc & Đối Chiếu Dữ Liệu  
-**Trạng thái phiên:** DỪNG CHỜ NGƯỜI DÙNG PHÊ DUYỆT KẾ HOẠCH (Tuyệt đối không sửa code)  
+**Giai đoạn:** Phase E.0-REBUILD-1 ĐÃ HOÀN TẤT (Xây dựng mới Character Category / Pilot Profile V2)  
+**Trạng thái phiên:** DỪNG CHỜ NGƯỜI DÙNG NGHIỆM THU TRỰC TIẾP TRÊN GIAO DIỆN  
 
 ---
 
-## 1. Kết Quả Kiểm Toán Thực Địa (Verified Reality)
+## 1. Danh Sách Tệp Đã Tạo & Cập Nhật
 
-1. **Xác Minh 3 Ảnh Concept PNG Phê Duyệt:**
-   - Đã kiểm tra trực tiếp hệ thống tệp trong container: Cả 3 ảnh concept PNG trong `docs/art-direction/UI_CONCEPTS/` đều **TỒN TẠI VẬT LÝ VÀ HỢP LỆ**:
-     - `FND8_823_CHARACTER_CATEGORY_PROFILE_DESKTOP_APPROVED.png`
-     - `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png`
-     - `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_INFO_VIEW_REFERENCE.png`
-   - **Cổng chặn Blocker được giải phóng hoàn toàn**.
-2. **Trạng Thái Thư Mục Thử Nghiệm Trước (`components/game/v2/character-profile/`):**
-   - Được gắn cờ kỹ thuật: **`IMPLEMENTED_BUT_NOT_ACCEPTED / LEGACY_V2_EXPERIMENT`**.
-   - Được cô lập nguyên vẹn làm tài liệu tham khảo; không dùng làm nền để chắp vá CSS.
-3. **Kiểm Toán Tài Nguyên Hình Ảnh Trên Đĩa (`public/images/`):**
-   - **Tồn tại thực tế:**
-     - `/images/valentine-fullbody.webp` (228 KB) — Tranh toàn thân chính thức.
-     - `/images/valentine-portrait.webp` (59 KB) — Avatar chân dung.
-   - **28 ảnh còn lại trong manifest:** Chưa có file vật lý `.webp` trong `public/images/`. Chúng sẽ được xử lý dưới dạng Thẻ Lưu Trữ Danh Mục (Archive Pending Card) kèm siêu dữ liệu và nhãn `[ Chờ Đồng Bộ WebP ]`, đảm bảo 100% không phát sinh lỗi HTTP 404 trên tab Network.
-   - **Cấm Tuyệt Đối:** Không dùng `sourceFilename` để tạo đường dẫn tải ảnh.
-4. **Đối Chiếu Dữ Liệu Chuẩn FND-8 (Valentine Lore & Stats):**
-   - `classCharacterName`: "Valentine Aurelia Vance" (Danh tính lore persona của Class, không ghi đè lên Instance phi công của người chơi).
-   - Base stats: 6 chỉ số tổng = 20 điểm (ATK: 2, DEF: 2, AGI: 2, ENE: 6, SHD: 6, LUK: 2).
-   - Traits: `pilot_trait_field_medic` (Bàn Tay Cứu Hộ) và `pilot_trait_safeguard` (Mái Khiên Nhân Ái).
-   - Story: Chương 01–04 `APPROVED` (Chương 01 toàn văn tiếng Việt, 02–04 tóm tắt), Chương 05–06 `PROVISIONAL`, Chương 07–10 `HOLD` (niêm phong bảo mật, không hiển thị như nội dung đã mở).
-   - Phân tách bắt buộc: `characterQuote` và `shortDescription` là hai khối văn bản tách biệt.
-   - Hai điều khiển bối cảnh (Background A / B) hoạt động trên cả Desktop và Mobile.
-5. **Đồng Bộ Hóa Với UI V2 Foundation:**
-   - Bộ Core UI Primitives tại `components/game/v2/ui/` (`Button`, `Card`, `Tabs`, `Tooltip`, `Dialog`, `Drawer`, `Feedback`) đã hoàn tất và đạt 5/5 responsive defect `FIXED`.
-   - UI V2 Foundation Roadmap đã xác lập: Phase 2 là Shared Art Viewer (`components/game/v2/ui/art-viewer.tsx`), Phase 3 là V2 Shell, và Phase 4 là Pilot Category/Profile Rebuild.
-
----
-
-## 2. Bảng Tài Liệu Đã Cập Nhật Trong Phiên Này
-
-| Đường Dẫn Tệp | Hành Động | Vai Trò |
+| Đường Dẫn Tệp | Loại | Mô Tả Chức Năng |
 |---|---|---|
-| `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_FEATURE_UI_REFERENCE.md` | Cập nhật | Giải phóng blocker concept ảnh, đồng bộ hóa hợp đồng UI V2 4 tầng và paired mobile |
-| `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_IMPLEMENTATION_PLAN.md` | Cập nhật | Khóa kế hoạch triển khai phân kỳ, ma trận nghiệm thu và quy trình test chi tiết |
-| `docs/progress/FND8/FND8_8_2_3_E0_CHECKPOINT.md` | Cập nhật | Điểm kiểm soát thực địa DEFINE / PLAN hoàn tất |
-| `docs/progress/FND8/FND8_8_2_3_E0_HANDOFF.md` | Cập nhật | Biên bản bàn giao hướng dẫn tiếp tục |
-| `docs/progress/FND8/FND8_8_2_3_E0_PROGRESS.md` | Cập nhật | Nhật ký tiến trình FND-8 E.0 |
+| `components/game/v2/ui/art-viewer.tsx` | Tạo mới | Fast-Track Shared Art Viewer độc lập (Zoom 1x–3x, pan, Esc, 44px hit target, archive fallback) |
+| `components/game/v2/ui/index.ts` | Cập nhật | Xuất ArtViewer vào bộ UI V2 Primitives dùng chung |
+| `components/game/v2/pilot-profile/tabs/overview-tab.tsx` | Tạo mới | Tab 6 chỉ số Base Attributes (không hiển thị tổng 20 điểm), 2 Traits tooltip, Dossier |
+| `components/game/v2/pilot-profile/tabs/story-tab.tsx` | Tạo mới | Tab Cốt truyện: toàn văn Chương 01 (`APPROVED`), tóm tắt 02–06, Chương 07–10 (`HOLD` niêm phong) |
+| `components/game/v2/pilot-profile/tabs/gear-compat-tab.tsx` | Tạo mới | Tab tương thích cơ giáp Aegis, Vanguard, Falcon minh bạch |
+| `components/game/v2/pilot-profile/tabs/gallery-tab.tsx` | Tạo mới | Lưới 2 ảnh WebP thật + Thẻ Archive cho 28 ảnh manifest chờ đồng bộ (100% Zero 404) |
+| `components/game/v2/pilot-profile/desktop-view.tsx` | Tạo mới | Giao diện Desktop 1440px 3 cột bám sát concept: Roster, Center Showcase (2 controls bối cảnh), 4 Tabs |
+| `components/game/v2/pilot-profile/mobile-art-view.tsx` | Tạo mới | Giao diện Mobile Art View gần full-screen, 2 controls bối cảnh nổi $\ge 44\text{px}$, nút xem hồ sơ |
+| `components/game/v2/pilot-profile/mobile-info-view.tsx` | Tạo mới | Giao diện Mobile Info View: Horizontal Roster 76px, quote/short bio tách biệt, 4 tabs |
+| `components/game/v2/pilot-profile/pilot-profile-v2.tsx` | Tạo mới | Master Coordinator quản lý state và chuyển đổi desktop/mobile |
+| `components/game/v2/character-profile/pilot-profile-v2.tsx` | Cập nhật | Forwarder chuyển hướng sang module mới mà không sửa bất kỳ dòng mã nào của V1 shell |
+| `app/ui-v2-preview/page.tsx` | Cập nhật | Tích hợp tab switcher xem trực tiếp Pilot Profile V2 trên môi trường preview cách ly |
 
 ---
 
-## 3. Hành Động Tiếp Theo Chính Xác (Next Exact Action)
+## 2. Kết Quả Kiểm Thử Thực Tế
 
-1. Dừng và xuất báo cáo toàn diện bằng tiếng Việt cho người dùng.
-2. Tuyệt đối không chỉnh sửa mã nguồn `.ts`, `.tsx`, `.css` hoặc thêm dependencies.
-3. Chờ người dùng phê duyệt kế hoạch triển khai và chỉ định bước tiếp theo:
-   - **Lựa chọn A (Khuyến nghị chuẩn tắc):** Triển khai `UI V2 Foundation Phase 2: Shared Art Viewer` để có sẵn component xem ảnh chuẩn dùng chung cho toàn bộ dự án.
-   - **Lựa chọn B (Triển khai trực tiếp E.0):** Triển khai gói `E.0-REBUILD-1` xây dựng mới trang Pilot Profile theo đúng hợp đồng thiết kế.
+- **Biên Dịch Next.js (`compile_applet`):** `Build succeeded - the applet is compiled` (0 lỗi TypeScript, 0 lỗi JSX).
+- **Kiểm Tra Cú Pháp (`lint_applet`):** `Linting completed successfully` (0 warnings, 0 errors).
+- **Toàn Vẹn V1:** Các tệp V1 (`components/game/starfront-shell.tsx`, `pilot-gallery.tsx`, `character-gear-select.tsx`, `lib/game/data.ts`) **giữ nguyên 100% không bị thay đổi**.
+
+---
+
+## 3. Giới Hạn Của Art Viewer & Lộ Trình Chuyển Đổi Sang Shared Art Viewer
+
+- **Khả năng hiện tại:**
+  - Hỗ trợ đầy đủ phóng to thu nhỏ từ 1x đến 3x qua nút bấm hoặc phím tắt `+` / `-` / `0`.
+  - Hỗ trợ kéo chuột (mouse drag) và cảm ứng vuốt (touch move) để pan khung ảnh khi phóng to $> 1x$.
+  - Phím `Escape` đóng modal, phím mũi tên điều hướng.
+  - Vùng chạm đóng và nút điều khiển tối thiểu $44 \times 44\text{px}$.
+  - Chống vỡ ảnh: Tự động phát hiện ảnh chưa có file và hiển thị thẻ thông tin lưu trữ danh mục.
+- **Giới hạn chưa triển khai:**
+  - Cử chỉ 2 ngón tay chụm mở (native touch pinch-to-zoom) đang dùng chế độ chạm double-tap và thanh công cụ nổi thay vì gesture listener đa điểm phức tạp để đảm bảo độ ổn định cao trên mọi trình duyệt.
+- **Điểm thay thế sang Shared Art Viewer:**
+  - Component được xây dựng trực tiếp tại `components/game/v2/ui/art-viewer.tsx` với interface chuẩn. Khi dự án bước sang Phase 2 của UI Foundation, chỉ cần nâng cấp trực tiếp file này mà không phải sửa đổi bất kỳ component nào trong `pilot-profile/`.
+
+---
+
+## 4. Hướng Dẫn Kiểm Thử Cho Người Dùng
+
+1. **Cách 1: Kiểm thử trên Preview Cách Ly (Khuyến nghị):**
+   - Mở URL ứng dụng và truy cập route: `/ui-v2-preview`.
+   - Bấm vào tab **`HỒ SƠ PHI CÔNG V2 (E.0-REBUILD-1)`** trên thanh phụ.
+   - Thử nghiệm trên màn hình Desktop hoặc bật DevTools chuyển sang chế độ Mobile (390px).
+2. **Cách 2: Kiểm thử qua V1 Shell:**
+   - Tại trang chủ `/`, trên thanh menu bên trái tìm mục:
+     `★ HỒ SƠ PHI CÔNG V2 // FND-8`.
+   - Xem giao diện Desktop 3 cột và thử click chọn nhân vật, đổi 2 chế độ bối cảnh Standard vs Tactical HUD, duyệt 4 tabs, và mở Art Viewer.

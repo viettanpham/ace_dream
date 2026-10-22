@@ -1,45 +1,30 @@
 # STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# BIÊN BẢN BÀN GIAO (HANDOFF INSTRUCTIONS — DEFINE / PLAN COMPLETED)
+# BIÊN BẢN BÀN GIAO (HANDOFF INSTRUCTIONS — E.0-REBUILD-1 COMPLETED)
 
 **Thời điểm:** 2026-10-22  
-**Đối tượng bàn giao:** Bất kỳ phiên làm việc tiếp theo / tài khoản AI Studio tiếp theo  
-**Trạng thái bàn giao:** `DEFINE / PLAN ONLY` ĐÃ HOÀN TẤT. Cổng chặn concept ảnh đã giải phóng, hợp đồng UI Desktop/Mobile đã khóa, dữ liệu Valentine và tài nguyên WebP đã đối chiếu chính xác.  
+**Đối tượng bàn giao:** Phiên làm việc / tài khoản tiếp theo  
+**Trạng thái bàn giao:** `Phase E.0-REBUILD-1` ĐÃ HOÀN TẤT. Module Character Category / Pilot Profile V2 mới đã dựng sạch tại `components/game/v2/pilot-profile/` và tích hợp Shared Art Viewer.  
 
 ---
 
-## 1. Tóm Tắt Nhanh Hiện Trạng Trước Khi Viết Mã
+## 1. Hướng Dẫn Thử Nghiệm
 
-1. **Concept PNG:** 3 ảnh concept PNG trong `docs/art-direction/UI_CONCEPTS/` đã có mặt đầy đủ trên đĩa.
-2. **Legacy V2 Experiment:** Thư mục `components/game/v2/character-profile/` đã được đánh dấu là `IMPLEMENTED_BUT_NOT_ACCEPTED / LEGACY_V2_EXPERIMENT`; không được dùng làm nền để vá đắp.
-3. **Core Primitives V2:** Đã hoàn thiện và kiểm chứng tại `components/game/v2/ui/` (`Button`, `Card`, `Tabs`, `Tooltip`, `Dialog`, `Drawer`, `Feedback`).
-4. **Tài nguyên ảnh WebP:**
-   - Chỉ có 2 ảnh WebP thật trên đĩa: `/images/valentine-fullbody.webp` và `/images/valentine-portrait.webp`.
-   - 28 ảnh manifest còn lại bắt buộc hiển thị dạng Thẻ Archive Card (tránh lỗi 404).
-   - Tuyệt đối không dùng `sourceFilename` làm URL web.
-5. **Dữ liệu Valentine canonical:**
-   - 6 chỉ số tổng = 20 điểm.
-   - 2 Trait V2 (`pilot_trait_field_medic`, `pilot_trait_safeguard`).
-   - Phân tách riêng `characterQuote` và `shortDescription`.
-   - Chương 01 toàn văn, 02–04 tóm tắt, 05–06 đề cương, 07–10 HOLD niêm phong.
-   - 2 background controls (Standard vs Tactical HUD).
+1. **Xem trực tiếp trên `/ui-v2-preview`:**
+   - Truy cập `/ui-v2-preview`.
+   - Chọn tab `HỒ SƠ PHI CÔNG V2 (E.0-REBUILD-1)` trên thanh phụ.
+2. **Kiểm tra trên Desktop (1440px):**
+   - Roster bên trái cuộn mượt, chọn Valentine hoặc các nhân vật khác.
+   - Khu vực trung tâm: Bấm thử 2 nút bối cảnh `Tiêu Chuẩn` (Standard) và `Radar HUD` (Tactical).
+   - Nút `Soi Tranh 4K`: Mở Art Viewer, thử Zoom In/Out, kéo pan chuột và bấm phím `Escape` để đóng.
+   - Cột phải: Đảm bảo `characterQuote` và `shortDescription` tách biệt rõ ràng; duyệt qua 4 tab: `OVERVIEW` (6 chỉ số sạch, không có tổng 20 điểm), `STORY` (toàn văn chương 1, chương 7-10 niêm phong), `GEAR COMPAT` (3 cơ giáp), `GALLERY` (2 ảnh WebP thật + 28 thẻ archive, không có lỗi 404).
+3. **Kiểm tra trên Mobile (375px–430px):**
+   - Mặc định mở ở `Mobile Art View` (ngắm tranh tràn màn hình, 2 controls bối cảnh nổi $\ge 44\text{px}$).
+   - Bấm nút `XEM HỒ SƠ` chuyển sang `Mobile Info View`: Horizontal roster 76px hiển thị đủ tên, 4 tabs cuộn dọc mượt mà.
 
 ---
 
-## 2. Các Bước Tiến Hành Tiếp Theo
+## 2. Quy Tắc Nghiêm Ngặt
 
-Khi người dùng ra lệnh `IMPLEMENT`:
-- Nếu người dùng chọn **Lộ trình chuẩn tắc Foundation**:
-  - Triển khai **UI V2 Foundation Phase 2: Shared Art Viewer** tạo `components/game/v2/ui/art-viewer.tsx`.
-- Nếu người dùng chọn **Triển khai E.0 Rebuild ngay**:
-  - Thực hiện theo kế hoạch tại `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_IMPLEMENTATION_PLAN.md`.
-  - Tạo mới module cách ly `components/game/v2/pilot-profile/` (hoặc cấu trúc mới sạch sẽ) sử dụng UI V2 Primitives.
-  - Triển khai đồng thời cả Desktop View (3 cột) và Mobile View (Paired States: Art View & Info View).
-  - Đảm bảo 100% không phát sinh lỗi 404 hình ảnh và đạt 0 lỗi build/lint.
-
----
-
-## 3. Ranh Giới Nghiêm Ngặt Cần Ghi Nhớ
-
-- **KHÔNG SỬA CODE V1:** Giữ nguyên `components/game/pilot-gallery.tsx`, `components/game/character-gear-select.tsx`, `lib/game/data.ts`.
-- **KHÔNG LÀM CHARACTER SELECTION WIZARD:** Scope chỉ gói gọn trong Character Category / Pilot Profile.
-- **KHÔNG TỰ TẠO LOGIC GAMEPLAY:** Tương thích GEAR chỉ hiển thị rating giao diện, không sáng tác công thức tính điểm chiến đấu.
+- **KHÔNG TỰ Ý CHUYỂN SANG REBUILD-2 HOẶC TỰ BỊA FEEDBACK:** Chờ người dùng trực tiếp nghiệm thu và phản hồi.
+- **KHÔNG SỬA CODE V1:** Giữ nguyên các tệp V1 hiện có.
+- **KHÔNG LÀM CHARACTER SELECTION WIZARD:** Scope chỉ gói gọn trong Profile / Category.

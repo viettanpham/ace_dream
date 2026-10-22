@@ -1275,7 +1275,7 @@ export function StarfrontShell() {
           )}
 
           {/* C. Nội Dung Phân Hệ Đang Chọn */}
-          <main className="min-w-0 flex-1 p-3 sm:p-5">
+          <main className={cn("min-w-0 flex-1", activeSection === "character-profile-v2" ? "p-0" : "p-3 sm:p-5")}>
             {/* Phân hệ 1: Tổng Quan (Home) */}
             {activeSection === "home" && (
               <StarfrontHome

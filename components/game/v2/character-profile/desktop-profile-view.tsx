@@ -67,18 +67,16 @@ export function DesktopProfileView({
             </div>
           </div>
 
-          {/* Breadcrumb Navigation chuẩn concept */}
+          {/* Breadcrumb Navigation Profile Category */}
           <nav className="hidden lg:flex items-center gap-2 text-xs font-mono font-bold tracking-wider text-slate-400 ml-6">
-            <span className="hover:text-slate-200 cursor-pointer">NEW GAME</span>
+            <span className="hover:text-slate-200 cursor-pointer">STARFRONT V2</span>
             <span className="text-slate-600">&gt;</span>
-            <span className="text-cyan-400 flex items-center gap-1">
+            <span className="text-slate-300">HỒ SƠ PHI CÔNG // FND-8</span>
+            <span className="text-slate-600">&gt;</span>
+            <span className="text-cyan-400 flex items-center gap-1 font-bold">
               <span className="size-1.5 rounded-full bg-cyan-400 animate-pulse" />
-              SELECT CHARACTER
+              {character.classCharacterName.toUpperCase()}
             </span>
-            <span className="text-slate-600">&gt;</span>
-            <span className="text-slate-500">GEAR SETUP</span>
-            <span className="text-slate-600">&gt;</span>
-            <span className="text-slate-500">CONFIRM</span>
           </nav>
         </div>
 
@@ -445,18 +443,10 @@ export function DesktopProfileView({
             )}
           </div>
 
-          {/* Primary CTA Button ở dưới cùng (CHỌN NHÂN VẬT >) */}
-          <div className="p-4 border-t border-slate-800/80 bg-slate-950">
-            <button
-              onClick={() => {
-                // Action preview hoặc chọn nhân vật
-                alert(`Đã chọn nhân vật mẫu: ${character.classCharacterName} (${character.callsign})`)
-              }}
-              className="w-full flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 via-cyan-400 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-black font-black py-3 px-6 font-display text-sm uppercase tracking-wider shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all cursor-pointer"
-            >
-              <span>CHỌN NHÂN VẬT</span>
-              <ArrowRight className="size-4" />
-            </button>
+          {/* Footer trạng thái phân hệ V2 */}
+          <div className="p-3 border-t border-slate-800/80 bg-slate-950/80 flex items-center justify-between text-xs font-mono text-slate-400">
+            <span>PILOT PROFILE V2 // FND-8</span>
+            <span className="text-cyan-400 font-semibold">{character.classCharacterName} · ACTIVE</span>
           </div>
         </aside>
       </div>

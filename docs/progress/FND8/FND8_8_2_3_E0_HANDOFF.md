@@ -29,11 +29,22 @@
        - **STORY:** Xem lộ trình 10 chương, đọc toàn văn Chương 01 với cỡ chữ 17px dễ đọc.
        - **GEAR COMPAT:** Xem thông tin minh bạch về trạng thái chuẩn hóa FND-8.3 (không có điểm số bịa đặt).
        - **GALLERY:** Xem 2 ảnh WebP thật và các thẻ archive "Chờ Đồng Bộ WebP".
-4. **Kiểm Thử Trên Màn Hình Mobile (Device Mode 375px–430px):**
+4. **Kiểm Thử Trên Màn Hình Mobile (Device Mode 375px–430px — Trọng Tâm Nghiệm Thu):**
    - Mở DevTools (F12) chuyển sang kích thước 390px (iPhone) hoặc 412px (Pixel).
-   - Kiểm tra **Thanh Chuyển Đổi Trạng Thái:**
-     - Chạm vào `[ Xem Thông Tin ]`: Hiển thị Info View với avatar, 4 tabs cuộn mượt, touch targets >= 44px.
-     - Chạm vào `[ Xem Tranh Nhân Vật ]`: Hiển thị Art View toàn màn hình, thanh công cụ nổi, 2 nút chuyển bối cảnh chạm nhạy.
+   - **Horizontal Roster:** Danh sách avatar ngang cuộn mượt, chiều rộng mỗi ô 76px, tên nhân vật ("Valentine", "Kaelen", "Alviss"...) hiển thị đầy đủ, không bị cắt cụt.
+   - **Mobile Art View (Mặc định khi mở):**
+     - Tranh Valentine hiển thị dạng gần full-screen, bám sát concept `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png` (Right Screen).
+     - Toàn bộ cơ thể (đầu, cánh/hào quang, tay cầm gậy y tế, trang phục) hiển thị trọn vẹn, không bị crop mất phần quan trọng.
+     - Hai nút mũi tên điều khiển chuyển nhân vật/bối cảnh `<` và `>` đối xứng hai bên sườn màn hình (touch target >= 44px).
+     - Nút nổi `2D` và `Zoom In` (+) bên phải trên nền tranh.
+     - Bảng thông tin nổi ở đáy màn hình: Insignia UME Medical Corps, Tên `+ Valentine`, Danh hiệu `Ánh Sáng Cuối Cùng`, Vai trò, 3-thumbnail carousel (Fullbody / Chân dung / Buồng lái), Trích dẫn lời thề, và nút `[ 📄 Xem Hồ Sơ ]`.
+   - **Mobile Info View:**
+     - Chạm nút `[ Xem Hồ Sơ & Story ]` hoặc nút trên bảng nổi đáy màn hình:
+     - Chuyển sang Info View bám sát concept (Left Screen), loại bỏ card-nesting rườm rà.
+     - Cỡ chữ chuẩn Design System V2: Body 16px, Story 17px, Text phụ 14px, đọc rất thoải mái và rõ nét.
+     - 4 Tab: OVERVIEW (Stats 20 điểm + Trait popover), STORY (Lộ trình 10 chương), GEAR (Tương thích cơ giáp), GALLERY (2 ảnh WebP nổi bật, 28 ảnh archive thu gọn dạng bảng trạng thái đóng/mở).
+   - **Loại Bỏ Hoàn Toàn Nút Wizard:** Không còn nút "CHỌN NHÂN VẬT" cố định ở đáy màn hình hay step breadcrumb.
+   - **Loại Bỏ Shell Margin:** Shell áp dụng `p-0` khi vào V2 giúp giao diện tràn viền chuẩn mobile native.
 
 ---
 

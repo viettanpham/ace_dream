@@ -22,15 +22,23 @@
 | **Bước 9** | Triển khai Master Container V2 | Tạo mới `components/game/v2/character-profile/pilot-profile-v2.tsx`: Tự động nhận diện viewport và điều phối state. | Responsive linh hoạt |
 | **Bước 10** | Tích hợp Entry Point Tối Thiểu Vào Shell | Thêm tab `"HỒ SƠ PHI CÔNG V2 // FND-8"` vào `components/game/starfront-shell.tsx`, giữ nguyên 100% các phân hệ V1. | Cô lập an toàn |
 | **Bước 11** | Kiểm tra Biên Dịch & Build Test | Chạy `compile_applet`: **Build succeeded** (0 lỗi TypeScript, 0 lỗi cú pháp). | Đạt chuẩn chấp nhận |
+| **Bước 12** | **Hiệu Chỉnh Trực Quan Mobile First** | Sửa triệt để 7 lỗi theo concept `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png`: Tranh Art View gần full-screen, không crop; Roster min-w 76px hiển thị đủ tên Valentine; Pill toggle chuyển Info/Art mượt mà; Body 16px, Story 17px; Thu gọn 28 ảnh archive trong Gallery; Xóa bỏ nút CHỌN NHÂN VẬT và wizard artifacts; Loại bỏ padding shell p-0 cho V2. | Khớp chuẩn Concept Mobile |
 
 ---
 
 ## 2. Kết Quả Kiểm Kê & Bảng Đối Chiếu Hiện Trạng
 
-- **Phase Hoàn Tất:** `E.0-IMPLEMENT-1`.
-- **Thư Mục Code Mới Tạo:**
-  - `lib/game/v2/`
-  - `components/game/v2/character-profile/`
-- **Tệp Cũ Được Sửa Đổi Tối Thiểu:**
-  - `components/game/starfront-shell.tsx` (Chỉ thêm 1 route tab thử nghiệm, không động chạm legacy V1).
+- **Phase Hoàn Tất:** `E.0-IMPLEMENT-1` & `E.0-MOBILE-CORRECTION`.
+- **Thư Mục Code Mới Tạo & Cập Nhật:**
+  - `lib/game/v2/character-profile-data.ts`
+  - `components/game/v2/character-profile/mobile-profile-view.tsx`
+  - `components/game/v2/character-profile/desktop-profile-view.tsx`
+  - `components/game/v2/character-profile/profile-tabs/gallery-tab.tsx`
+  - `components/game/v2/character-profile/profile-tabs/overview-tab.tsx`
+  - `components/game/v2/character-profile/profile-tabs/story-tab.tsx`
+  - `components/game/v2/character-profile/profile-tabs/gear-compat-tab.tsx`
+  - `components/game/v2/character-profile/artwork-lightbox-modal.tsx`
+  - `components/game/v2/character-profile/pilot-profile-v2.tsx`
+- **Tệp Shell Được Điều Chỉnh:**
+  - `components/game/starfront-shell.tsx` (Thêm entry point V2 và loại bỏ shell padding `p-0` khi hiển thị profile V2).
 - **Trạng Thái Tiếp Theo:** DỪNG và chờ người dùng kiểm thử giao diện thực tế. Không tự động chuyển sang `IMPLEMENT-2`.

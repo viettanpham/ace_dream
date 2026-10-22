@@ -1,123 +1,127 @@
 # STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# BOUNDED IMPLEMENTATION PLAN & ACCEPTANCE TEST PLAN (DESIGN SYSTEM ALIGNED)
+# BOUNDED IMPLEMENTATION & TEST PLAN (V2 FOUNDATION & DUAL SHELL ALIGNED)
 
 **Ngày cập nhật:** 2026-10-22  
-**Chế độ:** DEFINE / PLAN ONLY (Đã đồng bộ hóa Design System V2 & Ghi nhận Cổng Chặn Blocker)  
-**Phạm vi:** 8.2.3.E.0 — Character Category / Pilot Profile UI Foundation  
+**Chế độ:** DEFINE / PLAN ONLY — Khóa kế hoạch triển khai và ma trận nghiệm thu  
+**Phạm vi:** 8.2.3.E.0 — Character Category / Pilot Profile UI Rebuild  
 
 ---
 
-## 1. Cổng Kiểm Soát Tiền Triển Khai (Pre-Implementation Blocker Gate)
+## 1. Tình Trạng Cổng Kiểm Soát (Blocker Gate Status)
 
-> [!WARNING]
-> ### 🚨 CỔNG CHẶN TRƯỚC KHI IMPLEMENT: 3 ẢNH CONCEPT PNG
-> - **Tình trạng:** Thư mục `docs/art-direction/UI_CONCEPTS/` và 3 file PNG concept chưa có trong container filesystem.
-> - **Nguyên tắc:** Concept được duyệt là chuẩn thiết kế cao nhất; không tự suy diễn layout từ mô tả chữ.
-> - **Điều kiện giải phóng cổng:** Người dùng cung cấp tệp ảnh hoặc hướng dẫn khôi phục 3 file PNG vào `docs/art-direction/UI_CONCEPTS/`, HOẶC xác nhận phê duyệt tiến hành dựng khung xương theo đúng hợp đồng văn bản đã ghi nhận trong `FND8_8_2_3_E0_FEATURE_UI_REFERENCE.md`.
+> [!NOTE]
+> ### ✅ CỔNG CHẶN BLOCKER ĐÃ GIẢI PHÓNG: 3 ẢNH CONCEPT PNG ĐÃ CÓ MẶT
+> - Thư mục `docs/art-direction/UI_CONCEPTS/` chứa đủ 3 file PNG:
+>   - `FND8_823_CHARACTER_CATEGORY_PROFILE_DESKTOP_APPROVED.png`
+>   - `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png`
+>   - `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_INFO_VIEW_REFERENCE.png`
+> - Đạt điều kiện kiểm chứng trực quan; kế hoạch triển khai sau này sẽ bám sát 100% bố cục và chi tiết từ các ảnh này.
 
 ---
 
 ## 2. Phân Kỳ Triển Khai Có Giới Hạn (Bounded Phases)
 
-### Phase E.0-IMPLEMENT-1: Dựng Module V2 Độc Lập (Desktop + Mobile) Chuẩn Design System V2
-- **Mục tiêu:**
-  - Thiết lập module V2 tại thư mục cách ly `components/game/v2/character-profile/`.
-  - Triển khai Data Access Adapter tại `lib/game/v2/character-profile-data.ts`:
-    - Chỉ đọc dữ liệu canonical FND-8 (`FND8_8_2_3_CHARACTER_ROSTER_V2_DRAFT.md`, `FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md`, `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md`).
-    - Tuyệt đối không nhân đôi Class stats, Traits hay sáng tác logic/công thức gameplay mới.
-    - Cung cấp dữ liệu chuẩn bị sẵn cho FND-1 `CatalogRegistry`.
-  - Áp dụng **Design System V2**:
-    - Typography: Story body font 15–16px, line-height 1.65, giới hạn độ rộng dòng tối ưu (65–75 ký tự).
-    - Touch targets: Tất cả các nút bấm, Tab, Toggle trên mobile đạt kích thước tối thiểu **44 × 44px**.
-    - Phân tách độc lập `characterQuote` và `shortDescription`.
-  - Áp dụng **Chính Sách WebP & Zero Broken Images**:
-    - Tải 2 ảnh WebP thật trên đĩa: `/images/valentine-fullbody.webp` và `/images/valentine-portrait.webp`.
-    - 28 ảnh còn lại trong manifest hiển thị dưới dạng thẻ "Hồ Sơ Lưu Trữ Chờ Đồng Bộ WebP".
-    - Không sử dụng `sourceFilename` để tạo đường dẫn ảnh.
-  - Triển khai đồng thời cả **Desktop View (1440px 3 cột)** và **Mobile View (375px–430px Paired States)** với 2 background controls và 4 tabs.
-- **Tiêu chuẩn giao hàng:**
-  - Lối vào tối thiểu trong Starfront Shell để xem thử UI V2, không làm ảnh hưởng UI V1 cũ.
-  - Không có lỗi 404 hình ảnh (100% request đạt HTTP 200).
-  - Không có lỗi biên dịch TypeScript (`compile_applet` passed).
+### 2.1 Ma Trận Phụ Thuộc Với Lộ Trình UI Foundation
+Theo `docs/UI_v2/05_UI_V2_IMPLEMENTATION_ROADMAP.md`:
+- **Phase 1 (Core Primitives):** Đã hoàn tất (`components/game/v2/ui/`).
+- **Phase 2 (Shared Art Viewer):** Xây dựng component xem ảnh phóng to/thu nhỏ chuẩn `components/game/v2/ui/art-viewer.tsx`.
+- **Phase 3 (Official V2 Shell):** Shell 4 tầng, Navigation Registry, Settings switch V1/V2.
+- **Phase 4 / E.0 (Pilot Profile V2 Rebuild):** Xây dựng lại trang Pilot Profile.
 
-### Phase E.0-IMPLEMENT-2: Kiểm Thử Thực Địa & Hiệu Chỉnh Theo Phản Hồi Người Dùng
-- **Mục tiêu:** Nhận phản hồi thực tế từ người dùng sau khi trải nghiệm bản build V2, hiệu chỉnh chi tiết cảm ứng trên thiết bị thật, tinh chỉnh độ tương phản màu sắc và bố cục nếu cần.
-- **Tiêu chuẩn giao hàng:** 100% tiêu chí chấp nhận được kiểm chứng; giao diện chạy mượt mà trên cả Desktop và Mobile.
+**Chiến Lược Khuyến Nghị Về Ranh Giới (Recommended Sequencing):**
+1. **Lộ trình chuẩn tắc:** Người dùng kích hoạt triển khai **Foundation Phase 2 (Shared Art Viewer)** trước, sau đó đến **Foundation Phase 3 (V2 Shell)**, rồi E.0 Rebuild sẽ được đặt trực tiếp vào V2 Shell chính thức.
+2. **Lộ trình độc lập có ranh giới an toàn (Fast-Track Bounded Phase):** Nếu người dùng muốn triển khai E.0 Rebuild ngay, E.0 sẽ dùng bộ Primitives có sẵn từ Phase 1 và tích hợp một module xem ảnh chuẩn hóa (tuân thủ interface của Phase 2 Art Viewer) để khi Phase 2 và Phase 3 hoàn tất chỉ cần cắm vào mà không phải sửa lại giao diện.
+
+---
+
+### 2.2 Các Pha Của Gói E.0 Rebuild
+
+#### Phase E.0-PLAN: Rà Soát Thực Địa & Khóa Thiết Kế (Phiên Hiện Tại)
+- **Mục tiêu:** Rà soát mã nguồn, kiểm chứng dữ liệu Valentine, xác minh asset WebP, khóa hợp đồng UI Desktop/Mobile và cập nhật tài liệu chuẩn.
+- **Kết quả:** Không sửa code; xuất báo cáo toàn diện và chờ phê duyệt từ người dùng.
+
+#### Phase E.0-REBUILD-1: Xây Dựng Bản UI V2 Mới Sạch Sẽ (Desktop + Mobile Đồng Thời)
+- **Mục tiêu:**
+  - Cô lập hoàn toàn bản thử nghiệm cũ `components/game/v2/character-profile/` (đánh dấu `LEGACY_V2_EXPERIMENT`).
+  - Xây dựng module mới sử dụng trực tiếp **UI Primitives V2** (`components/game/v2/ui/`): Button, Tabs, Card, Tooltip, Dialog/Drawer.
+  - Xây dựng **Desktop View 1440px (3 cột)**:
+    - Roster phi công (hỗ trợ Full/Mini).
+    - Khung trưng bày trung tâm với **2 điều khiển bối cảnh (Standard vs Tactical HUD)** và nút mở Art Viewer.
+    - Cột thông tin 4 tabs (`OVERVIEW`, `STORY`, `GEAR COMPAT`, `GALLERY`).
+    - Phân tách độc lập `characterQuote` và `shortDescription`.
+  - Xây dựng **Mobile Paired States (375px–430px)**:
+    - **Mobile Art View**: Tranh toàn màn hình, nút chuyển bối cảnh cảm ứng $\ge 44 \times 44\text{px}$, nút xem hồ sơ nổi.
+    - **Mobile Info View**: Horizontal Roster 76px/ô, header gọn, 4 tabs, cỡ chữ body 16px, story 17px.
+    - Bỏ hoàn toàn nút Wizard ("CHỌN NHÂN VẬT") và padding rườm rà.
+  - Tích hợp **Data Adapter V2** và **Chính Sách WebP & Zero 404**:
+    - Nạp 2 ảnh thật: `valentine-fullbody.webp` và `valentine-portrait.webp`.
+    - 28 ảnh còn lại hiển thị dạng thẻ lưu trữ "Chờ Đồng Bộ WebP", 0 lỗi 404 trên Network.
+- **Tiêu chuẩn hoàn tất:** Compile pass 0 lỗi TypeScript, 0 lỗi lint, kiểm thử mượt mà trên Desktop và Mobile.
+
+#### Phase E.0-REBUILD-2: Nghiệm Thu Thực Tế & Tinh Chỉnh Cảm Ứng
+- **Mục tiêu:** Kiểm thử thực tế trên thiết bị thật, ghi nhận phản hồi và xử lý các vi chỉnh (nếu có).
 
 ---
 
 ## 3. Kế Hoạch Thay Đổi Tệp (File-Change Plan)
 
-### 3.1 Các Tệp Mới Được Tạo (Isolated New Files)
-1. `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_UI_V2_DESIGN_SYSTEM.md` *(Đã tạo trong turn này)*.
-2. `lib/game/v2/character-profile-data.ts`: Data Access Adapter trích xuất dữ liệu canonical FND-8.
-3. `components/game/v2/character-profile/pilot-profile-v2.tsx`: Container điều phối responsive và quản lý state.
-4. `components/game/v2/character-profile/desktop-profile-view.tsx`: Bố cục Desktop 3 cột chuẩn 1440px.
-5. `components/game/v2/character-profile/mobile-profile-view.tsx`: Bố cục Mobile Paired States (Info View & Art View).
-6. `components/game/v2/character-profile/profile-tabs/`:
-   - `overview-tab.tsx`: 6 chỉ số 20 điểm, Trait cards với tooltip, nhân thân.
-   - `story-tab.tsx`: Story reader tối ưu khả năng đọc, Chương 01 toàn văn, trạng thái 02–10.
-   - `gear-compat-tab.tsx`: Bảng xếp hạng tương thích cơ giáp (Aegis/Vanguard/Falcon).
-   - `gallery-tab.tsx`: Bộ sưu tập 2 ảnh WebP thật + Thẻ lưu trữ cho 28 ảnh chờ đồng bộ.
-7. `components/game/v2/character-profile/artwork-lightbox-modal.tsx`: Trình soi tranh (Zoom 1x-4x, Pan chuột, Esc).
+### 3.1 Tệp Sẽ Tạo Mới Trong Phase Implementation Sau
+1. `lib/game/v2/character-profile-data.ts`: Data Adapter trích xuất dữ liệu canonical FND-8.
+2. `components/game/v2/pilot-profile/`: Thư mục module mới độc lập (thay vì ghi đè lên thư mục thử nghiệm cũ):
+   - `pilot-profile-container.tsx`: Điều phối responsive desktop/mobile.
+   - `desktop-view.tsx`: Giao diện desktop 3 cột.
+   - `mobile-art-view.tsx`: Giao diện ngắm tranh mobile tràn màn hình.
+   - `mobile-info-view.tsx`: Giao diện thông số & story mobile.
+   - `tabs/overview-tab.tsx`: 6 chỉ số 20 điểm, 2 Traits tooltip, thông tin nhân thân.
+   - `tabs/story-tab.tsx`: Toàn văn Chương 01, lộ trình 10 chương.
+   - `tabs/gear-compat-tab.tsx`: Bảng tương thích cơ giáp (Aegis/Vanguard/Falcon).
+   - `tabs/gallery-tab.tsx`: 2 ảnh WebP thật + Thẻ Archive cho 28 ảnh chờ đồng bộ.
 
-### 3.2 Tệp Thay Đổi Nhỏ Cho Tích Hợp Thử Nghiệm
-1. `components/game/starfront-shell.tsx`: Thêm một tab điều hướng tối thiểu `"Hồ Sơ Phi Công V2 (FND-8)"` (chỉ 1 nhánh điều kiện an toàn, giữ nguyên toàn bộ V1).
-
-### 3.3 Tệp Nghiêm Ngặt Giữ Nguyên (Untouched Legacy)
-- `components/game/pilot-gallery.tsx` (Giữ nguyên toàn bộ 1573 dòng).
-- `components/game/character-gear-select.tsx` (Giữ nguyên).
-- `lib/game/data.ts` (Giữ nguyên).
-- `lib/game/types.ts` (Giữ nguyên).
-- `docs/art-direction/PILOT/VALENTINE/valentine_assets_manifest.json` (Giữ nguyên hồ sơ provenance).
+### 3.2 Tệp Giữ Nguyên Tuyệt Đối (Untouched Files)
+- `components/game/starfront-shell.tsx` (V1 shell, không sửa layout).
+- `components/game/pilot-gallery.tsx` (V1 gallery giữ nguyên).
+- `components/game/character-gear-select.tsx` (V1 gear select giữ nguyên).
+- `lib/game/data.ts` (V1 data).
+- `lib/game/types.ts` (V1 types).
+- `docs/art-direction/PILOT/VALENTINE/valentine_assets_manifest.json` (Hồ sơ provenance gốc).
 
 ---
 
 ## 4. Danh Mục Tiêu Chí Chấp Nhận (Acceptance Checklist)
 
-| STT | Tiêu Chí Kiểm Tra | Yêu Cầu Chi Tiết Theo Design System V2 | Cách Kiểm Thử |
+| STT | Tiêu Chí Kiểm Tra | Yêu Cầu Chi Tiết | Cách Kiểm Thử |
 |---|---|---|---|
-| 1 | **Không Kế Thừa CSS V1** | UI mới độc lập, không dùng CSS CRT scanlines xanh lá hay cấu trúc cũ của V1. | Kiểm tra CSS/Classes trong module V2. |
-| 2 | **Khả Năng Đọc & Kiểu Chữ** | Story body font >= 15px, line-height 1.65, max-w-prose. Không dùng font < 12px. | Kiểm tra Inspector kích thước font & line-height. |
-| 3 | **Touch Target Mobile >= 44px** | Nút bấm, Tab, Toggle chuyển bối cảnh trên mobile đều có vùng bấm >= 44 × 44px. | Kiểm tra bounding box trên DevTools Mobile Mode. |
-| 4 | **Data Adapter & Không Nhân Đôi** | UI Data Adapter đọc từ canonical FND-8; không tự bịa công thức gameplay hay nhân đôi stats. | Kiểm tra mã nguồn `lib/game/v2/character-profile-data.ts`. |
-| 5 | **Chính Sách WebP & Zero 404** | Chỉ nạp ảnh `.webp` có thật (`valentine-fullbody.webp`, `valentine-portrait.webp`). Không dùng `sourceFilename`. | Kiểm tra tab Network: 100% ảnh đạt HTTP 200, 0 lỗi 404. |
-| 6 | **Hai Background Controls** | Hoạt động trên cả Desktop (2 bên tranh) và Mobile (floating bar ở Art View). | Thao tác chuyển đổi và kiểm tra thay đổi nền. |
-| 7 | **Đồng Thời Desktop & Mobile** | Hoàn thành ngay trong Phase 1 cho cả màn hình rộng (>1280px) và smartphone (375px–430px). | Thử nghiệm trên cả 2 độ phân giải. |
-| 8 | **Đầy Đủ 4 Tab & Tách Biệt Quote** | 4 Tab chuẩn; `characterQuote` và `shortDescription` là 2 khối riêng biệt. | Kiểm tra trực quan và cấu trúc DOM. |
-| 9 | **Dữ Liệu Thật Của Valentine** | 20 điểm thuộc tính chuẩn, 2 Trait V2, Chương 01 toàn văn tiếng Việt, Chương 7–10 HOLD. | Đối chiếu hiển thị với tài liệu lore gốc. |
-| 10 | **Trình Soi Tranh (Inspector)** | Zoom 1x-4x, Pan kéo ảnh, phím Esc đóng modal hoạt động trơn tru. | Thử lăn chuột, kéo rê chuột và bấm Esc. |
-| 11 | **Không Phá Hỏng Legacy** | Toàn bộ phân hệ V1 cũ (Gallery, Combat, Hangar) vẫn hoạt động nguyên vẹn. | Truy cập lại các tab cũ kiểm tra hoạt động. |
-| 12 | **Biên Dịch Sạch Sẽ** | `compile_applet` thành công với 0 lỗi TypeScript hoặc Lint. | Chạy lệnh build kiểm tra. |
+| 1 | **Không Kế Thừa CSS V1** | Sử dụng toàn bộ Tailwind v4 và Primitives V2; không dùng CSS scanline xanh lá V1. | Kiểm tra mã nguồn module mới. |
+| 2 | **Khả Năng Đọc & Kiểu Chữ** | Story font 16–17px, line-height 1.65, max-w-prose. Body font 15–16px. Không font < 12px. | Kiểm tra DevTools Inspector. |
+| 3 | **Touch Target Mobile >= 44px** | Toàn bộ Tabs, Nút bấm, Toggle chuyển bối cảnh trên mobile đạt $\ge 44 \times 44\text{px}$. | Kiểm tra DevTools Mobile Mode bounding box. |
+| 4 | **Hai Background Controls** | Hoạt động trên cả Desktop (2 bên tranh) và Mobile (floating bar ở Art View). | Click chuyển đổi giữa Standard và Tactical HUD. |
+| 5 | **Đồng Thời Desktop & Mobile** | Hoàn thành ngay trong cùng một phase triển khai; mobile có bố cục riêng biệt. | Kiểm tra màn hình 1440px và 390px. |
+| 6 | **Đầy Đủ 4 Tab & Tách Biệt Quote** | 4 Tab chuẩn; `characterQuote` và `shortDescription` là 2 khối riêng biệt. | Kiểm tra cấu trúc DOM và giao diện. |
+| 7 | **Dữ Liệu Thật Của Valentine** | 20 điểm thuộc tính chuẩn, 2 Trait V2, Chương 01 toàn văn tiếng Việt, Chương 7–10 HOLD. | Đối chiếu với hồ sơ lore canonical. |
+| 8 | **Chính Sách WebP & Zero 404** | Chỉ nạp ảnh có thật trên đĩa (`valentine-fullbody.webp`, `valentine-portrait.webp`). 28 ảnh còn lại là thẻ Archive Card. 0 lỗi 404. | Kiểm tra tab Network: 100% request HTTP 200. |
+| 9 | **Không Có Wizard Artifacts** | Không có nút "CHỌN NHÂN VẬT", không có step wizard. | Kiểm tra giao diện không có tàn tích wizard. |
+| 10 | **Bảo Toàn 100% V1 & Build Pass** | V1 hoạt động bình thường, `compile_applet` và `lint_applet` đạt 0 lỗi. | Chạy lệnh build kiểm tra. |
 
 ---
 
-## 5. Kế Hoạch Kiểm Thử Chi Tiết
+## 5. Quy Trình Kiểm Thử Đích (Targeted Test Plan)
 
 ### 5.1 Desktop Viewport (1440 × 900)
-1. Mở Starfront Shell, chọn tab `"Hồ Sơ Phi Công V2 (FND-8)"`.
+1. Mở trang Category/Profile V2.
 2. Kiểm tra cột Roster bên trái và chọn Valentine.
 3. Kiểm tra Showcase tranh trung tâm:
-   - Click Toggle Background 1 (Elysia Hangar) và Toggle Background 2 (Buồng Lái HUD).
-   - Click nút phóng to mở Lightbox Inspector, thử Zoom và Pan chuột.
+   - Thử nghiệm Toggle Background 1 (Standard) và Toggle Background 2 (Tactical HUD).
+   - Thử nghiệm mở Art Viewer phóng to, rê kéo chuột và bấm phím Escape để đóng.
 4. Kiểm tra Cột phải:
    - Đảm bảo `characterQuote` và `shortDescription` hiển thị thành 2 khối tách biệt rõ ràng.
-   - Tab OVERVIEW: Kiểm tra 6 chỉ số chuẩn (2/2/2/6/6/2); hover 2 Trait xem tooltip.
-   - Tab STORY: Đọc Chương 01 toàn văn với cỡ chữ thoải mái; kiểm tra các chương 2–10.
-   - Tab GEAR COMPAT: Xem đánh giá tương thích 3 lớp cơ giáp Aegis/Vanguard/Falcon.
-   - Tab GALLERY: Kiểm tra 2 ảnh WebP thật và các thẻ archive fallback "Chờ Đồng Bộ WebP".
+   - Duyệt qua 4 tab: `OVERVIEW`, `STORY`, `GEAR COMPAT`, `GALLERY`.
 
 ### 5.2 Mobile Viewport (390 × 844)
 1. Bật DevTools ở kích thước 390px.
-2. Kiểm tra `Mobile Info View`:
-   - Top bar 56px, nút switch sang Art View, header thu gọn.
-   - Touch targets của các Tab và nút bấm đều đạt >= 44px.
-   - Font chữ Story đạt 15px, cuộn đọc dễ dàng.
-3. Chuyển sang `Mobile Art View`:
-   - Tranh toàn thân hiển thị tràn viền sắc nét.
-   - 2 nút chuyển đổi bối cảnh ở thanh công cụ đáy touch-friendly (>=44px).
-   - Thử nghiệm zoom và chạm nút quay lại Info View.
-
-### 5.3 Kiểm Thử Hồi Quy (Regression & Build Test)
-1. Mở lại tab "Pilot Gallery" V1 cũ: xác nhận mọi chức năng cũ không bị ảnh hưởng.
-2. Chạy `compile_applet`: đảm bảo 0 lỗi biên dịch.
+2. Kiểm tra `Mobile Art View`:
+   - Tranh toàn thân hiển thị tràn viền, không bị cắt crop.
+   - Thao tác 2 nút chuyển đổi bối cảnh ở thanh công cụ đáy touch-friendly ($\ge 44\text{px}$).
+   - Bấm nút `[ 📄 Xem Hồ Sơ ]` để chuyển sang `Mobile Info View`.
+3. Kiểm tra `Mobile Info View`:
+   - Horizontal Roster cuộn mượt, chiều rộng mỗi ô 76px, tên nhân vật đầy đủ.
+   - Duyệt qua 4 tab với cỡ chữ thoải mái, touch target lớn.

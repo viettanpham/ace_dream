@@ -56,120 +56,177 @@ export default function UIV2PreviewPage() {
   const [buttonLoading, setButtonLoading] = useState(false)
   const [feedbackDemo, setFeedbackDemo] = useState<'loading' | 'empty' | 'error' | 'success'>('loading')
 
+  const isSimulatedMobile = viewportMode === 'mobile'
+  const isSimulatedTablet = viewportMode === 'tablet'
+
   const viewportContainerStyles = {
     responsive: 'w-full',
-    mobile: 'max-w-[390px] mx-auto border-x border-[#26384D] shadow-2xl',
-    tablet: 'max-w-[768px] mx-auto border-x border-[#26384D] shadow-2xl',
-    desktop: 'max-w-[1440px] mx-auto',
+    mobile: 'max-w-[390px] mx-auto border-x border-[#26384D] shadow-2xl px-4',
+    tablet: 'max-w-[768px] mx-auto border-x border-[#26384D] shadow-2xl px-6',
+    desktop: 'max-w-[1440px] mx-auto px-6 sm:px-8',
   }[viewportMode]
 
+  // Responsive grid classes: In simulated mobile mode, strictly enforce 1 column
+  const gridTwoCols = isSimulatedMobile
+    ? 'grid grid-cols-1 gap-6'
+    : 'grid grid-cols-1 md:grid-cols-2 gap-6'
+
+  const gridThreeCols = isSimulatedMobile || isSimulatedTablet
+    ? 'grid grid-cols-1 gap-6'
+    : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+
   return (
-    <div className="sf-v2-root min-h-screen text-[#F1F5F9] pb-24">
-      {/* Top Bar Navigation for Preview Harness */}
-      <header className="sticky top-0 z-40 bg-[#070A12]/90 backdrop-blur-md border-b border-[#26384D] px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+    <div className="sf-v2-root min-h-screen text-[#F1F5F9] pb-24 overflow-x-hidden">
+      {/* ========================================================================
+          TOP BAR NAVIGATION (Streamlined single-tier header, max 56px height on mobile)
+          ======================================================================== */}
+      <header className="sticky top-0 z-40 bg-[#070A12]/95 backdrop-blur-md border-b border-[#26384D] px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+        {/* Left Zone: Single, prominent QUAY LẠI V1 action */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm text-[#A7B6C8] hover:text-[#06B6D4] transition-colors min-h-[44px] px-2"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#142338] border border-[#26384D] text-[#F1F5F9] font-medium hover:border-[#06B6D4] hover:bg-[#1E3553] active:bg-[#0F1C2E] transition-all min-h-[44px] text-xs sm:text-sm shrink-0 shadow-xs"
+            title="Quay lại giao diện Starfront V1 tại /"
           >
-            <ChevronLeft className="w-5 h-5 shrink-0" />
-            <span>Trở về Starfront V1</span>
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-[#06B6D4] shrink-0" />
+            <span className="font-bold tracking-wide">QUAY LẠI V1</span>
           </Link>
-          <span className="text-[#26384D] hidden sm:inline">|</span>
-          <h1 className="text-base sm:text-lg font-semibold tracking-tight text-[#F1F5F9] truncate">
-            UI V2 Foundation Primitives
-          </h1>
+
+          <span className="text-[#26384D] hidden md:inline">|</span>
+
+          {/* Desktop Version Control Switcher (Hidden on narrow mobile screens) */}
+          <div className="hidden md:flex items-center gap-1 p-1 bg-[#0F172A] border border-[#26384D] rounded-xl text-xs font-mono">
+            <Link
+              href="/"
+              className="px-2.5 py-1 rounded-lg text-[#A7B6C8] hover:text-[#F1F5F9] hover:bg-[#142338]/80 transition-colors min-h-[32px] flex items-center justify-center font-medium"
+              title="Chuyển sang Starfront V1 (/)"
+            >
+              STARFRONT V1
+            </Link>
+            <div
+              className="px-2.5 py-1 rounded-lg bg-[#142338] text-[#06B6D4] font-bold border border-[#06B6D4]/40 min-h-[32px] flex items-center justify-center shadow-xs"
+              aria-current="page"
+            >
+              V2 PREVIEW
+            </div>
+          </div>
         </div>
 
-        {/* Viewport Simulation Controls */}
-        <div className="flex items-center gap-1 bg-[#0F172A] border border-[#26384D] p-1 rounded-lg">
-          <button
-            type="button"
-            title="Kích thước linh hoạt"
-            onClick={() => setViewportMode('responsive')}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:px-2.5 sm:py-1.5 flex items-center justify-center rounded text-xs font-medium transition-colors ${
-              viewportMode === 'responsive'
-                ? 'bg-[#142338] text-[#06B6D4] font-semibold'
-                : 'text-[#A7B6C8] hover:text-[#F1F5F9]'
-            }`}
-          >
-            <Maximize2 className="w-4 h-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">Auto</span>
-          </button>
-          <button
-            type="button"
-            title="Mô phỏng Mobile 390px"
-            onClick={() => setViewportMode('mobile')}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:px-2.5 sm:py-1.5 flex items-center justify-center rounded text-xs font-medium transition-colors ${
-              viewportMode === 'mobile'
-                ? 'bg-[#142338] text-[#06B6D4] font-semibold'
-                : 'text-[#A7B6C8] hover:text-[#F1F5F9]'
-            }`}
-          >
-            <Smartphone className="w-4 h-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">Mobile (390px)</span>
-          </button>
-          <button
-            type="button"
-            title="Mô phỏng Tablet 768px"
-            onClick={() => setViewportMode('tablet')}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:px-2.5 sm:py-1.5 flex items-center justify-center rounded text-xs font-medium transition-colors ${
-              viewportMode === 'tablet'
-                ? 'bg-[#142338] text-[#06B6D4] font-semibold'
-                : 'text-[#A7B6C8] hover:text-[#F1F5F9]'
-            }`}
-          >
-            <Tablet className="w-4 h-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">Tablet (768px)</span>
-          </button>
-          <button
-            type="button"
-            title="Mô phỏng Desktop 1440px"
-            onClick={() => setViewportMode('desktop')}
-            className={`min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:px-2.5 sm:py-1.5 flex items-center justify-center rounded text-xs font-medium transition-colors ${
-              viewportMode === 'desktop'
-                ? 'bg-[#142338] text-[#06B6D4] font-semibold'
-                : 'text-[#A7B6C8] hover:text-[#F1F5F9]'
-            }`}
-          >
-            <Monitor className="w-4 h-4 sm:mr-1.5" />
-            <span className="hidden sm:inline">Desktop</span>
-          </button>
+        {/* Right Zone: Viewport Mode Controls on Desktop / Active Badge on Mobile */}
+        <div className="flex items-center gap-2">
+          {/* Active indicator on mobile */}
+          <span className="inline-flex md:hidden items-center px-2 py-1 rounded text-xs font-mono font-bold tracking-wider bg-[#06B6D4]/15 text-[#06B6D4] border border-[#06B6D4]/40">
+            V2 PREVIEW
+          </span>
+
+          {/* Viewport Simulation Controls (Desktop only to test responsive containers) */}
+          <div className="hidden sm:flex items-center gap-1 bg-[#0F172A] border border-[#26384D] p-1 rounded-lg">
+            <button
+              type="button"
+              title="Kích thước linh hoạt tự nhiên"
+              onClick={() => setViewportMode('responsive')}
+              className={`min-h-[36px] px-2.5 py-1 flex items-center justify-center rounded text-xs font-medium transition-colors ${
+                viewportMode === 'responsive'
+                  ? 'bg-[#142338] text-[#06B6D4] font-semibold'
+                  : 'text-[#A7B6C8] hover:text-[#F1F5F9]'
+              }`}
+            >
+              <Maximize2 className="w-3.5 h-3.5 mr-1" />
+              <span>Auto</span>
+            </button>
+            <button
+              type="button"
+              title="Mô phỏng Mobile 390px"
+              onClick={() => setViewportMode('mobile')}
+              className={`min-h-[36px] px-2.5 py-1 flex items-center justify-center rounded text-xs font-medium transition-colors ${
+                viewportMode === 'mobile'
+                  ? 'bg-[#142338] text-[#06B6D4] font-semibold'
+                  : 'text-[#A7B6C8] hover:text-[#F1F5F9]'
+              }`}
+            >
+              <Smartphone className="w-3.5 h-3.5 mr-1" />
+              <span>Mobile (390px)</span>
+            </button>
+            <button
+              type="button"
+              title="Mô phỏng Tablet 768px"
+              onClick={() => setViewportMode('tablet')}
+              className={`min-h-[36px] px-2.5 py-1 flex items-center justify-center rounded text-xs font-medium transition-colors ${
+                viewportMode === 'tablet'
+                  ? 'bg-[#142338] text-[#06B6D4] font-semibold'
+                  : 'text-[#A7B6C8] hover:text-[#F1F5F9]'
+              }`}
+            >
+              <Tablet className="w-3.5 h-3.5 mr-1" />
+              <span>Tablet (768px)</span>
+            </button>
+            <button
+              type="button"
+              title="Mô phỏng Desktop 1440px"
+              onClick={() => setViewportMode('desktop')}
+              className={`min-h-[36px] px-2.5 py-1 flex items-center justify-center rounded text-xs font-medium transition-colors ${
+                viewportMode === 'desktop'
+                  ? 'bg-[#142338] text-[#06B6D4] font-semibold'
+                  : 'text-[#A7B6C8] hover:text-[#F1F5F9]'
+              }`}
+            >
+              <Monitor className="w-3.5 h-3.5 mr-1" />
+              <span>Desktop</span>
+            </button>
+          </div>
         </div>
       </header>
 
       {/* Main Preview Harness Area */}
-      <main className={`p-4 sm:p-8 space-y-12 ${viewportContainerStyles}`}>
-        {/* Intro Banner */}
-        <section className="bg-[#0F172A] border border-[#26384D] rounded-2xl p-6 sm:p-8">
-          <div className="flex items-center gap-3 text-xs font-mono text-[#06B6D4] mb-2 uppercase tracking-wider">
+      <main className={`py-6 sm:py-8 space-y-10 ${viewportContainerStyles}`}>
+        {/* Version Control Informational Status Banner (No duplicate button) */}
+        <section className="p-4 sm:p-5 rounded-xl bg-[#0F172A] border border-[#26384D] shadow-sm">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#06B6D4] mt-1.5 sm:mt-0 animate-pulse shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold text-[#F1F5F9] flex flex-wrap items-center gap-2">
+                <span>Môi Trường Nghiệm Thu UI V2 Primitives</span>
+                <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#06B6D4]/15 text-[#06B6D4] border border-[#06B6D4]/40 font-bold">
+                  V2 PREVIEW ACTIVE
+                </span>
+              </div>
+              <p className="text-xs text-[#A7B6C8] mt-1 leading-relaxed">
+                Đang hiển thị bộ UI Primitives Phase 1 tại <code className="text-[#06B6D4] font-mono">/ui-v2-preview</code>. Bấm nút <strong>QUAY LẠI V1</strong> trên thanh tiêu đề để trở về game bất cứ lúc nào.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Intro Section */}
+        <section className="bg-[#0F172A] border border-[#26384D] rounded-2xl p-5 sm:p-7">
+          <div className="flex items-center gap-2 text-xs font-mono text-[#06B6D4] mb-2 uppercase tracking-wider">
             <span>Modern Aerospace Sci-Fi</span>
             <span>·</span>
-            <span>Phase 1 Verification Harness</span>
+            <span>Responsive Test Harness</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#F1F5F9] mb-3">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#F1F5F9] mb-2">
             Hệ Thống Thành Phần Giao Diện V2
           </h2>
-          <p className="text-base text-[#A7B6C8] max-w-2xl leading-relaxed">
-            Bộ thành phần độc lập hoàn toàn với V1: tuân thủ nghiêm ngặt chuẩn touch target tối thiểu 44px trên thiết bị cảm ứng, cỡ chữ văn bản chuẩn 16px, tương phản cao, và không sử dụng CRT scanlines.
+          <p className="text-sm sm:text-base text-[#A7B6C8] leading-relaxed">
+            Thiết kế đáp ứng linh hoạt: Tự động chuyển về 1 cột trên Mobile 390px, thanh tab hỗ trợ cuộn ngang không làm vỡ trang, nút bấm chống tràn viền, và tooltip hỗ trợ tương tác cảm ứng chạm.
           </p>
         </section>
 
         {/* 1. BUTTONS & ICON BUTTONS */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="border-b border-[#26384D] pb-3">
-            <h3 className="text-xl font-semibold text-[#F1F5F9]">01. Nút bấm (Button & IconButton)</h3>
-            <p className="text-sm text-[#A7B6C8] mt-1">Các biến thể, kích cỡ, trạng thái tải và tương tác bàn phím.</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-[#F1F5F9]">01. Nút bấm (Button & IconButton)</h3>
+            <p className="text-xs sm:text-sm text-[#A7B6C8] mt-0.5">Biến thể, kích cỡ, trạng thái tải và tương tác bàn phím (Touch target ≥ 44px).</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={gridTwoCols}>
             {/* Variants */}
-            <Card variant="panel">
+            <Card variant="panel" className="max-w-full overflow-hidden">
               <CardHeader>
                 <CardTitle>Biến Thể Nút (Variants)</CardTitle>
                 <CardDescription>Primary, Secondary, Outline, Ghost, Destructive</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-3">
+              <CardContent className="flex flex-wrap gap-2.5">
                 <Button variant="primary">Primary Action</Button>
                 <Button variant="secondary">Secondary Action</Button>
                 <Button variant="outline">Outline Action</Button>
@@ -179,12 +236,12 @@ export default function UIV2PreviewPage() {
             </Card>
 
             {/* States & Icons */}
-            <Card variant="panel">
+            <Card variant="panel" className="max-w-full overflow-hidden">
               <CardHeader>
                 <CardTitle>Trạng Thái & Biểu Tượng</CardTitle>
                 <CardDescription>Loading, Disabled, Left/Right Icons</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-3">
+              <CardContent className="flex flex-wrap gap-2.5">
                 <Button
                   variant="primary"
                   isLoading={buttonLoading}
@@ -208,12 +265,12 @@ export default function UIV2PreviewPage() {
             </Card>
 
             {/* Sizes */}
-            <Card variant="panel">
+            <Card variant="panel" className="max-w-full overflow-hidden">
               <CardHeader>
                 <CardTitle>Kích Cỡ Nút (Sizes)</CardTitle>
-                <CardDescription>Tất cả đều đảm bảo $\ge$ 44px chiều cao</CardDescription>
+                <CardDescription>Tất cả đều đảm bảo ≥ 44px chiều cao</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap items-center gap-3">
+              <CardContent className="flex flex-wrap items-center gap-2.5">
                 <Button size="sm" variant="secondary">Cỡ Nhỏ (sm · 44px)</Button>
                 <Button size="md" variant="secondary">Cỡ Vừa (md · 44px)</Button>
                 <Button size="lg" variant="primary">Cỡ Lớn (lg · 48px)</Button>
@@ -221,12 +278,12 @@ export default function UIV2PreviewPage() {
             </Card>
 
             {/* Icon Buttons */}
-            <Card variant="panel">
+            <Card variant="panel" className="max-w-full overflow-hidden">
               <CardHeader>
                 <CardTitle>Nút Biểu Tượng (IconButton)</CardTitle>
                 <CardDescription>Bắt buộc có aria-label, touch target 44×44px</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-wrap items-center gap-3">
+              <CardContent className="flex flex-wrap items-center gap-2.5">
                 <IconButton
                   aria-label="Cài đặt hệ thống"
                   variant="secondary"
@@ -263,41 +320,41 @@ export default function UIV2PreviewPage() {
         </section>
 
         {/* 2. CARDS & PANELS */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="border-b border-[#26384D] pb-3">
-            <h3 className="text-xl font-semibold text-[#F1F5F9]">02. Khung & Thẻ (Card & Panel)</h3>
-            <p className="text-sm text-[#A7B6C8] mt-1">Độ sâu 1 cấp, viền hairline tinh tế, không lồng card con.</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-[#F1F5F9]">02. Khung & Thẻ (Card & Panel)</h3>
+            <p className="text-xs sm:text-sm text-[#A7B6C8] mt-0.5">Độ sâu 1 cấp, viền hairline tinh tế, tự động chuyển 1 cột trên mobile.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card variant="panel">
+          <div className={gridThreeCols}>
+            <Card variant="panel" className="max-w-full overflow-hidden">
               <CardHeader bordered>
                 <CardTitle>Standard Panel</CardTitle>
                 <CardDescription>Bề mặt tiêu chuẩn #0F172A</CardDescription>
               </CardHeader>
-              <CardContent className="pt-4 text-base text-[#F1F5F9]">
+              <CardContent className="pt-4 text-sm sm:text-base text-[#F1F5F9] leading-relaxed">
                 Khung hiển thị nội dung thông thường với viền mỏng #26384D và padding đồng bộ 20px.
               </CardContent>
-              <CardFooter bordered>
+              <CardFooter bordered className="flex flex-wrap gap-2 justify-between">
                 <Button size="sm" variant="ghost">Hủy</Button>
-                <Button size="sm" variant="primary" className="ml-auto">Lưu</Button>
+                <Button size="sm" variant="primary">Lưu Thay Đổi</Button>
               </CardFooter>
             </Card>
 
-            <Card variant="raised">
+            <Card variant="raised" className="max-w-full overflow-hidden">
               <CardHeader bordered>
                 <CardTitle>Raised Panel</CardTitle>
                 <CardDescription>Bề mặt nâng nổi #142338</CardDescription>
               </CardHeader>
-              <CardContent className="pt-4 text-base text-[#F1F5F9]">
+              <CardContent className="pt-4 text-sm sm:text-base text-[#F1F5F9] leading-relaxed">
                 Dành cho panel nổi hoặc khu vực điều khiển cần tách biệt nhẹ nhàng so với canvas.
               </CardContent>
               <CardFooter bordered>
-                <Button size="sm" variant="secondary" className="w-full">Xem chi tiết</Button>
+                <Button size="sm" variant="secondary" fullWidth>Xem Chi Tiết</Button>
               </CardFooter>
             </Card>
 
-            <Card variant="interactive" onClick={() => alert('Đã bấm vào Interactive Card!')}>
+            <Card variant="interactive" className="max-w-full overflow-hidden" onClick={() => alert('Đã bấm vào Interactive Card!')}>
               <CardHeader bordered>
                 <div className="flex items-center justify-between">
                   <CardTitle>Interactive Card</CardTitle>
@@ -305,31 +362,31 @@ export default function UIV2PreviewPage() {
                 </div>
                 <CardDescription>Hover hiệu ứng viền Cyan</CardDescription>
               </CardHeader>
-              <CardContent className="pt-4 text-base text-[#F1F5F9]">
+              <CardContent className="pt-4 text-sm sm:text-base text-[#F1F5F9] leading-relaxed">
                 Nhấp chuột hoặc chạm vào để kích hoạt. Thẻ này phản hồi trạng thái hover và active tự nhiên.
               </CardContent>
               <CardFooter bordered>
-                <span className="text-xs font-mono text-[#06B6D4]">BẤM ĐỂ CHỌN →</span>
+                <span className="text-xs font-mono text-[#06B6D4] font-semibold">BẤM ĐỂ CHỌN →</span>
               </CardFooter>
             </Card>
           </div>
         </section>
 
         {/* 3. TABS */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="border-b border-[#26384D] pb-3">
-            <h3 className="text-xl font-semibold text-[#F1F5F9]">03. Phân Đoạn & Tab (Tabs)</h3>
-            <p className="text-sm text-[#A7B6C8] mt-1">Segmented controls và Underline tabs hỗ trợ phím mũi tên và touch target 44px.</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-[#F1F5F9]">03. Phân Đoạn & Tab (Tabs)</h3>
+            <p className="text-xs sm:text-sm text-[#A7B6C8] mt-0.5">Hỗ trợ cuộn ngang trên mobile, điều hướng mũi tên và tự động cuộn tab đang chọn vào vùng nhìn.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={gridTwoCols}>
             {/* Segmented Variant */}
-            <Card variant="panel">
+            <Card variant="panel" className="max-w-full overflow-hidden">
               <CardHeader>
                 <CardTitle>Segmented Tabs</CardTitle>
                 <CardDescription>Dùng cho bộ chọn trạng thái hoặc chế độ xem</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="max-w-full overflow-hidden">
                 <Tabs defaultValue="specs" variant="segmented">
                   <TabsList>
                     <TabsTrigger value="specs">Thông số</TabsTrigger>
@@ -350,12 +407,12 @@ export default function UIV2PreviewPage() {
             </Card>
 
             {/* Underline Variant */}
-            <Card variant="panel">
+            <Card variant="panel" className="max-w-full overflow-hidden">
               <CardHeader>
                 <CardTitle>Underline Tabs</CardTitle>
                 <CardDescription>Dùng cho điều hướng trang hoặc danh mục lớn</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="max-w-full overflow-hidden">
                 <Tabs defaultValue="overview" variant="underline">
                   <TabsList>
                     <TabsTrigger value="overview">Tổng quan</TabsTrigger>
@@ -368,7 +425,7 @@ export default function UIV2PreviewPage() {
                   <TabsContent value="equipment" className="text-sm text-[#A7B6C8] leading-relaxed">
                     Phi cơ A-Gear, I-Gear, B-Gear và M-Gear đã kiểm tra tương thích module.
                   </TabsContent>
-                  <TabsContent value="story" className="text-base text-[#F1F5F9] leading-relaxed">
+                  <TabsContent value="story" className="text-sm sm:text-base text-[#F1F5F9] leading-relaxed">
                     Chiến dịch Starfront bắt đầu sau khi cổng dịch chuyển Alpha bị mất liên lạc...
                   </TabsContent>
                 </Tabs>
@@ -378,27 +435,27 @@ export default function UIV2PreviewPage() {
         </section>
 
         {/* 4. TOOLTIP */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="border-b border-[#26384D] pb-3">
-            <h3 className="text-xl font-semibold text-[#F1F5F9]">04. Chú Thích Nổi (Tooltip)</h3>
-            <p className="text-sm text-[#A7B6C8] mt-1">Kích hoạt khi rê chuột hoặc di chuyển bàn phím (Focus), đóng bằng phím Escape.</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-[#F1F5F9]">04. Chú Thích Nổi (Tooltip)</h3>
+            <p className="text-xs sm:text-sm text-[#A7B6C8] mt-0.5">Desktop: rê chuột / phím focus; Mobile: chạm để mở/đóng; tự điều chỉnh vị trí an toàn tránh tràn mép.</p>
           </div>
 
-          <Card variant="panel">
-            <CardContent className="pt-5 flex flex-wrap items-center gap-6">
+          <Card variant="panel" className="max-w-full overflow-hidden">
+            <CardContent className="pt-5 flex flex-wrap items-center gap-4">
               <Tooltip content="Công suất khiên bảo vệ tối đa: 4.800 MJ" side="top">
                 <Button variant="secondary" leftIcon={<Shield className="w-4 h-4" />}>
-                  Rê chuột vào đây (Top)
+                  Chú thích trên (Top)
                 </Button>
               </Tooltip>
 
               <Tooltip content="Trạng thái hệ thống: Danh định 100%" side="bottom">
                 <Button variant="outline" leftIcon={<Info className="w-4 h-4" />}>
-                  Rê chuột vào đây (Bottom)
+                  Chú thích dưới (Bottom)
                 </Button>
               </Tooltip>
 
-              <Tooltip content="Phím tắt: [ESC] để hủy thao tác" side="right">
+              <Tooltip content="Phím tắt: [ESC] để hủy hoặc chạm ra ngoài để đóng" side="right">
                 <IconButton
                   aria-label="Xem trợ giúp phím tắt"
                   variant="ghost"
@@ -410,13 +467,13 @@ export default function UIV2PreviewPage() {
         </section>
 
         {/* 5. DIALOG & DRAWER */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="border-b border-[#26384D] pb-3">
-            <h3 className="text-xl font-semibold text-[#F1F5F9]">05. Cửa Sổ & Bảng Trượt (Dialog & Drawer)</h3>
-            <p className="text-sm text-[#A7B6C8] mt-1">Backdrop mờ, nút đóng 44px rõ ràng, hỗ trợ đóng bằng Escape và click ngoài.</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-[#F1F5F9]">05. Cửa Sổ & Bảng Trượt (Dialog & Drawer)</h3>
+            <p className="text-xs sm:text-sm text-[#A7B6C8] mt-0.5">Backdrop mờ, nút đóng 44px rõ ràng, hỗ trợ đóng bằng Escape và chạm ngoài.</p>
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-3">
             <Button variant="primary" onClick={() => setIsDialogOpen(true)}>
               Mở Hộp Thoại (Modal Dialog)
             </Button>
@@ -437,15 +494,13 @@ export default function UIV2PreviewPage() {
               <div className="py-4 text-sm text-[#A7B6C8] leading-relaxed">
                 Các thay đổi bao gồm phân phối năng lượng cho khiên và kích hoạt hệ thống ngắm bắn tự động. Nhấn Xác nhận để tiếp tục.
               </div>
-              <DialogFooter>
+              <DialogFooter className="flex flex-wrap gap-2">
                 <Button variant="ghost" onClick={() => setIsDialogOpen(false)}>
                   Đóng
                 </Button>
                 <Button
                   variant="primary"
-                  onClick={() => {
-                    setIsDialogOpen(false)
-                  }}
+                  onClick={() => setIsDialogOpen(false)}
                 >
                   Xác Nhận Thiết Lập
                 </Button>
@@ -463,19 +518,19 @@ export default function UIV2PreviewPage() {
                 </DrawerDescription>
               </DrawerHeader>
               <DrawerBody>
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-[#142338] border border-[#26384D]">
+                <div className="space-y-3">
+                  <div className="p-3.5 rounded-xl bg-[#142338] border border-[#26384D]">
                     <div className="text-sm font-semibold text-[#F1F5F9]">Tần số liên lạc: Channel 08</div>
                     <div className="text-xs text-[#A7B6C8] mt-1">Tín hiệu mã hóa lượng tử Starfront.</div>
                   </div>
-                  <div className="p-4 rounded-xl bg-[#142338] border border-[#26384D]">
+                  <div className="p-3.5 rounded-xl bg-[#142338] border border-[#26384D]">
                     <div className="text-sm font-semibold text-[#F1F5F9]">Chế độ tiết kiệm pin</div>
                     <div className="text-xs text-[#A7B6C8] mt-1">Giảm độ sáng radar phụ khi không có mục tiêu.</div>
                   </div>
                 </div>
               </DrawerBody>
               <DrawerFooter>
-                <Button variant="secondary" className="w-full" onClick={() => setIsDrawerOpen(false)}>
+                <Button variant="secondary" fullWidth onClick={() => setIsDrawerOpen(false)}>
                   Hoàn Tất
                 </Button>
               </DrawerFooter>
@@ -484,10 +539,10 @@ export default function UIV2PreviewPage() {
         </section>
 
         {/* 6. FEEDBACK STATES */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="border-b border-[#26384D] pb-3">
-            <h3 className="text-xl font-semibold text-[#F1F5F9]">06. Trạng Thái Phản Hồi (Feedback States)</h3>
-            <p className="text-sm text-[#A7B6C8] mt-1">Loading, Empty, Error, Success với biểu tượng rõ ràng và nút hành động phục hồi.</p>
+            <h3 className="text-lg sm:text-xl font-semibold text-[#F1F5F9]">06. Trạng Thái Phản Hồi (Feedback States)</h3>
+            <p className="text-xs sm:text-sm text-[#A7B6C8] mt-0.5">Loading, Empty, Error, Success với biểu tượng rõ ràng và nút hành động phục hồi.</p>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">
@@ -496,28 +551,28 @@ export default function UIV2PreviewPage() {
               variant={feedbackDemo === 'loading' ? 'primary' : 'outline'}
               onClick={() => setFeedbackDemo('loading')}
             >
-              Xem Loading
+              Loading
             </Button>
             <Button
               size="sm"
               variant={feedbackDemo === 'empty' ? 'primary' : 'outline'}
               onClick={() => setFeedbackDemo('empty')}
             >
-              Xem Empty
+              Empty
             </Button>
             <Button
               size="sm"
               variant={feedbackDemo === 'error' ? 'primary' : 'outline'}
               onClick={() => setFeedbackDemo('error')}
             >
-              Xem Error
+              Error
             </Button>
             <Button
               size="sm"
               variant={feedbackDemo === 'success' ? 'primary' : 'outline'}
               onClick={() => setFeedbackDemo('success')}
             >
-              Xem Success
+              Success
             </Button>
           </div>
 

@@ -11,6 +11,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: ButtonVariant
   size?: ButtonSize
   isLoading?: boolean
+  fullWidth?: boolean
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
 }
@@ -41,6 +42,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       variant = 'secondary',
       size = 'md',
       isLoading = false,
+      fullWidth = false,
       disabled,
       leftIcon,
       rightIcon,
@@ -51,6 +53,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const isDisabled = disabled || isLoading
+    const titleText = typeof children === 'string' ? children : undefined
 
     return (
       <button
@@ -59,10 +62,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isDisabled}
         className={cn(
           'inline-flex items-center justify-center rounded-lg transition-all duration-150',
-          'whitespace-nowrap shrink-0 select-none cursor-pointer',
+          'max-w-full select-none cursor-pointer',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#06B6D4] focus-visible:ring-offset-2 focus-visible:ring-offset-[#070A12]',
           variantStyles[variant],
           sizeStyles[size],
+          fullWidth ? 'w-full' : 'shrink-0',
           isDisabled && 'opacity-45 cursor-not-allowed pointer-events-none shadow-none',
           className
         )}
@@ -71,12 +75,16 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin shrink-0 text-current" aria-hidden="true" />
-            <span className="truncate">{children}</span>
+            <span className="truncate min-w-0" title={titleText}>
+              {children}
+            </span>
           </>
         ) : (
           <>
             {leftIcon && <span className="shrink-0 flex items-center" aria-hidden="true">{leftIcon}</span>}
-            <span className="truncate">{children}</span>
+            <span className="truncate min-w-0" title={titleText}>
+              {children}
+            </span>
             {rightIcon && <span className="shrink-0 flex items-center" aria-hidden="true">{rightIcon}</span>}
           </>
         )}

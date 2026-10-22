@@ -1,55 +1,45 @@
 # STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# BIÊN BẢN BÀN GIAO (HANDOFF INSTRUCTIONS — E.0-IMPLEMENT-1 COMPLETED)
+# BIÊN BẢN BÀN GIAO (HANDOFF INSTRUCTIONS — DEFINE / PLAN COMPLETED)
 
 **Thời điểm:** 2026-10-22  
 **Đối tượng bàn giao:** Bất kỳ phiên làm việc tiếp theo / tài khoản AI Studio tiếp theo  
-**Trạng thái bàn giao:** `Phase E.0-IMPLEMENT-1` ĐÃ HOÀN TẤT. Giao diện Character Category / Pilot Profile V2 đã chạy thực tế trên cả Desktop và Mobile.  
+**Trạng thái bàn giao:** `DEFINE / PLAN ONLY` ĐÃ HOÀN TẤT. Cổng chặn concept ảnh đã giải phóng, hợp đồng UI Desktop/Mobile đã khóa, dữ liệu Valentine và tài nguyên WebP đã đối chiếu chính xác.  
 
 ---
 
-## 1. Hướng Dẫn Nhanh Cách Kiểm Thử Giao Diện V2 (How To Test)
+## 1. Tóm Tắt Nhanh Hiện Trạng Trước Khi Viết Mã
 
-1. **Mở Trình Duyệt / Dev Server:**
-   - Ứng dụng chạy tại port 3000 hoặc URL Web App.
-2. **Truy Cập Vào Giao Diện V2:**
-   - Trên thanh menu bên trái (Left Sidebar) của Starfront, tìm mục thuộc nhóm Tác Chiến:
-     `★ HỒ SƠ PHI CÔNG V2 // FND-8` (có huy hiệu `V2 NEW`).
-   - Click vào mục này để mở giao diện Category / Profile V2 độc lập.
-3. **Kiểm Thử Trên Màn Hình Desktop (>= 1280px / 1440px):**
-   - **Cột Trái (Roster):** Click chọn giữa các nhân vật (Valentine, Kaelen, Alviss, Victor...). Xem hiệu ứng sáng viền Cyan.
-   - **Vùng Giữa (Showcase):**
-     - Click vào hai mũi tên `<` và `>` ở hai bên sườn tranh để chuyển đổi giữa 2 chế độ hiển thị:
-       1. *Chế Độ Tiêu Chuẩn (Standard Showcase)*: Ánh sáng tự nhiên.
-       2. *Chế Độ Tác Chiến & HUD (Tactical HUD Showcase)*: Lưới tọa độ quét, viền trường lực khiên quang học và thông số y sinh vi tính.
-     - Click nút **"Soi Tranh 4K"** hoặc nút Play Trailer: Mở trình phóng to Lightbox. Thử lăn chuột/bấm nút Zoom In để phóng to từ 1x đến 4x, kéo chuột để rê ảnh (pan), bấm phím **Esc** để đóng.
-   - **Cột Phải (Hồ Sơ):**
-     - Đảm bảo trích dẫn `characterQuote` và mô tả ngắn `shortDescription` hiển thị thành 2 khối tách biệt rõ ràng.
-     - Chuyển qua 4 tab:
-       - **OVERVIEW:** Xem 6 thanh chỉ số (tổng = 20), click vào thẻ Trait để mở modal giải thích chi tiết.
-       - **STORY:** Xem lộ trình 10 chương, đọc toàn văn Chương 01 với cỡ chữ 17px dễ đọc.
-       - **GEAR COMPAT:** Xem thông tin minh bạch về trạng thái chuẩn hóa FND-8.3 (không có điểm số bịa đặt).
-       - **GALLERY:** Xem 2 ảnh WebP thật và các thẻ archive "Chờ Đồng Bộ WebP".
-4. **Kiểm Thử Trên Màn Hình Mobile (Device Mode 375px–430px — Trọng Tâm Nghiệm Thu):**
-   - Mở DevTools (F12) chuyển sang kích thước 390px (iPhone) hoặc 412px (Pixel).
-   - **Horizontal Roster:** Danh sách avatar ngang cuộn mượt, chiều rộng mỗi ô 76px, tên nhân vật ("Valentine", "Kaelen", "Alviss"...) hiển thị đầy đủ, không bị cắt cụt.
-   - **Mobile Art View (Mặc định khi mở):**
-     - Tranh Valentine hiển thị dạng gần full-screen, bám sát concept `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png` (Right Screen).
-     - Toàn bộ cơ thể (đầu, cánh/hào quang, tay cầm gậy y tế, trang phục) hiển thị trọn vẹn, không bị crop mất phần quan trọng.
-     - Hai nút mũi tên điều khiển chuyển nhân vật/bối cảnh `<` và `>` đối xứng hai bên sườn màn hình (touch target >= 44px).
-     - Nút nổi `2D` và `Zoom In` (+) bên phải trên nền tranh.
-     - Bảng thông tin nổi ở đáy màn hình: Insignia UME Medical Corps, Tên `+ Valentine`, Danh hiệu `Ánh Sáng Cuối Cùng`, Vai trò, 3-thumbnail carousel (Fullbody / Chân dung / Buồng lái), Trích dẫn lời thề, và nút `[ 📄 Xem Hồ Sơ ]`.
-   - **Mobile Info View:**
-     - Chạm nút `[ Xem Hồ Sơ & Story ]` hoặc nút trên bảng nổi đáy màn hình:
-     - Chuyển sang Info View bám sát concept (Left Screen), loại bỏ card-nesting rườm rà.
-     - Cỡ chữ chuẩn Design System V2: Body 16px, Story 17px, Text phụ 14px, đọc rất thoải mái và rõ nét.
-     - 4 Tab: OVERVIEW (Stats 20 điểm + Trait popover), STORY (Lộ trình 10 chương), GEAR (Tương thích cơ giáp), GALLERY (2 ảnh WebP nổi bật, 28 ảnh archive thu gọn dạng bảng trạng thái đóng/mở).
-   - **Loại Bỏ Hoàn Toàn Nút Wizard:** Không còn nút "CHỌN NHÂN VẬT" cố định ở đáy màn hình hay step breadcrumb.
-   - **Loại Bỏ Shell Margin:** Shell áp dụng `p-0` khi vào V2 giúp giao diện tràn viền chuẩn mobile native.
+1. **Concept PNG:** 3 ảnh concept PNG trong `docs/art-direction/UI_CONCEPTS/` đã có mặt đầy đủ trên đĩa.
+2. **Legacy V2 Experiment:** Thư mục `components/game/v2/character-profile/` đã được đánh dấu là `IMPLEMENTED_BUT_NOT_ACCEPTED / LEGACY_V2_EXPERIMENT`; không được dùng làm nền để vá đắp.
+3. **Core Primitives V2:** Đã hoàn thiện và kiểm chứng tại `components/game/v2/ui/` (`Button`, `Card`, `Tabs`, `Tooltip`, `Dialog`, `Drawer`, `Feedback`).
+4. **Tài nguyên ảnh WebP:**
+   - Chỉ có 2 ảnh WebP thật trên đĩa: `/images/valentine-fullbody.webp` và `/images/valentine-portrait.webp`.
+   - 28 ảnh manifest còn lại bắt buộc hiển thị dạng Thẻ Archive Card (tránh lỗi 404).
+   - Tuyệt đối không dùng `sourceFilename` làm URL web.
+5. **Dữ liệu Valentine canonical:**
+   - 6 chỉ số tổng = 20 điểm.
+   - 2 Trait V2 (`pilot_trait_field_medic`, `pilot_trait_safeguard`).
+   - Phân tách riêng `characterQuote` và `shortDescription`.
+   - Chương 01 toàn văn, 02–04 tóm tắt, 05–06 đề cương, 07–10 HOLD niêm phong.
+   - 2 background controls (Standard vs Tactical HUD).
 
 ---
 
-## 2. Quy Tắc Tuyệt Đối Cho Phiên Tiếp Theo
+## 2. Các Bước Tiến Hành Tiếp Theo
 
-- **KHÔNG TỰ Ý CHUYỂN SANG IMPLEMENT-2:** Chỉ tiếp tục làm việc khi người dùng đã trải nghiệm thực tế và cung cấp danh sách phản hồi/hiệu chỉnh (feedback).
-- **KHÔNG ĐỤNG VÀO CODE V1:** Giữ nguyên vẹn `components/game/pilot-gallery.tsx`, `character-gear-select.tsx` và `lib/game/data.ts`.
-- **KHÔNG MỞ RỘNG SCOPE NGOÀI CATEGORY/PROFILE:** Tuyệt đối không làm Character Selection Wizard, gameplay balancing hay FND-8.3.2.x.
+Khi người dùng ra lệnh `IMPLEMENT`:
+- Nếu người dùng chọn **Lộ trình chuẩn tắc Foundation**:
+  - Triển khai **UI V2 Foundation Phase 2: Shared Art Viewer** tạo `components/game/v2/ui/art-viewer.tsx`.
+- Nếu người dùng chọn **Triển khai E.0 Rebuild ngay**:
+  - Thực hiện theo kế hoạch tại `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_IMPLEMENTATION_PLAN.md`.
+  - Tạo mới module cách ly `components/game/v2/pilot-profile/` (hoặc cấu trúc mới sạch sẽ) sử dụng UI V2 Primitives.
+  - Triển khai đồng thời cả Desktop View (3 cột) và Mobile View (Paired States: Art View & Info View).
+  - Đảm bảo 100% không phát sinh lỗi 404 hình ảnh và đạt 0 lỗi build/lint.
+
+---
+
+## 3. Ranh Giới Nghiêm Ngặt Cần Ghi Nhớ
+
+- **KHÔNG SỬA CODE V1:** Giữ nguyên `components/game/pilot-gallery.tsx`, `components/game/character-gear-select.tsx`, `lib/game/data.ts`.
+- **KHÔNG LÀM CHARACTER SELECTION WIZARD:** Scope chỉ gói gọn trong Character Category / Pilot Profile.
+- **KHÔNG TỰ TẠO LOGIC GAMEPLAY:** Tương thích GEAR chỉ hiển thị rating giao diện, không sáng tác công thức tính điểm chiến đấu.

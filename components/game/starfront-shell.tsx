@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { STARFRONT_GEAR_DEFS } from "@/lib/game/data"
 import {
@@ -1094,6 +1095,21 @@ export function StarfrontShell() {
               )}
             </div>
 
+            {/* Development shortcut to V2 Preview */}
+            {process.env.NODE_ENV !== "production" && (
+              <Link
+                href="/ui-v2-preview"
+                className={cn(
+                  "flex items-center gap-1.5 rounded border border-teal-500/60 bg-teal-950/40 hover:bg-teal-900/60 text-teal-300 hover:text-white px-2 py-1.5 text-xs font-mono transition-colors cursor-pointer",
+                  isSidebarCollapsed && "w-full justify-center px-1"
+                )}
+                title="Mở giao diện kiểm thử STARFRONT UI V2 Foundation"
+              >
+                <Sparkles className="size-3.5 text-teal-400 shrink-0" />
+                {!isSidebarCollapsed && <span className="font-bold tracking-wider">V2 PREVIEW</span>}
+              </Link>
+            )}
+
             {!isSidebarCollapsed && (
               <div className="text-xs font-mono text-muted-foreground/70 leading-tight">
                 STARFRONT Phase 5 // Turn-Based Combat & Unified Systems
@@ -1205,6 +1221,18 @@ export function StarfrontShell() {
                 <Sliders className="size-3 text-cyan-400" />
                 <span className="hidden sm:inline font-semibold">CÀI ĐẶT</span>
               </button>
+
+              {/* Lối vào V2 Preview cho môi trường Development (Bridge) */}
+              {process.env.NODE_ENV !== "production" && (
+                <Link
+                  href="/ui-v2-preview"
+                  className="flex items-center gap-1.5 rounded border border-teal-500/70 bg-gradient-to-r from-teal-950/80 to-cyan-950/80 hover:from-teal-900/90 hover:to-cyan-900/90 px-2.5 py-1 text-xs font-mono font-bold text-teal-300 hover:text-white transition-all cursor-pointer shadow-[0_0_10px_rgba(20,184,166,0.3)]"
+                  title="Chuyển sang giao diện kiểm thử STARFRONT UI V2 Foundation"
+                >
+                  <Sparkles className="size-3 text-teal-400 shrink-0" />
+                  <span>V2 PREVIEW</span>
+                </Link>
+              )}
             </div>
           </header>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useId } from 'react'
+import React, { createContext, useContext, useState, useId, useRef, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 
 type TabsVariant = 'segmented' | 'underline'
@@ -64,7 +64,7 @@ export const Tabs = React.forwardRef<HTMLDivElement, TabsProps>(
           baseId,
         }}
       >
-        <div ref={ref} className={cn('w-full flex flex-col', className)} {...props}>
+        <div ref={ref} className={cn('w-full max-w-full flex flex-col', className)} {...props}>
           {children}
         </div>
       </TabsContext.Provider>
@@ -102,8 +102,10 @@ export const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
       }
 
       if (nextIndex !== currentIndex) {
-        tabs[nextIndex].focus()
-        tabs[nextIndex].click()
+        const nextTab = tabs[nextIndex]
+        nextTab.focus()
+        nextTab.click()
+        nextTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
       }
     }
 
@@ -114,9 +116,9 @@ export const TabsList = React.forwardRef<HTMLDivElement, TabsListProps>(
         aria-orientation="horizontal"
         onKeyDown={handleKeyDown}
         className={cn(
-          'inline-flex items-center',
+          'flex items-center max-w-full overflow-x-auto overflow-y-hidden scrollbar-none flex-nowrap scroll-smooth',
           variant === 'segmented' &&
-            'p-1 bg-[#0F172A] border border-[#26384D] rounded-xl gap-1',
+            'p-1 bg-[#0F172A] border border-[#26384D] rounded-xl gap-1 w-fit max-w-full',
           variant === 'underline' &&
             'border-b border-[#26384D] gap-6 w-full',
           className
@@ -141,10 +143,22 @@ export const TabsTrigger = React.forwardRef<HTMLButtonElement, TabsTriggerProps>
     const isSelected = value === triggerValue
     const tabId = `${baseId}-tab-${triggerValue}`
     const panelId = `${baseId}-panel-${triggerValue}`
+    const innerRef = useRef<HTMLButtonElement | null>(null)
+
+    // Automatically bring active tab into view when selected
+    useEffect(() => {
+      if (isSelected && innerRef.current) {
+        innerRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+      }
+    }, [isSelected])
 
     return (
       <button
-        ref={ref}
+        ref={(el) => {
+          innerRef.current = el
+          if (typeof ref === 'function') ref(el)
+          else if (ref) (ref as React.MutableRefObject<HTMLButtonElement | null>).current = el
+        }}
         role="tab"
         type="button"
         id={tabId}
@@ -204,7 +218,7 @@ export const TabsContent = React.forwardRef<HTMLDivElement, TabsContentProps>(
         id={panelId}
         aria-labelledby={tabId}
         tabIndex={0}
-        className={cn('pt-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#06B6D4]', className)}
+        className={cn('pt-4 max-w-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#06B6D4]', className)}
         {...props}
       >
         {children}

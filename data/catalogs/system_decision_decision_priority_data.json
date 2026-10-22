@@ -1,0 +1,33 @@
+{
+  "configFileId": "system_decision_decision_priority",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "LOW",
+      "order": 1,
+      "colorHex": "#64748B"
+    },
+    {
+      "id": "NORMAL",
+      "order": 2,
+      "colorHex": "#38BDF8"
+    },
+    {
+      "id": "HIGH",
+      "order": 3,
+      "colorHex": "#F59E0B"
+    },
+    {
+      "id": "CRITICAL",
+      "order": 4,
+      "colorHex": "#EF4444"
+    }
+  ],
+  "metadata": {
+    "domain": "decision",
+    "catalog": "decision_priority",
+    "description": "Canonical decision priority levels."
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "configFileId": "system_population_workforce_category",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "BUILDING_WORKFORCE",
+      "name": "Công Trình / Cơ Sở Căn Cứ",
+      "description": "Nhân lực vận hành các phân xưởng, nhà máy, bệnh viện và công sự."
+    },
+    {
+      "id": "FLEET_CREW",
+      "name": "Thủy Thủ Đoàn Hạm Đội / Bang Hội",
+      "description": "Thủy thủ và sĩ quan phục vụ trên tàu chiến và chiến đoàn."
+    },
+    {
+      "id": "LOGISTICS",
+      "name": "Vận Tải & Hậu Cần",
+      "description": "Đội ngũ điều phối đoàn xe và luồng tiếp vận vật tư."
+    },
+    {
+      "id": "TRAINING",
+      "name": "Học Viên Đang Đào Tạo",
+      "description": "Tân binh hoặc nhân sự đang nâng cao trình độ chuyên môn."
+    },
+    {
+      "id": "RECOVERY",
+      "name": "Hồi Phục Y Tế",
+      "description": "Thương binh hoặc nhân sự đang điều trị bệnh tật."
+    },
+    {
+      "id": "OTHER_ASSIGNMENTS",
+      "name": "Phân Công Khác",
+      "description": "Nhiệm vụ đột xuất, an ninh nội vụ hoặc dự phòng."
+    }
+  ],
+  "metadata": {
+    "domain": "population",
+    "catalog": "workforce_category",
+    "description": "Canonical workforce category definitions."
+  }
+}

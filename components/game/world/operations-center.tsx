@@ -1,0 +1,2736 @@
+"use client"
+
+import { useEffect, useState, useMemo, useRef } from "react"
+import {
+  Activity,
+  AlertOctagon,
+  AlertTriangle,
+  ArrowRight,
+  Boxes,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Compass,
+  Crosshair,
+  Database,
+  Eye,
+  FileText,
+  Filter,
+  Flame,
+  Globe2,
+  Hammer,
+  HelpCircle,
+  History,
+  Layers,
+  Lock,
+  Minus,
+  Moon,
+  Orbit,
+  Pause,
+  Play,
+  Radio,
+  RefreshCw,
+  RotateCcw,
+  Route,
+  Save,
+  Search,
+  Send,
+  Shield,
+  ShieldAlert,
+  Sliders,
+  Sparkles,
+  Sun,
+  Sunrise,
+  Sunset,
+  Swords,
+  Terminal,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Truck,
+  Users,
+  Wheat,
+  X,
+  Zap,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { playClickSound, playLevelUpSound, playShieldSound } from "@/lib/game/audio"
+import {
+  loadWorldState,
+  saveWorldState,
+  resetWorldState,
+  createPreResetBackup,
+} from "@/lib/game/world/storage"
+import { executeWorldTick } from "@/lib/game/world/tick-engine"
+import {
+  getActiveEvents,
+  chooseEventStrategy,
+  autoLockDefaultStrategy,
+  resolveProcessingEvent,
+  type EventLifecycleSummary,
+} from "@/lib/game/world/event-engine"
+import {
+  setSectorStrategicOrder,
+  upgradeSectorFortification,
+  calculateTotalMilitaryForce,
+} from "@/lib/game/world/forces-ledger"
+import {
+  loadSimulatorConfig,
+  saveSimulatorConfig,
+  validateSimulatorConfig,
+  DEFAULT_SIMULATOR_CONFIG,
+  DEFAULT_GENERATOR_CONFIG,
+  DEFAULT_EVENT_STRATEGY_POLICY,
+  type WorldSimulatorConfig,
+  type SimulationSpeedPreset,
+  type EventStrategyPolicyConfig,
+  type TierStrategyPreference,
+} from "@/lib/game/world/simulator-config"
+import { getGameCalendarInfo } from "@/lib/game/world/calendar"
+import {
+  checkAndSpawnWorldEvents,
+  countActiveEventsByTier,
+  forceSpawnEventByTier,
+} from "@/lib/game/world/event-generator"
+import {
+  batchApplyEventStrategyPolicy,
+  evaluateAndApplyEventStrategyPolicy,
+  selectBestStrategyForEvent,
+  validateStrategyExecution,
+} from "@/lib/game/world/event-strategy-policy"
+import { DualResultsHub } from "./dual-results-hub"
+import { QuickDispatchDock } from "./quick-dispatch-dock"
+import { WorldMap } from "./world-map"
+import { WorldFullscreenOverlay } from "./world-fullscreen-overlay"
+import { EventsMissionsBoard } from "./events-missions-board"
+import { AdminSettingsModal } from "./admin-settings-modal"
+import { DebriefingDrawer } from "./debriefing-drawer"
+import { ThreatVisualizer } from "./threat-visualizer"
+import { ResourceSparkline } from "./resource-sparkline"
+import { SectorIntelModal } from "./sector-intel-modal"
+import { FleetCommandModal } from "./fleet-command-modal"
+import {
+  GlobalOperationsHub,
+  computeCriticalAlerts,
+  computeActionableItemsCount,
+  computeActiveEventsGroups,
+  computeCombatOperations,
+} from "./global-operations-hub"
+import {
+  lockEncounterAndCreateSnapshot,
+  abortSuspendedCombat,
+  isEntityCombatLocked,
+} from "@/lib/game/world/combat-adapter"
+import { getSectorMaxThreat } from "@/lib/game/world/threat-engine"
+import type {
+  WorldState,
+  WorldSector,
+  StrategicOrder,
+  WorldEvent,
+  EventStrategy,
+  WorldBattleContext,
+} from "@/lib/game/world/types"
+
+export type OperationsTab =
+  | "overview"
+  | "map"
+  | "sectors"
+  | "events"
+  | "military"
+  | "results"
+  | "admin"
+
+interface OperationsCenterProps {
+  initialTab?: OperationsTab
+  adminTrigger?: number
+  onNavigateSection?: (section: any) => void
+  onDeployEncounter?: (sectorId: string, battleContext?: WorldBattleContext) => void
+}
+
+export function OperationsCenter({
+  initialTab = "map",
+  adminTrigger,
+  onNavigateSection,
+  onDeployEncounter,
+}: OperationsCenterProps) {
+  const [worldState, setWorldState] = useState<WorldState | null>(null)
+  const [activeTab, setActiveTab] = useState<OperationsTab>(initialTab)
+  const [selectedSectorId, setSelectedSectorId] = useState<string>("sol_command_hq")
+  const [isQuickDispatchOpen, setIsQuickDispatchOpen] = useState(false)
+  const [isFullscreenMapOpen, setIsFullscreenMapOpen] = useState(false)
+  const [notification, setNotification] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null)
+  const [isTickAdvancing, setIsTickAdvancing] = useState(false)
+  const [lastTickLogs, setLastTickLogs] = useState<string[]>([])
+  const [lastEventsSummary, setLastEventsSummary] = useState<EventLifecycleSummary | null>(null)
+
+  // Phase 6.13: Real-time Simulator State & Generator
+  const [simulatorConfig, setSimulatorConfig] = useState<WorldSimulatorConfig>(DEFAULT_SIMULATOR_CONFIG)
+  const [dayFraction, setDayFraction] = useState<number>(0)
+  const [countdownSeconds, setCountdownSeconds] = useState<number>(300)
+  const lastTickTimeRef = useRef<number>(Date.now())
+  const isPausedRef = useRef<boolean>(false)
+  const isTickingRef = useRef<boolean>(false)
+
+  // Phase 6.18: Settings / ADMIN CP Overlay State
+  const [isAdminSettingsOpen, setIsAdminSettingsOpen] = useState(initialTab === "admin")
+
+  // Phase 6.20: Debriefing Drawer State
+  const [isDebriefingDrawerOpen, setIsDebriefingDrawerOpen] = useState(false)
+
+  // Phase 6.24: Event selection sync with Events & Missions board
+  const [selectedEventIdForBoard, setSelectedEventIdForBoard] = useState<string | null>(null)
+
+  // Phase 6.24: Quick approval review modal state from Strategic Overview
+  const [reviewingEvent, setReviewingEvent] = useState<WorldEvent | null>(null)
+
+  // Phase 6.28: Sector Intel modal state
+  const [isSectorIntelOpen, setIsSectorIntelOpen] = useState(false)
+
+  // Phase 7.7: Fleet Command modal state (FND-7)
+  const [isFleetCommandOpen, setIsFleetCommandOpen] = useState(false)
+  const [selectedFleetIdForModal, setSelectedFleetIdForModal] = useState<string | undefined>(undefined)
+
+  // Phase 6.26: Threat Visualizer mode & Session Resource History (Không thay đổi Schema V1)
+  const [threatVisualizerMode, setThreatVisualizerMode] = useState<"critical" | "average">("critical")
+  const [sessionResourceHistory, setSessionResourceHistory] = useState<
+    Array<{ day: number; food: number; logisticsSupplies: number }>
+  >([])
+
+  // UI Typography & Readability: Filter and Search for 54 Hyperlane Routes
+  const [hyperlaneSearch, setHyperlaneSearch] = useState("")
+  const [hyperlaneStatusFilter, setHyperlaneStatusFilter] = useState<"all" | "open" | "hazardous" | "blocked">("all")
+
+  // Nạp WorldState & Simulator Config từ Storage khi mount + Offline Catch-up
+  useEffect(() => {
+    const cfg = loadSimulatorConfig()
+    setSimulatorConfig(cfg)
+    isPausedRef.current = cfg.isPaused
+    setCountdownSeconds(cfg.speedSeconds)
+
+    const loadRes = loadWorldState()
+    const state = loadRes.state
+    const now = Date.now()
+    const speedMs = cfg.speedSeconds * 1000
+
+    lastTickTimeRef.current = state.lastTickTimestamp || now
+
+    // Bounded Offline Catch-up nếu simulator đang bật và đã trôi qua thời gian
+    if (state.lastTickTimestamp) {
+      const elapsed = now - state.lastTickTimestamp
+      if (elapsed < 0) {
+        // Phát hiện lùi giờ hệ thống: khử giá trị bất thường, neo lại về hiện tại
+        state.lastTickTimestamp = now
+        saveWorldState(state)
+        lastTickTimeRef.current = now
+        setDayFraction(0)
+        setCountdownSeconds(cfg.speedSeconds)
+      } else if (!cfg.isPaused) {
+        if (elapsed >= speedMs) {
+          const pendingTicks = Math.min(360, Math.floor(elapsed / speedMs))
+          if (pendingTicks > 0) {
+            const catchupResourcePoints: Array<{ day: number; food: number; logisticsSupplies: number }> = []
+            for (let t = 0; t < pendingTicks; t++) {
+              executeWorldTick(state)
+              checkAndSpawnWorldEvents(state, cfg.generator, undefined, cfg.strategyPolicy)
+              catchupResourcePoints.push({
+                day: state.currentDay,
+                food: state.resources.food,
+                logisticsSupplies: state.resources.logisticsSupplies,
+              })
+            }
+            if (catchupResourcePoints.length > 0) {
+              setSessionResourceHistory(catchupResourcePoints.slice(-10))
+            }
+            saveWorldState(state)
+            const rem = elapsed % speedMs
+            lastTickTimeRef.current = now - rem
+            const fraction = Math.min(0.999, Math.max(0, rem / speedMs))
+            setDayFraction(fraction)
+            setCountdownSeconds(Math.max(1, Math.ceil((speedMs - rem) / 1000)))
+          }
+        } else {
+          const fraction = Math.min(0.999, Math.max(0, elapsed / speedMs))
+          setDayFraction(fraction)
+          setCountdownSeconds(Math.max(1, Math.ceil((speedMs - elapsed) / 1000)))
+        }
+      } else {
+        // Đang tạm dừng: khôi phục chính xác tiến độ phân đoạn đã lưu
+        const pFraction = cfg.pausedFraction ?? 0
+        setDayFraction(pFraction)
+        setCountdownSeconds(Math.max(1, Math.ceil((1 - pFraction) * cfg.speedSeconds)))
+        lastTickTimeRef.current = now - pFraction * speedMs
+      }
+    }
+
+    setWorldState(state)
+  }, [])
+
+  // Đồng bộ ref pause
+  useEffect(() => {
+    isPausedRef.current = simulatorConfig.isPaused
+  }, [simulatorConfig.isPaused])
+
+  // Vòng lặp thời gian thực Real-time World Simulator
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!worldState || isPausedRef.current || isTickingRef.current) {
+        return
+      }
+
+      const now = Date.now()
+      const speedMs = simulatorConfig.speedSeconds * 1000
+      const elapsed = now - lastTickTimeRef.current
+
+      if (elapsed < 0) {
+        // Đồng hồ hệ thống bị lùi trong lúc chạy: neo lại mốc thời gian mượt mà, không tick bất thường
+        lastTickTimeRef.current = now
+        setDayFraction(0)
+        setCountdownSeconds(simulatorConfig.speedSeconds)
+        return
+      }
+
+      if (elapsed >= speedMs) {
+        isTickingRef.current = true
+        try {
+          // Thực thi 1 Strategic Tick
+          const tickRes = executeWorldTick(worldState, { logPhases: true })
+
+          // Sinh Event/Quest theo ngày game và áp dụng chính sách chiến lược
+          const spawnRes = checkAndSpawnWorldEvents(
+            worldState,
+            simulatorConfig.generator,
+            undefined,
+            simulatorConfig.strategyPolicy
+          )
+
+          // Lưu vĩnh viễn trạng thái
+          saveWorldState(worldState)
+          setWorldState({ ...worldState })
+          lastTickTimeRef.current = now
+          setDayFraction(0)
+          setCountdownSeconds(simulatorConfig.speedSeconds)
+
+          if (tickRes.eventsSummary) {
+            setLastEventsSummary(tickRes.eventsSummary)
+          }
+
+          if (spawnRes.spawnedEvents.length > 0) {
+            showToast(`[SỰ KIỆN MỚI] ${spawnRes.spawnedEvents[0].title}`, "info")
+          }
+        } catch (err) {
+          console.error("[SIMULATOR] Lỗi trong chu kỳ tự động tick:", err)
+        } finally {
+          isTickingRef.current = false
+        }
+      } else {
+        const fraction = Math.min(0.999, Math.max(0, elapsed / speedMs))
+        setDayFraction(fraction)
+        const remaining = Math.max(1, Math.ceil((speedMs - elapsed) / 1000))
+        setCountdownSeconds(remaining)
+      }
+    }, 250)
+
+    return () => clearInterval(timer)
+  }, [worldState, simulatorConfig.speedSeconds, simulatorConfig.generator])
+
+  // Bật/tắt Pause/Resume
+  const handleTogglePause = () => {
+    const newPaused = !simulatorConfig.isPaused
+    playClickSound()
+    const updated: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      isPaused: newPaused,
+      pausedFraction: newPaused ? dayFraction : undefined,
+    }
+    setSimulatorConfig(updated)
+    isPausedRef.current = newPaused
+    saveSimulatorConfig(updated)
+
+    if (!newPaused) {
+      // Khi tiếp tục, bảo toàn tiến độ phân đoạn hiện tại
+      const speedMs = simulatorConfig.speedSeconds * 1000
+      lastTickTimeRef.current = Date.now() - dayFraction * speedMs
+      showToast("Đã kích hoạt mô phỏng thời gian thực!", "info")
+    } else {
+      showToast("Đã tạm dừng mô phỏng thế giới.", "info")
+    }
+  }
+
+  // Xác nhận đổi tốc độ (bảo lưu tiến độ thế giới hoặc reset world tùy chọn)
+  const handleConfirmSpeedChange = (newSpeed: number, resetWorld: boolean) => {
+    playClickSound()
+    const updated: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      speedSeconds: newSpeed,
+      pausedFraction: undefined,
+    }
+    setSimulatorConfig(updated)
+    saveSimulatorConfig(updated)
+
+    if (resetWorld) {
+      // Đổi tốc độ kèm reset World theo yêu cầu người dùng
+      const freshState = resetWorldState(worldState || undefined)
+      setWorldState(freshState)
+      lastTickTimeRef.current = Date.now()
+      setDayFraction(0)
+      setCountdownSeconds(newSpeed)
+      showToast(`Đã chuyển tốc độ sang ${newSpeed}s/ngày và RESET WORLD về Ngày 1!`, "success")
+    } else {
+      // Điều chỉnh mốc thời gian mượt mà, bảo toàn tỷ lệ fraction hiện tại
+      const newSpeedMs = newSpeed * 1000
+      lastTickTimeRef.current = Date.now() - dayFraction * newSpeedMs
+      setCountdownSeconds(Math.max(1, Math.ceil((1 - dayFraction) * newSpeed)))
+      showToast(`Đã chuyển tốc độ mô phỏng sang 1 Ngày = ${newSpeed} giây thực!`, "success")
+    }
+    playLevelUpSound()
+  }
+
+  // Tua thời gian an toàn theo số ngày
+  const handleFastForwardDays = (days: number) => {
+    if (!worldState || isTickAdvancing) return
+    playClickSound()
+    setIsTickAdvancing(true)
+    try {
+      const fastForwardPoints: Array<{ day: number; food: number; logisticsSupplies: number }> = []
+      for (let i = 0; i < days; i++) {
+        executeWorldTick(worldState)
+        checkAndSpawnWorldEvents(
+          worldState,
+          simulatorConfig.generator,
+          undefined,
+          simulatorConfig.strategyPolicy
+        )
+        fastForwardPoints.push({
+          day: worldState.currentDay,
+          food: worldState.resources.food,
+          logisticsSupplies: worldState.resources.logisticsSupplies,
+        })
+      }
+      if (fastForwardPoints.length > 0) {
+        setSessionResourceHistory((prev) => {
+          const map = new Map<number, { day: number; food: number; logisticsSupplies: number }>()
+          for (const p of prev) map.set(p.day, p)
+          for (const pt of fastForwardPoints) map.set(pt.day, pt)
+          return Array.from(map.values()).sort((a, b) => a.day - b.day).slice(-10)
+        })
+      }
+      saveWorldState(worldState)
+      setWorldState({ ...worldState })
+      lastTickTimeRef.current = Date.now()
+      setDayFraction(0)
+      setCountdownSeconds(simulatorConfig.speedSeconds)
+      playLevelUpSound()
+      showToast(`Đã tua nhanh ${days} ngày chiến lược! (Hiện tại: Ngày #${worldState.currentDay})`, "success")
+    } catch (err: any) {
+      showToast(`Lỗi khi tua thời gian: ${err?.message || "Không xác định"}`, "error")
+    } finally {
+      setIsTickAdvancing(false)
+    }
+  }
+
+  // Kích hoạt sinh ngay sự kiện theo Tier
+  const handleForceSpawnEvent = (tier: "small" | "medium" | "large") => {
+    if (!worldState) return
+    playClickSound()
+    const res = forceSpawnEventByTier(
+      worldState,
+      tier,
+      simulatorConfig.generator,
+      undefined,
+      simulatorConfig.strategyPolicy
+    )
+    if (res.success && res.event) {
+      saveWorldState(worldState)
+      setWorldState({ ...worldState })
+      playShieldSound()
+      showToast(res.message, "success")
+    } else {
+      showToast(res.message, "error")
+    }
+  }
+
+  // Khôi phục cấu hình Generator về mặc định
+  const handleResetGeneratorToDefault = () => {
+    playClickSound()
+    const candidateConfig: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      generator: DEFAULT_GENERATOR_CONFIG,
+    }
+    setSimulatorConfig(candidateConfig)
+    saveSimulatorConfig(candidateConfig)
+    playShieldSound()
+    showToast("Đã khôi phục cấu hình Event/Quest Generator về mặc định!", "info")
+  }
+
+  // Xác nhận Reset World độc lập
+  const handleConfirmResetWorld = (customFreshState?: WorldState) => {
+    playClickSound()
+    isTickingRef.current = false
+    if (customFreshState) {
+      createPreResetBackup(worldState || undefined)
+    }
+    const freshState = customFreshState || resetWorldState(worldState || undefined)
+    setWorldState(freshState)
+    setSelectedSectorId(freshState.worldGenerationConfig?.vssCapitalSectorId || "sol_command_hq")
+    setSessionResourceHistory([])
+
+    lastTickTimeRef.current = Date.now()
+    setDayFraction(0)
+    setCountdownSeconds(simulatorConfig.speedSeconds)
+    playLevelUpSound()
+    showToast(
+      `Đã RESET toàn bộ dữ liệu STARFRONT WORLD với Thiên Hà 30 Sector! (Seed: ${freshState.worldSeed})`,
+      "success"
+    )
+  }
+
+  // Lưu cấu hình Generator từ form
+  const handleSaveGeneratorConfig = (genConfig: typeof DEFAULT_SIMULATOR_CONFIG.generator) => {
+    playClickSound()
+    const candidateConfig: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      generator: genConfig,
+    }
+
+    const validation = validateSimulatorConfig(candidateConfig)
+    if (!validation.valid) {
+      showToast(`Cấu hình không hợp lệ: ${validation.errors[0]}`, "error")
+      return
+    }
+
+    setSimulatorConfig(candidateConfig)
+    saveSimulatorConfig(candidateConfig)
+    playShieldSound()
+    showToast("Đã lưu cấu hình Event/Quest Generator thành công!", "success")
+  }
+
+  // Lưu cấu hình chính sách chiến lược sự kiện
+  const handleSaveStrategyPolicyConfig = (policyConfig: EventStrategyPolicyConfig) => {
+    playClickSound()
+    const updatedConfig: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      strategyPolicy: policyConfig,
+    }
+    const validation = validateSimulatorConfig(updatedConfig)
+    if (!validation.valid) {
+      showToast(`Cấu hình không hợp lệ: ${validation.errors[0]}`, "error")
+      return
+    }
+
+    setSimulatorConfig(updatedConfig)
+    saveSimulatorConfig(updatedConfig)
+    playShieldSound()
+    showToast("Đã lưu chính sách chiến lược sự kiện (Event Strategy Policy) thành công!", "success")
+  }
+
+  // Khôi phục chính sách chiến lược mặc định
+  const handleResetStrategyPolicyToDefault = () => {
+    playClickSound()
+    const updatedConfig: WorldSimulatorConfig = {
+      ...simulatorConfig,
+      strategyPolicy: { ...DEFAULT_EVENT_STRATEGY_POLICY },
+    }
+    setSimulatorConfig(updatedConfig)
+    saveSimulatorConfig(updatedConfig)
+    showToast("Đã khôi phục chính sách chiến lược về mặc định ban đầu.", "info")
+  }
+
+  // Áp dụng chính sách cho tất cả sự kiện INIT đang chờ
+  const handleBatchApplyStrategyPolicy = (policyToApply?: EventStrategyPolicyConfig) => {
+    if (!worldState) return
+    playClickSound()
+    const policy = policyToApply || simulatorConfig.strategyPolicy || DEFAULT_EVENT_STRATEGY_POLICY
+    const batchRes = batchApplyEventStrategyPolicy(worldState, policy)
+    saveWorldState(worldState)
+    setWorldState({ ...worldState })
+    playLevelUpSound()
+    showToast(
+      `Đã áp dụng chính sách: ${batchRes.autoProcessedCount} System Auto, ${batchRes.defaultFallbackCount} Default Fallback, ${batchRes.playerChoiceCount} Chờ chỉ huy.`,
+      "success"
+    )
+  }
+
+  // Báo cáo có chưa đọc hay không và số lượng chưa đọc (Phase 6.20)
+  const unreadResultsCount = useMemo(() => {
+    if (!worldState?.eventResultsArchive) return 0
+    return worldState.eventResultsArchive.filter((r) => !r.isRead).length
+  }, [worldState?.eventResultsArchive])
+
+  const hasUnreadResults = unreadResultsCount > 0
+
+  // Đồng bộ activeTab khi nhận prop initialTab từ Navigation ngoài
+  useEffect(() => {
+    if (initialTab === "admin") {
+      setIsAdminSettingsOpen(true)
+      setActiveTab("map")
+    } else if (initialTab) {
+      setActiveTab(initialTab)
+    }
+  }, [initialTab])
+
+  // Phase 6.33_FIX5: Mở Admin CP khi nhận tín hiệu từ Top Menu hoặc Left Menu
+  useEffect(() => {
+    if (adminTrigger && adminTrigger > 0) {
+      setIsAdminSettingsOpen(true)
+    }
+  }, [adminTrigger])
+
+  // Phase 6.26: Ghi nhận lịch sử tài nguyên theo phiên (Session Resource History)
+  // Bảo toàn nguyên vẹn WORLD Save Schema V1; ghi nhận tối đa 10 chu kỳ ngày gần nhất trong phiên
+  useEffect(() => {
+    if (!worldState) return
+    const currentDay = worldState.currentDay
+    const food = worldState.resources.food
+    const logisticsSupplies = worldState.resources.logisticsSupplies
+
+    setSessionResourceHistory((prev) => {
+      const idx = prev.findIndex((p) => p.day === currentDay)
+      if (idx >= 0) {
+        if (prev[idx].food === food && prev[idx].logisticsSupplies === logisticsSupplies) {
+          return prev
+        }
+        const updated = [...prev]
+        updated[idx] = { day: currentDay, food, logisticsSupplies }
+        return updated
+      }
+      const next = [...prev, { day: currentDay, food, logisticsSupplies }]
+      return next.slice(-10)
+    })
+  }, [worldState?.currentDay, worldState?.resources.food, worldState?.resources.logisticsSupplies])
+
+  const reloadState = () => {
+    const loadRes = loadWorldState()
+    setSessionResourceHistory([])
+    setWorldState({ ...loadRes.state })
+  }
+
+  const showToast = (message: string, type: "success" | "error" | "info" = "success") => {
+    setNotification({ type, message })
+    setTimeout(() => {
+      setNotification(null)
+    }, 4000)
+  }
+
+  // 1. Thao tác Tiến 1 Ngày Chiến Lược (Advance World Tick)
+  const handleAdvanceTick = () => {
+    if (!worldState) return
+    playClickSound()
+    setIsTickAdvancing(true)
+
+    try {
+      const tickRes = executeWorldTick(worldState, { logPhases: true })
+      const spawnRes = checkAndSpawnWorldEvents(
+        worldState,
+        simulatorConfig.generator,
+        undefined,
+        simulatorConfig.strategyPolicy
+      )
+      saveWorldState(worldState)
+      setSessionResourceHistory((prev) => {
+        const currentDay = worldState.currentDay
+        const food = worldState.resources.food
+        const logisticsSupplies = worldState.resources.logisticsSupplies
+        const map = new Map<number, { day: number; food: number; logisticsSupplies: number }>()
+        for (const p of prev) map.set(p.day, p)
+        map.set(currentDay, { day: currentDay, food, logisticsSupplies })
+        return Array.from(map.values()).sort((a, b) => a.day - b.day).slice(-10)
+      })
+      setWorldState({ ...worldState })
+      playShieldSound()
+
+      if (tickRes.eventsSummary) {
+        setLastEventsSummary(tickRes.eventsSummary)
+      }
+
+      const summaryLogs = tickRes.phaseLogs.flatMap((p) => p.changesApplied)
+      setLastTickLogs(summaryLogs.slice(0, 8))
+
+      const autoLocked = tickRes.eventsSummary?.autoLockedCount || 0
+      const resolved = tickRes.eventsSummary?.resolvedCount || 0
+      let eventNote = ""
+      if (spawnRes.spawnedEvents.length > 0) {
+        eventNote += ` · Xuất hiện ${spawnRes.spawnedEvents.length} sự kiện mới`
+      }
+      if (autoLocked > 0 && resolved > 0) {
+        eventNote += ` · ${resolved} sự kiện hoàn tất, ${autoLocked} sự kiện tự động khóa`
+      } else if (resolved > 0) {
+        eventNote += ` · ${resolved} sự kiện hoàn tất`
+      } else if (autoLocked > 0) {
+        eventNote += ` · ${autoLocked} sự kiện tự động khóa phương án mặc định`
+      }
+
+      showToast(`Chiến lược đã bước sang Ngày ${worldState.currentDay}! (${summaryLogs.length} biến động${eventNote})`, "success")
+    } catch (err: any) {
+      showToast(`Lỗi khi thực thi Tick: ${err?.message || "Không xác định"}`, "error")
+    } finally {
+      setIsTickAdvancing(false)
+    }
+  }
+
+  // 2. Thao tác Lưu trạng thái thủ công
+  const handleManualSave = () => {
+    if (!worldState) return
+    playClickSound()
+    const saveRes = saveWorldState(worldState)
+    if (saveRes.success) {
+      playLevelUpSound()
+      showToast(`Đã lưu trạng thái WORLD thành công (CRC32 Checksum: ${saveRes.checksum})`, "success")
+    } else {
+      showToast(`Lỗi khi lưu World State: ${saveRes.message}`, "error")
+    }
+  }
+
+  // 3. Thao tác thay đổi Lệnh Chiến Lược cho Sector
+  const handleSetStrategicOrder = (sectorId: string, newOrder: StrategicOrder) => {
+    if (!worldState) return
+    playClickSound()
+    const res = setSectorStrategicOrder(worldState, sectorId, newOrder)
+    if (res.success) {
+      saveWorldState(worldState)
+      setWorldState({ ...worldState })
+      showToast(`Đã giao lệnh [${newOrder.toUpperCase()}] cho đồn trú ${worldState.sectors[sectorId]?.name}.`, "success")
+    } else {
+      showToast(res.error || "Lỗi cập nhật lệnh", "error")
+    }
+  }
+
+  // 4. Thao tác Nâng cấp công sự phòng thủ
+  const handleUpgradeFortification = (sectorId: string) => {
+    if (!worldState) return
+    playClickSound()
+    const res = upgradeSectorFortification(worldState, sectorId)
+    if (res.success) {
+      saveWorldState(worldState)
+      setWorldState({ ...worldState })
+      playLevelUpSound()
+      showToast(`Đã nâng cấp công sự tại ${worldState.sectors[sectorId]?.name} lên Cấp ${res.newLevel}/5!`, "success")
+    } else {
+      showToast(res.error || "Không thể nâng cấp công sự", "error")
+    }
+  }
+
+  // 5. Thao tác Chọn chiến lược sự kiện
+  const handleChooseStrategy = (eventId: string, strategyId: string) => {
+    if (!worldState) return
+    playClickSound()
+    const res = chooseEventStrategy(worldState, eventId, strategyId)
+    if (res.success) {
+      saveWorldState(worldState)
+      setWorldState({ ...worldState })
+      playShieldSound()
+      showToast(`Đã phê chuẩn phương án cho sự kiện "${res.event?.title}". Tiến trình chuyển sang PROCESSING.`, "success")
+    } else {
+      showToast(res.error || "Không thể chọn phương án này", "error")
+    }
+  }
+
+  // 5. Thao tác Xuất Kích Tác Chiến Chiến Lược (Phase 6.23)
+  const handleDeployCombat = (sectorId: string) => {
+    if (!worldState) {
+      showToast("Không tìm thấy dữ liệu World State để xuất kích.", "error")
+      return
+    }
+
+    const sector = worldState.sectors[sectorId]
+    if (!sector) {
+      showToast(`Sector không tồn tại trên bản đồ: ${sectorId}`, "error")
+      return
+    }
+
+    // A. Kiểm tra trận chiến treo
+    if (worldState.isSuspendedCombat && worldState.suspendedSnapshot) {
+      if (worldState.suspendedSnapshot.sectorId === sectorId) {
+        const snapshot = worldState.suspendedSnapshot
+        const battleContext: WorldBattleContext = {
+          source: "WORLD",
+          transactionId: snapshot.transactionId,
+          encounterId: snapshot.encounterId,
+          sectorId: snapshot.sectorId,
+          sectorName: snapshot.sectorName,
+          snapshot,
+          resumedFromSuspended: true,
+        }
+        showToast(`Tiếp tục trận chiến dở dang tại Sector ${sector.name}!`, "info")
+        onDeployEncounter?.(sectorId, battleContext)
+        return
+      } else {
+        showToast(
+          `Đang có trận chiến chưa hoàn tất tại Sector ${worldState.suspendedSnapshot.sectorName}. Hãy hoàn tất hoặc hủy bỏ trước khi mở trận mới.`,
+          "error",
+        )
+        return
+      }
+    }
+
+    // B. Kiểm tra trạng thái khóa của sector
+    if (sector.isLockedForCombat) {
+      showToast(`Sector ${sector.name} hiện đang bị khóa tác chiến. Không thể mở trận mới.`, "error")
+      return
+    }
+
+    // C. Khóa Sector và tạo Encounter Snapshot bất biến qua Adapter
+    try {
+      const snapshot = lockEncounterAndCreateSnapshot(worldState, {
+        sectorId,
+      })
+
+      // Lưu ngay vào WORLD storage (STARFRONT_WORLD_SAVE_V1) trước khi chuyển cảnh
+      saveWorldState(worldState)
+      setWorldState({ ...worldState })
+
+      const battleContext: WorldBattleContext = {
+        source: "WORLD",
+        transactionId: snapshot.transactionId,
+        encounterId: snapshot.encounterId,
+        sectorId: snapshot.sectorId,
+        sectorName: snapshot.sectorName,
+        snapshot,
+      }
+
+      showToast(`Đã khóa mục tiêu và xuất kích tác chiến tại Sector ${sector.name}!`, "success")
+      onDeployEncounter?.(sectorId, battleContext)
+    } catch (err: any) {
+      console.error("Lỗi khi khóa trận chiến:", err)
+      showToast(err?.message || "Không thể khởi tạo trận chiến chiến lược.", "error")
+    }
+  }
+
+  // Dữ liệu tính toán vĩ mô
+  const sectorsList = useMemo(() => {
+    if (!worldState) return []
+    return Object.values(worldState.sectors)
+  }, [worldState])
+
+  const totalThreat = useMemo(() => {
+    if (!sectorsList.length) return 0
+    return sectorsList.reduce((acc, s) => acc + s.threatLevel, 0)
+  }, [sectorsList])
+
+  const avgThreat = useMemo(() => {
+    if (!sectorsList.length) return 0
+    return Math.round(totalThreat / sectorsList.length)
+  }, [sectorsList, totalThreat])
+
+  const vssCount = useMemo(() => {
+    return sectorsList.filter((s) => s.sovereignty === "vss").length
+  }, [sectorsList])
+
+  const voidCount = useMemo(() => {
+    return sectorsList.filter((s) => s.sovereignty === "void").length
+  }, [sectorsList])
+
+  const contestedCount = useMemo(() => {
+    return sectorsList.filter((s) => s.sovereignty === "contested").length
+  }, [sectorsList])
+
+  const avgStability = useMemo(() => {
+    const vssSectors = sectorsList.filter((s) => s.sovereignty === "vss")
+    if (!vssSectors.length) return 0
+    return Math.round(vssSectors.reduce((acc, s) => acc + s.stability, 0) / vssSectors.length)
+  }, [sectorsList])
+
+  const activeEventsList = useMemo(() => {
+    if (!worldState) return []
+    return getActiveEvents(worldState)
+  }, [worldState])
+
+  const activeMissionChainsList = useMemo(() => {
+    if (!worldState?.missionChains) return []
+    return Object.values(worldState.missionChains).filter((c) => c.status === "active")
+  }, [worldState])
+
+  const calendarInfo = useMemo(() => {
+    return getGameCalendarInfo(worldState?.currentDay || 1, dayFraction)
+  }, [worldState?.currentDay, dayFraction])
+
+  const eventTierCounts = useMemo(() => {
+    if (!worldState) return { small: 0, medium: 0, large: 0, total: 0 }
+    return countActiveEventsByTier(worldState)
+  }, [worldState])
+
+  const nearestDeadlineEvent = useMemo(() => {
+    if (!worldState) return null
+    const initEvents = activeEventsList.filter((e) => e.status === "INIT")
+    if (!initEvents.length) return null
+    return [...initEvents].sort((a, b) => a.decisionDeadlineTick - b.decisionDeadlineTick)[0]
+  }, [worldState, activeEventsList])
+
+  const urgentAttentionEvent = useMemo(() => {
+    if (!worldState) return null
+    const initEvents = activeEventsList.filter((e) => e.status === "INIT")
+    if (!initEvents.length) return null
+    const severityWeight: Record<string, number> = { critical: 3, warning: 2, info: 1 }
+    return [...initEvents].sort((a, b) => {
+      const aDeadline = Math.max(0, a.decisionDeadlineTick - worldState.currentDay)
+      const bDeadline = Math.max(0, b.decisionDeadlineTick - worldState.currentDay)
+      if (aDeadline !== bDeadline) return aDeadline - bDeadline
+      const aSev = severityWeight[a.severity] || 0
+      const bSev = severityWeight[b.severity] || 0
+      if (aSev !== bSev) return bSev - aSev
+      return (b.priority ?? 0) - (a.priority ?? 0)
+    })[0]
+  }, [worldState, activeEventsList])
+
+  const selectedSector = worldState?.sectors[selectedSectorId] || sectorsList[0]
+
+  // Phase 6.29: Global Operations Hub alerts và actionable count
+  const hubCriticalAlerts = useMemo(() => {
+    if (!worldState) return []
+    return computeCriticalAlerts(worldState, activeEventsList)
+  }, [worldState, activeEventsList])
+
+  const hubActionableCount = useMemo(() => {
+    if (!worldState) return 0
+    return computeActionableItemsCount(
+      hubCriticalAlerts,
+      activeEventsList.filter((e) => e.status === "INIT"),
+      worldState
+    )
+  }, [hubCriticalAlerts, activeEventsList, worldState])
+
+  // Phase 6.30: War Room Strategic Situation Indicators & Critical Alerts
+  const [showWarRoomOverview, setShowWarRoomOverview] = useState<boolean>(true)
+  const warRoomCriticalAlerts = hubCriticalAlerts
+  const warRoomP0Alerts = useMemo(() => warRoomCriticalAlerts.filter((a) => a.priority === "P0"), [warRoomCriticalAlerts])
+  const warRoomP1Alerts = useMemo(() => warRoomCriticalAlerts.filter((a) => a.priority === "P1"), [warRoomCriticalAlerts])
+  const warRoomCombatOps = useMemo(() => {
+    if (!worldState) return { suspendedEncounter: null, lockedSectors: [], recentCombatResults: [] }
+    return computeCombatOperations(worldState)
+  }, [worldState])
+
+  // Phase 6.24: Helpers điều hướng trực tiếp từ Strategic Overview
+  const handleNavigateToEvent = (eventId: string) => {
+    playClickSound()
+    setSelectedEventIdForBoard(eventId)
+    setActiveTab("events")
+  }
+
+  const handleNavigateToSector = (sectorId: string) => {
+    playClickSound()
+    setSelectedSectorId(sectorId)
+    setActiveTab("map")
+  }
+
+  const handleQuickDispatchToSector = (sectorId: string) => {
+    playClickSound()
+    setSelectedSectorId(sectorId)
+    setIsQuickDispatchOpen(true)
+  }
+
+  // Phase 6.24: Các chỉ số chiến lược vĩ mô
+  const stableSectorsCount = useMemo(() => {
+    return sectorsList.filter((s) => s.stage === "normal" || s.stage === "recovery").length
+  }, [sectorsList])
+
+  const threatenedSectorsCount = useMemo(() => {
+    return sectorsList.filter((s) => s.stage === "threatened").length
+  }, [sectorsList])
+
+  const underSiegeSectorsCount = useMemo(() => {
+    return sectorsList.filter((s) => s.stage === "under_siege").length
+  }, [sectorsList])
+
+  const lostSectorsCount = useMemo(() => {
+    return sectorsList.filter((s) => s.stage === "lost").length
+  }, [sectorsList])
+
+  const blockedRoutes = useMemo(() => {
+    if (!worldState?.routes) return []
+    return worldState.routes.filter((r) => r.state === "blocked")
+  }, [worldState?.routes])
+
+  const hazardousRoutes = useMemo(() => {
+    if (!worldState?.routes) return []
+    return worldState.routes.filter((r) => r.state === "hazardous")
+  }, [worldState?.routes])
+
+  const criticalSector = useMemo(() => {
+    if (!sectorsList.length) return null
+    return [...sectorsList].sort((a, b) => b.threatLevel - a.threatLevel)[0]
+  }, [sectorsList])
+
+  // Lấy xu hướng Threat của sector nguy cấp nhất dựa trên dữ liệu threatHistory thực tế
+  const criticalSectorThreatTrend = useMemo(() => {
+    if (!criticalSector?.threatHistory || criticalSector.threatHistory.length < 2) {
+      return null
+    }
+    const len = criticalSector.threatHistory.length
+    const current = criticalSector.threatHistory[len - 1].threat
+    const prev = criticalSector.threatHistory[len - 2].threat
+    const delta = current - prev
+    return {
+      delta,
+      current,
+      prev,
+      direction: delta > 0 ? "up" : delta < 0 ? "down" : "flat",
+    }
+  }, [criticalSector])
+
+  // Phase 6.26 & 6.27: Lịch sử đe dọa của Điểm Nóng (Critical Sector)
+  const criticalSectorThreatHistory = useMemo(() => {
+    if (!criticalSector?.threatHistory) return []
+    const history = [...criticalSector.threatHistory]
+    // Đồng bộ điểm ngày hiện tại với threatLevel thực tế của criticalSector để đảm bảo tính nhất quán 100%
+    if (history.length > 0 && worldState) {
+      const last = history[history.length - 1]
+      if (last.day === worldState.currentDay && last.threat !== criticalSector.threatLevel) {
+        history[history.length - 1] = { ...last, threat: criticalSector.threatLevel }
+      }
+    }
+    return history
+  }, [criticalSector, worldState?.currentDay])
+
+  // Phase 6.26 & 6.27: Lịch sử đe dọa trung bình toàn thiên hà (Galaxy Average Threat)
+  const galaxyAverageThreatHistory = useMemo(() => {
+    if (!worldState?.sectors) return []
+    const dayTotals: Record<number, { sum: number; count: number }> = {}
+    for (const sector of Object.values(worldState.sectors)) {
+      if (sector.threatHistory && sector.threatHistory.length > 0) {
+        for (const pt of sector.threatHistory) {
+          if (!dayTotals[pt.day]) {
+            dayTotals[pt.day] = { sum: 0, count: 0 }
+          }
+          // Với ngày hiện tại, dùng threatLevel thực tế hiện hành của sector
+          const threatVal = pt.day === worldState.currentDay ? sector.threatLevel : pt.threat
+          dayTotals[pt.day].sum += threatVal
+          dayTotals[pt.day].count += 1
+        }
+      }
+    }
+    const days = Object.keys(dayTotals).map(Number).sort((a, b) => a - b)
+    return days.slice(-10).map((day) => ({
+      day,
+      threat: Math.round(dayTotals[day].sum / dayTotals[day].count),
+    }))
+  }, [worldState?.sectors, worldState?.currentDay])
+
+  // Phase 6.26: Lịch sử tài nguyên Lương thực và Vật tư tiếp tế
+  const foodSparklineHistory = useMemo(() => {
+    return sessionResourceHistory.map((p) => ({ day: p.day, value: p.food }))
+  }, [sessionResourceHistory])
+
+  const suppliesSparklineHistory = useMemo(() => {
+    return sessionResourceHistory.map((p) => ({ day: p.day, value: p.logisticsSupplies }))
+  }, [sessionResourceHistory])
+
+  // Lực lượng hành quân in-transit thực tế
+  const inTransitTroopsCount = useMemo(() => {
+    if (!worldState?.activeDeployments) return null
+    return worldState.activeDeployments
+      .filter((d) => d.status === "in_transit")
+      .reduce((sum, d) => sum + d.troopCount, 0)
+  }, [worldState?.activeDeployments])
+
+  const inTransitDeploymentsCount = useMemo(() => {
+    if (!worldState?.activeDeployments) return 0
+    return worldState.activeDeployments.filter((d) => d.status === "in_transit").length
+  }, [worldState?.activeDeployments])
+
+  // Danh sách các điểm nóng & việc cần xử lý (Actionable Situation Triage)
+  const triageHotspots = useMemo(() => {
+    if (!worldState) return []
+    const items: Array<{
+      id: string
+      type: "suspended_combat" | "siege" | "threatened" | "event_deadline" | "logistics_crisis"
+      priority: "P0" | "P1" | "P2"
+      title: string
+      sectorName?: string
+      sectorId?: string
+      eventId?: string
+      eventRef?: WorldEvent
+      urgencyBadge: string
+      description: string
+      actionType: "resume_combat" | "war_room" | "dispatch" | "review_event" | "military_tab"
+    }> = []
+
+    // 1. Trận chiến đang dở dang (Suspended Combat) -> P0 cao nhất
+    if (worldState.isSuspendedCombat && worldState.suspendedSnapshot) {
+      items.push({
+        id: `combat_${worldState.suspendedSnapshot.transactionId}`,
+        type: "suspended_combat",
+        priority: "P0",
+        title: `Trận chiến dở dang tại ${worldState.suspendedSnapshot.sectorName}`,
+        sectorName: worldState.suspendedSnapshot.sectorName,
+        sectorId: worldState.suspendedSnapshot.sectorId,
+        urgencyBadge: "P0 TỐI NGUY · CHIẾN SỰ DỞ DANG",
+        description: `Mã giao dịch ${worldState.suspendedSnapshot.transactionId}. ${worldState.suspendedSnapshot.lockedGarrison.toLocaleString()} quân đồn trú đang bị đóng băng chờ giải quyết.`,
+        actionType: "resume_combat",
+      })
+    }
+
+    // 2. Sectors bị vây hãm (under_siege) -> P0
+    const underSiegeSectors = sectorsList.filter((s) => s.stage === "under_siege")
+    for (const s of underSiegeSectors) {
+      items.push({
+        id: `sector_${s.id}`,
+        type: "siege",
+        priority: "P0",
+        title: `Sector ${s.name} đang bị vây hãm!`,
+        sectorName: s.name,
+        sectorId: s.id,
+        urgencyBadge: "P0 TỐI NGUY · BỊ VÂY HÃM",
+        description: `Mức đe dọa cực hạn ${s.threatLevel.toLocaleString()} / ${getSectorMaxThreat(s, worldState.threatConfig).toLocaleString()}. Đồn trú: ${s.garrisonPower.toLocaleString()} quân. Cần giải vây khẩn cấp!`,
+        actionType: "war_room",
+      })
+    }
+
+    // 3. Sectors bị đe dọa (threatened) -> P1
+    const threatenedSectors = sectorsList.filter((s) => s.stage === "threatened")
+    for (const s of threatenedSectors) {
+      items.push({
+        id: `sector_${s.id}`,
+        type: "threatened",
+        priority: "P1",
+        title: `Sector ${s.name} đối mặt nguy cơ cao`,
+        sectorName: s.name,
+        sectorId: s.id,
+        urgencyBadge: "P1 NGUY CƠ · BỊ ĐE DỌA",
+        description: `Mức đe dọa ${s.threatLevel.toLocaleString()} / ${getSectorMaxThreat(s, worldState.threatConfig).toLocaleString()}. Đồn trú: ${s.garrisonPower.toLocaleString()} quân. Cần tăng cường phòng thủ hoặc tiếp viện.`,
+        actionType: "war_room",
+      })
+    }
+
+    // 4. Sự kiện INIT sắp hết hạn (xếp theo deadline gần nhất)
+    const initEvents = activeEventsList
+      .filter((e) => e.status === "INIT")
+      .sort((a, b) => {
+        const aDeadline = Math.max(0, a.decisionDeadlineTick - worldState.currentDay)
+        const bDeadline = Math.max(0, b.decisionDeadlineTick - worldState.currentDay)
+        return aDeadline - bDeadline
+      })
+
+    for (const ev of initEvents) {
+      const daysLeft = Math.max(0, ev.decisionDeadlineTick - worldState.currentDay)
+      const secName = ev.sectorId ? worldState.sectors[ev.sectorId]?.name : undefined
+      const isUrgent = daysLeft <= 1 || ev.severity === "critical"
+      items.push({
+        id: `event_${ev.id}`,
+        type: "event_deadline",
+        priority: daysLeft === 0 ? "P0" : isUrgent ? "P1" : "P2",
+        title: ev.title,
+        sectorName: secName,
+        sectorId: ev.sectorId,
+        eventId: ev.id,
+        eventRef: ev,
+        urgencyBadge: daysLeft === 0 ? "P0 HẾT HẠN HÔM NAY" : daysLeft === 1 ? "P1 CÒN 1 NGÀY" : `P2 CÒN ${daysLeft} NGÀY`,
+        description: `${ev.description} ${daysLeft === 0 ? "(Sẽ tự động khóa mặc định nếu qua ngày!)" : ""}`,
+        actionType: "review_event",
+      })
+    }
+
+    // 5. Khủng hoảng hậu cần / lương thực nghiêm trọng -> P0 / P1 / P2
+    if (worldState.resources.food <= 0) {
+      items.push({
+        id: "crisis_food",
+        type: "logistics_crisis",
+        priority: "P0",
+        title: "Khủng hoảng Lương thực Toàn diện (Food: 0)",
+        urgencyBadge: "P0 KHỦNG HOẢNG DÂN SỰ",
+        description: "Kho lương thực quốc gia chạm đáy 0 đơn vị. Nạn đói đang đe dọa sinh mạng người dân và làm suy thoái ổn định.",
+        actionType: "military_tab",
+      })
+    } else if (worldState.resources.food < 100) {
+      items.push({
+        id: "warning_food",
+        type: "logistics_crisis",
+        priority: "P2",
+        title: "Kho lương thực ở mức thấp",
+        urgencyBadge: "P2 CẢNH BÁO LƯƠNG THỰC",
+        description: `Tồn kho lương thực chỉ còn ${worldState.resources.food} đơn vị (ngưỡng an toàn: 100).`,
+        actionType: "military_tab",
+      })
+    }
+
+    if (worldState.resources.logisticsSupplies <= 0) {
+      items.push({
+        id: "crisis_supplies",
+        type: "logistics_crisis",
+        priority: "P0",
+        title: "Hết vật tư hậu cần quân sự (Supplies: 0)",
+        urgencyBadge: "P0 CẠN KIỆT TIẾP TẾ",
+        description: "Kho vật tư hậu cần quân sự chạm đáy 0 đơn vị. Đạn dược và phụ tùng cạn kiệt, đe dọa năng lực tác chiến.",
+        actionType: "military_tab",
+      })
+    } else if (worldState.resources.logisticsSupplies < 50) {
+      items.push({
+        id: "warning_supplies",
+        type: "logistics_crisis",
+        priority: "P2",
+        title: "Vật tư tiếp tế dưới ngưỡng an toàn",
+        urgencyBadge: "P2 CẢNH BÁO TIẾP TẾ",
+        description: `Vật tư hậu cần chỉ còn ${worldState.resources.logisticsSupplies} đơn vị (ngưỡng an toàn: 50).`,
+        actionType: "military_tab",
+      })
+    }
+
+    if (blockedRoutes.length > 0) {
+      items.push({
+        id: "blocked_routes",
+        type: "logistics_crisis",
+        priority: "P1",
+        title: `${blockedRoutes.length} tuyến siêu không gian bị phong tỏa`,
+        urgencyBadge: "P1 NGHẼN HẬU CẦN",
+        description: `Các tuyến bị phong tỏa: ${blockedRoutes.map((r) => `${r.fromSectorId}↔${r.toSectorId}`).join(", ")}. Đoàn vận tải không thể qua lại.`,
+        actionType: "military_tab",
+      })
+    }
+
+    return items
+  }, [worldState, sectorsList, activeEventsList, blockedRoutes])
+
+  // Điều hướng nhanh đến sector từ kết quả báo cáo
+  const handleNavigateToSectorFromResults = (sectorId: string) => {
+    playClickSound()
+    setSelectedSectorId(sectorId)
+    setActiveTab("map")
+    setIsDebriefingDrawerOpen(false)
+  }
+
+  if (!worldState) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center font-mono text-zinc-400">
+        <RefreshCw className="size-6 animate-spin text-cyan-400 mr-2" />
+        <span>ĐANG TẢI DỮ LIỆU TÁC CHIẾN STARFRONT WORLD...</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4 font-mono text-xs text-zinc-200">
+      {/* ====================================================================
+          A. SLIM TACTICAL HUD (PHASE 6.18: COMPACT STRATEGIC COMMAND BAR)
+          ==================================================================== */}
+      <header className="rounded border border-cyan-500/40 bg-zinc-950/95 px-3 py-2 sm:px-4 sm:py-2.5 shadow-xl shadow-cyan-950/30 backdrop-blur-md">
+        <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-2.5 sm:gap-3">
+          {/* NHÓM 1: THỜI GIAN CHIẾN LƯỢC (Strategic Time & Simulation Status) */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            {/* Live Indicator */}
+            <div className="flex items-center gap-1.5 pr-1 border-r border-zinc-800/80 shrink-0">
+              <span
+                className={cn(
+                  "size-2 rounded-full",
+                  simulatorConfig.isPaused ? "bg-amber-400" : "bg-cyan-400 animate-ping"
+                )}
+              />
+              <span className="font-display font-black text-xs text-cyan-300 uppercase tracking-wider">
+                WORLD
+              </span>
+            </div>
+
+            {/* Ngày & Niên Lịch */}
+            <div
+              className="flex items-center gap-1.5 rounded border border-zinc-800 bg-zinc-900/90 px-2 py-1 text-[11px] font-mono"
+              title={`Niên lịch thiên hà: ${calendarInfo.formattedDate} · ${calendarInfo.cycleDesc}`}
+            >
+              <Calendar className="size-3 text-cyan-400 shrink-0" />
+              <span className="font-bold text-cyan-200">NGÀY #{worldState.currentDay}</span>
+              <span className="text-zinc-600 hidden sm:inline">·</span>
+              <span className="text-zinc-400 text-[10px] hidden sm:inline">{calendarInfo.formattedDate}</span>
+              <span className="text-zinc-600 hidden md:inline">·</span>
+              <span className={cn("text-[10px] font-bold hidden md:inline", calendarInfo.cycleColor)}>
+                {calendarInfo.timeString} [{calendarInfo.cycleName}] {calendarInfo.seasonIcon}
+              </span>
+            </div>
+
+            {/* Simulator Control: Play/Pause */}
+            <button
+              type="button"
+              onClick={handleTogglePause}
+              className={cn(
+                "flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-bold font-mono transition-all cursor-pointer shadow-sm",
+                simulatorConfig.isPaused
+                  ? "border-amber-500/60 bg-amber-950/50 text-amber-300 hover:bg-amber-900/60 shadow-amber-950/30"
+                  : "border-emerald-500/60 bg-emerald-950/50 text-emerald-300 hover:bg-emerald-900/60 shadow-emerald-950/30"
+              )}
+              title={simulatorConfig.isPaused ? "Tiếp tục chạy mô phỏng thời gian thực" : "Tạm dừng mô phỏng thế giới"}
+            >
+              {simulatorConfig.isPaused ? (
+                <Play className="size-3 fill-current text-amber-400" />
+              ) : (
+                <Pause className="size-3 text-emerald-400" />
+              )}
+              <span>{simulatorConfig.isPaused ? "PAUSED" : "RUNNING"}</span>
+            </button>
+
+            {/* Đếm ngược ngày tiếp theo */}
+            <div
+              className="flex items-center gap-1 rounded border border-zinc-800/80 bg-zinc-900/80 px-2 py-1 text-[11px] font-mono text-zinc-300"
+              title={`Tốc độ simulator: 1 Ngày = ${simulatorConfig.speedSeconds}s thực`}
+            >
+              <Clock className="size-3 text-cyan-400 shrink-0" />
+              <span
+                className={cn(
+                  "font-bold text-xs",
+                  simulatorConfig.isPaused ? "text-amber-400" : "text-cyan-300"
+                )}
+              >
+                {simulatorConfig.isPaused ? "--" : `${countdownSeconds}s`}
+              </span>
+            </div>
+          </div>
+
+          {/* NHÓM 2: TÀI NGUYÊN (5 Core Galactic Resources - Compact & Legible) */}
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+            {/* 1. Vật Liệu */}
+            <div
+              className={cn(
+                "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-colors",
+                worldState.resources.industrialMaterials <= 20
+                  ? "border-red-500/70 bg-red-950/40 text-red-200"
+                  : "border-zinc-800 bg-zinc-900/70 text-zinc-200"
+              )}
+              title={`Vật Liệu Công Nghiệp: ${worldState.resources.industrialMaterials} (Nâng cấp công sự & hạ tầng)`}
+            >
+              <Boxes className="size-3 text-cyan-400 shrink-0" />
+              <span className="text-[10px] text-zinc-400 hidden xl:inline">Vật Liệu</span>
+              <span
+                className={cn(
+                  "font-bold",
+                  worldState.resources.industrialMaterials <= 20 ? "text-red-300 animate-pulse" : "text-zinc-100"
+                )}
+              >
+                {worldState.resources.industrialMaterials}
+              </span>
+            </div>
+
+            {/* 2. Năng Lượng */}
+            <div
+              className={cn(
+                "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-colors",
+                worldState.resources.energy <= 20
+                  ? "border-red-500/70 bg-red-950/40 text-red-200"
+                  : "border-zinc-800 bg-zinc-900/70 text-zinc-200"
+              )}
+              title={`Năng Lượng Plasma: ${worldState.resources.energy} (Duy trì khiên & vận hành phòng thủ)`}
+            >
+              <Zap className="size-3 text-amber-400 shrink-0" />
+              <span className="text-[10px] text-zinc-400 hidden xl:inline">Plasma</span>
+              <span
+                className={cn(
+                  "font-bold",
+                  worldState.resources.energy <= 20 ? "text-red-300 animate-pulse" : "text-zinc-100"
+                )}
+              >
+                {worldState.resources.energy}
+              </span>
+            </div>
+
+            {/* 3. Hậu Cần */}
+            <div
+              className={cn(
+                "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-colors",
+                worldState.resources.logisticsSupplies <= 20
+                  ? "border-red-500/70 bg-red-950/40 text-red-200"
+                  : "border-zinc-800 bg-zinc-900/70 text-zinc-200"
+              )}
+              title={`Vật Tư Hậu Cần: ${worldState.resources.logisticsSupplies} (Tiếp tế hạm đội & tuyến đường)`}
+            >
+              <Truck className="size-3 text-indigo-400 shrink-0" />
+              <span className="text-[10px] text-zinc-400 hidden xl:inline">Hậu Cần</span>
+              <span
+                className={cn(
+                  "font-bold",
+                  worldState.resources.logisticsSupplies <= 20 ? "text-red-300 animate-pulse" : "text-zinc-100"
+                )}
+              >
+                {worldState.resources.logisticsSupplies}
+              </span>
+            </div>
+
+            {/* 4. Dữ Liệu */}
+            <div
+              className={cn(
+                "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-colors",
+                worldState.resources.tacticalData <= 20
+                  ? "border-red-500/70 bg-red-950/40 text-red-200"
+                  : "border-zinc-800 bg-zinc-900/70 text-zinc-200"
+              )}
+              title={`Dữ Liệu Tác Chiến: ${worldState.resources.tacticalData} (Giải mã tình báo & sự kiện chiến lược)`}
+            >
+              <Database className="size-3 text-purple-400 shrink-0" />
+              <span className="text-[10px] text-zinc-400 hidden xl:inline">Dữ Liệu</span>
+              <span
+                className={cn(
+                  "font-bold",
+                  worldState.resources.tacticalData <= 20 ? "text-red-300 animate-pulse" : "text-zinc-100"
+                )}
+              >
+                {worldState.resources.tacticalData}
+              </span>
+            </div>
+
+            {/* 5. Lương Thực */}
+            <div
+              className={cn(
+                "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-colors",
+                worldState.resources.food <= 50
+                  ? "border-red-500/70 bg-red-950/40 text-red-200"
+                  : "border-emerald-500/40 bg-emerald-950/30 text-emerald-300"
+              )}
+              title={`Lương Thực Dân Sinh: ${worldState.resources.food} (Duy trì dân cư & độ ổn định các sector)`}
+            >
+              <Wheat className="size-3 text-emerald-400 shrink-0" />
+              <span className="text-[10px] text-emerald-400 hidden xl:inline">Lương Thực</span>
+              <span
+                className={cn(
+                  "font-bold",
+                  worldState.resources.food <= 50 ? "text-red-300 animate-pulse" : "text-emerald-300"
+                )}
+              >
+                {worldState.resources.food}
+              </span>
+            </div>
+          </div>
+
+          {/* NHÓM 3: THAO TÁC NHANH (Quick Actions & Settings Trigger) */}
+          <div className="flex flex-wrap items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Advance Day */}
+            <button
+              type="button"
+              onClick={handleAdvanceTick}
+              disabled={isTickAdvancing}
+              className={cn(
+                "flex items-center gap-1 rounded border border-cyan-400 bg-cyan-600/30 px-2.5 py-1 text-xs font-bold text-cyan-200 hover:bg-cyan-600/50 hover:text-white transition-all cursor-pointer shadow-sm shadow-cyan-900/50",
+                isTickAdvancing && "opacity-50 cursor-wait"
+              )}
+              title="Thực thi một chu kỳ chiến lược (+1 Ngày)"
+            >
+              <Play className="size-3 fill-current text-cyan-300" />
+              <span>{isTickAdvancing ? "Đang Tính..." : "+1 Ngày"}</span>
+            </button>
+
+            {/* Fullscreen Map */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound()
+                setIsFullscreenMapOpen(true)
+              }}
+              className="flex items-center gap-1 rounded border border-cyan-500/60 bg-cyan-950/40 px-2 py-1 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 hover:text-white transition-all cursor-pointer shadow-sm shadow-cyan-950/40"
+              title="Mở Bản Đồ Toàn Màn Hình (100vw/100vh)"
+            >
+              <Orbit className="size-3 text-cyan-400" />
+              <span className="hidden sm:inline">Bản Đồ</span>
+            </button>
+
+            {/* Báo cáo / Khay Debriefing Drawer */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound()
+                setIsDebriefingDrawerOpen((prev) => !prev)
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-bold font-mono transition-all cursor-pointer relative",
+                isDebriefingDrawerOpen
+                  ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 shadow-md shadow-cyan-950/60"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500 hover:text-white"
+              )}
+              title="Mở Khay Báo Cáo Tình Báo (Debriefing Drawer)"
+            >
+              <FileText className="size-3 text-cyan-400 shrink-0" />
+              <span className="hidden sm:inline">Báo Cáo</span>
+              {unreadResultsCount > 0 && (
+                <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-500/40 animate-pulse">
+                  {unreadResultsCount}
+                </span>
+              )}
+            </button>
+
+            {/* Điều Quân Nhanh */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound()
+                setIsQuickDispatchOpen(true)
+              }}
+              className="flex items-center gap-1 rounded border border-amber-500/50 bg-amber-950/40 px-2 py-1 text-xs font-bold text-amber-300 hover:bg-amber-900/50 transition-colors cursor-pointer"
+              title="Mở bến điều động chi viện quân sự nhanh"
+            >
+              <Zap className="size-3 text-amber-400" />
+              <span className="hidden md:inline">Điều Quân</span>
+            </button>
+
+            {/* Hạm Đội Quốc Gia (FND-7 Fleet Command) */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound()
+                setIsFleetCommandOpen(true)
+              }}
+              className="flex items-center gap-1 rounded border border-cyan-500/50 bg-cyan-950/40 px-2 py-1 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 hover:text-white transition-colors cursor-pointer shadow-sm shadow-cyan-950/40"
+              title="Mở Trung Tâm Chỉ Huy Hạm Đội Quốc Gia (FND-7 Fleet Command)"
+            >
+              <Compass className="size-3 text-cyan-400" />
+              <span className="hidden md:inline">Hạm Đội</span>
+            </button>
+
+            {/* Nút Bánh Răng: Cài Đặt / Admin CP Overlay */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound()
+                setIsAdminSettingsOpen(true)
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded border px-2.5 py-1 text-xs font-bold font-mono transition-all cursor-pointer",
+                isAdminSettingsOpen
+                  ? "border-amber-400 bg-amber-950/80 text-amber-200 shadow-md shadow-amber-950/60"
+                  : "border-amber-500/60 bg-amber-950/40 text-amber-300 hover:bg-amber-900/60 hover:text-amber-100 hover:border-amber-400"
+              )}
+              title="Mở Bảng Điều Khiển Cài Đặt & Quản Trị Viên (Settings Overlay)"
+            >
+              <Sliders className="size-3 text-amber-400" />
+              <span>Cài Đặt</span>
+              <span className="rounded bg-black/50 px-1 py-0.2 text-[9px] text-amber-300 border border-amber-500/30 hidden lg:inline">
+                {simulatorConfig.isPaused ? "Paused" : `${simulatorConfig.speedSeconds}s`}
+              </span>
+            </button>
+
+            {/* Lưu thủ công */}
+            <button
+              type="button"
+              onClick={handleManualSave}
+              className="flex items-center gap-1 rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-300 hover:border-zinc-500 hover:text-white transition-colors cursor-pointer"
+              title="Lưu trạng thái an toàn vào STARFRONT_WORLD_SAVE_V1"
+            >
+              <Save className="size-3 text-zinc-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Thông báo Toast Thu Gọn */}
+        {notification && (
+          <div
+            className={cn(
+              "mt-2 flex items-center justify-between rounded px-2.5 py-1 text-[11px] font-mono animate-fadeIn border",
+              notification.type === "success" && "border-emerald-500/50 bg-emerald-950/60 text-emerald-200",
+              notification.type === "error" && "border-red-500/50 bg-red-950/60 text-red-200",
+              notification.type === "info" && "border-cyan-500/50 bg-cyan-950/60 text-cyan-200"
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="size-3 shrink-0" />
+              <span>{notification.message}</span>
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-zinc-400 hover:text-white"
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+        )}
+      </header>
+
+      {/* Cảnh Báo Trận Chiến Dở Dang Cần Khôi Phục (Phase 6.23) */}
+      {worldState?.isSuspendedCombat && worldState?.suspendedSnapshot && (
+        <div className="rounded border border-amber-500/70 bg-gradient-to-r from-amber-950/80 via-black to-zinc-950 p-3 shadow-lg flex flex-wrap items-center justify-between gap-3 text-xs font-mono animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="size-5 text-amber-400 animate-pulse shrink-0" />
+            <div>
+              <div className="font-bold text-amber-300 uppercase flex items-center gap-2">
+                <span>PHÁT HIỆN TRẬN CHIẾN DỞ DANG CHƯA HOÀN TẤT</span>
+                <span className="rounded bg-black/50 px-1.5 py-0.2 text-[9px] text-amber-400 border border-amber-500/40">
+                  {worldState.suspendedSnapshot.sectorName}
+                </span>
+              </div>
+              <div className="text-[11px] text-zinc-300 mt-0.5">
+                Mã giao dịch: <span className="text-cyan-300 font-bold">{worldState.suspendedSnapshot.transactionId}</span> · Lực lượng đồn trú: {worldState.suspendedSnapshot.lockedGarrison.toLocaleString()} quân đang đóng băng.
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleDeployCombat(worldState.suspendedSnapshot!.sectorId)}
+              className="rounded bg-amber-500 hover:bg-amber-400 text-black px-3 py-1.5 font-bold cursor-pointer transition-colors"
+            >
+              Tiếp Tục Tác Chiến &rarr;
+            </button>
+            <button
+              onClick={() => {
+                if (!worldState.suspendedSnapshot) return
+                const res = abortSuspendedCombat(
+                  worldState,
+                  worldState.suspendedSnapshot.transactionId,
+                  "Hủy bỏ an toàn từ War Room",
+                )
+                saveWorldState(worldState)
+                setWorldState({ ...worldState })
+                showToast(res.message, "info")
+              }}
+              className="rounded border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 px-3 py-1.5 cursor-pointer transition-colors"
+            >
+              Hủy Bỏ An Toàn (Safe Abort)
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          B. NAVIGATION TABS (5 PHÂN KHU TÁC CHIẾN — ĐÃ CÁCH LY ADMIN CP)
+          ==================================================================== */}
+      <nav className="flex flex-wrap items-center gap-1.5 border-b border-zinc-800 pb-2">
+        {[
+          {
+            id: "map",
+            label: "War Room // Bản Đồ Chiến Lược",
+            icon: Compass,
+            badge: "Trung Tâm",
+          },
+          {
+            id: "overview",
+            label: "Trung Tâm Điều Hành",
+            icon: Activity,
+            badge: hubActionableCount > 0 ? `${hubActionableCount} Việc` : null,
+          },
+          {
+            id: "events",
+            label: "Sự Kiện & Nhiệm Vụ",
+            icon: Flame,
+            badge: activeEventsList.length > 0 ? `${activeEventsList.length}` : null,
+          },
+          { id: "military", label: "Quân Sự & Hậu Cần", icon: Swords },
+          {
+            id: "results",
+            label: "Trung Tâm Kết Quả",
+            icon: Layers,
+            badge: unreadResultsCount > 0 ? `${unreadResultsCount} Mới` : null,
+          },
+        ].map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id || (tab.id === "map" && activeTab === "sectors")
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                playClickSound()
+                setActiveTab(tab.id as OperationsTab)
+              }}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 rounded text-xs sm:text-[13px] font-bold uppercase transition-all cursor-pointer",
+                isActive
+                  ? "bg-cyan-950/80 text-cyan-300 border border-cyan-500/60 shadow-md shadow-cyan-950/40"
+                  : "bg-zinc-900/60 text-zinc-400 border border-zinc-800/80 hover:bg-zinc-900 hover:text-zinc-200"
+              )}
+            >
+              <Icon className={cn("size-4 shrink-0", isActive ? "text-cyan-400" : "text-zinc-500")} />
+              <span>{tab.label}</span>
+              {tab.badge && (
+                <span className={cn(
+                  "rounded px-2 py-0.5 text-xs font-mono font-bold border",
+                  tab.id === "map"
+                    ? "bg-cyan-500/20 text-cyan-300 border-cyan-500/40"
+                    : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                )}>
+                  {tab.badge}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </nav>
+
+      {/* ====================================================================
+          TAB 1: TRUNG TÂM ĐIỀU HÀNH TOÀN CẢNH (PHASE 6.29: GLOBAL OPERATIONS & EVENT HUB)
+          ==================================================================== */}
+      {activeTab === "overview" && (
+        <GlobalOperationsHub
+          worldState={worldState}
+          activeEvents={activeEventsList}
+          activeMissionChains={activeMissionChainsList}
+          lastTickLogs={lastTickLogs}
+          unreadResultsCount={unreadResultsCount}
+          onNavigateToSector={handleNavigateToSector}
+          onOpenSectorIntel={(sectorId) => {
+            playClickSound()
+            setSelectedSectorId(sectorId)
+            setIsSectorIntelOpen(true)
+          }}
+          onNavigateToEvent={(eventId) => {
+            playClickSound()
+            setSelectedEventIdForBoard(eventId)
+            setActiveTab("events")
+          }}
+          onQuickDispatch={handleQuickDispatchToSector}
+          onDeployCombat={handleDeployCombat}
+          onAbortSuspendedCombat={() => {
+            if (!worldState.suspendedSnapshot) return
+            const res = abortSuspendedCombat(
+              worldState,
+              worldState.suspendedSnapshot.transactionId,
+              "Hủy bỏ an toàn từ Global Operations Hub"
+            )
+            saveWorldState(worldState)
+            setWorldState({ ...worldState })
+            showToast(res.message, "info")
+          }}
+          onOpenDebriefingDrawer={() => {
+            playClickSound()
+            setIsDebriefingDrawerOpen(true)
+          }}
+          onNavigateToMilitary={() => {
+            playClickSound()
+            setActiveTab("military")
+          }}
+          onAdvanceTick={handleAdvanceTick}
+          isTickAdvancing={isTickAdvancing}
+          foodSparklineHistory={foodSparklineHistory}
+          suppliesSparklineHistory={suppliesSparklineHistory}
+          criticalSectorThreatHistory={criticalSectorThreatHistory}
+          galaxyAverageThreatHistory={galaxyAverageThreatHistory}
+          threatVisualizerMode={threatVisualizerMode}
+          onToggleThreatVisualizerMode={setThreatVisualizerMode}
+          calendarInfo={calendarInfo}
+          simulatorConfig={simulatorConfig}
+          countdownSeconds={countdownSeconds}
+          onTogglePause={handleTogglePause}
+          onReviewEventModal={(ev) => {
+            playClickSound()
+            setReviewingEvent(ev)
+          }}
+        />
+      )}
+
+      {/* ====================================================================
+          WAR ROOM // BẢN ĐỒ CHIẾN LƯỢC TOÀN DIỆN & SECTOR COMMAND FOUNDATION (PHASE 6.17 P0)
+          ==================================================================== */}
+      {(activeTab === "map" || activeTab === "sectors") && (
+        <div className="space-y-2.5">
+          {/* Thông báo tương thích nếu truy cập thông qua tab hoặc đường dẫn 'sectors' cũ */}
+          {activeTab === "sectors" && (
+            <div className="flex items-center justify-between rounded border border-cyan-500/40 bg-cyan-950/40 px-3 py-1.5 text-[11px] text-cyan-200 animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <Globe2 className="size-3.5 text-cyan-400 shrink-0" />
+                <span>
+                  <strong>Mạng Lưới Sector đã được hợp nhất vào War Room:</strong> Bấm vào sector trên bản đồ hoặc thanh điều phối bên dưới để xem Inspector chi tiết và ra lệnh.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  playClickSound()
+                  setActiveTab("map")
+                }}
+                className="text-cyan-300 hover:text-white underline text-[10px] font-bold shrink-0 ml-2 cursor-pointer"
+              >
+                Ẩn thông báo
+              </button>
+            </div>
+          )}
+
+          {/* TỔNG QUAN CHIẾN LƯỢC WAR ROOM (WAR ROOM STRATEGIC SITUATION DECK - PHASE 6.30) */}
+          <div className="rounded border border-cyan-500/30 bg-zinc-950/90 p-2.5 shadow-lg shadow-cyan-950/20 backdrop-blur-md space-y-2">
+            <div className="flex items-center justify-between text-xs sm:text-[13px] pb-1.5 border-b border-zinc-800/80">
+              <div className="flex flex-wrap items-center gap-2">
+                <Flame className="size-4 text-amber-400" />
+                <span className="text-zinc-100 font-bold uppercase tracking-wide text-xs sm:text-sm">
+                  Tổng Quan Tình Hình Chiến Lược Toàn Cảnh
+                </span>
+                {warRoomP0Alerts.length > 0 && (
+                  <span className="px-2 py-0.5 rounded bg-red-950/80 border border-red-500/60 text-xs font-bold text-red-300 animate-pulse flex items-center gap-1 font-mono">
+                    <AlertOctagon className="size-3 text-red-400" />
+                    {warRoomP0Alerts.length} CẢNH BÁO P0 TỐI NGUY
+                  </span>
+                )}
+                {warRoomP1Alerts.length > 0 && (
+                  <span className="hidden sm:inline-flex px-2 py-0.5 rounded bg-amber-950/70 border border-amber-500/50 text-xs font-bold text-amber-300 font-mono">
+                    {warRoomP1Alerts.length} P1 Nguy Cơ
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound()
+                    setShowWarRoomOverview(!showWarRoomOverview)
+                  }}
+                  className="text-xs text-zinc-300 hover:text-cyan-300 transition-colors cursor-pointer px-2 py-1 rounded border border-zinc-800 hover:border-zinc-700 font-medium"
+                >
+                  {showWarRoomOverview ? "Thu Gọn" : "Mở Rộng"}
+                </button>
+              </div>
+            </div>
+
+            {showWarRoomOverview && (
+              <div className="space-y-2.5 animate-in fade-in duration-150">
+                {/* 4 Thẻ tổng hợp chỉ số cốt lõi */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs font-mono">
+                  {/* Thẻ 1: Tình trạng 10 Sector */}
+                  <div className="rounded bg-zinc-900/60 border border-zinc-800 p-2.5 space-y-1">
+                    <div className="flex items-center justify-between text-zinc-400 text-xs">
+                      <span className="font-bold">10 SECTORS THIÊN HÀ</span>
+                      <Globe2 className="size-3.5 text-cyan-400" />
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-cyan-300 font-bold">VSS: {sectorsList.filter((s) => s.sovereignty === "vss").length}</span>
+                      <span className="text-zinc-600">·</span>
+                      <span className="text-amber-300 font-bold">Tranh chấp: {sectorsList.filter((s) => s.sovereignty === "contested" || s.sovereignty === "neutral").length}</span>
+                      <span className="text-zinc-600">·</span>
+                      <span className="text-red-400 font-bold">Void: {sectorsList.filter((s) => s.sovereignty === "void").length}</span>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 2: Threat & Nguy cấp */}
+                  <div className="rounded bg-zinc-900/60 border border-zinc-800 p-2.5 space-y-1">
+                    <div className="flex items-center justify-between text-zinc-400 text-xs">
+                      <span className="font-bold">THREAT TRUNG BÌNH</span>
+                      <Flame className="size-3.5 text-amber-400" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-zinc-100 font-mono text-xs sm:text-[13px]">
+                        {Math.round(sectorsList.reduce((acc, s) => acc + s.threatLevel, 0) / Math.max(1, sectorsList.length)).toLocaleString()} / {Math.round(sectorsList.reduce((acc, s) => acc + getSectorMaxThreat(s, worldState.threatConfig), 0) / Math.max(1, sectorsList.length)).toLocaleString()}
+                      </span>
+                      <span className="text-xs text-amber-400 font-semibold">
+                        {sectorsList.filter((s) => {
+                          const maxT = getSectorMaxThreat(s, worldState.threatConfig)
+                          return maxT > 0 && (s.threatLevel / maxT >= 0.7 || (maxT <= 1000 && s.threatLevel >= 700))
+                        }).length} Sector nguy cấp
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 3: Quân lực & Garrison */}
+                  <div className="rounded bg-zinc-900/60 border border-zinc-800 p-2.5 space-y-1">
+                    <div className="flex items-center justify-between text-zinc-400 text-xs">
+                      <span className="font-bold">QUÂN LỰC & HÀNH QUÂN</span>
+                      <Swords className="size-3.5 text-cyan-400" />
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-cyan-300 font-bold">
+                        Đồn trú: {sectorsList.reduce((acc, s) => acc + (s.garrisonPower || 0), 0)}q
+                      </span>
+                      <span className="text-zinc-400">
+                        Hành quân: {worldState?.activeDeployments?.filter((d) => d.status === "in_transit").length || 0}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Thẻ 4: Sự kiện & Tác chiến */}
+                  <div className="rounded bg-zinc-900/60 border border-zinc-800 p-2.5 space-y-1">
+                    <div className="flex items-center justify-between text-zinc-400 text-xs">
+                      <span className="font-bold">SỰ KIỆN & GIAO TRANH</span>
+                      <Activity className="size-3.5 text-cyan-400" />
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-amber-300 font-bold">
+                        {activeEventsList.filter((e) => e.status === "INIT").length} Chờ phê chuẩn
+                      </span>
+                      <span className={cn(warRoomCombatOps.suspendedEncounter ? "text-red-400 font-bold animate-pulse" : "text-emerald-400")}>
+                        {warRoomCombatOps.suspendedEncounter ? "Trận dở dang" : "Giao tranh ổn định"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Banner cảnh báo khẩn cấp P0/P1 có hành động điều hướng thực tế */}
+                {warRoomCriticalAlerts.length > 0 && (
+                  <div className="space-y-2 pt-1">
+                    {/* Ưu tiên 1: Trận chiến dở dang */}
+                    {warRoomCombatOps.suspendedEncounter && (
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 rounded border border-red-500/70 bg-red-950/60 p-2.5 text-xs text-red-200">
+                        <div className="flex items-center gap-2">
+                          <AlertOctagon className="size-4 text-red-400 animate-pulse shrink-0" />
+                          <div>
+                            <span className="font-bold text-red-300 uppercase">
+                              Trận Đấu Dở Dang Đang Bị Khóa (Suspended Combat):
+                            </span>{" "}
+                            Sector {warRoomCombatOps.suspendedEncounter.sector?.name || warRoomCombatOps.suspendedEncounter.snapshot.sectorId}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            playClickSound()
+                            if (warRoomCombatOps.suspendedEncounter?.snapshot.sectorId) {
+                              handleDeployCombat(warRoomCombatOps.suspendedEncounter.snapshot.sectorId)
+                            }
+                          }}
+                          className="px-3 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase transition-colors cursor-pointer shrink-0 shadow-md flex items-center gap-1.5"
+                        >
+                          <Zap className="size-3.5" />
+                          <span>Tiếp Tục Tác Chiến &rarr;</span>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Danh sách 2 cảnh báo P0/P1 nổi bật nhất */}
+                    {warRoomCriticalAlerts
+                      .filter((a) => a.type !== "suspended_combat")
+                      .slice(0, 2)
+                      .map((alert) => (
+                        <div
+                          key={alert.id}
+                          className={cn(
+                            "flex flex-wrap items-center justify-between gap-2 rounded border p-2.5 text-xs",
+                            alert.priority === "P0"
+                              ? "border-red-500/60 bg-red-950/40 text-red-200"
+                              : "border-amber-500/50 bg-amber-950/30 text-amber-200"
+                          )}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 pr-2">
+                            {alert.priority === "P0" ? (
+                              <AlertOctagon className="size-4 text-red-400 shrink-0" />
+                            ) : (
+                              <AlertTriangle className="size-4 text-amber-400 shrink-0" />
+                            )}
+                            <div className="truncate">
+                              <span className="font-bold">{alert.urgencyBadge}:</span>{" "}
+                              <span className="text-zinc-200">{alert.title}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {alert.actionType === "resolve_event" && alert.eventRef && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playClickSound()
+                                  setReviewingEvent(alert.eventRef!)
+                                }}
+                                className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-200 text-xs font-bold uppercase transition-colors cursor-pointer"
+                              >
+                                Phê Chuẩn &rarr;
+                              </button>
+                            )}
+
+                            {alert.sectorId && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  playClickSound()
+                                  setSelectedSectorId(alert.sectorId!)
+                                }}
+                                className="px-2.5 py-1 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-200 text-xs font-bold uppercase transition-colors cursor-pointer"
+                              >
+                                Focus Sector &rarr;
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* THANH ĐIỀU PHỐI SECTOR NHANH (SECTOR COMMAND RIBBON) */}
+          <div className="rounded border border-cyan-500/30 bg-zinc-950/90 p-3 shadow-lg shadow-cyan-950/20 backdrop-blur-md">
+            <div className="flex flex-wrap items-center justify-between gap-2 text-xs pb-2 mb-2 border-b border-zinc-800/80">
+              <div className="flex items-center gap-2 text-zinc-200 font-bold uppercase tracking-wide">
+                <Compass className="size-4 text-cyan-400" />
+                <span>Mạng Lưới {sectorsList.length} Sector Thiên Hà — Điều Phối & Soi Tức Thì</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    playClickSound()
+                    setIsSectorIntelOpen(true)
+                  }}
+                  className="px-2.5 py-1 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 text-xs font-bold uppercase transition-colors cursor-pointer flex items-center gap-1.5 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
+                  title="Mở hồ sơ chi tiết Sector Intel"
+                >
+                  <Radio className="size-3.5 text-cyan-400" />
+                  <span>Hồ Sơ Intel ({sectorsList.length})</span>
+                </button>
+                <span className="text-xs text-zinc-400 hidden sm:inline">
+                  Đồng bộ tự động giữa Bản Đồ và Inspector bên phải
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-10 gap-1.5 max-h-[220px] overflow-y-auto scrollbar-thin p-0.5">
+              {sectorsList.map((sector) => {
+                const isSelected = selectedSectorId === sector.id
+                const isLocked = isEntityCombatLocked(sector, worldState)
+                const secMax = getSectorMaxThreat(sector, worldState.threatConfig)
+                const secRatio = secMax > 0 ? sector.threatLevel / secMax : 0
+                const threatTier = (secRatio >= 0.7 || (secMax <= 1000 && sector.threatLevel >= 700)) ? "high" : (secRatio >= 0.3 || (secMax <= 1000 && sector.threatLevel >= 300)) ? "med" : "low"
+
+                return (
+                  <button
+                    key={sector.id}
+                    type="button"
+                    onClick={() => {
+                      playClickSound()
+                      setSelectedSectorId(sector.id)
+                    }}
+                    className={cn(
+                      "flex flex-col justify-between p-2 rounded border text-left transition-all cursor-pointer relative",
+                      isSelected
+                        ? "border-cyan-400 bg-cyan-950/50 shadow-md shadow-cyan-950/50 ring-1 ring-cyan-400/50"
+                        : "border-zinc-800/80 bg-zinc-900/60 hover:border-zinc-700 hover:bg-zinc-850"
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-1 w-full">
+                      <span className={cn("font-bold text-[11px] truncate", isSelected ? "text-cyan-200" : "text-zinc-200")}>
+                        {sector.name.split(" ")[0]}
+                      </span>
+                      <span
+                        className={cn(
+                          "size-2 rounded-full shrink-0",
+                          sector.sovereignty === "vss"
+                            ? "bg-cyan-400"
+                            : sector.sovereignty === "void"
+                            ? "bg-red-500 animate-pulse"
+                            : "bg-amber-400"
+                        )}
+                        title={`Chủ quyền: ${sector.sovereignty.toUpperCase()}`}
+                      />
+                    </div>
+
+                    <div className="mt-1 flex items-center justify-between text-[10px] text-zinc-400 w-full">
+                      <span
+                        className={cn(
+                          "font-mono font-bold text-[10px]",
+                          threatTier === "high" ? "text-red-400" : threatTier === "med" ? "text-amber-400" : "text-emerald-400"
+                        )}
+                        title={`Threat: ${sector.threatLevel.toLocaleString()} / ${secMax.toLocaleString()}`}
+                      >
+                        T:{sector.threatLevel}
+                      </span>
+
+                      <span className="font-mono text-[10px] text-zinc-300">
+                        {sector.garrisonPower}q
+                      </span>
+                    </div>
+
+                    {isLocked && (
+                      <div className="absolute top-1 right-1 text-red-400" title="Đang khóa Combat">
+                        <Lock className="size-2.5" />
+                      </div>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* KHUNG NHÌN WAR ROOM TRUNG TÂM: GALAXY MAP + SECTOR INSPECTOR */}
+          <div className="h-[680px] lg:h-[740px] xl:h-[780px] min-h-[580px] rounded border border-cyan-500/40 bg-zinc-950 overflow-hidden shadow-2xl relative">
+            <WorldMap
+              worldState={worldState}
+              selectedSectorId={selectedSectorId}
+              onSelectSector={(secId) => setSelectedSectorId(secId)}
+              onNavigateToSectorOperations={(secId) => {
+                setSelectedSectorId(secId)
+                setActiveTab("map")
+              }}
+              onOpenQuickDispatch={(secId) => {
+                setSelectedSectorId(secId)
+                setIsQuickDispatchOpen(true)
+              }}
+              onDeployCombat={(secId) => {
+                handleDeployCombat(secId)
+              }}
+              onUpdateWorldState={(newState) => {
+                setWorldState({ ...newState })
+              }}
+              isFullscreen={false}
+              onToggleFullscreen={() => setIsFullscreenMapOpen(true)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          TAB 3: SỰ KIỆN & NHIỆM VỤ (PHASE 6.10 REDESIGNED EVENTS & MISSIONS BOARD)
+          ==================================================================== */}
+      {activeTab === "events" && (
+        <EventsMissionsBoard
+          worldState={worldState}
+          activeEvents={activeEventsList}
+          activeMissionChains={activeMissionChainsList}
+          lastEventsSummary={lastEventsSummary}
+          onChooseStrategy={handleChooseStrategy}
+          onNavigateToResults={() => {
+            playClickSound()
+            setIsDebriefingDrawerOpen(true)
+          }}
+          onNavigateToSector={(sectorId) => {
+            playClickSound()
+            setSelectedSectorId(sectorId)
+            setActiveTab("map")
+          }}
+          onStateUpdated={reloadState}
+          selectedEventId={selectedEventIdForBoard}
+          onSelectEvent={(id) => setSelectedEventIdForBoard(id)}
+        />
+      )}
+
+      {/* ====================================================================
+          TAB 4: QUÂN SỰ & HẬU CẦN (FORCES & LOGISTICS)
+          ==================================================================== */}
+      {activeTab === "military" && (
+        <div className="space-y-4 font-mono text-sm leading-normal">
+          {/* Sổ cái quân sự */}
+          <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 sm:p-5 space-y-3.5 shadow-xl">
+            <div className="flex flex-wrap items-center justify-between gap-2.5 text-zinc-300 border-b border-zinc-800/80 pb-2.5">
+              <span className="font-bold uppercase tracking-wider flex items-center gap-2 text-sm sm:text-base text-zinc-100">
+                <Swords className="size-4.5 text-cyan-400" />
+                <span>SỔ CÁI LỰC LƯỢNG QUÂN SỰ BẢO TOÀN (AUTHORITATIVE FORCE LEDGER)</span>
+              </span>
+              <span className="font-bold text-cyan-300 text-sm sm:text-[15px] font-mono">
+                Tổng lực lượng: {calculateTotalMilitaryForce(worldState.military).toLocaleString()} quân
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="rounded bg-zinc-900/60 p-3 sm:p-3.5 border border-zinc-800">
+                <div className="text-zinc-400 text-xs font-semibold mb-1">Đang Triển Khai</div>
+                <div className="font-bold text-zinc-100 text-base sm:text-xl font-mono">
+                  {worldState.military.deployed.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="rounded bg-cyan-950/30 p-3 sm:p-3.5 border border-cyan-500/40">
+                <div className="text-cyan-300 text-xs font-bold mb-1">Dự Bị Chiến Lược</div>
+                <div className="font-bold text-cyan-300 text-base sm:text-xl font-mono">
+                  {worldState.military.reserves.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="rounded bg-zinc-900/60 p-3 sm:p-3.5 border border-zinc-800">
+                <div className="text-amber-400 text-xs font-semibold mb-1">Thương Binh / Sửa Chữa</div>
+                <div className="font-bold text-amber-400 text-base sm:text-xl font-mono">
+                  {worldState.military.woundedOrRepair.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="rounded bg-zinc-900/60 p-3 sm:p-3.5 border border-zinc-800">
+                <div className="text-zinc-400 text-xs font-semibold mb-1">Đang Rút Lui</div>
+                <div className="font-bold text-zinc-300 text-base sm:text-xl font-mono">
+                  {worldState.military.retreating.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="rounded bg-red-950/30 p-3 sm:p-3.5 border border-red-500/40">
+                <div className="text-red-400 text-xs font-semibold mb-1">Tổn Thất Vĩnh Viễn</div>
+                <div className="font-bold text-red-300 text-base sm:text-xl font-mono">
+                  {worldState.military.casualties.toLocaleString()}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Đạo quân đang hành quân in-transit */}
+          <div className="rounded border border-zinc-800 bg-zinc-950/70 p-4 sm:p-5 space-y-3 shadow-lg">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-2.5">
+              <span className="font-bold uppercase tracking-wider text-sm sm:text-base text-zinc-200 flex items-center gap-2">
+                <Truck className="size-4.5 text-indigo-400" />
+                <span>ĐẠO QUÂN ĐANG HÀNH QUÂN (IN-TRANSIT DEPLOYMENTS)</span>
+              </span>
+              <span className="rounded bg-zinc-800 px-2.5 py-0.5 text-xs text-indigo-300 border border-zinc-700 font-mono font-bold">
+                {worldState.activeDeployments?.length || 0} Đạo quân
+              </span>
+            </div>
+
+            {(!worldState.activeDeployments || worldState.activeDeployments.length === 0) ? (
+              <div className="rounded bg-zinc-900/40 p-5 text-center text-zinc-400 text-xs sm:text-sm">
+                Hiện không có đạo quân nào đang di chuyển trên các tuyến siêu không gian.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {worldState.activeDeployments.map((dep) => {
+                  const fromSector = worldState.sectors[dep.fromSectorId]
+                  const toSector = worldState.sectors[dep.toSectorId]
+                  return (
+                    <div
+                      key={dep.deploymentId}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded border border-zinc-800 bg-zinc-900/60 p-3.5 text-xs sm:text-sm"
+                    >
+                      <div className="space-y-1">
+                        <div className="font-bold text-zinc-100 text-sm sm:text-base">
+                          {dep.troopCount.toLocaleString()} quân: {fromSector?.name || dep.fromSectorId} &rarr; {toSector?.name || dep.toSectorId}
+                        </div>
+                        <div className="text-xs sm:text-[13px] text-zinc-300">
+                          Mệnh lệnh tác chiến: <strong className="text-cyan-300">[{dep.order}]</strong>
+                        </div>
+                      </div>
+                      <span className="font-mono font-bold text-xs sm:text-sm px-3 py-1 rounded bg-cyan-950/80 border border-cyan-500/60 text-cyan-300">
+                        Còn {dep.remainingDays} ngày hành quân
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Mạng lưới tuyến đường vận tải & 54 Hyperlanes với Tìm Kiếm & Bộ Lọc */}
+          <div className="rounded border border-zinc-800 bg-zinc-950/70 p-4 sm:p-5 space-y-4 shadow-xl">
+            {/* Header Mạng Lưới Tuyến */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <Route className="size-5 text-cyan-400" />
+                <div>
+                  <h3 className="font-bold uppercase tracking-wider text-sm sm:text-base text-zinc-100">
+                    MẠNG LƯỚI TUYẾN SIÊU KHÔNG GIAN (HYPERLANE NETWORK)
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    54 tuyến kết nối liên hành tinh giữa 30 Sector chiến lược
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="rounded bg-black/60 border border-zinc-700 px-2.5 py-1 text-xs font-mono font-bold text-cyan-300">
+                  Tổng số: {worldState.routes.length} Tuyến
+                </span>
+              </div>
+            </div>
+
+            {/* Thanh Tìm Kiếm & Bộ Lọc Trạng Thái */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Ô tìm kiếm */}
+              <div className="relative flex-1 min-w-[240px] max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-zinc-400" />
+                <input
+                  type="text"
+                  value={hyperlaneSearch}
+                  onChange={(e) => setHyperlaneSearch(e.target.value)}
+                  placeholder="Tìm theo mã tuyến hoặc tên Sector..."
+                  className="w-full rounded border border-zinc-700 bg-zinc-900/90 pl-9 pr-3 py-2 text-xs sm:text-sm text-zinc-200 placeholder-zinc-500 focus:border-cyan-400 focus:outline-none"
+                />
+                {hyperlaneSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setHyperlaneSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white cursor-pointer"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Bộ lọc trạng thái */}
+              <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                {(
+                  [
+                    { key: "all", label: "Tất Cả", count: worldState.routes.length },
+                    {
+                      key: "open",
+                      label: "Thông Suốt (OPEN)",
+                      count: worldState.routes.filter((r) => r.state === "open").length,
+                    },
+                    {
+                      key: "hazardous",
+                      label: "Nguy Hiểm (HAZARDOUS)",
+                      count: worldState.routes.filter((r) => r.state === "hazardous").length,
+                    },
+                    {
+                      key: "blocked",
+                      label: "Phong Tỏa (BLOCKED)",
+                      count: worldState.routes.filter((r) => r.state === "blocked").length,
+                    },
+                  ] as const
+                ).map(({ key, label, count }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      playClickSound()
+                      setHyperlaneStatusFilter(key)
+                    }}
+                    className={cn(
+                      "px-3 py-1.5 rounded border transition-colors cursor-pointer text-xs font-bold uppercase",
+                      hyperlaneStatusFilter === key
+                        ? "border-cyan-400 bg-cyan-950/70 text-cyan-300 shadow-xs"
+                        : "border-zinc-800 bg-zinc-900/40 text-zinc-400 hover:text-zinc-200"
+                    )}
+                  >
+                    {label} ({count})
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Danh Sách 54 Tuyến với Chiều Cao Rộng Rãi & Vùng Cuộn Hợp Lý */}
+            {(() => {
+              const query = hyperlaneSearch.toLowerCase().trim()
+              const filteredRoutes = worldState.routes.filter((route) => {
+                // Filter by status
+                if (hyperlaneStatusFilter !== "all" && route.state !== hyperlaneStatusFilter) {
+                  return false
+                }
+                // Filter by query
+                if (query) {
+                  const fromSec = worldState.sectors[route.fromSectorId]
+                  const toSec = worldState.sectors[route.toSectorId]
+                  const matchesId = route.id.toLowerCase().includes(query)
+                  const matchesFrom =
+                    route.fromSectorId.toLowerCase().includes(query) ||
+                    (fromSec && fromSec.name.toLowerCase().includes(query))
+                  const matchesTo =
+                    route.toSectorId.toLowerCase().includes(query) ||
+                    (toSec && toSec.name.toLowerCase().includes(query))
+                  return matchesId || matchesFrom || matchesTo
+                }
+                return true
+              })
+
+              if (filteredRoutes.length === 0) {
+                return (
+                  <div className="rounded border border-dashed border-zinc-800 p-8 text-center text-zinc-400 space-y-2">
+                    <Route className="size-8 mx-auto text-zinc-600" />
+                    <div className="font-bold text-zinc-200 text-sm">
+                      Không tìm thấy tuyến siêu không gian nào
+                    </div>
+                    <p className="text-xs text-zinc-400">
+                      Thử thay đổi từ khóa tìm kiếm hoặc bỏ chọn bộ lọc trạng thái.
+                    </p>
+                  </div>
+                )
+              }
+
+              return (
+                <div className="max-h-[640px] overflow-y-auto pr-2 scrollbar-thin">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {filteredRoutes.map((route) => {
+                      const fromSec = worldState.sectors[route.fromSectorId]
+                      const toSec = worldState.sectors[route.toSectorId]
+                      const isOpen = route.state === "open"
+                      const isHazardous = route.state === "hazardous"
+                      const isBlocked = route.state === "blocked"
+
+                      return (
+                        <div
+                          key={route.id}
+                          className={cn(
+                            "rounded border p-4 space-y-3 transition-all flex flex-col justify-between min-h-[110px] text-left",
+                            isOpen
+                              ? "border-zinc-800/90 bg-zinc-950/80 hover:border-emerald-500/50 hover:bg-zinc-900/60"
+                              : isHazardous
+                              ? "border-amber-500/40 bg-amber-950/20 hover:border-amber-500/70"
+                              : "border-red-500/40 bg-red-950/20 hover:border-red-500/70"
+                          )}
+                        >
+                          {/* Top: Route ID & State Badge */}
+                          <div className="flex items-center justify-between gap-2 border-b border-zinc-800/70 pb-2">
+                            <span className="font-mono font-bold text-xs sm:text-[13px] text-cyan-400">
+                              {route.id}
+                            </span>
+                            <span
+                              className={cn(
+                                "px-2.5 py-0.5 rounded text-xs font-bold uppercase border",
+                                isOpen
+                                  ? "border-emerald-500/50 bg-emerald-950/60 text-emerald-300"
+                                  : isHazardous
+                                  ? "border-amber-500/60 bg-amber-950/70 text-amber-200"
+                                  : "border-red-500/60 bg-red-950/70 text-red-200"
+                              )}
+                            >
+                              {isOpen ? "THÔNG SUỐT (OPEN)" : isHazardous ? "NGUY HIỂM (HAZARDOUS)" : "PHONG TỎA (BLOCKED)"}
+                            </span>
+                          </div>
+
+                          {/* Middle: Connected Sectors */}
+                          <div className="space-y-1">
+                            <div className="text-sm sm:text-[15px] font-bold text-zinc-100 flex items-center gap-2">
+                              <span>{fromSec?.name || route.fromSectorId}</span>
+                              <span className="text-cyan-400 font-normal">&harr;</span>
+                              <span>{toSec?.name || route.toSectorId}</span>
+                            </div>
+                            <div className="text-xs text-zinc-400 font-mono">
+                              {route.fromSectorId} &harr; {route.toSectorId}
+                            </div>
+                          </div>
+
+                          {/* Bottom: Travel Duration & Danger */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-2 border-t border-zinc-800/60 text-zinc-300">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="size-3.5 text-cyan-400 shrink-0" />
+                              <span className="font-medium">
+                                Thời gian: <strong className="text-zinc-100 font-mono">{route.distance} ngày</strong>
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <ShieldAlert
+                                className={cn(
+                                  "size-3.5 shrink-0",
+                                  route.dangerLevel <= 20
+                                    ? "text-emerald-400"
+                                    : route.dangerLevel <= 50
+                                    ? "text-amber-400"
+                                    : "text-red-400"
+                                )}
+                              />
+                              <span className="font-medium">
+                                Rủi ro:{" "}
+                                <strong
+                                  className={cn(
+                                    "font-mono font-bold",
+                                    route.dangerLevel <= 20
+                                      ? "text-emerald-300"
+                                      : route.dangerLevel <= 50
+                                      ? "text-amber-300"
+                                      : "text-red-300"
+                                  )}
+                                >
+                                  {route.dangerLevel}%
+                                </strong>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ====================================================================
+          TAB 5: TRUNG TÂM KẾT QUẢ KÉP (DUAL RESULTS HUB)
+          ==================================================================== */}
+      {activeTab === "results" && (
+        <DualResultsHub
+          worldState={worldState}
+          onStateUpdated={reloadState}
+          onNavigateToSector={handleNavigateToSectorFromResults}
+        />
+      )}
+
+      {/* ====================================================================
+          ADMIN CP & SETTINGS MODAL (PHASE 6.18: ISOLATED SETTINGS OVERLAY)
+          ==================================================================== */}
+      <AdminSettingsModal
+        isOpen={isAdminSettingsOpen}
+        onClose={() => setIsAdminSettingsOpen(false)}
+        worldState={worldState}
+        simulatorConfig={simulatorConfig}
+        countdownSeconds={countdownSeconds}
+        dayFraction={dayFraction}
+        calendarInfo={calendarInfo}
+        eventTierCounts={eventTierCounts}
+        isTickAdvancing={isTickAdvancing}
+        onTogglePause={handleTogglePause}
+        onConfirmSpeedChange={handleConfirmSpeedChange}
+        onConfirmResetWorld={handleConfirmResetWorld}
+        onSaveGeneratorConfig={handleSaveGeneratorConfig}
+        onResetGeneratorToDefault={handleResetGeneratorToDefault}
+        onSaveStrategyPolicy={handleSaveStrategyPolicyConfig}
+        onResetStrategyPolicyToDefault={handleResetStrategyPolicyToDefault}
+        onBatchApplyStrategyPolicy={handleBatchApplyStrategyPolicy}
+        onForceSpawnEvent={handleForceSpawnEvent}
+        onFastForwardDays={handleFastForwardDays}
+        onAdvanceTick={handleAdvanceTick}
+        onManualSave={handleManualSave}
+      />
+
+      {/* MODAL ĐIỀU ĐỘNG QUÂN NHANH */}
+      <QuickDispatchDock
+        worldState={worldState}
+        isOpen={isQuickDispatchOpen}
+        onClose={() => setIsQuickDispatchOpen(false)}
+        preselectedDestinationId={selectedSectorId}
+        onDispatchComplete={(msg) => {
+          setWorldState({ ...worldState })
+          showToast(msg, "success")
+        }}
+      />
+
+      {/* CHẾ ĐỘ BẢN ĐỒ TOÀN MÀN HÌNH (100vw/100vh FULLSCREEN OVERLAY) */}
+      <WorldFullscreenOverlay
+        isOpen={isFullscreenMapOpen}
+        onClose={() => setIsFullscreenMapOpen(false)}
+        worldState={worldState}
+        selectedSectorId={selectedSectorId}
+        onSelectSector={(secId) => setSelectedSectorId(secId)}
+        onNavigateToSectorOperations={(secId) => {
+          setSelectedSectorId(secId)
+          setActiveTab("sectors")
+        }}
+        onDeployCombat={(secId) => {
+          handleDeployCombat(secId)
+        }}
+        onUpdateWorldState={(newState) => {
+          setWorldState({ ...newState })
+        }}
+      />
+
+      {/* ====================================================================
+          DEBRIEFING DRAWER (PHASE 6.20: SLIDE-OVER RESULTS & DEBRIEFING ACCESS)
+          ==================================================================== */}
+      <DebriefingDrawer
+        isOpen={isDebriefingDrawerOpen}
+        onClose={() => setIsDebriefingDrawerOpen(false)}
+        worldState={worldState}
+        onStateUpdated={reloadState}
+        onNavigateToSector={handleNavigateToSectorFromResults}
+      />
+
+      {/* ====================================================================
+          PHASE 6.24: MODAL PHÊ CHUẨN NHANH AN TOÀN TỪ STRATEGIC OVERVIEW
+          ==================================================================== */}
+      {reviewingEvent && (() => {
+        const candidate = selectBestStrategyForEvent(worldState, reviewingEvent)
+        const validation = candidate
+          ? validateStrategyExecution(worldState, reviewingEvent, candidate.strategy)
+          : { valid: false, reason: "Không tìm thấy chiến lược phù hợp" }
+        const daysLeft = Math.max(0, reviewingEvent.decisionDeadlineTick - worldState.currentDay)
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fadeIn">
+            <div className="w-full max-w-xl rounded-lg border border-cyan-500/60 bg-zinc-950 p-5 space-y-4 shadow-2xl shadow-cyan-950/50 font-mono text-sm leading-normal">
+              <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <Flame className="size-4.5 text-amber-400" />
+                  <h3 className="font-bold uppercase tracking-wider text-sm sm:text-base text-cyan-300">
+                    Phê Chuẩn Nhanh Chiến Lược // Quick Strategy Approval
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setReviewingEvent(null)}
+                  className="rounded p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              {/* Tóm tắt sự kiện */}
+              <div className="rounded bg-zinc-900/60 p-4 border border-zinc-800 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold text-base text-zinc-100">{reviewingEvent.title}</span>
+                  <span className={cn(
+                    "rounded px-2.5 py-1 text-xs font-bold font-mono border uppercase",
+                    daysLeft === 0
+                      ? "border-red-500 bg-red-950/80 text-red-200 animate-pulse"
+                      : "border-amber-500 bg-amber-950/60 text-amber-200"
+                  )}>
+                    {daysLeft === 0 ? "HẾT HẠN HÔM NAY" : `CÒN ${daysLeft} NGÀY`}
+                  </span>
+                </div>
+                <div className="text-xs sm:text-sm text-zinc-300 leading-relaxed bg-black/40 p-3 rounded border border-zinc-800/80">
+                  {reviewingEvent.description}
+                </div>
+                {reviewingEvent.sectorId && (
+                  <div className="text-xs text-cyan-300 font-semibold flex items-center gap-1.5 pt-0.5">
+                    <span>Sector liên quan:</span>
+                    <strong className="text-zinc-100">{worldState.sectors[reviewingEvent.sectorId]?.name}</strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Phương án đề xuất từ System Auto */}
+              {candidate ? (
+                <div className="space-y-3">
+                  <div className="rounded border border-cyan-500/50 bg-cyan-950/30 p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="font-bold text-cyan-200 text-sm sm:text-base">
+                        Phương án đề xuất: {candidate.strategy.name}
+                      </span>
+                      <span className="rounded bg-cyan-900/60 border border-cyan-500/50 px-2 py-0.5 text-xs text-cyan-300 font-bold font-mono">
+                        Đánh giá: +{candidate.score} điểm
+                      </span>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed bg-black/30 p-2.5 rounded border border-zinc-800/60">
+                      {candidate.strategy.description}
+                    </p>
+
+                    {/* Chỉ số dự kiến */}
+                    <div className="grid grid-cols-4 gap-2 text-center text-xs pt-1 border-t border-cyan-900/60">
+                      <div className="rounded bg-black/50 p-2 border border-zinc-800">
+                        <div className="text-zinc-400 text-xs uppercase mb-0.5">Thành công</div>
+                        <div className="font-bold text-sm text-emerald-300">{candidate.strategy.successChance ?? 100}%</div>
+                      </div>
+                      <div className="rounded bg-black/50 p-2 border border-zinc-800">
+                        <div className="text-zinc-400 text-xs uppercase mb-0.5">Thời gian</div>
+                        <div className="font-bold text-sm text-cyan-300">{candidate.strategy.processingTicks}d</div>
+                      </div>
+                      <div className="rounded bg-black/50 p-2 border border-zinc-800">
+                        <div className="text-zinc-400 text-xs uppercase mb-0.5">&Delta;Ổn định</div>
+                        <div className={cn("font-bold text-sm", (candidate.strategy.consequences.stabilityDelta ?? 0) >= 0 ? "text-emerald-300" : "text-red-400")}>
+                          {(candidate.strategy.consequences.stabilityDelta ?? 0) > 0 ? "+" : ""}{candidate.strategy.consequences.stabilityDelta ?? 0}
+                        </div>
+                      </div>
+                      <div className="rounded bg-black/50 p-2 border border-zinc-800">
+                        <div className="text-zinc-400 text-xs uppercase mb-0.5">&Delta;Threat</div>
+                        <div className={cn("font-bold text-sm", (candidate.strategy.consequences.threatDelta ?? 0) <= 0 ? "text-emerald-300" : "text-red-400")}>
+                          {(candidate.strategy.consequences.threatDelta ?? 0) > 0 ? "+" : ""}{candidate.strategy.consequences.threatDelta ?? 0}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Thẩm định chi phí tài nguyên & quân lực */}
+                    <div className="text-xs text-zinc-300 pt-1 space-y-1.5">
+                      {candidate.strategy.militaryCost && candidate.strategy.militaryCost > 0 ? (
+                        <div className="flex items-center justify-between">
+                          <span className="text-zinc-400">Quân dự bị yêu cầu:</span>
+                          <span className={cn("font-mono font-bold text-xs sm:text-[13px]", worldState.military.reserves >= candidate.strategy.militaryCost ? "text-emerald-400" : "text-red-400")}>
+                            {candidate.strategy.militaryCost} quân (Dự bị hiện có: {worldState.military.reserves})
+                          </span>
+                        </div>
+                      ) : null}
+
+                      {candidate.strategy.cost ? (
+                        <div className="flex flex-wrap items-center justify-between gap-1.5">
+                          <span className="text-zinc-400">Chi phí tài nguyên:</span>
+                          <span className="font-mono text-xs sm:text-[13px] text-zinc-200 font-bold">
+                            {Object.entries(candidate.strategy.cost)
+                              .filter(([_, val]) => typeof val === "number" && val > 0)
+                              .map(([k, val]) => `${val} ${k}`)
+                              .join(", ") || "Không tốn"}
+                          </span>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    {/* Validation Status Banner */}
+                    <div className={cn(
+                      "rounded p-2.5 border text-xs flex items-center gap-2",
+                      validation.valid
+                        ? "border-emerald-500/50 bg-emerald-950/40 text-emerald-300"
+                        : "border-red-500/50 bg-red-950/40 text-red-300"
+                    )}>
+                      {validation.valid ? (
+                        <CheckCircle2 className="size-4 text-emerald-400 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="size-4 text-red-400 shrink-0" />
+                      )}
+                      <span>
+                        {validation.valid
+                          ? "Đủ điều kiện phê chuẩn: Kho tài nguyên và quân dự bị đáp ứng yêu cầu."
+                          : `Không thể phê chuẩn: ${validation.reason}`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Hành động */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t border-zinc-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleNavigateToEvent(reviewingEvent.id)
+                        setReviewingEvent(null)
+                      }}
+                      className="text-cyan-300 hover:text-white underline text-xs font-bold cursor-pointer"
+                    >
+                      Mở Bảng Quyết Định Đầy Đủ &rarr;
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setReviewingEvent(null)}
+                        className="rounded border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!validation.valid}
+                        onClick={() => {
+                          handleChooseStrategy(reviewingEvent.id, candidate.strategy.id)
+                          setReviewingEvent(null)
+                        }}
+                        className={cn(
+                          "rounded px-4 py-2 font-bold text-xs sm:text-[13px] cursor-pointer transition-colors",
+                          validation.valid
+                            ? "bg-cyan-500 hover:bg-cyan-400 text-black shadow-md shadow-cyan-500/30"
+                            : "bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700"
+                        )}
+                      >
+                        Xác Nhận Phê Chuẩn
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="rounded border border-red-500/40 bg-red-950/20 p-3.5 text-red-300 text-xs leading-relaxed">
+                    System Auto không tìm thấy phương án nào đủ tài nguyên hoặc đáp ứng điều kiện. Vui lòng chuyển sang Bảng Sự Kiện để xem xét thủ công.
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReviewingEvent(null)}
+                      className="rounded border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs text-zinc-300 hover:bg-zinc-800 cursor-pointer"
+                    >
+                      Đóng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleNavigateToEvent(reviewingEvent.id)
+                        setReviewingEvent(null)
+                      }}
+                      className="rounded bg-cyan-500 text-black px-3.5 py-1.5 font-bold hover:bg-cyan-400 cursor-pointer"
+                    >
+                      Mở Bảng Quyết Định &rarr;
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* SECTOR INTEL MODAL (PHASE 6.28) */}
+      {worldState && selectedSectorId && (
+        <SectorIntelModal
+          isOpen={isSectorIntelOpen}
+          onClose={() => setIsSectorIntelOpen(false)}
+          sectorId={selectedSectorId}
+          worldState={worldState}
+          onSelectSector={(secId) => {
+            setSelectedSectorId(secId)
+          }}
+          onNavigateToWarRoom={(secId) => {
+            setIsSectorIntelOpen(false)
+            setSelectedSectorId(secId)
+            setActiveTab("map")
+          }}
+          onCenterOnMap={(secId) => {
+            setIsSectorIntelOpen(false)
+            setSelectedSectorId(secId)
+            setActiveTab("map")
+          }}
+          onOpenQuickDispatch={(secId) => {
+            setIsSectorIntelOpen(false)
+            setSelectedSectorId(secId)
+            setIsQuickDispatchOpen(true)
+          }}
+          onDeployCombat={(secId) => {
+            setIsSectorIntelOpen(false)
+            handleDeployCombat(secId)
+          }}
+          onUpdateStrategicOrder={(secId, order) => {
+            handleSetStrategicOrder(secId, order)
+          }}
+          onOpenFleetCommand={(fleetId) => {
+            setSelectedFleetIdForModal(fleetId)
+            setIsFleetCommandOpen(true)
+          }}
+        />
+      )}
+
+      {/* FLEET COMMAND MODAL (PHASE 7.7) */}
+      {worldState && (
+        <FleetCommandModal
+          isOpen={isFleetCommandOpen}
+          onClose={() => setIsFleetCommandOpen(false)}
+          worldState={worldState}
+          initialSelectedFleetId={selectedFleetIdForModal}
+          onWorldStateUpdated={(newState) => {
+            setWorldState(newState)
+            saveWorldState(newState)
+          }}
+        />
+      )}
+    </div>
+  )
+}

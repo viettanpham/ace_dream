@@ -1,0 +1,20 @@
+{
+  "configFileId": "system_population_capacity_policy",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "policy_standard_base_capacity",
+      "name": "Chính Sách Sức Chứa Căn Cứ Tiêu Chuẩn",
+      "description": "Định mức sức chứa 4 nhóm: Nhà ở, Du khách, Lao động tạm, và Tiếp nhận khẩn cấp.",
+      "defaultEmergencyOverflowLimitRatio": 1.25,
+      "allowEmergencyOverflow": true
+    }
+  ],
+  "metadata": {
+    "domain": "population",
+    "catalog": "capacity_policy",
+    "description": "Canonical capacity policy definitions."
+  }
+}

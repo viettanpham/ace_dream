@@ -140,16 +140,16 @@ export function AdminCpModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-3xl rounded-xl border border-cyan-500/40 bg-slate-950 p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-3xl rounded-xl border border-cyan-500/40 bg-slate-950 p-6 shadow-2xl max-h-[90vh] overflow-y-auto font-mono sf-text-body">
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2">
-            <Cpu className="size-6 text-cyan-400" />
+          <div className="flex items-center gap-2.5">
+            <Cpu className="size-6 text-cyan-400 shrink-0" />
             <div>
-              <h3 className="font-display text-lg font-bold text-white tracking-wide">
+              <h3 className="font-display sf-title-page font-bold text-white tracking-wide">
                 STARFRONT ADMIN CONTROL PANEL (ADMIN CP)
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="sf-text-secondary text-slate-400">
                 Quản trị Cấu hình Toàn cục, Template Kỹ Năng Liên Hoàn & Normalization Engine
               </p>
             </div>
@@ -157,7 +157,7 @@ export function AdminCpModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded p-1 text-slate-400 hover:bg-slate-900 hover:text-white"
+            className="rounded p-1.5 text-slate-400 hover:bg-slate-900 hover:text-white sf-text-caption"
           >
             ✕
           </button>
@@ -165,7 +165,7 @@ export function AdminCpModal({
 
         {/* Priority Mode Switcher */}
         <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-          <label className="block text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">
+          <label className="block sf-title-card font-bold uppercase tracking-wider text-cyan-400 mb-2">
             Chế Độ Ưu Tiên Giới Hạn Cấp (Priority Mode)
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -173,17 +173,17 @@ export function AdminCpModal({
               type="button"
               onClick={() => setPriorityMode("TEMPLATE_OVERRIDE")}
               className={cn(
-                "rounded-md border p-3 text-left transition-colors",
+                "rounded-md border p-3.5 text-left transition-colors",
                 priorityMode === "TEMPLATE_OVERRIDE"
                   ? "border-cyan-500 bg-cyan-950/50 text-white"
                   : "border-slate-800 bg-slate-950/40 text-slate-400",
               )}
             >
-              <div className="font-bold text-xs flex items-center gap-1.5 text-cyan-300">
-                <Check className="size-3.5" />
+              <div className="font-bold sf-text-body flex items-center gap-1.5 text-cyan-300">
+                <Check className="size-4" />
                 Template Override (Mặc Định)
               </div>
-              <div className="text-[10px] text-slate-400 mt-1">
+              <div className="sf-text-secondary text-slate-400 mt-1.5">
                 Từng Skill Template được phép quy định trần cấp độ riêng. Đảm bảo tính linh hoạt cho từng nhân vật.
               </div>
             </button>
@@ -192,17 +192,17 @@ export function AdminCpModal({
               type="button"
               onClick={() => setPriorityMode("GLOBAL_PRIORITY")}
               className={cn(
-                "rounded-md border p-3 text-left transition-colors",
+                "rounded-md border p-3.5 text-left transition-colors",
                 priorityMode === "GLOBAL_PRIORITY"
                   ? "border-cyan-500 bg-cyan-950/50 text-white"
                   : "border-slate-800 bg-slate-950/40 text-slate-400",
               )}
             >
-              <div className="font-bold text-xs flex items-center gap-1.5 text-cyan-300">
-                <Sliders className="size-3.5" />
+              <div className="font-bold sf-text-body flex items-center gap-1.5 text-cyan-300">
+                <Sliders className="size-4" />
                 Global Priority
               </div>
-              <div className="text-[10px] text-slate-400 mt-1">
+              <div className="sf-text-secondary text-slate-400 mt-1.5">
                 Cấu hình toàn cục luôn được ưu tiên tuyệt đối và áp đặt lên toàn bộ mọi Skill Template.
               </div>
             </button>
@@ -212,7 +212,7 @@ export function AdminCpModal({
         {/* Global Level Configuration */}
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-            <label className="block text-xs font-bold uppercase text-slate-300 mb-1">
+            <label className="block sf-title-card font-bold uppercase text-slate-300 mb-1.5">
               Giới Hạn Cấp Phi Công Toàn Cục (Global Max Pilot Level)
             </label>
             <div className="flex items-center gap-2">
@@ -222,14 +222,14 @@ export function AdminCpModal({
                 max={200}
                 value={maxPilotLevel}
                 onChange={(e) => setMaxPilotLevel(Number(e.target.value) || 120)}
-                className="w-full rounded border border-slate-700 bg-slate-950 p-2 font-mono text-sm text-cyan-300"
+                className="w-full rounded border border-slate-700 bg-slate-950 p-2 font-mono sf-text-body text-cyan-300"
               />
-              <span className="text-xs text-slate-400 font-mono">Cấp (Mặc định: 120)</span>
+              <span className="sf-text-secondary text-slate-400 font-mono">Cấp (Mặc định: 120)</span>
             </div>
           </div>
 
           <div className="rounded-lg border border-slate-800 bg-slate-900/50 p-4">
-            <label className="block text-xs font-bold uppercase text-slate-300 mb-1">
+            <label className="block sf-title-card font-bold uppercase text-slate-300 mb-1.5">
               Giới Hạn Cấp Kỹ Năng Toàn Cục (Global Max Skill Level)
             </label>
             <div className="flex items-center gap-2">
@@ -239,17 +239,17 @@ export function AdminCpModal({
                 max={50}
                 value={maxSkillLevel}
                 onChange={(e) => setMaxSkillLevel(Number(e.target.value) || 30)}
-                className="w-full rounded border border-slate-700 bg-slate-950 p-2 font-mono text-sm text-cyan-300"
+                className="w-full rounded border border-slate-700 bg-slate-950 p-2 font-mono sf-text-body text-cyan-300"
               />
-              <span className="text-xs text-slate-400 font-mono">Cấp (Mặc định: 30)</span>
+              <span className="sf-text-secondary text-slate-400 font-mono">Cấp (Mặc định: 30)</span>
             </div>
           </div>
         </div>
 
         {/* Template Inspector */}
         <div className="mt-4 rounded-lg border border-slate-800 bg-slate-900/40 p-4">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <span className="text-xs font-bold uppercase text-slate-300">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+            <span className="sf-title-card font-bold uppercase text-slate-300">
               Kiểm Tra Chi Tiết Skill Template
             </span>
             <div className="flex gap-1.5">
@@ -259,7 +259,7 @@ export function AdminCpModal({
                   type="button"
                   onClick={() => setSelectedTemplateKey(key)}
                   className={cn(
-                    "rounded px-2.5 py-1 text-[11px] font-mono font-bold transition-colors uppercase",
+                    "rounded px-2.5 py-1.5 sf-text-caption font-mono font-bold transition-colors uppercase",
                     selectedTemplateKey === key
                       ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
                       : "bg-slate-800 text-slate-400 hover:bg-slate-700",
@@ -272,29 +272,29 @@ export function AdminCpModal({
           </div>
 
           {activeTemplate && (
-            <div className="mt-3 space-y-2 text-xs">
+            <div className="mt-3 space-y-2 sf-text-secondary">
               <div className="flex items-center justify-between text-slate-300">
-                <span className="font-bold text-white">{activeTemplate.name} ({activeTemplate.nameEn})</span>
-                <span className="font-mono text-cyan-400 font-bold">
+                <span className="font-bold text-white sf-title-card">{activeTemplate.name} ({activeTemplate.nameEn})</span>
+                <span className="font-mono text-cyan-400 font-bold sf-text-secondary">
                   Phân Loại: {activeTemplate.skillType} · Cơ Giáp: {activeTemplate.signatureGearId.toUpperCase()}
                 </span>
               </div>
-              <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
-                <div className="rounded bg-slate-950 p-2 border border-slate-800">
-                  <div className="text-slate-500">Cơ Chế Kích Hoạt</div>
-                  <div className="font-bold text-white">{activeTemplate.isPassive ? "Tự Động Passive" : "Chủ Động Active"}</div>
+              <div className="grid grid-cols-3 gap-2.5 pt-1.5 font-mono sf-text-secondary">
+                <div className="rounded bg-slate-950 p-2.5 border border-slate-800">
+                  <div className="text-slate-500 sf-text-caption">Cơ Chế Kích Hoạt</div>
+                  <div className="font-bold text-white mt-0.5">{activeTemplate.isPassive ? "Tự Động Passive" : "Chủ Động Active"}</div>
                 </div>
-                <div className="rounded bg-slate-950 p-2 border border-slate-800">
-                  <div className="text-slate-500">Tiêu Hao / Hồi Chiêu</div>
-                  <div className="font-bold text-white">{activeTemplate.spCost} SP · {activeTemplate.cooldownTurns} Lượt</div>
+                <div className="rounded bg-slate-950 p-2.5 border border-slate-800">
+                  <div className="text-slate-500 sf-text-caption">Tiêu Hao / Hồi Chiêu</div>
+                  <div className="font-bold text-white mt-0.5">{activeTemplate.spCost} SP · {activeTemplate.cooldownTurns} Lượt</div>
                 </div>
-                <div className="rounded bg-slate-950 p-2 border border-slate-800">
-                  <div className="text-slate-500">Budget Skill Power</div>
-                  <div className="font-bold text-yellow-400">{activeTemplate.maxSkillPowerBudget} PT</div>
+                <div className="rounded bg-slate-950 p-2.5 border border-slate-800">
+                  <div className="text-slate-500 sf-text-caption">Budget Skill Power</div>
+                  <div className="font-bold text-yellow-400 mt-0.5">{activeTemplate.maxSkillPowerBudget} PT</div>
                 </div>
               </div>
 
-              <div className="mt-2 text-[11px] text-slate-400">
+              <div className="mt-2.5 sf-text-secondary text-slate-400">
                 <strong>Bể Candidate Pool ({activeTemplate.candidatePool.length} thuộc tính):</strong>{" "}
                 {activeTemplate.candidatePool.map((c) => c.name).join(", ")}
               </div>
@@ -307,34 +307,34 @@ export function AdminCpModal({
           <button
             type="button"
             onClick={handleNormalizeAll}
-            className="flex items-center gap-1.5 rounded border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-1.5 rounded border border-slate-700 bg-slate-900 px-3.5 py-2 sf-text-button text-slate-300 hover:bg-slate-800 transition-colors"
           >
-            <RefreshCw className="size-3.5 text-cyan-400" />
+            <RefreshCw className="size-4 text-cyan-400" />
             Chuẩn Hóa Tất Cả Kỹ Năng
           </button>
 
           <button
             type="button"
             onClick={handleAddTokens}
-            className="flex items-center gap-1.5 rounded border border-yellow-500/40 bg-yellow-950/40 px-3 py-1.5 text-xs text-yellow-300 hover:bg-yellow-900/40 transition-colors"
+            className="flex items-center gap-1.5 rounded border border-yellow-500/40 bg-yellow-950/40 px-3.5 py-2 sf-text-button text-yellow-300 hover:bg-yellow-900/40 transition-colors"
           >
-            <Sparkles className="size-3.5 text-yellow-400" />
+            <Sparkles className="size-4 text-yellow-400" />
             +10 Vé Reroll (Test)
           </button>
 
           <button
             type="button"
             onClick={handleTestLevelUpActivePilot}
-            className="flex items-center gap-1.5 rounded border border-cyan-500/40 bg-cyan-950/40 px-3 py-1.5 text-xs text-cyan-300 hover:bg-cyan-900/40 transition-colors"
+            className="flex items-center gap-1.5 rounded border border-cyan-500/40 bg-cyan-950/40 px-3.5 py-2 sf-text-button text-cyan-300 hover:bg-cyan-900/40 transition-colors"
           >
-            <Zap className="size-3.5 text-cyan-400" />
+            <Zap className="size-4 text-cyan-400" />
             +5 Cấp Pilot (Test Milestone)
           </button>
         </div>
 
         {/* Feedback message */}
         {feedback && (
-          <div className="mt-3 rounded border border-cyan-500/40 bg-cyan-950/40 p-2 text-xs text-cyan-300">
+          <div className="mt-3 rounded border border-cyan-500/40 bg-cyan-950/40 p-2.5 sf-text-body text-cyan-300">
             {feedback}
           </div>
         )}
@@ -344,14 +344,14 @@ export function AdminCpModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded px-4 py-2 text-xs text-slate-400 hover:text-white"
+            className="rounded px-4 py-2.5 sf-text-button text-slate-400 hover:text-white"
           >
             Đóng
           </button>
           <button
             type="button"
             onClick={handleSaveConfig}
-            className="rounded bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2 text-xs font-bold text-white shadow-lg hover:brightness-110 active:scale-95 transition-all"
+            className="rounded bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-2.5 sf-text-button font-bold text-white shadow-lg hover:brightness-110 active:scale-95 transition-all"
           >
             Lưu & Áp Dụng Cấu Hình Toàn Cục
           </button>

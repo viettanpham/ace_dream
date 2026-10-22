@@ -1,65 +1,91 @@
 # STARFRONT — Kế Hoạch Triển Khai Giai Đoạn Hiện Tại (Current Phase Scope)
 
-## GIAI ĐOẠN HIỆN TẠI: PHASE 5.9 — PILOT SKILL LIÊN HOÀN, TEMPLATE CONFIGURATION & COMBAT SYNERGY
+## LỘ TRÌNH CHIẾN LƯỢC TIẾP THEO SAU PHASE 6.30
 
 ---
 
-## 1. Mục Tiêu & Trạng Thái Giai Đoạn (Phase Status)
-- **Trạng thái**: **HOÀN THÀNH PHẦN CODE & TÍNH NĂNG (Gameplay Done — 93/93 Tests PASS) · ASSET ẢNH MECHA & TOÀN THÂN: PENDING DO QUOTA AI STUDIO (429)**.
+## 1. Trạng Thái Giai Đoạn Vừa Hoàn Thành
+
+### Phase 6.30 — Strategic Galaxy Map & Command UX Enhancement
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (DONE)**.
+- **Kết quả thực tế đã nghiệm thu**:
+  - Giao diện Galaxy Map node-only chuẩn Sci-Fi Tactical Command với chiều sâu tinh vân mờ ảo và lưới tọa độ chiến thuật.
+  - Map Legend chuẩn hóa mặc định **OFF**, có nút bật/tắt và lưu preference `localStorage`.
+  - Node Details & Inspector chuẩn hóa mặc định **OFF** (chế độ Tổng Thể), nút chuyển đổi `Chế Độ: [Tổng Thể / Chi Tiết]` trên HUD và nút nổi `[Mở Bảng: <Sector>]`.
+  - Bổ sung Mouse-Wheel Zoom và Double-Click Zoom trong giới hạn `[0.7x, 2.2x]`; loại trừ Drag-to-zoom để tránh xung đột cử chỉ.
+  - Bổ sung War Room Strategic Situation Deck và dải cảnh báo P0/P1 có hành động thực tế (tiếp tục trận đấu suspended combat, duyệt sự kiện INIT, focus sector).
+  - Bảo toàn 100% tọa độ hiển thị, hitbox, Save Schema V1 và RPG Save V4 (100% automated tests PASS, build & lint thành công).
+
+---
+
+## 2. Kế Hoạch Các Giai Đoạn Tiếp Theo (Roadmap Execution Order)
+
+```
+[Phase 6.30 (Hoàn thành)]
+        │
+        ▼
+[Phase 6.31 — Mission Dispatch & Operations Archive]  ◄── (Kế hoạch sắp triển khai)
+        │
+        ▼
+[Combat V2 Review — Đánh giá & Thiết kế kiến trúc]   ◄── (Phase review riêng, chưa viết mã)
+        │
+        ▼
+[Phase 6.32 — Route Intelligence & Action Logs]       ◄── (Kế hoạch tương lai)
+```
+
+---
+
+## 3. Chi Tiết Kế Hoạch Cho Từng Giai Đoạn
+
+### 3.1. Phase 6.31 — Mission Dispatch & Operations Archive
+- **Trạng thái**: **HOÀN THÀNH TOÀN BỘ (DONE)**.
+- **Kết quả thực tế đã nghiệm thu**:
+  - **Giới hạn tham gia duy nhất**: Người chơi chỉ được trực tiếp chỉ huy tối đa **1** nhiệm vụ tại một thời điểm (`canPlayerJoinMission`, `playerJoinMission`, `playerWithdrawMission`, `getActivePlayerMission`). Ngăn chặn duplicate và xung đột vai trò.
+  - **Cơ chế PREPARE & NPC Takeover**: Nhiệm vụ ở giai đoạn PREPARE tiếp tục nhận lực lượng đồn trú (`assignGarrisonForcesToMission`). Khi hết hạn PREPARE mà người chơi chưa tham gia, sĩ quan NPC cấp phó/đồn trú (`getEligibleNPCCommander`) tự động tiếp quản (`processPrepareExpirationsAndTakeovers`), chuyển sang PROCESSING để nhiệm vụ không bị đóng băng.
+  - **Mô phỏng nhiệm vụ NPC-only với kết quả thực tế**: Động cơ `simulateAndResolveMission` mô phỏng tác chiến có kiểm soát dựa trên độ ổn định, Threat, quân đồn trú và tư cách chỉ huy; áp dụng biến động thực tế vào Threat, Stability, Casualties và Tài nguyên, đồng thời giải phóng quyền chỉ huy của người chơi.
+  - **Hệ thống Objective chuẩn hóa tái sử dụng**: Hỗ trợ 6 hình thái nhiệm vụ: Patrol, Escort, Defend, Raid, Eliminate, Threat Containment (`createStandardObjective`), tích hợp tiêu chí thành công rõ ràng.
+  - **Operations Archive có giới hạn (Bounded Retention)**: Lưu trữ 2 luồng kết quả độc lập (`eventResultsArchive` và committed combat trong `transactionJournal`), hỗ trợ cấu hình hạn ngạch quota động (`eventArchiveQuota`, `battleArchiveQuota`), cắt tỉa FIFO an toàn (`archiveEventResult`, `enforceOperationsArchiveQuotas`).
+  - **Nhật ký dòng thời gian xác thực (Action Timeline)**: Ghi nhận đúng các bước chuyển đổi trạng thái thực (`created`, `participant_joined`, `participant_withdrawn`, `prepare_completed`, `npc_takeover`, `processing_started`, `objective_resolved`, `completed`, `failed`, `aborted`), không sinh timestamp giả hay spam per-tick.
+  - **Giao diện Command Desk & Admin CP**: Tab "ĐIỀU PHỐI [DISPATCH]" trực quan trong `events-missions-board.tsx`, quản lý chỉ huy, tiếp quản, bổ sung quân, xem timeline và tạo lệnh điều phối mới; hiển thị quota badge trong `dual-results-hub.tsx`; thanh điều chỉnh quota trong Admin CP `admin-settings-modal.tsx`.
+  - **Khế ước WORLD an toàn**: Bảo toàn 100% `STARFRONT_WORLD_SAVE_V1`, CRC32 checksum, cách ly Save V4, Transaction Journal, Safe Abort (`abortMissionDispatch`), và tính lũy đẳng (Idempotent Resolution).
+
+---
+
+### 3.2. Combat V2 Review — Đánh Giá & Thiết Kế Kiến Trúc (Phase Riêng / Chưa Triển Khai)
 - **Mục tiêu cốt lõi**:
-  - Xây dựng hệ thống **Tuyệt Kỹ Liên Hoàn Phi Công (Pilot Skill Liên Hoàn)** độc lập với 5 Slot Mô-đun Cơ Giáp trong Hangar.
-  - Cung cấp 4 Template cấu hình chi tiết cho Marcus, Valentine, Alviss (Levi Reed), và Eric.
-  - Tăng cấp tuần tự, mở khóa dòng phụ tại các mốc Milestone (chia hết cho 5: cấp 5, 10, 15, 20...).
-  - Cơ chế **Reroll Dòng Phụ** (Ngẫu nhiên hoặc Chọn mục tiêu có định hướng) bằng Vé Reroll (Reroll Tokens) hoặc Credits.
-  - Tính toán và khống chế Điểm Sức Mạnh Kỹ Năng (Skill Power) theo trần ngân sách (`maxSkillPowerBudget`).
-  - Giao diện người dùng buồng lái trực quan: Component `PilotSkillView`, Tab "Tuyệt Kỹ Liên Hoàn Phi Công" trong `CharacterGearSelect`.
-  - Bảng điều khiển quản trị toàn cục **Admin CP** (`AdminCpModal`) với quyền cấu hình giới hạn cấp độ, thứ tự ưu tiên (`GLOBAL_PRIORITY` vs `TEMPLATE_OVERRIDE`), và chuẩn hóa dữ liệu.
-  - Tích hợp thực chiến: Marcus Active phóng loạt pháo Ion bồi sát thương và nạp SP; Alviss phản kích né tránh chớp nhoáng; Valentine kích hoạt khiên cấp cứu; Eric phá vỡ giáp đối phương.
-  - Bảo toàn 100% dữ liệu Schema v4, an toàn nâng cấp từ v1, v2, v3.
+  - Đây là một phase **nghiên cứu & thiết kế độc lập**, tuyệt đối chưa can thiệp vào engine chiến đấu hay viết mã gameplay.
+  - Toàn bộ nội dung phân tích chi tiết được quy định tại tài liệu: `docs/roadmap/COMBAT_V2_REVIEW.md`.
+- **8 Trọng tâm thiết kế cần bàn thảo**:
+  1. *Quy mô chiến đấu*: Phân cấp rạch ròi Unit, Squad (3-4 GEARs), Fleet chi viện và Strategic Garrison.
+  2. *Quan hệ Quân số - Lực chiến - HP*: Ranh giới giữa sinh lực cá nhân của cỗ máy GEAR và lực lượng phụ trợ chiến lược.
+  3. *Động lực học khi một GEAR bị loại*: Cập nhật hỏa lực, mất aura, tái phân bổ sát thương và điểm gãy đổ tinh thần.
+  4. *Quản lý tổn thất*: 5 trạng thái nhân lực (Tử trận, Thương binh, Rút lui, Đào tẩu, Viện binh).
+  5. *Bổ trợ chiến trường*: Hiệu ứng địa hình sector, công sự căn cứ (Fortification Barrier), pháo hạm chi viện (Orbital Broadside).
+  6. *Mô phỏng tự động*: Thuật toán giải quyết từng vòng khi vắng người chơi hoặc NPC thay thế.
+  7. *Khế ước tích hợp WORLD*: Save isolation (`STARFRONT_WORLD_SAVE_V1`), Transaction Journal idempotency, Encounter Snapshot freezing, và Safe Abort.
+  8. *Kế thừa từ Combat V1*: Tái sử dụng Status Effects, Speed Initiative, Pilot Synergy và biểu đồ D3 Combat Efficiency mà không bị bó hẹp trong kiến trúc 1v1.
+- **Nguyên tắc**: Giữ các quyết định mở cho thảo luận nhóm; không áp đặt công thức giả định hay quy mô cố định (ví dụ 1 người chơi + 29 NPC).
 
 ---
 
-## 2. Bảng Đối Chiếu Tính Năng Triển Khai
-
-| Hạng mục tính năng | Trạng thái kỹ thuật | Đối chiếu mã nguồn thực tế |
-|---|---|---|
-| Hệ thống Types & Interfaces | **Đã hoàn thành (Done)** | `lib/game/pilot-skill-types.ts` |
-| 4 Template Kỹ năng Chuẩn | **Đã hoàn thành (Done)** | `lib/game/pilot-skill-templates.ts` |
-| Engine Tăng Cấp, Milestone, Reroll, Normalization | **Đã hoàn thành (Done)** | `lib/game/pilot-skill-engine.ts` |
-| Tích hợp CombatUnit & Sát thương Thực Chiến | **Đã hoàn thành (Done)** | `lib/game/progression.ts`, `lib/game/engine.ts` |
-| Nút Tuyệt Kỹ Action Deck trong Đấu Trường | **Đã hoàn thành (Done)** | `components/game/combat-arena.tsx` (Slot 5) |
-| Giao diện Buồng Lái Pilot Skill View | **Đã hoàn thành (Done)** | `components/game/pilot-skill-view.tsx` |
-| Modal Quản Trị Toàn Cục Admin CP | **Đã hoàn thành (Done)** | `components/game/admin-cp-modal.tsx` |
-| Tab Kỹ Năng Phi Công trong Character & Gear | **Đã hoàn thành (Done)** | `components/game/character-gear-select.tsx` |
-| Lưu Trữ Schema v4 & Migration Tự Động | **Đã hoàn thành (Done)** | `lib/game/storage.ts` |
-| Bộ Kiểm Thử Tự Động Toàn Diện Phase 5.9 | **Đã hoàn thành (Done)** | `tests/phase5-9-pilot-synergy-skills.test.ts` (18/18 PASS) |
-| Tái Tạo Ảnh Mecha & Ảnh Phi Công Toàn Thân | **Đang chờ (Pending Quota)** | 4/4 Portrait raster hoàn tất; 4 Fullbody và 3 Mecha dùng SVG fallback an toàn. |
-| Báo Cáo Triển Khai & Asset Manifest | **Đã hoàn thành (Done)** | `PHASE_5_9_IMPLEMENTATION_REPORT.md`, `PHASE_5_9_ASSET_MANIFEST.md` |
+### 3.3. Phase 6.32 — Route Intelligence & Action Logs (Kế hoạch / Chưa Triển Khai)
+- **Mục tiêu cốt lõi**:
+  - **Route Cards trực quan**: Thẻ tuyến hiển thị rõ cấu trúc: `Điểm Đi` $\rightarrow$ `Hyperlane` $\rightarrow$ `Điểm Đến`, kèm trạng thái vận hành.
+  - **Route Detail Modal chuyên sâu**: Hiển thị định danh tuyến, 2 đầu sector, trạng thái (`open`, `hazardous`, `blocked`, `offline`), thời gian di chuyển dự kiến, mức độ rủi ro và lưu lượng quân sự/hậu cần thực tế.
+  - **Điều hướng Focus Route**: Nút định vị tự động đưa camera bản đồ căn giữa và làm nổi bật tuyến siêu không gian được chọn.
+  - **Nhật ký hành động theo từng tuyến (Per-Route Action Logs)**:
+    - Mặc định lưu trữ tối đa 100 bản ghi thay đổi trạng thái thực tế cho mỗi tuyến.
+    - Cho phép cấu hình trần số lượng bản ghi trong ADMIN CP.
+    - Áp dụng chính sách vòng lặp FIFO khi vượt ngưỡng giới hạn; tuyệt đối không xóa trạng thái tuyến hiện hành hay làm gián đoạn các đoàn quân đang hành quân.
+- **Phạm vi phase hiện tại**: Không triển khai bất kỳ mã nguồn Route Intelligence nào trong lượt cập nhật tài liệu này.
 
 ---
 
-## 3. Kiến Trúc Tuyệt Kỹ Liên Hoàn 4 Phi Công
+## 4. Bảng Tổng Hợp Trạng Thái Các Phase Kế Tiếp
 
-1. **Marcus Thorne (Assault / Weapons Specialist)**:
-   - **Template**: `tpl_marcus_artillery_storm` (Bão Pháo Ion Càn Quét).
-   - **Loại**: ACTIVE (Chủ động xuất kích).
-   - **Signature Gear**: `vanguard`.
-   - **Hiệu ứng Hiệp Đồng**: +25% Sát thương tổng thể, bắn bồi thêm 35% sát thương và nạp lại +15 SP.
-
-2. **Valentine Reyes (Support / Defense Specialist)**:
-   - **Template**: `tpl_valentine_nano_sanctuary` (Thánh Vực Nano Hộ Vệ).
-   - **Loại**: PASSIVE (Tự động kích hoạt khi khiên vỡ).
-   - **Signature Gear**: `aegis`.
-   - **Hiệu ứng Hiệp Đồng**: Tái tạo ngay khiên cấp cứu kèm khiên thưởng từ Tuyệt Kỹ Liên Hoàn.
-
-3. **Levi Reed / Alviss (Interceptor / Speed Specialist)**:
-   - **Template**: `tpl_alviss_quantum_surge` (Gia Tốc Lượng Tử & Phản Kích Né Tránh).
-   - **Loại**: PASSIVE (Tự động phản công chớp nhoáng khi né tránh thành công).
-   - **Signature Gear**: `falcon`.
-   - **Hiệu ứng Hiệp Đồng**: +12% Evasion, +25% Armor Penetration, phóng đạn xung kích phản đòn x1.4 sát thương khi né đòn.
-
-4. **Eric Vance (Siege / Heavy Demolition Specialist)**:
-   - **Template**: `tpl_eric_titan_breaker` (Đạn Hạt Nhân Xuyên Giáp Tận Diệt).
-   - **Loại**: ACTIVE (Chủ động xuất kích).
-   - **Signature Gear**: `aegis`.
-   - **Hiệu ứng Hiệp Đồng**: Xuyên giáp tuyệt đối +30%, phá vỡ giáp đối thủ (-45% DEF trong 2 lượt).
+| Phase | Tên Phân Hệ | Trạng Thái Kỹ Thuật | Nhiệm Vụ Trọng Tâm |
+|---|---|---|---|
+| **Phase 6.30** | Strategic Galaxy Map & Command UX Enhancement | **HOÀN THÀNH (DONE)** | Chiều sâu không gian node-only, Legend/Details mặc định OFF, Wheel/Double-click zoom, War Room Situation Deck |
+| **Phase 6.31** | Mission Dispatch & Operations Archive | **HOÀN THÀNH (DONE)** | 1 mission trực tiếp, PREPARE timeout NPC takeover, 6 objectives chuẩn hóa, Bounded Operations Archive & Action Timeline |
+| **Combat V2 Review** | Architectural Review & Design Specification | **THIẾT KẾ (DESIGN ONLY / CHƯA TRIỂN KHAI)** | Đánh giá kiến trúc quy mô squad/fleet, quan hệ quân số - HP, mô phỏng NPC, khế ước WORLD (`COMBAT_V2_REVIEW.md`) |
+| **Phase 6.32** | Route Intelligence & Action Logs | **KẾ HOẠCH (PLANNED / CHƯA TRIỂN KHAI)** | Route cards điểm đi - đến, Route Detail modal, focus tuyến, Action logs FIFO 100 bản ghi cấu hình AdminCP |

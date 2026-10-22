@@ -1,0 +1,91 @@
+{
+  "configFileId": "system_base_world_seed_profile",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "SEED_PROFILE_STANDARD_30",
+      "name": "Thiên Hà Tiêu Chuẩn 30 Khu Vực (Balanced 18/12)",
+      "description": "Cấu hình khởi tạo chuẩn 30 Main Base Nodes với tối thiểu 20% mỗi phe, chênh lệch tổng sức mạnh quốc gia tối đa 10 điểm phần trăm.",
+      "totalMainBaseNodes": 30,
+      "minimumFactionBaseSharePercent": 20,
+      "maximumFactionPowerDifferencePercentagePoints": 10,
+      "vssBaseTargetCount": 18,
+      "voidBaseTargetCount": 12,
+      "capitalOrbitalSlotsTable": {
+        "1": 2,
+        "2": 3,
+        "3": 4,
+        "4": 5,
+        "5": 6,
+        "6": 7,
+        "7": 8,
+        "8": 9,
+        "9": 10,
+        "10": 12
+      },
+      "maxNonCapitalOrbitalSlots": 3,
+      "autoSaveIntervalGameDays": 7,
+      "autoSaveIntervalRealMinutes": 10,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SEED_PROFILE_PARITY_15_15",
+      "name": "Thế Trận Đối Xứng Tuyệt Đối (Parity 15/15)",
+      "description": "Mỗi phe nắm giữ đúng 15 Main Base Nodes (50% / 50%) với cân bằng sức mạnh đối xứng.",
+      "totalMainBaseNodes": 30,
+      "minimumFactionBaseSharePercent": 20,
+      "maximumFactionPowerDifferencePercentagePoints": 10,
+      "vssBaseTargetCount": 15,
+      "voidBaseTargetCount": 15,
+      "capitalOrbitalSlotsTable": {
+        "1": 2,
+        "2": 3,
+        "3": 4,
+        "4": 5,
+        "5": 6,
+        "6": 7,
+        "7": 8,
+        "8": 9,
+        "9": 10,
+        "10": 12
+      },
+      "maxNonCapitalOrbitalSlots": 3,
+      "autoSaveIntervalGameDays": 7,
+      "autoSaveIntervalRealMinutes": 10,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SEED_PROFILE_DOMINANCE_24_6",
+      "name": "Ưu Thế Lãnh Thổ Tối Đa (24 VSS / 6 Void Elite)",
+      "description": "VSS nắm 24 căn cứ (80%), Void nắm 6 căn cứ tinh anh (20%) có cấp độ MK cao và hạm đội tập trung để giữ chênh lệch sức mạnh <= 10%.",
+      "totalMainBaseNodes": 30,
+      "minimumFactionBaseSharePercent": 20,
+      "maximumFactionPowerDifferencePercentagePoints": 10,
+      "vssBaseTargetCount": 24,
+      "voidBaseTargetCount": 6,
+      "capitalOrbitalSlotsTable": {
+        "1": 2,
+        "2": 3,
+        "3": 4,
+        "4": 5,
+        "5": 6,
+        "6": 7,
+        "7": 8,
+        "8": 9,
+        "9": 10,
+        "10": 12
+      },
+      "maxNonCapitalOrbitalSlots": 3,
+      "autoSaveIntervalGameDays": 7,
+      "autoSaveIntervalRealMinutes": 10,
+      "lifecycle": "ACTIVE"
+    }
+  ],
+  "metadata": {
+    "domain": "base",
+    "catalog": "world_seed_profile",
+    "description": "Canonical World Seed & Generation Profiles for FND-6."
+  }
+}

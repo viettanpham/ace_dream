@@ -30,6 +30,8 @@ import {
   enhanceItem,
   getExpRequiredForLevel,
   INITIAL_STARFRONT_PROGRESSION,
+  isSelectionOptional,
+  isValidPilotGearSelection,
 } from "@/lib/game/progression"
 import {
   createScaledEnemyUnit,
@@ -56,6 +58,7 @@ import type {
   StarfrontProgression,
   StatusEffect,
 } from "@/lib/game/types"
+import { PostMissionResults } from "@/components/game/post-mission-results"
 import { cn } from "@/lib/utils"
 import {
   AlertTriangle,
@@ -90,6 +93,7 @@ import {
   Wind,
   Wrench,
   Zap,
+  Flag,
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { CampaignMap } from "./campaign-map"
@@ -99,6 +103,20 @@ import { StarfrontHangar } from "./starfront-hangar"
 import { StarfrontShop } from "./starfront-shop"
 import { CombatText, type CombatTextItem } from "./combat-text"
 import { TacticalGridOverlay } from "./tactical-grid-overlay"
+import { WorldCombatPostMissionResults } from "./world-combat-results"
+import {
+  buildCombatUnitFromSnapshot,
+  applyWorldSnapshotPlayerModifiers,
+  buildCombatReceiptFromCombatState,
+  commitCombatResultReceipt,
+  abortSuspendedCombat,
+} from "@/lib/game/world/combat-adapter"
+import { loadWorldState, saveWorldState } from "@/lib/game/world/storage"
+import type {
+  WorldBattleContext,
+  CombatResolutionResult,
+  AbortCombatResult,
+} from "@/lib/game/world/types"
 
 const GEAR_THEMES: Record<
   StarfrontGearId,
@@ -167,8 +185,11 @@ export interface CombatArenaProps {
   activeCampaignMission?: CampaignMission | null
   onClearCampaignMission?: () => void
   onSelectCampaignMission?: (mission: CampaignMission | null) => void
-  onNavigateSection?: (section: "home" | "battlefield" | "missions" | "shop" | "hangar" | "character-gear") => void
+  onNavigateSection?: (section: "home" | "battlefield" | "missions" | "shop" | "hangar" | "character-gear" | "world") => void
   isEmbeddedInShell?: boolean
+  worldBattleContext?: WorldBattleContext | null
+  onWorldCombatComplete?: (result: CombatResolutionResult) => void
+  onWorldCombatAborted?: (abortResult: AbortCombatResult) => void
 }
 
 export function CombatArena({
@@ -179,6 +200,9 @@ export function CombatArena({
   onSelectCampaignMission,
   onNavigateSection,
   isEmbeddedInShell = false,
+  worldBattleContext,
+  onWorldCombatComplete,
+  onWorldCombatAborted,
 }: CombatArenaProps = {}) {
   // 1. Quản lý tiến trình STARFRONT (Level, EXP, Credits, Trang bị, Gears, Chiến dịch)
   const [progression, setProgression] = useState<StarfrontProgression>(
@@ -190,6 +214,12 @@ export function CombatArena({
     parentMission !== undefined ? parentMission : null,
   )
   const [audioMuted, setAudioMutedState] = useState(false)
+
+  // Trạng thái cho trận chiến thực địa STARFRONT WORLD (Phase 6.23)
+  const [worldResolutionResult, setWorldResolutionResult] = useState<CombatResolutionResult | null>(null)
+  const [worldAbortResult, setWorldAbortResult] = useState<AbortCombatResult | null>(null)
+  const [isRetreatModalOpen, setIsRetreatModalOpen] = useState(false)
+  const worldCommittedRef = useRef(false)
 
   // Đồng bộ progression từ parent shell nếu có thay đổi
   useEffect(() => {
@@ -644,8 +674,114 @@ export function CombatArena({
     handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
   }
 
+  // Khởi động trận chiến thực địa STARFRONT WORLD (Phase 6.23)
+  const handleStartWorldEncounter = (
+    context: WorldBattleContext,
+    currentProg: StarfrontProgression = progression,
+  ) => {
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current)
+      aiTimeoutRef.current = null
+    }
+    setIsProcessingAI(false)
+    rewardClaimedRef.current = false
+    defeatRecordedRef.current = false
+    worldCommittedRef.current = false
+    setLastVictoryReward(null)
+    setWorldResolutionResult(null)
+    setWorldAbortResult(null)
+
+    let playerUnit = buildPlayerCombatUnit(currentProg)
+    playerUnit = applyWorldSnapshotPlayerModifiers(playerUnit, context.snapshot)
+    const worldEnemyUnit = buildCombatUnitFromSnapshot(context.snapshot)
+
+    const fresh = createInitialCombatState("raider-mech", playerUnit, worldEnemyUnit)
+    fresh.logs = [
+      {
+        id: `world-log-init-1-${Date.now()}`,
+        turn: 1,
+        type: "system",
+        text: `[STARFRONT WORLD] Tiếp cận không phận chiến sự Sector ${context.sectorName} (${context.sectorId})! Giao dịch: ${context.transactionId}`,
+        actorName: "SỞ CHỈ HUY",
+        timestamp: "00:01",
+      },
+      {
+        id: `world-log-init-2-${Date.now()}`,
+        turn: 1,
+        type: "system",
+        text: `[TÌNH BÁO CHIẾN TRƯỜNG] Đối thủ: ${worldEnemyUnit.name}. Đồn trú đóng băng: ${context.snapshot.lockedGarrison.toLocaleString()} quân. Công sự cấp ${context.snapshot.friendlyModifiers.fortificationLevel} (Thủ +${Math.round((context.snapshot.friendlyModifiers.defenseMultiplier - 1) * 100)}%). Sĩ khí: +${Math.round((context.snapshot.friendlyModifiers.moraleMultiplier - 1) * 100)}%.`,
+        actorName: "RADAR TIỀN TIẾN",
+        timestamp: "00:01",
+      },
+      ...fresh.logs,
+    ]
+    setCombatState(fresh)
+  }
+
+  // Khởi động lại hoặc đồng bộ khi nhận worldBattleContext
+  useEffect(() => {
+    if (worldBattleContext) {
+      handleStartWorldEncounter(worldBattleContext, progression)
+    }
+  }, [worldBattleContext?.transactionId])
+
+  // Xử lý Hủy Bỏ An Toàn trận đấu (Safe Abort - Hoàn trả đồn trú nguyên vẹn)
+  const handleConfirmSafeAbort = () => {
+    if (!worldBattleContext) return
+    try {
+      const loadRes = loadWorldState()
+      const wState = loadRes.state
+      const res = abortSuspendedCombat(
+        wState,
+        worldBattleContext.transactionId,
+        "Người chơi hủy bỏ an toàn trận tác chiến",
+      )
+      saveWorldState(wState)
+      setWorldAbortResult(res)
+      setIsRetreatModalOpen(false)
+      onWorldCombatAborted?.(res)
+    } catch (err: any) {
+      console.error("Error aborting combat:", err)
+    }
+  }
+
+  // Xử lý Rút Lui Chiến Thuật (Tactical Retreat - Chấp nhận thất bại)
+  const handleConfirmTacticalRetreat = () => {
+    if (!worldBattleContext) return
+    try {
+      const receipt = buildCombatReceiptFromCombatState(combatState, worldBattleContext.snapshot, false)
+      receipt.logSummary = "Người chơi chủ động rút lui khỏi chiến trường."
+      const loadRes = loadWorldState()
+      const wState = loadRes.state
+      const resolution = commitCombatResultReceipt(wState, receipt)
+      saveWorldState(wState)
+      setWorldResolutionResult(resolution)
+      // Đồng bộ cờ đã commit thành công ngay trong handler trước khi chuyển sang status defeat
+      // ngăn chặn useEffect lắng nghe defeat bị kích hoạt double-invocation
+      worldCommittedRef.current = true
+      setIsRetreatModalOpen(false)
+      setCombatState((prev) => ({ ...prev, status: "defeat" }))
+    } catch (err: any) {
+      console.error("Error retreating combat:", err)
+    }
+  }
+
   // Khôi phục dữ liệu đã lưu từ LocalStorage khi khởi chạy
   useEffect(() => {
+    if (worldBattleContext) {
+      if (initialProgression) {
+        setProgression(initialProgression)
+        setHasLoadedProgression(true)
+      } else {
+        const saved = loadStarfrontProgression()
+        setProgression(saved)
+        setHasLoadedProgression(true)
+      }
+      setAudioMutedState(isAudioMuted())
+      handleStartWorldEncounter(worldBattleContext, initialProgression || loadStarfrontProgression())
+      return
+    }
+
     if (initialProgression) {
       setProgression(initialProgression)
       setHasLoadedProgression(true)
@@ -674,13 +810,13 @@ export function CombatArena({
 
   // Tự động lưu tiến trình mỗi khi có thay đổi quan trọng (EXP, Level, Credits, Trang bị)
   useEffect(() => {
-    if (hasLoadedProgression) {
+    if (hasLoadedProgression && !worldBattleContext) {
       saveStarfrontProgression(progression)
       if (onUpdateProgression) {
         onUpdateProgression(progression)
       }
     }
-  }, [progression, hasLoadedProgression])
+  }, [progression, hasLoadedProgression, worldBattleContext])
 
   // Thực hiện lượt đi của Kẻ địch ngay lập tức (dùng cho cả timer tự động và click thủ công)
   const performEnemyTurn = () => {
@@ -871,6 +1007,25 @@ export function CombatArena({
       rewardClaimedRef.current = true
       playVictorySound()
 
+      // NẾU LÀ TRẬN ĐẤU THỰC ĐỊA TỪ STARFRONT WORLD (PHASE 6.23):
+      if (worldBattleContext) {
+        if (!worldCommittedRef.current) {
+          worldCommittedRef.current = true
+          try {
+            const receipt = buildCombatReceiptFromCombatState(combatState, worldBattleContext.snapshot, true)
+            const loadRes = loadWorldState()
+            const wState = loadRes.state
+            const resolution = commitCombatResultReceipt(wState, receipt)
+            saveWorldState(wState)
+            setWorldResolutionResult(resolution)
+          } catch (err: any) {
+            console.error("Error committing WORLD victory receipt:", err)
+          }
+        }
+        // TUYỆT ĐỐI KHÔNG GHI THƯỞNG VÀO RPG PROGRESSION!
+        return
+      }
+
       setProgression((prev) => {
         if (activeCampaignMission) {
           const { updated, reward, dropItem, isFirstClear } = applyMissionClearReward(
@@ -899,23 +1054,43 @@ export function CombatArena({
         }
       })
     }
-  }, [combatState.status, selectedEncounter, activeCampaignMission])
+  }, [combatState.status, selectedEncounter, activeCampaignMission, worldBattleContext])
 
   // Xử lý ghi nhận trận thua duy nhất 1 lần khi THẤT BẠI
   useEffect(() => {
     if (combatState.status === "defeat" && !defeatRecordedRef.current) {
       defeatRecordedRef.current = true
+
+      // NẾU LÀ TRẬN ĐẤU THỰC ĐỊA TỪ STARFRONT WORLD (PHASE 6.23):
+      if (worldBattleContext) {
+        if (!worldCommittedRef.current) {
+          worldCommittedRef.current = true
+          try {
+            const receipt = buildCombatReceiptFromCombatState(combatState, worldBattleContext.snapshot, false)
+            const loadRes = loadWorldState()
+            const wState = loadRes.state
+            const resolution = commitCombatResultReceipt(wState, receipt)
+            saveWorldState(wState)
+            setWorldResolutionResult(resolution)
+          } catch (err: any) {
+            console.error("Error committing WORLD defeat receipt:", err)
+          }
+        }
+        // TUYỆT ĐỐI KHÔNG GHI PHẠT VÀO RPG PROGRESSION!
+        return
+      }
+
       setProgression((prev) => applyDefeatRecord(prev))
     }
-  }, [combatState.status])
+  }, [combatState.status, worldBattleContext])
 
   // Người chơi bấm kích hoạt kỹ năng
   const handleUseSkill = (skillId: string) => {
     if (combatState.status !== "player-turn" || isProcessingAI) return
 
-    if (!progression.activePairing?.isLocked) {
+    if (!isValidPilotGearSelection(progression)) {
       setFloatingNotification({
-        text: "⚠️ BẮT BUỘC KHÓA NHÂN VẬT & CƠ GIÁP TRƯỚC KHI THI ĐẤU!",
+        text: "⚠️ BẮT BUỘC CHỌN NHÂN VẬT & CƠ GIÁP TRƯỚC KHI THI ĐẤU!",
         isCrit: false,
         isPlayer: false,
       })
@@ -1337,8 +1512,65 @@ export function CombatArena({
             </div>
           )}
 
+          {/* Banner thông báo khi đang thực hiện trận chiến thực địa STARFRONT WORLD (Phase 6.23) */}
+          {worldBattleContext && (
+            <div className="rounded-sm border border-cyan-400 bg-gradient-to-r from-cyan-950/90 via-black to-zinc-950 p-3 shadow-xl flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-center gap-3">
+                <Globe2 className="size-5 text-cyan-400 animate-pulse shrink-0" />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-display text-xs font-black uppercase text-cyan-300 tracking-wider">
+                      CHIẾN TRƯỜNG THỰC ĐỊA STARFRONT WORLD: {worldBattleContext.sectorName.toUpperCase()}
+                    </span>
+                    <span className="rounded bg-cyan-950 px-1.5 py-0.2 font-mono text-[9px] text-cyan-400 border border-cyan-500/40">
+                      TX: {worldBattleContext.transactionId}
+                    </span>
+                    {worldBattleContext.resumedFromSuspended && (
+                      <span className="rounded bg-amber-500/20 px-1.5 py-0.2 font-mono text-[9px] text-amber-300 border border-amber-500/40 font-bold">
+                        KHÔI PHỤC TỪ TRẬN TREO
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2.5 text-[11px] font-mono text-zinc-400 mt-0.5">
+                    <span>
+                      Đồn trú: <strong className="text-white">{worldBattleContext.snapshot.lockedGarrison.toLocaleString()}</strong> quân
+                    </span>
+                    <span>·</span>
+                    <span>
+                      Công sự: <strong className="text-emerald-400">Cấp {worldBattleContext.snapshot.friendlyModifiers.fortificationLevel}</strong> (Thủ +{Math.round((worldBattleContext.snapshot.friendlyModifiers.defenseMultiplier - 1) * 100)}%)
+                    </span>
+                    <span>·</span>
+                    <span>
+                      Sĩ khí: <strong className="text-cyan-400">+{Math.round((worldBattleContext.snapshot.friendlyModifiers.moraleMultiplier - 1) * 100)}%</strong>
+                    </span>
+                    <span>·</span>
+                    <span>
+                      Mục tiêu: <strong className="text-amber-300">{worldBattleContext.snapshot.winConditions.objective === "eliminate_enemy" ? "Tiêu diệt kẻ địch" : "Phòng thủ"}</strong> (Tối đa {worldBattleContext.snapshot.winConditions.maxRounds || 20} lượt)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="xs"
+                  variant="outline"
+                  onClick={() => {
+                    playClickSound()
+                    setIsRetreatModalOpen(true)
+                  }}
+                  className="gap-1 text-xs border-red-500/60 text-red-300 hover:bg-red-950/60 cursor-pointer"
+                  title="Mở tùy chọn rút lui chiến lược"
+                >
+                  <Flag className="size-3" />
+                  <span>Rút Lui Chiến Lược</span>
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Banner thông báo khi đang thực hiện nhiệm vụ chiến dịch */}
-          {activeCampaignMission && (
+          {!worldBattleContext && activeCampaignMission && (
             <div className="rounded-sm border border-cyan-400/60 bg-gradient-to-r from-cyan-950/60 via-black/70 to-cyan-950/60 p-3 shadow-lg flex flex-wrap items-center justify-between gap-3 animate-in fade-in">
               <div className="flex items-center gap-2">
                 <Globe2 className="size-4 text-cyan-400 animate-pulse" />
@@ -1601,7 +1833,19 @@ export function CombatArena({
                 </span>
               </div>
 
-              {activeCampaignMission ? (
+              {worldBattleContext ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-2 rounded border border-cyan-500/60 bg-cyan-950/40 px-3 py-1.5 font-mono text-xs">
+                    <Lock className="size-3.5 text-cyan-400" />
+                    <span className="text-cyan-300 font-bold">
+                      ĐÃ KHÓA CHIẾN SỰ THỰC ĐỊA: {enemy.name}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 hidden sm:inline">
+                      ({worldBattleContext.sectorName})
+                    </span>
+                  </div>
+                </div>
+              ) : activeCampaignMission ? (
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-2 rounded border border-amber-500/50 bg-amber-950/40 px-3 py-1.5 font-mono text-xs">
                     <Lock className="size-3.5 text-amber-400" />
@@ -1773,25 +2017,25 @@ export function CombatArena({
             )}
 
             {/* Cột 1: Người chơi (Vanguard / Falcon / Aegis) */}
-            <div className={cn("relative overflow-hidden rounded-sm border p-3.5 shadow-xl bg-gradient-to-b", currentTheme.border, currentTheme.bgGradient)}>
+            <div className={cn("relative overflow-hidden rounded-sm border p-3.5 shadow-xl bg-gradient-to-b sf-card", currentTheme.border, currentTheme.bgGradient)}>
               <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-2.5">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={cn("flex size-5 items-center justify-center rounded-xs font-mono text-xs font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                    <span className={cn("flex size-5 items-center justify-center rounded-xs font-mono sf-text-caption font-black border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                       {activeGearDef.name.charAt(0)}
                     </span>
-                    <h3 className={cn("font-display text-base font-bold", currentTheme.textPrimary)}>
+                    <h3 className={cn("font-display sf-title-card font-bold", currentTheme.textPrimary)}>
                       {player.name}
                     </h3>
                     {/* BUỒNG LÁI TRỰC CHIẾN COMPACT PILL */}
-                    <div className={cn("flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-mono border", currentTheme.iconBg, currentTheme.iconBorder)}>
+                    <div className={cn("flex items-center gap-1.5 rounded px-2 py-0.5 sf-text-caption font-mono border", currentTheme.iconBg, currentTheme.iconBorder)}>
                       <Radio className={cn("size-3 animate-pulse", currentTheme.iconColor)} />
                       <span className={cn("font-bold tracking-wider uppercase", currentTheme.textPrimary)}>
                         BUỒNG LÁI {activeGearDef.name.toUpperCase()} TRỰC CHIẾN
                       </span>
                     </div>
                   </div>
-                  <p className={cn("font-mono text-xs", currentTheme.textAccent)}>
+                  <p className={cn("font-mono sf-text-secondary mt-0.5", currentTheme.textAccent)}>
                     {activeGearDef.role} · Cấp {progression.level}
                   </p>
                 </div>
@@ -1800,23 +2044,23 @@ export function CombatArena({
                 <div className="flex flex-wrap gap-1">
                   {player.statusEffects.map((eff) => renderStatusBadge(eff))}
                   {player.statusEffects.length === 0 && (
-                    <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng</span>
+                    <span className="sf-text-caption text-muted-foreground/60">Không có hiệu ứng</span>
                   )}
                 </div>
               </div>
 
               {/* Huy hiệu Kỹ Năng Nội Tại Của Gear */}
-              <div className="mb-2.5 rounded border border-border/60 bg-black/40 p-2 text-[10px] font-mono">
+              <div className="mb-2.5 rounded border border-border/60 bg-black/40 p-2.5 sf-text-caption font-mono">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 font-bold text-amber-300">
-                    <Sparkles className="size-3 text-amber-400" />
+                    <Sparkles className="size-3.5 text-amber-400" />
                     <span>NỘI TẠI: {activeGearDef.passive.name}</span>
                   </div>
-                  <span className={cn("rounded px-1.5 py-0.2 text-[9px] border", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                  <span className={cn("rounded px-2 py-0.5 sf-text-caption border font-bold", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                     BẢN SẮC GEAR
                   </span>
                 </div>
-                <p className="mt-1 text-slate-300 leading-snug">
+                <p className="mt-1 sf-text-body text-slate-200 leading-snug">
                   {activeGearDef.passive.desc}
                 </p>
               </div>
@@ -1824,7 +2068,7 @@ export function CombatArena({
               {/* Thanh HP & SP */}
               <div className="space-y-2.5">
                 <div>
-                  <div className="mb-1 flex justify-between font-mono text-xs">
+                  <div className="mb-1 flex justify-between font-mono sf-text-secondary">
                     <span className="flex items-center gap-1 font-bold text-emerald-400">
                       <Shield className="size-3.5" /> ĐỘ BỀN VỎ GIÁP (HP)
                     </span>
@@ -1841,7 +2085,7 @@ export function CombatArena({
                 </div>
 
                 <div>
-                  <div className="mb-1 flex justify-between font-mono text-xs">
+                  <div className="mb-1 flex justify-between font-mono sf-text-secondary">
                     <span className="flex items-center gap-1 font-bold text-cyan-400">
                       <Zap className="size-3.5" /> LÕI NĂNG LƯỢNG (SP)
                     </span>
@@ -1859,21 +2103,21 @@ export function CombatArena({
               </div>
 
               {/* Chỉ số tác chiến thực tế (Hiển thị chỉ số hiệu dụng 4 cột) */}
-              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono text-xs">
+              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono sf-text-secondary">
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Tấn Công</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Tấn Công</span>
                   <span className="font-bold text-cyan-300">{getEffectiveAttack(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Phòng Thủ</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Phòng Thủ</span>
                   <span className="font-bold text-cyan-300">{getEffectiveDefense(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Tốc Độ</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Tốc Độ</span>
                   <span className="font-bold text-cyan-300">{getEffectiveSpeed(player)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Né Tránh</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Né Tránh</span>
                   <span className={cn("font-bold", player.gearType === "falcon" ? "text-amber-300" : "text-cyan-300")}>
                     {getEffectiveEvasion(player)}%
                   </span>
@@ -1882,34 +2126,34 @@ export function CombatArena({
             </div>
 
             {/* Cột 2: Kẻ Địch */}
-            <div className="relative overflow-hidden rounded-sm border border-red-500/40 bg-gradient-to-b from-red-950/20 via-panel/80 to-panel p-3.5 shadow-xl">
+            <div className="relative overflow-hidden rounded-sm border border-red-500/40 bg-gradient-to-b from-red-950/20 via-panel/80 to-panel p-3.5 shadow-xl sf-card">
               <div className="mb-3 flex items-start justify-between border-b border-border/60 pb-2.5">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="flex size-5 items-center justify-center rounded-xs bg-red-500/20 font-mono text-xs font-black text-red-400 border border-red-500/50">
+                    <span className="flex size-5 items-center justify-center rounded-xs bg-red-500/20 font-mono sf-text-caption font-black text-red-400 border border-red-500/50">
                       E
                     </span>
-                    <h3 className="font-display text-base font-bold text-red-200">
+                    <h3 className="font-display sf-title-card font-bold text-red-200">
                       {enemy.name}
                     </h3>
                     {/* MỤC TIÊU ĐANG KHÓA COMPACT PILL */}
-                    <div className="flex items-center gap-1.5 rounded px-2 py-0.5 text-[10px] font-mono border border-red-500/50 bg-red-950/60 text-red-300">
+                    <div className="flex items-center gap-1.5 rounded px-2 py-0.5 sf-text-caption font-mono border border-red-500/50 bg-red-950/60 text-red-300">
                       <Target className="size-3 text-red-400 animate-spin" style={{ animationDuration: "10s" }} />
                       <span className="font-bold tracking-wider uppercase">MỤC TIÊU ĐANG KHÓA</span>
                     </div>
                     {enemy.bossPhase === 2 && (
-                      <span className="rounded bg-red-500/30 border border-red-400 px-1.5 py-0.5 font-display text-[10px] font-bold text-red-300 animate-pulse">
+                      <span className="rounded bg-red-500/30 border border-red-400 px-2 py-0.5 font-display sf-text-caption font-bold text-red-300 animate-pulse">
                         PHA 2: OVERDRIVE 🔥
                       </span>
                     )}
                   </div>
-                  <p className="font-mono text-xs text-red-400/80">{enemy.title}</p>
+                  <p className="font-mono sf-text-secondary text-red-400/80 mt-0.5">{enemy.title}</p>
                 </div>
 
                 <div className="flex flex-wrap gap-1">
                   {enemy.statusEffects.map((eff) => renderStatusBadge(eff))}
                   {enemy.statusEffects.length === 0 && (
-                    <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng</span>
+                    <span className="sf-text-caption text-muted-foreground/60">Không có hiệu ứng</span>
                   )}
                 </div>
               </div>
@@ -1917,13 +2161,13 @@ export function CombatArena({
               {/* Thanh HP & SP Địch */}
               <div className="space-y-2.5">
                 <div>
-                  <div className="mb-1 flex justify-between font-mono text-xs">
+                  <div className="mb-1 flex justify-between font-mono sf-text-secondary">
                     <span className="flex items-center gap-1 font-bold text-red-400">
                       <ShieldAlert className="size-3.5" /> ĐỘ BỀN VỎ GIÁP (HP)
                     </span>
                     <div className="flex items-center gap-1.5 tabular-nums">
                       {projectedDamage > 0 && (
-                        <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-400/40 animate-pulse">
+                        <span className="rounded bg-amber-500/20 px-2 py-0.5 sf-text-caption font-bold text-amber-300 border border-amber-400/40 animate-pulse">
                           -{projectedDamage} HP {projectedEnemyHp <= 0 ? "⚡ LETHAL" : ""}
                         </span>
                       )}
@@ -1951,7 +2195,7 @@ export function CombatArena({
                 </div>
 
                 <div>
-                  <div className="mb-1 flex justify-between font-mono text-xs">
+                  <div className="mb-1 flex justify-between font-mono sf-text-secondary">
                     <span className="flex items-center gap-1 font-bold text-amber-400">
                       <Zap className="size-3.5" /> NĂNG LƯỢNG KẺ ĐỊCH (SP)
                     </span>
@@ -1969,21 +2213,21 @@ export function CombatArena({
               </div>
 
               {/* Chỉ số tác chiến Địch (Hiển thị chỉ số hiệu dụng 4 cột) */}
-              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono text-xs">
+              <div className="mt-3 grid grid-cols-4 gap-1.5 border-t border-border/50 pt-2.5 text-center font-mono sf-text-secondary">
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Tấn Công</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Tấn Công</span>
                   <span className="font-bold text-red-300">{getEffectiveAttack(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Phòng Thủ</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Phòng Thủ</span>
                   <span className="font-bold text-red-300">{getEffectiveDefense(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Tốc Độ</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Tốc Độ</span>
                   <span className="font-bold text-red-300">{getEffectiveSpeed(enemy)}</span>
                 </div>
                 <div className="rounded bg-black/30 p-1.5">
-                  <span className="block text-[9px] uppercase text-muted-foreground">Né Tránh</span>
+                  <span className="block sf-text-caption uppercase text-muted-foreground">Né Tránh</span>
                   <span className="font-bold text-red-300">{getEffectiveEvasion(enemy)}%</span>
                 </div>
               </div>
@@ -1995,26 +2239,26 @@ export function CombatArena({
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-border/70 pb-2">
               <div className="flex items-center gap-2">
                 <Flame className={cn("size-4", currentTheme.textAccent)} />
-                <h4 className={cn("font-display text-xs font-bold uppercase tracking-wider", currentTheme.textPrimary)}>
+                <h4 className={cn("font-display sf-title-card font-bold uppercase tracking-wider", currentTheme.textPrimary)}>
                   BẢNG ĐIỀU KHIỂN KỸ NĂNG {activeGearDef.name.toUpperCase()}
                 </h4>
                 {status === "player-turn" ? (
-                  <span className="rounded bg-emerald-500/20 px-2 py-0.5 font-display text-[10px] font-bold text-emerald-300 border border-emerald-400/50 animate-pulse">
+                  <span className="rounded bg-emerald-500/20 px-2 py-0.5 font-display sf-text-caption font-bold text-emerald-300 border border-emerald-400/50 animate-pulse">
                     ✓ ĐẾN LƯỢT BẠN ({activeGearDef.name.toUpperCase()}) — CHỌN KỸ NĂNG ĐỂ TẤN CÔNG
                   </span>
                 ) : (
-                  <span className="rounded bg-amber-500/20 px-2 py-0.5 font-display text-[10px] text-amber-300 border border-amber-400/40">
+                  <span className="rounded bg-amber-500/20 px-2 py-0.5 font-display sf-text-caption text-amber-300 border border-amber-400/40">
                     ⏳ LƯỢT KẺ ĐỊCH (ĐANG PHẢN KÍCH...)
                   </span>
                 )}
               </div>
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono sf-text-secondary text-muted-foreground">
                 SP Hiện Có: <strong className={currentTheme.textPrimary}>{player.sp}</strong> / {player.maxSp}
               </span>
             </div>
 
             {/* 🎯 THANH GIÁM SÁT MỤC TIÊU & HP NỔI BẬT GẮN TRÊN ACTION DECK (DOCKED TARGET STATUS HUD) */}
-            <div className="mb-3 rounded border border-red-500/50 bg-gradient-to-r from-red-950/70 via-black/90 to-panel p-2.5 shadow-md flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+            <div className="mb-3 rounded border border-red-500/50 bg-gradient-to-r from-red-950/70 via-black/90 to-panel p-2.5 shadow-md flex flex-wrap items-center justify-between gap-3 font-mono sf-text-secondary">
               {/* Thông tin định danh đối thủ */}
               <div className="flex items-center gap-2.5">
                 <div className="flex size-7 items-center justify-center rounded-full border border-red-500/60 bg-red-950/80 shadow-[0_0_10px_rgba(239,68,68,0.4)] shrink-0">
@@ -2022,11 +2266,11 @@ export function CombatArena({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase text-red-400 font-bold tracking-wider">MỤC TIÊU ĐANG KHÓA:</span>
-                    <strong className="font-display text-sm text-white font-bold">{enemy.name}</strong>
-                    <span className="text-[10px] text-muted-foreground hidden sm:inline">({enemy.title})</span>
+                    <span className="sf-text-caption uppercase text-red-400 font-bold tracking-wider">MỤC TIÊU ĐANG KHÓA:</span>
+                    <strong className="font-display sf-title-card text-white font-bold">{enemy.name}</strong>
+                    <span className="sf-text-caption text-muted-foreground hidden sm:inline">({enemy.title})</span>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
+                  <div className="flex items-center gap-2 sf-text-caption text-muted-foreground mt-0.5">
                     <span>ATK: <strong className="text-red-300">{getEffectiveAttack(enemy)}</strong></span>
                     <span>DEF: <strong className="text-red-300">{getEffectiveDefense(enemy)}</strong></span>
                     <span>SPD: <strong className="text-red-300">{getEffectiveSpeed(enemy)}</strong></span>
@@ -2037,13 +2281,13 @@ export function CombatArena({
 
               {/* HP MỤC TIÊU & THANH SÁT THƯƠNG DỰ TÍNH (GHOST DAMAGE BAR) */}
               <div className="flex-1 max-w-sm min-w-[220px]">
-                <div className="mb-1 flex items-center justify-between text-xs">
-                  <span className="flex items-center gap-1 font-bold text-red-400 text-[11px]">
+                <div className="mb-1 flex items-center justify-between sf-text-secondary">
+                  <span className="flex items-center gap-1 font-bold text-red-400 sf-text-caption">
                     <ShieldAlert className="size-3 text-red-400" /> HP MỤC TIÊU:
                   </span>
                   <div className="flex items-center gap-1.5 tabular-nums">
                     {projectedDamage > 0 && (
-                      <span className="rounded bg-amber-500/20 px-1.5 py-0.2 text-[10px] font-bold text-amber-300 border border-amber-400/40 animate-pulse">
+                      <span className="rounded bg-amber-500/20 px-1.5 py-0.2 sf-text-caption font-bold text-amber-300 border border-amber-400/40 animate-pulse">
                         -{projectedDamage} HP {projectedEnemyHp <= 0 ? "⚡ LETHAL" : ""}
                       </span>
                     )}
@@ -2075,7 +2319,7 @@ export function CombatArena({
               <div className="flex flex-wrap items-center gap-1">
                 {enemy.statusEffects.map((eff) => renderStatusBadge(eff))}
                 {enemy.statusEffects.length === 0 && (
-                  <span className="text-[10px] text-muted-foreground/60">Không có hiệu ứng bất lợi</span>
+                  <span className="sf-text-caption text-muted-foreground/60">Không có hiệu ứng bất lợi</span>
                 )}
               </div>
             </div>
@@ -2108,25 +2352,25 @@ export function CombatArena({
                   >
                     <div>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="font-display text-xs font-bold text-foreground group-hover:text-cyan-300">
+                        <span className="font-display sf-text-body font-bold text-foreground group-hover:text-cyan-300">
                           {skill.name}
                         </span>
                         {hasCooldown ? (
-                          <span className="rounded bg-red-950/80 px-1.5 py-0.5 font-mono text-[10px] font-bold text-red-400 border border-red-500/40">
+                          <span className="rounded bg-red-950/80 px-1.5 py-0.5 font-mono sf-text-caption font-bold text-red-400 border border-red-500/40">
                             CD: {cooldown} lượt
                           </span>
                         ) : (
-                          <span className={cn("rounded px-1.5 py-0.5 font-mono text-[10px]", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
+                          <span className={cn("rounded px-1.5 py-0.5 font-mono sf-text-caption", currentTheme.badgeBg, currentTheme.badgeText, currentTheme.badgeBorder)}>
                             {skill.spCost > 0 ? `${skill.spCost} SP` : "Hồi +15 SP"}
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                      <p className="mt-1 sf-text-secondary leading-relaxed text-muted-foreground line-clamp-2">
                         {skill.desc}
                       </p>
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-1.5 text-[10px] font-mono">
+                    <div className="mt-2.5 flex items-center justify-between border-t border-border/40 pt-1.5 sf-text-caption font-mono">
                       <span className="text-muted-foreground/80">{skill.nameEn}</span>
                       <span className={cn("font-bold group-hover:underline", disabled ? "text-muted-foreground" : currentTheme.textAccent)}>
                         {disabled
@@ -2150,20 +2394,20 @@ export function CombatArena({
                   <div className="group relative flex flex-col justify-between rounded-sm border border-purple-500/50 bg-purple-950/20 p-3 text-left">
                     <div>
                       <div className="flex items-center justify-between gap-1">
-                        <span className="font-display text-xs font-bold text-purple-300 flex items-center gap-1 truncate">
+                        <span className="font-display sf-text-body font-bold text-purple-300 flex items-center gap-1 truncate">
                           <Sparkles className="size-3 text-purple-400 shrink-0" />
                           {player.pilotSynergySkill.name}
                         </span>
-                        <span className="rounded bg-purple-500/20 px-1.5 py-0.5 font-mono text-[9px] font-bold text-purple-300 border border-purple-400/40 shrink-0">
+                        <span className="rounded bg-purple-500/20 px-1.5 py-0.5 font-mono sf-text-caption font-bold text-purple-300 border border-purple-400/40 shrink-0">
                           NỘI TẠI
                         </span>
                       </div>
-                      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                      <p className="mt-1 sf-text-secondary leading-relaxed text-muted-foreground line-clamp-2">
                         {player.pilotSynergySkill.description || player.pilotSynergySkill.mainLine?.description || ""}
                       </p>
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-between border-t border-purple-500/30 pt-1.5 text-[10px] font-mono">
+                    <div className="mt-2.5 flex items-center justify-between border-t border-purple-500/30 pt-1.5 sf-text-caption font-mono">
                       <span className="text-purple-300/80">
                         {player.signatureSynergyActive ? "✨ ĐỒNG BỘ 100%" : "Hiệp Đồng Phi Công"}
                       </span>
@@ -2248,261 +2492,220 @@ export function CombatArena({
             className={currentTheme.border}
           />
 
-          {/* 7. Hộp Thoại Kết Thúc Trận Đấu & Trao Thưởng Tiến Trình (Phase 2 Rewards Modal) */}
-          {(status === "victory" || status === "defeat") && (
-            <div className="rounded-sm border border-border bg-panel p-5 text-center shadow-2xl animate-in fade-in zoom-in-95">
-              <div className="mx-auto flex size-14 items-center justify-center rounded-full mb-3">
-                {status === "victory" ? (
-                  <Trophy className="size-10 text-emerald-400 animate-bounce" />
-                ) : (
-                  <AlertTriangle className="size-10 text-red-500 animate-pulse" />
-                )}
-              </div>
-
-              <h3
-                className={cn(
-                  "font-display text-xl font-black uppercase tracking-widest",
-                  status === "victory" ? "text-emerald-400" : "text-red-500",
-                )}
-              >
-                {status === "victory" ? "CHIẾN THẮNG VANG DỘI!" : "THẤT BẠI TÁC CHIẾN"}
-              </h3>
-
-              <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-                {status === "victory"
-                  ? `${player.name} đã tiêu diệt thành công ${enemy.name} sau ${turnNumber} vòng chiến đấu ác liệt.`
-                  : `Vỏ giáp ${player.name} bị đục thủng bởi hỏa lực của ${enemy.name}. Không nhận được phần thưởng chiến đấu.`}
-              </p>
-
-              {/* Bảng tổng kết phần thưởng chiến thắng Phase 2 & Phase 3 */}
-              {status === "victory" && lastVictoryReward && (
-                <div className="my-4 mx-auto max-w-lg rounded-sm border border-emerald-500/40 bg-emerald-950/20 p-3.5 text-left font-mono">
-                  {lastVictoryReward.missionTitle && (
-                    <div className="mb-3 rounded bg-cyan-500/20 border border-cyan-400/60 p-2 text-xs text-cyan-200 flex items-center gap-2">
-                      <Globe2 className="size-4 text-cyan-300 shrink-0" />
-                      <span>
-                        <strong>{lastVictoryReward.isFirstClear ? "🏆 QUA MÀN CHIẾN DỊCH LẦN ĐẦU:" : "✓ HOÀN THÀNH LẠI:"}</strong>{" "}
-                        {lastVictoryReward.missionTitle}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 text-xs font-bold uppercase text-emerald-300 border-b border-emerald-500/30 pb-2">
-                    <CheckCircle2 className="size-4 text-emerald-400" />
-                    <span>PHẦN THƯỞNG CHIẾN TÍCH (ĐÃ LƯU TỰ ĐỘNG)</span>
-                  </div>
-
-                  <div className="mt-2.5 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3">
-                    <div className="flex items-center gap-1.5 text-cyan-300">
-                      <Sparkles className="size-4 text-cyan-400" />
-                      <span>EXP Nhận Được:</span>
-                      <strong className="text-white">+{lastVictoryReward.reward.expGained}</strong>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-amber-300">
-                      <Coins className="size-4 text-amber-400" />
-                      <span>Credits Nhận Được:</span>
-                      <strong className="text-white">+{lastVictoryReward.reward.creditsGained.toLocaleString("vi-VN")}</strong>
-                    </div>
-
-                    {lastVictoryReward.reward.alloyGained !== undefined && lastVictoryReward.reward.alloyGained > 0 && (
-                      <div className="flex items-center gap-1.5 text-purple-300">
-                        <Layers className="size-4 text-purple-400" />
-                        <span>Hợp Kim (Alloy):</span>
-                        <strong className="text-white">+{lastVictoryReward.reward.alloyGained}</strong>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Thông báo thăng cấp nếu có */}
-                  {lastVictoryReward.reward.leveledUp && (
-                    <div className="mt-3 rounded bg-amber-500/20 border border-amber-400/60 p-2 text-xs text-amber-200 flex items-center gap-2 animate-pulse">
-                      <Sparkles className="size-4 text-amber-300 shrink-0" />
-                      <span>
-                        <strong>🎉 CHÚC MỪNG THĂNG CẤP!</strong> {player.name} đã đạt <strong>Cấp {lastVictoryReward.reward.newLevel}</strong>. Toàn bộ chỉ số (HP, SP, ATK, DEF, SPD) được tăng vĩnh viễn!
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Thông báo rơi vật phẩm nếu có (Chi Tiết Trang Bị Phase 5.5) */}
-                  {lastVictoryReward.dropItem && (
-                    <div className="mt-3 rounded border border-cyan-500/40 bg-cyan-950/40 p-2.5 text-xs text-cyan-200">
-                      <div className="flex items-center justify-between gap-2 border-b border-cyan-500/30 pb-1.5 mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <Gift className="size-4 text-cyan-300" />
-                          <strong className="text-white uppercase tracking-wider">CHIẾN LỢI PHẨM RƠI // 1 TRANG BỊ DUY NHẤT:</strong>
-                        </div>
-                        <span className={cn(
-                          "rounded px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase border",
-                          lastVictoryReward.dropItem.rarity === "legendary"
-                            ? "bg-amber-950/80 text-amber-300 border-amber-400/70"
-                            : lastVictoryReward.dropItem.rarity === "epic"
-                              ? "bg-purple-950/80 text-purple-300 border-purple-400/70"
-                              : lastVictoryReward.dropItem.rarity === "rare"
-                                ? "bg-cyan-950/80 text-cyan-300 border-cyan-400/70"
-                                : "bg-slate-900/80 text-slate-300 border-slate-600/50"
-                        )}>
-                          {lastVictoryReward.dropItem.rarity === "legendary"
-                            ? "Huyền Thoại"
-                            : lastVictoryReward.dropItem.rarity === "epic"
-                              ? "Sử Thi"
-                              : lastVictoryReward.dropItem.rarity === "rare"
-                                ? "Hiếm"
-                                : "Thường"}
-                        </span>
-                      </div>
-
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="font-bold text-white text-sm">
-                          {lastVictoryReward.dropItem.name}
-                        </span>
-                        <span className="rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-cyan-300 border border-cyan-500/30">
-                          Ô: {lastVictoryReward.dropItem.slot === "weapon" ? "Vũ Khí" : lastVictoryReward.dropItem.slot === "shield" ? "Khiên Giáp" : "Động Cơ"}
-                        </span>
-                      </div>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] font-mono">
-                        {lastVictoryReward.dropItem.attackBonus && (
-                          <span className="rounded bg-red-950/60 px-1.5 py-0.5 text-red-300 border border-red-500/30">
-                            +{lastVictoryReward.dropItem.attackBonus} Tấn Công
-                          </span>
-                        )}
-                        {lastVictoryReward.dropItem.defenseBonus && (
-                          <span className="rounded bg-blue-950/60 px-1.5 py-0.5 text-blue-300 border border-blue-500/30">
-                            +{lastVictoryReward.dropItem.defenseBonus} Phòng Ngự
-                          </span>
-                        )}
-                        {lastVictoryReward.dropItem.speedBonus && (
-                          <span className="rounded bg-amber-950/60 px-1.5 py-0.5 text-amber-300 border border-amber-500/30">
-                            +{lastVictoryReward.dropItem.speedBonus} Tốc Độ
-                          </span>
-                        )}
-                        {lastVictoryReward.dropItem.hpBonus && (
-                          <span className="rounded bg-emerald-950/60 px-1.5 py-0.5 text-emerald-300 border border-emerald-500/30">
-                            +{lastVictoryReward.dropItem.hpBonus} Giáp HP
-                          </span>
-                        )}
-                        {lastVictoryReward.dropItem.spBonus && (
-                          <span className="rounded bg-purple-950/60 px-1.5 py-0.5 text-purple-300 border border-purple-500/30">
-                            +{lastVictoryReward.dropItem.spBonus} SP
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Nút hành động sau trận */}
-              {(() => {
+          {/* 7. MÀN HÌNH KẾT QUẢ TÁC CHIẾN // POST-MISSION RESULTS (D3 PERFORMANCE METRICS, EXP & LOOT) */}
+          {status === "victory" && (
+            <div className="my-4 animate-in fade-in zoom-in-95 duration-300">
+              {worldBattleContext ? (
+                <WorldCombatPostMissionResults
+                  isVictory={true}
+                  combatState={combatState}
+                  worldBattleContext={worldBattleContext}
+                  resolutionResult={worldResolutionResult}
+                  onReturnToWarRoom={() => {
+                    playClickSound()
+                    onWorldCombatComplete?.(worldResolutionResult!)
+                  }}
+                />
+              ) : (() => {
                 const campaignCandidate = activeCampaignMission
                   ? getNextCampaignMission(activeCampaignMission.id, progression)
                   : getCurrentOrNextCampaignMission(progression, null)
 
                 return (
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                    {/* 1. Nút Thách đấu mục tiêu tiếp theo khi đang làm Chiến Dịch (VD: Ải 1-1 -> Ải 1-2) */}
-                    {status === "victory" && campaignCandidate && (
-                      <Button
-                        onClick={() => {
-                          playClickSound()
-                          setActiveCampaignMission(campaignCandidate)
-                          onSelectCampaignMission?.(campaignCandidate)
-                          handleStartEncounter(campaignCandidate.encounterId, progression, campaignCandidate)
-                          setFloatingNotification({
-                            text: `ĐÃ XUẤT KÍCH: ${campaignCandidate.title.toUpperCase()} ⚡`,
-                            isCrit: false,
-                            isPlayer: true,
-                          })
-                          setTimeout(() => setFloatingNotification(null), 2500)
-                        }}
-                        className="gap-2 font-display uppercase tracking-wider bg-cyan-600 hover:bg-cyan-500 text-white border border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer"
-                      >
-                        <Play className="size-4 fill-current" /> Thách đấu mục tiêu tiếp theo ({campaignCandidate.title.split(":")[0] || "Ải Tiếp Theo"}) ➔
-                      </Button>
-                    )}
-
-                    {/* 2. Thách đấu mục tiêu tiếp theo trong Đấu Trường Tự Do (Free Scrimmage - Chỉ khi người chơi chủ động chọn đấu tự do) */}
-                    {status === "victory" && !activeCampaignMission && selectedEncounter !== "siege-walker" && (
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          playClickSound()
-                          const nextTarget: EnemyEncounterType =
-                            selectedEncounter === "scout-drone" ? "raider-mech" : "siege-walker"
-                          handleStartEncounter(nextTarget)
-                        }}
-                        className="gap-2 border-cyan-400/60 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer text-xs font-mono"
-                      >
-                        <Play className="size-3.5" /> Đấu trường tự do ({selectedEncounter === "scout-drone" ? "Cơ Giáp Đột Kích" : "Pháo Đài"}) ➔
-                      </Button>
-                    )}
-
-                    {/* 3. Tái đấu mục tiêu hiện tại */}
-                    <Button
-                      variant={campaignCandidate ? "outline" : "default"}
-                      onClick={() => {
+                  <PostMissionResults
+                    combatState={combatState}
+                    progression={progression}
+                    rewardData={lastVictoryReward}
+                    activeCampaignMission={activeCampaignMission}
+                    nextCampaignMission={campaignCandidate}
+                    selectedEncounter={selectedEncounter}
+                    onNextMission={() => {
+                      if (campaignCandidate) {
                         playClickSound()
-                        handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
-                      }}
-                      className="gap-2 font-display uppercase tracking-wider cursor-pointer"
-                    >
-                      <RotateCcw className="size-4" /> Tái đấu mục tiêu này
-                    </Button>
-
-                    {/* 4. Tiếp tục Chiến Dịch (Quay lại Bản Đồ Chiến Dịch) */}
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        playClickSound()
-                        if (isEmbeddedInShell && onNavigateSection) {
-                          onNavigateSection("missions")
-                        } else {
-                          setActiveSubView("campaign")
-                        }
-                      }}
-                      className="gap-2 border-cyan-400 text-cyan-300 hover:bg-cyan-950/50 cursor-pointer"
-                    >
-                      <Globe2 className="size-4" /> Tiếp tục Chiến Dịch (Bản Đồ) ➔
-                    </Button>
-
-                    {/* 5. Mở Kho Đồ & Hangar */}
-                    <Button
-                      variant="secondary"
-                      onClick={() => {
-                        playClickSound()
-                        if (isEmbeddedInShell && onNavigateSection) {
-                          onNavigateSection("hangar")
-                        } else {
-                          setActiveSubView("hangar")
-                        }
-                      }}
-                      className="gap-2 font-display uppercase tracking-wider border border-border cursor-pointer"
-                    >
-                      <Wrench className="size-4 text-cyan-400" /> Mở Kho Đồ & Hangar
-                    </Button>
-
-                    {/* 6. Chợ Quân Sự */}
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        playClickSound()
-                        if (isEmbeddedInShell && onNavigateSection) {
-                          onNavigateSection("shop")
-                        } else {
-                          setActiveSubView("shop")
-                        }
-                      }}
-                      className="gap-2 font-display uppercase tracking-wider border border-amber-500/40 text-amber-300 hover:bg-amber-950/50 cursor-pointer"
-                    >
-                      <ShoppingBag className="size-4 text-amber-400" /> Chợ Quân Sự
-                    </Button>
-                  </div>
+                        setActiveCampaignMission(campaignCandidate)
+                        onSelectCampaignMission?.(campaignCandidate)
+                        handleStartEncounter(campaignCandidate.encounterId, progression, campaignCandidate)
+                        setFloatingNotification({
+                          text: `ĐÃ XUẤT KÍCH: ${campaignCandidate.title.toUpperCase()} ⚡`,
+                          isCrit: false,
+                          isPlayer: true,
+                        })
+                        setTimeout(() => setFloatingNotification(null), 2500)
+                      }
+                    }}
+                    onReplayMission={() => {
+                      playClickSound()
+                      handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+                    }}
+                    onNavigateSection={(sec) => {
+                      playClickSound()
+                      if (onNavigateSection) {
+                        onNavigateSection(sec)
+                      } else {
+                        setActiveSubView(sec === "shop" ? "shop" : sec === "missions" ? "campaign" : "hangar")
+                      }
+                    }}
+                    onEquipItem={handleEquipItem}
+                    onReturnToHangar={() => {
+                      playClickSound()
+                      if (isEmbeddedInShell && onNavigateSection) {
+                        onNavigateSection("hangar")
+                      } else {
+                        setActiveSubView("hangar")
+                      }
+                    }}
+                    onOpenShop={() => {
+                      playClickSound()
+                      if (isEmbeddedInShell && onNavigateSection) {
+                        onNavigateSection("shop")
+                      } else {
+                        setActiveSubView("shop")
+                      }
+                    }}
+                  />
                 )
               })()}
             </div>
           )}
+
+          {/* Hộp Thoại Thất Bại Tác Chiến (Defeat Modal) */}
+          {status === "defeat" && (
+            worldBattleContext ? (
+              <div className="my-4 animate-in fade-in zoom-in-95 duration-300">
+                <WorldCombatPostMissionResults
+                  isVictory={false}
+                  combatState={combatState}
+                  worldBattleContext={worldBattleContext}
+                  resolutionResult={worldResolutionResult}
+                  onReturnToWarRoom={() => {
+                    playClickSound()
+                    onWorldCombatComplete?.(worldResolutionResult!)
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="rounded-sm border border-red-500/50 bg-panel p-5 text-center shadow-2xl animate-in fade-in zoom-in-95">
+                <div className="mx-auto flex size-14 items-center justify-center rounded-full mb-3 bg-red-950/40 border border-red-500/40">
+                  <AlertTriangle className="size-10 text-red-500 animate-pulse" />
+                </div>
+
+                <h3 className="font-display text-xl font-black uppercase tracking-widest text-red-500">
+                  THẤT BẠI TÁC CHIẾN
+                </h3>
+
+                <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+                  Vỏ giáp {player.name} bị đục thủng bởi hỏa lực của {enemy.name}. Không nhận được phần thưởng chiến đấu.
+                </p>
+
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    onClick={() => {
+                      playClickSound()
+                      handleStartEncounter(selectedEncounter, progression, activeCampaignMission)
+                    }}
+                    className="gap-2 font-display uppercase tracking-wider cursor-pointer bg-red-600 hover:bg-red-500 text-white"
+                  >
+                    <RotateCcw className="size-4" /> Tái Đấu Thử Thách Lại
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      playClickSound()
+                      if (isEmbeddedInShell && onNavigateSection) {
+                        onNavigateSection("hangar")
+                      } else {
+                        setActiveSubView("hangar")
+                      }
+                    }}
+                    className="gap-2 border-border cursor-pointer"
+                  >
+                    <Wrench className="size-4 text-cyan-400" /> Nâng Cấp Trang Bị & Hangar
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      playClickSound()
+                      if (isEmbeddedInShell && onNavigateSection) {
+                        onNavigateSection("shop")
+                      } else {
+                        setActiveSubView("shop")
+                      }
+                    }}
+                    className="gap-2 border-amber-500/40 text-amber-300 hover:bg-amber-950/50 cursor-pointer"
+                  >
+                    <ShoppingBag className="size-4 text-amber-400" /> Vào Chợ Quân Sự
+                  </Button>
+                </div>
+              </div>
+            )
+          )}
         </>
+      )}
+
+      {/* ====================================================================
+          MODAL XÁC NHẬN RÚT LUI CHIẾN LƯỢC STARFRONT WORLD (PHASE 6.23)
+          ==================================================================== */}
+      {isRetreatModalOpen && worldBattleContext && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md rounded-sm border border-red-500/70 bg-gradient-to-b from-panel via-black/95 to-panel p-5 shadow-2xl font-mono text-left">
+            <div className="flex items-center gap-3 border-b border-border/60 pb-3">
+              <div className="flex size-10 items-center justify-center rounded border border-red-500/60 bg-red-950/50 text-red-400">
+                <Flag className="size-5 animate-pulse" />
+              </div>
+              <div>
+                <h2 className="font-display text-sm font-black uppercase tracking-wider text-white">
+                  RÚT LUI CHIẾN LƯỢC // SECTOR {worldBattleContext.sectorName.toUpperCase()}
+                </h2>
+                <span className="text-[10px] text-amber-300 font-bold uppercase">
+                  Xác Nhận Phương Án Thoát Khỏi Trận Đấu
+                </span>
+              </div>
+            </div>
+
+            <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+              Chỉ Huy đang trong chiến sự tiền tuyến với <strong className="text-white">{enemy.name}</strong>. Chọn phương án xử lý kết quả chiến sự:
+            </p>
+
+            <div className="mt-4 space-y-2.5">
+              <button
+                onClick={handleConfirmSafeAbort}
+                className="w-full flex flex-col justify-between rounded border border-cyan-500/50 bg-cyan-950/30 p-2.5 text-left hover:bg-cyan-950/60 hover:border-cyan-400 transition-all cursor-pointer"
+              >
+                <div className="text-xs font-bold text-cyan-300">
+                  1. Hủy Bỏ An Toàn (Safe Abort)
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  Mở khóa Sector ngay lập tức, hoàn trả nguyên vẹn {worldBattleContext.snapshot.lockedGarrison.toLocaleString()} quân đồn trú và không áp dụng bất kỳ hình phạt nào.
+                </div>
+              </button>
+
+              <button
+                onClick={handleConfirmTacticalRetreat}
+                className="w-full flex flex-col justify-between rounded border border-red-500/50 bg-red-950/30 p-2.5 text-left hover:bg-red-950/60 hover:border-red-400 transition-all cursor-pointer"
+              >
+                <div className="text-xs font-bold text-red-300">
+                  2. Thừa Nhận Thất Bại & Rút Lui (Tactical Retreat)
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  Chấp nhận kết quả thất bại: giảm ổn định, chịu thương vong rút lui và chuyển sector sang trạng thái bao vây hoặc nguy cấp.
+                </div>
+              </button>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsRetreatModalOpen(false)}
+                className="text-xs border-border/80 text-zinc-300 hover:text-white cursor-pointer"
+              >
+                Hủy Bỏ (Tiếp Tục Chiến Đấu)
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

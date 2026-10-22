@@ -733,6 +733,69 @@ export function getPilotExpRequiredForLevel(level: number): number {
 }
 
 /**
+ * Phase 5.11: Kiểm tra xem tiến trình có cặp đôi Phi Công & Cơ Giáp hợp lệ hay không.
+ * Điều kiện hợp lệ:
+ * - activePairing tồn tại và là object
+ * - pilotId là chuỗi hợp lệ, nằm trong danh mục STARFRONT_PILOT_MAP
+ * - gearId là chuỗi hợp lệ, nằm trong STARFRONT_GEAR_DEFS
+ * - Cơ giáp phải thuộc danh sách unlockedGears của người chơi (nếu có unlockedGears)
+ */
+export function isValidPilotGearSelection(
+  progression: StarfrontProgression | null | undefined,
+): boolean {
+  if (!progression || typeof progression !== "object") return false
+  const pairing = progression.activePairing
+  if (!pairing || typeof pairing !== "object") return false
+
+  const pilotId = String(pairing.pilotId || "").trim()
+  const gearId = String(pairing.gearId || "").trim() as StarfrontGearId
+
+  if (!pilotId || !gearId) return false
+  if (!STARFRONT_PILOT_MAP[pilotId]) return false
+  if (!STARFRONT_GEAR_DEFS[gearId]) return false
+
+  if (Array.isArray(progression.unlockedGears) && progression.unlockedGears.length > 0) {
+    if (!progression.unlockedGears.includes(gearId)) {
+      return false
+    }
+  }
+
+  return true
+}
+
+/**
+ * Phase 5.11: Kiểm tra xem bước chọn Phi Công & Cơ Giáp có bắt buộc hay không.
+ * Bắt buộc khi game vừa reset hoặc dữ liệu khởi tạo không có lựa chọn hợp lệ.
+ */
+export function isSelectionMandatory(
+  progression: StarfrontProgression | null | undefined,
+): boolean {
+  return !isValidPilotGearSelection(progression)
+}
+
+/**
+ * Phase 5.11: Kiểm tra xem bước chọn Phi Công & Cơ Giáp là tùy chọn (optional).
+ * Tùy chọn khi người chơi đã có lựa chọn hợp lệ và cặp đôi hiện tại đang mở khóa
+ * (ví dụ: đã hoàn thành đủ 5/5 nhiệm vụ hoặc 5 trận thắng).
+ */
+export function isSelectionOptional(
+  progression: StarfrontProgression | null | undefined,
+): boolean {
+  if (!isValidPilotGearSelection(progression)) return false
+  return !progression?.activePairing?.isLocked
+}
+
+/**
+ * Phase 5.11: Kiểm tra xem cặp đôi hiện tại đã hoàn thành đủ 5/5 nhiệm vụ hay chưa.
+ */
+export function hasCompletedAllPairingMissions(
+  progression: StarfrontProgression | null | undefined,
+): boolean {
+  if (!progression?.activePairing?.unlockProgress) return false
+  return (progression.activePairing.unlockProgress.completedMissions || 0) >= 5
+}
+
+/**
  * Xử lý trao EXP cho phi công đang ghép đôi và cập nhật tiến độ mở khóa sau trận đánh / hoàn thành nhiệm vụ
  */
 export function processPairingProgressionAfterActivity(

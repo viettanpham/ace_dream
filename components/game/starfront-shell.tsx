@@ -11,6 +11,18 @@ import {
   setAudioMuted,
 } from "@/lib/game/audio"
 import {
+  applyUiScale,
+  getSavedUiScale,
+  getSavedTextScale,
+  getSavedLayoutDensity,
+  applyTextScaleAndDensity,
+  getSavedScanlineOverlay,
+  getSavedScanlineBeam,
+  getSavedVignette,
+  getSavedCornerBrackets,
+  saveCrtSettings,
+} from "@/lib/game/ui-settings"
+import {
   loadStarfrontProgression,
   resetStarfrontProgression,
   saveStarfrontProgression,
@@ -20,6 +32,8 @@ import {
   enhanceItem,
   getExpRequiredForLevel,
   INITIAL_STARFRONT_PROGRESSION,
+  isSelectionMandatory,
+  isValidPilotGearSelection,
 } from "@/lib/game/progression"
 import { getCurrentOrNextCampaignMission } from "@/lib/game/scaling"
 import type {
@@ -46,6 +60,7 @@ import {
   LayoutDashboard,
   Lock,
   Menu,
+  Orbit,
   PanelLeftClose,
   PanelLeftOpen,
   Radar,
@@ -54,7 +69,9 @@ import {
   Rocket,
   Scan,
   Shield,
+  ShieldAlert,
   ShoppingBag,
+  Sliders,
   Sparkles,
   Swords,
   Terminal,
@@ -87,9 +104,16 @@ import { PilotGallery } from "./pilot-gallery"
 import { MissionLog } from "./mission-log"
 import { FullMissionLogView } from "./full-mission-log-view"
 import { TopShipIntegrityBar } from "./top-ship-integrity-bar"
+import { OperationsCenter } from "./world/operations-center"
+import { CombatV2Dashboard } from "./world/combat-v2"
+import { convertWorldBattleContextToCombatV2Snapshot } from "@/lib/game/world/combat-v2-adapter-bridge"
+import type { WorldBattleContext } from "@/lib/game/world/types"
+import { loadWorldState } from "@/lib/game/world/storage"
+import { GlobalSettingsModal, type GlobalSettingsState } from "./global-settings-modal"
 
 export type StarfrontSection =
   | "home"
+  | "world"
   | "character-gear"
   | "gallery"
   | "battlefield"
@@ -115,26 +139,88 @@ interface SectionConfig {
   label: string
   shortLabel: string
   icon: typeof Rocket
+  group?: "strategic" | "tactical" | "armory"
   badge?: (prog: StarfrontProgression) => string | null
   submenus?: (prog: StarfrontProgression, onSelectSubmenu?: (subId: string) => void) => SubMenuItem[]
 }
 
+// Cấu hình 3 tầng chỉ huy (Command Tier Architecture) từ Blueprint Phase 6.16/6.17
+const COMMAND_TIERS: {
+  id: "strategic" | "tactical" | "armory"
+  label: string
+  shortLabel: string
+  badge?: string
+}[] = [
+  {
+    id: "strategic",
+    label: "Khối 1: Tổng Hành Dinh Chiến Lược",
+    shortLabel: "Chiến Lược",
+    badge: "Galaxy Hub",
+  },
+  {
+    id: "tactical",
+    label: "Khối 2: Buồng Lái & Tác Chiến",
+    shortLabel: "Buồng Lái",
+  },
+  {
+    id: "armory",
+    label: "Khối 3: Hậu Phương & Khí Tài",
+    shortLabel: "Hậu Phương",
+  },
+]
+
 const SECTIONS: SectionConfig[] = [
+  // =========================================================================
+  // KHỐI 1: TỔNG HÀNH DINH CHIẾN LƯỢC (STRATEGIC COMMAND HUB)
+  // =========================================================================
+  {
+    id: "world",
+    label: "★ CHIẾN TRƯỜNG THIÊN HÀ // WORLD",
+    shortLabel: "Chiến Trường WORLD",
+    icon: Orbit,
+    group: "strategic",
+    badge: () => "LIVE GALAXY",
+    submenus: () => [
+      { id: "map", label: "War Room // Bản Đồ Chiến Lược" },
+      { id: "overview", label: "Tình Hình Toàn Cảnh" },
+      { id: "events", label: "Sự Kiện & Nhiệm Vụ" },
+      { id: "military", label: "Quân Sự & Hậu Cần" },
+      { id: "results", label: "Trung Tâm Kết Quả" },
+    ],
+  },
   {
     id: "home",
-    label: "STARFRONT / Tổng Quan",
-    shortLabel: "Tổng Quan",
+    label: "STARFRONT / Tổng Quan Tác Chiến",
+    shortLabel: "Tổng Quan Console",
     icon: LayoutDashboard,
+    group: "strategic",
     submenus: () => [
       { id: "overview", label: "Bảng Chỉ Huy Tác Chiến" },
       { id: "gears", label: "Hồ Sơ 3 Lớp Cơ Giáp" },
     ],
   },
+
+  // =========================================================================
+  // KHỐI 2: BUỒNG LÁI & TÁC CHIẾN CÁ NHÂN (TACTICAL MECHA COMBAT)
+  // =========================================================================
+  {
+    id: "battlefield",
+    label: "Đấu Trường Cơ Giáp",
+    shortLabel: "Đấu Trường 2D",
+    icon: Swords,
+    group: "tactical",
+    submenus: (p) => [
+      { id: "arena", label: "Đấu Trường Cơ Giáp" },
+      { id: "combat-log", label: "Nhật Ký Tác Chiến" },
+      ...(p.activeQuest ? [{ id: "active-quest", label: "Nhiệm Vụ Đang Thực Hiện", badge: "Live" }] : []),
+    ],
+  },
   {
     id: "character-gear",
     label: "Nhân Vật & Cơ Giáp",
-    shortLabel: "Nhân Vật & Gear",
+    shortLabel: "Phi Công & Gear",
     icon: Users,
+    group: "tactical",
     badge: (p) => {
       const pilotId = p.activePairing?.pilotId || "marcus"
       const gearId = p.activePairing?.gearId || p.activeGearId || "vanguard"
@@ -153,6 +239,7 @@ const SECTIONS: SectionConfig[] = [
     label: "Bộ Sưu Tập Phi Công // ART GALLERY",
     shortLabel: "Pilot Art Gallery",
     icon: Sparkles,
+    group: "tactical",
     badge: () => "16 Art",
     submenus: () => [
       { id: "all-art", label: "8 Cặp Đôi (16 Tác Phẩm)" },
@@ -161,22 +248,42 @@ const SECTIONS: SectionConfig[] = [
       { id: "inspector", label: "Soi Chi Tiết Từng Phi Công" },
     ],
   },
+
+  // =========================================================================
+  // KHỐI 3: HẬU PHƯƠNG, KHÍ TÀI & CHIẾN DỊCH (BASE, ARMORY & CAMPAIGN)
+  // =========================================================================
   {
-    id: "battlefield",
-    label: "Chiến Trường",
-    shortLabel: "Chiến Trường",
-    icon: Swords,
+    id: "hangar",
+    label: "Hangar & Kho Đồ",
+    shortLabel: "Hangar & Kho",
+    icon: Boxes,
+    group: "armory",
+    badge: (p) => `${p.inventory.length}`,
     submenus: (p) => [
-      { id: "arena", label: "Đấu Trường Cơ Giáp" },
-      { id: "combat-log", label: "Nhật Ký Tác Chiến" },
-      ...(p.activeQuest ? [{ id: "active-quest", label: "Nhiệm Vụ Đang Thực Hiện", badge: "Live" }] : []),
+      { id: "loadout", label: "Buồng Lái & Trang Bị", icon: Cpu },
+      { id: "skills", label: "Mô Đun Kỹ Năng", icon: Flame, badge: "5 Ô" },
+      { id: "inventory", label: "Kho Đồ & Tái Chế", icon: Boxes, badge: `${p.inventory.length}` },
+      { id: "enhancement", label: "Xưởng Cường Hóa", icon: Hammer, badge: "+1..+10" },
+    ],
+  },
+  {
+    id: "shop",
+    label: "Chợ Quân Sự & Tiếp Tế",
+    shortLabel: "Chợ Quân Sự",
+    icon: ShoppingBag,
+    group: "armory",
+    badge: (p) => (p.freeShopRefreshes && p.freeShopRefreshes > 0 ? `${p.freeShopRefreshes} Free` : null),
+    submenus: () => [
+      { id: "armory", label: "Kho Vũ Khí & Trang Bị" },
+      { id: "refresh", label: "Làm Mới Hàng Hóa" },
     ],
   },
   {
     id: "missions",
-    label: "Nhiệm Vụ & Chiến Dịch",
-    shortLabel: "Nhiệm Vụ",
+    label: "Nhiệm Vụ Chiến Dịch Cốt Truyện (RPG)",
+    shortLabel: "Chiến Dịch RPG (12 M)",
     icon: Globe2,
+    group: "armory",
     badge: (p) => `${p.completedMissions.length}/12`,
     submenus: () => [
       { id: "sectors", label: "Bản Đồ 4 Sector Vũ Trụ" },
@@ -189,31 +296,8 @@ const SECTIONS: SectionConfig[] = [
     label: "Nhật Ký Tác Chiến // Full Logs",
     shortLabel: "Full Mission Logs",
     icon: Terminal,
+    group: "armory",
     badge: () => "Logs",
-  },
-  {
-    id: "shop",
-    label: "Chợ Quân Sự",
-    shortLabel: "Chợ Quân Sự",
-    icon: ShoppingBag,
-    badge: (p) => (p.freeShopRefreshes && p.freeShopRefreshes > 0 ? `${p.freeShopRefreshes} Free` : null),
-    submenus: () => [
-      { id: "armory", label: "Kho Vũ Khí & Trang Bị" },
-      { id: "refresh", label: "Làm Mới Hàng Hóa" },
-    ],
-  },
-  {
-    id: "hangar",
-    label: "Hangar & Kho Đồ",
-    shortLabel: "Hangar & Kho",
-    icon: Boxes,
-    badge: (p) => `${p.inventory.length}`,
-    submenus: (p) => [
-      { id: "loadout", label: "Buồng Lái & Trang Bị", icon: Cpu },
-      { id: "skills", label: "Mô Đun Kỹ Năng", icon: Flame, badge: "5 Ô" },
-      { id: "inventory", label: "Kho Đồ & Tái Chế", icon: Boxes, badge: `${p.inventory.length}` },
-      { id: "enhancement", label: "Xưởng Cường Hóa", icon: Hammer, badge: "+1..+10" },
-    ],
   },
 ]
 
@@ -271,18 +355,29 @@ export function StarfrontShell() {
   const [hasLoaded, setHasLoaded] = useState(false)
   const [activeSection, setActiveSection] = useState<StarfrontSection>("home")
   const [activeCampaignMission, setActiveCampaignMission] = useState<CampaignMission | null>(null)
-  const [audioMuted, setAudioMutedState] = useState(false)
-  const [scanlineEnabled, setScanlineEnabled] = useState(true)
+  const [activeWorldBattle, setActiveWorldBattle] = useState<WorldBattleContext | null>(null)
+  const [audioMuted, setAudioMutedState] = useState(true)
+  const [scanlineEnabled, setScanlineEnabled] = useState(false)
+  const [scanlineBeamEnabled, setScanlineBeamEnabled] = useState(false)
+  const [vignetteEnabled, setVignetteEnabled] = useState(false)
+  const [cornerBracketsEnabled, setCornerBracketsEnabled] = useState(false)
+  const [uiScale, setUiScale] = useState(100)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [lockNoticeToast, setLockNoticeToast] = useState<{ text: string; type: "warning" | "success" } | null>(null)
 
-  // Trạng thái khóa nhân vật & cơ giáp
+  // Trạng thái ghép đôi và khóa nhân vật & cơ giáp (Phase 5.11)
+  const hasValidSelection = isValidPilotGearSelection(progression)
   const isCharacterLocked = Boolean(progression.activePairing?.isLocked)
+  const [pendingSectionAfterSelection, setPendingSectionAfterSelection] = useState<StarfrontSection | null>(null)
+  const [mandatoryModalOpen, setMandatoryModalOpen] = useState(false)
 
   // Quản lý trạng thái thanh điều hướng bên trái (Left Sidebar)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [activeHangarTab, setActiveHangarTab] = useState<HangarTab>("loadout")
+  const [activeWorldTab, setActiveWorldTab] = useState<"overview" | "map" | "sectors" | "events" | "military" | "results">("map")
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
+    world: true,
     hangar: true,
     missions: true,
   })
@@ -296,17 +391,49 @@ export function StarfrontShell() {
     setAudioMutedState(isAudioMuted())
 
     try {
-      const savedScanline = localStorage.getItem("starfront_scanline_overlay")
-      if (savedScanline !== null) {
-        setScanlineEnabled(savedScanline === "true")
-      }
+      const savedScanline = getSavedScanlineOverlay()
+      setScanlineEnabled(savedScanline)
+      const savedBeam = getSavedScanlineBeam()
+      setScanlineBeamEnabled(savedBeam)
+      const savedVignette = getSavedVignette()
+      setVignetteEnabled(savedVignette)
+      const savedBrackets = getSavedCornerBrackets()
+      setCornerBracketsEnabled(savedBrackets)
+
+      const savedScale = getSavedUiScale()
+      setUiScale(savedScale)
+      applyUiScale(savedScale)
+
+      const savedTextScale = getSavedTextScale()
+      const savedDensity = getSavedLayoutDensity()
+      applyTextScaleAndDensity(savedTextScale, savedDensity)
     } catch {
       // ignore local storage errors
     }
 
-    // Nếu người chơi chưa khóa nhân vật & cơ giáp, mở ngay màn hình chọn nhân vật
-    if (!saved.activePairing?.isLocked) {
+    // Phase 6.23: Kiểm tra trận chiến treo từ STARFRONT WORLD
+    try {
+      const worldRes = loadWorldState()
+      if (worldRes.state.isSuspendedCombat && worldRes.state.suspendedSnapshot) {
+        const snap = worldRes.state.suspendedSnapshot
+        setActiveWorldBattle({
+          source: "WORLD",
+          transactionId: snap.transactionId,
+          encounterId: snap.encounterId,
+          sectorId: snap.sectorId,
+          sectorName: snap.sectorName,
+          snapshot: snap,
+          resumedFromSuspended: true,
+        })
+      }
+    } catch {
+      // ignore
+    }
+
+    // Phase 5.11: Nếu chưa có lựa chọn Phi Công & Cơ Giáp hợp lệ, yêu cầu bắt buộc chọn
+    if (!isValidPilotGearSelection(saved)) {
       setActiveSection("character-gear")
+      setMandatoryModalOpen(true)
     }
   }, [])
 
@@ -315,13 +442,20 @@ export function StarfrontShell() {
     playClickSound()
     setScanlineEnabled((prev) => {
       const next = !prev
-      try {
-        localStorage.setItem("starfront_scanline_overlay", String(next))
-      } catch {
-        // ignore
-      }
+      saveCrtSettings({ scanlineOverlay: next })
       return next
     })
+  }
+
+  const handleUpdateGlobalSettings = (s: GlobalSettingsState) => {
+    setAudioMutedState(s.audioMuted)
+    setScanlineEnabled(s.scanlineOverlay)
+    setScanlineBeamEnabled(s.scanlineBeam)
+    setVignetteEnabled(s.vignette)
+    setCornerBracketsEnabled(s.cornerBrackets)
+    setUiScale(s.uiScale)
+    applyUiScale(s.uiScale)
+    applyTextScaleAndDensity(s.textScale, s.layoutDensity)
   }
 
   // Lưu tự động mỗi khi có thay đổi tiến trình
@@ -337,6 +471,16 @@ export function StarfrontShell() {
 
     setProgression(updated)
     saveStarfrontProgression(updated)
+
+    // Nếu vừa hoàn thành lựa chọn hợp lệ từ flow bắt buộc, đóng modal và chuyển đến phân hệ dự định
+    if (isValidPilotGearSelection(updated)) {
+      setMandatoryModalOpen(false)
+      if (pendingSectionAfterSelection) {
+        const nextTarget = pendingSectionAfterSelection
+        setPendingSectionAfterSelection(null)
+        setTimeout(() => setActiveSection(nextTarget), 300)
+      }
+    }
   }
 
   // Chuyển đổi lớp Gear
@@ -363,15 +507,17 @@ export function StarfrontShell() {
   const handleSwitchSection = (section: StarfrontSection, forceMission?: CampaignMission | null) => {
     playClickSound()
 
-    // Kiểm tra quy định: Bắt buộc khóa nhân vật trước khi làm nhiệm vụ hoặc tham chiến (trừ home, character-gear và pilot)
-    const requiresLock = section !== "character-gear" && section !== "home" && section !== "pilot"
-    if (!isCharacterLocked && requiresLock) {
-      setLockNoticeToast({
-        type: "warning",
-        text: "⚠️ BẮT BUỘC: Bạn cần chọn và KHÓA NHÂN VẬT & CƠ GIÁP trước khi vào phân hệ này!",
-      })
+    // Phase 5.11: Bắt buộc chọn Phi Công & Cơ Giáp hợp lệ trước khi vào phân hệ tác chiến
+    const requiresSelection = section !== "character-gear" && section !== "home" && section !== "pilot"
+    if (!hasValidSelection && requiresSelection) {
+      setPendingSectionAfterSelection(section)
+      setMandatoryModalOpen(true)
       setActiveSection("character-gear")
       setMobileMenuOpen(false)
+      setLockNoticeToast({
+        type: "warning",
+        text: "⚠️ BẮT BUỘC: Bạn cần hoàn tất CHỌN PHI CÔNG & CƠ GIÁP trước khi vào phân hệ này!",
+      })
       setTimeout(() => setLockNoticeToast(null), 4000)
       return
     }
@@ -388,6 +534,16 @@ export function StarfrontShell() {
     setMobileMenuOpen(false)
   }
 
+  // Phase 6.33_FIX5: Entry point mở nhanh WORLD ADMIN CP từ Top Menu & Left Menu
+  const [worldAdminTrigger, setWorldAdminTrigger] = useState<number>(0)
+  const handleOpenWorldAdminCp = () => {
+    playClickSound()
+    setActiveSection("world")
+    setActiveWorldTab("admin" as any)
+    setWorldAdminTrigger(Date.now())
+    setMobileMenuOpen(false)
+  }
+
   // Đóng/Mở submenu
   const toggleSubmenu = (sectionId: string, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -401,7 +557,9 @@ export function StarfrontShell() {
   // Chọn submenu để điều hướng chuyên sâu (bao gồm 4 phân hệ Hangar & Kho)
   const handleSelectSubmenu = (sectionId: StarfrontSection, subId: string) => {
     playClickSound()
-    if (sectionId === "hangar") {
+    if (sectionId === "world") {
+      setActiveWorldTab(subId as any)
+    } else if (sectionId === "hangar") {
       const targetTab = (subId === "enhance" ? "enhancement" : subId) as HangarTab
       setActiveHangarTab(targetTab)
     } else if (sectionId === "missions" && subId === "full-logs") {
@@ -472,13 +630,15 @@ export function StarfrontShell() {
     return result
   }
 
-  // Reset tiến trình
+  // Reset tiến trình (Phase 5.11: Đưa về trạng thái chưa có ghép đôi và mở flow bắt buộc)
   const handleResetSave = () => {
     playClickSound()
     const fresh = resetStarfrontProgression()
     setProgression(fresh)
     setActiveCampaignMission(null)
-    setActiveSection("home")
+    setPendingSectionAfterSelection(null)
+    setActiveSection("character-gear")
+    setMandatoryModalOpen(true)
   }
 
   const activeGearId: StarfrontGearId = progression.activeGearId || "vanguard"
@@ -496,7 +656,9 @@ export function StarfrontShell() {
 
   return (
     <GameProvider>
-      <div className="flex min-h-screen bg-background text-foreground antialiased selection:bg-cyan-500 selection:text-black">
+      <div
+        className="flex min-h-screen bg-background text-foreground antialiased selection:bg-cyan-500 selection:text-black"
+      >
         {/* ==================================================================
             1. THANH ĐIỀU HƯỚNG BÊN TRÁI CỐ ĐỊNH (PERSISTENT LEFT SIDEBAR)
             ================================================================== */}
@@ -532,11 +694,11 @@ export function StarfrontShell() {
                 <div className="min-w-0 flex-1 leading-tight">
                   <div className="flex items-center gap-1.5 font-display text-base font-black tracking-wider text-white group-hover:text-cyan-300 transition-colors">
                     <span>STARFRONT</span>
-                    <span className="rounded bg-cyan-500/20 px-1 py-0.2 font-mono text-[9px] font-bold text-cyan-300 border border-cyan-500/40">
+                    <span className="rounded bg-cyan-500/20 px-1 py-0.2 font-mono text-xs font-bold text-cyan-300 border border-cyan-500/40">
                       v3.2
                     </span>
                   </div>
-                  <div className="truncate text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
+                  <div className="truncate text-xs font-mono text-muted-foreground uppercase tracking-widest">
                     Tactical 2D Sci-Fi RPG
                   </div>
                 </div>
@@ -572,14 +734,14 @@ export function StarfrontShell() {
                   />
                   <span>{activeGearDef.name}</span>
                 </div>
-                <span className="rounded bg-cyan-500/20 px-1.5 py-0.2 font-mono text-[10px] font-bold text-cyan-300 border border-cyan-500/40">
+                <span className="rounded bg-cyan-500/20 px-1.5 py-0.2 font-mono text-xs font-bold text-cyan-300 border border-cyan-500/40">
                   CẤP {progression.level}
                 </span>
               </div>
 
               {/* Thanh EXP nhỏ */}
               <div className="mt-2">
-                <div className="mb-0.5 flex justify-between font-mono text-[10px] text-muted-foreground">
+                <div className="mb-0.5 flex justify-between font-mono text-xs text-muted-foreground">
                   <span>EXP</span>
                   <span>{progression.exp}/{expRequired} ({expPct}%)</span>
                 </div>
@@ -592,7 +754,7 @@ export function StarfrontShell() {
               </div>
 
               {/* Ngân sách Tín Dụng & Hợp Kim */}
-              <div className="mt-2.5 flex items-center justify-between font-mono text-[11px] text-muted-foreground border-t border-border/40 pt-2">
+              <div className="mt-2.5 flex items-center justify-between font-mono text-xs text-muted-foreground border-t border-border/40 pt-2">
                 <div className="flex items-center gap-1 text-amber-300">
                   <Coins className="size-3 text-amber-400" />
                   <span>{progression.credits.toLocaleString("vi-VN")}</span>
@@ -605,154 +767,210 @@ export function StarfrontShell() {
             </div>
           ) : (
             <div className="border-b border-border/50 p-2 flex flex-col items-center gap-1 bg-black/40">
-              <span className="rounded px-1 font-mono text-[9px] font-bold text-cyan-300">
+              <span className="rounded px-1 font-mono text-xs font-bold text-cyan-300">
                 Lv.{progression.level}
               </span>
             </div>
           )}
 
-          {/* C. Danh Mục Các Phân Hệ Chính (Primary Navigation Items & Submenus) */}
-          <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-            {!isSidebarCollapsed && (
-              <div className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground/80">
-                Menu Tác Chiến Chính
-              </div>
-            )}
+          {/* C. Danh Mục Các Phân Hệ Chính — Mô Hình 3 Tầng Chỉ Huy (Command Tier Architecture) */}
+          <nav className="flex-1 overflow-y-auto p-2 space-y-2">
+            {/* 0. ENTRY POINT WORLD ADMIN CP Ở VỊ TRÍ TRÊN CÙNG CỦA LEFT MENU (PHASE 6.33_FIX5) */}
+            <div className="pb-1 border-b border-orange-500/30">
+              <button
+                type="button"
+                onClick={handleOpenWorldAdminCp}
+                className={cn(
+                  "w-full flex items-center justify-between rounded-sm px-2.5 py-1.5 font-mono text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border",
+                  "border-orange-500/70 bg-gradient-to-r from-orange-950/80 via-black/70 to-amber-950/70 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.2)] hover:border-orange-400 hover:text-orange-100 hover:from-orange-900/90 hover:to-amber-900/90",
+                  isSidebarCollapsed && "justify-center px-1.5",
+                )}
+                title="Bảng Quản Trị Hệ Thống Toàn Cầu // WORLD ADMIN CP"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <ShieldAlert className="size-3.5 text-orange-400 shrink-0" />
+                  {!isSidebarCollapsed && (
+                    <span className="truncate tracking-wider text-orange-300 font-bold">WORLD ADMIN CP</span>
+                  )}
+                </div>
+                {!isSidebarCollapsed && (
+                  <span className="rounded bg-orange-500/20 border border-orange-500/40 px-1 py-0.2 text-[9px] text-orange-200 shrink-0">
+                    ADM
+                  </span>
+                )}
+              </button>
+            </div>
 
-            {SECTIONS.map((sec) => {
-              const Icon = sec.icon
-              const isActive = activeSection === sec.id
-              const requiresLock = sec.id !== "character-gear" && sec.id !== "home"
-              const isTabLocked = !isCharacterLocked && requiresLock
-              const badgeText = isTabLocked ? "Khóa" : sec.badge ? sec.badge(progression) : null
-              const submenus = sec.submenus ? sec.submenus(progression) : []
-              const hasSubmenus = !isTabLocked && submenus.length > 0 && !isSidebarCollapsed
-              const isExpanded = expandedMenus[sec.id] || false
-
+            {COMMAND_TIERS.map((tier) => {
+              const tierSections = SECTIONS.filter((sec) => sec.group === tier.id)
               return (
-                <div key={sec.id} className="space-y-0.5">
-                  <div
-                    onClick={() => handleSwitchSection(sec.id)}
-                    className={cn(
-                      "group relative flex items-center justify-between rounded-sm px-2.5 py-2 font-display text-xs uppercase tracking-wider transition-all cursor-pointer",
-                      isActive
-                        ? "bg-cyan-500/15 text-cyan-300 border-l-2 border-cyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.15)]"
-                        : isTabLocked
-                          ? "text-muted-foreground/60 hover:text-amber-300 hover:bg-amber-950/20"
-                          : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
-                    )}
-                    title={isSidebarCollapsed ? (isTabLocked ? `[Khóa] Cần khóa NV trước: ${sec.label}` : sec.label) : undefined}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {isTabLocked ? (
-                        <Lock className="size-4 shrink-0 text-amber-400/80 group-hover:text-amber-300" />
-                      ) : (
-                        <Icon className={cn("size-4 shrink-0", isActive ? "text-cyan-400" : "text-muted-foreground group-hover:text-cyan-300")} />
-                      )}
-                      {!isSidebarCollapsed && (
-                        <span className={cn("truncate", isTabLocked && "text-muted-foreground/80")}>{sec.shortLabel}</span>
+                <div key={tier.id} className="space-y-1">
+                  {!isSidebarCollapsed ? (
+                    <div className="flex items-center justify-between px-2 py-1 text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground/80 border-b border-border/30">
+                      <span>{tier.label}</span>
+                      {tier.badge && (
+                        <span className="rounded bg-cyan-950/80 px-1 py-0.2 text-xs font-bold text-cyan-300 border border-cyan-500/40">
+                          {tier.badge}
+                        </span>
                       )}
                     </div>
+                  ) : (
+                    <div className="my-1 border-t border-border/30" />
+                  )}
 
-                    {!isSidebarCollapsed && (
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {badgeText && (
-                          <span
-                            className={cn(
-                              "rounded px-1.5 py-0.2 font-mono text-[9px] font-bold border",
-                              isTabLocked
-                                ? "bg-amber-950/60 text-amber-300 border-amber-500/40"
-                                : "bg-black/60 text-cyan-300 border-border/50",
+                  {tierSections.map((sec) => {
+                    const Icon = sec.icon
+                    const isActive = activeSection === sec.id
+                    const isWorld = sec.id === "world"
+                    const requiresSelection = sec.id !== "character-gear" && sec.id !== "home" && sec.id !== "pilot"
+                    const isTabLocked = !hasValidSelection && requiresSelection
+                    const badgeText = isTabLocked ? "Khóa" : sec.badge ? sec.badge(progression) : null
+                    const submenus = sec.submenus ? sec.submenus(progression) : []
+                    const hasSubmenus = !isTabLocked && submenus.length > 0 && !isSidebarCollapsed
+                    const isExpanded = expandedMenus[sec.id] || false
+
+                    return (
+                      <div key={sec.id} className="space-y-0.5">
+                        <div
+                          onClick={() => handleSwitchSection(sec.id)}
+                          className={cn(
+                            "group relative flex items-center justify-between rounded-sm px-2.5 py-2 font-display text-xs uppercase tracking-wider transition-all cursor-pointer",
+                            isActive
+                              ? isWorld
+                                ? "bg-cyan-500/20 text-cyan-200 border-l-2 border-cyan-400 font-bold shadow-[0_0_16px_rgba(6,182,212,0.25)] border-y border-r border-cyan-500/40"
+                                : "bg-cyan-500/15 text-cyan-300 border-l-2 border-cyan-400 font-bold shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+                              : isTabLocked
+                                ? "text-muted-foreground/60 hover:text-amber-300 hover:bg-amber-950/20"
+                                : isWorld
+                                  ? "border border-cyan-500/35 bg-cyan-950/20 text-cyan-200 hover:border-cyan-400 hover:bg-cyan-950/40 shadow-[0_0_8px_rgba(6,182,212,0.1)]"
+                                  : "text-muted-foreground hover:bg-secondary/40 hover:text-white",
+                          )}
+                          title={isSidebarCollapsed ? (isTabLocked ? `[Khóa] Cần chọn Phi Công & Cơ Giáp: ${sec.label}` : sec.label) : undefined}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {isTabLocked ? (
+                              <Lock className="size-4 shrink-0 text-amber-400/80 group-hover:text-amber-300" />
+                            ) : (
+                              <Icon className={cn("size-4 shrink-0", isActive ? "text-cyan-400" : isWorld ? "text-cyan-400 group-hover:text-cyan-300" : "text-muted-foreground group-hover:text-cyan-300")} />
                             )}
-                          >
-                            {badgeText}
-                          </span>
-                        )}
-
-                        {hasSubmenus && (
-                          <button
-                            onClick={(e) => toggleSubmenu(sec.id, e)}
-                            className="size-5 flex items-center justify-center rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer"
-                          >
-                            <ChevronDown
-                              className={cn(
-                                "size-3 transition-transform duration-200",
-                                isExpanded ? "rotate-0" : "-rotate-90",
-                              )}
-                            />
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Cây Submenu Mở Rộng */}
-                  {hasSubmenus && isExpanded && (
-                    <div className="ml-5 pl-2 border-l border-border/50 space-y-0.5 py-0.5">
-                      {submenus.map((sub) => {
-                        const SubIcon = sub.icon
-                        const isSubActive =
-                          isActive &&
-                          (sec.id === "hangar"
-                            ? activeHangarTab === (sub.id === "enhance" ? "enhancement" : sub.id)
-                            : sec.id === "battlefield"
-                              ? (sub.id === "arena" && !activeCampaignMission) ||
-                                (sub.id === "active-quest" && !!activeCampaignMission)
-                              : false)
-
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => handleSelectSubmenu(sec.id, sub.id)}
-                            className={cn(
-                              "w-full flex items-center justify-between rounded px-2 py-1.5 text-left font-mono text-[11px] transition-all cursor-pointer",
-                              isSubActive
-                                ? sec.id === "hangar" && sub.id === "enhancement"
-                                  ? "bg-purple-500/25 text-purple-200 border-l-2 border-purple-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(168,85,247,0.25)]"
-                                  : "bg-cyan-500/20 text-cyan-300 border-l-2 border-cyan-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]"
-                                : "text-muted-foreground hover:text-white hover:bg-secondary/30",
+                            {!isSidebarCollapsed && (
+                              <div className="flex items-center gap-1.5 truncate">
+                                {isWorld && !isTabLocked && (
+                                  <span className="size-1.5 rounded-full bg-cyan-400 animate-ping shrink-0" />
+                                )}
+                                <span className={cn("truncate", isTabLocked && "text-muted-foreground/80", isWorld && "font-black tracking-wide text-cyan-200")}>
+                                  {sec.shortLabel}
+                                </span>
+                              </div>
                             )}
-                          >
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              {SubIcon ? (
-                                <SubIcon
+                          </div>
+
+                          {!isSidebarCollapsed && (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {badgeText && (
+                                <span
                                   className={cn(
-                                    "size-3 shrink-0",
+                                    "rounded px-1.5 py-0.2 font-mono text-xs font-bold border",
+                                    isTabLocked
+                                      ? "bg-amber-950/60 text-amber-300 border-amber-500/40"
+                                      : isWorld
+                                        ? "bg-cyan-950/80 text-cyan-300 border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.3)] animate-pulse"
+                                        : "bg-black/60 text-cyan-300 border-border/50",
+                                  )}
+                                >
+                                  {badgeText}
+                                </span>
+                              )}
+
+                              {hasSubmenus && (
+                                <button
+                                  onClick={(e) => toggleSubmenu(sec.id, e)}
+                                  className="size-5 flex items-center justify-center rounded hover:bg-white/10 text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                                >
+                                  <ChevronDown
+                                    className={cn(
+                                      "size-3 transition-transform duration-200",
+                                      isExpanded ? "rotate-0" : "-rotate-90",
+                                    )}
+                                  />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Cây Submenu Mở Rộng */}
+                        {hasSubmenus && isExpanded && (
+                          <div className="ml-5 pl-2 border-l border-border/50 space-y-0.5 py-0.5">
+                            {submenus.map((sub) => {
+                              const SubIcon = sub.icon
+                              const isSubActive =
+                                isActive &&
+                                (sec.id === "world"
+                                  ? activeWorldTab === sub.id || (sub.id === "map" && activeWorldTab === "sectors")
+                                  : sec.id === "hangar"
+                                    ? activeHangarTab === (sub.id === "enhance" ? "enhancement" : sub.id)
+                                    : sec.id === "battlefield"
+                                      ? (sub.id === "arena" && !activeCampaignMission) ||
+                                        (sub.id === "active-quest" && !!activeCampaignMission)
+                                      : false)
+
+                              return (
+                                <button
+                                  key={sub.id}
+                                  onClick={() => handleSelectSubmenu(sec.id, sub.id)}
+                                  className={cn(
+                                    "w-full flex items-center justify-between rounded px-2 py-1.5 text-left font-mono text-xs transition-all cursor-pointer",
                                     isSubActive
                                       ? sec.id === "hangar" && sub.id === "enhancement"
-                                        ? "text-purple-400"
-                                        : "text-cyan-400"
-                                      : "text-muted-foreground/80",
+                                        ? "bg-purple-500/25 text-purple-200 border-l-2 border-purple-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(168,85,247,0.25)]"
+                                        : "bg-cyan-500/20 text-cyan-300 border-l-2 border-cyan-400 pl-1.5 font-bold shadow-[0_0_10px_rgba(6,182,212,0.2)]"
+                                      : "text-muted-foreground hover:text-white hover:bg-secondary/30",
                                   )}
-                                />
-                              ) : (
-                                <div
-                                  className={cn(
-                                    "size-1.5 rounded-full shrink-0",
-                                    isSubActive ? "bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]" : "bg-muted-foreground/40",
-                                  )}
-                                />
-                              )}
-                              <span className="truncate">{sub.label}</span>
-                            </div>
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    {SubIcon ? (
+                                      <SubIcon
+                                        className={cn(
+                                          "size-3 shrink-0",
+                                          isSubActive
+                                            ? sec.id === "hangar" && sub.id === "enhancement"
+                                              ? "text-purple-400"
+                                              : "text-cyan-400"
+                                            : "text-muted-foreground/80",
+                                        )}
+                                      />
+                                    ) : (
+                                      <div
+                                        className={cn(
+                                          "size-1.5 rounded-full shrink-0",
+                                          isSubActive ? "bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]" : "bg-muted-foreground/40",
+                                        )}
+                                      />
+                                    )}
+                                    <span className="truncate">{sub.label}</span>
+                                  </div>
 
-                            {sub.badge && (
-                              <span
-                                className={cn(
-                                  "rounded px-1.5 py-0.2 font-mono text-[8px] font-bold border shrink-0",
-                                  isSubActive
-                                    ? "bg-cyan-400/20 text-cyan-200 border-cyan-400/40"
-                                    : "bg-black/60 text-muted-foreground border-border/40",
-                                )}
-                              >
-                                {sub.badge}
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
+                                  {sub.badge && (
+                                    <span
+                                      className={cn(
+                                        "rounded px-1.5 py-0.2 font-mono text-xs font-bold border shrink-0",
+                                        isSubActive
+                                          ? "bg-cyan-400/20 text-cyan-200 border-cyan-400/40"
+                                          : "bg-black/60 text-muted-foreground border-border/40",
+                                      )}
+                                    >
+                                      {sub.badge}
+                                    </span>
+                                  )}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )
             })}
@@ -762,7 +980,7 @@ export function StarfrontShell() {
               {!isSidebarCollapsed ? (
                 <button
                   onClick={() => setShowOperationsGroup(!showOperationsGroup)}
-                  className="w-full flex items-center justify-between px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                  className="w-full flex items-center justify-between px-2 py-1 text-xs font-mono font-bold uppercase tracking-wider text-muted-foreground hover:text-white transition-colors cursor-pointer"
                 >
                   <span>Căn Cứ & Hạm Đội</span>
                   <ChevronDown
@@ -784,7 +1002,7 @@ export function StarfrontShell() {
                         key={op.id}
                         onClick={() => handleSwitchSection(op.id)}
                         className={cn(
-                          "w-full flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 font-display text-[11px] uppercase tracking-wider transition-colors cursor-pointer",
+                          "w-full flex items-center gap-2.5 rounded-sm px-2.5 py-1.5 font-display text-xs uppercase tracking-wider transition-colors cursor-pointer",
                           isOpActive
                             ? "bg-purple-500/20 text-purple-300 border-l-2 border-purple-400 font-bold"
                             : !isCharacterLocked
@@ -830,50 +1048,35 @@ export function StarfrontShell() {
                 title="Mở Nhật Ký Tác Chiến // Full Mission Logs"
               >
                 <Terminal className="size-4 animate-pulse text-cyan-400" />
-                <span className="text-[8px] font-mono mt-0.5 font-bold">LOGS</span>
+                <span className="text-xs font-mono mt-0.5 font-bold">LOGS</span>
               </button>
             )}
           </div>
 
           {/* F. Footer Sidebar: Âm Thanh, CRT Scanline, Cài Lại & Thông Tin */}
           <div className="shrink-0 border-t border-border/60 p-2 bg-black/70 space-y-2">
-            <div className="flex items-center justify-between gap-1">
+            <div className="flex flex-wrap items-center justify-between gap-1">
               <button
-                onClick={handleToggleAudio}
+                type="button"
+                onClick={() => {
+                  playClickSound()
+                  setIsSettingsOpen(true)
+                }}
                 className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-colors cursor-pointer",
-                  audioMuted
-                    ? "border-red-500/40 text-red-300 bg-red-950/30"
-                    : "border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50",
+                  "flex items-center gap-1.5 rounded border border-cyan-500/40 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 px-2 py-1 text-xs font-mono transition-colors cursor-pointer",
+                  isSidebarCollapsed && "w-full justify-center px-1"
                 )}
-                title={audioMuted ? "Bật âm thanh hiệu ứng" : "Tắt âm thanh hiệu ứng"}
+                title="Cài đặt hệ thống (Âm thanh, CRT, Tỷ lệ hiển thị UI)"
               >
-                {audioMuted ? <VolumeX className="size-3.5" /> : <Volume2 className="size-3.5" />}
-                {!isSidebarCollapsed && (
-                  <span>{audioMuted ? "Tắt Âm" : "Âm Thanh"}</span>
-                )}
-              </button>
-
-              <button
-                onClick={handleToggleScanline}
-                className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-all cursor-pointer",
-                  !scanlineEnabled
-                    ? "border-border/60 text-muted-foreground bg-secondary/30"
-                    : "border-cyan-500/50 text-cyan-300 bg-cyan-950/30 hover:bg-cyan-950/50 shadow-[0_0_8px_rgba(6,182,212,0.2)]",
-                )}
-                title={scanlineEnabled ? "Tắt hiệu ứng quét màn hình CRT (Scanline)" : "Bật hiệu ứng quét màn hình CRT (Scanline)"}
-              >
-                <Scan className="size-3.5 text-cyan-400" />
-                {!isSidebarCollapsed && (
-                  <span>{scanlineEnabled ? "CRT: Bật" : "CRT: Tắt"}</span>
-                )}
+                <Sliders className="size-3.5 text-cyan-400" />
+                {!isSidebarCollapsed && <span>Cài Đặt</span>}
               </button>
 
               {!isSidebarCollapsed && (
                 <button
+                  type="button"
                   onClick={handleResetSave}
-                  className="rounded border border-border/60 px-2 py-1 text-[10px] font-mono text-muted-foreground hover:text-red-400 hover:border-red-500/50 transition-colors cursor-pointer"
+                  className="rounded border border-border/60 px-2 py-1 text-xs font-mono text-muted-foreground hover:text-red-400 hover:border-red-500/50 transition-colors cursor-pointer"
                   title="Cài lại tiến trình LocalStorage"
                 >
                   Reset
@@ -882,7 +1085,7 @@ export function StarfrontShell() {
             </div>
 
             {!isSidebarCollapsed && (
-              <div className="text-[9px] font-mono text-muted-foreground/70 leading-tight">
+              <div className="text-xs font-mono text-muted-foreground/70 leading-tight">
                 STARFRONT Phase 5 // Turn-Based Combat & Unified Systems
               </div>
             )}
@@ -913,7 +1116,7 @@ export function StarfrontShell() {
           />
 
           {/* A. Compact Top Bar: Tiêu đề phân hệ & Nút Mobile Menu */}
-          <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border/70 bg-panel/90 px-4 py-2 backdrop-blur-md">
+          <header className="sticky top-0 z-30 flex min-h-14 h-auto flex-wrap shrink-0 items-center justify-between gap-2 border-b border-border/70 bg-panel/90 px-4 py-2 backdrop-blur-md">
             {/* Trái: Nút Hamburger Mobile & Breadcrumb Phân Hệ */}
             <div className="flex items-center gap-3">
               <button
@@ -936,7 +1139,7 @@ export function StarfrontShell() {
             </div>
 
             {/* Phải: Huy hiệu Cơ giáp & Tài nguyên Nhanh */}
-            <div className="flex items-center gap-2 font-mono text-xs">
+            <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
               {/* Huy hiệu Cặp Đôi Phi Công & Cơ Giáp */}
               <div
                 onClick={() => handleSwitchSection("pilot")}
@@ -954,7 +1157,7 @@ export function StarfrontShell() {
                 <span className="font-bold text-white">
                   {STARFRONT_PILOT_MAP[progression.activePairing?.pilotId || "marcus"]?.name.split(" ")[0] || "Marcus"} · {activeGearDef.name}
                 </span>
-                <span className="text-[10px] text-muted-foreground">· Cấp {progression.level}</span>
+                <span className="text-xs text-muted-foreground">· Cấp {progression.level}</span>
               </div>
 
               {/* Credits */}
@@ -969,19 +1172,28 @@ export function StarfrontShell() {
                 <span className="font-bold">{alloyCount} Alloy</span>
               </div>
 
-              {/* Nút bật/tắt nhanh hiệu ứng quét CRT Scanline */}
+              {/* Nút Mở Bảng WORLD ADMIN CP // Dedicated Orange Accent Entry Point (Phase 6.33_FIX5) */}
               <button
-                onClick={handleToggleScanline}
-                className={cn(
-                  "flex items-center gap-1.5 rounded border px-2 py-1 text-[11px] font-mono transition-all cursor-pointer",
-                  scanlineEnabled
-                    ? "border-cyan-500/50 bg-cyan-950/40 text-cyan-300 shadow-[0_0_8px_rgba(6,182,212,0.25)]"
-                    : "border-border/60 bg-black/40 text-muted-foreground hover:text-white",
-                )}
-                title={scanlineEnabled ? "Tắt hiệu ứng quét màn hình (CRT Scanline Overlay)" : "Bật hiệu ứng quét màn hình (CRT Scanline Overlay)"}
+                type="button"
+                onClick={handleOpenWorldAdminCp}
+                className="flex items-center gap-1.5 rounded border border-orange-500/70 bg-gradient-to-r from-orange-950/80 to-amber-950/80 hover:from-orange-900/90 hover:to-amber-900/90 px-2.5 py-1 text-xs font-mono font-bold text-orange-300 hover:text-orange-100 hover:border-orange-400 transition-all cursor-pointer shadow-[0_0_12px_rgba(249,115,22,0.2)]"
+                title="Bảng Quản Trị Hệ Thống Toàn Cầu // WORLD ADMIN CP"
               >
-                <Scan className={cn("size-3", scanlineEnabled ? "text-cyan-400 animate-pulse" : "text-muted-foreground")} />
-                <span className="hidden sm:inline font-semibold">{scanlineEnabled ? "SCANLINE: ON" : "SCANLINE: OFF"}</span>
+                <ShieldAlert className="size-3.5 text-orange-400 shrink-0" />
+                <span className="font-bold tracking-wider">[ WORLD ADMIN CP ]</span>
+              </button>
+
+              {/* Nút Mở Bảng Cài Đặt Toàn Cục // Global Settings */}
+              <button
+                onClick={() => {
+                  playClickSound()
+                  setIsSettingsOpen(true)
+                }}
+                className="flex items-center gap-1.5 rounded border border-cyan-500/50 bg-cyan-950/40 hover:bg-cyan-900/60 px-2 py-1 text-xs font-mono text-cyan-300 transition-all cursor-pointer shadow-[0_0_8px_rgba(6,182,212,0.2)]"
+                title="Cài đặt hệ thống: Âm thanh, Hiệu ứng CRT, Tỷ lệ hiển thị UI"
+              >
+                <Sliders className="size-3 text-cyan-400" />
+                <span className="hidden sm:inline font-semibold">CÀI ĐẶT</span>
               </button>
             </div>
           </header>
@@ -1043,7 +1255,7 @@ export function StarfrontShell() {
                 <button
                   onClick={handleClearMission}
                   title="Hủy nhiệm vụ để tự do chọn mục tiêu"
-                  className="flex items-center gap-1 rounded-xs border border-border/60 bg-black/40 px-2 py-1 text-[11px] font-mono text-muted-foreground hover:text-white transition-colors cursor-pointer"
+                  className="flex items-center gap-1 rounded-xs border border-border/60 bg-black/40 px-2 py-1 text-xs font-mono text-muted-foreground hover:text-white transition-colors cursor-pointer"
                 >
                   <X className="size-3" />
                   <span>Hủy</span>
@@ -1063,7 +1275,22 @@ export function StarfrontShell() {
               />
             )}
 
-            {/* Phân hệ: Nhân Vật & Cơ Giáp (Character & Gear - Phase 5.8) */}
+            {/* Phân hệ: Chỉ Huy Chiến Lược // STARFRONT WORLD Operations Center (Phase 6.8 & 6.23) */}
+            {activeSection === "world" && (
+              <OperationsCenter
+                initialTab={activeWorldTab}
+                adminTrigger={worldAdminTrigger}
+                onNavigateSection={handleSwitchSection}
+                onDeployEncounter={(sectorId, battleContext) => {
+                  if (battleContext) {
+                    setActiveWorldBattle(battleContext)
+                  }
+                  handleSwitchSection("battlefield")
+                }}
+              />
+            )}
+
+            {/* Phân hệ: Nhân Vật & Cơ Giáp (Character & Gear - Phase 5.8 & 5.11) */}
             {activeSection === "character-gear" && (
               <CharacterGearSelect
                 progression={progression}
@@ -1071,6 +1298,7 @@ export function StarfrontShell() {
                 onNavigateToHangar={() => handleSwitchSection("hangar")}
                 onNavigateToCombat={() => handleSwitchSection("battlefield")}
                 onNavigateToPilotStatus={() => handleSwitchSection("pilot")}
+                onContinueWithCurrentSelection={() => handleSwitchSection("battlefield")}
                 onEquipItem={handleEquipItem}
                 onUnequipSlot={handleUnequipSlot}
               />
@@ -1085,17 +1313,43 @@ export function StarfrontShell() {
               />
             )}
 
-            {/* Phân hệ 2: Đấu Trường (Battlefield) */}
+            {/* Phân hệ 2: Đấu Trường (Battlefield - Phase 6.23 & 6.33 Combat V2 Integration) */}
             {activeSection === "battlefield" && (
-              <CombatArena
-                progression={progression}
-                onUpdateProgression={handleUpdateProgression}
-                activeCampaignMission={activeCampaignMission}
-                onClearCampaignMission={handleClearMission}
-                onSelectCampaignMission={setActiveCampaignMission}
-                onNavigateSection={handleSwitchSection}
-                isEmbeddedInShell={true}
-              />
+              activeWorldBattle?.snapshot?.combatVersion === "v2" ? (
+                <CombatV2Dashboard
+                  initialSnapshot={convertWorldBattleContextToCombatV2Snapshot(activeWorldBattle, {
+                    gearName: progression.activePairing?.gearId || progression.activeGearId || "Vanguard",
+                    pilotName: STARFRONT_PILOT_MAP[progression.activePairing?.pilotId || "marcus"]?.name || "Marcus Vance",
+                  })}
+                  onCombatComplete={(res, resolution) => {
+                    setActiveWorldBattle(null)
+                    handleSwitchSection("world")
+                  }}
+                  onExit={() => {
+                    setActiveWorldBattle(null)
+                    handleSwitchSection("world")
+                  }}
+                />
+              ) : (
+                <CombatArena
+                  progression={progression}
+                  onUpdateProgression={handleUpdateProgression}
+                  activeCampaignMission={activeWorldBattle ? null : activeCampaignMission}
+                  onClearCampaignMission={handleClearMission}
+                  onSelectCampaignMission={setActiveCampaignMission}
+                  onNavigateSection={handleSwitchSection}
+                  isEmbeddedInShell={true}
+                  worldBattleContext={activeWorldBattle}
+                  onWorldCombatComplete={(result) => {
+                    setActiveWorldBattle(null)
+                    handleSwitchSection("world")
+                  }}
+                  onWorldCombatAborted={() => {
+                    setActiveWorldBattle(null)
+                    handleSwitchSection("world")
+                  }}
+                />
+              )
             )}
 
             {/* Phân hệ 3: Nhiệm Vụ & Bản Đồ Chiến Dịch (Missions) */}
@@ -1167,6 +1421,50 @@ export function StarfrontShell() {
           </main>
         </div>
 
+        {/* ====================================================================
+            HỘP THOẠI BẮT BUỘC CHỌN PHI CÔNG & CƠ GIÁP (PHASE 5.11 MANDATORY SELECTION MODAL)
+            ==================================================================== */}
+        {(!hasValidSelection || mandatoryModalOpen) && activeSection !== "character-gear" && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
+            <div className="w-full max-w-md rounded-sm border border-amber-500/70 bg-gradient-to-b from-panel via-black/95 to-panel p-5 shadow-2xl font-mono text-left">
+              <div className="flex items-center gap-3 border-b border-border/60 pb-3">
+                <div className="flex size-10 items-center justify-center rounded border border-amber-500/60 bg-amber-950/50 text-amber-300">
+                  <AlertTriangle className="size-5 animate-pulse" />
+                </div>
+                <div>
+                  <h2 className="font-display text-sm font-black uppercase tracking-wider text-white">
+                    YÊU CẦU BẮT BUỘC: CHỌN PHI CÔNG & CƠ GIÁP
+                  </h2>
+                  <span className="text-xs text-amber-300 font-bold uppercase">Hệ Thống Chưa Khởi Tạo Tổ Hợp</span>
+                </div>
+              </div>
+
+              <p className="mt-3 text-xs text-muted-foreground leading-relaxed">
+                Chào mừng Chỉ Huy! Để có thể tham gia các phân hệ tác chiến (Đấu Trường, Bản Đồ Nhiệm Vụ, Hangar & Chợ Quân Sự), bạn bắt buộc phải hoàn tất lựa chọn ghép đôi Phi Công & Cơ Giáp khởi đầu.
+              </p>
+
+              <div className="mt-4 rounded bg-black/60 border border-amber-500/30 p-2.5 text-xs text-amber-200/90 flex items-center gap-2">
+                <AlertTriangle className="size-4 text-amber-400 shrink-0" />
+                <span>Không thể bỏ qua bước này khi chưa có tổ hợp hợp lệ.</span>
+              </div>
+
+              <div className="mt-5 flex justify-end">
+                <button
+                  onClick={() => {
+                    playClickSound()
+                    setMandatoryModalOpen(false)
+                    setActiveSection("character-gear")
+                  }}
+                  className="w-full flex items-center justify-center gap-2 rounded bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-black py-2.5 px-4 font-display text-xs uppercase tracking-wider border border-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer"
+                >
+                  <span>BẮT ĐẦU CHỌN PHI CÔNG & CƠ GIÁP</span>
+                  <ArrowRight className="size-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ==================================================================
             HIỆU ỨNG QUÉT MÀN HÌNH CRT TỔNG THỂ (FULL-SCREEN SCI-FI SCANLINE OVERLAY)
             ================================================================== */}
@@ -1179,18 +1477,33 @@ export function StarfrontShell() {
             <div className="absolute inset-0 crt-scanlines opacity-75 pointer-events-none" />
 
             {/* Dải quét tia sáng radar chuyển động mượt mà từ trên xuống dưới (Animated Sweep Beam) */}
-            <div className="absolute inset-x-0 h-44 scanline-beam opacity-85 pointer-events-none" />
+            {scanlineBeamEnabled && (
+              <div className="absolute inset-x-0 h-44 scanline-beam opacity-85 pointer-events-none" />
+            )}
 
             {/* Hiệu ứng viền tối cockpit chiến hạm sci-fi (Subtle Radial Vignette) */}
-            <div className="absolute inset-0 vignette-radial opacity-50 pointer-events-none" />
+            {vignetteEnabled && (
+              <div className="absolute inset-0 vignette-radial opacity-50 pointer-events-none" />
+            )}
 
             {/* Khung ngắm HUD 4 góc phong cách chiến thuật tương lai (Tactical Reticle Corners) */}
-            <div className="absolute top-2 left-2 size-4 border-t-2 border-l-2 border-cyan-500/40 pointer-events-none" />
-            <div className="absolute top-2 right-2 size-4 border-t-2 border-r-2 border-cyan-500/40 pointer-events-none" />
-            <div className="absolute bottom-2 left-2 size-4 border-b-2 border-l-2 border-cyan-500/40 pointer-events-none" />
-            <div className="absolute bottom-2 right-2 size-4 border-b-2 border-r-2 border-cyan-500/40 pointer-events-none" />
+            {cornerBracketsEnabled && (
+              <>
+                <div className="absolute top-2 left-2 size-4 border-t-2 border-l-2 border-cyan-500/40 pointer-events-none" />
+                <div className="absolute top-2 right-2 size-4 border-t-2 border-r-2 border-cyan-500/40 pointer-events-none" />
+                <div className="absolute bottom-2 left-2 size-4 border-b-2 border-l-2 border-cyan-500/40 pointer-events-none" />
+                <div className="absolute bottom-2 right-2 size-4 border-b-2 border-r-2 border-cyan-500/40 pointer-events-none" />
+              </>
+            )}
           </div>
         )}
+
+        {/* Modal Cài Đặt Hệ Thống Toàn Cục // Global Settings Modal (Phase 6.33_FIX1 P1) */}
+        <GlobalSettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onUpdateSettings={handleUpdateGlobalSettings}
+        />
       </div>
     </GameProvider>
   )

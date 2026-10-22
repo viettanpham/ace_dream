@@ -1,0 +1,71 @@
+{
+  "configFileId": "system_fleet_ship_type",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "SHIP_TYPE_CORVETTE",
+      "name": "Hộ Vệ Hạm Trinh Sát Nhanh (Corvette)",
+      "hullClass": "LIGHT",
+      "evasionBase": 45,
+      "speedBase": 140,
+      "defaultRole": "RECON_PATROL",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_TYPE_FRIGATE",
+      "name": "Khinh Hạm Đa Năng (Frigate)",
+      "hullClass": "MEDIUM_LIGHT",
+      "evasionBase": 30,
+      "speedBase": 110,
+      "defaultRole": "SCREENING_ESCORT",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_TYPE_DESTROYER",
+      "name": "Khu Trục Hạm Tác Chiến (Destroyer)",
+      "hullClass": "MEDIUM",
+      "evasionBase": 20,
+      "speedBase": 95,
+      "defaultRole": "LINE_COMBAT",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_TYPE_CRUISER",
+      "name": "Tuần Dương Hạm Hỏa Lực (Cruiser)",
+      "hullClass": "HEAVY",
+      "evasionBase": 12,
+      "speedBase": 75,
+      "defaultRole": "FIRE_SUPPORT",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_TYPE_BATTLESHIP",
+      "name": "Thiết Giáp Hạm Kỳ Hạm (Battleship)",
+      "hullClass": "CAPITAL",
+      "evasionBase": 5,
+      "speedBase": 55,
+      "defaultRole": "COMMAND_SIEGE",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_TYPE_CARRIER",
+      "name": "Hàng Không Mẫu Hạm Cơ Giới (Carrier)",
+      "hullClass": "CAPITAL",
+      "evasionBase": 6,
+      "speedBase": 65,
+      "defaultRole": "STRIKE_HANGAR",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "SHIP_TYPE_FREIGHTER",
+      "name": "Tàu Vận Tải Tiếp Tế Hậu Cần (Freighter)",
+      "hullClass": "LOGISTICS",
+      "evasionBase": 8,
+      "speedBase": 60,
+      "defaultRole": "SUPPLY_TRANSPORT",
+      "lifecycle": "ACTIVE"
+    }
+  ]
+}

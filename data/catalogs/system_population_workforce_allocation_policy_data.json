@@ -1,0 +1,21 @@
+{
+  "configFileId": "system_population_workforce_allocation_policy",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "policy_standard_three_pass",
+      "name": "Phân Bổ Tiêu Chuẩn Ba Vòng",
+      "description": "Vòng 1: Cấp Minimum theo độ ưu tiên. Vòng 2: Cấp delta lên Target. Vòng 3: Cấp delta lên Maximum.",
+      "enforceMinimumPrerequisite": true,
+      "allowProportionalSplit": false,
+      "defaultMinimumOperatingThreshold": 1.0
+    }
+  ],
+  "metadata": {
+    "domain": "population",
+    "catalog": "workforce_allocation_policy",
+    "description": "Canonical workforce allocation policy definitions."
+  }
+}

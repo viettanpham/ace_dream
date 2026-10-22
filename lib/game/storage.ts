@@ -184,35 +184,49 @@ export function migrateProgressionToV4(parsed: any): StarfrontProgression {
     }
   }
 
-  // 2. Chuẩn hóa trạng thái cặp đôi activePairing
+  // 2. Chuẩn hóa trạng thái cặp đôi activePairing (Phase 5.11 an toàn với dữ liệu thiếu/sai lệch)
   const rawPairing = parsed?.activePairing
-  const pilotId = rawPairing && VALID_PILOT_IDS.includes(rawPairing.pilotId)
-    ? rawPairing.pilotId
-    : "marcus"
+  let activePairing: ActivePairingState | undefined = undefined
 
-  const gearId: StarfrontGearId = rawPairing && VALID_GEAR_IDS.includes(rawPairing.gearId)
-    ? rawPairing.gearId
-    : baseV3.activeGearId
+  if (rawPairing && typeof rawPairing === "object") {
+    const rawPilotId = String(rawPairing.pilotId || "").trim()
+    const rawGearId = String(rawPairing.gearId || "").trim() as StarfrontGearId
 
-  const isLocked = Boolean(rawPairing?.isLocked)
-  const completedMissionsCount = Math.max(
-    0,
-    Number(rawPairing?.unlockProgress?.completedMissions) || 0,
-  )
-  const wonBattlesCount = Math.max(
-    0,
-    Number(rawPairing?.unlockProgress?.wonBattles) || 0,
-  )
+    // Chỉ chấp nhận nếu phi công và cơ giáp nằm trong danh mục hợp lệ
+    if (VALID_PILOT_IDS.includes(rawPilotId) && VALID_GEAR_IDS.includes(rawGearId)) {
+      const isLocked = Boolean(rawPairing.isLocked)
+      const completedMissionsCount = Math.max(
+        0,
+        Number(rawPairing?.unlockProgress?.completedMissions) || 0,
+      )
+      const wonBattlesCount = Math.max(
+        0,
+        Number(rawPairing?.unlockProgress?.wonBattles) || 0,
+      )
 
-  const activePairing: ActivePairingState = {
-    pilotId,
-    gearId,
-    isLocked,
-    unlockProgress: {
-      completedMissions: completedMissionsCount,
-      wonBattles: wonBattlesCount,
-      targetCount: 5,
-    },
+      activePairing = {
+        pilotId: rawPilotId,
+        gearId: rawGearId,
+        isLocked,
+        unlockProgress: {
+          completedMissions: completedMissionsCount,
+          wonBattles: wonBattlesCount,
+          targetCount: 5,
+        },
+      }
+    }
+  } else if (!parsed || parsed.version === undefined || parsed.version < 4) {
+    // Với save phiên bản cũ (v1, v2, v3), khởi tạo mặc định Marcus + activeGearId để giữ tính tương thích
+    activePairing = {
+      pilotId: "marcus",
+      gearId: baseV3.activeGearId,
+      isLocked: false,
+      unlockProgress: {
+        completedMissions: 0,
+        wonBattles: 0,
+        targetCount: 5,
+      },
+    }
   }
 
   // 3. Khởi tạo & Chuẩn hóa Skill Liên Hoàn độc lập theo từng phi công (Phase 5.9)
@@ -242,7 +256,7 @@ export function migrateProgressionToV4(parsed: any): StarfrontProgression {
   return {
     ...baseV3,
     version: 4,
-    activeGearId: gearId,
+    activeGearId: activePairing?.gearId || baseV3.activeGearId,
     activePairing,
     pilots,
     gearSlotLevels: parsed?.gearSlotLevels,
@@ -255,7 +269,7 @@ export function migrateProgressionToV4(parsed: any): StarfrontProgression {
 /** Tải dữ liệu tiến trình đã lưu từ localStorage (an toàn với SSR, chống crash và hỗ trợ migration v1..v3 -> v4) */
 export function loadStarfrontProgression(): StarfrontProgression {
   if (typeof window === "undefined") {
-    return { ...INITIAL_STARFRONT_PROGRESSION, version: 4 }
+    return { ...INITIAL_STARFRONT_PROGRESSION, activePairing: undefined, version: 4 }
   }
 
   try {
@@ -282,7 +296,7 @@ export function loadStarfrontProgression(): StarfrontProgression {
     }
 
     if (!raw) {
-      return { ...INITIAL_STARFRONT_PROGRESSION, version: 4 }
+      return { ...INITIAL_STARFRONT_PROGRESSION, activePairing: undefined, version: 4 }
     }
 
     const parsed = JSON.parse(raw)
@@ -296,7 +310,7 @@ export function loadStarfrontProgression(): StarfrontProgression {
     return migrated
   } catch (error) {
     console.error("[STARFRONT] Lỗi khi đọc dữ liệu lưu từ localStorage:", error)
-    return { ...INITIAL_STARFRONT_PROGRESSION, version: 4 }
+    return { ...INITIAL_STARFRONT_PROGRESSION, activePairing: undefined, version: 4 }
   }
 }
 
@@ -314,7 +328,7 @@ export function saveStarfrontProgression(progression: StarfrontProgression): boo
   }
 }
 
-/** Xóa bỏ tiến trình đã lưu trên toàn bộ các phiên bản và đưa về trạng thái khởi tạo v4 */
+/** Xóa bỏ tiến trình đã lưu trên toàn bộ các phiên bản và đưa về trạng thái khởi tạo v4 chưa có ghép đôi */
 export function resetStarfrontProgression(): StarfrontProgression {
   if (typeof window !== "undefined") {
     try {
@@ -326,5 +340,5 @@ export function resetStarfrontProgression(): StarfrontProgression {
       console.error("[STARFRONT] Lỗi khi xóa save:", e)
     }
   }
-  return { ...INITIAL_STARFRONT_PROGRESSION, version: 4 }
+  return { ...INITIAL_STARFRONT_PROGRESSION, activePairing: undefined, version: 4 }
 }

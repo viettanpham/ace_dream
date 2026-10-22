@@ -1,0 +1,44 @@
+{
+  "configFileId": "system_fleet_frame_award_catalog",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "FRAME_AWARD_BOSS_ELIMINATION",
+      "name": "Chiến Công Tiêu Diệt Boss Đe Dọa Cấp Cao",
+      "basePoints": 2500,
+      "bonusMultiplierPerThreatLevel": 1.25,
+      "recipientType": "FLEET_AND_PILOT",
+      "description": "Khen thưởng đặc biệt khi hạm đội xóa sổ hoàn toàn một hạm đội đầu não của phe đối địch.",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FRAME_AWARD_SAR_PILOT_RESCUED",
+      "name": "Huân Chương Cứu Nạn Phi Công Chiến Trường",
+      "basePoints": 450,
+      "bonusMultiplierPerThreatLevel": 1.1,
+      "recipientType": "FLEET",
+      "description": "Trao thưởng cho mỗi phi công đồng minh được giải cứu và đưa về căn cứ an toàn.",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FRAME_AWARD_TRADE_LANE_PATROL_CYCLE",
+      "name": "Công Trạng Bảo Vệ Hành Lang Siêu Không Gian",
+      "basePoints": 150,
+      "bonusMultiplierPerThreatLevel": 1.05,
+      "recipientType": "FLEET",
+      "description": "Thưởng định kỳ 7 ngày cho các hạm đội duy trì an ninh tuyệt đối trên các tuyến đường huyết mạch.",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FRAME_AWARD_FORTIFICATION_BREAKTHROUGH",
+      "name": "Đột Phá Tuyến Phòng Thủ Kiên Cố",
+      "basePoints": 850,
+      "bonusMultiplierPerThreatLevel": 1.15,
+      "recipientType": "FLEET",
+      "description": "Ghi nhận chiến công phá vỡ công sự phòng thủ của đối phương trong chiến dịch giải phóng.",
+      "lifecycle": "ACTIVE"
+    }
+  ]
+}

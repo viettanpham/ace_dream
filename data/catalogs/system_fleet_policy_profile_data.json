@@ -1,0 +1,27 @@
+{
+  "configFileId": "system_fleet_policy_profile",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "POLICY_NATIONAL_STANDARD_2026",
+      "name": "Chính Sách Hạm Đội Tiêu Chuẩn Quốc Gia VSS",
+      "annualDecayCycleDays": 360,
+      "annualDecayDivisor": 2,
+      "annualDecayMaxCapPercent": 50,
+      "subsidyMultiplierPerTier": 10,
+      "subsidyFloorPercent": 30,
+      "subsidyFullRateLimit": 3,
+      "frontlineWarExceptionEnabled": true,
+      "emergencyCommandThresholds": {
+        "capitalSiege": true,
+        "sectorThreatLevelCutoff": 85,
+        "minFleetReadinessPercent": 60
+      },
+      "newGuildProtectionDays": 3600,
+      "exchangeRateFrameToCredits": 150,
+      "lifecycle": "ACTIVE"
+    }
+  ]
+}

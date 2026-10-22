@@ -1,51 +1,53 @@
 # STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# ĐIỂM KIỂM SOÁT THỰC ĐỊA (CHECKPOINT REPORT)
+# ĐIỂM KIỂM SOÁT THỰC ĐỊA (CHECKPOINT REPORT — REVISED)
 
 **Thời điểm ghi nhận:** 2026-10-22  
-**Chế độ:** DEFINE / PLAN ONLY  
+**Chế độ:** DEFINE / PLAN ONLY (Đã rà soát nguồn dữ liệu, manifest & WebP policy)  
 **Trạng thái phiên:** DỪNG CHỜ PHÊ DUYỆT CỦA NGƯỜI DÙNG (Không tự ý code)  
 
 ---
 
-## 1. Tóm Tắt Hiện Trạng Thực Tế (Verified Reality)
+## 1. Tóm Tắt Hiện Trạng Thực Tế Đã Xác Minh (Verified Reality)
 
 1. **Kho Lưu Trữ & Git:**
    - Hệ thống không sử dụng Git cục bộ (không có `.git`). Toàn bộ việc theo dõi phiên bản và bàn giao được tài liệu hóa minh bạch tại thư mục `docs/`.
-   - Ứng dụng chạy trên Next.js 16.3.0 App Router, đang hoạt động ổn định trên port 3000.
-2. **Hình Ảnh Thực Tế Trên Đĩa:**
-   - `public/images/valentine-fullbody.webp` (228,394 bytes) — **Có thực**
-   - `public/images/valentine-portrait.webp` (59,150 bytes) — **Có thực**
-   - `src/assets/images/valentine_portrait_1791631686158.jpg` — **Có thực**
-   - 28 file ảnh khác được liệt kê trong `valentine_assets_manifest.json` **chưa tồn tại trong `public/images/`**. Không được trỏ thẻ `<img>` vào các file này; sẽ dùng thẻ đại diện trạng thái (Archive Pending) để tránh lỗi vỡ ảnh.
-3. **Concept Hình Ảnh:**
-   - Thư mục `docs/art-direction/UI_CONCEPTS/` không tồn tại trên đĩa. Không bịa đặt đường dẫn; hợp đồng giao diện dựa trên văn bản quy chuẩn đã thống nhất ngày 2026-10-22.
-4. **Mã Nguồn Cũ (Legacy UI):**
-   - File `components/game/pilot-gallery.tsx` (1573 dòng) chứa UI V1 và Inspector cũ.
-   - Toàn bộ code cũ này được bảo toàn nguyên vẹn; module V2 sẽ được xây dựng độc lập trong `components/game/v2/character-profile/`.
+   - Ứng dụng chạy trên Next.js 16.3.0 App Router, đang hoạt động ổn định trên port 3000, build thành công (`compile_applet` passed).
+2. **Kiểm Tra Nguồn Dữ Liệu Canonical:**
+   - Đã phân biệt rõ việc dựng UI mới với việc tạo nguồn dữ liệu mới.
+   - Master Catalog Registry `lib/game/world/catalog/registry.ts` (FND-1) đang quản lý FND-2 đến FND-7. FND-8 chưa có runtime registry. Dữ liệu chuẩn của FND-8 được lấy trực tiếp từ:
+     - `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_CHARACTER_ROSTER_V2_DRAFT.md` (12 Class, 20 điểm thuộc tính chuẩn).
+     - `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md` (2 Trait chuẩn: Bàn Tay Cứu Hộ & Mái Khiên Nhân Ái).
+     - `docs/art-direction/PILOT/VALENTINE/FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` (Lore, trích dẫn, mô tả ngắn, tiểu sử).
+   - Tuyệt đối không nhân đôi Class stats, Traits hay logic chiến đấu.
+3. **Kiểm Tra Tham Chiếu `valentine_assets_manifest.json` & `sourceFilename`:**
+   - Cả hai hoàn toàn KHÔNG được tham chiếu hay import trong mã nguồn runtime hiện tại (`app/`, `components/`, `lib/`).
+   - `sourceFilename` chỉ là tên file ảnh gốc (tiếng Việt) trong manifest để truy vết nguồn gốc (provenance). Tuyệt đối KHÔNG dùng để tạo URL tải ảnh.
+   - Giữ nguyên `valentine_assets_manifest.json` như hồ sơ lưu trữ; không tự ý chỉnh sửa file đã duyệt.
+4. **Hình Ảnh Thực Tế Trên Đĩa & WebP Policy:**
+   - Ưu tiên định dạng `.webp` cho runtime.
+   - Chỉ có 2 ảnh WebP thật tồn tại trong `public/images/`:
+     - `/images/valentine-fullbody.webp` (228 KB)
+     - `/images/valentine-portrait.webp` (59 KB)
+   - 28 ảnh khác trong manifest chưa có file vật lý; được xử lý an toàn bằng thẻ hồ sơ lưu trữ "Chờ Đồng Bộ WebP" (100% Zero Broken Images).
+5. **Tình Trạng 3 Ảnh Concept:**
+   - Không tìm thấy 3 tệp PNG concept trong container filesystem (chúng được đính kèm ở ChatGPT conversation library với mã `file_00000000...`).
+   - Sẵn sàng đường dẫn chuẩn `docs/art-direction/UI_CONCEPTS/` để tiếp nhận ảnh khi người dùng cung cấp.
+6. **Mã Nguồn Cũ (Legacy UI):**
+   - File `components/game/pilot-gallery.tsx` (1573 dòng) chứa UI V1 và Inspector cũ được giữ nguyên 100%.
 
 ---
 
-## 2. Các Tài Liệu Đã Được Tạo / Cập Nhật Trong Phiên Này
+## 2. Các Tài Liệu Đã Cập Nhật
 
-1. `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_FEATURE_UI_REFERENCE.md`: Đặc tả tính năng, giao diện Desktop/Mobile, 2 background controls, 4 tabs, và bản đồ dữ liệu Valentine.
-2. `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_IMPLEMENTATION_PLAN.md`: Kế hoạch triển khai có ranh giới, danh mục tệp tạo mới, tiêu chuẩn chấp nhận và kế hoạch kiểm thử Desktop/Mobile.
-3. `docs/progress/FND8/FND8_8_2_3_E0_PROGRESS.md`: Nhật ký tiến độ chi tiết của đợt audit.
-4. `docs/progress/FND8/FND8_8_2_3_E0_CHECKPOINT.md`: Báo cáo checkpoint hiện tại.
-5. `docs/progress/FND8/FND8_8_2_3_E0_HANDOFF.md`: Hướng dẫn bàn giao cho phiên tiếp theo.
-
----
-
-## 3. Các Rủi Ro & Giải Pháp Đã Xác Định (Risks & Mitigations)
-
-| Rủi Ro | Mức Độ | Giải Pháp Phòng Ngừa |
-|---|---|---|
-| Thiếu 28 ảnh trong manifest trên đĩa | Cao | Áp dụng Zero-Broken-Image Policy: Chỉ nạp 2 ảnh thật trên đĩa, các mục khác hiển thị dưới dạng thẻ thông tin lưu trữ có trạng thái "Chờ Đồng Bộ", tuyệt đối không dùng link ảnh chết. |
-| Xung đột với UI Legacy cũ | Trung bình | Xây dựng V2 hoàn toàn độc lập trong thư mục `components/game/v2/character-profile/` và `lib/game/v2/`. Giữ nguyên 100% code V1. |
-| Co cụm giao diện mobile thành phiên bản thu nhỏ của desktop | Cao | Thiết kế 2 chế độ riêng cho Mobile: `Mobile Info View` (cuộn thông tin, tab tiện dụng) và `Mobile Art View` (xem tranh toàn cảnh + 2 nút toggle bối cảnh chạm đáy). |
+1. `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_FEATURE_UI_REFERENCE.md`
+2. `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_IMPLEMENTATION_PLAN.md`
+3. `docs/progress/FND8/FND8_8_2_3_E0_PROGRESS.md`
+4. `docs/progress/FND8/FND8_8_2_3_E0_CHECKPOINT.md`
+5. `docs/progress/FND8/FND8_8_2_3_E0_HANDOFF.md`
 
 ---
 
-## 4. Hành Động Tiếp Theo Chính Xác (Next Exact Action)
+## 3. Hành Động Tiếp Theo Chính Xác (Next Exact Action)
 
-Chờ người dùng xem xét bản báo cáo này và gửi lệnh phê duyệt kế hoạch.  
+Chờ người dùng xem xét bản báo cáo rà soát này và gửi lệnh phê duyệt kế hoạch.  
 Khi nhận được lệnh `IMPLEMENT / RESUME ONE PHASE`, phiên tiếp theo sẽ tiến hành tạo các tệp trong Phase E.0-IMPLEMENT-1.

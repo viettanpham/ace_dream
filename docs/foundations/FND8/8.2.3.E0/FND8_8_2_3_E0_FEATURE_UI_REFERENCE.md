@@ -1,150 +1,135 @@
 # STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# CHARACTER CATEGORY / PILOT PROFILE UI FEATURE & UI REFERENCE (REVISED)
+# CHARACTER CATEGORY / PILOT PROFILE UI FEATURE & UI REFERENCE (V2 DESIGN SYSTEM ALIGNED)
 
 **Ngày cập nhật:** 2026-10-22  
-**Chế độ:** DEFINE / PLAN ONLY (Rà soát & cập nhật theo kết quả audit mã nguồn thực tế)  
-**Tài liệu tham chiếu gốc:**
-- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_CHARACTER_CATEGORY_PROFILE_UI_CONCEPT.md`
-- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_UI_REBUILD_CHECKPOINT_2026-10-22.md`
-- `docs/progress/FND8/STARFRONT_HANDOFF_FND8_2026-10-22_UI_POLICY_DELTA.md`
-- `docs/art-direction/PILOT/VALENTINE/FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md`
-- `docs/art-direction/PILOT/VALENTINE/valentine_assets_manifest.json`
-- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_CHARACTER_ROSTER_V2_DRAFT.md`
-- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md`
-- `lib/game/world/catalog/registry.ts` & `lib/game/world/bootstrap.ts` (FND-1 Master Catalog Architecture)
+**Chế độ:** DEFINE / PLAN ONLY (Cập nhật chuẩn hóa theo Design System V2 & Báo Cáo Blocker Concept)  
+**Tài liệu tham chiếu cốt lõi:**
+- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_UI_V2_DESIGN_SYSTEM.md` (Design System Baseline V2)
+- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_CHARACTER_CATEGORY_PROFILE_UI_CONCEPT.md` (Hợp đồng ý tưởng đã duyệt)
+- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_UI_REBUILD_CHECKPOINT_2026-10-22.md` (Quy định xây dựng UI V2)
+- `docs/progress/FND8/STARFRONT_HANDOFF_FND8_2026-10-22_UI_POLICY_DELTA.md` (Chính sách preview-first)
+- `docs/art-direction/PILOT/VALENTINE/FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` (Dữ liệu lore, chỉ số & cốt truyện)
+- `docs/art-direction/PILOT/VALENTINE/valentine_assets_manifest.json` (Hồ sơ danh mục artwork)
+- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_CHARACTER_ROSTER_V2_DRAFT.md` (12 Class Persona V2)
+- `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md` (Danh mục Trait V2 chuẩn)
 
 ---
 
-## 1. Mục Tiêu & Ranh Giới Tính Năng (Scope & Boundaries)
+## 1. Tình Trạng Ảnh Concept & Cảnh Báo BLOCKER (Concept Images Status)
 
-### 1.1 Mục Tiêu
-Thiết lập nền tảng giao diện V2 hoàn toàn mới cho **Hồ Sơ Nhân Vật / Danh Mục Phi Công (Character Category / Pilot Profile UI Foundation)**:
-- Dựng UI mới, sạch, không chắp vá hoặc kế thừa layout/CSS cũ bị rối.
-- Hỗ trợ đồng thời cả **Desktop (1440px wide layout)** và **Mobile (375px–430px smartphone layout)** ngay trong Phase 1.
-- Tích hợp nhân vật phi công chuẩn đầu tiên: **Valentine** bằng dữ liệu lore, chỉ số 20 điểm canonical, Trait V2 và artwork đã kiểm chứng trên đĩa.
-- Giữ nguyên toàn bộ UI V1 và routes cũ; tuyệt đối không xóa code dùng chung khi chưa có kế hoạch cutover chính thức.
-
-### 1.2 Ranh Giới Nghiêm Ngặt (Exclusions)
-- **KHÔNG** triển khai Character Selection Wizard / tạo phi công người chơi (đây là scope riêng biệt sau này).
-- **KHÔNG** xóa hay sửa các file UI cũ: `components/game/pilot-gallery.tsx`, `components/game/character-gear-select.tsx`, `components/game/starfront-home.tsx`.
-- **KHÔNG** thay đổi cân bằng gameplay, công thức chiến đấu, hay tiến trình FND-8.3.2.x (vẫn giữ trạng thái HOLD).
-- **KHÔNG** tự bịa lore, chỉ số, Traits, tương thích GEAR hoặc đường dẫn ảnh không có thật trên đĩa.
-- **KHÔNG** tạo thêm ảnh mới (no image generation trong phase này).
-
----
-
-## 2. Nguồn Dữ Liệu Canonical & Kiến Trúc FND-1 / FND-8 (Data Integration Clarity)
-
-### 2.1 Phân Biệt Giữa Dựng UI Mới & Nguồn Dữ Liệu
-- Dựng UI mới **không đồng nghĩa** với việc tự tạo ra một bộ chỉ số hay công thức gameplay mới.
-- Kết quả audit thực tế mã nguồn:
-  - `lib/game/world/catalog/registry.ts` và `lib/game/world/bootstrap.ts` là hệ thống **FND-1 Catalog Registry** quản lý các master catalog (FND-2 Progression, FND-3 Decision, FND-4 Population, FND-5 Building, FND-6 Base, FND-7 Fleet).
-  - Phân hệ nhân vật FND-8 hiện chưa có registry runtime trong `lib/game/world/`, mà được lưu giữ quy chuẩn tại:
-    - `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_CHARACTER_ROSTER_V2_DRAFT.md` (Bảng 12 Class 20 điểm thuộc tính chuẩn).
-    - `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md` (Danh mục Trait chuẩn).
-    - `docs/art-direction/PILOT/VALENTINE/FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` (Tiểu sử, trích dẫn, mô tả và chương truyện Valentine).
-- **Nguyên tắc không nhân đôi dữ liệu (No Duplication):**
-  - Không sao chép hay tự định nghĩa lại các bộ chỉ số xung đột với legacy hay bịa ra công thức mới.
-  - Xây dựng tầng cung ứng dữ liệu giao diện (Data Access Provider) bám sát tuyệt đối các tài liệu FND-8 chuẩn nêu trên. Khi FND-8 được tích hợp chính thức vào FND-1 `CatalogRegistry` trong tương lai, giao diện UI V2 sẽ kết nối trực tiếp với FND-1 mà không cần thay đổi cấu trúc component.
-
-### 2.2 Rà Soát Tham Chiếu `valentine_assets_manifest.json`, `sourceFilename`, `path`
-- **Kết quả kiểm tra trong toàn bộ mã nguồn (`app/`, `components/`, `lib/`):**
-  - `valentine_assets_manifest.json`: **Hoàn toàn KHÔNG được import hay sử dụng** trong bất kỳ file runtime code nào. Nó chỉ tồn tại trong `docs/art-direction/PILOT/VALENTINE/` như một tài liệu danh mục thiết kế.
-  - `sourceFilename`: **Hoàn toàn KHÔNG xuất hiện** trong runtime code. Trường này chỉ là tên file ảnh gốc (tiếng Việt, ví dụ: `dạ_tiệc_vũ_trụ_xa_hoa_sắc_đỏ.png`) phục vụ việc truy vết nguồn gốc artwork (provenance record).
-  - **Quy tắc tuyệt đối cho UI Gallery V2:**
-    - **CẤM** sử dụng `sourceFilename` để tạo URL tải ảnh (sẽ gây 404/vỡ ảnh).
-    - Giữ nguyên `sourceFilename` trong `valentine_assets_manifest.json` như hồ sơ lưu trữ truy vết; không tự ý xóa sửa tài liệu gốc đã duyệt.
-    - Trong runtime UI, trường tải ảnh chỉ sử dụng `path` đã xác minh trên đĩa.
+> [!CAUTION]
+> ### ⚠️ BLOCKER QUAN TRỌNG: THIẾU 3 ẢNH CONCEPT PNG THỰC TẾ TRÊN ĐĨA
+> Theo quy tắc kiểm toán thực địa số 5: *"Đối chiếu ba ảnh concept PNG thực tế tại `docs/art-direction/UI_CONCEPTS/`. Nếu thiếu hoặc không mở được, đánh dấu BLOCKER; không tự suy diễn concept từ mô tả chữ."*
+> 
+> **Kết Quả Rà Soát Thực Tế:**
+> - Thư mục `docs/art-direction/UI_CONCEPTS/` **chưa tồn tại** trong container.
+> - Cả 3 file PNG concept được phê duyệt:
+>   1. `FND8_823_CHARACTER_CATEGORY_PROFILE_DESKTOP_APPROVED.png` (Desktop reference)
+>   2. `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png` (Mobile paired reference)
+>   3. `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_INFO_VIEW_REFERENCE.png` (Mobile info reference)
+>   hiện **KHÔNG có trên hệ thống tệp** (chúng chỉ tồn tại dưới dạng mã định danh `file_00000000...` trong thư viện đính kèm bên ngoài).
+> - **Quyết Định Kỹ Thuật:**
+>   - Đánh dấu **BLOCKER** cho giai đoạn chuyển sang `IMPLEMENT`.
+>   - Tuyệt đối không tự suy diễn hay tự vẽ lại layout từ mô tả chữ.
+>   - Đã chuẩn bị sẵn thư mục `docs/art-direction/UI_CONCEPTS/` để tiếp nhận 3 file ảnh vật lý từ người dùng trước khi tiến hành viết mã UI.
 
 ---
 
-## 3. Chính Sách Định Dạng WebP & Kiểm Tra 3 Bước (WebP Runtime Policy)
+## 2. Chuẩn Hóa Design System V2 (Design System Alignment)
 
-1. **Ưu Tiên WebP Tuyệt Đối:**
-   - Tất cả ảnh trong runtime Category/Profile UI đều ưu tiên định dạng `.webp` để đảm bảo hiệu năng tải, kích thước nhỏ và hiển thị mượt mà.
-2. **Quy Trình Kiểm Tra 3 Bước Trước Khi Tích Hợp (3-Way Verification):**
-   - **Bước 1 (Disk Check):** File vật lý có thực sự tồn tại trong `public/images/` không?
-   - **Bước 2 (Manifest Check):** File có ID và Category hợp lệ trong hồ sơ artwork không?
-   - **Bước 3 (URL Check):** Đường dẫn `/images/<file>.webp` có phản hồi mã HTTP 200 không?
-3. **Hiện Trạng Thực Tế Đã Xác Minh:**
-   - **2 Ảnh Đạt Chuẩn (Verified & Renderable):**
-     - `/images/valentine-fullbody.webp` (228 KB) — Tranh toàn thân chính thức.
-     - `/images/valentine-portrait.webp` (59 KB) — Chân dung đại diện.
-   - **28 Ảnh Còn Lại Trong Manifest:** Hiện chưa có file vật lý trong `public/images/`.
-   - **Xử Lý Giao Diện:** Không tạo thẻ `<img>` trỏ vào 28 file chưa có. Thay vào đó, trong Tab Gallery, hiển thị dưới dạng **Thẻ Hồ Sơ Lưu Trữ (Archive Pending Card)**: hiển thị tên trang phục, phân loại (Dạ tiệc, Học viện, Thường phục...), và nhãn "Chờ Đồng Bộ WebP", đảm bảo 100% không vỡ ảnh (Zero-Broken-Image).
+Giao diện Category/Profile V2 là giao diện mới hoàn toàn, được thiết kế theo các tiêu chuẩn kỹ thuật sau:
 
----
+### 2.1 Cô Lập Hoàn Toàn Khỏi Legacy V1 (Clean Slate)
+- **Không kế thừa:** Tuyệt đối không import, kế thừa hay bọc lại CSS, class, hoặc font monospace xanh lá CRT scanline của V1 cũ (`components/game/pilot-gallery.tsx`).
+- **Phong cách thị giác:** Sci-Fi Aerospace hiện đại: tông nền sẫm sâu thẳm (`bg-slate-950`), bề mặt bán trong suốt (`bg-slate-900/80 backdrop-blur-md`), đường viền công nghệ tinh tế (`border-slate-800`).
 
-## 4. Tình Trạng Ảnh Concept (Concept Images Status)
+### 2.2 Quy Chuẩn Đọc & Kiểu Chữ (Legibility & Typography)
+- **Ưu tiên khả năng đọc tuyệt đối:** Không dùng font quá nhỏ để nhồi nhét dữ liệu; không dùng cỡ chữ dưới 12px.
+- **Story Reader:**
+  - Cỡ chữ thân bài: **15px - 16px**, khoảng cách dòng (line-height) rộng rãi **1.65** (`leading-relaxed`).
+  - Độ dài dòng tối ưu: **65 - 75 ký tự (ch)** (`max-w-prose`) giúp người đọc theo dõi truyện dài của phi công dễ dàng mà không bị mỏi mắt.
+  - Tương phản màu chữ: Văn bản chính đạt màu `#CBD5E1` (Slate-300) đến `#F8FAFC` (Slate-50) trên nền sẫm `#070A12`, tỷ lệ tương phản vượt chuẩn WCAG AA (> 10:1).
+- **Phân tách Quote và Short Description:**
+  - `characterQuote`: Đoạn văn bản nghiêng 15px, có border-l-2 màu Cyan/Teal nổi bật, hiển thị danh xưng triết lý sống của nhân vật.
+  - `shortDescription`: Khối mô tả độc lập 14px Slate-300, giải thích bối cảnh và mâu thuẫn nội tâm của phi công.
+- **Chỉ số 6 thuộc tính (Stats Grid):**
+  - Hiển thị cỡ chữ 14px - 15px với tính năng `tabular-nums` để số liệu thẳng hàng, rõ ràng.
 
-- **Audit thư mục:** Thư mục `docs/art-direction/UI_CONCEPTS/` hiện không có trong container filesystem.
-- **Nguồn gốc tham chiếu:** Ba concept được phê duyệt trong thảo luận gốc:
-  - Desktop: `Giao diện chọn nhân vật Valentine tương lai.png` (ID: `file_00000000c5448211822fe20d85b18282`).
-  - Mobile Paired: `hồ_sơ_valentine_ánh_sáng_cuối_cùng.png` (ID: `file_00000000149c8211841a4d5c37b01dd4`).
-  - Mobile Info: `giao_diện_chọn_nhân_vật_valentine_tương_lai.png` (ID: `file_00000000b928821191fb2c5005032393`).
-- **Xử lý:**
-  - Không tự ý vẽ lại hay thay thế bằng concept khác.
-  - Giữ nguyên hợp đồng bố cục, phân cấp thông tin và tương tác theo đúng văn bản đặc tả đã duyệt.
-  - Sẵn sàng đường dẫn chuẩn `docs/art-direction/UI_CONCEPTS/` để đặt 3 file ảnh vào khi người dùng cung cấp tệp từ gói dữ liệu.
+### 2.3 Tiêu Chuẩn Kích Thước Vùng Chạm Cảm Ứng Mobile (Touch Targets)
+- Mọi nút bấm, Tab, Toggle chuyển bối cảnh, icon điều khiển trên giao diện Mobile đều phải có diện tích chạm tối thiểu **44 × 44px**.
+- Thanh Tab mobile dạng Segmented có chiều cao tối thiểu 48px, các nút chuyển đổi bối cảnh dạng Floating Bar có kích thước tối thiểu 48 × 48px với khoảng cách an toàn tránh bấm nhầm.
 
----
-
-## 5. Kiến Trúc Giao Diện Desktop vs Mobile (Co-Equal Deliverables)
-
-### 5.1 Bố Cục Desktop (1440px Baseline)
-1. **Cột Trái (Character Roster & Category Index):**
-   - Danh sách 12 archetype V2 (4 Nam, 8 Nữ) với thumbnail và trạng thái khả dụng.
-   - Valentine hiển thị nổi bật là hồ sơ hoàn chỉnh; các nhân vật khác hiển thị thẻ tóm tắt chuẩn hoặc nhãn "Đang cập nhật hồ sơ V2".
-   - Bộ lọc phân loại: Tất cả / Nam / Nữ / Vai trò (Cứu hộ, Tiên phong, Cơ động, Phòng thủ...).
-2. **Khu Vực Trung Tâm (Showcase Nhân Vật & 2 Toggles Nền):**
-   - Tranh toàn thân (`/images/valentine-fullbody.webp`) hiển thị trang trọng, sắc nét.
-   - **Hai điều khiển chuyển đổi bối cảnh (Background / Showcase Controls):**
-     - Đặt đối xứng ở hai bên khung tranh trung tâm.
-     - Cho phép người chơi chuyển đổi giữa 2 môi trường:
-       - **Bối Cảnh A (Trạm Y Tế Quỹ Đạo Elysia / Hangar):** Ánh sáng xanh ngọc dịu, trạm cứu hộ không gian.
-       - **Bối Cảnh B (Buồng Lái Tác Chiến / Hologram HUD):** Hiển thị màn hình dữ liệu y sinh và trường lực khiên.
-     - Nút bấm phóng to / mở Modal Art Inspector độc lập (hỗ trợ zoom 1x-4x, pan, xem chi tiết).
-3. **Cột Phải (Hồ Sơ Chi Tiết 4 Tab):**
-   - **Header Nhận Diện:**
-     - Tên Class / Lore: `Valentine Aurelia Vance`
-     - Mật danh (Callsign): `Mercy Wing` · Danh hiệu: `Ánh Sáng Cuối Cùng`
-     - Vai trò: `Quân Y Chiến Trường (Combat Medic) · Cứu Hộ (Rescue)`
-     - **Hai khối văn bản độc lập:**
-       - `characterQuote`: “Chừng nào còn một tín hiệu cầu cứu, tôi sẽ không bỏ lại ai phía sau.”
-       - `shortDescription`: “Một nữ phi công cứu hộ luôn nở nụ cười dịu dàng, ngay cả khi bản thân cô vẫn chưa tha thứ cho một quyết định trong quá khứ.”
-   - **Hệ Thống 4 Tab:**
-     - **Tab 1: OVERVIEW (Tổng Quan)**
-       - Bảng 6 thuộc tính gốc V2 (chuẩn 20 điểm): ATK: 2, DEF: 2, AGI: 2, ENE: 6, SHD: 6, LUK: 2.
-       - Thẻ hiển thị Traits chính thức: `Bàn Tay Cứu Hộ` (`pilot_trait_field_medic`) và `Mái Khiên Nhân Ái` (`pilot_trait_safeguard`). Kèm Tooltip giải thích chi tiết khi hover/click.
-       - Thông tin nhân thân vắn tắt: Tuổi: 24, Xuất thân: Elysia, Đào tạo: Học viện Quân y Không gian, Tính cách: Ấm áp, kiên trì, ân cần.
-     - **Tab 2: STORY (Tiểu Sử & Biên Niên)**
-       - Tóm tắt tiểu sử (Biography Summary): Quá khứ tại Elysia và quyết định định mệnh.
-       - Danh sách chương theo lộ trình 10 chương:
-         - Chương 01: "Ánh sáng cuối cùng tại Elysia" (APPROVED — Hiển thị toàn văn tiếng Việt).
-         - Chương 02–04: APPROVED (Hiển thị tiêu đề & tóm tắt, nhãn "Đang biên tập nội dung chi tiết").
-         - Chương 05–06: PROVISIONAL (Nhãn "Bản thảo sơ bộ — Chưa phát hành chính thức").
-         - Chương 07–10: HOLD (Nhãn "Hồ sơ niêm phong / Chưa mở khóa").
-     - **Tab 3: GEAR COMPAT (Tương Thích Cơ Giáp)**
-       - Hiển thị mức độ tương thích với 3 khung cơ giáp: Aegis (S-Rank, tối ưu), Vanguard (B-Rank), Falcon (C-Rank).
-     - **Tab 4: GALLERY (Bộ Sưu Tập Artwork)**
-       - Hiển thị 2 ảnh WebP thật đã kiểm chứng trên đĩa.
-       - 28 mục còn lại hiển thị qua thẻ "Hồ Sơ Lưu Trữ Chờ Đồng Bộ WebP", click xem thông tin chi tiết.
+### 2.4 Ranh Giới Phạm Vi & Điều Hướng (Scope Boundary)
+- Không can thiệp vào thanh điều hướng toàn cầu (Global Navigation) hay menu game tổng thể (sẽ được làm ở phase riêng).
+- Chỉ bổ sung một điểm vào (entry point) an toàn và tối thiểu trong `components/game/starfront-shell.tsx` để người dùng thử nghiệm UI V2.
 
 ---
 
-### 5.2 Bố Cục Mobile (Smartphone 375px–430px Dedicated Architecture)
-Tổ chức thành **2 trạng thái linh hoạt (Paired States)**:
-1. **Trạng Thái 1: Mobile Info View (Xem Thông Tin Hồ Sơ):**
-   - Top Bar tinh gọn (<=56px): Nút Quay lại / Đổi nhân vật, Tiêu đề hồ sơ, nút chuyển nhanh sang "Chế Độ Ngắm Tranh".
-   - Header nhỏ gọn: Avatar WebP 64px, Tên, Callsign, Danh hiệu và Role tag.
+## 3. Kiến Trúc Cung Ứng Dữ Liệu: Data Adapter & Không Tự Tạo Dữ Liệu Gameplay
+
+### 3.1 Data Adapter Pattern (`lib/game/v2/character-profile-data.ts`)
+- Dựng UI mới **không đồng nghĩa** với việc tạo ra hệ thống tính toán thuộc tính mới.
+- UI V2 sử dụng tầng **Data Access Adapter** thuần túy để trích xuất dữ liệu từ các tài liệu FND-8 chuẩn đã duyệt trong repository:
+  - `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_CHARACTER_ROSTER_V2_DRAFT.md` (12 Class Persona, phân bổ chuẩn 20 điểm thuộc tính).
+  - `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md` (Danh mục Trait chuẩn).
+  - `docs/art-direction/PILOT/VALENTINE/FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` (Thông tin nhân thân, câu trích dẫn, mô tả ngắn, chương truyện).
+- **Không tự bịa gameplay:** Không sáng tác công thức tính sát thương, tỷ lệ né, hay stats cân bằng chiến đấu mới.
+- **Tương thích GEAR:** Tab `GEAR COMPAT` hiển thị đánh giá tương thích theo hồ sơ xếp hạng (S/B/C rank) kèm ghi chú giao diện placeholder mà không tạo động cơ tính toán trang bị mới.
+- **Sẵn sàng tích hợp FND-1:** Adapter được cấu trúc theo dạng Provider để khi FND-8 được đăng ký chính thức vào `CatalogRegistry` (`lib/game/world/catalog/registry.ts`), UI V2 sẽ kết nối trực tiếp mà không cần sửa đổi layout.
+
+---
+
+## 4. Chính Sách Tài Nguyên Hình Ảnh & Thư Viện WebP
+
+### 4.1 Quy Tắc Không Sử Dụng `sourceFilename`
+- `sourceFilename` (ví dụ: `dạ_tiệc_vũ_trụ_xa_hoa_sắc_đỏ.png`) chỉ là tên file ảnh gốc bằng tiếng Việt trong `valentine_assets_manifest.json` nhằm phục vụ truy vết nguồn gốc artwork (provenance record).
+- **CẤM TUYỆT ĐỐI:** Không dùng `sourceFilename` để tạo đường dẫn URL tải ảnh trên web (`/images/...`).
+- Giữ nguyên `valentine_assets_manifest.json` nguyên vẹn; chỉ sử dụng `assetId` và `path` hợp lệ.
+
+### 4.2 Chính Sách WebP & Quy Trình Kiểm Tra 3 Bước (Zero Broken Images)
+- **Ưu tiên WebP:** Mọi artwork hiển thị trong runtime UI đều ưu tiên định dạng `.webp`.
+- **Hiện trạng vật lý trên đĩa:**
+  - 2 file WebP thật đã xác minh:
+    1. `/images/valentine-fullbody.webp` (228 KB) — Tranh toàn thân chính thức.
+    2. `/images/valentine-portrait.webp` (59 KB) — Chân dung đại diện.
+  - 28 artwork còn lại trong manifest: Chưa có file vật lý trong `public/images/`.
+- **Xử lý giao diện Gallery V2:**
+  - Không tạo thẻ `<img>` trỏ tới 28 ảnh thiếu.
+  - Hiển thị 28 mục này dưới dạng **Thẻ Hồ Sơ Lưu Trữ (Archive Pending Card)**: hiển thị tên phân loại trang phục, metadata danh mục và nhãn `Chờ Đồng Bộ WebP`. Khi người dùng click, hiển thị bảng thông tin chi tiết mà không gây lỗi HTTP 404 trên Network.
+
+---
+
+## 5. Kiến Trúc Bố Cục Desktop & Mobile
+
+### 5.1 Desktop Layout (1440px Baseline)
+1. **Cột Trái (280px - 300px):**
+   - Danh sách 12 Archetype V2 (4 Nam, 8 Nữ) kèm thumbnail WebP và bộ lọc vai trò.
+2. **Khu Vực Trung Tâm (Showcase & 2 Controls Bối Cảnh):**
+   - Tranh toàn thân sắc nét.
+   - **Hai điều khiển bối cảnh (Background / Showcase Controls):**
+     - Nút bên trái: Bối Cảnh A (Trạm Y Tế Elysia Hangar).
+     - Nút bên phải: Bối Cảnh B (Buồng Lái Hologram HUD).
+   - Nút mở Trình Soi Tranh (Artwork Lightbox Inspector) hỗ trợ Zoom 1x-4x, Pan chuột, phím Esc.
+3. **Cột Phải (420px - 460px):**
+   - Header nhận diện: Tên, Callsign, Danh hiệu, Vai trò.
    - Hai khối văn bản riêng biệt: `characterQuote` và `shortDescription`.
-   - Segmented Tab Bar 4 Tab (OVERVIEW / STORY / GEAR COMPAT / GALLERY) với touch target >= 44px.
-   - Tab OVERVIEW: 6 thanh chỉ số với số liệu tabular-nums; Trait cards có thể tap để xem chi tiết.
-2. **Trạng Thái 2: Mobile Art View (Xem Tranh & Bối Cảnh):**
-   - Màn hình tràn viền tập trung vào tranh nhân vật chất lượng cao.
-   - **Hai điều khiển bối cảnh (Background Toggles) dạng nút cảm ứng nổi (Floating Bar) ở góc dưới**, cho phép chuyển nhanh Bối Cảnh A (Elysia Hangar) và Bối Cảnh B (Buồng Lái HUD).
-   - Thanh công cụ đáy chứa nút: Zoom in / Zoom out, Reset góc nhìn, và nút chuyển về Info View.
-   - Hỗ trợ cử chỉ cảm ứng: Double-tap để zoom, kéo rê (pan), chạm nút đóng để quay lại Info View.
+   - 4 Tabs chuyển đổi:
+     - **OVERVIEW:** Bảng 6 thuộc tính chuẩn (tổng = 20), thẻ Trait V2 kèm tooltip, thông tin nhân thân.
+     - **STORY:** Tóm tắt tiểu sử, Chương 01 toàn văn tiếng Việt (APPROVED), Chương 02–04 (APPROVED tóm tắt), Chương 05–06 (PROVISIONAL), Chương 07–10 (HOLD / Niêm phong).
+     - **GEAR COMPAT:** Khung tương thích 3 lớp Aegis, Vanguard, Falcon.
+     - **GALLERY:** Lưới 2 ảnh WebP thật + Thẻ lưu trữ Archive cho 28 ảnh chưa đồng bộ WebP.
+
+### 5.2 Mobile Layout (375px–430px Dedicated Paired Architecture)
+1. **Trạng Thái 1: Mobile Info View:**
+   - Top Bar 56px với nút đổi nhân vật, tiêu đề và nút chuyển nhanh sang Art View.
+   - Header nhân vật thu gọn, quote và short description tách biệt.
+   - Segmented Tab Bar 4 tab, touch target >= 44px.
+   - Nội dung tab cuộn dọc tự nhiên, cỡ chữ 15px dễ đọc.
+2. **Trạng Thái 2: Mobile Art View:**
+   - Hiển thị tranh toàn thân tràn màn hình.
+   - **Floating Bar đáy:** Chứa 2 nút chuyển đổi bối cảnh (Background A / B) kích thước chạm chuẩn >= 44px.
+   - Nút Zoom in, Zoom out, Reset và nút quay lại Info View.
+   - Hỗ trợ cảm ứng double-tap và pinch-to-zoom.
 
 ---
 
@@ -157,12 +142,8 @@ Tổ chức thành **2 trạng thái linh hoạt (Paired States)**:
 | `callsign` | Mercy Wing | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt draft |
 | `title` | Ánh Sáng Cuối Cùng (The Last Light) | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt draft |
 | `role` | Quân Y Chiến Trường (Combat Medic) · Cứu Hộ (Rescue) | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt draft |
-| `gender` / `age` | Nữ · 24 tuổi | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt draft |
-| `origin` | Khu dân cư y tế quỹ đạo Elysia | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt draft |
-| `training` | Học viện Quân y Không gian | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt draft |
-| `personality` | Ấm áp, kiên trì, ân cần, giàu lòng trắc ẩn | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt draft |
-| `characterQuote` | “Chừng nào còn một tín hiệu cầu cứu, tôi sẽ không bỏ lại ai phía sau.” | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt (Khối riêng 1) |
-| `shortDescription` | Một nữ phi công cứu hộ luôn nở nụ cười dịu dàng, ngay cả khi bản thân cô vẫn chưa tha thứ cho một quyết định trong quá khứ. | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt (Khối riêng 2) |
+| `characterQuote` | “Chừng nào còn một tín hiệu cầu cứu, tôi sẽ không bỏ lại ai phía sau.” | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | **Khối riêng biệt 1** |
+| `shortDescription` | Một nữ phi công cứu hộ luôn nở nụ cười dịu dàng, ngay cả khi bản thân cô vẫn chưa tha thứ cho một quyết định trong quá khứ. | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | **Khối riêng biệt 2** |
 | `baseStats` (Total: 20) | ATK: 2, DEF: 2, AGI: 2, ENE: 6, SHD: 6, LUK: 2 | `FND8_8_2_3_CHARACTER_ROSTER_V2_DRAFT.md` | Đã duyệt canonical |
 | `traits` | 1. Bàn Tay Cứu Hộ (`pilot_trait_field_medic`)<br>2. Mái Khiên Nhân Ái (`pilot_trait_safeguard`) | `FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md` | Đã duyệt canonical |
 | `story.chapter01` | "Ánh sáng cuối cùng tại Elysia" (Toàn văn) | `FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md` | Đã duyệt nội dung |

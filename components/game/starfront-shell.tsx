@@ -110,11 +110,13 @@ import { convertWorldBattleContextToCombatV2Snapshot } from "@/lib/game/world/co
 import type { WorldBattleContext } from "@/lib/game/world/types"
 import { loadWorldState } from "@/lib/game/world/storage"
 import { GlobalSettingsModal, type GlobalSettingsState } from "./global-settings-modal"
+import { PilotProfileV2 } from "./v2/character-profile/pilot-profile-v2"
 
 export type StarfrontSection =
   | "home"
   | "world"
   | "character-gear"
+  | "character-profile-v2"
   | "gallery"
   | "battlefield"
   | "missions"
@@ -233,6 +235,14 @@ const SECTIONS: SectionConfig[] = [
       { id: "pilot-list", label: "8 Hồ Sơ Phi Công" },
       { id: "gear-list", label: "3 Lớp Cơ Giáp" },
     ],
+  },
+  {
+    id: "character-profile-v2",
+    label: "★ HỒ SƠ PHI CÔNG V2 // FND-8",
+    shortLabel: "Hồ Sơ V2 (FND-8)",
+    icon: Sparkles,
+    group: "tactical",
+    badge: () => "V2 NEW",
   },
   {
     id: "gallery",
@@ -1301,6 +1311,13 @@ export function StarfrontShell() {
                 onContinueWithCurrentSelection={() => handleSwitchSection("battlefield")}
                 onEquipItem={handleEquipItem}
                 onUnequipSlot={handleUnequipSlot}
+              />
+            )}
+
+            {/* Phân hệ V2: Hồ Sơ Phi Công / Character Profile V2 (FND-8 / 8.2.3.E.0) */}
+            {activeSection === "character-profile-v2" && (
+              <PilotProfileV2
+                onNavigateSection={handleSwitchSection}
               />
             )}
 

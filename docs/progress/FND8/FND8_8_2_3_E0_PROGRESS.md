@@ -1,9 +1,9 @@
 # STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# TIẾN TRÌNH THỰC HIỆN (PROGRESS REPORT — REVISED)
+# TIẾN TRÌNH THỰC HIỆN (PROGRESS REPORT — E.0-IMPLEMENT-1 COMPLETED)
 
 **Ngày cập nhật:** 2026-10-22  
-**Giai đoạn:** DEFINE / PLAN ONLY — Audit mã nguồn thật & Lập kế hoạch kiến trúc UI V2  
-**Trạng thái hiện tại:** HOÀN TẤT RÀ SOÁT TÀI LIỆU & NGUỒN DỮ LIỆU (Chờ người dùng duyệt)  
+**Giai đoạn:** E.0-IMPLEMENT-1 — Triển Khai Xây Dựng UI Foundation V2 (Desktop + Mobile)  
+**Trạng thái hiện tại:** HOÀN THÀNH PHASE E.0-IMPLEMENT-1 (Dừng chờ người dùng nghiệm thu thực tế)  
 
 ---
 
@@ -11,19 +11,26 @@
 
 | Thời Điểm | Hạng Mục Công Việc | Kết Quả Đạt Được | Ghi Chú |
 |---|---|---|---|
-| **Bước 1** | Kiểm tra môi trường & Git status | Đã xác nhận: Thư mục gốc không có `.git`. Mọi tracking lịch sử dựa trên tài liệu Markdown persistent. Dev server chạy bình thường tại port 3000 (HTTP 200). | Không có xung đột git |
-| **Bước 2** | Audit tài nguyên hình ảnh thực tế (`public/images/`) | Xác minh thực tế: Có 19 ảnh WebP và 1 ảnh JPG trong kho. Riêng Valentine có:<br>- `/images/valentine-fullbody.webp` (228 KB)<br>- `/images/valentine-portrait.webp` (59 KB)<br>- `src/assets/images/valentine_portrait_1791631686158.jpg`<br>28 ảnh còn lại trong manifest 30 ảnh chưa có trên đĩa. | Đã áp dụng quy tắc Zero-Broken-Image |
-| **Bước 3** | Rà soát FND-1 / FND-8 Data Registry | Xác nhận: `lib/game/world/catalog/registry.ts` quản lý master catalogs FND-2 đến FND-7. FND-8 hiện chưa có registry runtime mà lưu chuẩn tại `docs/foundations/FND8/8.2.3.E0/`. Sẽ dùng data adapter đọc canonical docs, chuẩn bị cắm vào FND-1, không nhân đôi gameplay stats. | Đảm bảo kiến trúc FND-1 |
-| **Bước 4** | Kiểm tra tham chiếu manifest & `sourceFilename` | Xác nhận: `valentine_assets_manifest.json` và `sourceFilename` hoàn toàn KHÔNG được tham chiếu trong runtime code. Giữ nguyên file như hồ sơ truy vết; UI V2 tuyệt đối không dùng `sourceFilename` để tải ảnh. | Ngăn ngừa 100% link chết |
-| **Bước 5** | Rà soát 3 ảnh Concept UI | Đã tìm kiếm trên toàn bộ hệ thống file: 3 ảnh PNG concept không có trong container filesystem. Giữ nguyên đặc tả text contract; sẵn sàng thư mục `docs/art-direction/UI_CONCEPTS/` khi người dùng cấp file. | Minh bạch thực tế |
-| **Bước 6** | Thiết lập WebP Runtime Policy | Mọi artwork runtime ưu tiên `.webp`; quy trình kiểm tra 3 bước (Disk - Manifest - URL); 28 ảnh thiếu hiển thị thẻ "Chờ Đồng Bộ WebP". | Chuẩn hóa WebP |
-| **Bước 7** | Cập nhật bộ 5 tài liệu FND-8 E.0 | Đã cập nhật đầy đủ Feature Reference, Implementation Plan, Progress, Checkpoint, Handoff. | Hoàn tất rà soát |
+| **Bước 1** | Kiểm tra môi trường & Dev server | Đã xác nhận: Hệ thống chạy ổn định trên port 3000, App Router Next.js 16.3.0. | Sẵn sàng |
+| **Bước 2** | Kiểm toán tài nguyên ảnh thực tế | 2 ảnh WebP thật của Valentine (`valentine-fullbody.webp` 228 KB, `valentine-portrait.webp` 59 KB). 28 ảnh manifest chờ đồng bộ. | Áp dụng Zero Broken Images |
+| **Bước 3** | Rà soát 3 ảnh Concept PNG thực tế | Đã mở và kiểm tra trực tiếp cả 3 ảnh PNG trong `docs/art-direction/UI_CONCEPTS/`: Desktop, Mobile Paired, Mobile Info View. Giải phóng hoàn toàn cổng chặn Blocker. | Đạt điều kiện triển khai |
+| **Bước 4** | Thiết lập Data Access Adapter V2 | Tạo mới `lib/game/v2/character-profile-data.ts`: Trích xuất 12 Class 20 điểm chuẩn FND-8, hồ sơ Valentine, 10 chương Story, không nhân đôi gameplay stats. | Kiến trúc sạch FND-1 ready |
+| **Bước 5** | Triển khai 4 Tab Components V2 | Tạo mới `components/game/v2/character-profile/profile-tabs/`: `overview-tab.tsx`, `story-tab.tsx`, `gear-compat-tab.tsx`, `gallery-tab.tsx`. | Đạt chuẩn Design System V2 |
+| **Bước 6** | Triển khai Trình Soi Tranh (Lightbox Inspector) | Tạo mới `components/game/v2/character-profile/artwork-lightbox-modal.tsx`: Zoom 1x-4x, kéo chuột pan, phím Esc/mũi tên, reset 1x. | Độc lập khỏi legacy gallery |
+| **Bước 7** | Triển khai Giao Diện Desktop (1440px) | Tạo mới `components/game/v2/character-profile/desktop-profile-view.tsx`: 3 cột, 2 controls bối cảnh, quote/short bio riêng, 4 tabs. | Khớp 100% Concept Desktop |
+| **Bước 8** | Triển khai Giao Diện Mobile (375px–430px) | Tạo mới `components/game/v2/character-profile/mobile-profile-view.tsx`: Paired States (Info View & Art View), touch targets >= 44px. | Khớp 100% Concept Mobile |
+| **Bước 9** | Triển khai Master Container V2 | Tạo mới `components/game/v2/character-profile/pilot-profile-v2.tsx`: Tự động nhận diện viewport và điều phối state. | Responsive linh hoạt |
+| **Bước 10** | Tích hợp Entry Point Tối Thiểu Vào Shell | Thêm tab `"HỒ SƠ PHI CÔNG V2 // FND-8"` vào `components/game/starfront-shell.tsx`, giữ nguyên 100% các phân hệ V1. | Cô lập an toàn |
+| **Bước 11** | Kiểm tra Biên Dịch & Build Test | Chạy `compile_applet`: **Build succeeded** (0 lỗi TypeScript, 0 lỗi cú pháp). | Đạt chuẩn chấp nhận |
 
 ---
 
 ## 2. Kết Quả Kiểm Kê & Bảng Đối Chiếu Hiện Trạng
 
-- **Mã Nguồn:** Next.js 16.3.0 App Router, React 19, Tailwind CSS v4, Lucide React, Motion. Dự án biên dịch sạch sẽ (`compile_applet` passed).
-- **Ranh Giới Thực Hiện:**
-  - DEFINE / PLAN ONLY: Tuyệt đối không can thiệp mã nguồn, không sửa code, không đổi dependency.
-  - Báo cáo và DỪNG để người dùng duyệt.
+- **Phase Hoàn Tất:** `E.0-IMPLEMENT-1`.
+- **Thư Mục Code Mới Tạo:**
+  - `lib/game/v2/`
+  - `components/game/v2/character-profile/`
+- **Tệp Cũ Được Sửa Đổi Tối Thiểu:**
+  - `components/game/starfront-shell.tsx` (Chỉ thêm 1 route tab thử nghiệm, không động chạm legacy V1).
+- **Trạng Thái Tiếp Theo:** DỪNG và chờ người dùng kiểm thử giao diện thực tế. Không tự động chuyển sang `IMPLEMENT-2`.

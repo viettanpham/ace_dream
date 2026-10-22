@@ -34,6 +34,12 @@ export function MobileArtView({
   onPrevPilot,
   onNextPilot,
 }: MobileArtViewProps) {
+  const [imageError, setImageError] = React.useState<boolean>(false)
+
+  React.useEffect(() => {
+    setImageError(false)
+  }, [character.id])
+
   return (
     <div className="relative w-full h-[100dvh] bg-[#070A12] overflow-hidden flex flex-col justify-between select-none">
       {/* Background Graphic depending on mode */}
@@ -98,16 +104,27 @@ export function MobileArtView({
           <ChevronRight className="w-6 h-6" />
         </button>
 
-        {/* Character Image */}
-        <div className="relative w-full h-[62vh] max-h-[520px]">
-          <Image
-            src={character.fullbodyAssetPath}
-            alt={character.classCharacterName}
-            fill
-            priority
-            referrerPolicy="no-referrer"
-            className="object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
-          />
+        {/* Character Image or Fallback */}
+        <div className="relative w-full h-[62vh] max-h-[520px] flex items-center justify-center">
+          {!imageError ? (
+            <Image
+              src={character.fullbodyAssetPath}
+              alt={character.classCharacterName}
+              fill
+              priority
+              referrerPolicy="no-referrer"
+              className="object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.9)]"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="text-center p-6 rounded-2xl bg-[#0F172A]/80 border border-[#26384D] space-y-2 max-w-xs">
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#FBBF24]/20 text-[#FBBF24] font-bold">
+                CHỜ ĐỒNG BỘ WEBP
+              </span>
+              <h4 className="text-sm font-bold text-[#F1F5F9]">{character.classCharacterName}</h4>
+              <p className="text-xs text-[#A7B6C8]">Artwork toàn thân đang chờ cập nhật.</p>
+            </div>
+          )}
         </div>
 
         {/* Floating Side Tools on right */}

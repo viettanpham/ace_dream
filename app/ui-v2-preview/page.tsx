@@ -211,8 +211,18 @@ export default function UIV2PreviewPage() {
             <span>UI PRIMITIVES HARNESS</span>
           </button>
         </div>
-        <div className="text-xs font-mono text-[#06B6D4] hidden sm:block">
-          {previewSection === 'profile' ? 'FND-8 / 8.2.3.E.0' : 'UI Foundation Phase 1'}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/v2/pilots"
+            className="min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 bg-[#06B6D4]/15 hover:bg-[#06B6D4]/25 text-[#06B6D4] border border-[#06B6D4]/50 hover:border-[#06B6D4] transition-all shrink-0"
+            title="Mở route độc lập chính thức V2 Shell & Pilot Category tại /v2/pilots"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#06B6D4]" />
+            <span>ROUTE CHÍNH THỨC (/v2/pilots) →</span>
+          </Link>
+          <div className="text-xs font-mono text-[#06B6D4] hidden sm:block">
+            {previewSection === 'profile' ? 'FND-8 / 8.2.3.E.0' : 'UI Foundation Phase 1'}
+          </div>
         </div>
       </div>
 

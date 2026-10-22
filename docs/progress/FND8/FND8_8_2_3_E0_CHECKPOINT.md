@@ -52,11 +52,12 @@
 
 ## 4. Hướng Dẫn Kiểm Thử Cho Người Dùng
 
-1. **Cách 1: Kiểm thử trên Preview Cách Ly (Khuyến nghị):**
-   - Mở URL ứng dụng và truy cập route: `/ui-v2-preview`.
-   - Bấm vào tab **`HỒ SƠ PHI CÔNG V2 (E.0-REBUILD-1)`** trên thanh phụ.
-   - Thử nghiệm trên màn hình Desktop hoặc bật DevTools chuyển sang chế độ Mobile (390px).
-2. **Cách 2: Kiểm thử qua V1 Shell:**
-   - Tại trang chủ `/`, trên thanh menu bên trái tìm mục:
-     `★ HỒ SƠ PHI CÔNG V2 // FND-8`.
-   - Xem giao diện Desktop 3 cột và thử click chọn nhân vật, đổi 2 chế độ bối cảnh Standard vs Tactical HUD, duyệt 4 tabs, và mở Art Viewer.
+1. **Cách 1: Trải nghiệm chính thức V2 Shell + Category độc lập (KHUYẾN NGHỊ CAO NHẤT):**
+   - Mở trực tiếp URL: **`/v2/pilots`** (hoặc `/v2`).
+   - Màn hình Desktop: Trải nghiệm Top Bar V2, thu/phóng Global Left Menu Mini (64px) / Full (240px) và Pilot Roster Mini (72px) / Full (256px), 2 chế độ bối cảnh nền, 4 tabs thông tin, Soi Tranh 4K.
+   - Màn hình Mobile: Menu Hamburger mở Drawer hệ thống, thanh Avatar Rail $\ge 76\text{px}$, chuyển đổi mượt mà giữa Mobile Art View và Mobile Info View.
+2. **Cách 2: Kiểm thử trên Preview Harness cách ly:**
+   - Truy cập: `/ui-v2-preview`.
+   - Bấm vào tab `HỒ SƠ PHI CÔNG V2 (E.0-REBUILD-1)` hoặc nút `ROUTE CHÍNH THỨC (/v2/pilots) →`.
+3. **Cách 3: Kiểm thử qua V1 Shell:**
+   - Tại trang chủ `/`, trên menu bên trái bấm: `★ HỒ SƠ PHI CÔNG V2 // FND-8`.

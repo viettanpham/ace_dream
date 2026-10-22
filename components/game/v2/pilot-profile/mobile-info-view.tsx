@@ -103,6 +103,10 @@ export function MobileInfoView({
                     fill
                     referrerPolicy="no-referrer"
                     className="object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = '/images/valentine-portrait.webp'
+                    }}
                   />
                 </div>
                 <span

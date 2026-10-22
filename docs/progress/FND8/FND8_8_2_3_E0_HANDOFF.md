@@ -8,18 +8,20 @@
 ---
 
 ## 1. Hướng Dẫn Thử Nghiệm
-
-1. **Xem trực tiếp trên `/ui-v2-preview`:**
-   - Truy cập `/ui-v2-preview`.
-   - Chọn tab `HỒ SƠ PHI CÔNG V2 (E.0-REBUILD-1)` trên thanh phụ.
+1. **Truy cập trực tiếp Route V2 chính thức:**
+   - Mở URL: **`/v2/pilots`** (hoặc `/v2`).
 2. **Kiểm tra trên Desktop (1440px):**
-   - Roster bên trái cuộn mượt, chọn Valentine hoặc các nhân vật khác.
-   - Khu vực trung tâm: Bấm thử 2 nút bối cảnh `Tiêu Chuẩn` (Standard) và `Radar HUD` (Tactical).
-   - Nút `Soi Tranh 4K`: Mở Art Viewer, thử Zoom In/Out, kéo pan chuột và bấm phím `Escape` để đóng.
-   - Cột phải: Đảm bảo `characterQuote` và `shortDescription` tách biệt rõ ràng; duyệt qua 4 tab: `OVERVIEW` (6 chỉ số sạch, không có tổng 20 điểm), `STORY` (toàn văn chương 1, chương 7-10 niêm phong), `GEAR COMPAT` (3 cơ giáp), `GALLERY` (2 ảnh WebP thật + 28 thẻ archive, không có lỗi 404).
+   - V2 Top Bar: Hiển thị thanh trạng thái, nút chuyển đổi/quay lại V1.
+   - Global Left Menu: Nút thu gọn/mở rộng Mini (64px) ↔ Full (240px), lưu vào `sf_v2_ui_prefs`.
+   - Pilot Roster: Độc lập thu gọn Mini (72px) ↔ Full (256px), lưu vào `sf_v2_ui_prefs`.
+   - Khu vực trung tâm: Nút chuyển đổi 2 bối cảnh `Tiêu Chuẩn` (Standard) và `Radar HUD` (Tactical).
+   - Nút `Soi Tranh 4K`: Mở Shared Art Viewer (zoom 1x–3x, pan có kẹp biên, phím Escape, touch targets $\ge 44\text{px}$).
+   - Cột phải: 4 tabs `OVERVIEW` (6 chỉ số sạch, không có tổng 20 điểm), `STORY` (toàn văn chương 1, chương 7–10 niêm phong HOLD), `GEAR COMPAT` (3 cơ giáp), `GALLERY` (WebP thật + Thẻ Archive cho 28 tranh manifest, 100% Zero 404).
 3. **Kiểm tra trên Mobile (375px–430px):**
+   - Hamburger Button mở V2 Drawer menu đầy đủ.
    - Mặc định mở ở `Mobile Art View` (ngắm tranh tràn màn hình, 2 controls bối cảnh nổi $\ge 44\text{px}$).
-   - Bấm nút `XEM HỒ SƠ` chuyển sang `Mobile Info View`: Horizontal roster 76px hiển thị đủ tên, 4 tabs cuộn dọc mượt mà.
+   - Bấm nút `XEM HỒ SƠ` chuyển sang `Mobile Info View`: Horizontal avatar rail $\ge 76\text{px}$ hiển thị đủ tên, 4 tabs cuộn dọc mượt mà.
+4. **Harness phụ trợ:** `/ui-v2-preview` tiếp tục hoạt động độc lập để test primitives.
 
 ---
 

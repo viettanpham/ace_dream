@@ -1,0 +1,420 @@
+{
+  "version": "2.0.30-artworks-r2",
+  "classId": "valentine",
+  "characterName": "Valentine",
+  "assetRoot": "/images/",
+  "approvedAssetCount": 30,
+  "assets": [
+    {
+      "id": "valentine-activity-001",
+      "path": "/images/valentine-activity-001.webp",
+      "category": "base",
+      "width": 1086,
+      "height": 1448,
+      "use": [
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-casual",
+      "path": "/images/valentine-casual.webp",
+      "category": "base",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-closeup",
+      "path": "/images/valentine-closeup.webp",
+      "category": "base",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-combat",
+      "path": "/images/valentine-combat.webp",
+      "category": "base",
+      "width": 1086,
+      "height": 1448,
+      "use": [
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-event-001",
+      "path": "/images/valentine-event-001.webp",
+      "category": "base",
+      "width": 1086,
+      "height": 1448,
+      "use": [
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-fullbody",
+      "path": "/images/valentine-fullbody.webp",
+      "category": "base",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "character-selection",
+        "character-details",
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-portrait",
+      "path": "/images/valentine-portrait.webp",
+      "category": "base",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-story-001",
+      "path": "/images/valentine-story-001.webp",
+      "category": "base",
+      "width": 1086,
+      "height": 1448,
+      "use": [
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-uniform-001",
+      "path": "/images/valentine-uniform-001.webp",
+      "category": "base",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ]
+    },
+    {
+      "id": "valentine-outfit-001",
+      "path": "/images/valentine-outfit-001.webp",
+      "category": "flight-suit",
+      "description": "Cockpit; seated pilot",
+      "sourceFilename": "nữ_phi_công_valentine_trong_buồng_lái_vũ_trụ.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-002",
+      "path": "/images/valentine-outfit-002.webp",
+      "category": "evening",
+      "description": "Teal evening gown",
+      "sourceFilename": "nữ_quý_tộc_nâng_ly_giữa_vũ_hội_sao_trời.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-003",
+      "path": "/images/valentine-outfit-003.webp",
+      "category": "evening",
+      "description": "Red-and-black gala gown, full-body standing invitation pose, newly approved replacement; distinct from outfit-013 seated gown.",
+      "sourceFilename": "dạ_tiệc_vũ_trụ_xa_hoa_sắc_đỏ.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-004",
+      "path": "/images/valentine-outfit-004.webp",
+      "category": "evening",
+      "description": "White gala look",
+      "sourceFilename": "công_chúa_giữa_cung_điện_ngân_hà.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-005",
+      "path": "/images/valentine-outfit-005.webp",
+      "category": "casual",
+      "description": "City stroll",
+      "sourceFilename": "valentine_dạo_bước_giữa_thành_phố_quỹ_đạo.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-006",
+      "path": "/images/valentine-outfit-006.webp",
+      "category": "casual",
+      "description": "Afternoon tea",
+      "sourceFilename": "trà_chiều_trên_thành_phố_vũ_trụ.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-007",
+      "path": "/images/valentine-outfit-007.webp",
+      "category": "casual",
+      "description": "Flower street",
+      "sourceFilename": "mỹ_nhân_tóc_vàng_giữa_phố_hoa_mùa_xuân.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-008",
+      "path": "/images/valentine-outfit-008.webp",
+      "category": "flight-suit",
+      "description": "Pilot near hangar",
+      "sourceFilename": "nữ_phi_công_quân_y_giữa_không_gian.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-009",
+      "path": "/images/valentine-outfit-009.webp",
+      "category": "flight-suit",
+      "description": "Pilot seated in hangar",
+      "sourceFilename": "nữ_chỉ_huy_y_tế_tại_cảng_vũ_trụ.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-010",
+      "path": "/images/valentine-outfit-010.webp",
+      "category": "night-shift",
+      "description": "Clinical shift",
+      "sourceFilename": "thiên_thần_y_tế_trong_bệnh_xá_tương_lai.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-011",
+      "path": "/images/valentine-outfit-011.webp",
+      "category": "evening",
+      "description": "Grand gala",
+      "sourceFilename": "dạ_tiệc_vũ_trụ_xa_hoa.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-012",
+      "path": "/images/valentine-outfit-012.webp",
+      "category": "evening",
+      "description": "Gala staircase",
+      "sourceFilename": "valentine_xuống_cầu_thang_vũ_trụ.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-013",
+      "path": "/images/valentine-outfit-013.webp",
+      "category": "evening",
+      "description": "Ballroom",
+      "sourceFilename": "valentine_trong_sảnh_tiệc_vũ_trụ_lộng_lẫy.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-014",
+      "path": "/images/valentine-outfit-014.webp",
+      "category": "casual",
+      "description": "Spring city",
+      "sourceFilename": "dạo_bước_giữa_phố_xuân_tương_lai.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-015",
+      "path": "/images/valentine-outfit-015.webp",
+      "category": "night-shift",
+      "description": "Doctor at hospital",
+      "sourceFilename": "bác_sĩ_valentine_trong_bệnh_viện_tương_lai.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-016",
+      "path": "/images/valentine-outfit-016.webp",
+      "category": "academy",
+      "description": "Academy uniform standing, revised image",
+      "sourceFilename": "nữ_sĩ_quan_học_viện_tương_lai.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-017",
+      "path": "/images/valentine-outfit-017.webp",
+      "category": "academy",
+      "description": "Academy uniform seated, revised image",
+      "sourceFilename": "valentine_trong_sảnh_học_viện_tương_lai.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-018",
+      "path": "/images/valentine-outfit-018.webp",
+      "category": "academy",
+      "description": "Academy formal walk",
+      "sourceFilename": "huy_hiệu_y_khoa_giữa_học_viện_tương_lai.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-019",
+      "path": "/images/valentine-outfit-019.webp",
+      "category": "night-shift",
+      "description": "Medical duty seated",
+      "sourceFilename": "valentine_trong_bệnh_viện_tương_lai.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-020",
+      "path": "/images/valentine-outfit-020.webp",
+      "category": "homewear",
+      "description": "Homewear in room",
+      "sourceFilename": "phòng_ngủ_tương_lai_lãng_mạn_của_valentine.png",
+      "width": 1122,
+      "height": 1402,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    },
+    {
+      "id": "valentine-outfit-021",
+      "path": "/images/valentine-outfit-021.webp",
+      "category": "homewear",
+      "description": "New approved at-home night look",
+      "sourceFilename": "a_highly_detailed_photorealistic_anime_style_illu.png",
+      "width": 1024,
+      "height": 1536,
+      "use": [
+        "gallery"
+      ],
+      "storyChapterRefs": []
+    }
+  ],
+  "storyChapters": {
+    "01": {
+      "status": "approved",
+      "artIds": [
+        "valentine-story-001",
+        "valentine-closeup"
+      ]
+    },
+    "02": {
+      "status": "approved",
+      "artIds": [
+        "valentine-uniform-001"
+      ]
+    },
+    "03": {
+      "status": "approved",
+      "artIds": [
+        "valentine-activity-001"
+      ]
+    },
+    "04": {
+      "status": "approved",
+      "artIds": [
+        "valentine-casual"
+      ]
+    },
+    "05": {
+      "status": "provisionally-approved",
+      "artIds": []
+    },
+    "06": {
+      "status": "provisionally-approved",
+      "artIds": []
+    },
+    "07-10": {
+      "status": "hold",
+      "artIds": []
+    }
+  },
+  "notes": [
+    "Gallery lists all assets independent of Story; optional story refs can be added without moving files.",
+    "Class-character lore art does not imply the same biography for Pilot Instances.",
+    "Original nine WebP images retained unchanged.",
+    "All outfit images are individual renders (not cuts from collages).",
+    "2026-10-22: Replaced valentine-outfit-003.webp with approved red-and-black full-body gala pose, previous version superseded; valentine-outfit-013.webp unchanged."
+  ]
+}

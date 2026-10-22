@@ -1,0 +1,74 @@
+{
+  "configFileId": "system_fleet_fleet_class",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "FLEET_CLASS_MK1_SQUAD",
+      "tierOrder": 1,
+      "displayName": "Tiểu Đội Hạm Đội MK I (Squad)",
+      "minLevel": 1,
+      "maxLevel": 10,
+      "maxShipCount": 4,
+      "commandCapRequirement": 1,
+      "minimumCommanderRank": "ENSIGN",
+      "baseUpkeepCredits": 250,
+      "levelMultiplier": 1.0,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_CLASS_MK2_FLOTILLA",
+      "tierOrder": 2,
+      "displayName": "Chi Hạm Đội MK II (Flotilla)",
+      "minLevel": 11,
+      "maxLevel": 20,
+      "maxShipCount": 8,
+      "commandCapRequirement": 2,
+      "minimumCommanderRank": "LIEUTENANT",
+      "baseUpkeepCredits": 650,
+      "levelMultiplier": 1.5,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_CLASS_MK3_TASK_FORCE",
+      "tierOrder": 3,
+      "displayName": "Phân Hạm Đội Đặc Nhiệm MK III (Task Force)",
+      "minLevel": 21,
+      "maxLevel": 30,
+      "maxShipCount": 16,
+      "commandCapRequirement": 4,
+      "minimumCommanderRank": "COMMANDER",
+      "baseUpkeepCredits": 1600,
+      "levelMultiplier": 2.0,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_CLASS_MK4_BATTLE_GROUP",
+      "tierOrder": 4,
+      "displayName": "Liên Đội Tác Chiến MK IV (Battle Group)",
+      "minLevel": 31,
+      "maxLevel": 40,
+      "maxShipCount": 32,
+      "commandCapRequirement": 8,
+      "minimumCommanderRank": "COMMODORE",
+      "baseUpkeepCredits": 3800,
+      "levelMultiplier": 2.5,
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_CLASS_MK5_ARMADA",
+      "tierOrder": 5,
+      "displayName": "Đại Hạm Đội Hùng Cường MK V (Armada)",
+      "minLevel": 41,
+      "maxLevel": 50,
+      "maxShipCount": 64,
+      "commandCapRequirement": 16,
+      "minimumCommanderRank": "ADMIRAL",
+      "baseUpkeepCredits": 9500,
+      "levelMultiplier": 3.0,
+      "hasMaxTierBonus": true,
+      "lifecycle": "ACTIVE"
+    }
+  ]
+}

@@ -21,6 +21,7 @@ import type { BasePopulationState, BaseType } from "../population/types"
 import type { BaseEntityState, BuildingInstance } from "../building/types"
 import { createBuildingInstance } from "../building/construction-engine"
 import { calculateSlots } from "../building/slot-engine"
+import { createDefaultStartingShips } from "../ship/ship-entity"
 import {
   SYSTEM_DEFAULT_BUILDING_DEFINITIONS,
   SYSTEM_DEFAULT_SLOT_PROFILES,
@@ -675,6 +676,8 @@ export function generate30NodeWorld(
     basePopulationStates,
     bases,
     orbitalSubBases,
+    // Phase 7.2: Ship Entities
+    ships: createDefaultStartingShips(),
     worldGenerationConfig: config,
     lastAutoSaveGameDay: 1,
     lastAutoSaveTimestamp: now,

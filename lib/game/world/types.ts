@@ -20,7 +20,16 @@ import type {
   OrbitalSubBaseState,
   WorldGenerationConfig,
   NationalSupportRequest,
-} from "./base/types"
+} from "./base"
+import type { ShipInstance } from "./ship/types"
+import type { FleetEntityState } from "./fleet/fleet-entity"
+
+export interface NationalFleetRegistryConfig {
+  cycleReportIntervalDays: number // default 7
+  macroSettlementIntervalDays: number // default 30
+  lastCycleReportGameDay: number
+  lastMacroSettlementGameDay: number
+}
 
 export type {
   SurvivalConfig,
@@ -36,6 +45,7 @@ export type {
   OrbitalSubBaseState,
   WorldGenerationConfig,
   NationalSupportRequest,
+  ShipInstance,
 }
 
 export type SectorStage = "normal" | "threatened" | "under_siege" | "lost" | "recovery"
@@ -753,6 +763,11 @@ export interface WorldState {
   nationalSupportRequests?: NationalSupportRequest[]
   lastAutoSaveGameDay?: number
   lastAutoSaveTimestamp?: number
+  // Phase 7.2: Ship Entities (Individually addressable MK I..X Ships)
+  ships?: Record<string, ShipInstance>
+  // Phase 7.4-7.6: Fleet Entities & National Fleet Registry (FND-7)
+  fleets?: Record<string, FleetEntityState>
+  nationalFleetRegistryConfig?: NationalFleetRegistryConfig
   // World Reset & Commander Identity Configuration
   worldResetConfig?: {
     cc0Name: string // Default: "Liên minh VSS"

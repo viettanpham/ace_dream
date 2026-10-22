@@ -18,6 +18,7 @@ import {
   type ExtendedBaseEntityState,
   type WorldGenerationConfig,
 } from "./base/types"
+import { createDefaultStartingShips } from "./ship/ship-entity"
 
 export { DEFAULT_WORLD_SEED_CONFIG }
 
@@ -791,6 +792,8 @@ export function createInitialWorldState(
     // Phase 6.34A-FND-5 Base Entities & Building Instances
     bases,
     orbitalSubBases: {},
+    // Phase 7.2: Ship Entities
+    ships: createDefaultStartingShips(),
     worldGenerationConfig: {
       ...DEFAULT_WORLD_GENERATION_CONFIG,
       totalMainBaseNodes: 10,

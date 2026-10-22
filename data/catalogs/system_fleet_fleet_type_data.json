@@ -1,0 +1,99 @@
+{
+  "configFileId": "system_fleet_fleet_type",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "items": [
+    {
+      "id": "FLEET_TYPE_HOME_DEFENSE",
+      "name": "Hạm Đội Vệ Binh Thủ Phủ",
+      "description": "Đóng giữ bảo vệ các căn cứ kinh tế then chốt, tối ưu hóa khả năng phòng ngự và lá chắn.",
+      "strategicRole": "DEFENSIVE",
+      "baseSpeedMultiplier": 0.9,
+      "baseMaintenanceCostMultiplier": 0.85,
+      "defaultAIPersona": "STEADFAST_DEFENDER",
+      "compatibleShipTypes": [
+        "SHIP_TYPE_BATTLESHIP",
+        "SHIP_TYPE_CRUISER",
+        "SHIP_TYPE_DESTROYER",
+        "SHIP_TYPE_FRIGATE"
+      ],
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_TYPE_MILITARY_EXPEDITIONARY",
+      "name": "Hạm Đội Viễn Chinh Tác Chiến",
+      "description": "Chuyên trách tấn công thọc sâu, giải phóng các sector bị bao vây và tiêu diệt hạm đội địch.",
+      "strategicRole": "OFFENSIVE",
+      "baseSpeedMultiplier": 1.15,
+      "baseMaintenanceCostMultiplier": 1.25,
+      "defaultAIPersona": "AGGRESSIVE_VANGUARD",
+      "compatibleShipTypes": [
+        "SHIP_TYPE_BATTLESHIP",
+        "SHIP_TYPE_CARRIER",
+        "SHIP_TYPE_CRUISER",
+        "SHIP_TYPE_DESTROYER"
+      ],
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_TYPE_TACTICAL_RECON",
+      "name": "Hạm Đội Trinh Sát Tình Báo Tác Chiến",
+      "description": "Tốc độ cơ động cao, tàng hình và ngụy trang, thu thập tin tức tình báo và cảnh báo sớm hiểm họa.",
+      "strategicRole": "RECON",
+      "baseSpeedMultiplier": 1.4,
+      "baseMaintenanceCostMultiplier": 0.9,
+      "defaultAIPersona": "TACTICAL_RECON",
+      "compatibleShipTypes": [
+        "SHIP_TYPE_CORVETTE",
+        "SHIP_TYPE_FRIGATE"
+      ],
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_TYPE_LOGISTICS_TRANSPORT",
+      "name": "Hạm Đội Hộ Tống & Vận Tải Chiến Lược",
+      "description": "Sức chứa khoang hàng cực lớn, đảm bảo tiếp vận lương thực và nhiên liệu thông suốt thiên hà.",
+      "strategicRole": "LOGISTICS",
+      "baseSpeedMultiplier": 0.85,
+      "baseMaintenanceCostMultiplier": 0.8,
+      "defaultAIPersona": "COMMERCIAL_ESCORT",
+      "compatibleShipTypes": [
+        "SHIP_TYPE_FREIGHTER",
+        "SHIP_TYPE_FRIGATE",
+        "SHIP_TYPE_CORVETTE"
+      ],
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_TYPE_SEARCH_AND_RESCUE",
+      "name": "Hạm Đội Tìm Kiếm & Cứu Hộ SAR",
+      "description": "Tốc độ hành quân cao, trang bị trạm y tế hồi sức dã chiến, chuyên cứu hộ phi công gặp nạn.",
+      "strategicRole": "SUPPORT",
+      "baseSpeedMultiplier": 1.3,
+      "baseMaintenanceCostMultiplier": 0.95,
+      "defaultAIPersona": "TACTICAL_RECON",
+      "compatibleShipTypes": [
+        "SHIP_TYPE_CORVETTE",
+        "SHIP_TYPE_FRIGATE",
+        "SHIP_TYPE_FREIGHTER"
+      ],
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "FLEET_TYPE_COMMERCIAL_ESCORT",
+      "name": "Hạm Đội Hộ Tống Đoàn Tàu Thương Mại",
+      "description": "Chuyên trách hộ tống bảo an các đoàn tàu buôn, tuần tra bảo vệ các tuyến thương mại khỏi hải tặc.",
+      "strategicRole": "ESCORT",
+      "baseSpeedMultiplier": 1.05,
+      "baseMaintenanceCostMultiplier": 0.9,
+      "defaultAIPersona": "COMMERCIAL_ESCORT",
+      "compatibleShipTypes": [
+        "SHIP_TYPE_DESTROYER",
+        "SHIP_TYPE_FRIGATE",
+        "SHIP_TYPE_CORVETTE"
+      ],
+      "lifecycle": "ACTIVE"
+    }
+  ]
+}

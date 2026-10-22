@@ -109,6 +109,7 @@ import { DebriefingDrawer } from "./debriefing-drawer"
 import { ThreatVisualizer } from "./threat-visualizer"
 import { ResourceSparkline } from "./resource-sparkline"
 import { SectorIntelModal } from "./sector-intel-modal"
+import { FleetCommandModal } from "./fleet-command-modal"
 import {
   GlobalOperationsHub,
   computeCriticalAlerts,
@@ -185,6 +186,10 @@ export function OperationsCenter({
 
   // Phase 6.28: Sector Intel modal state
   const [isSectorIntelOpen, setIsSectorIntelOpen] = useState(false)
+
+  // Phase 7.7: Fleet Command modal state (FND-7)
+  const [isFleetCommandOpen, setIsFleetCommandOpen] = useState(false)
+  const [selectedFleetIdForModal, setSelectedFleetIdForModal] = useState<string | undefined>(undefined)
 
   // Phase 6.26: Threat Visualizer mode & Session Resource History (Không thay đổi Schema V1)
   const [threatVisualizerMode, setThreatVisualizerMode] = useState<"critical" | "average">("critical")
@@ -1447,6 +1452,20 @@ export function OperationsCenter({
               <span className="hidden md:inline">Điều Quân</span>
             </button>
 
+            {/* Hạm Đội Quốc Gia (FND-7 Fleet Command) */}
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound()
+                setIsFleetCommandOpen(true)
+              }}
+              className="flex items-center gap-1 rounded border border-cyan-500/50 bg-cyan-950/40 px-2 py-1 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 hover:text-white transition-colors cursor-pointer shadow-sm shadow-cyan-950/40"
+              title="Mở Trung Tâm Chỉ Huy Hạm Đội Quốc Gia (FND-7 Fleet Command)"
+            >
+              <Compass className="size-3 text-cyan-400" />
+              <span className="hidden md:inline">Hạm Đội</span>
+            </button>
+
             {/* Nút Bánh Răng: Cài Đặt / Admin CP Overlay */}
             <button
               type="button"
@@ -2691,6 +2710,24 @@ export function OperationsCenter({
           }}
           onUpdateStrategicOrder={(secId, order) => {
             handleSetStrategicOrder(secId, order)
+          }}
+          onOpenFleetCommand={(fleetId) => {
+            setSelectedFleetIdForModal(fleetId)
+            setIsFleetCommandOpen(true)
+          }}
+        />
+      )}
+
+      {/* FLEET COMMAND MODAL (PHASE 7.7) */}
+      {worldState && (
+        <FleetCommandModal
+          isOpen={isFleetCommandOpen}
+          onClose={() => setIsFleetCommandOpen(false)}
+          worldState={worldState}
+          initialSelectedFleetId={selectedFleetIdForModal}
+          onWorldStateUpdated={(newState) => {
+            setWorldState(newState)
+            saveWorldState(newState)
           }}
         />
       )}

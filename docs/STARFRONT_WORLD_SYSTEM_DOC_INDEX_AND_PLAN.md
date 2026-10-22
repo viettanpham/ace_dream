@@ -17,6 +17,7 @@
 | **6.34A-FND-4** | Population / Workforce Shared Foundation | [`docs/PHASE_6_34A_FND_4_POPULATION_WORKFORCE_FOUNDATION.md`](./PHASE_6_34A_FND_4_POPULATION_WORKFORCE_FOUNDATION.md) | **DONE** | 23/23 PASS |
 | **6.34A-FND-5** | Foundation Audit Repair + Building / Production Foundation | [`docs/PHASE_6_34A_FND_5_BUILDING_PRODUCTION_FOUNDATION.md`](./PHASE_6_34A_FND_5_BUILDING_PRODUCTION_FOUNDATION.md) | **DONE** | 7/7 World Init PASS + 12/12 Building PASS |
 | **6.34A-FND-6** | Base / Hub / Capital / Orbital Sub-Base Foundation | [`docs/PHASE_6_34A_FND_6_BASE_FOUNDATION_ACCEPTANCE.md`](./PHASE_6_34A_FND_6_BASE_FOUNDATION_ACCEPTANCE.md) | **DONE** | 19/19 FND-6 PASS (142/142 All FNDs PASS) |
+| **FND-7** | Ship & Fleet Foundation Architecture & Specification | [`docs/foundations/FND7_SHIP_FLEET_FEATURE.md`](./foundations/FND7_SHIP_FLEET_FEATURE.md)<br>[`docs/foundations/FND7_DATA_DICTIONARY_AND_CATALOGS.md`](./foundations/FND7_DATA_DICTIONARY_AND_CATALOGS.md)<br>[`docs/foundations/FND7_MULTI_PHASE_ROADMAP.md`](./foundations/FND7_MULTI_PHASE_ROADMAP.md)<br>[`docs/progress/FND7_HANDOVER_REPORT.md`](./progress/FND7_HANDOVER_REPORT.md) | **PLANNED & SPECIFIED** | 15/15 Items Approved, Ready for Phase 7.1 |
 
 ---
 

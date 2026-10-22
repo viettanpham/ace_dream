@@ -2,17 +2,17 @@
   "label": "dev_save",
   "tick": 0,
   "currentDay": 42,
-  "savedAt": "2026-10-19T15:14:19.719Z",
+  "savedAt": "2026-10-20T12:22:07.237Z",
   "schemaVersion": 1,
-  "timestamp": 1792422859719,
-  "checksum": "d77d18ef",
+  "timestamp": 1792498927237,
+  "checksum": "e4f8d67c",
   "data": {
     "version": 1,
     "worldSeed": 99887766,
     "currentDay": 42,
     "totalDaysElapsed": 0,
-    "realTimeAnchor": 1792422859676,
-    "lastTickTimestamp": 1792422859676,
+    "realTimeAnchor": 1792498927206,
+    "lastTickTimestamp": 1792498927206,
     "sectors": {
       "sol_command_hq": {
         "id": "sol_command_hq",
@@ -35,7 +35,13 @@
           "food": 1800
         },
         "population": 260000,
-        "stability": 96
+        "stability": 96,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 40
+          }
+        ]
       },
       "helios_perimeter": {
         "id": "helios_perimeter",
@@ -57,7 +63,13 @@
           "food": 850
         },
         "population": 135378,
-        "stability": 88
+        "stability": 88,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 150
+          }
+        ]
       },
       "mining_outpost_k7": {
         "id": "mining_outpost_k7",
@@ -79,7 +91,13 @@
           "food": 550
         },
         "population": 71252,
-        "stability": 72
+        "stability": 72,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 360
+          }
+        ]
       },
       "asteroid_delta": {
         "id": "asteroid_delta",
@@ -101,7 +119,13 @@
           "food": 450
         },
         "population": 42430,
-        "stability": 80
+        "stability": 80,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 240
+          }
+        ]
       },
       "nebula_bastion": {
         "id": "nebula_bastion",
@@ -123,7 +147,13 @@
           "food": 350
         },
         "population": 86577,
-        "stability": 68
+        "stability": 68,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 460
+          }
+        ]
       },
       "waypoint_orion": {
         "id": "waypoint_orion",
@@ -145,7 +175,13 @@
           "food": 220
         },
         "population": 49447,
-        "stability": 52
+        "stability": 52,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 560
+          }
+        ]
       },
       "shadow_reach": {
         "id": "shadow_reach",
@@ -167,7 +203,13 @@
           "food": 100
         },
         "population": 31329,
-        "stability": 32
+        "stability": 32,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 740
+          }
+        ]
       },
       "tartarus_breach": {
         "id": "tartarus_breach",
@@ -190,7 +232,13 @@
           "food": 50
         },
         "population": 15000,
-        "stability": 95
+        "stability": 95,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 980
+          }
+        ]
       },
       "elysium_sanctuary": {
         "id": "elysium_sanctuary",
@@ -212,7 +260,13 @@
           "food": 2000
         },
         "population": 102020,
-        "stability": 92
+        "stability": 92,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 90
+          }
+        ]
       },
       "abyssal_rift": {
         "id": "abyssal_rift",
@@ -234,7 +288,13 @@
           "food": 150
         },
         "population": 33831,
-        "stability": 45
+        "stability": 45,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 720
+          }
+        ]
       },
       "proxima_forge": {
         "id": "proxima_forge",
@@ -256,7 +316,13 @@
           "food": 400
         },
         "population": 81635,
-        "stability": 85
+        "stability": 85,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 110
+          }
+        ]
       },
       "sirius_citadel": {
         "id": "sirius_citadel",
@@ -278,7 +344,13 @@
           "food": 500
         },
         "population": 68155,
-        "stability": 82
+        "stability": 82,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 210
+          }
+        ]
       },
       "cygnus_observatory": {
         "id": "cygnus_observatory",
@@ -300,7 +372,13 @@
           "food": 300
         },
         "population": 38880,
-        "stability": 90
+        "stability": 90,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 80
+          }
+        ]
       },
       "orion_belt_waypoint": {
         "id": "orion_belt_waypoint",
@@ -322,7 +400,13 @@
           "food": 600
         },
         "population": 51314,
-        "stability": 86
+        "stability": 86,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 130
+          }
+        ]
       },
       "vega_hydroponics": {
         "id": "vega_hydroponics",
@@ -344,7 +428,13 @@
           "food": 2500
         },
         "population": 73273,
-        "stability": 94
+        "stability": 94,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 95
+          }
+        ]
       },
       "centauri_gate": {
         "id": "centauri_gate",
@@ -366,7 +456,13 @@
           "food": 450
         },
         "population": 59887,
-        "stability": 78
+        "stability": 78,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 280
+          }
+        ]
       },
       "arcturus_fortress": {
         "id": "arcturus_fortress",
@@ -388,7 +484,13 @@
           "food": 400
         },
         "population": 51279,
-        "stability": 81
+        "stability": 81,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 290
+          }
+        ]
       },
       "antares_shipyard": {
         "id": "antares_shipyard",
@@ -410,7 +512,13 @@
           "food": 350
         },
         "population": 73019,
-        "stability": 76
+        "stability": 76,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 340
+          }
+        ]
       },
       "rigel_medical_hub": {
         "id": "rigel_medical_hub",
@@ -432,7 +540,13 @@
           "food": 700
         },
         "population": 45828,
-        "stability": 93
+        "stability": 93,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 75
+          }
+        ]
       },
       "pleiades_sanctuary": {
         "id": "pleiades_sanctuary",
@@ -454,7 +568,13 @@
           "food": 1200
         },
         "population": 129792,
-        "stability": 95
+        "stability": 95,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 50
+          }
+        ]
       },
       "aurora_exchange": {
         "id": "aurora_exchange",
@@ -476,7 +596,13 @@
           "food": 600
         },
         "population": 59339,
-        "stability": 94
+        "stability": 94,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 60
+          }
+        ]
       },
       "perseus_listening_post": {
         "id": "perseus_listening_post",
@@ -498,7 +624,13 @@
           "food": 150
         },
         "population": 27836,
-        "stability": 58
+        "stability": 58,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 520
+          }
+        ]
       },
       "corvus_outpost": {
         "id": "corvus_outpost",
@@ -520,7 +652,13 @@
           "food": 120
         },
         "population": 31477,
-        "stability": 48
+        "stability": 48,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 640
+          }
+        ]
       },
       "hydra_containment": {
         "id": "hydra_containment",
@@ -542,7 +680,13 @@
           "food": 80
         },
         "population": 20276,
-        "stability": 35
+        "stability": 35,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 780
+          }
+        ]
       },
       "scorpio_abyss": {
         "id": "scorpio_abyss",
@@ -564,7 +708,13 @@
           "food": 40
         },
         "population": 19266,
-        "stability": 20
+        "stability": 20,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 820
+          }
+        ]
       },
       "vulcan_foundry": {
         "id": "vulcan_foundry",
@@ -586,7 +736,13 @@
           "food": 200
         },
         "population": 49085,
-        "stability": 79
+        "stability": 79,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 420
+          }
+        ]
       },
       "andromeda_dock": {
         "id": "andromeda_dock",
@@ -608,7 +764,13 @@
           "food": 380
         },
         "population": 56571,
-        "stability": 80
+        "stability": 80,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 460
+          }
+        ]
       },
       "zenith_command_relay": {
         "id": "zenith_command_relay",
@@ -630,7 +792,13 @@
           "food": 320
         },
         "population": 38725,
-        "stability": 87
+        "stability": 87,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 180
+          }
+        ]
       },
       "nadir_station": {
         "id": "nadir_station",
@@ -652,7 +820,13 @@
           "food": 60
         },
         "population": 21575,
-        "stability": 28
+        "stability": 28,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 750
+          }
+        ]
       },
       "chronos_vault": {
         "id": "chronos_vault",
@@ -674,7 +848,13 @@
           "food": 100
         },
         "population": 23740,
-        "stability": 24
+        "stability": 24,
+        "threatHistory": [
+          {
+            "day": 1,
+            "threat": 890
+          }
+        ]
       }
     },
     "routes": [
@@ -1204,7 +1384,7 @@
       "hpPerThreatPoint": 100,
       "winnerRatio": 2,
       "threatFormulaMultiplier": 1,
-      "lastModified": 1792422859676
+      "lastModified": 1792498927206
     },
     "survivalConfig": {
       "thresholdSafe": 70,
@@ -1214,7 +1394,7 @@
       "baseCaptureChance": 0.4,
       "facilityRescuePowerBonusPerTier": 0.1,
       "alliedVictoryRescueBonus": 0.35,
-      "lastModified": 1792422859676
+      "lastModified": 1792498927206
     },
     "pilotSurvivalRegistry": [],
     "nationalPowRegistry": [],
@@ -10730,6 +10910,189 @@
         "defenseRating": 600
       }
     },
+    "ships": {
+      "ship_vss_valiant_lead": {
+        "instanceId": "ship_vss_valiant_lead",
+        "definitionId": "SHIP_DEF_SOL_VALIANT_CORVETTE",
+        "serialNumber": "VSS-COR-0001",
+        "customName": "VSS Valiant Alpha",
+        "ownerRef": {
+          "ownerType": "NATIONAL",
+          "ownerId": "vss_high_command",
+          "ownerName": "Liên minh VSS",
+          "factionId": "vss"
+        },
+        "currentBaseId": "base_sol_command_hq",
+        "currentSectorId": "sol_command_hq",
+        "status": "OPERATIONAL",
+        "hullHp": 3200,
+        "maxHullHp": 3200,
+        "shieldHp": 1800,
+        "maxShieldHp": 1800,
+        "condition": 100,
+        "maintenancePolicy": "AUTO",
+        "assignedCrewCount": 16,
+        "installedModules": {
+          "slot_wpn_1": {
+            "slotId": "slot_wpn_1",
+            "slotType": "WEAPON",
+            "size": "LIGHT",
+            "moduleId": "mod_stock_slot_wpn_1",
+            "name": "Stock WEAPON System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_eng_1": {
+            "slotId": "slot_eng_1",
+            "slotType": "ENGINE",
+            "size": "LIGHT",
+            "moduleId": "mod_stock_slot_eng_1",
+            "name": "Stock ENGINE System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_shd_1": {
+            "slotId": "slot_shd_1",
+            "slotType": "SHIELD",
+            "size": "LIGHT",
+            "moduleId": "mod_stock_slot_shd_1",
+            "name": "Stock SHIELD System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_utl_1": {
+            "slotId": "slot_utl_1",
+            "slotType": "UTILITY",
+            "size": "LIGHT",
+            "moduleId": "mod_stock_slot_utl_1",
+            "name": "Stock UTILITY System",
+            "condition": 100,
+            "isOperational": true
+          }
+        },
+        "unlockedModuleSlotsCount": 4,
+        "unlockedGenericSlotsCount": 0,
+        "unlockedTypedSlots": {
+          "WEAPON": 1,
+          "ENGINE": 1,
+          "SHIELD": 1,
+          "UTILITY": 1
+        },
+        "progression": {
+          "entityId": "ship_vss_valiant_lead",
+          "profileId": "profile_standard_100",
+          "currentLevel": 1,
+          "currentExp": 0,
+          "currentTierId": "TIER_I",
+          "state": "PROGRESSING",
+          "upgradePolicy": "MANUAL",
+          "levelHistory": {
+            "TIER_I": 1
+          },
+          "milestones": []
+        },
+        "mileageKm": 0,
+        "battlesCount": 0,
+        "killsCount": 0,
+        "commissionedGameDay": 1,
+        "lastMaintenanceGameDay": 1
+      },
+      "ship_vss_hermes_01": {
+        "instanceId": "ship_vss_hermes_01",
+        "definitionId": "SHIP_DEF_HERMES_SUPPLY_TENDER",
+        "serialNumber": "VSS-LOG-0002",
+        "customName": "VSS Hermes Resupply 01",
+        "ownerRef": {
+          "ownerType": "NATIONAL",
+          "ownerId": "vss_high_command",
+          "ownerName": "Liên minh VSS",
+          "factionId": "vss"
+        },
+        "currentBaseId": "base_sol_command_hq",
+        "currentSectorId": "sol_command_hq",
+        "status": "OPERATIONAL",
+        "hullHp": 7500,
+        "maxHullHp": 7500,
+        "shieldHp": 4200,
+        "maxShieldHp": 4200,
+        "condition": 100,
+        "maintenancePolicy": "AUTO",
+        "assignedCrewCount": 40,
+        "installedModules": {
+          "slot_crg_1": {
+            "slotId": "slot_crg_1",
+            "slotType": "CARGO",
+            "size": "CAPITAL",
+            "moduleId": "mod_stock_slot_crg_1",
+            "name": "Stock CARGO System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_crg_2": {
+            "slotId": "slot_crg_2",
+            "slotType": "CARGO",
+            "size": "CAPITAL",
+            "moduleId": "mod_stock_slot_crg_2",
+            "name": "Stock CARGO System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_shd_1": {
+            "slotId": "slot_shd_1",
+            "slotType": "SHIELD",
+            "size": "MEDIUM",
+            "moduleId": "mod_stock_slot_shd_1",
+            "name": "Stock SHIELD System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_eng_1": {
+            "slotId": "slot_eng_1",
+            "slotType": "ENGINE",
+            "size": "MEDIUM",
+            "moduleId": "mod_stock_slot_eng_1",
+            "name": "Stock ENGINE System",
+            "condition": 100,
+            "isOperational": true
+          },
+          "slot_utl_1": {
+            "slotId": "slot_utl_1",
+            "slotType": "UTILITY",
+            "size": "MEDIUM",
+            "moduleId": "mod_stock_slot_utl_1",
+            "name": "Stock UTILITY System",
+            "condition": 100,
+            "isOperational": true
+          }
+        },
+        "unlockedModuleSlotsCount": 5,
+        "unlockedGenericSlotsCount": 0,
+        "unlockedTypedSlots": {
+          "CARGO": 2,
+          "SHIELD": 1,
+          "ENGINE": 1,
+          "UTILITY": 1
+        },
+        "progression": {
+          "entityId": "ship_vss_hermes_01",
+          "profileId": "profile_standard_100",
+          "currentLevel": 1,
+          "currentExp": 0,
+          "currentTierId": "TIER_I",
+          "state": "PROGRESSING",
+          "upgradePolicy": "MANUAL",
+          "levelHistory": {
+            "TIER_I": 1
+          },
+          "milestones": []
+        },
+        "mileageKm": 0,
+        "battlesCount": 0,
+        "killsCount": 0,
+        "commissionedGameDay": 1,
+        "lastMaintenanceGameDay": 1
+      }
+    },
     "worldGenerationConfig": {
       "totalMainBaseNodes": 30,
       "minimumFactionBaseSharePercent": 20,
@@ -10758,12 +11121,12 @@
       "autoSaveIntervalRealMinutes": 10
     },
     "lastAutoSaveGameDay": 42,
-    "lastAutoSaveTimestamp": 1792422859679,
+    "lastAutoSaveTimestamp": 1792498927209,
     "worldResetConfig": {
       "cc0Name": "Liên minh VSS",
       "commanderName": "Alviss",
       "resetCount": 0,
-      "lastResetTimestamp": 1792422859676
+      "lastResetTimestamp": 1792498927206
     }
   }
 }

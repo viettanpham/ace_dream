@@ -17,6 +17,7 @@ import { registerDecisionCatalogs } from "./decision/registry-integration"
 import { registerPopulationCatalogs } from "./population/registry-integration"
 import { registerBuildingCatalogs } from "./building/registry-integration"
 import { registerBaseCatalogs } from "./base/registry-integration"
+import { registerFleetCatalogs } from "./fleet/registry-integration"
 
 let isBootstrapped = false
 
@@ -24,6 +25,7 @@ export interface BootstrapResult {
   success: boolean
   catalogsRegistered: number
   baseCatalogsRegistered: number
+  fleetCatalogsRegistered: number
   totalCanonicalItems: number
   isRebootstrap: boolean
 }
@@ -52,6 +54,9 @@ export function bootstrapWorldCatalogs(
 
   // 5. Register FND-6 Base, Hub & Seed Profile Catalogs
   registerBaseCatalogs(registry, provider)
+
+  // 6. Register FND-7 Fleet & Ship Master Catalogs
+  registerFleetCatalogs(registry, provider)
 
   isBootstrapped = true
 
@@ -86,8 +91,19 @@ export function bootstrapWorldCatalogs(
     ["base", "world_seed_profile"],
   ]
 
+  const fleetCatalogList = [
+    ["fleet", "fleet_type"],
+    ["fleet", "fleet_class"],
+    ["fleet", "ship_type"],
+    ["fleet", "ship_class"],
+    ["fleet", "ship_definition"],
+    ["fleet", "policy_profile"],
+    ["fleet", "frame_award_catalog"],
+    ["fleet", "academy_training_profile"],
+  ]
+
   let totalItems = 0
-  for (const [domain, name] of [...catalogList, ...baseCatalogList]) {
+  for (const [domain, name] of [...catalogList, ...baseCatalogList, ...fleetCatalogList]) {
     try {
       const items = registry.getResolvedItems(domain, name)
       totalItems += items.length
@@ -100,6 +116,7 @@ export function bootstrapWorldCatalogs(
     success: true,
     catalogsRegistered: catalogList.length,
     baseCatalogsRegistered: baseCatalogList.length,
+    fleetCatalogsRegistered: fleetCatalogList.length,
     totalCanonicalItems: totalItems,
     isRebootstrap,
   }

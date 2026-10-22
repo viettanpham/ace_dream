@@ -4,7 +4,7 @@
 **Ngày cập nhật:** 2026-10-22  
 **Chế độ:** IMPLEMENT / ONE BOUNDED PHASE — Đã hoàn tất Phase E.0-REBUILD-1  
 **Tài liệu tham chiếu cốt lõi:**
-- `docs/art-direction/UI_CONCEPTS/` (3 ảnh concept PNG chính thức đã được người dùng phê duyệt)
+- `docs/art-direction/UI_CONCEPTS/` (3 ảnh concept WebP chính thức đã được người dùng phê duyệt)
 - `docs/UI_v2/` (Bộ tài liệu kiến trúc UI V2 Foundation 01 đến 07)
 - `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_UI_V2_DESIGN_SYSTEM.md` (Design System Baseline V2)
 - `docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_E0_CHARACTER_CATEGORY_PROFILE_UI_CONCEPT.md` (Hợp đồng ý tưởng đã duyệt)

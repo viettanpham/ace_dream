@@ -53,4 +53,4 @@ Liên kết đặc tả UX chi tiết: `docs/UI_v2/07_UI_V2_UX_CONTRACT_AND_RESP
 Mỗi page V2 có metadata ổn định: `id`, `label`, `group/system`, `status`, `version: "v2"`, và route/component phù hợp repo. Không xây registry quá phức tạp; không hardcode menu lặp lại trong nhiều component.
 
 ## Pilot Category/Profile (Phase 4)
-Sau khi Shell sẵn sàng, dùng Valentine làm page đầu tiên; desktop + mobile trong cùng phase; đối chiếu concept PNG trực tiếp tại `docs/art-direction/UI_CONCEPTS/`; chỉ load WebP thực sự có trên đĩa; asset thiếu hiển thị placeholder/archive card, không request URL chết. Các tab Overview/Story/Gear Compatibility/Gallery có ranh giới rõ. Không tái sử dụng nguyên layout/CSS V1.
+Sau khi Shell sẵn sàng, dùng Valentine làm page đầu tiên; desktop + mobile trong cùng phase; đối chiếu concept WebP trực tiếp tại `docs/art-direction/UI_CONCEPTS/`; chỉ load WebP thực sự có trên đĩa; asset thiếu hiển thị placeholder/archive card, không request URL chết. Các tab Overview/Story/Gear Compatibility/Gallery có ranh giới rõ. Không tái sử dụng nguyên layout/CSS V1.

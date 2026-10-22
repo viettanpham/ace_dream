@@ -61,7 +61,7 @@ Chế độ: `PLAN / DEFINE ONLY — RESPONSIVE STATUS RECONCILIATION & UX LOCK`
    - Thay thế sidebar cồng kềnh bằng **Dải thẻ Avatar cuộn ngang (Horizontal Avatar Rail)** ở đầu trang, hỗ trợ vuốt chạm mượt mà.
    - Nút "Danh Sách Đầy Đủ" mở danh sách phi công chi tiết qua **Bottom Sheet / Drawer** từ cạnh dưới màn hình.
 4. **Hai Chế Độ Trình Bày Cốt Lõi Trên Mobile (Artwork View & Info View)**:
-   - Bám sát concept đã duyệt (`FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png` và `MOBILE_INFO_VIEW_REFERENCE.png`).
+   - Bám sát concept đã duyệt (`FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.webp` và `FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_INFO_VIEW_REFERENCE.webp`).
    - **Artwork View**: Trình bày tranh nhân vật tập trung, bố cục gần full-screen, tối giản các panel đè lên tranh để tôn vinh artwork.
    - **Info View**: Trình bày thông số, tiểu sử (Story), tương thích GEAR và kỹ năng dưới dạng các tab cảm ứng dễ đọc.
    - Người dùng chuyển đổi giữa hai chế độ xem thông qua thanh điều hướng / toggle tiện lợi.

@@ -24,9 +24,9 @@ DEFINE / PLAN ONLY. Chỉ đọc/audit repository và cập nhật tài liệu. 
 - `docs/foundations/FND8/8.2.3.E0/FND8_CHARACTER_ASSET_NAMING_V2.md`
 
 Concept đã duyệt:
-- Desktop: `docs/art-direction/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_DESKTOP_APPROVED.png`
-- Mobile: `docs/art-direction/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png`
-- Mobile info-state: `docs/art-direction/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_INFO_VIEW_REFERENCE.png`
+- Desktop: `docs/art-direction/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_DESKTOP_APPROVED.webp`
+- Mobile: `docs/art-direction/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.webp`
+- Mobile info-state: `docs/art-direction/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_INFO_VIEW_REFERENCE.webp`
 
 Nếu file nào chưa có tại đường dẫn trên, tìm file tương đương đã tồn tại trong repo, ghi lại path thực tế và tiếp tục audit. Không nhân bản tài liệu chỉ để ép khớp tên. Không khẳng định đã xem ảnh concept nếu không mở/đọc được chúng.
 

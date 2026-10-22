@@ -24,9 +24,9 @@ Chỉ đọc/audit repository và cập nhật tài liệu định nghĩa/kế h
 Nếu repo dùng đường dẫn khác, tìm đúng file hiện có, ghi lại đường dẫn thực tế và không nhân bản tài liệu vô ích.
 
 ## Concept đã duyệt — bắt buộc đối chiếu trực tiếp
-- Desktop: `STARFRONT_WORLD/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_DESKTOP_APPROVED.png`
-- Mobile: `STARFRONT_WORLD/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.png`
-- Mobile info-state reference: `STARFRONT_WORLD/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_INFO_VIEW_REFERENCE.png`
+- Desktop: `STARFRONT_WORLD/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_DESKTOP_APPROVED.webp`
+- Mobile: `STARFRONT_WORLD/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_APPROVED.webp`
+- Mobile info-state reference: `STARFRONT_WORLD/UI_CONCEPTS/FND8_823_CHARACTER_CATEGORY_PROFILE_MOBILE_INFO_VIEW_REFERENCE.webp`
 
 Concept là chuẩn tối thiểu về bố cục, thứ bậc thông tin và hành vi. Không dùng screenshot làm background tĩnh thay UI thật. Không tự thêm panel, chữ, decoration hoặc thông tin khiến màn hình rối. Nếu không đọc được concept trong IDE, ghi rõ; không giả vờ đã so sánh.
 

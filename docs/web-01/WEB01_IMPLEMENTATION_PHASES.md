@@ -106,18 +106,17 @@
 
 ---
 
-### Phase WEB-01.3.A — AdminCP Runtime Asset Version Manager (Roadmap Concept Approved)
-- **Trạng thái:** ROADMAP CONCEPT APPROVED (Ghi nhận kiến trúc, KHÔNG code trong WEB-01.4)
-- **Mô tả chức năng:**
-  1. Liệt kê GitHub release/tag từ `viettanpham/starfront-assets`.
-  2. Hiển thị Active Version hiện hành.
-  3. Preview artwork ở version được chọn.
-  4. Validate manifest và tính sẵn sàng của asset trên CDN trước khi áp dụng.
-  5. Quy trình xác nhận 2 bước an toàn (Two-step confirmation).
-  6. Kích hoạt phiên bản runtime không cần rebuild server.
-  7. Rollback tức thời về tag trước đó.
-  8. Phân quyền Admin và Audit Log.
-  9. Bảo vệ FND-8 Gallery: Không tự động đưa artwork chưa đăng ký vào hồ sơ phi công.
+### Phase WEB-01.3.A — AdminCP Runtime Asset Version Manager (Quản lý Phiên bản CDN)
+- **Trạng thái:** **PLAN/DEFINE COMPLETE (ĐÃ HOÀN TẤT BẢN THIẾT KẾ KỸ THUẬT 6 TÀI LIỆU — CHỜ DUYỆT)**
+- **Mục tiêu:** Cung cấp công cụ quản trị trong AdminCP cho phép chuyển đổi phiên bản phát hành artwork trên GitHub tại runtime trong 1 giây mà không cần rebuild Next.js.
+- **Hồ sơ thiết kế chi tiết đã lập:**
+  1. `WEB01_3A_ADMINCP_ASSET_VERSION_MANAGER_MASTER_PLAN.md`: Kế hoạch tổng thể & phân tích audit hiện trạng.
+  2. `WEB01_3A_RUNTIME_CONFIG_ARCHITECTURE.md`: Schema `.starfront-config/runtime-asset-config.json`, API contracts, dynamic hook.
+  3. `WEB01_3A_GITHUB_RELEASE_VALIDATION.md`: Proxy discovery, bộ đệm TTL 10m chống rate limit, Fast & Full Validation.
+  4. `WEB01_3A_ADMINCP_UI_UX_DEFINITION.md`: Tab 9 trong AdminSettingsModal, sandbox preview, 2-step confirmation.
+  5. `WEB01_3A_ACTIVATION_ROLLBACK_SECURITY.md`: Kích hoạt nguyên tử 9 bước, revision locking, rollback 1-click, admin PIN.
+  6. `WEB01_3A_IMPLEMENTATION_PHASES.md`: Lộ trình 5 subphase từ 3.A.1 đến 3.A.5.
+- **Quy tắc kỷ luật:** Dừng tại checkpoint; KHÔNG triển khai code runtime trong giai đoạn này.
 
 ---
 

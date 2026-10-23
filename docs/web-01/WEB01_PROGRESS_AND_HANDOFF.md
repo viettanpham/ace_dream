@@ -1,14 +1,14 @@
 # STARFRONT WORLD V2 — WEB-01
 # TIẾN ĐỘ VÀ BÀN GIAO CHECKPOINT (PROGRESS & HANDOFF REPORT)
 
-**Mã tài liệu:** WEB01-HANDOFF-05  
-**Giai đoạn:** WEB-01.5 SAFE REPOSITORY CLEANUP  
+**Mã tài liệu:** WEB01-HANDOFF-06  
+**Giai đoạn:** WEB-01.3.A PLAN/DEFINE ONLY  
 **Ngày hoàn tất:** 2026-10-22  
-**Trạng thái phiên làm việc:** ĐÃ HOÀN TẤT TOÀN DIỆN WEB-01.5 & DỪNG TẠI CHECKPOINT
+**Trạng thái phiên làm việc:** ĐÃ HOÀN TẤT THIẾT KẾ KẾ HOẠCH WEB-01.3.A & DỪNG TẠI CHECKPOINT (KHÔNG CODE)
 
 ---
 
-## 1. Trạng thái thực hiện các mục tiêu WEB-01 (Cập nhật đến WEB-01.5)
+## 1. Trạng thái thực hiện các mục tiêu WEB-01 (Cập nhật đến WEB-01.3.A)
 
 | Nhiệm vụ | Trạng thái | Ghi chú kỹ thuật |
 | :--- | :---: | :--- |
@@ -24,97 +24,45 @@
 | **WEB-01.4: GEAR & Pilot Verification** | **PASS** | 3 GEAR V1 và 8 Pilot V1 hiển thị chính xác, bảo toàn tỷ lệ khung hình. |
 | **WEB-01.4: V2 Archive Pending Protection** | **PASS** | 10 tác phẩm Archive Pending không tạo thẻ `<img>` lỗi hay bất kỳ request 404 nào. |
 | **WEB-01.5: Safe Repository Cleanup** | **HOÀN THÀNH** | Đã xóa an toàn đúng 26 tệp WebP trong `public/images/`, giải phóng 5.94 MB binary. |
-| **WEB-01.5: Kiểm thử sau dọn dẹp** | **PASS (26/26)** | Script `scripts/web01-post-cleanup-verify.ts` xác nhận 26/26 ảnh CDN khớp manifest, build sạch. |
-| **WEB-01.3.A: AdminCP Asset Manager** | **ROADMAP APPROVED** | Định hướng concept đã duyệt; chưa triển khai code trong WEB-01.5. |
+| **WEB-01.3.A: AdminCP Asset Version Manager** | **PLAN/DEFINE COMPLETE** | Đã hoàn tất 100% thiết kế kiến trúc, schema cấu hình, kiểm định, UI/UX, bảo mật và lộ trình 5 subphase. |
 | **WEB-01.6: Web Hosting & Cloud Save** | **FUTURE ROADMAP** | Lộ trình Model A trong tương lai. |
 
 ---
 
-## 2. Thống kê Dọn dẹp Tài nguyên Cục bộ (WEB-01.5)
+## 2. Danh mục Tài liệu Thiết kế Mới được Thiết lập (WEB-01.3.A Blueprint Suite)
 
-### 2.1. Số liệu định lượng
-- **Số tệp đã loại khỏi `public/images/`:** Đúng **26 tệp WebP**.
-- **Dung lượng tệp nhị phân đã giải phóng:** **6,230,606 bytes (~5.94 MB)**.
-- **Kích thước thư mục `public/` trước dọn dẹp:** **6.0 MB**.
-- **Kích thước thư mục `public/` sau dọn dẹp:** **2.5 KB** (chỉ còn `icon.svg` 2,260 bytes và `images/.gitkeep`).
-- **Tệp tài nguyên duy nhất còn giữ lại:** `public/icon.svg` (giữ nguyên vẹn 100%).
+Trong giai đoạn này, hệ thống đã hoàn thành trọn bộ 6 tài liệu kiến trúc chuyên sâu:
 
-### 2.2. Danh sách 26 tệp WebP đã chuyển sang CDN & loại khỏi repository chính
-1. `aegis-gear.webp` (202,914 B)
-2. `alviss-fullbody.webp` (139,294 B)
-3. `alviss-portrait.webp` (42,752 B)
-4. `eric-fullbody.webp` (185,586 B)
-5. `eric-portrait.webp` (52,338 B)
-6. `falcon-gear.webp` (204,850 B)
-7. `kaelen-fullbody.webp` (129,332 B)
-8. `kaelen-portrait.webp` (36,150 B)
-9. `lyra-fullbody.webp` (231,746 B)
-10. `lyra-portrait.webp` (51,272 B)
-11. `marcus-fullbody.webp` (105,444 B)
-12. `marcus-portrait.webp` (28,296 B)
-13. `selena-fullbody.webp` (225,160 B)
-14. `selena-portrait.webp` (54,668 B)
-15. `valentine-activity-001.webp` (480,818 B)
-16. `valentine-casual.webp` (385,402 B)
-17. `valentine-closeup.webp` (449,192 B)
-18. `valentine-combat.webp` (513,434 B)
-19. `valentine-event-001.webp` (512,834 B)
-20. `valentine-fullbody.webp` (483,340 B)
-21. `valentine-portrait.webp` (424,206 B)
-22. `valentine-story-001.webp` (539,724 B)
-23. `valentine-uniform-001.webp` (423,716 B)
-24. `vanguard-gear.webp` (144,036 B)
-25. `victor-fullbody.webp` (143,962 B)
-26. `victor-portrait.webp` (40,140 B)
+1. **`docs/web-01/WEB01_3A_ADMINCP_ASSET_VERSION_MANAGER_MASTER_PLAN.md`:** Kế hoạch tổng thể, bối cảnh vận hành, ma trận audit hiện trạng, và 3 quyết định kiến trúc trọng yếu (ADR).
+2. **`docs/web-01/WEB01_3A_RUNTIME_CONFIG_ARCHITECTURE.md`:** Đặc tả schema JSON `.starfront-config/runtime-asset-config.json`, cơ chế lưu trữ máy chủ, API Route contracts, React Context đồng bộ và triệt tiêu Hydration Mismatch.
+3. **`docs/web-01/WEB01_3A_GITHUB_RELEASE_VALIDATION.md`:** Cơ chế khám phá GitHub Release, proxy máy chủ kèm bộ đệm TTL 10 phút chống cạn kiệt Rate Limit, phân loại 6 trạng thái release và quy trình kiểm định 2 cấp độ (Fast & Full Audit).
+4. **`docs/web-01/WEB01_3A_ADMINCP_UI_UX_DEFINITION.md`:** Tích hợp Tab thứ 9 vào `AdminSettingsModal`, 5 khối giao diện trực quan, hộp cát xem trước Sandboxed Preview, và quy trình xác nhận 2 bước an toàn.
+5. **`docs/web-01/WEB01_3A_ACTIVATION_ROLLBACK_SECURITY.md`:** Quy trình kích hoạt nguyên tử 9 bước, kiểm soát tương tranh lạc quan bằng số hiệu `revision`, hoàn tác 1 chạm One-Click Rollback, và kiến trúc bảo mật với mã khóa Admin PIN.
+6. **`docs/web-01/WEB01_3A_IMPLEMENTATION_PHASES.md`:** Lộ trình phân rã 5 subphase độc lập kèm điều kiện tiên quyết và tiêu chí nghiệm thu rõ ràng.
 
 ---
 
-## 3. Kết quả Kiểm thử & Nghiệm thu sau Dọn dẹp
+## 3. Tóm tắt Kết quả Audit Kiến trúc Thực tế
 
-1. **Kiểm tra trạng thái tệp vật lý:**
-   - Số tệp `.webp` còn lại trong `public/images/`: **0**.
-   - Tệp `public/icon.svg`: **TỒN TẠI NGUYÊN VẸN** (2,260 bytes).
-2. **Kiểm tra mạng CDN với Manifest chuẩn (`scripts/web01-post-cleanup-verify.ts`):**
-   - Đã kiểm tra 26/26 tệp trên jsDelivr: **26/26 HTTP 200**, `Content-Type: image/webp`.
-   - Đối chiếu SHA-256 mạng với `starfront-world-assets/manifests/assets-manifest.json`: **26/26 KHỚP 100%**.
-3. **Unit Tests Resolver (`tests/image-resolver.test.ts`):** **8/8 PASS**.
-4. **TypeScript & Static Analysis (`lint_applet` / `tsc --noEmit`):** **PASS (0 errors)**.
-5. **Next.js Production Build (`compile_applet` / `npm run build`):** **PASS (Build succeeded)**.
-6. **Kiểm tra Preview Endpoint:**
-   - `http://localhost:3000/v2/pilots` -> **HTTP 200**
-   - `http://localhost:3000/` -> **HTTP 200**
+- **Hệ thống Quản trị Hiện có:** Đã có `components/game/world/admin-settings-modal.tsx` với 8 tabs quản lý chi tiết. Giải pháp tối ưu nhất là bổ sung thêm **Tab thứ 9** để giữ tính đồng nhất và tái sử dụng toàn bộ khung hiển thị, âm thanh và phong cách Sci-Fi Terminal sẵn có.
+- **Lưu trữ Cấu hình Máy chủ:** Không cần thêm database bên ngoài. Tận dụng mô hình đọc/ghi tệp JSON bền vững tương tự `.starfront-saves/dev/latest_dev_save.json` qua thư mục an toàn `.starfront-config/`.
+- **An toàn Tuyệt đối cho Save Game:** Toàn bộ dữ liệu người chơi trong `.starfront-saves/` và các định nghĩa canonical trong `data.ts` tiếp tục sử dụng relative path `/images/...`. Việc chuyển đổi phiên bản CDN diễn ra hoàn toàn ở tầng hiển thị, không làm biến đổi bất kỳ bit dữ liệu nào của save game.
 
 ---
 
-## 4. Hạn chế của Chế độ Local & Hướng dẫn Khôi phục (Rollback Guide)
+## 4. Các Quyết định Cần Chủ Dự Án Phê Duyệt Trước khi Triển Khai Code
 
-### 4.1. Hạn chế kỹ thuật sau cleanup
-- Kể từ Phase WEB-01.5, chế độ `NEXT_PUBLIC_ASSET_STORAGE_MODE=local` **KHÔNG THỂ** tải 26 tệp WebP nếu chúng chưa được khôi phục vào thư mục `public/images/`.
-- Mọi môi trường phát triển (dev, preview, production) phải sử dụng:
-  ```env
-  NEXT_PUBLIC_ASSET_STORAGE_MODE=jsdelivr
-  NEXT_PUBLIC_ASSET_CDN_URL=https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets
-  ```
+Để bắt đầu bước sang giai đoạn code (Implementation), chủ dự án cần đưa ra lựa chọn cho các câu hỏi kiến trúc sau:
 
-### 4.2. Quy trình Khôi phục Khẩn cấp (Emergency Local Rollback)
-Nếu cần khôi phục lại 26 tệp WebP về đĩa cục bộ:
-- **Cách 1 (Từ tệp nén sao lưu ZIP đã có):**
-  ```bash
-  unzip -j -o starfront-world-assets-v2.0-backup.zip "images/*.webp" -d public/images/
-  ```
-- **Cách 2 (Từ thư mục staging):**
-  ```bash
-  cp starfront-world-assets/images/*.webp public/images/
-  ```
-- **Cách 3 (Từ Google Drive):** Tải `starfront-world-assets-v2.0-backup.zip` từ thư mục `dream_ACE/backup/` và giải nén vào `public/images/`.
+1. **Phương thức Xác thực Quyền Admin:** Lựa chọn giữa **(A) Nhập mã PIN Quản trị cố định** (ví dụ 6 số cấu hình trong biến môi trường `ADMIN_SECRET_KEY`) hay **(B) Secret Header Token**? *(Khuyến nghị: Phương án A — Mã PIN 6 số hiển thị modal nhập liệu trực quan, thân thiện cho AdminCP).*
+2. **Quy tắc Xác nhận Bước 2:** Lựa chọn giữa **(A) Gõ lại chính xác tên Release Tag** (ví dụ gõ `v2.0-assets-r2`) hay **(B) Giữ nút bấm trong 3 giây (Hold to Confirm)**?
+3. **Phê duyệt Bắt đầu Subphase WEB-01.3.A.1:** Khi chủ dự án duyệt bản thiết kế này, hệ thống sẽ bắt đầu triển khai subphase đầu tiên: *Xây dựng tầng lưu trữ cấu hình bền vững và hook đồng bộ dynamic resolver*.
 
 ---
 
-## 5. Kế hoạch và Điều kiện tiếp tục cho WEB-01.3.A
+## 5. Kỷ luật Tuân thủ
 
-- **Định hướng:** **WEB-01.3.A — AdminCP Runtime Asset Version Manager**.
-- **Điều kiện tiên quyết:** 
-  - Toàn bộ hạ tầng CDN của WEB-01 đã ổn định và kiểm chứng thực tế.
-  - Được chủ dự án phê duyệt triển khai bằng lệnh tiếp theo.
-- **Phạm vi tính năng:** Quản lý danh sách tag GitHub, chuyển version runtime không cần build lại, xem trước artwork theo version, kiểm tra tính toàn vẹn manifest, cơ chế rollback 1 click trong giao diện AdminCP.
-- **Trạng thái:** Dừng lại tại Checkpoint WEB-01.5 theo đúng kỷ luật MVP-First.
+- Phiên làm việc này tuân thủ nghiêm ngặt chế độ **PLAN/DEFINE ONLY**.
+- **KHÔNG** chỉnh sửa mã nguồn game, **KHÔNG** sửa `image-resolver.ts`, **KHÔNG** sửa `.env`.
+- Toàn bộ 26 tệp WebP vẫn được phục vụ ổn định 100% qua CDN jsDelivr tại phiên bản `v2.0-assets-r1`.
+- Dừng lại tại Checkpoint này và chờ phản hồi của chủ dự án.

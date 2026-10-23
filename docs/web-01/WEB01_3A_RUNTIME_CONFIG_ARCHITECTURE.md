@@ -1,0 +1,160 @@
+# STARFRONT WORLD V2 — WEB-01.3.A
+# KIẾN TRÚC CẤU HÌNH TÀI NGUYÊN TẠI RUNTIME (RUNTIME CONFIGURATION ARCHITECTURE)
+
+**Mã tài liệu:** WEB01-3A-ARCH-01  
+**Chế độ:** PLAN/DEFINE ONLY  
+**Ngày lập:** 2026-10-22  
+**Ngôn ngữ:** 100% Tiếng Việt  
+
+---
+
+## 1. Schema Cấu hình Runtime (`runtime-asset-config.json`)
+
+Tệp cấu hình phiên bản tài nguyên được quản lý tập trung trên máy chủ tại đường dẫn nội bộ:
+`.starfront-config/runtime-asset-config.json`
+
+### 1.1. Định dạng JSON Chuẩn hóa (Schema Definition)
+```json
+{
+  "$schema": "https://starfront.internal/schemas/asset-config-v1.json",
+  "schemaVersion": 1,
+  "revision": 3,
+  "provider": "jsdelivr",
+  "repository": "viettanpham/starfront-assets",
+  "assetRoot": "starfront-world-assets",
+  "activeVersion": "v2.0-assets-r1",
+  "cdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets",
+  "previousVersion": null,
+  "previousCdnBaseUrl": null,
+  "updatedAt": "2026-10-22T20:25:00.000Z",
+  "updatedBy": "admin_master",
+  "comment": "Initial verified release of 26 pilot and gear assets",
+  "manifestMetadata": {
+    "totalAssets": 26,
+    "manifestSha256": "3cb49a...",
+    "validatedAt": "2026-10-22T20:24:50.000Z"
+  }
+}
+```
+
+### 1.2. Ý nghĩa các trường dữ liệu
+- `schemaVersion`: Phiên bản cấu trúc schema (bắt đầu bằng `1`).
+- `revision`: Số thứ tự tăng dần mỗi khi có thay đổi (dùng cho Optimistic Concurrency Control, ngăn chặn lỗi ghi đè dữ liệu khi 2 admin thao tác cùng lúc).
+- `provider`: Nhà cung cấp CDN (mặc định `jsdelivr`, sẵn sàng mở rộng sang `cloudflare_r2` hoặc `custom`).
+- `repository`: Tên kho lưu trữ GitHub chứa tài nguyên (`viettanpham/starfront-assets`).
+- `assetRoot`: Thư mục gốc chứa ảnh trong kho (`starfront-world-assets`).
+- `activeVersion`: Git Tag phiên bản phát hành đang hoạt động phục vụ game (`v2.0-assets-r1`).
+- `cdnBaseUrl`: URL gốc hoàn chỉnh được tính toán tự động dựa trên `provider`, `repository`, `activeVersion` và `assetRoot`.
+- `previousVersion`: Phiên bản hoạt động trước đó (lưu trữ phục vụ cơ chế Rollback tức thì).
+- `updatedAt` / `updatedBy`: Dấu thời gian và danh tính người thực hiện thao tác (phục vụ Audit Log).
+
+---
+
+## 2. Cơ chế Lưu trữ Bền vững trên Máy chủ (Server Persistence Engine)
+
+### 2.1. Đánh giá Môi trường Vận hành Thực tế
+- **Dự án:** Ứng dụng Next.js Standalone chạy trong môi trường container của AI Studio / Cloud Run.
+- **Hiện trạng:** Chưa có cơ sở dữ liệu quan hệ (PostgreSQL) hoặc NoSQL (Firestore) được cấu hình cho ứng dụng.
+- **Giải pháp Bền vững:**
+  - Sử dụng tệp JSON `.starfront-config/runtime-asset-config.json` nằm trong thư mục gốc của dự án.
+  - Tận dụng cơ chế đọc/ghi tệp đồng bộ và an toàn đã được chứng minh hiệu quả qua hệ thống `.starfront-saves/dev/latest_dev_save.json`.
+  - Khởi tạo tự động (Auto-bootstrap): Nếu tệp `.starfront-config/runtime-asset-config.json` chưa tồn tại, máy chủ sẽ tự động sinh tệp mặc định từ các biến môi trường `NEXT_PUBLIC_ASSET_CDN_URL` hiện hành.
+
+---
+
+## 3. Giao ước API Máy chủ (API Route Contracts)
+
+Cần xây dựng API Route nội bộ phục vụ việc truy xuất và cập nhật cấu hình tài nguyên:
+`app/api/admin/asset-version/route.ts`
+
+### 3.1. Truy vấn Cấu hình Hiện hành: `GET /api/admin/asset-version`
+- **Mục đích:** Cho phép cả Client Game và AdminCP nạp phiên bản CDN đang hoạt động.
+- **Quyền hạn:** Công khai cho Client (chỉ trả về thông tin công khai không nhạy cảm).
+- **Header phản hồi:** `Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=600` (giúp giảm tải máy chủ khi người chơi truy cập đông).
+- **Payload phản hồi (200 OK):**
+```json
+{
+  "success": true,
+  "config": {
+    "revision": 3,
+    "activeVersion": "v2.0-assets-r1",
+    "cdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets",
+    "previousVersion": null,
+    "updatedAt": "2026-10-22T20:25:00.000Z",
+    "totalAssets": 26
+  }
+}
+```
+
+### 3.2. Cập nhật Kích hoạt Phiên bản: `POST /api/admin/asset-version`
+- **Mục đích:** Kích hoạt phiên bản mới hoặc Rollback về phiên bản trước.
+- **Quyền hạn:** **BẮT BUỘC YÊU CẦU QUYỀN ADMIN**.
+- **Payload yêu cầu:**
+```json
+{
+  "action": "ACTIVATE" | "ROLLBACK",
+  "targetVersion": "v2.0-assets-r2",
+  "expectedRevision": 3,
+  "adminKey": "<TOKEN_HOẶC_PIN>",
+  "bypassFastValidation": false
+}
+```
+- **Payload phản hồi (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Đã kích hoạt thành công phiên bản v2.0-assets-r2",
+  "newConfig": {
+    "revision": 4,
+    "activeVersion": "v2.0-assets-r2",
+    "previousVersion": "v2.0-assets-r1",
+    "cdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r2/starfront-world-assets"
+  }
+}
+```
+
+---
+
+## 4. Cơ chế Đồng bộ Client Runtime (Client-Side Synchronization)
+
+Để người chơi nhận được ảnh mới mà không cần F5/tải lại toàn trang web, kiến trúc sử dụng luồng dữ liệu phản ứng (Reactive Flow):
+
+```
++-----------------------------------------------------------------------------------+
+|                        LUỒNG ĐỒNG BỘ CLIENT RUNTIME                               |
++-----------------------------------------------------------------------------------+
+|                                                                                   |
+|  [Server Runtime Config] ----(GET /api/admin/asset-version)----> [AssetConfigProvider]
+|                                                                        |          |
+|                                                                        v          |
+|  [React Components: Avatar/Gear/Gallery] <--- useAssetConfig() --------+          |
+|                                                                                   |
+|  [Admin Action: Activate v2.0-assets-r2] ---> POST API ---> Broadcast Event       |
+|                                                                        |          |
+|  [Client Image Resolver Cache Invalidation] <--------------------------+          |
+|                                                                                   |
++-----------------------------------------------------------------------------------+
+```
+
+### 4.1. React Context `AssetConfigProvider`
+- Nạp cấu hình phiên bản ban đầu từ API máy chủ khi ứng dụng khởi chạy.
+- Cung cấp hook `useAssetConfig()` trả về:
+  - `activeVersion`: Tag phiên bản hiện hành.
+  - `cdnBaseUrl`: URL CDN hiện hành.
+  - `resolveUrl(rawPath)`: Hàm phân giải URL tự động gắn liền với phiên bản động.
+  - `refreshConfig()`: Hàm làm mới cấu hình theo yêu cầu.
+
+### 4.2. Tránh Hiện tượng Hydration Mismatch
+- **Vấn đề:** Khi SSR render trên server với một phiên bản, nhưng client hydrate lại lấy một phiên bản khác dẫn đến lỗi lệch cấu trúc HTML của Next.js.
+- **Giải pháp:**
+  - Trong Root Layout (`app/layout.tsx`), Server Component nạp cấu hình trực tiếp từ tệp JSON tĩnh trên đĩa thông qua hàm nội bộ `getStaticServerAssetConfig()`.
+  - Cấu hình này được truyền làm `initialConfig` cho `AssetConfigProvider` trên client.
+  - Quá trình hydrate diễn ra đồng nhất 100% giữa Server và Client, hoàn toàn triệt tiêu cảnh báo Hydration Mismatch.
+
+---
+
+## 5. Chiến lược Xử lý Bộ đệm (Cache Management Strategy)
+
+1. **Immutable Git Tags:** Mọi phiên bản phát hành trên GitHub bắt buộc phải gắn Tag cố định (`v2.0-assets-r1`, `v2.0-assets-r2`...). Trình duyệt và jsDelivr edge server có thể cache vĩnh viễn mà không bao giờ bị xung đột nội dung cũ/mới.
+2. **Không Dùng Tag `@latest` hoặc `@main`:** Việc gọi `@main` trên jsDelivr có thể mất tới 24–48 giờ để xóa sạch cache toàn cầu, gây ra hiện tượng người chơi thấy ảnh cũ, người chơi thấy ảnh mới.
+3. **Phân giải URL Động:** Khi Admin đổi phiên bản từ `r1` sang `r2`, toàn bộ URL sinh ra đổi từ `...@v2.0-assets-r1/...` sang `...@v2.0-assets-r2/...`. Trình duyệt sẽ nhận diện đây là URL hoàn toàn mới và tải ngay lập tức hình ảnh của phiên bản mới, không bị ảnh hưởng bởi cache cũ.

@@ -19,11 +19,10 @@ export interface PilotProfileV2Props {
 /**
  * STARFRONT WORLD V2 — CHARACTER CATEGORY / PILOT PROFILE V2 (FND-8 / 8.2.3.E.0)
  * 
- * Rebuilt from clean slate matching 100% of the approved Desktop and Mobile concepts:
+ * Rebuilt & Hotfixed matching 100% of the approved Desktop and Mobile concepts:
  * - Desktop: 3-column layout (Roster, Center Showcase with 2 symmetrical background controls, Right 4-tab dossier).
- * - Mobile: Dedicated Paired States (Art View near full-screen with floating controls & Info View with 4 tabs).
- * - Canonical Valentine test pilot: ATK/DEF/AGI/ENE/SHD/LUK (NO "20 total points" displayed), 2 Traits, Story Chapters 01–04 APPROVED, 05–06 PROVISIONAL, 07–10 HOLD.
- * - Fast-Track Art Viewer with zoom, pan, escape key, and zero broken image archive fallback.
+ * - Mobile: Dedicated Paired States (Art View with single source of truth carousel & Info View with high-contrast UI).
+ * - Fullscreen Viewer: Contextual artwork synchronization (9 verified artworks in Gallery = exact 01/09 in viewer), bottom sheet info panel.
  */
 export function PilotProfileV2({
   initialPilotId = 'valentine',
@@ -46,6 +45,7 @@ export function PilotProfileV2({
 
   // Art Viewer Modal State
   const [viewerArtwork, setViewerArtwork] = useState<GalleryArtwork | null>(null)
+  const [viewerContextList, setViewerContextList] = useState<GalleryArtwork[] | null>(null)
   const [isViewerOpen, setIsViewerOpen] = useState<boolean>(false)
 
   // Viewport resize listener
@@ -62,6 +62,11 @@ export function PilotProfileV2({
   const activeCharacter: CharacterProfileV2 =
     V2_ROSTER_CHARACTERS.find((c) => c.id === activePilotId) || V2_ROSTER_CHARACTERS[0]
 
+  // Reset viewer context when pilot changes
+  useEffect(() => {
+    setViewerContextList(null)
+  }, [activePilotId])
+
   // Pilot Navigation Helpers
   const handlePrevPilot = () => {
     const currentIndex = V2_ROSTER_CHARACTERS.findIndex((c) => c.id === activeCharacter.id)
@@ -75,17 +80,26 @@ export function PilotProfileV2({
     setActivePilotId(V2_ROSTER_CHARACTERS[nextIndex].id)
   }
 
-  // Open Art Viewer for specific artwork
-  const handleOpenArtViewer = (art?: GalleryArtwork) => {
+  // Open Art Viewer with contextual list (Khắc phục lỗi đếm 9 vs 13)
+  const handleOpenArtViewer = (art?: GalleryArtwork, contextList?: GalleryArtwork[]) => {
+    // 1. Xác định tập hợp tranh cho phiên xem Viewer
+    let targetList: GalleryArtwork[] = []
+    if (contextList && contextList.length > 0) {
+      targetList = contextList
+    } else {
+      // Mặc định lấy danh sách tranh khả dụng (verified)
+      const verifiedOnly = activeCharacter.artworks.filter((a) => a.isAvailableOnDisk)
+      targetList = verifiedOnly.length > 0 ? verifiedOnly : activeCharacter.artworks
+    }
+    setViewerContextList(targetList)
+
+    // 2. Xác định tác phẩm ban đầu
     if (art) {
       setViewerArtwork(art)
     } else {
-      // Tìm tác phẩm fullbody trong artworks nếu có
-      const existingFullbody = activeCharacter.artworks.find(
-        (a) => a.category === 'base' || a.id.includes('fullbody')
-      )
-      if (existingFullbody) {
-        setViewerArtwork(existingFullbody)
+      // Ưu tiên tác phẩm đầu tiên trong danh sách ngữ cảnh
+      if (targetList.length > 0) {
+        setViewerArtwork(targetList[0])
       } else {
         const isVerifiedOnDisk = [
           'valentine',
@@ -112,23 +126,30 @@ export function PilotProfileV2({
     setIsViewerOpen(true)
   }
 
-  // Artwork navigation handlers
-  const currentArtworkIndex = activeCharacter.artworks.findIndex(
+  // Danh sách tác phẩm đang duyệt trong Viewer
+  const currentViewerArtworks = viewerContextList || (
+    activeCharacter.artworks.filter((a) => a.isAvailableOnDisk).length > 0
+      ? activeCharacter.artworks.filter((a) => a.isAvailableOnDisk)
+      : activeCharacter.artworks
+  )
+
+  // Artwork navigation handlers (Chỉ duyệt trong tập hợp ngữ cảnh đã chọn)
+  const currentArtworkIndex = currentViewerArtworks.findIndex(
     (a) => a.id === viewerArtwork?.id || a.path === viewerArtwork?.path
   )
   const hasPrevArtwork = currentArtworkIndex > 0
   const hasNextArtwork =
-    currentArtworkIndex >= 0 && currentArtworkIndex < activeCharacter.artworks.length - 1
+    currentArtworkIndex >= 0 && currentArtworkIndex < currentViewerArtworks.length - 1
 
   const handlePrevArtwork = () => {
     if (hasPrevArtwork) {
-      setViewerArtwork(activeCharacter.artworks[currentArtworkIndex - 1])
+      setViewerArtwork(currentViewerArtworks[currentArtworkIndex - 1])
     }
   }
 
   const handleNextArtwork = () => {
     if (hasNextArtwork) {
-      setViewerArtwork(activeCharacter.artworks[currentArtworkIndex + 1])
+      setViewerArtwork(currentViewerArtworks[currentArtworkIndex + 1])
     }
   }
 
@@ -142,7 +163,7 @@ export function PilotProfileV2({
           onSelectCharacter={(char) => setActivePilotId(char.id)}
           backgroundMode={backgroundMode}
           onToggleBackgroundMode={setBackgroundMode}
-          onOpenArtViewer={handleOpenArtViewer}
+          onOpenArtViewer={(art) => handleOpenArtViewer(art, activeCharacter.artworks.filter(a => a.isAvailableOnDisk))}
           activeTab={activeTab}
           onTabChange={setActiveTab}
         />
@@ -154,9 +175,11 @@ export function PilotProfileV2({
           backgroundMode={backgroundMode}
           onToggleBackgroundMode={setBackgroundMode}
           onSwitchToInfoView={() => setMobileMode('info')}
-          onOpenArtViewer={() => handleOpenArtViewer()}
-          onPrevPilot={handlePrevPilot}
-          onNextPilot={handleNextPilot}
+          onOpenArtViewer={handleOpenArtViewer}
+          onNavigateToGallery={() => {
+            setMobileMode('info')
+            setActiveTab('gallery')
+          }}
         />
       ) : (
         <MobileInfoView
@@ -170,7 +193,7 @@ export function PilotProfileV2({
         />
       )}
 
-      {/* SHARED ART VIEWER MODAL */}
+      {/* SHARED ART VIEWER MODAL — 100% ĐỒNG BỘ INDEX VỚI TẬP TRANH NGỮ CẢNH */}
       {viewerArtwork && (
         <ArtViewer
           isOpen={isViewerOpen}
@@ -188,7 +211,7 @@ export function PilotProfileV2({
           onPrev={handlePrevArtwork}
           onNext={handleNextArtwork}
           currentIndex={currentArtworkIndex >= 0 ? currentArtworkIndex + 1 : 1}
-          totalCount={activeCharacter.artworks.length || 1}
+          totalCount={currentViewerArtworks.length || 1}
         />
       )}
     </div>

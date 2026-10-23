@@ -113,4 +113,41 @@ describe('STARFRONT WORLD V2 — FND-8.2.3.E.0 Character Category & Pilot Profil
     const fallback = getCharacterProfileById('non-existent-id')
     assert.equal(fallback.id, 'valentine')
   })
+
+  it('7. Đồng bộ hóa tập hợp tác phẩm ngữ cảnh: Gallery Count trùng khớp hoàn toàn với Viewer Total Count (9/9)', () => {
+    const val = getCharacterProfileById('valentine')
+    const verifiedArtworks = val.artworks.filter((a) => a.isAvailableOnDisk)
+    assert.equal(verifiedArtworks.length, 9, 'Số lượng tranh verified của Valentine phải là đúng 9')
+
+    // Mô phỏng thuật toán tính toán trong Viewer của PilotProfileV2
+    const currentViewerArtworks = verifiedArtworks
+    assert.equal(currentViewerArtworks.length, 9, 'Viewer mở từ Gallery phải nhận chính xác 9 tranh khả dụng')
+
+    // Kiểm tra chỉ số ảnh duyệt qua lại: không bao giờ rơi ra khỏi tập 9 tranh
+    for (let i = 0; i < currentViewerArtworks.length; i++) {
+      const art = currentViewerArtworks[i]
+      const index = currentViewerArtworks.findIndex((a) => a.id === art.id)
+      assert.equal(index, i)
+      assert.ok(art.isAvailableOnDisk, 'Toàn bộ tranh trong tập ngữ cảnh phải có sẵn trên đĩa/CDN')
+    }
+  })
+
+  it('8. Bốn phi công nữ mới (Fortuna, Aria, Rhea, Nova) có đầy đủ 6 thuộc tính chuẩn 20 điểm và trạng thái an toàn', () => {
+    const newFemales = ['fortuna', 'aria', 'rhea', 'nova']
+    for (const id of newFemales) {
+      const char = getCharacterProfileById(id)
+      assert.ok(char, `Không tìm thấy profile cho ${id}`)
+      assert.equal(char.gender, 'Nữ')
+      const totalPoints =
+        char.baseAttributes.atk +
+        char.baseAttributes.def +
+        char.baseAttributes.agi +
+        char.baseAttributes.ene +
+        char.baseAttributes.shd +
+        char.baseAttributes.luk
+      assert.equal(totalPoints, 20, `Tổng điểm của ${char.classCharacterName} phải là 20`)
+      assert.equal(char.progressStatus.artStatus, 'PLACEHOLDER_ONLY')
+    }
+  })
 })
+

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 7,
-  "updatedAt": "2026-10-23T16:28:40.942Z",
+  "revision": 21,
+  "updatedAt": "2026-10-23T16:54:24.905Z",
   "updatedBy": "system_bootstrap",
   "profiles": {
     "alviss": {
@@ -20,7 +20,7 @@
       "lorePersonality": "Tự tin, nhiệt huyết, yêu tự do",
       "loreWeakness": "Đôi khi quá liều lĩnh trong truy kích",
       "loreDream": "Bảo vệ hòa bình vành đai",
-      "updatedAt": "2026-10-23T16:28:40.942Z",
+      "updatedAt": "2026-10-23T16:54:24.905Z",
       "updatedBy": "lead_architect",
       "quote": "Không một tấm khiên nào vỡ dưới sự giám sát của tôi."
     },
@@ -51,7 +51,7 @@
       "title": "Chỉ Huy Tác Chiến",
       "role": "Chiến Thuật Toàn Diện",
       "characterQuote": "“Kỷ luật thép và chiến thuật chuẩn xác định đoạt thắng bại chiến trường.”",
-      "shortDescription": "Sĩ quan chỉ huy mẫu mực của lực lượng Starfront, cân bằng hoàn hảo giữa tấn công vũ bão và phòng ngự kiên cố.",
+      "shortDescription": "Chỉ huy thiết giáp kỳ cựu với hơn 100 giờ xuất kích.",
       "storySummary": "Hồ sơ chỉ huy trưởng lực lượng cơ động tiên phong.",
       "loreOrigin": "Tổng bộ Chỉ huy Hạm đội Starfront",
       "loreAcademy": "Học viện Hàng không Không gian",
@@ -59,8 +59,9 @@
       "lorePersonality": "Kiên định, kỷ luật",
       "loreWeakness": "Cầu toàn",
       "loreDream": "Bảo vệ hòa bình vành đai",
-      "updatedAt": "2026-10-23T08:00:00.000Z",
-      "updatedBy": "system_bootstrap"
+      "updatedAt": "2026-10-23T16:54:23.569Z",
+      "updatedBy": "test_admin",
+      "quote": "“Bão từ không gian chỉ là bài kiểm tra độ bền của động cơ.”"
     },
     "victor": {
       "pilotId": "victor",
@@ -304,7 +305,7 @@
         "status": "verified",
         "description": "Cảnh Alviss điều khiển pháo đài chắn asteroid.",
         "priority": 90,
-        "createdAt": "2026-10-23T16:28:40.939Z",
+        "createdAt": "2026-10-23T16:54:24.903Z",
         "updatedBy": "lead_architect"
       }
     ],
@@ -426,6 +427,66 @@
         "version": "1.0.0",
         "uploadedAt": "2026-10-23T08:00:00.000Z",
         "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "art_victor_1792774293951",
+        "pilotId": "victor",
+        "title": "Victor — Đột Kích Vành Đai",
+        "label": "Victor — Đột Kích Vành Đai",
+        "category": "lore",
+        "role": "action",
+        "roleCategory": "action",
+        "path": "/assets/artworks/victor/action_1792774293951_1f0ce387.webp",
+        "sourceUrl": "/assets/artworks/victor/action_1792774293951_1f0ce387.webp",
+        "localPath": "/assets/artworks/victor/action_1792774293951_1f0ce387.webp",
+        "aspectRatio": "3:4",
+        "status": "verified",
+        "verificationStatus": "VERIFIED",
+        "isAvailableOnDisk": true,
+        "checksumSha256": "1f0ce387fcff50609fb3beaa176ff2becb5cce86e3f55c1f7a578c71f40822bf",
+        "fileSizeBytes": 55,
+        "uploadedAt": "2026-10-23T16:51:33.951Z",
+        "updatedBy": "admin"
+      },
+      {
+        "assetId": "art_victor_1792774331813",
+        "pilotId": "victor",
+        "title": "Victor — Đột Kích Vành Đai",
+        "label": "Victor — Đột Kích Vành Đai",
+        "category": "lore",
+        "role": "action",
+        "roleCategory": "action",
+        "path": "/assets/artworks/victor/action_1792774331812_1f0ce387.webp",
+        "sourceUrl": "/assets/artworks/victor/action_1792774331812_1f0ce387.webp",
+        "localPath": "/assets/artworks/victor/action_1792774331812_1f0ce387.webp",
+        "aspectRatio": "3:4",
+        "status": "verified",
+        "verificationStatus": "VERIFIED",
+        "isAvailableOnDisk": true,
+        "checksumSha256": "1f0ce387fcff50609fb3beaa176ff2becb5cce86e3f55c1f7a578c71f40822bf",
+        "fileSizeBytes": 55,
+        "uploadedAt": "2026-10-23T16:52:11.813Z",
+        "updatedBy": "admin"
+      },
+      {
+        "assetId": "art_victor_1792774463572",
+        "pilotId": "victor",
+        "title": "Victor — Đột Kích Vành Đai",
+        "label": "Victor — Đột Kích Vành Đai",
+        "category": "lore",
+        "role": "action",
+        "roleCategory": "action",
+        "path": "/assets/artworks/victor/action_1792774463572_1f0ce387.webp",
+        "sourceUrl": "/assets/artworks/victor/action_1792774463572_1f0ce387.webp",
+        "localPath": "/assets/artworks/victor/action_1792774463572_1f0ce387.webp",
+        "aspectRatio": "3:4",
+        "status": "verified",
+        "verificationStatus": "VERIFIED",
+        "isAvailableOnDisk": true,
+        "checksumSha256": "1f0ce387fcff50609fb3beaa176ff2becb5cce86e3f55c1f7a578c71f40822bf",
+        "fileSizeBytes": 55,
+        "uploadedAt": "2026-10-23T16:54:23.572Z",
+        "updatedBy": "admin"
       }
     ],
     "kaelen": [
@@ -879,7 +940,7 @@
         "publicationStatus": "PUBLISHED",
         "editorialStatus": "APPROVED",
         "contentReadiness": "VERIFIED",
-        "publishedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T16:54:23.576Z",
         "version": "1.0.0",
         "title": "Ánh sáng cuối cùng tại Elysia",
         "summary": "Quyết định định mệnh giữa đoàn tàu hàng trăm bệnh nhân và đội ngũ đồng đội bị cô lập.",
@@ -964,6 +1025,132 @@
     "nova": {}
   },
   "auditLog": [
+    {
+      "id": "audit-1792774464905",
+      "timestamp": "2026-10-23T16:54:24.905Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "alviss",
+      "user": "lead_architect",
+      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
+    },
+    {
+      "id": "audit-1792774464904",
+      "timestamp": "2026-10-23T16:54:24.904Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "alviss",
+      "targetId": "test_alviss_action_01",
+      "user": "lead_architect",
+      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
+    },
+    {
+      "id": "audit-1792774463576",
+      "timestamp": "2026-10-23T16:54:23.576Z",
+      "action": "STORY_PUBLISH",
+      "targetPilotId": "valentine",
+      "targetId": "chap-01",
+      "user": "admin",
+      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành PUBLISHED"
+    },
+    {
+      "id": "audit-1792774463575",
+      "timestamp": "2026-10-23T16:54:23.575Z",
+      "action": "STORY_HIDE",
+      "targetPilotId": "valentine",
+      "targetId": "chap-01",
+      "user": "admin",
+      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành HIDDEN"
+    },
+    {
+      "id": "audit-1792774463573",
+      "timestamp": "2026-10-23T16:54:23.573Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "victor",
+      "targetId": "art_victor_1792774463572",
+      "user": "admin",
+      "details": "Đăng ký artwork \"Victor — Đột Kích Vành Đai\" [lore] cho victor"
+    },
+    {
+      "id": "audit-1792774463570",
+      "timestamp": "2026-10-23T16:54:23.570Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "marcus",
+      "targetId": "marcus",
+      "user": "test_admin",
+      "details": "Cập nhật thông tin hồ sơ cho phi công marcus"
+    },
+    {
+      "id": "audit-1792774331817",
+      "timestamp": "2026-10-23T16:52:11.817Z",
+      "action": "STORY_PUBLISH",
+      "targetPilotId": "valentine",
+      "targetId": "chap-01",
+      "user": "admin",
+      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành PUBLISHED"
+    },
+    {
+      "id": "audit-1792774331816",
+      "timestamp": "2026-10-23T16:52:11.816Z",
+      "action": "STORY_HIDE",
+      "targetPilotId": "valentine",
+      "targetId": "chap-01",
+      "user": "admin",
+      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành HIDDEN"
+    },
+    {
+      "id": "audit-1792774331813",
+      "timestamp": "2026-10-23T16:52:11.813Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "victor",
+      "targetId": "art_victor_1792774331813",
+      "user": "admin",
+      "details": "Đăng ký artwork \"Victor — Đột Kích Vành Đai\" [lore] cho victor"
+    },
+    {
+      "id": "audit-1792774331809",
+      "timestamp": "2026-10-23T16:52:11.809Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "marcus",
+      "targetId": "marcus",
+      "user": "test_admin",
+      "details": "Cập nhật thông tin hồ sơ cho phi công marcus"
+    },
+    {
+      "id": "audit-1792774293951",
+      "timestamp": "2026-10-23T16:51:33.951Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "victor",
+      "targetId": "art_victor_1792774293951",
+      "user": "admin",
+      "details": "Đăng ký artwork \"Victor — Đột Kích Vành Đai\" [lore] cho victor"
+    },
+    {
+      "id": "audit-1792774293947",
+      "timestamp": "2026-10-23T16:51:33.947Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "marcus",
+      "targetId": "marcus",
+      "user": "test_admin",
+      "details": "Cập nhật thông tin hồ sơ cho phi công marcus"
+    },
+    {
+      "id": "audit-1792774271169",
+      "timestamp": "2026-10-23T16:51:11.169Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "alviss",
+      "user": "lead_architect",
+      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
+    },
+    {
+      "id": "audit-1792774271169",
+      "timestamp": "2026-10-23T16:51:11.169Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "alviss",
+      "targetId": "test_alviss_action_01",
+      "user": "lead_architect",
+      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
+    },
     {
       "id": "audit-1792772920942",
       "timestamp": "2026-10-23T16:28:40.942Z",

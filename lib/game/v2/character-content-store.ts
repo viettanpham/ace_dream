@@ -200,23 +200,38 @@ export class CharacterContentStore {
   private memoryCache: CharacterContentManifest | null = null;
 
   public getContentStorageStatus(): ContentStorageStatus {
-    const isGcsConfigured = Boolean(process.env.GCS_STORY_BUCKET_NAME);
-    if (isGcsConfigured) {
+    const bucketName = process.env.GCS_STORY_BUCKET_NAME?.trim();
+    const googleCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim();
+
+    if (bucketName) {
+      if (!googleCreds && !process.env.K_SERVICE) {
+        return {
+          durable: false,
+          type: 'gcs',
+          provider: 'google-cloud-storage',
+          code: 'BLOCKED_BY_GCS_IAM_CONFIG',
+          bucketName,
+          message: `BLOCKED BY GCS/IAM CONFIG: Đã khai báo bucket '${bucketName}' nhưng thiếu GOOGLE_APPLICATION_CREDENTIALS hoặc Service Account IAM roles (Storage Object Admin). Fallback về local atomic CAS.`,
+        };
+      }
+
       return {
         durable: true,
         type: 'gcs',
-        code: 'READY',
-        bucketName: process.env.GCS_STORY_BUCKET_NAME,
-        message: `Persistent Google Cloud Storage active (Bucket: ${process.env.GCS_STORY_BUCKET_NAME})`,
+        provider: 'google-cloud-storage',
+        code: 'PERSISTENT_STORAGE_CONFIGURED',
+        bucketName,
+        message: `PERSISTENT STORAGE CONFIGURED: Google Cloud Storage bucket '${bucketName}' đã được khai báo và kích hoạt.`,
       };
     }
 
     return {
       durable: true,
       type: 'file',
-      code: 'READY',
+      provider: 'local-filesystem-cas',
+      code: 'LOCAL_DEV_ONLY',
       manifestPath: MANIFEST_FILE_PATH,
-      message: 'Local standalone persistence active (.starfront-config/character-content-manifest.json). Production GCS pending configuration.',
+      message: 'LOCAL DEV ONLY: Hệ thống lưu trữ bền vững độc lập cục bộ qua cơ chế Atomic CAS (.starfront-config/character-content-manifest.json). Sẵn sàng nâng cấp GCS khi cấu hình bucket production.',
     };
   }
 

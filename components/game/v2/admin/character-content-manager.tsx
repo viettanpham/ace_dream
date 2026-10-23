@@ -25,9 +25,13 @@ import {
   Check,
   ChevronRight,
   BookOpen,
+  LogOut,
+  Key,
+  UploadCloud,
 } from 'lucide-react';
 import {
   CANONICAL_PILOT_IDS,
+  CANONICAL_PILOT_NAMES,
   CanonicalPilotId,
   CharacterContentManifest,
   ArtworkRegistration,
@@ -51,10 +55,39 @@ export function CharacterContentManager({
   const [authLoading, setAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [registeredUsernames, setRegisteredUsernames] = useState<string[]>([]);
+  const [adminUser, setAdminUser] = useState<{ username: string; role: string } | null>(null);
   const [csrfToken, setCsrfToken] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
+
+  // Change Password Modal State
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [changePassForm, setChangePassForm] = useState({
+    oldPassword: '',
+    newPassword: '',
+    confirmNewPassword: '',
+  });
+  const [changePassFeedback, setChangePassFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const [changingPass, setChangingPass] = useState(false);
+
+  // Real WebP Binary Upload Modal State
+  const [showBinaryUploadModal, setShowBinaryUploadModal] = useState(false);
+  const [selectedBinaryFile, setSelectedBinaryFile] = useState<File | null>(null);
+  const [binaryPreviewUrl, setBinaryPreviewUrl] = useState<string | null>(null);
+  const [binaryUploadForm, setBinaryUploadForm] = useState({
+    label: '',
+    category: 'lore',
+    roleCategory: 'fullbody',
+    aspectRatio: '3:4',
+    description: '',
+  });
+  const [uploadingBinary, setUploadingBinary] = useState(false);
 
   // Data state
   const [dataLoading, setDataLoading] = useState(false);
@@ -72,7 +105,7 @@ export function CharacterContentManager({
   } | null>(null);
   const [savingChapter, setSavingChapter] = useState(false);
 
-  // New Artwork Form State
+  // New Artwork Form State (Metadata only)
   const [showAddArtworkModal, setShowAddArtworkModal] = useState(false);
   const [newArtForm, setNewArtForm] = useState<Partial<ArtworkRegistration>>({
     label: '',
@@ -98,16 +131,24 @@ export function CharacterContentManager({
       if (data.authenticated && data.csrfToken) {
         setIsAuthenticated(true);
         setCsrfToken(data.csrfToken);
+        setAdminUser(data.user || null);
       } else {
         setIsAuthenticated(false);
         setNeedsSetup(Boolean(data.needsSetup));
+        setAdminUser(null);
+      }
+      if (Array.isArray(data.registeredUsernames)) {
+        setRegisteredUsernames(data.registeredUsernames);
+        if (data.registeredUsernames.length > 0 && !username) {
+          setUsername(data.registeredUsernames[0]);
+        }
       }
     } catch {
       setIsAuthenticated(false);
     } finally {
       setAuthLoading(false);
     }
-  }, []);
+  }, [username]);
 
   useEffect(() => {
     checkAuth();
@@ -155,22 +196,42 @@ export function CharacterContentManager({
     }
   }, [manifest, selectedPilot]);
 
-  // Handle Login
+  // Handle Login & Setup
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
+
+    if (needsSetup) {
+      if (password !== confirmPassword) {
+        setLoginError('Mật khẩu xác nhận không khớp. Vui lòng nhập lại.');
+        return;
+      }
+      if (password.length < 8) {
+        setLoginError('Mật khẩu phải có độ dài tối thiểu 8 ký tự.');
+        return;
+      }
+    }
+
     setAuthLoading(true);
     try {
       const endpoint = needsSetup ? '/api/admin/auth/setup' : '/api/admin/auth/login';
+      const payload = needsSetup
+        ? { username: username.trim(), password, confirmPassword }
+        : { username: username.trim(), password };
+
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setIsAuthenticated(true);
+        setAdminUser(data.user || { username: username.trim(), role: 'admin' });
         setCsrfToken(data.csrfToken || '');
+        setNeedsSetup(false);
+        setPassword('');
+        setConfirmPassword('');
         await loadManifest();
       } else {
         setLoginError(data.error || 'Đăng nhập không thành công.');
@@ -179,6 +240,163 @@ export function CharacterContentManager({
       setLoginError(err.message || 'Lỗi kết nối máy chủ.');
     } finally {
       setAuthLoading(false);
+    }
+  };
+
+  // Handle Logout
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth/logout', { method: 'POST' });
+    } catch {
+      // Continue client cleanup
+    } finally {
+      setIsAuthenticated(false);
+      setAdminUser(null);
+      setCsrfToken('');
+      setManifest(null);
+      setPassword('');
+      setConfirmPassword('');
+      checkAuth();
+    }
+  };
+
+  // Handle Change Password
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePassFeedback(null);
+
+    if (changePassForm.newPassword !== changePassForm.confirmNewPassword) {
+      setChangePassFeedback({
+        type: 'error',
+        message: 'Mật khẩu mới xác nhận không khớp.',
+      });
+      return;
+    }
+
+    if (changePassForm.newPassword.length < 8) {
+      setChangePassFeedback({
+        type: 'error',
+        message: 'Mật khẩu mới phải có ít nhất 8 ký tự.',
+      });
+      return;
+    }
+
+    setChangingPass(true);
+    try {
+      const res = await fetch('/api/admin/auth/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-csrf-token': csrfToken,
+        },
+        body: JSON.stringify(changePassForm),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setChangePassFeedback({
+          type: 'success',
+          message: data.message || 'Đã đổi mật khẩu thành công.',
+        });
+        setChangePassForm({ oldPassword: '', newPassword: '', confirmNewPassword: '' });
+        setTimeout(() => setShowChangePasswordModal(false), 1500);
+      } else {
+        setChangePassFeedback({
+          type: 'error',
+          message: data.error || 'Đổi mật khẩu thất bại.',
+        });
+      }
+    } catch (err: any) {
+      setChangePassFeedback({
+        type: 'error',
+        message: err.message || 'Lỗi kết nối máy chủ.',
+      });
+    } finally {
+      setChangingPass(false);
+    }
+  };
+
+  // Handle File Selection for Binary WebP Upload
+  const handleBinaryFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      setSelectedBinaryFile(null);
+      setBinaryPreviewUrl(null);
+      return;
+    }
+
+    setSelectedBinaryFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setBinaryPreviewUrl(objectUrl);
+
+    if (!binaryUploadForm.label) {
+      const rawName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      setBinaryUploadForm((prev) => ({
+        ...prev,
+        label: `${CANONICAL_PILOT_NAMES[selectedPilot]} — ${rawName}`,
+      }));
+    }
+  };
+
+  // Handle Binary Upload Submission
+  const handleBinaryUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedBinaryFile) {
+      setActionFeedback({ type: 'error', message: 'Vui lòng chọn một tệp hình ảnh.' });
+      return;
+    }
+
+    setUploadingBinary(true);
+    setActionFeedback(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedBinaryFile);
+      formData.append('pilotId', selectedPilot);
+      formData.append('label', binaryUploadForm.label || 'Tác phẩm mới');
+      formData.append('category', binaryUploadForm.category);
+      formData.append('roleCategory', binaryUploadForm.roleCategory);
+      formData.append('aspectRatio', binaryUploadForm.aspectRatio);
+      formData.append('description', binaryUploadForm.description);
+
+      const res = await fetch('/api/admin/artwork/upload', {
+        method: 'POST',
+        headers: {
+          'x-csrf-token': csrfToken,
+        },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setActionFeedback({
+          type: 'success',
+          message: `Tải lên thành công! SHA-256: ${data.checksumSha256?.slice(0, 16)}... (${(
+            data.fileSizeBytes / 1024
+          ).toFixed(1)} KB)`,
+        });
+        setShowBinaryUploadModal(false);
+        setSelectedBinaryFile(null);
+        setBinaryPreviewUrl(null);
+        setBinaryUploadForm({
+          label: '',
+          category: 'lore',
+          roleCategory: 'fullbody',
+          aspectRatio: '3:4',
+          description: '',
+        });
+        await loadManifest();
+      } else {
+        setActionFeedback({
+          type: 'error',
+          message: data.error || 'Tải lên tác phẩm thất bại.',
+        });
+      }
+    } catch (err: any) {
+      setActionFeedback({
+        type: 'error',
+        message: err.message || 'Lỗi mạng khi tải lên tệp.',
+      });
+    } finally {
+      setUploadingBinary(false);
     }
   };
 
@@ -419,8 +637,33 @@ export function CharacterContentManager({
           </div>
 
           <div className="flex items-center gap-2">
+            {isAuthenticated && adminUser && (
+              <div className="hidden sm:flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/80 border border-cyan-800/80 text-[11px] font-mono text-cyan-300">
+                  <User className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="font-bold">{adminUser.username}</span>
+                </span>
+                <button
+                  onClick={() => setShowChangePasswordModal(true)}
+                  className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-[11px] font-mono text-slate-300 hover:text-cyan-300 hover:border-cyan-500 flex items-center gap-1"
+                  title="Đổi mật khẩu"
+                >
+                  <Key className="w-3 h-3" />
+                  <span>Đổi mật khẩu</span>
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-2.5 py-1 rounded bg-rose-950/60 border border-rose-800 text-[11px] font-mono text-rose-300 hover:bg-rose-900 flex items-center gap-1"
+                  title="Đăng xuất phiên làm việc"
+                >
+                  <LogOut className="w-3 h-3" />
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            )}
+
             {manifest && (
-              <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
+              <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-mono text-slate-400 bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
                 <Database className="w-3 h-3 text-cyan-400" />
                 <span>REV #{manifest.manifestRevision}</span>
               </span>
@@ -448,13 +691,38 @@ export function CharacterContentManager({
                   {needsSetup ? 'KHỞI TẠO TÀI KHOẢN QUẢN TRỊ' : 'XÁC THỰC QUẢN TRỊ VIÊN'}
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Đăng nhập để quản lý tác phẩm và trạng thái xuất bản của 12 phi công.
+                  {needsSetup
+                    ? 'Hệ thống chưa có tài khoản Quản trị. Vui lòng thiết lập tài khoản quản trị viên lần đầu.'
+                    : 'Đăng nhập với tài khoản Quản trị viên (admin hoặc admin123) để quản trị nội dung.'}
                 </p>
               </div>
 
               {loginError && (
                 <div className="p-3 mb-4 rounded bg-rose-950/50 border border-rose-800 text-rose-300 text-xs">
                   {loginError}
+                </div>
+              )}
+
+              {/* Quick Account Selector when already configured */}
+              {!needsSetup && registeredUsernames.length > 0 && (
+                <div className="mb-4 p-2.5 rounded bg-[#070F1E] border border-cyan-950 flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-slate-400">Chọn tài khoản:</span>
+                  <div className="flex items-center gap-1.5">
+                    {registeredUsernames.map((u) => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => setUsername(u)}
+                        className={`px-2 py-0.5 rounded border transition-colors ${
+                          username === u
+                            ? 'bg-cyan-950 border-cyan-400 text-cyan-300 font-bold'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {u}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -469,7 +737,7 @@ export function CharacterContentManager({
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="w-full px-3 py-2 rounded bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
-                    placeholder="admin"
+                    placeholder="admin hoặc admin123"
                   />
                 </div>
 
@@ -486,6 +754,24 @@ export function CharacterContentManager({
                     placeholder="••••••••"
                   />
                 </div>
+
+                {/* Confirm Password Field — ONLY when setup is required */}
+                {needsSetup && (
+                  <div>
+                    <label className="block text-[11px] font-mono uppercase text-cyan-400 mb-1 flex items-center justify-between">
+                      <span>Xác nhận mật khẩu</span>
+                      <span className="text-[10px] text-slate-400">Khớp với mật khẩu trên</span>
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full px-3 py-2 rounded bg-slate-900 border border-cyan-700 text-sm text-slate-100 focus:outline-none focus:border-cyan-400"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -822,13 +1108,27 @@ export function CharacterContentManager({
                       </p>
                     </div>
 
-                    <button
-                      onClick={() => setShowAddArtworkModal(true)}
-                      className="px-3 py-1.5 rounded bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase hover:bg-cyan-400 flex items-center gap-1.5"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Đăng ký Artwork Mới</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedBinaryFile(null);
+                          setBinaryPreviewUrl(null);
+                          setShowBinaryUploadModal(true);
+                        }}
+                        className="px-3.5 py-1.5 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-bold text-xs uppercase flex items-center gap-1.5 shadow-lg shadow-cyan-950/50"
+                      >
+                        <UploadCloud className="w-4 h-4" />
+                        <span>TẢI LÊN FILE WEBP THẬT</span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowAddArtworkModal(true)}
+                        className="px-3 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-300 font-mono text-xs uppercase hover:bg-slate-800 flex items-center gap-1.5"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span className="hidden sm:inline">Đăng ký theo URL</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Artwork Grid */}
@@ -1274,6 +1574,297 @@ export function CharacterContentManager({
                   className="px-4 py-2 rounded bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase hover:bg-cyan-400"
                 >
                   XÁC NHẬN ĐĂNG KÝ
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Real Binary WebP Upload Modal */}
+      {showBinaryUploadModal && (
+        <div className="fixed inset-0 z-60 bg-black/95 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+          <div className="w-full max-w-xl bg-[#070D18] border border-cyan-500/80 rounded-xl flex flex-col shadow-2xl overflow-hidden my-auto">
+            <header className="h-12 border-b border-cyan-950 px-4 flex items-center justify-between shrink-0 bg-[#0A1324]">
+              <div className="flex items-center gap-2">
+                <UploadCloud className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-xs font-mono font-bold text-slate-100 uppercase">
+                  TẢI LÊN FILE HÌNH ẢNH THẬT (BINARY UPLOAD) // {selectedPilot.toUpperCase()}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowBinaryUploadModal(false)}
+                className="p-1 rounded text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </header>
+
+            <form onSubmit={handleBinaryUploadSubmit} className="p-4 sm:p-6 space-y-4">
+              {/* File Input & Preview Area */}
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-cyan-400 mb-1.5 font-bold">
+                  Chọn tệp hình ảnh từ máy tính (WebP, PNG, JPEG) *
+                </label>
+                <div className="border-2 border-dashed border-cyan-800/80 hover:border-cyan-500 rounded-lg p-4 bg-slate-950/60 text-center transition-colors">
+                  <input
+                    type="file"
+                    accept="image/webp,image/png,image/jpeg"
+                    required
+                    onChange={handleBinaryFileSelect}
+                    className="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-mono file:font-bold file:bg-cyan-500 file:text-slate-950 hover:file:bg-cyan-400 cursor-pointer"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-2 font-mono">
+                    Khuyến nghị WebP chuẩn Starfront V2. Tệp sẽ được lưu trực tiếp vào public/assets/artworks/{selectedPilot}/ và tính mã băm SHA-256.
+                  </p>
+                </div>
+              </div>
+
+              {/* Image Preview Box */}
+              {binaryPreviewUrl && (
+                <div className="p-3 rounded-lg bg-black/60 border border-slate-800 flex items-center gap-4">
+                  <div className="w-20 h-24 bg-slate-900 rounded overflow-hidden shrink-0 border border-cyan-500/40">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={binaryPreviewUrl}
+                      alt="Xem trước"
+                      className="w-full h-full object-cover object-top"
+                    />
+                  </div>
+                  <div className="text-xs space-y-1 overflow-hidden">
+                    <div className="font-mono text-cyan-300 truncate font-semibold">
+                      {selectedBinaryFile?.name}
+                    </div>
+                    <div className="text-[11px] text-slate-400 font-mono">
+                      Kích thước: {selectedBinaryFile ? (selectedBinaryFile.size / 1024).toFixed(1) : 0} KB · Định dạng: {selectedBinaryFile?.type}
+                    </div>
+                    <div className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Sẵn sàng băm SHA-256 & lưu trữ
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  Tên tác phẩm (Label) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={binaryUploadForm.label}
+                  onChange={(e) =>
+                    setBinaryUploadForm({ ...binaryUploadForm, label: e.target.value })
+                  }
+                  placeholder={`Ví dụ: ${CANONICAL_PILOT_NAMES[selectedPilot]} — Tác Chiến Vành Đai Asteroid`}
+                  className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                    Vai trò (Role)
+                  </label>
+                  <select
+                    value={binaryUploadForm.roleCategory}
+                    onChange={(e) =>
+                      setBinaryUploadForm({ ...binaryUploadForm, roleCategory: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="fullbody">fullbody (Toàn thân)</option>
+                    <option value="portrait">portrait (Chân dung)</option>
+                    <option value="action">action (Chiến trường)</option>
+                    <option value="concept">concept (Phác thảo)</option>
+                    <option value="chibi">chibi (Chibi)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                    Phân loại
+                  </label>
+                  <select
+                    value={binaryUploadForm.category}
+                    onChange={(e) =>
+                      setBinaryUploadForm({ ...binaryUploadForm, category: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="lore">lore (Cốt truyện)</option>
+                    <option value="base">base (Cơ bản)</option>
+                    <option value="awakened">awakened (Thức tỉnh)</option>
+                    <option value="combat">combat (Chiến đấu)</option>
+                    <option value="chibi">chibi</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                    Tỷ lệ ảnh
+                  </label>
+                  <select
+                    value={binaryUploadForm.aspectRatio}
+                    onChange={(e) =>
+                      setBinaryUploadForm({ ...binaryUploadForm, aspectRatio: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="3:4">3:4 (Chuẩn dọc)</option>
+                    <option value="1:1">1:1 (Vuông)</option>
+                    <option value="16:9">16:9 (Ngang)</option>
+                    <option value="9:16">9:16 (Story)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  Mô tả / Chú thích
+                </label>
+                <textarea
+                  rows={2}
+                  value={binaryUploadForm.description}
+                  onChange={(e) =>
+                    setBinaryUploadForm({ ...binaryUploadForm, description: e.target.value })
+                  }
+                  placeholder="Ghi chú ngữ cảnh của tác phẩm..."
+                  className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-900">
+                <button
+                  type="button"
+                  onClick={() => setShowBinaryUploadModal(false)}
+                  className="px-3.5 py-2 rounded bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400 hover:text-white"
+                >
+                  HỦY
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploadingBinary || !selectedBinaryFile}
+                  className="px-5 py-2 rounded bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase hover:bg-cyan-400 transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {uploadingBinary ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>ĐANG TẢI LÊN & XỬ LÝ...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="w-4 h-4" />
+                      <span>XÁC NHẬN TẢI LÊN</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 z-60 bg-black/95 flex items-center justify-center p-3 sm:p-6">
+          <div className="w-full max-w-md bg-[#070D18] border border-cyan-800 rounded-xl flex flex-col shadow-2xl overflow-hidden">
+            <header className="h-12 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 bg-[#0A1324]">
+              <div className="flex items-center gap-2">
+                <Key className="w-4 h-4 text-cyan-400" />
+                <h3 className="text-xs font-mono font-bold text-slate-100 uppercase">
+                  ĐỔI MẬT KHẨU QUẢN TRỊ VIÊN ({adminUser?.username})
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowChangePasswordModal(false);
+                  setChangePassFeedback(null);
+                }}
+                className="p-1 rounded text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </header>
+
+            <form onSubmit={handleChangePassword} className="p-4 sm:p-6 space-y-3.5">
+              {changePassFeedback && (
+                <div
+                  className={`p-3 rounded text-xs font-mono border ${
+                    changePassFeedback.type === 'success'
+                      ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300'
+                      : 'bg-rose-950/60 border-rose-800 text-rose-300'
+                  }`}
+                >
+                  {changePassFeedback.message}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  Mật khẩu hiện tại *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={changePassForm.oldPassword}
+                  onChange={(e) =>
+                    setChangePassForm({ ...changePassForm, oldPassword: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  Mật khẩu mới (Tối thiểu 8 ký tự) *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={changePassForm.newPassword}
+                  onChange={(e) =>
+                    setChangePassForm({ ...changePassForm, newPassword: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1">
+                  Xác nhận mật khẩu mới *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={changePassForm.confirmNewPassword}
+                  onChange={(e) =>
+                    setChangePassForm({ ...changePassForm, confirmNewPassword: e.target.value })
+                  }
+                  className="w-full px-3 py-2 rounded bg-slate-950 border border-slate-800 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2 border-t border-slate-900">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowChangePasswordModal(false);
+                    setChangePassFeedback(null);
+                  }}
+                  className="px-3 py-2 rounded bg-slate-900 border border-slate-800 text-xs font-mono text-slate-400 hover:text-white"
+                >
+                  HỦY
+                </button>
+                <button
+                  type="submit"
+                  disabled={changingPass}
+                  className="px-4 py-2 rounded bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase hover:bg-cyan-400 disabled:opacity-50"
+                >
+                  {changingPass ? 'ĐANG CẬP NHẬT...' : 'CẬP NHẬT MẬT KHẨU'}
                 </button>
               </div>
             </form>

@@ -30,6 +30,12 @@ export interface AdminCredentialsRecord {
   updatedAt: string;
 }
 
+export interface AdminStoreData {
+  version: number;
+  accounts: Record<string, AdminCredentialsRecord>;
+  updatedAt: string;
+}
+
 export interface SessionPayload {
   username: string;
   role: 'admin';
@@ -44,7 +50,7 @@ export const SESSION_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
 const AUTH_CONFIG_FILE = path.join(process.cwd(), '.starfront-config', 'admin-auth.json');
 const SECRET_KEY_FILE = path.join(process.cwd(), '.starfront-config', 'session-secret.key');
 
-// In-memory rate-limiter: IP -> { attempts: number, lockUntil: number }
+// In-memory rate-limiter: IP -> { attempts: number, lockUntil: number, resetAt: number }
 interface RateLimitRecord {
   attempts: number;
   resetAt: number;
@@ -88,71 +94,147 @@ export function hashPassword(password: string, salt: string): string {
 }
 
 /**
- * Checks if admin authentication has been configured either in file or environment
+ * Loads or initializes the multi-admin account store with backward compatibility
  */
-export function isAuthConfigured(): boolean {
-  if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
-    return true;
-  }
-
-  try {
-    if (fs.existsSync(AUTH_CONFIG_FILE)) {
-      const data = JSON.parse(fs.readFileSync(AUTH_CONFIG_FILE, 'utf-8'));
-      return Boolean(data.username && data.salt && data.hash);
-    }
-  } catch {
-    return false;
-  }
-
-  return false;
-}
-
-/**
- * Reads stored credentials record
- */
-function getStoredCredentials(): AdminCredentialsRecord | null {
-  if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
-    const envSalt = 'env_salt_' + (process.env.ADMIN_SALT || 'starfront_default_salt');
-    const envHash = hashPassword(process.env.ADMIN_PASSWORD, envSalt);
-    return {
-      username: process.env.ADMIN_USERNAME.trim(),
-      salt: envSalt,
-      hash: envHash,
-      createdAt: '2026-10-22T00:00:00.000Z',
-      updatedAt: '2026-10-22T00:00:00.000Z',
-    };
-  }
+export function loadAdminStore(): AdminStoreData {
+  let store: AdminStoreData = {
+    version: 2,
+    accounts: {},
+    updatedAt: new Date().toISOString(),
+  };
 
   try {
     if (fs.existsSync(AUTH_CONFIG_FILE)) {
       const raw = fs.readFileSync(AUTH_CONFIG_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
-      if (parsed.username && parsed.salt && parsed.hash) {
-        return parsed as AdminCredentialsRecord;
+
+      if (parsed.accounts && typeof parsed.accounts === 'object') {
+        store = {
+          version: parsed.version || 2,
+          accounts: parsed.accounts,
+          updatedAt: parsed.updatedAt || new Date().toISOString(),
+        };
+      } else if (parsed.username && parsed.salt && parsed.hash) {
+        // Legacy single-account migration
+        const key = parsed.username.toLowerCase();
+        store.accounts[key] = {
+          username: parsed.username,
+          salt: parsed.salt,
+          hash: parsed.hash,
+          createdAt: parsed.createdAt || new Date().toISOString(),
+          updatedAt: parsed.updatedAt || new Date().toISOString(),
+        };
       }
     }
-  } catch {
-    return null;
+  } catch (err) {
+    console.warn('[AdminAuth] Error reading admin auth store, using clean in-memory copy:', err);
   }
 
-  return null;
+  // Auto-bootstrap from environment variables if provided (idempotent, no overwrite)
+  let mutated = false;
+
+  // Primary Admin: 'admin' via STARFRONT_ADMIN_PRIMARY_PASSWORD
+  const primaryEnvPass = process.env.STARFRONT_ADMIN_PRIMARY_PASSWORD;
+  if (primaryEnvPass && primaryEnvPass.trim().length >= 8 && !store.accounts['admin']) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = hashPassword(primaryEnvPass.trim(), salt);
+    const now = new Date().toISOString();
+    store.accounts['admin'] = {
+      username: 'admin',
+      salt,
+      hash,
+      createdAt: now,
+      updatedAt: now,
+    };
+    mutated = true;
+  }
+
+  // Backup Admin: 'admin123' via STARFRONT_ADMIN_BACKUP_PASSWORD
+  const backupEnvPass = process.env.STARFRONT_ADMIN_BACKUP_PASSWORD;
+  if (backupEnvPass && backupEnvPass.trim().length >= 8 && !store.accounts['admin123']) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = hashPassword(backupEnvPass.trim(), salt);
+    const now = new Date().toISOString();
+    store.accounts['admin123'] = {
+      username: 'admin123',
+      salt,
+      hash,
+      createdAt: now,
+      updatedAt: now,
+    };
+    mutated = true;
+  }
+
+  // Legacy single env check (ADMIN_USERNAME & ADMIN_PASSWORD)
+  if (process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
+    const legacyUser = process.env.ADMIN_USERNAME.trim().toLowerCase();
+    if (!store.accounts[legacyUser]) {
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = hashPassword(process.env.ADMIN_PASSWORD, salt);
+      const now = new Date().toISOString();
+      store.accounts[legacyUser] = {
+        username: process.env.ADMIN_USERNAME.trim(),
+        salt,
+        hash,
+        createdAt: now,
+        updatedAt: now,
+      };
+      mutated = true;
+    }
+  }
+
+  if (mutated) {
+    saveAdminStore(store);
+  }
+
+  return store;
 }
 
 /**
- * Initializes Admin credentials on first boot if unconfigured
+ * Saves multi-admin account store atomically
+ */
+export function saveAdminStore(store: AdminStoreData): boolean {
+  try {
+    const dir = path.dirname(AUTH_CONFIG_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+    store.updatedAt = new Date().toISOString();
+    const tmp = `${AUTH_CONFIG_FILE}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
+    fs.writeFileSync(tmp, JSON.stringify(store, null, 2), 'utf-8');
+    fs.renameSync(tmp, AUTH_CONFIG_FILE);
+    return true;
+  } catch (err) {
+    console.error('[AdminAuth] Failed to write admin auth store:', err);
+    return false;
+  }
+}
+
+/**
+ * Checks if at least one admin account is configured in the system
+ */
+export function isAuthConfigured(): boolean {
+  const store = loadAdminStore();
+  return Object.keys(store.accounts).length > 0;
+}
+
+/**
+ * Returns summary of registered admin account usernames (NO passwords or hashes)
+ */
+export function getRegisteredAdminUsernames(): string[] {
+  const store = loadAdminStore();
+  return Object.values(store.accounts).map((a) => a.username);
+}
+
+/**
+ * Initializes or adds an Admin credentials record (e.g. during first-time UI setup)
  */
 export function initializeAdminCredentials(
   username: string,
   password: string
 ): { success: boolean; error?: string } {
-  if (isAuthConfigured()) {
-    return {
-      success: false,
-      error: 'Hệ thống xác thực Admin đã được khởi tạo trước đó. Không thể ghi đè.',
-    };
-  }
-
   const cleanUser = username.trim();
+  const lowerUser = cleanUser.toLowerCase();
+
   if (cleanUser.length < 3 || cleanUser.length > 32) {
     return { success: false, error: 'Tên người dùng Admin phải từ 3 đến 32 ký tự.' };
   }
@@ -161,12 +243,22 @@ export function initializeAdminCredentials(
     return { success: false, error: 'Mật khẩu phải có độ dài tối thiểu 8 ký tự.' };
   }
 
+  const store = loadAdminStore();
+
+  // If already configured and this user already exists, prevent accidental overwrite without auth
+  if (store.accounts[lowerUser]) {
+    return {
+      success: false,
+      error: `Tài khoản ${cleanUser} đã tồn tại trong hệ thống. Vui lòng đăng nhập hoặc sử dụng tính năng đổi mật khẩu.`,
+    };
+  }
+
   try {
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = hashPassword(password, salt);
     const now = new Date().toISOString();
 
-    const record: AdminCredentialsRecord = {
+    store.accounts[lowerUser] = {
       username: cleanUser,
       salt,
       hash,
@@ -174,21 +266,64 @@ export function initializeAdminCredentials(
       updatedAt: now,
     };
 
-    const dir = path.dirname(AUTH_CONFIG_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    // Atomic write
-    const tmp = `${AUTH_CONFIG_FILE}.tmp.${Date.now()}`;
-    fs.writeFileSync(tmp, JSON.stringify(record, null, 2), 'utf-8');
-    fs.renameSync(tmp, AUTH_CONFIG_FILE);
+    const saved = saveAdminStore(store);
+    if (!saved) {
+      return { success: false, error: 'Không thể ghi tệp lưu trữ credentials.' };
+    }
 
     return { success: true };
   } catch (err) {
     return {
       success: false,
-      error: `Lỗi ghi tệp lưu trữ credentials: ${err instanceof Error ? err.message : 'Unknown'}`,
+      error: `Lỗi khởi tạo credentials: ${err instanceof Error ? err.message : 'Unknown'}`,
     };
   }
+}
+
+/**
+ * Changes password for an existing admin user
+ */
+export function changeAdminPassword(
+  username: string,
+  oldPassword: string,
+  newPassword: string
+): { success: boolean; error?: string } {
+  if (newPassword.length < 8) {
+    return { success: false, error: 'Mật khẩu mới phải có tối thiểu 8 ký tự.' };
+  }
+
+  const cleanUser = username.trim().toLowerCase();
+  const store = loadAdminStore();
+  const account = store.accounts[cleanUser];
+
+  if (!account) {
+    return { success: false, error: 'Không tìm thấy tài khoản quản trị.' };
+  }
+
+  const computedOld = hashPassword(oldPassword, account.salt);
+  const isMatch = crypto.timingSafeEqual(
+    Buffer.from(computedOld, 'hex'),
+    Buffer.from(account.hash, 'hex')
+  );
+
+  if (!isMatch) {
+    return { success: false, error: 'Mật khẩu hiện tại không chính xác.' };
+  }
+
+  const newSalt = crypto.randomBytes(16).toString('hex');
+  const newHash = hashPassword(newPassword, newSalt);
+
+  account.salt = newSalt;
+  account.hash = newHash;
+  account.updatedAt = new Date().toISOString();
+  store.accounts[cleanUser] = account;
+
+  const saved = saveAdminStore(store);
+  if (!saved) {
+    return { success: false, error: 'Không thể cập nhật mật khẩu mới.' };
+  }
+
+  return { success: true };
 }
 
 /**
@@ -241,30 +376,32 @@ export function recordLoginAttempt(ip: string, success: boolean): void {
 }
 
 /**
- * Verifies admin credentials
+ * Verifies admin credentials against multi-account store
  */
 export function verifyAdminCredentials(
   username: string,
   password: string
 ): { success: boolean; user?: AdminUser; error?: string } {
-  const stored = getStoredCredentials();
-  if (!stored) {
+  const store = loadAdminStore();
+  if (Object.keys(store.accounts).length === 0) {
     return {
       success: false,
       error: 'Hệ thống chưa được khởi tạo tài khoản Quản trị viên.',
     };
   }
 
-  const cleanUser = username.trim();
-  if (cleanUser.toLowerCase() !== stored.username.toLowerCase()) {
+  const cleanUser = username.trim().toLowerCase();
+  const account = store.accounts[cleanUser];
+
+  if (!account) {
     return { success: false, error: 'Tên đăng nhập hoặc mật khẩu không chính xác.' };
   }
 
-  const computedHash = hashPassword(password, stored.salt);
+  const computedHash = hashPassword(password, account.salt);
   // Constant time comparison to prevent timing attacks
   const isMatch = crypto.timingSafeEqual(
     Buffer.from(computedHash, 'hex'),
-    Buffer.from(stored.hash, 'hex')
+    Buffer.from(account.hash, 'hex')
   );
 
   if (!isMatch) {
@@ -274,9 +411,9 @@ export function verifyAdminCredentials(
   return {
     success: true,
     user: {
-      username: stored.username,
+      username: account.username,
       role: 'admin',
-      createdAt: stored.createdAt,
+      createdAt: account.createdAt,
     },
   };
 }

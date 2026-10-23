@@ -114,7 +114,9 @@ export interface ArtworkRegistration {
   width?: number;
   height?: number;
   fileSize?: number;
+  fileSizeBytes?: number;
   sha256?: string;
+  checksumSha256?: string;
   version?: string;
   displayPriority?: number;
   priority?: number;

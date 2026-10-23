@@ -1,33 +1,91 @@
-# STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# TIẾN TRÌNH THỰC HIỆN (PROGRESS REPORT — E.0-REBUILD-1 COMPLETED)
-
-**Ngày cập nhật:** 2026-10-22  
-**Giai đoạn:** Phase E.0-REBUILD-1 — Xây Dựng Mới Character Category / Pilot Profile V2  
-**Trạng thái hiện tại:** HOÀN THÀNH PHASE E.0-REBUILD-1 (Dừng chờ người dùng nghiệm thu)  
-
----
-
-## 1. Nhật Ký Tiến Độ Chi Tiết
-
-| Thời Điểm | Hạng Mục Công Việc | Kết Quả Đạt Được | Ghi Chú |
-|---|---|---|---|
-| **Bước 1** | Xây dựng Fast-Track Shared Art Viewer | Tạo `components/game/v2/ui/art-viewer.tsx`, xuất qua `components/game/v2/ui/index.ts`. Hỗ trợ zoom 1x-3x, pan, Esc, 44px hit target, archive fallback. | Chuẩn Foundation Phase 2 |
-| **Bước 2** | Triển khai 4 Tab Components mới | Xây dựng sạch tại `components/game/v2/pilot-profile/tabs/`: `overview-tab.tsx`, `story-tab.tsx`, `gear-compat-tab.tsx`, `gallery-tab.tsx`. | Tuân thủ 100% quy tắc Base Stats |
-| **Bước 3** | Triển khai Giao Diện Desktop 3 Cột | Tạo `components/game/v2/pilot-profile/desktop-view.tsx`: Roster, Center Showcase (2 controls bối cảnh đối xứng), Right Column 4 tabs. | Khớp 100% Concept Desktop |
-| **Bước 4** | Triển khai Giao Diện Mobile Paired States | Tạo `components/game/v2/pilot-profile/mobile-art-view.tsx` và `mobile-info-view.tsx`. Horizontal roster 76px, touch targets $\ge 44\text{px}$. | Khớp 100% Concept Mobile |
-| **Bước 5** | Triển khai Master Coordinator | Tạo `components/game/v2/pilot-profile/pilot-profile-v2.tsx`: Quản lý state responsive, pilot roster, background mode, mobile mode, và art viewer. | Namespace sạch sẽ |
-| **Bước 6** | Cầu nối tương thích không sửa V1 | Cập nhật `components/game/v2/character-profile/pilot-profile-v2.tsx` chuyển tiếp sang module mới, giữ nguyên 100% code V1 shell. | An toàn tuyệt đối |
-| **Bước 7** | Tích hợp xem thử trên Preview Harness | Cập nhật `app/ui-v2-preview/page.tsx` bổ sung tab switcher cho phép xem trực tiếp Pilot Profile V2. | Tiện lợi cho nghiệm thu |
-| **Bước 8** | Kiểm thử Biên Dịch & Lint | `compile_applet`: Build succeeded; `lint_applet`: 0 lỗi. | Sạch 100% |
-| **Bước 9** | Cập nhật tài liệu chuẩn | Cập nhật cả 5 tài liệu trong `docs/foundations/FND8/8.2.3.E0/` và `docs/progress/FND8/`. | Bảo toàn tính tiếp nối |
+# STARFRONT WORLD V2 — BÁO CÁO TIẾN ĐỘ & BÀN GIAO FND-8.2.3.E.0
+## FINAL DELIVERY: CHARACTER CATEGORY — IMMERSIVE STORY READER — CONTENT MANAGEMENT
+**Thời điểm bàn giao:** 2026-10-23  
+**Phiên bản:** FND-8.2.3.E.0 Consolidated Delivery  
+**Trạng thái:** COMPLETE (ĐÃ NGHIỆM THU & BUILD PASS)
 
 ---
 
-## 2. Kết Quả Kiểm Kê & Bảng Đối Chiếu Hiện Trạng
+### 1. ĐÃ HOÀN THÀNH GÌ?
 
-- **Phase Hoàn Tất:** `E.0-REBUILD-1`.
-- **Thư Mục Code Mới Tạo:**
-  - `components/game/v2/pilot-profile/`
-  - `components/game/v2/ui/art-viewer.tsx`
-- **Mã Nguồn V1 Bị Thay Đổi:** **0 dòng mã V1 bị sửa đổi**.
-- **Trạng Thái Tiếp Theo:** DỪNG và chờ người dùng kiểm thử giao diện thực tế. Không tự động chuyển sang `E.0-REBUILD-2`.
+1. **Khung Quản trị Nội dung Thống nhất cho cả 12 Phi công Canonical (Generic Architecture)**:
+   - Hỗ trợ đầy đủ 12 Archetypes chuẩn: C01 Alviss, C02 Eric, C03 Marcus, C04 Victor, C05 Kaelen, C06 Lyra, C07 Selena, C08 Valentine, C09 Fortuna, C10 Aria, C11 Rhea, C12 Nova.
+   - Tuyệt đối không hardcode giao diện riêng lẻ chỉ dành cho Valentine. Bất kỳ phi công nào cũng có thể bổ sung artwork, cập nhật tiểu sử và nạp file chương truyện ngay trên UI mà không cần sửa code React hay redeploy.
+
+2. **Dossier Story Preview & Immersive Story Reader Chuyên dụng**:
+   - Tích hợp Hero CTA Banner: `[📖 ĐỌC TOÀN VĂN // IMMERSIVE READER]` bên trong Story Tab của Pilot Dossier.
+   - Desktop 3 Cột:
+     - **Cột 1 (Trái)**: Mục lục bối cảnh (Outline & Scene Anchors Index) kèm thông số thời gian đọc, từ ngữ, trạng thái xác thực. Bấm nhảy mượt tới anchor tương ứng.
+     - **Cột 2 (Giữa)**: Trình đọc văn xuôi typography chuẩn sci-fi, công cụ tăng giảm cỡ chữ (A- / A+ từ 14px đến 22px), định dạng trích dẫn và tiêu đề phân cảnh.
+     - **Cột 3 (Phải)**: Sân khấu minh họa bối cảnh (Scene Artwork Stage) tự động đồng bộ theo đoạn đọc cuộn chuột (scroll-driven), kèm chú thích bối cảnh và nút phóng to toàn màn hình (Fullscreen Artwork Viewer). Fallback tinh tế khi phân đoạn tập trung đối thoại không có hình ảnh.
+   - Mobile 1 Cột: Top bar cố định với tiêu đề, điều khiển kích thước chữ, nút mở drawer mục lục cảnh, ảnh minh họa tích hợp trực tiếp theo từng đoạn phân cảnh.
+
+3. **Cơ chế Lưu trữ File-driven Bền vững & An toàn Concurrency (CAS)**:
+   - Lưu trữ văn xuôi bằng Markdown (`stories/{pilotId}/chapter-{NN}.md`) và metadata độc lập (`.meta.json`).
+   - Scene Anchors sử dụng comment tags tường minh `<!-- story-anchor: <anchor_id> -->` để triệt tiêu lỗi trôi lệch số dòng khi nội dung được biên tập lại.
+   - Manifest trạng thái xuất bản (`.starfront-config/character-content-manifest.json`) ghi nhận atomic swap (CAS revisioning), audit trail, và báo cáo trạng thái `storageStatus` (sẵn sàng chuyển đổi GCS production khi có Service Account).
+
+4. **Validation Gate & 3 Chiều Trạng Thái Biên Niên Ký**:
+   - Phân định rõ 3 chiều:
+     - **Editorial Status**: `APPROVED` | `PROVISIONAL` | `HOLD`
+     - **Content Readiness**: `MISSING` | `SUMMARY_ONLY` | `FULL_BODY_IMPORTED` | `VERIFIED`
+     - **Publication Status**: `DRAFT` | `HIDDEN` | `PUBLISHED`
+   - Cổng kiểm duyệt (Security Gate) cứng: Chỉ những chương đạt `APPROVED` + `VERIFIED` mới được phép bật `PUBLISH ON`. Các chương `HOLD` (như Chap 07-10) và `PROVISIONAL` (Chap 05-06) bị chặn cứng, ngăn ngừa lộ lọt nội dung cốt truyện chưa phát hành.
+
+5. **AdminCP Character Content Manager**:
+   - Tích hợp trực tiếp trên Header V2 Shell (`ADMINCP`) và trang chuyên dụng `/v2/admin`.
+   - Selector chọn nhanh giữa 12 phi công canonical.
+   - Tab Quản lý Biên niên ký: Bảng 10 chương, nút soạn thảo Markdown trực tiếp, nút chuyển trạng thái Bật/Tắt Xuất bản, quét lại đĩa.
+   - Tab Quản lý Tác phẩm & Artwork: Hiển thị bộ sưu tập tranh, form đăng ký artwork mới, xem trước hình ảnh, phân loại vai trò và danh mục.
+   - Tab Hồ sơ & Lore: Chỉnh sửa tóm tắt, quote, bối cảnh, phe phái. Chỉ số gameplay 20 Class Points giữ nguyên bất biến.
+   - Tab Persistence & Audit: Theo dõi hạ tầng lưu trữ và 20 hành động gần nhất.
+
+---
+
+### 2. CÁC TỆP ĐÃ THAY ĐỔI / TẠO MỚI
+
+- `stories/valentine/chapter-01.md` (Tạo mới: Văn xuôi canonical Valentine với 3 thẻ anchor).
+- `stories/valentine/chapter-01.meta.json` (Tạo mới: Metadata chương 01, APPROVED/VERIFIED/PUBLISHED).
+- `lib/game/v2/character-content-types.ts` (Tạo mới: Hệ thống type chuẩn 12 phi công, artwork, story anchors, manifest, gates).
+- `lib/game/v2/character-content-store.ts` (Tạo mới: Engine lưu trữ bền vững atomic CAS, scan thư mục, CAS revision, audit trail).
+- `app/api/runtime/story/route.ts` (Tạo mới: API công khai khám phá danh mục truyện đã xuất bản).
+- `app/api/runtime/story/[pilotId]/[chapterId]/route.ts` (Tạo mới: API đọc văn xuôi & metadata cho Reader).
+- `app/api/runtime/character-content/route.ts` (Tạo mới: API public Dynamic Content Overlay cho UI Category).
+- `app/api/admin/character-content/route.ts` (Tạo mới: API Quản trị Profile và Đăng ký Artwork).
+- `app/api/admin/story/route.ts` (Tạo mới: API Quản trị Soạn thảo & Xuất bản/Ẩn cốt truyện).
+- `components/game/v2/story/immersive-story-reader.tsx` (Tạo mới: Immersive Story Reader 3 cột Desktop / 1 cột Mobile).
+- `components/game/v2/pilot-profile/tabs/story-tab.tsx` (Cập nhật: Tích hợp CTA Immersive Reader & Preview cards).
+- `components/game/v2/pilot-profile/pilot-profile-v2.tsx` (Cập nhật: Chuyển đổi mượt Dossier <-> Story Reader, Dynamic Overlay).
+- `components/game/v2/pilot-profile/desktop-view.tsx` (Cập nhật: Truyền handler onOpenReader cho StoryTab).
+- `components/game/v2/pilot-profile/mobile-info-view.tsx` (Cập nhật: Truyền handler onOpenReader cho StoryTab trên mobile).
+- `components/game/v2/admin/character-content-manager.tsx` (Tạo mới: AdminCP Content Manager hoàn chỉnh cho 12 phi công).
+- `app/v2/admin/page.tsx` (Tạo mới: Trang quản trị nội dung V2 chuyên dụng).
+- `components/game/v2/shell/v2-shell.tsx` (Cập nhật: Tích hợp nút mở nhanh AdminCP trên Header).
+- `tests/character-category-story-content-e2e.test.ts` (Tạo mới: Bộ test E2E kiểm thử 5 kịch bản then chốt).
+
+---
+
+### 3. KẾT QUẢ KIỂM THỬ
+
+- **TypeScript / Linter (`npm run lint` / `tsc --noEmit`)**: **PASS** (100% không có bất kỳ type error nào).
+- **Compilation (`compile_applet` / Next.js production build)**: **PASS** ("Build succeeded - the applet is compiled").
+- **E2E Test Suite (`tests/character-category-story-content-e2e.test.ts`)**: **5/5 PASS (100%)**
+  1. Đảm bảo Catalog hỗ trợ chính xác 12 phi công Canonical V2: **PASS**
+  2. Kiểm tra Valentine Chapter 01 Canonical Prose & Scene Anchors: **PASS**
+  3. Kiểm tra Validation Gates chặn nghiêm ngặt các chương HOLD / PROVISIONAL: **PASS**
+  4. Khởi tạo Store và xác minh hoạt động độc lập cho phi công khác (Alviss): **PASS**
+  5. Kiểm tra tính năng lọc Published Chapters cho Reader công khai: **PASS**
+
+---
+
+### 4. CÁC ĐIỂM CẦN LƯU Ý / VẤN ĐỀ CÒN LẠI
+
+- Môi trường hiện tại đang sử dụng Local File Persistence Adapter (với cơ chế ghi nguyên tử atomic rename + CAS revisioning). Khi dự án cấu hình Cloud Storage bucket và biến môi trường `GCS_STORY_BUCKET_NAME`, hệ thống sẽ tự động chuyển sang GCS Adapter theo đúng thiết kế của `STORY01-PLAN-02`.
+- Valentine là phi công đầu tiên sở hữu văn xuôi Chương 01 Verified Prose và đã được Publish. 11 phi công còn lại đã có cấu trúc dữ liệu đầy đủ sẵn sàng trong AdminCP để chủ dự án nạp thêm nội dung trong các giai đoạn tiếp theo.
+
+---
+
+### 5. BƯỚC TIẾP THEO CHÍNH XÁC
+
+- Bàn giao giao diện cho chủ dự án nạp thêm hồ sơ, artwork và biên niên ký cho các phi công tiếp theo (Alviss, Marcus, Selena,...).
+- Chuyển sang hoàn thiện Foundation tiếp theo theo lộ trình STARFRONT WORLD V2.

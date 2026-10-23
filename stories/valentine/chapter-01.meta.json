@@ -1,0 +1,50 @@
+{
+  "$schema": "https://starfront.game/schemas/story-chapter-meta-v2.json",
+  "chapterId": "chap-01",
+  "chapterNumber": 1,
+  "pilotId": "valentine",
+  "characterName": "Valentine",
+  "title": "Ánh sáng cuối cùng tại Elysia",
+  "version": "1.0.0",
+  "summary": "Quyết định định mệnh giữa đoàn tàu hàng trăm bệnh nhân và đội ngũ đồng đội bị cô lập.",
+  "quote": "“Tôi không hứa rằng mọi người sẽ không bị thương. Nhưng tôi hứa sẽ làm tất cả những gì có thể để đưa họ trở về.”",
+  "estimatedReadTimeMinutes": 4,
+  "editorialStatus": "APPROVED",
+  "contentReadiness": "VERIFIED",
+  "publicationStatus": "PUBLISHED",
+  "publishedAt": "2026-10-23T08:00:00.000Z",
+  "provenance": {
+    "sourceDocument": "lib/game/v2/character-profile-data.ts",
+    "verifiedBy": "Chủ dự án & Lead Architect"
+  },
+  "anchors": [
+    {
+      "anchorId": "val-ch01-scene-academy",
+      "placementTag": "val-ch01-scene-academy",
+      "fallbackParagraphIndex": 2,
+      "assetId": "valentine-portrait",
+      "assetPath": "/images/valentine-portrait.webp",
+      "caption": "Valentine trong những ngày đầu tốt nghiệp Học viện Quân y Không gian",
+      "aspectRatio": "1:1"
+    },
+    {
+      "anchorId": "val-ch01-scene-evac",
+      "placementTag": "val-ch01-scene-evac",
+      "fallbackParagraphIndex": 4,
+      "assetId": "valentine-fullbody",
+      "assetPath": "/images/valentine-fullbody.webp",
+      "caption": "Valentine điều phối phi đội sơ tán Mercy Wing trong cuộc phong tỏa Elysia",
+      "aspectRatio": "portrait"
+    },
+    {
+      "anchorId": "val-ch01-scene-resolve",
+      "placementTag": "val-ch01-scene-resolve",
+      "fallbackParagraphIndex": 7,
+      "assetId": "valentine-fullbody",
+      "assetPath": "/images/valentine-fullbody.webp",
+      "caption": "Lời thề bảo vệ sinh mạng và lý tưởng của phi đội Mercy Wing",
+      "aspectRatio": "portrait"
+    }
+  ],
+  "updatedAt": "2026-10-23T08:00:00.000Z"
+}

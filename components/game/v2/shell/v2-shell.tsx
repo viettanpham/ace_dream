@@ -16,11 +16,13 @@ import {
   Sparkles,
   PanelLeftClose,
   PanelLeftOpen,
-  Radio,
   Shield,
   Coins,
+  Settings,
+  Radio,
 } from 'lucide-react'
 import { loadV2UIPreferences, saveV2UIPreferences } from '@/lib/game/v2/ui-preferences'
+import { CharacterContentManager } from '@/components/game/v2/admin/character-content-manager'
 
 export interface V2ShellProps {
   children: React.ReactNode
@@ -109,6 +111,8 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
   const [menuMode, setMenuMode] = useState<'mini' | 'full'>('mini')
   // Mobile drawer state
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false)
+  // AdminCP Character Content Manager modal state
+  const [isAdminCpOpen, setIsAdminCpOpen] = useState<boolean>(false)
   // Hydration state
   const [isMounted, setIsMounted] = useState<boolean>(false)
 
@@ -207,6 +211,17 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
             <span className="font-bold text-white tracking-wide">45,820</span>
             <span className="text-[10px] text-[#F59E0B]">₢</span>
           </div>
+
+          {/* AdminCP Content Manager Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsAdminCpOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0E1626] border border-[#1E2D42] hover:border-cyan-500 text-slate-300 hover:text-cyan-400 text-xs font-mono font-bold transition-all cursor-pointer"
+            title="Mở Quản trị viên Nội dung Nhân vật & Biên niên ký"
+          >
+            <Shield className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">ADMINCP</span>
+          </button>
 
           {/* Core System Status */}
           <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded bg-[#10B981]/10 border border-[#10B981]/30 text-[#10B981]">
@@ -415,6 +430,14 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
           {children}
         </main>
       </div>
+
+      {/* AdminCP Character Content Manager Modal */}
+      {isAdminCpOpen && (
+        <CharacterContentManager
+          isOpen={isAdminCpOpen}
+          onClose={() => setIsAdminCpOpen(false)}
+        />
+      )}
     </div>
   )
 }

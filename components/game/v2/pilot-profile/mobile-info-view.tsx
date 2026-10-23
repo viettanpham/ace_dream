@@ -40,6 +40,7 @@ interface MobileInfoViewProps {
   onOpenArtViewer: (art?: GalleryArtwork, contextList?: GalleryArtwork[]) => void
   activeTab: string
   onTabChange: (tab: string) => void
+  onOpenReader?: (chapterId: string) => void
 }
 
 /**
@@ -59,6 +60,7 @@ export function MobileInfoView({
   onOpenArtViewer,
   activeTab,
   onTabChange,
+  onOpenReader,
 }: MobileInfoViewProps) {
   // Lọc tác phẩm đã xác thực cho gallery
   const verifiedArtworks = activeCharacter.artworks.filter((a) => a.isAvailableOnDisk)
@@ -446,7 +448,7 @@ export function MobileInfoView({
 
             {/* TAB STORY */}
             <TabsContent value="story">
-              <StoryTab character={activeCharacter} />
+              <StoryTab character={activeCharacter} onOpenReader={onOpenReader} />
             </TabsContent>
 
             {/* TAB GEAR */}

@@ -1,0 +1,1031 @@
+{
+  "schemaVersion": 1,
+  "revision": 7,
+  "updatedAt": "2026-10-23T16:28:40.942Z",
+  "updatedBy": "system_bootstrap",
+  "profiles": {
+    "alviss": {
+      "pilotId": "alviss",
+      "classCharacterName": "Alviss",
+      "fullLoreName": "Alviss Thorne",
+      "callsign": "Sky Strider",
+      "title": "Tiên Phong Tốc Độ",
+      "role": "Tác Chiến Cơ Động Không Gian",
+      "characterQuote": "“Tốc độ là chân lý duy nhất trên bầu trời không gian.”",
+      "shortDescription": "Tay lái tiêm kích trẻ tuổi, tự tin và luôn tìm kiếm giới hạn cơ động cao nhất của cơ giáp.",
+      "storySummary": "Alviss là một trong những phi công tiêm kích trẻ tuổi nhất từng tốt nghiệp thủ khoa khoa bay cơ động. Anh đam mê cảm giác bẻ lái xuyên qua bão bức xạ và coi tốc độ là chìa khóa mở lối qua mọi phòng tuyến.",
+      "loreOrigin": "Hành lang quỹ đạo Vành Đai Trong",
+      "loreAcademy": "Học viện Không quân Cơ Động",
+      "loreSpecialty": "Không chiến cơ động, tập kích chớp nhoáng",
+      "lorePersonality": "Tự tin, nhiệt huyết, yêu tự do",
+      "loreWeakness": "Đôi khi quá liều lĩnh trong truy kích",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T16:28:40.942Z",
+      "updatedBy": "lead_architect",
+      "quote": "Không một tấm khiên nào vỡ dưới sự giám sát của tôi."
+    },
+    "eric": {
+      "pilotId": "eric",
+      "classCharacterName": "Eric",
+      "fullLoreName": "Eric Cross",
+      "callsign": "Thunder Cannon",
+      "title": "Hỏa Lực Tuyệt Đối",
+      "role": "Pháo Binh Hạng Nặng",
+      "characterQuote": "“Phạm vi sát thương chính là vùng an toàn.”",
+      "shortDescription": "Chuyên gia xạ kích pháo kích trường cự ly, sở hữu năng lực xuyên phá công sự kẻ thù từ khoảng cách xa.",
+      "storySummary": "Hồ sơ chỉ huy hỏa lực pháo binh bọc thép kiên cường.",
+      "loreOrigin": "Cụm công nghiệp nặng Tartarus",
+      "loreAcademy": "Sư đoàn Pháo binh Thiết giáp",
+      "loreSpecialty": "Pháo hạng nặng, oanh tạc diện rộng",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "marcus": {
+      "pilotId": "marcus",
+      "classCharacterName": "Marcus",
+      "fullLoreName": "Marcus Vance",
+      "callsign": "Aegis Commander",
+      "title": "Chỉ Huy Tác Chiến",
+      "role": "Chiến Thuật Toàn Diện",
+      "characterQuote": "“Kỷ luật thép và chiến thuật chuẩn xác định đoạt thắng bại chiến trường.”",
+      "shortDescription": "Sĩ quan chỉ huy mẫu mực của lực lượng Starfront, cân bằng hoàn hảo giữa tấn công vũ bão và phòng ngự kiên cố.",
+      "storySummary": "Hồ sơ chỉ huy trưởng lực lượng cơ động tiên phong.",
+      "loreOrigin": "Tổng bộ Chỉ huy Hạm đội Starfront",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Chỉ huy chiến dịch, điều phối hạm đội",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "victor": {
+      "pilotId": "victor",
+      "classCharacterName": "Victor",
+      "fullLoreName": "Victor Stone",
+      "callsign": "Iron Bastion",
+      "title": "Tường Thành Vững Chắc",
+      "role": "Phòng Thủ Hạng Nặng & Giữ Khiên",
+      "characterQuote": "“Đứng sau lưng tôi, không một viên đạn nào có thể chạm tới các bạn.”",
+      "shortDescription": "Chiến binh kỳ cựu mang giáp hạng nặng, là trụ cột vững chắc của mọi đội hình tác chiến.",
+      "storySummary": "Hồ sơ chỉ huy phòng thủ tiền tuyến giàu kinh nghiệm trận mạc.",
+      "loreOrigin": "Trạm Quỹ Đạo Trung Tâm",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Bảo hộ đội hình, chống chịu hỏa lực cực hạn",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "kaelen": {
+      "pilotId": "kaelen",
+      "classCharacterName": "Kaelen",
+      "fullLoreName": "Kaelen Vance",
+      "callsign": "Shadow Veil",
+      "title": "Bóng Đêm Thầm Lặng",
+      "role": "Tình Báo & Trinh Sát Cơ Động",
+      "characterQuote": "“Thông tin chính xác là vũ khí hủy diệt nguy hiểm hơn mọi loại đạn pháo.”",
+      "shortDescription": "Chuyên viên tình báo lạnh lùng, luôn tính toán mọi bước đi trước khi đối phương nhận ra sự hiện diện của mình.",
+      "storySummary": "Hồ sơ lưu trữ tình báo chiến lược bí mật.",
+      "loreOrigin": "Trạm Quỹ Đạo Trung Tâm",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Thu thập tình báo, né tránh, gây nhiễu radar",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "lyra": {
+      "pilotId": "lyra",
+      "classCharacterName": "Lyra",
+      "fullLoreName": "Lyra Swift",
+      "callsign": "Valkyrie Wind",
+      "title": "Cánh Nhạn Tinh Vân",
+      "role": "Đột Kích & Né Tránh Cực Hạn",
+      "characterQuote": "“Chạm vào tôi trước khi nghĩ đến việc bắn trúng!”",
+      "shortDescription": "Nữ phi công năng động và tinh nghịch, sở hữu phản xạ giác quan siêu việt vượt xa giới hạn thông thường.",
+      "storySummary": "Hồ sơ nữ phi công cơ động tinh vân xuất sắc.",
+      "loreOrigin": "Trạm Quỹ Đạo Trung Tâm",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Cơ động né tránh, quấy rối đội hình đối phương",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "selena": {
+      "pilotId": "selena",
+      "classCharacterName": "Selena",
+      "fullLoreName": "Selena Solaris",
+      "callsign": "Plasma Nova",
+      "title": "Pháp Sư Năng Lượng",
+      "role": "Hỏa Lực Năng Lượng Plasma",
+      "characterQuote": "“Dòng chảy năng lượng plasma sẽ thiêu rụi mọi chướng ngại.”",
+      "shortDescription": "Nữ phi công mang dòng máu quý tộc không gian, sở hữu khả năng điều khiển chùm plasma chuẩn xác đến từng milimet.",
+      "storySummary": "Hồ sơ nữ xạ thủ năng lượng cao cấp với dòng dõi quý tộc vũ trụ.",
+      "loreOrigin": "Trạm Quỹ Đạo Trung Tâm",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Chùm hạt ion, pháo plasma định hướng",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "valentine": {
+      "pilotId": "valentine",
+      "classCharacterName": "Valentine",
+      "fullLoreName": "Valentine Aurelia Vance",
+      "callsign": "Mercy Wing",
+      "title": "Ánh Sáng Cuối Cùng",
+      "role": "Quân Y Chiến Trường & Cứu Hộ",
+      "characterQuote": "“Chừng nào còn một tín hiệu cầu cứu, tôi sẽ không bỏ lại ai phía sau.”",
+      "shortDescription": "Một nữ phi công cứu hộ luôn nở nụ cười dịu dàng, ngay cả khi bản thân cô vẫn chưa tha thứ cho một quyết định trong quá khứ.",
+      "storySummary": "Valentine sinh ra ở vành đai quỹ đạo Elysia, nơi các đoàn tàu y tế thường xuyên đi qua những tuyến biên giới nguy hiểm. Cô trưởng thành trong môi trường cứu hộ và tin rằng sức mạnh của người phi công nằm ở số người có thể đưa trở về an toàn.",
+      "loreOrigin": "Khu dân cư y tế quỹ đạo Elysia",
+      "loreAcademy": "Học viện Quân y Không gian",
+      "loreSpecialty": "Cứu hộ, hồi phục, hỗ trợ khiên",
+      "lorePersonality": "Ấm áp, kiên trì, giàu lòng trắc ẩn",
+      "loreWeakness": "Khó chấp nhận việc phải bỏ lại người khác",
+      "loreDream": "Không một tín hiệu cầu cứu nào bị lãng quên",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "fortuna": {
+      "pilotId": "fortuna",
+      "classCharacterName": "Fortuna",
+      "fullLoreName": "Fortuna Gold",
+      "callsign": "Lady Luck",
+      "title": "Nữ Hoàng Cơ Hội",
+      "role": "Chiến Lược Gia Tình Báo & Vận May",
+      "characterQuote": "“Vận may luôn đứng về phía người nắm giữ lá bài tẩy trong tay áo.”",
+      "shortDescription": "Nhà ngoại giao và tình báo kỳ cựu với phong cách trang nhã nhưng đầy mưu lược sắc sảo.",
+      "storySummary": "Hồ sơ điệp viên và cố vấn chiến lược cấp cao tại các sòng bài ngoại giao không gian.",
+      "loreOrigin": "Trạm Quỹ Đạo Trung Tâm",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Đàm phán chiến lược, phân tích rủi ro, thời cơ",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "aria": {
+      "pilotId": "aria",
+      "classCharacterName": "Aria",
+      "fullLoreName": "Aria Blue",
+      "callsign": "Sky Harmonizer",
+      "title": "Điều Phối Tác Chiến",
+      "role": "Điều Phối Bay & Tiếp Vận Năng Lượng",
+      "characterQuote": "“Đội hình chuẩn xác sẽ tạo nên bản giao hưởng chiến thắng.”",
+      "shortDescription": "Sĩ quan điều hành bay rạng rỡ và nhiệt huyết, luôn giữ liên lạc thông suốt cho toàn bộ phi đội.",
+      "storySummary": "Hồ sơ sĩ quan điều phối bay được mến mộ nhất tại đài không lưu hạm đội.",
+      "loreOrigin": "Trạm Quỹ Đạo Trung Tâm",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Điều hướng không gian, tiếp tế năng lượng trường lực",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "rhea": {
+      "pilotId": "rhea",
+      "classCharacterName": "Rhea",
+      "fullLoreName": "Rhea Aegis",
+      "callsign": "Vanguard Sentinel",
+      "title": "Hộ Vệ Tiên Phong",
+      "role": "Hộ Tống & Cơ Động Phòng Thủ",
+      "characterQuote": "“Mệnh lệnh hộ tống là lời thề danh dự của người lính.”",
+      "shortDescription": "Nữ vệ binh kiên cường chuyên bảo vệ các đoàn tàu vận tải quân sự qua những vùng chiến sự ác liệt.",
+      "storySummary": "Hồ sơ hộ vệ chỉ huy kỳ cựu với thành tích 100% đoàn tàu hộ tống an toàn cập bến.",
+      "loreOrigin": "Trạm Quỹ Đạo Trung Tâm",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Hộ tống đoàn tàu vận tải, đánh chặn tên lửa hành trình",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    },
+    "nova": {
+      "pilotId": "nova",
+      "classCharacterName": "Nova",
+      "fullLoreName": "Nova Spark",
+      "callsign": "Solar Comet",
+      "title": "Đột Kích Thử Nghiệm",
+      "role": "Thử Nghiệm Vũ Khí & Đột Phá Hỏa Lực",
+      "characterQuote": "“Nếu thiết bị chưa phát nổ, nghĩa là công suất vẫn còn có thể đẩy cao hơn nữa!”",
+      "shortDescription": "Phi công thử nghiệm nổi loạn và sáng tạo, ưa thích cầm lái các nguyên mẫu mecha nguy hiểm nhất.",
+      "storySummary": "Hồ sơ phi công thử nghiệm liều lĩnh nhất của Viện Nghiên cứu Khí tài Tác chiến.",
+      "loreOrigin": "Trạm Quỹ Đạo Trung Tâm",
+      "loreAcademy": "Học viện Hàng không Không gian",
+      "loreSpecialty": "Đột phá phòng tuyến, thử nghiệm khí tài nguyên mẫu",
+      "lorePersonality": "Kiên định, kỷ luật",
+      "loreWeakness": "Cầu toàn",
+      "loreDream": "Bảo vệ hòa bình vành đai",
+      "updatedAt": "2026-10-23T08:00:00.000Z",
+      "updatedBy": "system_bootstrap"
+    }
+  },
+  "artworks": {
+    "alviss": [
+      {
+        "assetId": "alviss-fullbody",
+        "pilotId": "alviss",
+        "title": "Tranh Toàn Thân Tiên Phong Tốc Độ (Official)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/alviss-fullbody.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "alviss",
+          "base"
+        ],
+        "description": "Bộ giáp phi hành gọn nhẹ tối ưu hóa luồng khí động học và chuyển hướng cơ động.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "alviss-portrait",
+        "pilotId": "alviss",
+        "title": "Chân Dung Alviss (Portrait)",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/alviss-portrait.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "alviss",
+          "portrait"
+        ],
+        "description": "Chân dung tay lái trẻ với nụ cười tự tin và ánh nhìn hướng về bầu trời.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "alviss-combat-001",
+        "pilotId": "alviss",
+        "title": "Xuất Kích Chớp Nhoáng",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/alviss-combat-001.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "alviss",
+          "base"
+        ],
+        "description": "Tư thế khai hỏa cơ động trong buồng lái tiêm kích siêu âm.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "test_alviss_action_01",
+        "pilotId": "alviss",
+        "title": "Alviss — Tác Chiến Vành Đai Asteroid",
+        "category": "lore",
+        "role": "action",
+        "sourceUrl": "/assets/artworks/alviss/action-01.webp",
+        "path": "/assets/artworks/alviss/action-01.webp",
+        "aspectRatio": "3:4",
+        "status": "verified",
+        "description": "Cảnh Alviss điều khiển pháo đài chắn asteroid.",
+        "priority": 90,
+        "createdAt": "2026-10-23T16:28:40.939Z",
+        "updatedBy": "lead_architect"
+      }
+    ],
+    "eric": [
+      {
+        "assetId": "eric-fullbody",
+        "pilotId": "eric",
+        "title": "Tranh Toàn Thân Hỏa Lực Tuyệt Đối (Official)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/eric-fullbody.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "eric",
+          "base"
+        ],
+        "description": "Bộ giáp cường kích hạng nặng tích hợp hệ thống giảm chấn pháo công suất lớn.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "eric-portrait",
+        "pilotId": "eric",
+        "title": "Chân Dung Eric (Portrait)",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/eric-portrait.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "eric",
+          "portrait"
+        ],
+        "description": "Khuôn mặt dạn dày khói đạn và ý chí sắt đá của pháo thủ tiền tuyến.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "marcus": [
+      {
+        "assetId": "marcus-fullbody",
+        "pilotId": "marcus",
+        "title": "Tranh Toàn Thân Chỉ Huy Tác Chiến (Official)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/marcus-fullbody.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "marcus",
+          "base"
+        ],
+        "description": "Quân phục chỉ huy xanh hải quân uy nghiêm kết hợp khung xương trợ lực hiện đại.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "marcus-portrait",
+        "pilotId": "marcus",
+        "title": "Chân Dung Marcus (Portrait)",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/marcus-portrait.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "marcus",
+          "portrait"
+        ],
+        "description": "Chân dung vị chỉ huy điềm tĩnh với ánh mắt sắc sảo nhìn bao quát bàn cờ tác chiến.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "victor": [
+      {
+        "assetId": "victor-fullbody",
+        "pilotId": "victor",
+        "title": "Tranh Toàn Thân Tường Thành (Official)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/victor-fullbody.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "victor",
+          "base"
+        ],
+        "description": "Bộ giáp titan nguyên khối màu xám tro được gia cố hệ thống khiên năng lượng tầng.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "victor-portrait",
+        "pilotId": "victor",
+        "title": "Chân Dung Victor (Portrait)",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/victor-portrait.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "victor",
+          "portrait"
+        ],
+        "description": "Khuôn mặt kiên nghị của người chiến binh coi mạng sống đồng đội cao hơn bản thân.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "kaelen": [
+      {
+        "assetId": "kaelen-fullbody",
+        "pilotId": "kaelen",
+        "title": "Tranh Toàn Thân Bóng Đêm Thầm Lặng (Official)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/kaelen-fullbody.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "kaelen",
+          "base"
+        ],
+        "description": "Trang phục điệp viên bó sát màu lục lam đậm tích hợp lớp phủ tàng hình phản radar.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "kaelen-portrait",
+        "pilotId": "kaelen",
+        "title": "Chân Dung Kaelen (Portrait)",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/kaelen-portrait.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "kaelen",
+          "portrait"
+        ],
+        "description": "Chân dung mái tóc xanh lục lam bí ẩn và ánh mắt quan sát không bỏ sót chi tiết nào.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "lyra": [
+      {
+        "assetId": "lyra-fullbody",
+        "pilotId": "lyra",
+        "title": "Tranh Toàn Thân Cánh Nhạn Tinh Vân (Official)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/lyra-fullbody.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "lyra",
+          "base"
+        ],
+        "description": "Bộ đồ bay trắng tím thanh thoát mang đậm phong cách anime khoa học viễn tưởng.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "lyra-portrait",
+        "pilotId": "lyra",
+        "title": "Chân Dung Lyra (Portrait)",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/lyra-portrait.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "lyra",
+          "portrait"
+        ],
+        "description": "Chân dung cô gái tóc bạc tím với nụ cười tự tin và thần thái đầy sức sống.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "selena": [
+      {
+        "assetId": "selena-fullbody",
+        "pilotId": "selena",
+        "title": "Tranh Toàn Thân Pháp Sư Năng Lượng (Official)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/selena-fullbody.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "selena",
+          "base"
+        ],
+        "description": "Bộ quân phục đầm đỏ kiêu sa cùng áo khoác sĩ quan quý tộc phong cách tương lai.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "selena-portrait",
+        "pilotId": "selena",
+        "title": "Chân Dung Selena (Portrait)",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/selena-portrait.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "selena",
+          "portrait"
+        ],
+        "description": "Mái tóc đỏ rực rỡ và ánh nhìn kiêu hãnh của bậc thầy điều khiển chùm tia năng lượng.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "valentine": [
+      {
+        "assetId": "valentine-fullbody",
+        "pilotId": "valentine",
+        "title": "Tranh Toàn Thân Chiến Trường (Official)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/valentine-fullbody.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "base"
+        ],
+        "description": "Thiết kế toàn thân trang phục quân y chiến trường Mercy Wing chính thức.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-portrait",
+        "pilotId": "valentine",
+        "title": "Chân Dung Đại Diện (Portrait)",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/valentine-portrait.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "portrait"
+        ],
+        "description": "Chân dung tỉ lệ 1:1 góc nhìn cận cảnh khuôn mặt dịu dàng và ánh mắt kiên định.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-activity-001",
+        "pilotId": "valentine",
+        "title": "Trực Ca Phòng Khám Quỹ Đạo",
+        "category": "activity",
+        "path": "/images/valentine-activity-001.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "activity"
+        ],
+        "description": "Khoảnh khắc chăm sóc bệnh nhân tại trạm y tế Elysia trong ca trực đêm.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-casual",
+        "pilotId": "valentine",
+        "title": "Trang Phục Thường Nhật Elysia",
+        "category": "costume",
+        "path": "/images/valentine-casual.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "costume"
+        ],
+        "description": "Áo len cổ lọ thanh lịch và áo khoác thường phục trong ngày nghỉ phép.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-closeup",
+        "pilotId": "valentine",
+        "title": "Góc Nhìn Cận Cảnh Chiến Thuật",
+        "category": "portrait",
+        "slot": "portrait",
+        "path": "/images/valentine-closeup.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "portrait"
+        ],
+        "description": "Kính bảo hộ hiển thị dữ liệu sinh học trong lúc phẫu thuật khẩn cấp.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-combat",
+        "pilotId": "valentine",
+        "title": "Xuất Kích Cứu Hộ Tiền Tuyến",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/valentine-combat.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "base"
+        ],
+        "description": "Tư thế kích hoạt trường lực khiên che chắn cho đồng đội giữa hỏa tuyến.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-event-001",
+        "pilotId": "valentine",
+        "title": "Dạ Tiệc Vũ Trụ Sắc Đỏ",
+        "category": "event",
+        "path": "/images/valentine-event-001.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "event"
+        ],
+        "description": "Trang phục dạ hội lộng lẫy trong lễ kỷ niệm hòa bình của Liên minh Elysia.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-story-001",
+        "pilotId": "valentine",
+        "title": "Tia Nắng Sau Bão Elysia",
+        "category": "activity",
+        "path": "/images/valentine-story-001.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "activity"
+        ],
+        "description": "Bản vẽ minh họa khoảnh khắc bình yên sau khi hoàn tất cuộc sơ tán y tế.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-uniform-001",
+        "pilotId": "valentine",
+        "title": "Quân Phục Sĩ Quan Cứu Trợ",
+        "category": "costume",
+        "path": "/images/valentine-uniform-001.webp",
+        "status": "published",
+        "isAvailableOnDisk": true,
+        "tags": [
+          "valentine",
+          "costume"
+        ],
+        "description": "Đồng phục chỉ huy đội cứu hộ không gian với phù hiệu Mercy Wing.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z",
+        "publishedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-event-002",
+        "pilotId": "valentine",
+        "title": "Lễ Trao Bằng Khen Cứu Hộ",
+        "category": "event",
+        "path": "/images/valentine-event-002.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "valentine",
+          "event"
+        ],
+        "description": "Lễ vinh danh sự hy sinh thầm lặng của phi đội Mercy Wing.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-story-002",
+        "pilotId": "valentine",
+        "title": "Tín Hiệu Cầu Cứu Cuối Cùng",
+        "category": "activity",
+        "path": "/images/valentine-story-002.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "valentine",
+          "activity"
+        ],
+        "description": "Màn hình radar buồng lái ghi nhận tần số cầu cứu đơn độc.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-hangar-001",
+        "pilotId": "valentine",
+        "title": "Kiểm Tra Hệ Thống Cơ Giáp",
+        "category": "activity",
+        "path": "/images/valentine-hangar-001.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "valentine",
+          "activity"
+        ],
+        "description": "Valentine cùng kỹ thuật viên kiểm tra bộ điều áp khiên tại Hangar.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      },
+      {
+        "assetId": "valentine-medic-002",
+        "pilotId": "valentine",
+        "title": "Trường Khiên Bảo Hộ Đồng Minh",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/valentine-medic-002.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "valentine",
+          "base"
+        ],
+        "description": "Hiệu ứng quang học phát tán trường lực năng lượng xanh ngọc bảo vệ đồng đội.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "fortuna": [
+      {
+        "assetId": "fortuna-concept-001",
+        "pilotId": "fortuna",
+        "title": "Bản Phác Thảo Khái Niệm Fortuna (Concept)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/fortuna-fullbody.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "fortuna",
+          "base"
+        ],
+        "description": "Ý tưởng trang phục đầm đen viền vàng quý phái kết hợp công nghệ bảo mật lượng tử.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "aria": [
+      {
+        "assetId": "aria-concept-001",
+        "pilotId": "aria",
+        "title": "Bản Phác Thảo Khái Niệm Aria (Concept)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/aria-fullbody.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "aria",
+          "base"
+        ],
+        "description": "Thiết kế váy ngắn phi công kết hợp tai nghe viễn thông lượng tử ánh sáng xanh.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "rhea": [
+      {
+        "assetId": "rhea-concept-001",
+        "pilotId": "rhea",
+        "title": "Bản Phác Thảo Khái Niệm Rhea (Concept)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/rhea-fullbody.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "rhea",
+          "base"
+        ],
+        "description": "Bộ giáp vệ binh đen tím với tấm khiên động cơ đẩy tích hợp hai bên cánh tay.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ],
+    "nova": [
+      {
+        "assetId": "nova-concept-001",
+        "pilotId": "nova",
+        "title": "Bản Phác Thảo Khái Niệm Nova (Concept)",
+        "category": "base",
+        "slot": "fullbody",
+        "path": "/images/nova-fullbody.webp",
+        "status": "staged",
+        "isAvailableOnDisk": false,
+        "tags": [
+          "nova",
+          "base"
+        ],
+        "description": "Bộ đồ bay màu bạc sọc cam tương lai và găng tay điều khiển từ trường.",
+        "mimeType": "image/webp",
+        "version": "1.0.0",
+        "uploadedAt": "2026-10-23T08:00:00.000Z"
+      }
+    ]
+  },
+  "storyPublications": {
+    "alviss": {},
+    "eric": {},
+    "marcus": {},
+    "victor": {},
+    "kaelen": {},
+    "lyra": {},
+    "selena": {},
+    "valentine": {
+      "chap-01": {
+        "publicationStatus": "PUBLISHED",
+        "editorialStatus": "APPROVED",
+        "contentReadiness": "VERIFIED",
+        "publishedAt": "2026-10-23T08:00:00.000Z",
+        "version": "1.0.0",
+        "title": "Ánh sáng cuối cùng tại Elysia",
+        "summary": "Quyết định định mệnh giữa đoàn tàu hàng trăm bệnh nhân và đội ngũ đồng đội bị cô lập.",
+        "wordCount": 780
+      },
+      "chap-02": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "APPROVED",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "Ca trực đầu tiên tại Trạm Cứu hộ Quỹ đạo",
+        "summary": "Thử thách đầu tiên khi tiếp quản buồng lái tàu cứu thương bọc thép trong cơn bão điện từ."
+      },
+      "chap-03": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "APPROVED",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "Tín hiệu bị cô lập ở Vành đai Asteroid",
+        "summary": "Hành trình đơn độc vượt qua bãi mảnh vỡ để cứu sống một phi công tiêm kích bị trúng đạn."
+      },
+      "chap-04": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "APPROVED",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "Lằn ranh đỏ giữa hai mệnh lệnh",
+        "summary": "Sự giằng xé giữa quy tắc quân sự và lương tâm của một bác sĩ cứu trợ tiền tuyến."
+      },
+      "chap-05": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "PROVISIONAL",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "Học viện Y sinh Không gian và Lời thề",
+        "summary": "Những năm tháng rèn luyện nghiêm ngặt trước khi khoác lên mình bộ giáp Mercy Wing."
+      },
+      "chap-06": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "PROVISIONAL",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "Chuyến bay thử nghiệm của Mercy Wing",
+        "summary": "Giai đoạn thử nghiệm hệ thống khiên năng lượng tái tạo kép trên nguyên mẫu mecha y tế."
+      },
+      "chap-07": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "HOLD",
+        "contentReadiness": "MISSING",
+        "version": "1.0.0",
+        "title": "Bí mật bên dưới tầng ngầm Elysia",
+        "summary": "Hồ sơ niêm phong cấp độ II. Chưa mở khóa nội dung."
+      },
+      "chap-08": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "HOLD",
+        "contentReadiness": "MISSING",
+        "version": "1.0.0",
+        "title": "Bức màn che phủ cuộc sơ tán",
+        "summary": "Hồ sơ niêm phong cấp độ II. Chưa mở khóa nội dung."
+      },
+      "chap-09": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "HOLD",
+        "contentReadiness": "MISSING",
+        "version": "1.0.0",
+        "title": "Đối đầu trong giông bão",
+        "summary": "Hồ sơ niêm phong cấp độ III. Chưa mở khóa nội dung."
+      },
+      "chap-10": {
+        "publicationStatus": "DRAFT",
+        "editorialStatus": "HOLD",
+        "contentReadiness": "MISSING",
+        "version": "1.0.0",
+        "title": "Nguyện ước không bao giờ lãng quên",
+        "summary": "Hồ sơ niêm phong cấp độ tối cao. Chưa mở khóa nội dung."
+      }
+    },
+    "fortuna": {},
+    "aria": {},
+    "rhea": {},
+    "nova": {}
+  },
+  "auditLog": [
+    {
+      "id": "audit-1792772920942",
+      "timestamp": "2026-10-23T16:28:40.942Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "alviss",
+      "user": "lead_architect",
+      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
+    },
+    {
+      "id": "audit-1792772920939",
+      "timestamp": "2026-10-23T16:28:40.939Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "alviss",
+      "targetId": "test_alviss_action_01",
+      "user": "lead_architect",
+      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
+    },
+    {
+      "id": "audit-1792772659129",
+      "timestamp": "2026-10-23T16:24:19.129Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "alviss",
+      "user": "lead_architect",
+      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
+    },
+    {
+      "id": "audit-1792772659127",
+      "timestamp": "2026-10-23T16:24:19.127Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "alviss",
+      "targetId": "test_alviss_action_01",
+      "user": "lead_architect",
+      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
+    },
+    {
+      "id": "audit-1792772640159",
+      "timestamp": "2026-10-23T16:24:00.159Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "alviss",
+      "user": "lead_architect",
+      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
+    },
+    {
+      "id": "audit-1792772640158",
+      "timestamp": "2026-10-23T16:24:00.158Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "alviss",
+      "targetId": "test_alviss_action_01",
+      "user": "lead_architect",
+      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
+    },
+    {
+      "id": "audit-init-001",
+      "timestamp": "2026-10-23T08:00:00.000Z",
+      "action": "STORY_PUBLISH",
+      "targetPilotId": "valentine",
+      "targetId": "chap-01",
+      "user": "system_bootstrap",
+      "details": "Initial publication of Valentine Chapter 01 (Verified Prose Body)"
+    }
+  ]
+}

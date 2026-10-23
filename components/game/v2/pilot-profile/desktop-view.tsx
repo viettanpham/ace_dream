@@ -47,6 +47,7 @@ interface DesktopViewProps {
   onOpenArtViewer: (artwork?: GalleryArtwork) => void
   activeTab: string
   onTabChange: (tab: string) => void
+  onOpenReader?: (chapterId: string) => void
 }
 
 export function DesktopView({
@@ -58,6 +59,7 @@ export function DesktopView({
   onOpenArtViewer,
   activeTab,
   onTabChange,
+  onOpenReader,
 }: DesktopViewProps) {
   // Pilot Roster Mode: 'mini' (72px) vs 'full' (260px)
   const [rosterMode, setRosterMode] = useState<'mini' | 'full'>('mini')
@@ -713,7 +715,7 @@ export function DesktopView({
 
               {/* Tab 2: STORY (10 Chapters) */}
               <TabsContent value="story">
-                <StoryTab character={activeCharacter} />
+                <StoryTab character={activeCharacter} onOpenReader={onOpenReader} />
               </TabsContent>
 
               {/* Tab 3: GEAR COMPATIBILITY */}

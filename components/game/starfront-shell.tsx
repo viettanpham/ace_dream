@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { STARFRONT_GEAR_DEFS } from "@/lib/game/data"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import {
   isAudioMuted,
   playClickSound,
@@ -695,7 +696,7 @@ export function StarfrontShell() {
                 }}
               >
                 <img
-                  src={activeGearDef.illustration || `/images/${activeGearId}.svg`}
+                  src={resolveImageUrl(activeGearDef.illustration) || `/images/${activeGearId}.svg`}
                   alt={activeGearDef.name}
                   className="size-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]"
                 />

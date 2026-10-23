@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import type { CharacterProfileV2, GalleryArtwork } from "@/lib/game/v2/character-profile-data"
 import { V2_ROSTER_CHARACTERS } from "@/lib/game/v2/character-profile-data"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import { OverviewTab } from "./profile-tabs/overview-tab"
 import { StoryTab } from "./profile-tabs/story-tab"
 import { GearCompatTab } from "./profile-tabs/gear-compat-tab"
@@ -144,7 +145,7 @@ export function MobileProfileView({
                 }`}
               >
                 <img
-                  src={char.portraitAssetPath}
+                  src={resolveImageUrl(char.portraitAssetPath)}
                   alt={char.classCharacterName}
                   className="size-full object-cover object-top"
                   onError={(e) => {
@@ -222,7 +223,7 @@ export function MobileProfileView({
           {/* VÙNG TRANH NHÂN VẬT GẦN FULL-SCREEN (KHÔNG BỊ CẮT PHẦN QUAN TRỌNG) */}
           <div className="relative w-full flex-1 flex items-center justify-center px-2 py-2 min-h-[56vh]">
             <img
-              src={character.fullbodyAssetPath}
+              src={resolveImageUrl(character.fullbodyAssetPath)}
               alt={character.fullLoreName}
               className={`max-h-[66vh] w-auto max-w-full object-contain object-bottom sm:object-center transition-all duration-300 drop-shadow-[0_10px_25px_rgba(0,0,0,0.9)] ${
                 showcaseMode === "tactical_hud"
@@ -328,7 +329,7 @@ export function MobileProfileView({
                   >
                     <div className="size-8 rounded overflow-hidden bg-slate-950 shrink-0">
                       <img
-                        src={thumb.path}
+                        src={resolveImageUrl(thumb.path)}
                         alt={thumb.title}
                         className="size-full object-cover object-top"
                       />
@@ -363,7 +364,7 @@ export function MobileProfileView({
             <div className="flex items-start gap-3">
               <div className="relative size-16 shrink-0 overflow-hidden rounded-xl border-2 border-cyan-400 bg-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.35)]">
                 <img
-                  src={character.portraitAssetPath}
+                  src={resolveImageUrl(character.portraitAssetPath)}
                   alt={character.classCharacterName}
                   className="size-full object-cover object-top"
                 />

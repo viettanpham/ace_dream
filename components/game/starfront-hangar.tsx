@@ -68,6 +68,7 @@ import {
   Zap,
 } from "lucide-react"
 import { SalvageModal } from "./salvage-modal"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 
 /* ==========================================================================
    CẤU HÌNH GIAO DIỆN & PHẨM CHẤT (THEME & RARITY CONFIG)
@@ -409,7 +410,7 @@ export function StarfrontHangar({
               }}
             >
               <img
-                src={activeGearDef.illustration || `/images/${activeGearId}.svg`}
+                src={resolveImageUrl(activeGearDef.illustration || `/images/${activeGearId}.svg`)}
                 alt={activeGearDef.name}
                 className="size-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]"
                 onError={(e) => {
@@ -698,7 +699,7 @@ export function StarfrontHangar({
                 {/* Hình Ảnh SVG Phi Thuyền Trung Tâm */}
                 <div className="relative my-3 size-56 sm:size-64 flex items-center justify-center">
                   <img
-                    src={activeGearDef.illustration || `/images/${activeGearId}.svg`}
+                    src={resolveImageUrl(activeGearDef.illustration || `/images/${activeGearId}.svg`)}
                     alt={activeGearDef.name}
                     className="size-full object-contain filter drop-shadow-[0_0_25px_rgba(6,182,212,0.45)] transition-transform duration-300 hover:scale-105"
                   />

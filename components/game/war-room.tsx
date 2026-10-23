@@ -5,6 +5,7 @@ import { AlertTriangle, ArrowRightLeft, Bell, Building2, Crosshair, Flag, Globe2
 import { Button } from "@/components/ui/button"
 import { useGame } from "@/lib/game/store"
 import { cn } from "@/lib/utils"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import { Panel, formatNum } from "./shared"
 
 type Nation = "ANI" | "BCU"
@@ -40,7 +41,7 @@ export function WarRoom() {
       <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <Panel title="Phòng chiến sự toàn cầu" icon={<Globe2 className="size-4" />} bodyClassName="p-0">
           <div className="relative min-h-[330px] overflow-hidden">
-            <img src="/images/ngc-sector-map.png" alt="Bản đồ chiến sự NGC" className="absolute inset-0 h-full w-full object-cover opacity-70" />
+            <img src={resolveImageUrl("/images/ngc-sector-map.png")} alt="Bản đồ chiến sự NGC" className="absolute inset-0 h-full w-full object-cover opacity-70" />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/35 to-transparent" />
             <div className="relative flex min-h-[330px] flex-col justify-between p-4">
               <div className="flex items-start justify-between gap-3">
@@ -68,7 +69,7 @@ export function WarRoom() {
 
       <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
         <Panel title={`Bản đồ ${nation} // ${current.name}`} icon={<Map className="size-4" />} bodyClassName="p-0">
-          <div className="relative aspect-[16/7] overflow-hidden"><img src={current.image} alt={`Bản đồ chiến lược ${nation}`} className="h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-r from-background/75 via-transparent to-background/30" /><div className="absolute left-4 top-4 border border-border/60 bg-background/70 px-3 py-2 backdrop-blur-sm"><div className="font-display text-lg font-800" style={{ color: current.color }}>{nation}</div><div className="text-[10px] uppercase tracking-widest text-muted-foreground">{current.status}</div></div><div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[10px] text-muted-foreground"><span>Kiểm soát lãnh thổ {current.territory}%</span><span className="flex items-center gap-1 text-primary"><Zap className="size-3" /> realtime feed</span></div></div>
+          <div className="relative aspect-[16/7] overflow-hidden"><img src={resolveImageUrl(current.image)} alt={`Bản đồ chiến lược ${nation}`} className="h-full w-full object-cover" /><div className="absolute inset-0 bg-gradient-to-r from-background/75 via-transparent to-background/30" /><div className="absolute left-4 top-4 border border-border/60 bg-background/70 px-3 py-2 backdrop-blur-sm"><div className="font-display text-lg font-800" style={{ color: current.color }}>{nation}</div><div className="text-[10px] uppercase tracking-widest text-muted-foreground">{current.status}</div></div><div className="absolute bottom-3 left-4 right-4 flex items-center justify-between text-[10px] text-muted-foreground"><span>Kiểm soát lãnh thổ {current.territory}%</span><span className="flex items-center gap-1 text-primary"><Zap className="size-3" /> realtime feed</span></div></div>
         </Panel>
         <Panel title="Thông báo chiến sự" icon={<Bell className="size-4" />}>
           <div className="flex flex-col gap-2">{[simulatedAlert, ...fronts].slice(0, 3).map((alert, i) => <div key={`${alert.name}-${i}`} className="flex gap-2 border-b border-border/40 pb-2 last:border-0 last:pb-0"><span className={cn("mt-0.5 flex size-5 shrink-0 items-center justify-center", i === 0 ? "bg-destructive/15 text-destructive" : "bg-primary/15 text-primary")}><AlertTriangle className="size-3" /></span><div><p className="text-xs font-600">{alert.name}</p><p className="mt-0.5 text-[10px] leading-relaxed text-muted-foreground">{alert.note}</p></div></div>)}</div>
@@ -84,7 +85,7 @@ export function WarRoom() {
   )
 }
 
-export function AvatarStrip() { return <div className="relative size-8 overflow-hidden rounded-sm border border-primary/60 bg-card"><img src="/images/marcus-portrait.webp" alt="Chân dung chỉ huy Marcus" className="h-full w-full object-cover" /><span className="sr-only">COMMANDER</span></div> }
+export function AvatarStrip() { return <div className="relative size-8 overflow-hidden rounded-sm border border-primary/60 bg-card"><img src={resolveImageUrl("/images/marcus-portrait.webp")} alt="Chân dung chỉ huy Marcus" className="h-full w-full object-cover" /><span className="sr-only">COMMANDER</span></div> }
 
 void Crosshair
 void Shield

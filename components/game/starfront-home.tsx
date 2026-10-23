@@ -17,6 +17,7 @@ import type {
   StarfrontProgression,
 } from "@/lib/game/types"
 import { cn } from "@/lib/utils"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import { ShipStatDisplay } from "./ship-stat-display"
 import {
   Activity,
@@ -367,7 +368,7 @@ export function StarfrontHome({
             {/* Ảnh Mecha Concept Art Hero Showcase */}
             <div className="mt-3 relative w-full h-44 sm:h-52 overflow-hidden rounded-sm border border-cyan-500/30 bg-black/80 flex items-center justify-center group shadow-md">
               <img
-                src={activeGearDef.illustration || `/images/${activeGearId}-gear.webp`}
+                src={resolveImageUrl(activeGearDef.illustration || `/images/${activeGearId}-gear.webp`)}
                 alt={activeGearDef.name}
                 className="w-full h-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-transform duration-500 group-hover:scale-105"
               />
@@ -413,7 +414,7 @@ export function StarfrontHome({
               <div className="flex items-center gap-2 min-w-0">
                 <div className="size-9 rounded overflow-hidden border border-cyan-500/40 shrink-0 bg-black/80">
                   <img
-                    src={activePilotDef.avatar}
+                    src={resolveImageUrl(activePilotDef.avatar)}
                     alt={activePilotDef.name}
                     className="size-full object-cover object-top"
                   />
@@ -433,7 +434,7 @@ export function StarfrontHome({
                   style={{ borderColor: activeGearDef.color }}
                 >
                   <img
-                    src={activeGearDef.illustration || `/images/${activeGearId}.svg`}
+                    src={resolveImageUrl(activeGearDef.illustration) || `/images/${activeGearId}.svg`}
                     alt={activeGearDef.name}
                     className="size-full object-contain"
                   />

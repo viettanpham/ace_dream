@@ -17,6 +17,7 @@ import {
   Zap,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import type { CombatUnit, StarfrontProgression } from "@/lib/game/types"
 
 export interface PlayerStatusProps {
@@ -326,7 +327,7 @@ export function PlayerStatus({
           >
             {propAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={propAvatar} alt={displayName} className="size-full object-cover object-top" referrerPolicy="no-referrer" />
+              <img src={resolveImageUrl(propAvatar)} alt={displayName} className="size-full object-cover object-top" referrerPolicy="no-referrer" />
             ) : displayGear === "aegis" ? (
               <ShieldCheck className="size-6 text-amber-400" />
             ) : displayGear === "falcon" ? (

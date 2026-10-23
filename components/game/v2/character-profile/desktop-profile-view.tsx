@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import type { CharacterProfileV2, GalleryArtwork } from "@/lib/game/v2/character-profile-data"
 import { V2_ROSTER_CHARACTERS } from "@/lib/game/v2/character-profile-data"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import { OverviewTab } from "./profile-tabs/overview-tab"
 import { StoryTab } from "./profile-tabs/story-tab"
 import { GearCompatTab } from "./profile-tabs/gear-compat-tab"
@@ -137,7 +138,7 @@ export function DesktopProfileView({
                     }`}
                   >
                     <img
-                      src={char.portraitAssetPath}
+                      src={resolveImageUrl(char.portraitAssetPath)}
                       alt={char.classCharacterName}
                       className="size-full object-cover object-top"
                       onError={(e) => {
@@ -204,7 +205,7 @@ export function DesktopProfileView({
           {/* Tranh nhân vật toàn thân sắc nét trung tâm */}
           <div className="relative flex-1 w-full flex items-center justify-center p-4">
             <img
-              src={character.fullbodyAssetPath}
+              src={resolveImageUrl(character.fullbodyAssetPath)}
               alt={character.fullLoreName}
               className={`max-h-[80vh] max-w-full object-contain transition-all duration-500 ${
                 showcaseMode === "tactical_hud"
@@ -305,7 +306,7 @@ export function DesktopProfileView({
                     }`}
                   >
                     <img
-                      src={art.path}
+                      src={resolveImageUrl(art.path)}
                       alt={art.title}
                       className="size-full object-cover object-top"
                       onError={(e) => {

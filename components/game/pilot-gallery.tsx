@@ -42,6 +42,7 @@ import {
 import { playClickSound, playShieldSound } from "@/lib/game/audio"
 import type { StarfrontProgression } from "@/lib/game/types"
 import { cn } from "@/lib/utils"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 
 export interface PilotGalleryProps {
   progression?: StarfrontProgression
@@ -928,7 +929,7 @@ export function PilotGallery({
                         onClick={() => portraitMeta && openLightbox(portraitMeta)}
                       >
                         <img
-                          src={pilot.avatar}
+                          src={resolveImageUrl(pilot.avatar)}
                           alt={`${pilot.name} Portrait`}
                           className="size-full object-cover object-top transition-transform duration-500 group-hover/img:scale-105"
                           loading="lazy"
@@ -955,7 +956,7 @@ export function PilotGallery({
                         onClick={() => fullbodyMeta && openLightbox(fullbodyMeta)}
                       >
                         <img
-                          src={pilot.fullBodyAvatar || pilot.avatar}
+                          src={resolveImageUrl(pilot.fullBodyAvatar || pilot.avatar)}
                           alt={`${pilot.name} Full-Body`}
                           className="size-full object-cover object-top transition-transform duration-500 group-hover/img:scale-105"
                           loading="lazy"
@@ -1011,7 +1012,7 @@ export function PilotGallery({
 
                   <div className="flex items-center gap-2">
                     <a
-                      href={pilot.fullBodyAvatar}
+                      href={resolveImageUrl(pilot.fullBodyAvatar)}
                       download={`${pilot.id}-fullbody.webp`}
                       className="rounded border border-border/70 bg-black/50 hover:bg-black/90 p-1.5 text-muted-foreground hover:text-white transition-colors"
                       title="Tải ảnh toàn thân Full HD (WebP 1080x1920)"
@@ -1163,7 +1164,7 @@ export function PilotGallery({
                   )}
                 >
                   <img
-                    src={p.avatar}
+                    src={resolveImageUrl(p.avatar)}
                     alt={p.name}
                     className="size-5 rounded-full object-cover border border-cyan-400/50"
                   />
@@ -1190,7 +1191,7 @@ export function PilotGallery({
                 }}
               >
                 <img
-                  src={inspectorPilot.fullBodyAvatar || inspectorPilot.avatar}
+                  src={resolveImageUrl(inspectorPilot.fullBodyAvatar || inspectorPilot.avatar)}
                   alt={`${inspectorPilot.name} Full Body Concept`}
                   className="w-full max-h-[640px] object-cover object-top transition-transform duration-500 group-hover:scale-102"
                 />
@@ -1223,7 +1224,7 @@ export function PilotGallery({
                     }}
                   >
                     <img
-                      src={inspectorPilot.avatar}
+                      src={resolveImageUrl(inspectorPilot.avatar)}
                       alt={inspectorPilot.name}
                       className="size-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                     />

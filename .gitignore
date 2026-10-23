@@ -13,3 +13,7 @@ __v0_jsx-dev-runtime.ts
 node_modules
 .next/
 .DS_Store
+
+# External Asset Staging & Backups (WEB-01.2)
+starfront-world-assets/
+*.zip

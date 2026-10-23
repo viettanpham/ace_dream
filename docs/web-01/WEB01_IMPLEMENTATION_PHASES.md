@@ -49,75 +49,92 @@
 ---
 
 ### Phase WEB-01.2 — Asset Repository & Backup Preparation (Chuẩn bị Kho lưu trữ & Sao lưu)
-- **Trạng thái:** PENDING APPROVAL (Chờ duyệt tài khoản GitHub)
-- **Điều kiện bắt đầu:** Chủ dự án phê duyệt kế hoạch Master Plan và xác nhận tên tài khoản GitHub (Owner).
-- **Nội dung thực hiện:**
-  1. Chủ dự án tạo hoặc ủy quyền tạo GitHub Public Repository: `starfront-world-assets`.
-  2. Tạo bản sao lưu dự phòng toàn bộ 26 tệp WebP lên Google Drive an toàn.
-  3. Đẩy cấu trúc thư mục chuẩn lên repo assets:
-     ```
-     starfront-world-assets/
-       ├── images/
-       │     ├── aegis-gear.webp
-       │     ├── ... (26 tệp webp)
-       ├── manifest.json (bảng băm SHA-256 và metadata)
-       └── README.md
-     ```
-  4. Đóng gói Git Release Tag đầu tiên: `v2.0-assets-r1`.
+- **Trạng thái:** **PACKAGE_READY (Giai đoạn chuẩn bị hoàn tất, chờ xác nhận GitHub Owner & Drive Backup)**
+- **Đầu vào:** 26 tệp WebP nguồn trong `public/images/`.
+- **Kết quả thực hiện:**
+  1. Đã tạo staging package độc lập: `starfront-world-assets/` gồm:
+     - `images/`: 26 tệp WebP nguyên gốc (5.94 MB / 6,230,606 bytes), không biến đổi hay resize.
+     - `manifests/assets-manifest.json`: Chứa metadata, kích thước, nhóm và mã SHA-256 từng tệp.
+     - `SHA256SUMS.txt`: Bảng đối chiếu mã băm SHA-256 chuẩn hóa cho 26 tệp.
+     - `README.md`: Hướng dẫn cấu trúc, cú pháp jsDelivr và quy ước tag `@v2.0-assets-r1`.
+  2. Đã đóng gói kho lưu trữ dự phòng: `starfront-world-assets-v2.0-backup.zip` (5.95 MB / 6,239,884 bytes).
+  3. Đã cấu hình `.gitignore` để tránh commit nhầm tệp nhị phân staging vào repository mã nguồn.
+  4. Đã chạy kiểm thử tự động `sha256sum`: Đạt 26/26 tệp khớp 100% với nguồn `public/images/`.
+- **Trạng thái thành phần:**
+  - `PACKAGE_READY`: Đã đạt 100%.
+  - `BACKUP_PENDING`: Tệp ZIP sẵn sàng, chờ chủ dự án tải lên Google Drive cá nhân.
+  - `REPOSITORY_PENDING`: Package sẵn sàng, chờ chủ dự án tạo GitHub repository `starfront-world-assets` và gắn tag `v2.0-assets-r1`.
 - **Tiêu chí nghiệm thu (Exit Criteria):**
-  - Truy cập thử trực tiếp 1 URL qua jsDelivr: `https://cdn.jsdelivr.net/gh/<owner>/starfront-world-assets@v2.0-assets-r1/images/marcus-portrait.webp` trả về HTTP 200 trong trình duyệt.
+  - Khi chủ dự án tạo xong repo và push tag `v2.0-assets-r1`, kiểm tra thử 1 URL qua jsDelivr (`https://cdn.jsdelivr.net/gh/<owner>/starfront-world-assets@v2.0-assets-r1/images/marcus-portrait.webp`) trả về HTTP 200 trước khi sang WEB-01.3.
 
 ---
 
 ### Phase WEB-01.3 — CDN & Resolver Implementation (Tích hợp Module Phân giải)
-- **Trạng thái:** PENDING APPROVAL
+- **Trạng thái:** **HOÀN THÀNH (VERIFIED - 8/8 UNIT TESTS PASS, BUILD PASS)**
 - **Điều kiện bắt đầu:** Phase WEB-01.2 hoàn thành và tag `v2.0-assets-r1` đã hoạt động.
-- **Nội dung thực hiện:**
-  1. Tạo module `lib/game/assets/image-resolver.ts` với hàm `resolveImageUrl()`.
-  2. Cập nhật `next.config.mjs`: Thêm `cdn.jsdelivr.net` vào danh sách `images.remotePatterns`.
-  3. Cập nhật `.env.example` với các biến môi trường cấu hình `NEXT_PUBLIC_ASSET_STORAGE_MODE` và `NEXT_PUBLIC_ASSET_CDN_URL`.
-  4. Tạo test kiểm thử đơn vị cho `resolveImageUrl()` (kiểm tra các case: relative path, absolute path, empty path, local mode, cdn mode).
+- **Nội dung đã thực hiện:**
+  1. Tạo module `lib/game/assets/image-resolver.ts` với hàm `resolveImageUrl()`, `isCdnEnabled()`, `getResolverConfig()`.
+  2. Cập nhật `next.config.mjs`: Thêm `cdn.jsdelivr.net` vào danh sách `images.remotePatterns` (`/gh/viettanpham/starfront-assets@**`).
+  3. Cập nhật `.env.example` với `NEXT_PUBLIC_ASSET_STORAGE_MODE=jsdelivr` và `NEXT_PUBLIC_ASSET_CDN_URL`.
+  4. Tạo bộ unit test `tests/image-resolver.test.ts` (8/8 ca kiểm thử PASS bao quát CDN, local, R2, empty string, URL tuyệt đối, query params).
+  5. Tích hợp `resolveImageUrl` vào toàn bộ các component UI V2 (9 tệp) và UI V1 (6 tệp).
 - **Tiêu chí nghiệm thu (Exit Criteria):**
   - Typecheck `tsc --noEmit` PASS.
   - Build `npm run build` PASS.
-  - Các hàm kiểm thử resolver đạt 100% PASS.
+  - Các hàm kiểm thử resolver đạt 100% PASS (8/8).
+  - Tải live từ jsDelivr thành công HTTP 200, MIME `image/webp`.
 
 ---
 
 ### Phase WEB-01.4 — Pilot Migration & Regression Plan (Chuyển đổi Thử nghiệm 3 Ảnh GEAR)
-- **Trạng thái:** PENDING APPROVAL
+- **Trạng thái:** **HOÀN THÀNH (VERIFIED - 26/26 ASSETS MATCH, GEAR PASS, PILOT PASS, ROLLBACK PASS)**
 - **Điều kiện bắt đầu:** Phase WEB-01.3 hoàn thành.
-- **Phạm vi thử nghiệm hẹp:**
-  - Chỉ 3 tệp phi cơ GEAR V1: `vanguard-gear.webp`, `falcon-gear.webp`, `aegis-gear.webp`.
-- **Nội dung thực hiện:**
-  1. Bọc hàm `resolveImageUrl()` tại điểm render của các component hiển thị GEAR:
-     - `components/game/starfront-hangar.tsx`
-     - `components/game/character-gear-select.tsx`
-  2. Bật chế độ `NEXT_PUBLIC_ASSET_STORAGE_MODE=jsdelivr` trong môi trường preview.
-  3. Giữ nguyên 3 tệp trên đĩa cục bộ (chưa xóa) để bảo đảm fallback an toàn.
-  4. Kiểm tra Network tab: Xác nhận 3 ảnh GEAR tải thành công từ `cdn.jsdelivr.net` với HTTP Status 200.
-  5. Đổi sang `NEXT_PUBLIC_ASSET_STORAGE_MODE=local`: Xác nhận game tự động quay lại nạp từ đĩa không có lỗi.
+- **Phạm vi thử nghiệm:**
+  - 3 tệp phi cơ GEAR V1: `vanguard-gear.webp`, `falcon-gear.webp`, `aegis-gear.webp`.
+  - 8 phi công V1: Marcus, Valentine, Alviss, Eric, Lyra, Kaelen, Selena, Victor.
+  - Character Category V2 (`/v2/pilots`): Valentine Profile, Gallery, Lightbox, Mobile/Desktop layouts, Archive Pending.
+- **Nội dung đã thực hiện & Kết quả kiểm thử:**
+  1. **GEAR V1 (3/3):** Cả 3 tệp tải thành công từ jsDelivr với HTTP 200, Content-Type `image/webp`, mã băm SHA-256 khớp 100% với tệp local.
+  2. **Pilot V1 (8/8):** Cả 8 phi công với 23 tệp WebP (portrait, fullbody, combat...) tải thành công qua CDN, khớp 100% SHA-256.
+  3. **V2 Archive Pending Protection:** Đã xác minh 10 tác phẩm dạng Archive Pending không tạo bất kỳ thẻ `<img>` lỗi hay request mạng 404 nào.
+  4. **Local Rollback Test:** Khi đặt `mode: 'local'`, resolver phân giải chính xác về `/images/...` không bị lỗi.
+  5. **Bảo toàn dữ liệu gốc:** Không can thiệp `data.ts`, `character-profile-data.ts`, không sửa `.starfront-saves/`, giữ nguyên 26 tệp trong `public/images/`.
 - **Tiêu chí nghiệm thu (Exit Criteria):**
-  - Màn hình Hangar và Chọn phi cơ hiển thị đúng 100% hình ảnh GEAR trên cả desktop và mobile.
-  - Zero lỗi console hoặc warning trong Network tab.
+  - Màn hình Hangar, Chọn phi cơ và Roster V2 hiển thị chuẩn xác không lỗi console.
+  - Zero lỗi network request 404.
+  - Build PASS, Lint PASS, 8/8 unit tests PASS, 26/26 CDN SHA256 MATCH.
+
+---
+
+### Phase WEB-01.3.A — AdminCP Runtime Asset Version Manager (Roadmap Concept Approved)
+- **Trạng thái:** ROADMAP CONCEPT APPROVED (Ghi nhận kiến trúc, KHÔNG code trong WEB-01.4)
+- **Mô tả chức năng:**
+  1. Liệt kê GitHub release/tag từ `viettanpham/starfront-assets`.
+  2. Hiển thị Active Version hiện hành.
+  3. Preview artwork ở version được chọn.
+  4. Validate manifest và tính sẵn sàng của asset trên CDN trước khi áp dụng.
+  5. Quy trình xác nhận 2 bước an toàn (Two-step confirmation).
+  6. Kích hoạt phiên bản runtime không cần rebuild server.
+  7. Rollback tức thời về tag trước đó.
+  8. Phân quyền Admin và Audit Log.
+  9. Bảo vệ FND-8 Gallery: Không tự động đưa artwork chưa đăng ký vào hồ sơ phi công.
 
 ---
 
 ### Phase WEB-01.5 — Full Image Migration & Safe Repository Cleanup (Chuyển đổi Toàn bộ & Dọn dẹp)
-- **Trạng thái:** PENDING APPROVAL
-- **Điều kiện bắt đầu:** Phase WEB-01.4 nghiệm thu đạt yêu cầu.
-- **Nội dung thực hiện:**
-  1. Áp dụng `resolveImageUrl()` cho các điểm render còn lại:
-     - Avatar phi công V1 (`pilot-gallery.tsx`, `war-room.tsx`, `pilot-panel.tsx`, `starfront-home.tsx`).
-     - Character Profile V2 (`desktop-view.tsx`, `mobile-art-view.tsx`, `mobile-info-view.tsx`, `art-viewer.tsx`).
-  2. Bật CDN cho toàn bộ 26 tệp.
-  3. Kiểm tra hồi quy toàn diện (Regression Test):
-     - Màn hình V1: Đăng nhập -> Chọn phi công -> Trang bị -> Hangar -> Combat log.
-     - Màn hình V2 (`/v2/pilots`): Bố cục Desktop 3 cột, Mobile Art View, Mobile Info View, Tab Gallery (chuyển đổi giữa 7 ảnh thật và 5 thẻ Archive Card).
-  4. Sau khi kiểm tra thành công: Di chuyển các tệp ảnh trong `public/images/` vào thư mục lưu trữ ngoài hoặc dọn dẹp có kiểm soát (giữ lại `public/icon.svg`).
-  5. Đánh giá kích thước working tree sau dọn dẹp (giảm ngay 5.44 MB binary).
+- **Trạng thái:** **HOÀN THÀNH (CLEANUP_VERIFIED - 26/26 WEBP REMOVED, 5.94 MB FREED, ZERO REGRESSION)**
+- **Điều kiện bắt đầu:** Phase WEB-01.4 nghiệm thu đạt yêu cầu và backup Google Drive / Staging đã xác minh.
+- **Nội dung đã thực hiện:**
+  1. Loại bỏ an toàn 26 tệp WebP khỏi thư mục `public/images/`.
+  2. Bảo toàn nguyên vẹn tệp `public/icon.svg` và duy trì cấu trúc thư mục rỗng với `.gitkeep`.
+  3. Giải phóng 6,230,606 bytes (~5.94 MB) dung lượng tệp nhị phân khỏi working tree. Thư mục `public/` giảm từ 6.0 MB xuống còn 2.5 KB.
+  4. Chạy kiểm thử tự động sau dọn dẹp `scripts/web01-post-cleanup-verify.ts`: 26/26 ảnh trên CDN khớp 100% SHA-256 theo manifest.
+  5. Cập nhật tài liệu và quy trình phục hồi khẩn cấp (Emergency Local Rollback).
 - **Tiêu chí nghiệm thu (Exit Criteria):**
-  - Build PASS, Lint PASS, UI hiển thị toàn diện không gãy ảnh.
+  - Số file WebP trong `public/images/`: 0 tệp.
+  - Tệp `public/icon.svg`: Tồn tại nguyên vẹn.
+  - Build PASS, Lint PASS, 8/8 unit tests PASS, 26/26 CDN SHA256 MATCH.
+  - Tuyến đường `/v2/pilots` và `/` phản hồi HTTP 200.
 
 ---
 

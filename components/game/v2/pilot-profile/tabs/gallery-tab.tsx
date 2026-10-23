@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import Image from 'next/image'
 import { GalleryArtwork, CharacterProfileV2 } from '@/lib/game/v2/character-profile-data'
+import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/game/v2/ui'
 import { Image as ImageIcon, FileArchive, CheckCircle2, AlertCircle, ChevronDown, ChevronUp, ZoomIn } from 'lucide-react'
 
@@ -44,7 +45,7 @@ export function GalleryTab({ character, onSelectArtwork }: GalleryTabProps) {
               {/* Image Preview Container */}
               <div className="relative h-64 sm:h-72 w-full bg-[#070A12] overflow-hidden">
                 <Image
-                  src={art.path}
+                  src={resolveImageUrl(art.path)}
                   alt={art.title}
                   fill
                   priority

@@ -6,6 +6,13 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.jsdelivr.net',
+        pathname: '/gh/viettanpham/starfront-assets@**',
+      },
+    ],
   },
   allowedDevOrigins: [
     '*.run.app',

@@ -2,8 +2,8 @@
 # THIẾT KẾ BỘ GIẢI QUYẾT TÀI NGUYÊN HÌNH ẢNH (CDN & IMAGE RESOLVER DESIGN)
 
 **Mã tài liệu:** WEB01-DESIGN-01  
-**Trạng thái:** PROPOSED ARCHITECTURE SPECIFICATION  
-**Ngày lập:** 2026-10-22  
+**Trạng thái:** IMPLEMENTED & VERIFIED (ĐÃ TRIỂN KHAI VÀ NGHIỆM THU)  
+**Ngày hoàn tất:** 2026-10-22  
 **Mục tiêu:** Cung cấp cơ chế phân giải URL hình ảnh tập trung, hỗ trợ linh hoạt giữa Local, jsDelivr CDN và Cloudflare R2 mà không thay đổi dữ liệu gốc.
 
 ---

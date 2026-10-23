@@ -2,6 +2,7 @@
 
 import React, { useState } from "react"
 import type { CharacterProfileV2, GalleryArtwork } from "@/lib/game/v2/character-profile-data"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import { Image as ImageIcon, ZoomIn, Clock, CheckCircle2, ChevronDown, ChevronUp, Sparkles, Layers } from "lucide-react"
 
 interface GalleryTabProps {
@@ -60,7 +61,7 @@ export function GalleryTab({ character, onInspectArtwork }: GalleryTabProps) {
             >
               <div className="relative aspect-[3/4] w-full overflow-hidden bg-slate-950">
                 <img
-                  src={art.path}
+                  src={resolveImageUrl(art.path)}
                   alt={art.title}
                   className="size-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
                 />

@@ -16,6 +16,7 @@ import {
   Hand,
 } from 'lucide-react'
 import { IconButton } from './button'
+import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
 
 export interface ArtViewerProps {
   isOpen: boolean
@@ -432,7 +433,7 @@ export function ArtViewer({
           >
             <div className="relative w-auto h-auto max-w-[92vw] max-h-[78vh] rounded-xl overflow-hidden shadow-2xl border border-[#26384D]/60 bg-[#0F172A]">
               <Image
-                src={imageSrc}
+                src={resolveImageUrl(imageSrc)}
                 alt={imageAlt}
                 width={1122}
                 height={1402}

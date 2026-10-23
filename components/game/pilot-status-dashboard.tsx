@@ -44,6 +44,7 @@ import {
   STARFRONT_PILOTS,
   type StarfrontPilotDef,
 } from "@/lib/game/data"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import {
   allocatePilotPoint,
   calculateGearCombatRating,
@@ -632,7 +633,7 @@ export function PilotStatusDashboard({
                 >
                   <div className="relative size-10 shrink-0 overflow-hidden rounded-xs border border-border/80 bg-black">
                     <img
-                      src={pilot.avatar}
+                      src={resolveImageUrl(pilot.avatar)}
                       alt={pilot.name}
                       className="size-full object-cover object-top"
                     />
@@ -680,7 +681,7 @@ export function PilotStatusDashboard({
               <div className="flex gap-3">
                 <div className="relative size-28 shrink-0 overflow-hidden rounded-xs border border-cyan-500/60 shadow-lg">
                   <img
-                    src={pilotDef.avatar}
+                    src={resolveImageUrl(pilotDef.avatar)}
                     alt={pilotDef.name}
                     className="size-full object-cover object-top"
                   />
@@ -817,7 +818,7 @@ export function PilotStatusDashboard({
                   style={{ borderColor: gearDef.color }}
                 >
                   <img
-                    src={gearDef.illustration || `/images/${activeGearId}.svg`}
+                    src={resolveImageUrl(gearDef.illustration) || `/images/${activeGearId}.svg`}
                     alt={gearDef.name}
                     className="size-full object-contain"
                   />

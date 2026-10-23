@@ -6,6 +6,7 @@ import {
   CharacterProfileV2,
   GalleryArtwork,
 } from '@/lib/game/v2/character-profile-data'
+import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
 import {
   Tabs,
   TabsList,
@@ -187,7 +188,7 @@ export function DesktopView({
                   }`}
                 >
                   <Image
-                    src={char.portraitAssetPath}
+                    src={resolveImageUrl(char.portraitAssetPath)}
                     alt={char.classCharacterName}
                     fill
                     referrerPolicy="no-referrer"
@@ -195,7 +196,7 @@ export function DesktopView({
                     onError={(e) => {
                       // Fallback to valentine portrait if image missing
                       const target = e.target as HTMLImageElement
-                      target.src = '/images/valentine-portrait.webp'
+                      target.src = resolveImageUrl('/images/valentine-portrait.webp')
                     }}
                   />
                 </div>
@@ -257,7 +258,7 @@ export function DesktopView({
           {!mainImageError ? (
             <div className="relative w-full h-[65vh] max-h-[640px]">
               <Image
-                src={activeCharacter.fullbodyAssetPath}
+                src={resolveImageUrl(activeCharacter.fullbodyAssetPath)}
                 alt={activeCharacter.classCharacterName}
                 fill
                 priority

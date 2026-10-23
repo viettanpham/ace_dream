@@ -48,6 +48,7 @@ import {
   STARFRONT_PILOTS,
   type StarfrontPilotDef,
 } from "@/lib/game/data"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import {
   allocatePilotPoint,
   calculateGearCombatRating,
@@ -471,7 +472,7 @@ export function CharacterGearSelect({
               title="Bấm để mở hồ sơ nổi bật phi công"
             >
               <img
-                src={activePilotDef.avatar}
+                src={resolveImageUrl(activePilotDef.avatar)}
                 alt={activePilotDef.name}
                 className="size-full object-cover object-top"
               />
@@ -764,7 +765,7 @@ export function CharacterGearSelect({
                           <div className="flex items-start gap-2.5">
                             <div className="relative size-14 shrink-0 overflow-hidden rounded-sm border border-cyan-500/40 bg-black/60 shadow-sm group-hover:border-cyan-400 transition-colors">
                               <img
-                                src={pilot.avatar}
+                                src={resolveImageUrl(pilot.avatar)}
                                 alt={pilot.name}
                                 className="size-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                               />
@@ -910,7 +911,7 @@ export function CharacterGearSelect({
                               style={{ borderColor: `${def.color}70` }}
                             >
                               <img
-                                src={def.illustration || `/images/${gId}-gear.webp`}
+                                src={resolveImageUrl(def.illustration || `/images/${gId}-gear.webp`)}
                                 alt={def.name}
                                 className="size-full object-cover object-center"
                               />
@@ -991,7 +992,7 @@ export function CharacterGearSelect({
                     >
                       <div className="size-16 overflow-hidden rounded-sm border border-cyan-400 bg-black/60 shrink-0">
                         <img
-                          src={flowPilotDef.avatar}
+                          src={resolveImageUrl(flowPilotDef.avatar)}
                           alt={flowPilotDef.name}
                           className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
@@ -1019,7 +1020,7 @@ export function CharacterGearSelect({
                     >
                       <div className="size-16 p-1 rounded-sm border border-cyan-400 bg-black/60 shrink-0">
                         <img
-                          src={flowGearDef.illustration || `/images/${selectedGearId}.svg`}
+                          src={resolveImageUrl(flowGearDef.illustration || `/images/${selectedGearId}.svg`)}
                           alt={flowGearDef.name}
                           className="size-full object-contain transition-transform duration-300 group-hover:scale-105"
                         />
@@ -1153,7 +1154,7 @@ export function CharacterGearSelect({
 
               {/* Ảnh Phi Công Kích Thước Lớn (Toàn Thân) */}
               <img
-                src={activePilotDef.fullBodyAvatar || activePilotDef.avatar}
+                src={resolveImageUrl(activePilotDef.fullBodyAvatar || activePilotDef.avatar)}
                 alt={activePilotDef.name}
                 className="size-full max-h-[540px] object-cover sm:object-contain object-top drop-shadow-[0_0_20px_rgba(6,182,212,0.35)] transition-transform duration-300 group-hover:scale-102"
               />
@@ -1423,7 +1424,7 @@ export function CharacterGearSelect({
                 {/* Ảnh 3D Concept Art Cơ Giáp Trung Tâm */}
                 <div className="relative my-2 w-full max-w-md h-44 sm:h-52 rounded-sm overflow-hidden border border-cyan-500/40 bg-black/70 shadow-lg flex items-center justify-center group">
                   <img
-                    src={activeGearDef.illustration || `/images/${activeGearId}-gear.webp`}
+                    src={resolveImageUrl(activeGearDef.illustration || `/images/${activeGearId}-gear.webp`)}
                     alt={activeGearDef.name}
                     className="size-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-transform duration-500 group-hover:scale-105"
                   />
@@ -1945,7 +1946,7 @@ export function CharacterGearSelect({
                           </div>
 
                           <img
-                            src={pDef.fullBodyAvatar || pDef.avatar}
+                            src={resolveImageUrl(pDef.fullBodyAvatar || pDef.avatar)}
                             alt={pDef.name}
                             className="size-full object-cover object-top filter drop-shadow-[0_0_15px_rgba(34,211,238,0.3)] transition-transform duration-500 group-hover:scale-102"
                           />
@@ -2301,7 +2302,7 @@ export function CharacterGearSelect({
                           }}
                         >
                           <img
-                            src={gDef.illustration || `/images/${inspectGearId}-gear.webp`}
+                            src={resolveImageUrl(gDef.illustration || `/images/${inspectGearId}-gear.webp`)}
                             alt={gDef.name}
                             className="size-full object-cover object-center filter drop-shadow-[0_0_20px_rgba(0,0,0,0.8)] transition-transform duration-500 group-hover:scale-105"
                           />

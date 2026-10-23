@@ -1,0 +1,111 @@
+/**
+ * STARFRONT WORLD V2 — ASSET IMAGE RESOLVER (WEB-01.3)
+ * Centralized, non-intrusive URL resolver for runtime image delivery.
+ * Supports Local filesystem, jsDelivr CDN, and future Cloudflare R2 / Custom CDN.
+ */
+
+export type AssetStorageMode = 'local' | 'jsdelivr' | 'r2' | 'custom';
+
+export interface ImageResolverConfig {
+  mode: AssetStorageMode;
+  cdnBaseUrl: string;
+}
+
+/**
+ * Official default CDN Base URL confirmed by the project owner (WEB-01.3):
+ * Repository: viettanpham/starfront-assets
+ * Release Tag: v2.0-assets-r1
+ * Subdirectory: starfront-world-assets
+ */
+export const DEFAULT_JSDELIVR_CDN_BASE =
+  'https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets';
+
+/**
+ * Returns current configuration from environment variables or safe defaults.
+ */
+export function getResolverConfig(): ImageResolverConfig {
+  const envMode = process.env.NEXT_PUBLIC_ASSET_STORAGE_MODE?.toLowerCase().trim();
+  const validModes: AssetStorageMode[] = ['local', 'jsdelivr', 'r2', 'custom'];
+  const mode: AssetStorageMode = validModes.includes(envMode as AssetStorageMode)
+    ? (envMode as AssetStorageMode)
+    : 'jsdelivr';
+
+  const cdnBaseUrl =
+    process.env.NEXT_PUBLIC_ASSET_CDN_URL?.trim() || DEFAULT_JSDELIVR_CDN_BASE;
+
+  return { mode, cdnBaseUrl };
+}
+
+/**
+ * Checks if the current configuration is actively using a remote CDN.
+ */
+export function isCdnEnabled(): boolean {
+  const { mode, cdnBaseUrl } = getResolverConfig();
+  return mode !== 'local' && Boolean(cdnBaseUrl);
+}
+
+/**
+ * Resolves a game asset image path to either a local public URL or a remote CDN URL.
+ * 
+ * Rules:
+ * 1. Empty/null/undefined paths return "" (allowing calling components to render context-specific placeholders).
+ * 2. Absolute URLs (http/https/data/blob) are returned unchanged.
+ * 3. Assets outside images (e.g. /icon.svg) are returned as local absolute paths.
+ * 4. Image paths (/images/... or images/...) are normalized and prepended with CDN base in CDN mode,
+ *    or returned as local /images/... in local mode.
+ * 5. Does not modify underlying data models or save files.
+ */
+export function resolveImageUrl(
+  rawPath?: string | null,
+  overrideConfig?: Partial<ImageResolverConfig>
+): string {
+  if (!rawPath || typeof rawPath !== 'string') {
+    return '';
+  }
+
+  const trimmed = rawPath.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  // Preserve absolute network and data URLs
+  if (
+    trimmed.startsWith('http://') ||
+    trimmed.startsWith('https://') ||
+    trimmed.startsWith('data:') ||
+    trimmed.startsWith('blob:')
+  ) {
+    return trimmed;
+  }
+
+  // Preserve assets outside /images/ (e.g. /icon.svg, /favicon.ico)
+  const isImageSubdir =
+    trimmed.startsWith('/images/') ||
+    trimmed.startsWith('images/') ||
+    trimmed === '/images' ||
+    trimmed === 'images';
+
+  if (!isImageSubdir) {
+    return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  }
+
+  // Normalize path without leading slash
+  const cleanPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+
+  const config = {
+    ...getResolverConfig(),
+    ...overrideConfig,
+  };
+
+  // Local mode fallback
+  if (config.mode === 'local' || !config.cdnBaseUrl) {
+    return `/${cleanPath}`;
+  }
+
+  // Remote CDN mode: strip any trailing slash from base URL
+  const normalizedBase = config.cdnBaseUrl.endsWith('/')
+    ? config.cdnBaseUrl.slice(0, -1)
+    : config.cdnBaseUrl;
+
+  return `${normalizedBase}/${cleanPath}`;
+}

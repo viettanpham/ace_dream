@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react"
 import type { GalleryArtwork } from "@/lib/game/v2/character-profile-data"
+import { resolveImageUrl } from "@/lib/game/assets/image-resolver"
 import { X, ZoomIn, ZoomOut, RotateCcw, Maximize2, Minimize2, ChevronLeft, ChevronRight, Download } from "lucide-react"
 
 interface ArtworkLightboxModalProps {
@@ -148,7 +149,7 @@ export function ArtworkLightboxModal({
         }`}
       >
         <img
-          src={artwork.path}
+          src={resolveImageUrl(artwork.path)}
           alt={artwork.title}
           draggable={false}
           className="max-h-[85vh] max-w-[90vw] object-contain transition-transform duration-100 ease-out drop-shadow-[0_0_25px_rgba(6,182,212,0.2)]"

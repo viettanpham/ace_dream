@@ -3,6 +3,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { CharacterProfileV2 } from '@/lib/game/v2/character-profile-data'
+import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
 import {
   Maximize2,
   Radar,
@@ -108,7 +109,7 @@ export function MobileArtView({
         <div className="relative w-full h-[62vh] max-h-[520px] flex items-center justify-center">
           {!imageError ? (
             <Image
-              src={character.fullbodyAssetPath}
+              src={resolveImageUrl(character.fullbodyAssetPath)}
               alt={character.classCharacterName}
               fill
               priority

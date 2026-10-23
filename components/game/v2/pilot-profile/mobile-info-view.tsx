@@ -6,6 +6,7 @@ import {
   CharacterProfileV2,
   GalleryArtwork,
 } from '@/lib/game/v2/character-profile-data'
+import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
 import {
   Tabs,
   TabsList,
@@ -98,14 +99,14 @@ export function MobileInfoView({
                   }`}
                 >
                   <Image
-                    src={char.portraitAssetPath}
+                    src={resolveImageUrl(char.portraitAssetPath)}
                     alt={char.classCharacterName}
                     fill
                     referrerPolicy="no-referrer"
                     className="object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
-                      target.src = '/images/valentine-portrait.webp'
+                      target.src = resolveImageUrl('/images/valentine-portrait.webp')
                     }}
                   />
                 </div>

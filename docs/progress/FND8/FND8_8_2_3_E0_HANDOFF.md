@@ -1,32 +1,67 @@
 # STARFRONT WORLD V2 — FND-8 / 8.2.3.E.0
-# BIÊN BẢN BÀN GIAO (HANDOFF INSTRUCTIONS — E.0-REBUILD-1 COMPLETED)
+# BIÊN BẢN BÀN GIAO CHECKPOINT (FND8-HANDOFF-10)
+# CHARACTER CATEGORY / PILOT PROFILE V2 — TÍCH HỢP HOÀN CHỈNH 12 PILOTS
 
-**Thời điểm:** 2026-10-22  
-**Đối tượng bàn giao:** Phiên làm việc / tài khoản tiếp theo  
-**Trạng thái bàn giao:** `Phase E.0-REBUILD-1` ĐÃ HOÀN TẤT. Module Character Category / Pilot Profile V2 mới đã dựng sạch tại `components/game/v2/pilot-profile/` và tích hợp Shared Art Viewer.  
-
----
-
-## 1. Hướng Dẫn Thử Nghiệm
-1. **Truy cập trực tiếp Route V2 chính thức:**
-   - Mở URL: **`/v2/pilots`** (hoặc `/v2`).
-2. **Kiểm tra trên Desktop (1440px):**
-   - V2 Top Bar: Hiển thị thanh trạng thái, nút chuyển đổi/quay lại V1.
-   - Global Left Menu: Nút thu gọn/mở rộng Mini (64px) ↔ Full (240px), lưu vào `sf_v2_ui_prefs`.
-   - Pilot Roster: Độc lập thu gọn Mini (72px) ↔ Full (256px), lưu vào `sf_v2_ui_prefs`.
-   - Khu vực trung tâm: Nút chuyển đổi 2 bối cảnh `Tiêu Chuẩn` (Standard) và `Radar HUD` (Tactical).
-   - Nút `Soi Tranh 4K`: Mở Shared Art Viewer (zoom 1x–3x, pan có kẹp biên, phím Escape, touch targets $\ge 44\text{px}$).
-   - Cột phải: 4 tabs `OVERVIEW` (6 chỉ số sạch, không có tổng 20 điểm), `STORY` (toàn văn chương 1, chương 7–10 niêm phong HOLD), `GEAR COMPAT` (3 cơ giáp), `GALLERY` (WebP thật + Thẻ Archive cho 28 tranh manifest, 100% Zero 404).
-3. **Kiểm tra trên Mobile (375px–430px):**
-   - Hamburger Button mở V2 Drawer menu đầy đủ.
-   - Mặc định mở ở `Mobile Art View` (ngắm tranh tràn màn hình, 2 controls bối cảnh nổi $\ge 44\text{px}$).
-   - Bấm nút `XEM HỒ SƠ` chuyển sang `Mobile Info View`: Horizontal avatar rail $\ge 76\text{px}$ hiển thị đủ tên, 4 tabs cuộn dọc mượt mà.
-4. **Harness phụ trợ:** `/ui-v2-preview` tiếp tục hoạt động độc lập để test primitives.
+**Thời điểm:** 2026-10-23  
+**Mã tài liệu:** FND8-HANDOFF-10  
+**Giai đoạn:** FND-8.2.3.E.0 — IMPLEMENT INTEGRATED ONE PASS  
+**Trạng thái bàn giao:** HOÀN THÀNH 100% — SẴN SÀNG NGHIỆM THU TRỰC TIẾP TRÊN PREVIEW.  
+**Tuyến đường URL:** `/v2/pilots`
 
 ---
 
-## 2. Quy Tắc Nghiêm Ngặt
+## 1. Kết Quả Thực Hiện Cốt Lõi
 
-- **KHÔNG TỰ Ý CHUYỂN SANG REBUILD-2 HOẶC TỰ BỊA FEEDBACK:** Chờ người dùng trực tiếp nghiệm thu và phản hồi.
-- **KHÔNG SỬA CODE V1:** Giữ nguyên các tệp V1 hiện có.
-- **KHÔNG LÀM CHARACTER SELECTION WIZARD:** Scope chỉ gói gọn trong Profile / Category.
+1. **Danh mục 12 Class / Pilot Canonical (C01–C12):**
+   - Đầy đủ 12 phi công: C01 Alviss, C02 Eric, C03 Marcus, C04 Victor, C05 Kaelen, C06 Lyra, C07 Selena, C08 Valentine (reference lead profile), C09 Fortuna, C10 Aria, C11 Rhea, C12 Nova.
+   - Chuyển đổi mượt mà giữa các phi công mà không gây lỗi hoặc re-render vô tận.
+   - Mỗi nhân vật có đúng 6 chỉ số thuộc tính cơ bản (ATK, DEF, AGI, ENE, SHD, LUK) với tổng điểm chính xác 20 điểm theo quy định FND-8.
+   - Tuyệt đối không hiển thị nhãn tổng 20 điểm gây vi phạm chỉ thị thiết kế.
+
+2. **Valentine — Lead Reference Profile:**
+   - 9 tác phẩm WebP khả dụng thực tế trên jsDelivr CDN v2.0-assets-r1 (fullbody, portrait, activity-001, casual, closeup, combat, event-001, story-001, uniform-001).
+   - 4 tác phẩm ý tưởng lưu trữ được hiển thị dạng Archive Pending (Zero 404s).
+   - 2 Class Traits: Bàn Tay Cứu Hộ (+30% Medic) và Mái Khiên Nhân Ái (+30% Shield Recovery) có modal tra cứu chi tiết.
+   - Biên niên 10 chương: Chương 01–04 APPROVED (chương 1 có toàn văn cốt truyện), Chương 05–06 PROVISIONAL, Chương 07–10 HOLD (niêm phong bảo mật).
+   - Tách biệt hoàn toàn hai khối văn bản `characterQuote` và `shortDescription`.
+
+3. **11 Pilot còn lại:**
+   - 7 Pilot V1 có ảnh WebP chân thực trên CDN jsDelivr qua Image Resolver (`marcus`, `alviss`, `eric`, `victor`, `kaelen`, `lyra`, `selena`).
+   - 4 Pilot nữ mới (`fortuna`, `aria`, `rhea`, `nova`) hiển thị trạng thái Concept Approved kèm khung hồ sơ và placeholder thanh lịch, không gây request 404.
+
+4. **Mô hình Trạng Thái Trực Giao (Orthogonal Progress Status Model):**
+   - Tích hợp thẻ theo dõi 5 chiều trực giao vào tab OVERVIEW:
+     - Sản xuất Artwork: `COMPLETE_ART` / `PROCESSING_LIMITED` / `PLACEHOLDER_ONLY`
+     - Hồ sơ & Lore: `COMPLETE` / `IN_PROGRESS`
+     - Biên niên Cốt truyện: `APPROVED` / `PARTIAL` / `HOLD`
+     - Gallery Runtime CDN: `READY` / `PARTIAL` / `EMPTY` (kèm số lượng assets khả dụng vs đăng ký)
+     - Sẵn sàng UI: `READY` / `PARTIAL`
+
+5. **Trải nghiệm Desktop & Mobile theo Concept đã duyệt:**
+   - **Desktop (1440px):** 3 cột độc lập (Pilot Roster mini/full, Center Stage với 2 nút chuyển bối cảnh Standard vs Tactical HUD, Dossier 4 tabs).
+   - **Mobile (375px–430px):** Hai chế độ riêng biệt `Art View` (ngắm tranh toàn màn hình với 2 nút bối cảnh nổi) và `Info View` (danh sách chọn pilot ngang và 4 tabs). Touch target $\ge 44\text{px}$, không tràn ngang.
+   - Tuân thủ nghiêm ngặt chuẩn **frontend-design**: Zero-Pill cho static metadata, typography phân cấp rõ ràng, tabular-nums cho chỉ số.
+
+---
+
+## 2. Kết Quả Kiểm Thử
+
+- **Unit & Integration Test:** `npx tsx --test tests/fnd8-character-category.test.ts` (6/6 PASS).
+- **Regression Test:** `tests/image-resolver.test.ts`, `tests/runtime-asset-config.test.ts`, `tests/release-manifest-diff.test.ts` (100% PASS).
+- **TypeScript Typecheck:** `npm run lint` (`tsc --noEmit`) → **0 lỗi (PASS)**.
+- **Production Build:** `compile_applet` (`next build`) → **BUILD SUCCESS**.
+
+---
+
+## 3. Hướng Dẫn Nghiệm Thu Trực Tiếp
+
+1. Mở Preview tại đường dẫn: **`/v2/pilots`**.
+2. Thử nghiệm trên Desktop:
+   - Thu gọn / mở rộng Pilot Roster bên trái.
+   - Nhấp chọn lần lượt các phi công từ C01 đến C12.
+   - Bấm 2 nút bối cảnh `Tiêu Chuẩn` và `Radar HUD` ở hai bên artwork trung tâm.
+   - Bấm nút `Soi Tranh HD` để phóng to tranh toàn thân.
+   - Mở lần lượt 4 tabs: `OVERVIEW` (xem trạng thái tiến độ trực giao, 6 stats, traits), `STORY` (chọn đọc các chương), `GEAR` (xem độ tương thích 3 cơ giáp), `GALLERY` (bấm vào tranh để soi chi tiết).
+3. Thử nghiệm trên Mobile (chuyển khung hiển thị điện thoại):
+   - Mặc định ở `Art View`, thử đổi bối cảnh, lật qua lại giữa các phi công bằng 2 phím mũi tên.
+   - Bấm `XEM HỒ SƠ` chuyển sang `Info View`, cuộn đọc 4 tabs, rồi bấm `NGẮM TRANH TOÀN MÀN HÌNH` để quay lại.

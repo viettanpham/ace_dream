@@ -80,16 +80,34 @@ export function PilotProfileV2({
     if (art) {
       setViewerArtwork(art)
     } else {
-      // Default to character's fullbody artwork
-      setViewerArtwork({
-        id: activeCharacter.id + '-fullbody',
-        title: activeCharacter.classCharacterName + ' — Tranh Toàn Thân Chiến Trường',
-        category: 'base',
-        path: activeCharacter.fullbodyAssetPath,
-        isAvailableOnDisk: true,
-        status: 'verified_webp',
-        description: activeCharacter.shortDescription,
-      })
+      // Tìm tác phẩm fullbody trong artworks nếu có
+      const existingFullbody = activeCharacter.artworks.find(
+        (a) => a.category === 'base' || a.id.includes('fullbody')
+      )
+      if (existingFullbody) {
+        setViewerArtwork(existingFullbody)
+      } else {
+        const isVerifiedOnDisk = [
+          'valentine',
+          'marcus',
+          'alviss',
+          'eric',
+          'victor',
+          'kaelen',
+          'lyra',
+          'selena',
+        ].includes(activeCharacter.id)
+
+        setViewerArtwork({
+          id: activeCharacter.id + '-fullbody',
+          title: activeCharacter.classCharacterName + ' — Tranh Toàn Thân Chiến Trường',
+          category: 'base',
+          path: activeCharacter.fullbodyAssetPath,
+          isAvailableOnDisk: isVerifiedOnDisk,
+          status: isVerifiedOnDisk ? 'verified_webp' : 'archive_pending',
+          description: activeCharacter.shortDescription,
+        })
+      }
     }
     setIsViewerOpen(true)
   }

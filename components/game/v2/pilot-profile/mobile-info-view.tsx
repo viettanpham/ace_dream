@@ -126,11 +126,12 @@ export function MobileInfoView({
       {/* 3. CHARACTER IDENTITY HEADER */}
       <div className="p-4 sm:p-5 border-b border-[#26384D] bg-[#0F172A]/40 space-y-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#142338] text-[#06B6D4] border border-[#26384D] font-bold">
+          <div className="flex items-center gap-2 text-xs text-[#A7B6C8]">
+            <span className="font-mono text-[#06B6D4] font-bold">
               {activeCharacter.callsign}
             </span>
-            <span className="text-xs text-[#A7B6C8] font-mono">
+            <span aria-hidden="true" className="text-[#3B526D]">·</span>
+            <span>
               {activeCharacter.role}
             </span>
           </div>
@@ -145,7 +146,7 @@ export function MobileInfoView({
         {/* TWO SEPARATE TEXT BLOCKS: characterQuote & shortDescription (MANDATORY SEPARATION) */}
         <div className="space-y-2.5 pt-1">
           {/* Block 1: characterQuote */}
-          <div className="p-3.5 rounded-xl bg-[#070A12]/80 border-l-4 border-[#06B6D4] flex items-start gap-2.5">
+          <div className="p-3.5 rounded-xl bg-[#070A12]/80 border border-[#26384D] flex items-start gap-2.5">
             <Quote className="w-4 h-4 text-[#06B6D4] shrink-0 mt-0.5" />
             <p className="text-sm italic font-medium text-[#F1F5F9] leading-relaxed">
               {activeCharacter.characterQuote}

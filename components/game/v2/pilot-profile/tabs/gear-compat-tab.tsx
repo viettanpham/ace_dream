@@ -3,6 +3,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { CharacterProfileV2 } from '@/lib/game/v2/character-profile-data'
+import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/game/v2/ui'
 import { Cpu, Shield, Zap, Sparkles, AlertCircle } from 'lucide-react'
 
@@ -83,7 +84,7 @@ export function GearCompatTab({ character }: GearCompatTabProps) {
               {/* Gear Thumbnail */}
               <div className="relative h-44 w-full bg-[#070A12] border-b border-[#26384D] overflow-hidden">
                 <Image
-                  src={gear.imagePath}
+                  src={resolveImageUrl(gear.imagePath)}
                   alt={gear.name}
                   fill
                   referrerPolicy="no-referrer"

@@ -359,11 +359,12 @@ export function DesktopView({
         <div className="p-4 sm:p-5 border-b border-[#26384D] bg-[#142338]/40 space-y-2.5">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#070A12] text-[#06B6D4] border border-[#26384D] font-bold">
+              <div className="flex items-center gap-2 text-xs text-[#A7B6C8]">
+                <span className="font-mono text-[#06B6D4] font-bold">
                   {activeCharacter.callsign}
                 </span>
-                <span className="text-xs text-[#A7B6C8] font-mono truncate max-w-[180px]">
+                <span aria-hidden="true" className="text-[#3B526D]">·</span>
+                <span className="truncate max-w-[200px]">
                   {activeCharacter.role}
                 </span>
               </div>
@@ -375,7 +376,7 @@ export function DesktopView({
               </p>
             </div>
 
-            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#142338] text-[#F1F5F9] border border-[#26384D] shrink-0">
+            <span className="text-[11px] font-mono font-medium text-[#A7B6C8] shrink-0">
               V2 DOSSIER
             </span>
           </div>
@@ -383,7 +384,7 @@ export function DesktopView({
           {/* TWO SEPARATE TEXT BLOCKS: characterQuote & shortDescription (MANDATORY SEPARATION) */}
           <div className="space-y-2 pt-1">
             {/* Block 1: characterQuote */}
-            <div className="p-2.5 rounded-xl bg-[#070A12]/70 border-l-3 border-[#06B6D4] flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-[#070A12]/80 border border-[#26384D] flex items-start gap-2.5">
               <Quote className="w-3.5 h-3.5 text-[#06B6D4] shrink-0 mt-0.5" />
               <p className="text-xs italic font-medium text-[#F1F5F9] leading-relaxed">
                 {activeCharacter.characterQuote}

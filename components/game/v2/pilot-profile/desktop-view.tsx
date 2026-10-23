@@ -17,6 +17,7 @@ import { StoryTab } from './tabs/story-tab'
 import { GearCompatTab } from './tabs/gear-compat-tab'
 import { GalleryTab } from './tabs/gallery-tab'
 import { PilotAvatar } from './pilot-avatar'
+import { loadV2UIPreferences, saveV2UIPreferences } from '@/lib/game/v2/ui-preferences'
 import {
   Maximize2,
   Radar,
@@ -32,6 +33,9 @@ import {
   Award,
   VideoOff,
   CheckCircle2,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Users,
 } from 'lucide-react'
 
 interface DesktopViewProps {
@@ -55,10 +59,24 @@ export function DesktopView({
   activeTab,
   onTabChange,
 }: DesktopViewProps) {
+  // Pilot Roster Mode: 'mini' (72px) vs 'full' (260px)
+  const [rosterMode, setRosterMode] = useState<'mini' | 'full'>('mini')
   const [mainImageError, setMainImageError] = useState<boolean>(false)
   const [carouselIndex, setCarouselIndex] = useState<number>(0)
   const [selectedArtwork, setSelectedArtwork] = useState<GalleryArtwork | null>(null)
   const [showTrailerNotice, setShowTrailerNotice] = useState<boolean>(false)
+
+  // Load saved roster mode from preferences on mount
+  useEffect(() => {
+    const prefs = loadV2UIPreferences()
+    setRosterMode(prefs.pilotRosterMode || 'mini')
+  }, [])
+
+  const toggleRosterMode = () => {
+    const nextMode = rosterMode === 'mini' ? 'full' : 'mini'
+    setRosterMode(nextMode)
+    saveV2UIPreferences({ pilotRosterMode: nextMode })
+  }
 
   // Reset khi đổi phi công
   useEffect(() => {
@@ -98,24 +116,54 @@ export function DesktopView({
   return (
     <div className="w-full h-[calc(100vh-56px)] min-h-[720px] flex gap-3 p-3 lg:p-3.5 bg-[#070A12] text-[#F1F5F9] overflow-hidden select-none">
       {/* =========================================================================
-          CỘT 1 (TRÁI): CHARACTER CLASS ROSTER (12 Pilot Canonical)
+          CỘT 1 (TRÁI): CHARACTER CLASS ROSTER (12 Pilot Canonical - 2 Mode Độc Lập)
           ========================================================================= */}
-      <aside className="w-60 lg:w-64 flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
-        {/* Header Cột: | CHARACTER CLASS */}
-        <div className="p-3 border-b border-[#1E2D42] bg-[#0E1626]/80 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
-            <h2 className="text-xs font-black uppercase tracking-wider text-white font-mono">
-              CHARACTER CLASS
-            </h2>
-          </div>
-          <span className="text-[10px] font-mono font-bold text-[#00D4FF] bg-[#00D4FF]/10 px-1.5 py-0.5 rounded border border-[#00D4FF]/30">
-            {roster.length}
-          </span>
+      <aside
+        className={`flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md transition-all duration-300 ease-in-out ${
+          rosterMode === 'full' ? 'w-[260px]' : 'w-[72px]'
+        }`}
+      >
+        {/* Header Cột: | PHI CÔNG HỆ THỐNG (Full) hoặc Icon + Nút Mở Rộng (Mini) */}
+        <div className="p-2.5 border-b border-[#1E2D42] bg-[#0E1626]/80 flex items-center justify-between min-h-[48px]">
+          {rosterMode === 'full' ? (
+            <>
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
+                <h2 className="text-xs font-black uppercase tracking-wider text-white font-mono truncate">
+                  PHI CÔNG HỆ THỐNG
+                </h2>
+                <span className="text-[10px] font-mono font-bold text-[#00D4FF] bg-[#00D4FF]/10 px-1.5 py-0.5 rounded border border-[#00D4FF]/30">
+                  {roster.length}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={toggleRosterMode}
+                title="Thu gọn danh sách phi công (MINI 72px)"
+                className="p-1 rounded-md border border-[#1E2D42] bg-[#0E1626] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-all cursor-pointer"
+              >
+                <PanelLeftClose className="w-4 h-4 text-[#00D4FF]" />
+              </button>
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-between">
+              <span className="text-[10px] font-mono font-bold text-[#00D4FF] bg-[#00D4FF]/10 px-1 py-0.5 rounded border border-[#00D4FF]/30">
+                {roster.length}
+              </span>
+              <button
+                type="button"
+                onClick={toggleRosterMode}
+                title="Mở rộng danh sách phi công (FULL 260px)"
+                className="p-1 rounded-md border border-[#1E2D42] bg-[#0E1626] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-all cursor-pointer"
+              >
+                <PanelLeftOpen className="w-4 h-4 text-[#00D4FF]" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Danh sách 12 Pilot - Dùng PilotAvatar chuẩn, không fallback sai */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1.5 scrollbar-thin scrollbar-thumb-[#1E2D42]">
+        <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 scrollbar-thin scrollbar-thumb-[#1E2D42]">
           {roster.map((char) => {
             const isSelected = char.id === activeCharacter.id
 
@@ -123,41 +171,52 @@ export function DesktopView({
               <div
                 key={char.id}
                 onClick={() => onSelectCharacter(char)}
-                className={`group relative rounded-xl border transition-all duration-200 cursor-pointer flex items-center p-2 gap-2.5 ${
+                title={`${char.classCharacterName} — ${char.role}`}
+                className={`group relative rounded-xl border transition-all duration-200 cursor-pointer flex items-center ${
+                  rosterMode === 'full' ? 'p-2 gap-2.5' : 'p-1.5 justify-center'
+                } ${
                   isSelected
                     ? 'bg-gradient-to-r from-[#142338] via-[#102035] to-[#0D1828] border-[#00D4FF] shadow-[0_0_15px_rgba(0,212,255,0.25)] ring-1 ring-[#00D4FF]/60'
                     : 'bg-[#0B111E]/70 border-[#1A2638] hover:border-[#2C415E] hover:bg-[#101A2B]'
                 }`}
               >
-                {/* Avatar Roster Chuyên Biệt Cho Từng Pilot (Fortuna/Aria có icon riêng) */}
-                <PilotAvatar
-                  character={char}
-                  isSelected={isSelected}
-                  className="w-12 h-10 shrink-0"
-                />
-
-                {/* Thông tin: Tên Pilot & Vai Trò (Class Subtitle) */}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3
-                      className={`text-xs font-bold font-mono tracking-wide truncate ${
-                        isSelected ? 'text-white' : 'text-[#CBD5E1]'
-                      }`}
-                    >
-                      {char.classCharacterName}
-                    </h3>
-                  </div>
-                  <p
-                    className={`text-[10px] truncate mt-0.5 ${
-                      isSelected ? 'text-[#00D4FF] font-semibold' : 'text-[#7D90A6]'
-                    }`}
-                  >
-                    {char.role}
-                  </p>
+                {/* Avatar Roster Chuyên Biệt Cho Từng Pilot */}
+                <div className="relative">
+                  <PilotAvatar
+                    character={char}
+                    isSelected={isSelected}
+                    className="w-12 h-10 shrink-0"
+                  />
+                  {/* Chấm chỉ báo active khi ở mode mini */}
+                  {isSelected && rosterMode === 'mini' && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#00D4FF] shadow-[0_0_6px_#00D4FF] ring-2 ring-[#070A12]" />
+                  )}
                 </div>
 
-                {/* Active Indicator Bar */}
-                {isSelected && (
+                {/* Thông tin: Tên Pilot & Vai Trò (Chỉ hiện khi FULL mode) */}
+                {rosterMode === 'full' && (
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <h3
+                        className={`text-xs font-bold font-mono tracking-wide truncate ${
+                          isSelected ? 'text-white' : 'text-[#CBD5E1]'
+                        }`}
+                      >
+                        {char.classCharacterName}
+                      </h3>
+                    </div>
+                    <p
+                      className={`text-[10px] truncate mt-0.5 ${
+                        isSelected ? 'text-[#00D4FF] font-semibold' : 'text-[#7D90A6]'
+                      }`}
+                    >
+                      {char.role}
+                    </p>
+                  </div>
+                )}
+
+                {/* Active Indicator Bar khi FULL mode */}
+                {isSelected && rosterMode === 'full' && (
                   <div className="w-1 h-5 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF] shrink-0" />
                 )}
               </div>
@@ -174,7 +233,7 @@ export function DesktopView({
       {/* =========================================================================
           CỘT 2 (GIỮA): CENTER VISUAL STAGE (Visual Hero Hoành Tráng Liền Mạch)
           ========================================================================= */}
-      <section className="flex-1 relative rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl flex flex-col justify-between">
+      <section className="flex-1 min-w-[340px] relative rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl flex flex-col justify-between">
         {/* Background Visual Layers: Bầu Trời Sao, Trạm Quỹ Đạo & Hành Tinh Xanh */}
         <div
           className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${
@@ -397,7 +456,7 @@ export function DesktopView({
       {/* =========================================================================
           CỘT 3 (PHẢI): PROFILE DOSSIER & ATTRIBUTES (Typography Game Cao Cấp)
           ========================================================================= */}
-      <section className="w-[410px] lg:w-[440px] flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
+      <section className="w-[380px] lg:w-[400px] xl:w-[420px] flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
         {/* Header Profile: Tên, Title, Vai Trò và Logo UME CORPS */}
         <div className="p-3.5 border-b border-[#1E2D42] bg-[#0E1626]/70">
           <div className="flex items-start justify-between gap-3">

@@ -29,9 +29,13 @@ import { useAssetConfig, broadcastAssetConfigChange } from '@/components/game/as
 import { resolveImageUrlWithConfig } from '@/lib/game/assets/image-resolver';
 import type { PublicRuntimeAssetConfig, AuditLogEntry } from '@/lib/game/assets/runtime-asset-config';
 import type { DiscoveredRelease, ValidationResult } from '@/lib/game/assets/github-release-validator';
+import { FullArtworkGalleryModal } from './full-artwork-gallery-modal';
 
 export function AssetVersionTab() {
   const { config: activeConfig, refreshConfig: refreshGlobalConfig } = useAssetConfig();
+
+  // Full Artwork Gallery Modal state
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
 
   // --------------------------------------------------------------------------
   // AUTHENTICATION STATE
@@ -865,6 +869,30 @@ export function AssetVersionTab() {
           <code className="text-cyan-300">{selectedTag}</code>. Không ảnh hưởng đến bất kỳ người chơi nào đang online.
         </p>
 
+        {/* Full Artwork Gallery Launch Banner */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/30">
+          <div>
+            <div className="text-xs font-bold text-cyan-300 font-mono flex items-center gap-1.5">
+              <Layers className="size-3.5 text-cyan-400" />
+              <span>XEM TOÀN BỘ ARTWORK & SO SÁNH PHIÊN BẢN (DIFF)</span>
+            </div>
+            <div className="text-[11px] text-zinc-400 mt-0.5">
+              Phân tích toàn bộ WebP trong manifest của <span className="text-cyan-400 font-bold">{selectedTag}</span>, hỗ trợ lọc theo Phi công, Phân loại, Diff và Fullscreen Zoom/Pan.
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              playClickSound();
+              setIsGalleryModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold text-xs font-mono transition-all cursor-pointer shadow-md hover:shadow-cyan-500/25 shrink-0"
+          >
+            <Layers className="size-4" />
+            <span>MỞ THƯ VIỆN ARTWORK CHI TIẾT</span>
+          </button>
+        </div>
+
         {/* 3 Reference Previews */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
           {/* 1. Marcus Portrait */}
@@ -1227,6 +1255,14 @@ export function AssetVersionTab() {
           </div>
         </div>
       )}
+
+      {/* Full Artwork Gallery Modal */}
+      <FullArtworkGalleryModal
+        isOpen={isGalleryModalOpen}
+        onClose={() => setIsGalleryModalOpen(false)}
+        activeTag={activeConfig.activeVersion}
+        targetTag={selectedTag}
+      />
     </div>
   );
 }

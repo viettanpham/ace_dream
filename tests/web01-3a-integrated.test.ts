@@ -221,6 +221,48 @@ async function runTests() {
     console.log('✓ Suite 5 Passed: Client-side dynamic image resolver synchronizes immediately without page rebuild');
   }
 
+  // ============================================================================
+  // SUITE 6: FULL MANIFEST & VERSION DIFF ENGINE
+  // ============================================================================
+  console.log('\n--- SUITE 6: Manifest Parsing, 26 Assets Audit & Version Diff ---');
+  {
+    const {
+      inferPilotId,
+      normalizeCategory,
+      computeVersionDiff,
+      CANONICAL_R1_MANIFEST_DATA,
+    } = await import('../lib/game/assets/release-manifest');
+
+    // 1. Verify all 26 canonical assets are mapped
+    assert(CANONICAL_CORE_26_ASSETS.length === 26, 'CANONICAL_CORE_26_ASSETS must have 26 items');
+    assert(CANONICAL_R1_MANIFEST_DATA.length === 26, 'CANONICAL_R1_MANIFEST_DATA must have 26 items');
+
+    for (const coreAsset of CANONICAL_CORE_26_ASSETS) {
+      assert(
+        CANONICAL_R1_MANIFEST_DATA.some((m) => m.relativePath === coreAsset),
+        `Core asset ${coreAsset} must be in R1 manifest`
+      );
+    }
+
+    // 2. Diff between identical manifests produces 26 UNCHANGED
+    const testManifest = {
+      schemaVersion: '1.0.0',
+      packageName: 'starfront-world-assets',
+      releaseTag: 'v2.0-assets-r1',
+      cdnBaseUrl: 'https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets',
+      totalFiles: 26,
+      assets: CANONICAL_R1_MANIFEST_DATA.map((a) => ({ ...a })),
+    };
+
+    const diff = computeVersionDiff(testManifest, testManifest);
+    assert(diff.unchangedCount === 26, 'Unchanged count must be 26');
+    assert(diff.addedCount === 0, 'Added count must be 0');
+    assert(diff.removedCount === 0, 'Removed count must be 0');
+    assert(diff.isCompatible === true, 'Identical diff must be compatible');
+
+    console.log('✓ Suite 6 Passed: Full manifest parsing, 26 assets audit, and version diff engine');
+  }
+
   console.log('='.repeat(78));
   console.log('ALL INTEGRATED UNIT TESTS (WEB-01.3.A) PASSED WITH 100% SUCCESS!');
   console.log('='.repeat(78));

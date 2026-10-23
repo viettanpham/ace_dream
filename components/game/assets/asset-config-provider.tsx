@@ -129,8 +129,29 @@ export function AssetConfigProvider({
     };
 
     window.addEventListener(ASSET_CONFIG_CHANGED_EVENT, handleConfigChange);
+
+    // Revalidate on focus and visibility change (cross-tab / cross-browser sync)
+    const handleRevalidate = () => {
+      if (document.visibilityState === 'visible') {
+        refreshConfig();
+      }
+    };
+
+    window.addEventListener('focus', handleRevalidate);
+    document.addEventListener('visibilitychange', handleRevalidate);
+
+    // Periodic 60s lightweight polling
+    const pollInterval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshConfig();
+      }
+    }, 60000);
+
     return () => {
       window.removeEventListener(ASSET_CONFIG_CHANGED_EVENT, handleConfigChange);
+      window.removeEventListener('focus', handleRevalidate);
+      document.removeEventListener('visibilitychange', handleRevalidate);
+      window.clearInterval(pollInterval);
     };
   }, [refreshConfig]);
 

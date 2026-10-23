@@ -53,43 +53,41 @@ export interface ValidationResult {
 }
 
 /**
- * 26 Core Mandatory Assets from Phase 5.9 / WEB-01.1
- * Must be present in any release for full compatibility with the existing game.
+ * 26 Core Mandatory Assets from WEB01_PUBLIC_IMAGES_INVENTORY.md & Phase 6.0
+ * Must be present in any release for full compatibility with existing game screens.
  */
 export const CANONICAL_CORE_26_ASSETS: string[] = [
-  // 8 Pilots portraits
-  'images/marcus-portrait.webp',
-  'images/valentine-portrait.webp',
-  'images/alviss-portrait.webp',
-  'images/lyra-portrait.webp',
-  'images/victor-portrait.webp',
-  'images/helena-portrait.webp',
-  'images/boris-portrait.webp',
-  'images/selene-portrait.webp',
-
-  // 8 Pilots fullbody
-  'images/marcus-fullbody.webp',
-  'images/valentine-fullbody.webp',
-  'images/alviss-fullbody.webp',
-  'images/lyra-fullbody.webp',
-  'images/victor-fullbody.webp',
-  'images/helena-fullbody.webp',
-  'images/boris-fullbody.webp',
-  'images/selene-fullbody.webp',
-
-  // 4 GEAR frames
-  'images/vanguard-gear.webp',
+  // 3 GEARs
   'images/aegis-gear.webp',
-  'images/striker-gear.webp',
-  'images/phantom-gear.webp',
+  'images/falcon-gear.webp',
+  'images/vanguard-gear.webp',
 
-  // 6 Core campaign & world illustrations
-  'images/ngc-sector-map.png',
+  // 16 Pilot V1 (8 portraits + 8 fullbody)
+  'images/marcus-portrait.webp',
+  'images/marcus-fullbody.webp',
+  'images/valentine-portrait.webp',
+  'images/valentine-fullbody.webp',
+  'images/alviss-portrait.webp',
+  'images/alviss-fullbody.webp',
+  'images/eric-portrait.webp',
+  'images/eric-fullbody.webp',
+  'images/lyra-portrait.webp',
+  'images/lyra-fullbody.webp',
+  'images/kaelen-portrait.webp',
+  'images/kaelen-fullbody.webp',
+  'images/selena-portrait.webp',
+  'images/selena-fullbody.webp',
+  'images/victor-portrait.webp',
+  'images/victor-fullbody.webp',
+
+  // 7 Valentine V2 Approved Artworks
+  'images/valentine-activity-001.webp',
+  'images/valentine-casual.webp',
+  'images/valentine-closeup.webp',
   'images/valentine-combat.webp',
-  'images/procyon-banner.webp',
-  'images/aquila-banner.webp',
-  'images/procyon-emblem.webp',
-  'images/aquila-emblem.webp',
+  'images/valentine-event-001.webp',
+  'images/valentine-story-001.webp',
+  'images/valentine-uniform-001.webp',
 ];
 
 // In-memory cache for GitHub releases (TTL = 10 minutes)
@@ -263,7 +261,8 @@ export async function runFastValidation(tag: string): Promise<ValidationResult> 
   }
 
   const cdnBase = computeCdnBaseUrl('jsdelivr', CANONICAL_REPOSITORY, tag, CANONICAL_ASSET_ROOT);
-  const canaryUrl = `${cdnBase}/images/marcus-portrait.webp`;
+  const canaryAssetPath = 'images/vanguard-gear.webp';
+  const canaryUrl = `${cdnBase}/${canaryAssetPath}`;
 
   try {
     const res = await fetch(canaryUrl, {
@@ -291,10 +290,10 @@ export async function runFastValidation(tag: string): Promise<ValidationResult> 
         cdnBaseUrl: cdnBase,
         verifiedCount: 0,
         totalRequired: 1,
-        missingAssets: ['images/marcus-portrait.webp'],
+        missingAssets: [canaryAssetPath],
         validatedAt,
         mode: 'fast',
-        error: `Canary asset không tìm thấy trên CDN jsDelivr (HTTP ${res.status}).`,
+        error: `Canary asset (${canaryAssetPath}) không tìm thấy trên CDN jsDelivr (HTTP ${res.status}).`,
       };
     }
   } catch (err) {

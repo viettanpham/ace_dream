@@ -138,7 +138,7 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
   }, [isMobileDrawerOpen])
 
   return (
-    <div className="sf-v2-shell min-h-screen bg-[#070A12] text-[#F1F5F9] flex flex-col antialiased selection:bg-[#00D4FF]/30 selection:text-white">
+    <div className="sf-v2-shell min-h-screen md:h-screen md:max-h-screen bg-[#070A12] text-[#F1F5F9] flex flex-col md:overflow-hidden antialiased selection:bg-[#00D4FF]/30 selection:text-white">
       {/* =======================================================================
           TẦNG 1: GLOBAL TOP MENU V2 (Toàn ứng dụng)
           ======================================================================= */}
@@ -219,12 +219,12 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
       {/* =======================================================================
           APPLICATION BODY: GLOBAL LEFT MENU + MAIN CONTENT VIEWPORT
           ======================================================================= */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* =====================================================================
             TẦNG 2: GLOBAL LEFT MENU V2 (Desktop Only: MINI 64px / FULL 240px)
             ===================================================================== */}
         <aside
-          className={`hidden md:flex flex-col bg-[#090D18]/95 border-r border-[#1E2D42] transition-all duration-300 ease-in-out shrink-0 select-none z-30 ${
+          className={`hidden md:flex flex-col h-full bg-[#090D18]/95 border-r border-[#1E2D42] transition-all duration-300 ease-in-out shrink-0 select-none z-30 ${
             menuMode === 'full' ? 'w-60' : 'w-16'
           }`}
         >
@@ -411,7 +411,7 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
         {/* =====================================================================
             MAIN PAGE / CONTENT VIEWPORT (Tự động thích ứng không gian)
             ===================================================================== */}
-        <main className="flex-1 w-full flex flex-col min-w-0 overflow-x-hidden overflow-y-auto">
+        <main className="flex-1 w-full flex flex-col min-w-0 h-full min-h-0 overflow-x-hidden overflow-y-auto">
           {children}
         </main>
       </div>

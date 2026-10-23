@@ -154,7 +154,7 @@ export function PilotProfileV2({
   }
 
   return (
-    <div className="sf-v2-pilot-profile w-full min-h-screen bg-[#070A12] text-[#F1F5F9]">
+    <div className="sf-v2-pilot-profile w-full h-full min-h-0 flex-1 flex flex-col bg-[#070A12] text-[#F1F5F9]">
       {/* RENDER DESKTOP OR MOBILE ACCORDING TO VIEWPORT */}
       {isDesktop ? (
         <DesktopView

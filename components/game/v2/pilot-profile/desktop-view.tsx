@@ -114,12 +114,12 @@ export function DesktopView({
   const currentDisplayImage = selectedArtwork?.path || activeCharacter.fullbodyAssetPath
 
   return (
-    <div className="w-full h-[calc(100vh-56px)] min-h-[720px] flex gap-3 p-3 lg:p-3.5 bg-[#070A12] text-[#F1F5F9] overflow-hidden select-none">
+    <div className="w-full h-full min-h-[640px] flex gap-3 p-3 lg:p-3.5 bg-[#070A12] text-[#F1F5F9] overflow-hidden select-none">
       {/* =========================================================================
           CỘT 1 (TRÁI): CHARACTER CLASS ROSTER (12 Pilot Canonical - 2 Mode Độc Lập)
           ========================================================================= */}
       <aside
-        className={`flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md transition-all duration-300 ease-in-out ${
+        className={`flex flex-col h-full rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md transition-all duration-300 ease-in-out ${
           rosterMode === 'full' ? 'w-[260px]' : 'w-[72px]'
         }`}
       >
@@ -233,7 +233,7 @@ export function DesktopView({
       {/* =========================================================================
           CỘT 2 (GIỮA): CENTER VISUAL STAGE (Visual Hero Hoành Tráng Liền Mạch)
           ========================================================================= */}
-      <section className="flex-1 min-w-[340px] relative rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl flex flex-col justify-between">
+      <section className="flex-1 min-w-[340px] h-full relative rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl flex flex-col justify-between">
         {/* Background Visual Layers: Bầu Trời Sao, Trạm Quỹ Đạo & Hành Tinh Xanh */}
         <div
           className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${
@@ -273,7 +273,7 @@ export function DesktopView({
           {/* Visual Hero Nhân Vật Lớn (Toàn màn hình sân khấu, không còn khung chữ nhật nhỏ) */}
           <div className="relative w-full h-full flex items-end justify-center pb-2">
             {!mainImageError ? (
-              <div className="relative w-full h-[76vh] max-h-[780px] flex items-end justify-center">
+              <div className="relative w-full h-full flex items-end justify-center">
                 <Image
                   src={resolveImageUrl(currentDisplayImage)}
                   alt={activeCharacter.classCharacterName}
@@ -456,7 +456,7 @@ export function DesktopView({
       {/* =========================================================================
           CỘT 3 (PHẢI): PROFILE DOSSIER & ATTRIBUTES (Typography Chuẩn Thiết Kế)
           ========================================================================= */}
-      <section className="w-[390px] lg:w-[410px] xl:w-[430px] flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
+      <section className="w-[390px] lg:w-[410px] xl:w-[430px] h-full flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
         {/* Header Profile: Tên 30px+, Title, Vai Trò và Logo UME CORPS */}
         <div className="p-4 border-b border-[#1E2D42] bg-[#0E1626]/75">
           <div className="flex items-start justify-between gap-3">
@@ -511,7 +511,7 @@ export function DesktopView({
         </div>
 
         {/* Nội Dung Cuộn Tách Bạch: Base Attributes, Traits, và Tabs Chi Tiết */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#1E2D42]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#1E2D42] min-h-0">
           {/* SECTION: | BASE ATTRIBUTES (6 Thanh Đo Màu Sắc) */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">

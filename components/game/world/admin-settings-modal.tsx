@@ -77,8 +77,9 @@ import {
 import { ensureWorldFleetsInitialized } from "@/lib/game/world/fleet/fleet-entity"
 import { NationalFleetRegistry } from "@/lib/game/world/fleet/fleet-registry"
 import { awardFramePoints, calculateAnnualFrameDecay } from "@/lib/game/world/fleet/fleet-frame-engine"
+import { AssetVersionTab } from "./admin-tabs/asset-version-tab"
 
-export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "threat" | "survival" | "triggers" | "storage" | "fleets"
+export type AdminModalTab = "all" | "speed" | "generator" | "policy" | "threat" | "survival" | "triggers" | "storage" | "fleets" | "asset_version"
 
 export interface AdminSettingsModalProps {
   isOpen: boolean
@@ -555,6 +556,7 @@ export function AdminSettingsModal({
             { id: "triggers", label: "6. Thử Nghiệm Nhanh", icon: Zap },
             { id: "storage", label: "7. Lưu Trữ & Reset", icon: Database },
             { id: "fleets", label: "8. Hạm Đội & Sổ Cái (FND-7)", icon: Compass },
+            { id: "asset_version", label: "9. Phiên Bản Artwork (CDN)", icon: Layers },
           ].map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -2167,6 +2169,13 @@ export function AdminSettingsModal({
                 )
               })()}
             </div>
+          )}
+
+          {/* ================================================================
+              KHỐI 9: QUẢN LÝ PHIÊN BẢN ARTWORK & CDN RUNTIME (WEB-01.3.A)
+              ================================================================ */}
+          {(activeTab === "all" || activeTab === "asset_version") && (
+            <AssetVersionTab />
           )}
 
         </div>

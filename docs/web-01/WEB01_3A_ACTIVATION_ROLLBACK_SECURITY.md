@@ -17,7 +17,7 @@
 [Admin Chọn Tag v2.0-assets-r2]
                |
                v
-[Bước 1: Server xác thực quyền Admin (Admin PIN / Secret Token)]
+[Bước 1: Server xác thực phiên đăng nhập Quản trị viên (Admin Account Session & CSRF)]
                |
                v
 [Bước 2: Server thực hiện Fast Validation qua jsDelivr CDN]
@@ -26,13 +26,13 @@
 [Bước 3: Hiển thị Dialog Xác nhận Bước 1 (So sánh chi tiết thay đổi)]
                |
                v
-[Bước 4: Hiển thị Dialog Cảnh báo Bước 2 (Gõ xác nhận tên Tag)]
+[Bước 4: Hiển thị Dialog Cảnh báo Bước 2 (Gõ chính xác tên Release Tag)]
                |
                v
 [Bước 5: Server kiểm tra Revision Concurrency (Optimistic Locking)]
                |
                v
-[Bước 6: Ghi tệp atomic .starfront-config/runtime-asset-config.json]
+[Bước 6: Ghi bền vững atomic qua AssetConfigStore (File hoặc DB)]
                | (Chuyển activeVersion -> v2.0-assets-r2, previousVersion -> v2.0-assets-r1)
                v
 [Bước 7: Ghi Audit Log vào hệ thống với timestamp và IP/User]
@@ -102,28 +102,35 @@ Nếu Admin A và Admin B cùng mở AdminCP:
 
 ---
 
-## 5. Kiến trúc An toàn & Bảo mật (Security Blueprint)
+## 5. Kiến trúc An toàn & Bảo mật (Security Blueprint - FINAL APPROVED)
 
 ### 5.1. Hiện trạng & Lỗ hổng Cần Khắc phục (Vulnerability Audit)
-- Hiện tại, ứng dụng game chưa có hệ thống đăng nhập tài khoản (No Auth / No Sessions).
-- Nếu API `POST /api/admin/asset-version` mở công khai, bất kỳ người dùng nào biết endpoint đều có thể gửi request để đổi phiên bản game.
+- Hiện tại, ứng dụng game chưa có hệ thống đăng nhập tài khoản người dùng (No Auth / No Sessions).
+- **Quyết định phê duyệt chính thức:** Bắt buộc xây dựng **HỆ THỐNG TÀI KHOẢN ADMIN CÓ ĐĂNG NHẬP** phía máy chủ (Server-side Authentication & Session Lifecycle) trước khi triển khai Subphase A.4.
+- **Tuyệt đối không sử dụng mã PIN 6 số** làm cơ chế xác thực Admin.
+- Không tin tưởng vào việc chỉ ẩn/hiện giao diện AdminCP trên client.
 
-### 5.2. Lớp Bảo vệ Tối thiểu Bắt buộc (Baseline Security Architecture)
-Để bảo đảm an toàn trước khi mở tính năng này ra môi trường có người chơi:
-1. **Khóa Bí mật Quản trị (Admin Secret Key / PIN):**
-   - Khai báo biến môi trường máy chủ: `ADMIN_SECRET_KEY` (không có tiền tố `NEXT_PUBLIC_`, bảo mật 100% trên server).
-   - Mọi yêu cầu `POST /api/admin/asset-version` bắt buộc phải gửi kèm header `X-Admin-Secret-Key` hoặc mã PIN xác nhận.
-   - Nếu không khớp hoặc thiếu key: Máy chủ từ chối ngay lập tức với mã lỗi `401 Unauthorized`.
+### 5.2. Lớp Bảo vệ Quản trị Bắt buộc (Baseline Security Architecture)
+Để bảo đảm an toàn tuyệt đối khi triển khai tính năng mutation tại Subphase A.4:
+1. **Xác thực và Phân quyền Phía Máy chủ (Server Authentication & Authorization):**
+   - Tài khoản Admin phải được xác minh danh tính trước khi có quyền thay đổi cấu hình runtime.
+   - Có cơ chế quản lý vòng đời phiên (session lifecycle, secure HttpOnly cookie) và chức năng đăng xuất (logout).
+   - Bảo vệ chống tấn công CSRF (Cross-Site Request Forgery) trên toàn bộ API mutation.
+   - Không lưu mật khẩu hoặc secret/private keys trong mã nguồn client.
+   - Tuyệt đối không tạo tài khoản Admin mặc định với mật khẩu hardcode sẵn trong repository.
 2. **Chống Nhập Liệu Bừa bãi (Whitelisted Inputs Only):**
-   - Tuyệt đối không cho phép người dùng truyền URL CDN tùy ý hoặc tên repository khác vào payload.
+   - Tuyệt đối không cho phép client truyền domain CDN tùy ý hoặc tên repository ngoài danh mục.
    - Repository được cố định nghiêm ngặt: `viettanpham/starfront-assets`.
-   - Provider được cố định: `jsdelivr`.
+   - Provider được kiểm soát danh mục an toàn (`jsdelivr`, `cloudflare_r2`, `local`).
    - Tham số `targetVersion` được lọc chặt chẽ qua biểu thức chính quy (Regex):
-     `^v[0-9]+\.[0-9]+(-[a-zA-Z0-9_.-]+)?$` (chỉ chấp nhận định dạng tag hợp lệ, ngăn chặn tấn công Path Traversal).
-3. **Nhật ký Kiểm toán (Audit Logging):**
-   - Mọi thao tác kích hoạt và rollback đều được ghi vào tệp nhật ký `.starfront-config/asset-version-audit.log` gồm:
+     `^v[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9_.-]+)?$` (ngăn chặn hoàn toàn tấn công Path Traversal).
+3. **Bảo đảm Tính Nhất quán và Tương tranh Đa Instance:**
+   - Kế hoạch ghi nguyên tử (Atomic write), so sánh số hiệu phiên bản (Revision Compare-And-Swap).
+   - Khi chạy trên nhiều container/instance hoặc serverless, hệ thống ghi nhận trạng thái `PERSISTENCE_NOT_CONFIGURED` nếu chưa cấu hình database tập trung, không giả định đĩa cục bộ chia sẻ xuyên instance.
+4. **Nhật ký Kiểm toán (Audit Logging):**
+   - Mọi thao tác kích hoạt và rollback đều được ghi nhận vào nhật ký kiểm toán với:
      - Thời điểm thao tác (ISO 8601).
      - Hành động (`ACTIVATE` / `ROLLBACK`).
      - Phiên bản nguồn và phiên bản đích.
-     - Địa chỉ IP nguồn (Client IP).
+     - Danh tính Admin đã xác thực (`updatedBy`).
      - Kết quả thực hiện.

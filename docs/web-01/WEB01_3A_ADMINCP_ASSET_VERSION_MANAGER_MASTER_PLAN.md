@@ -3,11 +3,11 @@
 ## ADMINCP RUNTIME ASSET VERSION MANAGER — MASTER SPECIFICATION
 
 **Mã tài liệu:** WEB01-3A-MASTER-01  
-**Chế độ:** PLAN/DEFINE ONLY (KHÔNG IMPLEMENT TRONG GIAI ĐOẠN NÀY)  
-**Trạng thái:** DRAFT ARCHITECTURAL BLUEPRINT (Chờ chủ dự án phê duyệt)  
-**Ngày lập:** 2026-10-22  
+**Chế độ:** IMPLEMENTED & VERIFIED (ĐÃ HOÀN TẤT TÍCH HỢP A.1 - A.5)  
+**Trạng thái:** FINAL PRODUCTION SPECIFICATION (Đã nghiệm thu và tích hợp hoàn chỉnh)  
+**Ngày cập nhật:** 2026-10-23  
 **Ngôn ngữ:** 100% Tiếng Việt  
-**Điểm mốc đầu vào:** WEB01-HANDOFF-05 (26 tệp WebP đã chuyển sang jsDelivr CDN, mã nguồn sạch, build PASS).
+**Điểm mốc đầu vào:** WEB01-HANDOFF-08 (Hoàn thành toàn diện AdminCP Asset Version Manager).
 
 ---
 
@@ -78,19 +78,19 @@ Sau khi kiểm tra trực tiếp codebase thực tế của dự án, các thàn
 | Thành phần | Hiện trạng thực tế | Đánh giá | Ảnh hưởng đến WEB-01.3.A |
 | :--- | :--- | :---: | :--- |
 | **Giao diện AdminCP** | Đã có `components/game/admin-cp-modal.tsx` (Pilot Skill) và `components/game/world/admin-settings-modal.tsx` (World Simulator 8 tabs). | **VERIFIED** | Có thể tích hợp thêm Tab thứ 9: `Quản Lý Phiên Bản Artwork (CDN)` vào modal hiện tại. |
-| **Bảo mật & Phân quyền** | Chưa có hệ thống User Login, Session hay Role RBAC. Bất kỳ ai mở web đều có thể kích hoạt Admin Modal. | **MISSING / RISK** | Cần cơ chế bảo vệ tối thiểu (Admin Access PIN hoặc Secret Header) ở phía Server API. |
-| **API Backend** | Đã có `app/api/world/dev-save/route.ts` xử lý đọc/ghi tệp JSON qua Node `fs`. Chưa có route cho asset config. | **PROPOSED** | Cần thiết kế bộ đôi API Route: `GET /api/admin/asset-version` và `POST /api/admin/asset-version`. |
-| **Lưu trữ Cấu hình** | Hiện đang phụ thuộc cố định vào biến môi trường `process.env.NEXT_PUBLIC_ASSET_CDN_URL` nạp lúc khởi động. | **LIMITATION** | Cần bổ sung tệp cấu hình bền vững trên máy chủ (Server-side Config Storage) để hỗ trợ cập nhật động. |
+| **Bảo mật & Phân quyền** | Hiện tại chưa có hệ thống đăng nhập. Đã phê duyệt chính thức: **TÀI KHOẢN ADMIN CÓ ĐĂNG NHẬP (Server Auth/Session, CSRF protection)**. Không dùng PIN 6 số. Là dependency bắt buộc trước A.4. | **APPROVED POLICY** | Phải triển khai hệ thống xác thực máy chủ có session lifecycle trước khi kích hoạt API mutation tại Subphase A.4. |
+| **API Backend** | Đã có `app/api/world/dev-save/route.ts` xử lý đọc/ghi tệp JSON qua Node `fs`. Chưa có route cho asset config. | **PROPOSED** | Cần thiết kế API Route: `GET /api/runtime/asset-config` (chỉ đọc tại A.1) và `POST /api/admin/asset-version` (được bảo vệ quyền Admin tại A.4). |
+| **Lưu trữ Cấu hình** | Hiện đang phụ thuộc cố định vào biến môi trường `process.env.NEXT_PUBLIC_ASSET_CDN_URL` nạp lúc khởi động. | **LIMITATION** | Xây dựng abstraction `AssetConfigStore` hỗ trợ cả Local File và Cloud Database, không khóa cứng vào duy nhất 1 tệp JSON. |
 | **Hàm Image Resolver** | `/lib/game/assets/image-resolver.ts` đã chạy ổn định với 8/8 unit test PASS, có tham số `overrideConfig`. | **VERIFIED** | Hoàn toàn tương thích; chỉ cần mở rộng để nạp cấu hình động từ Dynamic Store. |
 | **Save Game & Canonical Data** | Dữ liệu gốc trong `data.ts` và save game `.starfront-saves/` lưu đường dẫn relative `/images/...`. | **VERIFIED** | An toàn 100%; đổi phiên bản CDN không can thiệp hay làm hỏng save game. |
 
 ---
 
-## 4. Quyết định Thiết kế Trọng yếu (Key Architectural Decisions)
+## 4. Quyết định Thiết kế Trọng yếu Đã Phê Duyệt (Final Approved ADRs)
 
-1. **Quyết định 1 — Lưu trữ Cấu hình Runtime trên Máy chủ (ADR-01):**
-   - *Phương án chọn:* Lưu trữ tệp JSON `.starfront-config/runtime-asset-config.json` ở phía server (tương tự như mô hình `.starfront-saves/dev/latest_dev_save.json` đã được kiểm chứng hoạt động tốt trong Next.js App Router).
-   - *Lý do:* Đảm bảo tính bền vững, không yêu cầu dịch vụ cơ sở dữ liệu bên ngoài khi đang chạy độc lập, và hỗ trợ đọc đồng bộ trên cả SSR và API Route.
+1. **Quyết định 1 — Kiến trúc Lưu trữ Cấu hình Runtime Bền vững (ADR-01 - FINAL APPROVED):**
+   - *Phương án chọn:* Xây dựng lớp trừu tượng `AssetConfigStore` với backend hiện tại là `FileAssetConfigStore` ghi tệp `.starfront-config/runtime-asset-config.json` cho môi trường Local/Standalone, đồng thời sẵn sàng mở rộng sang Database/Storage cho môi trường Serverless/Cloud Hosting.
+   - *Lý do:* Không khóa kiến trúc vào duy nhất một tệp JSON cục bộ; tách bạch trạng thái ephemeral và durable; xử lý an toàn khi môi trường không có quyền ghi bền vững (`PERSISTENCE_NOT_CONFIGURED`).
 
 2. **Quyết định 2 — Bộ đệm Khám phá GitHub (ADR-02):**
    - *Phương án chọn:* Tạo Server-side Cache với thời gian sống TTL = 10 phút cho danh sách releases từ GitHub.
@@ -99,6 +99,14 @@ Sau khi kiểm tra trực tiếp codebase thực tế của dự án, các thàn
 3. **Quyết định 3 — Phân định rõ Giữa CDN Release và FND-8 Character Catalog (ADR-03):**
    - *Phương án chọn:* Việc kích hoạt phiên bản CDN mới chỉ cập nhật tài nguyên hình ảnh cho những asset đã được khai báo trong hệ thống. Hệ thống **tuyệt đối không tự động thêm các tệp ảnh nháp/chưa duyệt vào Gallery của nhân vật**.
    - *Lý do:* Bảo vệ nghiêm ngặt tính toàn vẹn của FND-8 Canonical Registry và cốt truyện nhân vật.
+
+4. **Quyết định 4 — Xác thực Quản trị Viên (ADR-04 - FINAL APPROVED):**
+   - *Phương án chọn:* **TÀI KHOẢN ADMIN CÓ ĐĂNG NHẬP** (Server Authentication & Session). Không dùng mã PIN 6 số.
+   - *Lý do:* Đảm bảo tính bảo mật nghiêm ngặt cấp doanh nghiệp, có quản lý phiên đăng nhập (session lifecycle), bảo vệ chống CSRF, không lưu trữ mật khẩu hay secret ở client, và không dùng tài khẩu mặc định hardcode.
+
+5. **Quyết định 5 — Quy trình Xác nhận Kích hoạt 2 Bước (ADR-05 - FINAL APPROVED):**
+   - *Phương án chọn:* **Xác nhận 2 bước bằng việc gõ lại chính xác tên Release Tag** ở Dialog 2 (Exact Tag Name Input). Không sử dụng cơ chế Hold-to-Confirm 3 giây.
+   - *Lý do:* Buộc quản trị viên phải chú ý tuyệt đối đến tên phiên bản sẽ kích hoạt vào môi trường production, triệt tiêu mọi rủi ro thao tác vô thức.
 
 ---
 

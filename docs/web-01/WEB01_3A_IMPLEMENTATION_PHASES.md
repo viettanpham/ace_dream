@@ -36,8 +36,9 @@
 |         v                                                                         |
 |  [WEB-01.3.A.4: Quy trình Kích hoạt 2 Bước, Khóa Tương tranh & Audit Log]        |
 |  ├── Dialog Xác nhận Bước 1 (So sánh chi tiết & kiểm định)                        |
-|  ├── Dialog Cảnh báo Bước 2 (Nhập mã xác nhận / Hold-to-confirm)                 |
-|  ├── API Route: POST /api/admin/asset-version (Admin Key, Revision Locking)       |
+|  ├── Dialog Cảnh báo Bước 2 (Gõ chính xác tên Release Tag, không hold 3s)        |
+|  ├── Yêu cầu Tiên quyết: Hệ thống Tài khoản Admin có đăng nhập (Server Auth)     |
+|  ├── API Route: POST /api/admin/asset-version (Admin Session, CSRF, Revision)     |
 |  └── Ghi Audit Log vào hệ thống                                                   |
 |         |                                                                         |
 |         v                                                                         |
@@ -96,14 +97,15 @@
 
 ### Subphase WEB-01.3.A.4 — Two-Step Activation, Revision Locking & Audit Log
 - **Mục tiêu:** Hiện thực hóa quy trình chuyển đổi phiên bản an toàn tuyệt đối.
+- **Yêu cầu Tiên quyết:** Bắt buộc có hệ thống **Tài khoản Admin có đăng nhập** (Server Authentication, Session Cookie, Logout, CSRF Protection) trước khi triển khai subphase này. Không dùng PIN 6 số.
 - **Nội dung công việc:**
   1. Hiện thực hóa Dialog Bước 1: Tóm tắt so sánh và kết quả kiểm định.
-  2. Hiện thực hóa Dialog Bước 2: Cảnh báo nguy cấp và yêu cầu gõ lại tên Tag để xác nhận.
-  3. Xây dựng API Route `POST /api/admin/asset-version` có bảo vệ bằng `ADMIN_SECRET_KEY`.
-  4. Cơ chế khóa tương tranh lạc quan dựa trên số hiệu `revision`.
+  2. Hiện thực hóa Dialog Bước 2: Cảnh báo nguy cấp và yêu cầu gõ lại **chính xác 100% tên Release Tag** để xác nhận (không dùng Hold-to-Confirm).
+  3. Xây dựng API Route `POST /api/admin/asset-version` yêu cầu quyền Admin đã xác thực và bảo vệ chống CSRF.
+  4. Cơ chế khóa tương tranh lạc quan dựa trên số hiệu `revision` (Revision Compare-And-Swap) qua abstraction `AssetConfigStore`.
   5. Ghi tệp nhật ký kiểm toán `.starfront-config/asset-version-audit.log`.
 - **Tiêu chí nghiệm thu:**
-  - Không thể kích hoạt nếu thiếu xác nhận bước 2 hoặc sai mã Admin.
+  - Không thể kích hoạt nếu thiếu xác nhận gõ đúng Tag hoặc chưa đăng nhập quyền Admin.
   - Ngăn chặn hoàn toàn lỗi ghi đè đồng thời khi 2 phiên admin cùng kích hoạt.
 
 ---

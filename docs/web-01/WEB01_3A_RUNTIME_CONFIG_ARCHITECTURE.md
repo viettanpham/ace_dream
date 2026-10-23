@@ -52,51 +52,59 @@ Tệp cấu hình phiên bản tài nguyên được quản lý tập trung trê
 
 ## 2. Cơ chế Lưu trữ Bền vững trên Máy chủ (Server Persistence Engine)
 
-### 2.1. Đánh giá Môi trường Vận hành Thực tế
-- **Dự án:** Ứng dụng Next.js Standalone chạy trong môi trường container của AI Studio / Cloud Run.
-- **Hiện trạng:** Chưa có cơ sở dữ liệu quan hệ (PostgreSQL) hoặc NoSQL (Firestore) được cấu hình cho ứng dụng.
-- **Giải pháp Bền vững:**
-  - Sử dụng tệp JSON `.starfront-config/runtime-asset-config.json` nằm trong thư mục gốc của dự án.
-  - Tận dụng cơ chế đọc/ghi tệp đồng bộ và an toàn đã được chứng minh hiệu quả qua hệ thống `.starfront-saves/dev/latest_dev_save.json`.
-  - Khởi tạo tự động (Auto-bootstrap): Nếu tệp `.starfront-config/runtime-asset-config.json` chưa tồn tại, máy chủ sẽ tự động sinh tệp mặc định từ các biến môi trường `NEXT_PUBLIC_ASSET_CDN_URL` hiện hành.
+### 2.1. Lớp Trừu tượng Lưu trữ (AssetConfigStore Abstraction)
+Kiến trúc **không bị khóa cứng vào duy nhất một tệp JSON**. Hệ thống định nghĩa interface `AssetConfigStore` có khả năng tích hợp linh hoạt:
+- **`FileAssetConfigStore`**: Áp dụng cho môi trường máy chủ Local / Standalone / Node.js có persistent disk. Ghi tệp tại `.starfront-config/runtime-asset-config.json`.
+- **`DatabaseAssetConfigStore`**: Dành cho môi trường Web Hosting / Serverless (Cloud Run, Cloudflare Pages/Workers, Supabase, Neon) trong tương lai khi có cơ sở dữ liệu.
+
+### 2.2. Xử lý Môi trường Không Hỗ trợ Ghi Bền vững
+- Không giả định serverless/edge có writable persistent filesystem.
+- Khi đĩa ở chế độ chỉ đọc hoặc không có quyền ghi: Hệ thống trả về cấu hình mặc định kèm trạng thái `code: "PERSISTENCE_NOT_CONFIGURED"`, tuyệt đối không giả vờ đã lưu thành công.
+- Không phát sinh side effect ghi tệp trong SSR render hoặc module import.
+- Không thay đổi filesystem trong bất kỳ request GET nào.
 
 ---
 
 ## 3. Giao ước API Máy chủ (API Route Contracts)
 
 Cần xây dựng API Route nội bộ phục vụ việc truy xuất và cập nhật cấu hình tài nguyên:
-`app/api/admin/asset-version/route.ts`
+- **`app/api/runtime/asset-config/route.ts`** (Được hiện thực hóa trong Subphase A.1): API GET công khai phục vụ cấp phát cấu hình cho client game và kiểm tra trạng thái.
+- **`app/api/admin/asset-version/route.ts`** (Dự kiến triển khai tại Subphase A.4): API mutation POST yêu cầu phiên đăng nhập Quản trị viên (Admin Account Login) và bảo vệ chống CSRF.
 
-### 3.1. Truy vấn Cấu hình Hiện hành: `GET /api/admin/asset-version`
-- **Mục đích:** Cho phép cả Client Game và AdminCP nạp phiên bản CDN đang hoạt động.
-- **Quyền hạn:** Công khai cho Client (chỉ trả về thông tin công khai không nhạy cảm).
-- **Header phản hồi:** `Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=600` (giúp giảm tải máy chủ khi người chơi truy cập đông).
+### 3.1. Truy vấn Cấu hình Hiện hành: `GET /api/runtime/asset-config` (Đã có trong A.1)
+- **Mục đích:** Cho phép Client Game, Provider và AdminCP nạp phiên bản CDN đang hoạt động mà không bị đóng băng tĩnh khi build.
+- **Quyền hạn:** Công khai cho Client (chỉ trả về `PublicRuntimeAssetConfig`, không để lộ bất kỳ server secrets hay audit internal nào).
+- **Header phản hồi:** `Cache-Control: public, max-age=30, s-maxage=60, stale-while-revalidate=120`.
+- **Tuyệt đối không thay đổi filesystem** khi xử lý request GET.
 - **Payload phản hồi (200 OK):**
 ```json
 {
   "success": true,
   "config": {
-    "revision": 3,
+    "schemaVersion": 1,
+    "revision": 1,
+    "provider": "jsdelivr",
+    "repository": "viettanpham/starfront-assets",
+    "assetRoot": "starfront-world-assets",
     "activeVersion": "v2.0-assets-r1",
     "cdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets",
     "previousVersion": null,
-    "updatedAt": "2026-10-22T20:25:00.000Z",
-    "totalAssets": 26
+    "updatedAt": "2026-10-22T20:25:00.000Z"
   }
 }
 ```
 
-### 3.2. Cập nhật Kích hoạt Phiên bản: `POST /api/admin/asset-version`
+### 3.2. Cập nhật Kích hoạt Phiên bản: `POST /api/admin/asset-version` (Phạm vi Subphase A.4)
 - **Mục đích:** Kích hoạt phiên bản mới hoặc Rollback về phiên bản trước.
-- **Quyền hạn:** **BẮT BUỘC YÊU CẦU QUYỀN ADMIN**.
-- **Payload yêu cầu:**
+- **Quyền hạn:** **BẮT BUỘC YÊU CẦU PHIÊN ĐĂNG NHẬP TÀI KHOẢN ADMIN ĐÃ ĐƯỢC XÁC THỰC PHÍA SERVER**. Không dùng PIN 6 số.
+- **Yêu cầu bảo mật:** Kiểm tra CSRF token, session cookie hợp lệ, và đối chiếu `expectedRevision` để chống xung đột tương tranh.
+- **Payload yêu cầu (Dự kiến A.4):**
 ```json
 {
-  "action": "ACTIVATE" | "ROLLBACK",
+  "action": "ACTIVATE",
   "targetVersion": "v2.0-assets-r2",
-  "expectedRevision": 3,
-  "adminKey": "<TOKEN_HOẶC_PIN>",
-  "bypassFastValidation": false
+  "expectedRevision": 1,
+  "confirmedTagInput": "v2.0-assets-r2"
 }
 ```
 - **Payload phản hồi (200 OK):**

@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import { AssetConfigProvider } from '@/components/game/assets/asset-config-provider'
+import { getStaticServerAssetConfig } from '@/lib/game/assets/runtime-asset-config'
 
 export const metadata: Metadata = {
   title: 'STARFRONT',
@@ -15,16 +17,19 @@ export const metadata: Metadata = {
     apple: '/icon.svg',
   },
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const initialAssetConfig = getStaticServerAssetConfig();
+
   return (
     <html lang="vi" className="bg-background">
       <body className="antialiased font-sans">
-        {children}
+        <AssetConfigProvider initialConfig={initialAssetConfig}>
+          {children}
+        </AssetConfigProvider>
       </body>
     </html>
   )

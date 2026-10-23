@@ -107,16 +107,17 @@
 ---
 
 ### Phase WEB-01.3.A — AdminCP Runtime Asset Version Manager (Quản lý Phiên bản CDN)
-- **Trạng thái:** **PLAN/DEFINE COMPLETE (ĐÃ HOÀN TẤT BẢN THIẾT KẾ KỸ THUẬT 6 TÀI LIỆU — CHỜ DUYỆT)**
-- **Mục tiêu:** Cung cấp công cụ quản trị trong AdminCP cho phép chuyển đổi phiên bản phát hành artwork trên GitHub tại runtime trong 1 giây mà không cần rebuild Next.js.
-- **Hồ sơ thiết kế chi tiết đã lập:**
-  1. `WEB01_3A_ADMINCP_ASSET_VERSION_MANAGER_MASTER_PLAN.md`: Kế hoạch tổng thể & phân tích audit hiện trạng.
-  2. `WEB01_3A_RUNTIME_CONFIG_ARCHITECTURE.md`: Schema `.starfront-config/runtime-asset-config.json`, API contracts, dynamic hook.
-  3. `WEB01_3A_GITHUB_RELEASE_VALIDATION.md`: Proxy discovery, bộ đệm TTL 10m chống rate limit, Fast & Full Validation.
-  4. `WEB01_3A_ADMINCP_UI_UX_DEFINITION.md`: Tab 9 trong AdminSettingsModal, sandbox preview, 2-step confirmation.
-  5. `WEB01_3A_ACTIVATION_ROLLBACK_SECURITY.md`: Kích hoạt nguyên tử 9 bước, revision locking, rollback 1-click, admin PIN.
-  6. `WEB01_3A_IMPLEMENTATION_PHASES.md`: Lộ trình 5 subphase từ 3.A.1 đến 3.A.5.
-- **Quy tắc kỷ luật:** Dừng tại checkpoint; KHÔNG triển khai code runtime trong giai đoạn này.
+- **Trạng thái:** **HOÀN THÀNH 100% (VERIFIED - TÍCH HỢP HOÀN TẤT CẢ A.1 ĐẾN A.5)**
+- **Mục tiêu:** Cung cấp công cụ quản trị trong AdminCP cho phép chuyển đổi phiên bản phát hành artwork trên GitHub tại runtime trong 1 giây mà không cần rebuild Next.js, có xác thực Admin an toàn, kiểm định 26 core assets, double confirmation và 1-click rollback.
+- **Kết quả thực hiện:**
+  1. **A.1 (Runtime Config Foundation):** Schema `RuntimeAssetConfig`, store abstraction, fallback an toàn, React context provider & hook, SSR initialConfig loại bỏ hydration mismatch.
+  2. **A.2 (Discovery Proxy & Validator):** GitHub release proxy với cache 10m TTL, Fast validation (HEAD), Full audit 26/26 core assets.
+  3. **A.3 (AdminCP Tab 9 UI):** Tab 9 "Phiên Bản Artwork (CDN)", Form đăng nhập & Setup an toàn, thẻ Active Production, bảng Release Discovery, Sandboxed Preview 3 tranh đối chiếu, Audit Trail lịch sử.
+  4. **A.4 (Activation & Security):** Xác thực tài khoản Admin phía server (Scrypt hash, session cookie HttpOnly/Secure/Lax, CSRF protection, IP rate limiting), Double Confirmation yêu cầu gõ chính xác 100% tên tag, ghi tệp nguyên tử (temp write + rename) và khóa lạc quan (CAS revision locking).
+  5. **A.5 (Rollback & Client Synchronization):** Rollback 1-click về `previousVersion`, đồng bộ hóa client resolver `setClientActiveRuntimeConfig()` và broadcast event giúp toàn game cập nhật tức thì 0 downtime.
+- **Tiêu chí nghiệm thu:**
+  - Build Next.js PASS, Lint PASS (0 lỗi).
+  - 15/15 unit and integrated tests PASS (image-resolver: 8/8, runtime-asset-config: 7/7, web01-3a-integrated: 5/5 suites).
 
 ---
 

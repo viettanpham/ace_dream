@@ -1,0 +1,20 @@
+{
+  "$schema": "https://starfront.internal/schemas/asset-config-v1.json",
+  "schemaVersion": 1,
+  "revision": 1,
+  "provider": "jsdelivr",
+  "repository": "viettanpham/starfront-assets",
+  "assetRoot": "starfront-world-assets",
+  "activeVersion": "v2.0-assets-r1",
+  "cdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets",
+  "previousVersion": null,
+  "previousCdnBaseUrl": null,
+  "updatedAt": "2026-10-22T20:25:00.000Z",
+  "updatedBy": "system_bootstrap",
+  "comment": "Initial verified production release r1 (26 core WebP assets)",
+  "manifestMetadata": {
+    "totalAssets": 26,
+    "manifestSha256": "4b68e7ec89f21f1d1a933f2b1d5e3f4c6e9a7b8c0d1e2f3a4b5c6d7e8f9a0b1c",
+    "validatedAt": "2026-10-22T20:25:00.000Z"
+  }
+}

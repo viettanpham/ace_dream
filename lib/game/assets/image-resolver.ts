@@ -92,8 +92,10 @@ export function resolveImageUrl(
   // Normalize path without leading slash
   const cleanPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
 
+  const clientConfig = typeof window !== 'undefined' ? clientActiveRuntimeConfig : null;
   const config = {
     ...getResolverConfig(),
+    ...(clientConfig || {}),
     ...overrideConfig,
   };
 
@@ -108,4 +110,66 @@ export function resolveImageUrl(
     : config.cdnBaseUrl;
 
   return `${normalizedBase}/${cleanPath}`;
+}
+
+let clientActiveRuntimeConfig: {
+  mode: AssetStorageMode;
+  cdnBaseUrl: string;
+} | null = null;
+
+/**
+ * Sets the active runtime configuration for all client-side image resolutions.
+ * Strictly active in browser environments only — never leaks between SSR requests.
+ */
+export function setClientActiveRuntimeConfig(
+  config: {
+    provider?: string;
+    cdnBaseUrl?: string;
+  } | null
+): void {
+  if (typeof window === 'undefined') return;
+  if (!config || !config.cdnBaseUrl) {
+    clientActiveRuntimeConfig = null;
+    return;
+  }
+
+  const mode: AssetStorageMode =
+    config.provider === 'local'
+      ? 'local'
+      : config.provider === 'cloudflare_r2'
+        ? 'r2'
+        : 'jsdelivr';
+
+  clientActiveRuntimeConfig = {
+    mode,
+    cdnBaseUrl: config.cdnBaseUrl,
+  };
+}
+
+/**
+ * Resolves an image path using a specific PublicRuntimeAssetConfig or RuntimeAssetConfig.
+ * Ensures effortless integration with React Context and AdminCP Preview Sandboxes.
+ */
+export function resolveImageUrlWithConfig(
+  rawPath?: string | null,
+  runtimeConfig?: {
+    provider?: string;
+    cdnBaseUrl?: string;
+  }
+): string {
+  if (!runtimeConfig) {
+    return resolveImageUrl(rawPath);
+  }
+
+  const mode: AssetStorageMode =
+    runtimeConfig.provider === 'local'
+      ? 'local'
+      : runtimeConfig.provider === 'cloudflare_r2'
+        ? 'r2'
+        : 'jsdelivr';
+
+  return resolveImageUrl(rawPath, {
+    mode,
+    cdnBaseUrl: runtimeConfig.cdnBaseUrl,
+  });
 }

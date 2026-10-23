@@ -107,11 +107,12 @@
   - Cảnh báo: *“Hành động này sẽ cập nhật URL nạp hình ảnh cho toàn bộ người chơi khi họ làm mới hoặc chuyển màn hình.”*
 - **Hành động:** Nút `Hủy Thao Tác` và Nút `Tiếp Tục Xác Nhận ➔`.
 
-### 4.2. Bước 2 — Dialog Cảnh Báo Cuối Cùng (Final Safety Confirmation)
+### 4.2. Bước 2 — Dialog Cảnh Báo Cuối Cùng (Final Safety Confirmation - FINAL APPROVED)
 - **Tiêu đề:** `CẢNH BÁO CUỐI CÙNG — KÍCH HOẠT HỆ THỐNG RUNTIME`
 - **Màu sắc:** Tông màu đỏ cảnh báo nguy cấp (`border-rose-500/80 bg-rose-950/40 text-rose-200`).
-- **Cơ chế an toàn:** 
-  - Yêu cầu Admin gõ lại chính xác tên Tag mục tiêu (ví dụ: `v2.0-assets-r2`) vào ô xác nhận, hoặc giữ nút bấm trong 3 giây (Hold-to-Confirm).
+- **Cơ chế an toàn (Chủ dự án đã phê duyệt):** 
+  - Yêu cầu Quản trị viên gõ lại **CHÍNH XÁC 100% TÊN RELEASE TAG** (ví dụ: `v2.0-assets-r2`) vào ô xác nhận. Nút kích hoạt chỉ sáng lên khi chuỗi ký tự khớp hoàn toàn.
+  - **Không sử dụng cơ chế Hold-to-Confirm 3 giây.**
 - **Hành động:** Nút `QUAY LẠI` và Nút `XÁC NHẬN KÍCH HOẠT NGAY`.
 
 ---

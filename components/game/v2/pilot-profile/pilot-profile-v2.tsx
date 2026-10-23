@@ -148,7 +148,9 @@ export function PilotProfileV2({
         />
       ) : mobileMode === 'art' ? (
         <MobileArtView
+          roster={V2_ROSTER_CHARACTERS}
           character={activeCharacter}
+          onSelectCharacter={(char) => setActivePilotId(char.id)}
           backgroundMode={backgroundMode}
           onToggleBackgroundMode={setBackgroundMode}
           onSwitchToInfoView={() => setMobileMode('info')}

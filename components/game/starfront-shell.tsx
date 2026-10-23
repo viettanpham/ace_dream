@@ -1096,20 +1096,18 @@ export function StarfrontShell() {
               )}
             </div>
 
-            {/* Development shortcut to V2 Preview */}
-            {process.env.NODE_ENV !== "production" && (
-              <Link
-                href="/ui-v2-preview"
-                className={cn(
-                  "flex items-center gap-1.5 rounded border border-teal-500/60 bg-teal-950/40 hover:bg-teal-900/60 text-teal-300 hover:text-white px-2 py-1.5 text-xs font-mono transition-colors cursor-pointer",
-                  isSidebarCollapsed && "w-full justify-center px-1"
-                )}
-                title="Mở giao diện kiểm thử STARFRONT UI V2 Foundation"
-              >
-                <Sparkles className="size-3.5 text-teal-400 shrink-0" />
-                {!isSidebarCollapsed && <span className="font-bold tracking-wider">V2 PREVIEW</span>}
-              </Link>
-            )}
+            {/* Direct shortcut to V2 Pilots Official Route */}
+            <Link
+              href="/v2/pilots"
+              className={cn(
+                "flex items-center gap-1.5 rounded border border-[#00D4FF]/60 bg-[#00D4FF]/10 hover:bg-[#00D4FF]/20 text-[#00D4FF] hover:text-white px-2 py-1.5 text-xs font-mono transition-colors cursor-pointer shadow-[0_0_8px_rgba(0,212,255,0.2)]",
+                isSidebarCollapsed && "w-full justify-center px-1"
+              )}
+              title="Mở giao diện Hồ Sơ Phi Công V2 chính thức (FND-8 / 8.2.3.E.0)"
+            >
+              <Sparkles className="size-3.5 text-[#00D4FF] shrink-0" />
+              {!isSidebarCollapsed && <span className="font-bold tracking-wider">HỒ SƠ V2 (FND-8)</span>}
+            </Link>
 
             {!isSidebarCollapsed && (
               <div className="text-xs font-mono text-muted-foreground/70 leading-tight">
@@ -1223,17 +1221,15 @@ export function StarfrontShell() {
                 <span className="hidden sm:inline font-semibold">CÀI ĐẶT</span>
               </button>
 
-              {/* Lối vào V2 Preview cho môi trường Development (Bridge) */}
-              {process.env.NODE_ENV !== "production" && (
-                <Link
-                  href="/ui-v2-preview"
-                  className="flex items-center gap-1.5 rounded border border-teal-500/70 bg-gradient-to-r from-teal-950/80 to-cyan-950/80 hover:from-teal-900/90 hover:to-cyan-900/90 px-2.5 py-1 text-xs font-mono font-bold text-teal-300 hover:text-white transition-all cursor-pointer shadow-[0_0_10px_rgba(20,184,166,0.3)]"
-                  title="Chuyển sang giao diện kiểm thử STARFRONT UI V2 Foundation"
-                >
-                  <Sparkles className="size-3 text-teal-400 shrink-0" />
-                  <span>V2 PREVIEW</span>
-                </Link>
-              )}
+              {/* Lối vào Hồ Sơ Phi Công V2 chính thức (FND-8 / 8.2.3.E.0) */}
+              <Link
+                href="/v2/pilots"
+                className="flex items-center gap-1.5 rounded border border-[#00D4FF]/70 bg-gradient-to-r from-cyan-950/80 to-[#142338]/90 hover:from-cyan-900/90 hover:to-[#1E3553] px-2.5 py-1 text-xs font-mono font-bold text-[#00D4FF] hover:text-white transition-all cursor-pointer shadow-[0_0_12px_rgba(0,212,255,0.3)]"
+                title="Mở giao diện Hồ Sơ Phi Công V2 chính thức (FND-8 / 8.2.3.E.0)"
+              >
+                <Sparkles className="size-3 text-[#00D4FF] shrink-0" />
+                <span>HỒ SƠ V2 (FND-8)</span>
+              </Link>
             </div>
           </header>
 
@@ -1345,9 +1341,25 @@ export function StarfrontShell() {
 
             {/* Phân hệ V2: Hồ Sơ Phi Công / Character Profile V2 (FND-8 / 8.2.3.E.0) */}
             {activeSection === "character-profile-v2" && (
-              <PilotProfileV2
-                onNavigateSection={handleSwitchSection}
-              />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-[#0E1626] border border-[#00D4FF]/40 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="size-4 text-[#00D4FF] animate-pulse" />
+                    <span className="text-white font-bold">HỒ SƠ PHI CÔNG V2 (FND-8)</span>
+                    <span className="text-[#A7B6C8] hidden sm:inline">— Chuẩn Concept Modern Aerospace Sci-Fi</span>
+                  </div>
+                  <Link
+                    href="/v2/pilots"
+                    className="flex items-center gap-1 text-[#00D4FF] hover:underline font-bold"
+                  >
+                    <span>Mở Toàn Màn Hình Độc Lập (/v2/pilots)</span>
+                    <ArrowRight className="size-3.5" />
+                  </Link>
+                </div>
+                <PilotProfileV2
+                  onNavigateSection={handleSwitchSection}
+                />
+              </div>
             )}
 
             {/* Phân hệ: Thư Viện Art Phi Công (Pilot Art Gallery) */}

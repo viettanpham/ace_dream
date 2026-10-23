@@ -157,9 +157,9 @@ export function StoryTab({ character }: StoryTabProps) {
 
                   {/* Full Prose Content if available (Chapter 01) */}
                   {activeChapter.content ? (
-                    <div className="story-reader max-w-prose space-y-4 text-[15px] sm:text-[17px] text-[#CBD5E1] leading-[1.65] font-normal pt-2">
+                    <div className="story-reader max-w-prose space-y-5 text-[16px] sm:text-[18px] text-[#E2E8F0] leading-[1.8] font-normal pt-2">
                       {activeChapter.content.split('\n\n').map((paragraph, pIdx) => (
-                        <p key={pIdx}>{paragraph}</p>
+                        <p key={pIdx} className="tracking-normal">{paragraph}</p>
                       ))}
                     </div>
                   ) : (

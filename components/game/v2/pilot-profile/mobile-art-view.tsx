@@ -70,12 +70,25 @@ export function MobileArtView({
 
   return (
     <div className="relative w-full min-h-[100dvh] bg-[#070A12] text-[#F1F5F9] flex flex-col justify-between overflow-x-hidden select-none pb-20">
+      {/* Ambient Blurred Pilot Background Layer */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <Image
+          src={resolveImageUrl(character.fullbodyAssetPath)}
+          alt={character.classCharacterName}
+          fill
+          priority
+          referrerPolicy="no-referrer"
+          className="object-cover object-top opacity-20 filter blur-3xl scale-125"
+        />
+        <div className="absolute inset-0 bg-[#070A12]/80" />
+      </div>
+
       {/* Background Graphic */}
       <div
-        className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${
+        className={`absolute inset-0 transition-opacity duration-700 pointer-events-none z-0 ${
           backgroundMode === 'tactical'
-            ? 'opacity-100 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-950/60 via-[#070A12] to-[#070A12]'
-            : 'opacity-100 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-950/50 via-[#070A12] to-[#070A12]'
+            ? 'opacity-100 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-950/60 via-[#070A12]/70 to-[#070A12]'
+            : 'opacity-100 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-950/50 via-[#070A12]/70 to-[#070A12]'
         }`}
       />
 

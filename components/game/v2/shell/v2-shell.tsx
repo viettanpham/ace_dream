@@ -302,25 +302,26 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
             })}
           </nav>
 
-          {/* Menu Footer: Nút Chuyển Đổi MINI / FULL Độc Lập */}
-          <div className="p-2 border-t border-[#1E2D42] bg-[#0A0F1A]/80 flex items-center">
+          {/* Menu Footer: Nút Chuyển Đổi MINI / FULL Độc Lập — Luôn hiển thị nổi bật, không phụ thuộc hover */}
+          <div className="p-2 border-t border-[#1E2D42] bg-[#0A0F1A] flex items-center shrink-0">
             <button
               type="button"
               onClick={toggleMenuMode}
+              aria-label={menuMode === 'full' ? 'Thu gọn menu điều hướng (MINI 64px)' : 'Mở rộng menu điều hướng (FULL 240px)'}
               title={
                 menuMode === 'full'
                   ? 'Thu gọn menu điều hướng (MINI 64px)'
                   : 'Mở rộng menu điều hướng (FULL 240px)'
               }
-              className={`w-full py-2 rounded-lg border border-[#1E2D42] hover:border-[#00D4FF] bg-[#0E1626] text-[#A7B6C8] hover:text-[#00D4FF] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-xs font-mono font-bold`}
+              className={`w-full py-2.5 rounded-xl border border-[#00D4FF]/40 bg-[#0E1B2E] text-[#00D4FF] hover:bg-[#142640] hover:border-[#00D4FF] shadow-sm shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-xs font-mono font-bold`}
             >
               {menuMode === 'full' ? (
                 <>
-                  <PanelLeftClose className="w-4 h-4 text-[#00D4FF]" />
-                  <span>THU GỌN (MINI)</span>
+                  <PanelLeftClose className="w-4 h-4 text-[#00D4FF] shrink-0" />
+                  <span className="truncate tracking-wider">THU GỌN (MINI)</span>
                 </>
               ) : (
-                <PanelLeftOpen className="w-4 h-4 text-[#00D4FF]" />
+                <PanelLeftOpen className="w-5 h-5 text-[#00D4FF] shrink-0" />
               )}
             </button>
           </div>

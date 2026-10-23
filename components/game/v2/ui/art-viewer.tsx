@@ -38,6 +38,8 @@ export interface ArtViewerProps {
   hasPrev?: boolean
   hasNext?: boolean
   isAvailableOnDisk?: boolean
+  currentIndex?: number
+  totalCount?: number
 }
 
 /**
@@ -51,6 +53,7 @@ export interface ArtViewerProps {
  * - Double-click to zoom, mouse wheel zoom, 2-finger pinch on mobile.
  * - Real 100% Actual Size scaling based on naturalWidth/naturalHeight.
  * - Free mouse drag/pan when zoomed > 1x without click conflicts.
+ * - Image counter badge (ẢNH 0X / YY) updating dynamically on navigation.
  */
 export function ArtViewer({
   isOpen,
@@ -67,6 +70,8 @@ export function ArtViewer({
   hasPrev = false,
   hasNext = false,
   isAvailableOnDisk = true,
+  currentIndex,
+  totalCount,
 }: ArtViewerProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [loadError, setLoadError] = useState<boolean>(false)
@@ -158,12 +163,17 @@ export function ArtViewer({
     >
       {/* 1. TOP FLOATING CONTROLS (Tối Giản, Không Thanh Header Đen Dày) */}
       <div className="absolute top-4 inset-x-4 z-40 flex items-center justify-between pointer-events-none">
-        {/* Left: Compact artwork title & dimensions badge */}
-        <div className="flex items-center gap-2 pointer-events-auto bg-[#090D18]/80 border border-[#1E2D42] backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-mono text-[#F1F5F9] shadow-lg">
+        {/* Left: Compact artwork title & dimensions badge + Image Counter */}
+        <div className="flex items-center gap-2 pointer-events-auto bg-[#090D18]/90 border border-[#1E2D42] backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-mono text-[#F1F5F9] shadow-xl">
           <Sparkles className="w-3.5 h-3.5 text-[#00D4FF]" />
-          <span className="font-bold truncate max-w-[200px] sm:max-w-[320px]">{title}</span>
+          {currentIndex !== undefined && totalCount !== undefined && totalCount > 0 && (
+            <span className="text-[11px] font-mono font-bold text-[#00D4FF] bg-[#00D4FF]/15 px-2 py-0.5 rounded border border-[#00D4FF]/40 tracking-wider">
+              ẢNH {String(currentIndex).padStart(2, '0')} / {String(totalCount).padStart(2, '0')}
+            </span>
+          )}
+          <span className="font-bold truncate max-w-[180px] sm:max-w-[320px]">{title}</span>
           {naturalDimensions && (
-            <span className="text-[10px] text-[#00D4FF] bg-[#00D4FF]/10 px-1.5 py-0.5 rounded border border-[#00D4FF]/30">
+            <span className="text-[10px] text-[#A7B6C8] bg-[#142338] px-1.5 py-0.5 rounded border border-[#1E2D42] hidden sm:inline">
               {naturalDimensions.width}×{naturalDimensions.height}
             </span>
           )}

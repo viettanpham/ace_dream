@@ -52,7 +52,21 @@ export function MobileInfoView({
   onTabChange,
 }: MobileInfoViewProps) {
   return (
-    <div className="w-full min-h-[100dvh] bg-[#070A12] text-[#F1F5F9] flex flex-col pb-24 overflow-x-hidden select-none">
+    <div className="relative w-full min-h-[100dvh] bg-[#070A12] text-[#F1F5F9] flex flex-col pb-24 overflow-x-hidden select-none">
+      {/* Ambient Sci-Fi Background Layer từ Artwork của Phi Công */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <Image
+          src={resolveImageUrl(activeCharacter.fullbodyAssetPath)}
+          alt={activeCharacter.classCharacterName}
+          fill
+          priority
+          referrerPolicy="no-referrer"
+          className="object-cover object-top opacity-15 filter blur-3xl scale-125"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#070A12]/80 via-[#070A12]/95 to-[#070A12]" />
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#00d4ff15_1px,transparent_1px)] [background-size:24px_24px]" />
+      </div>
+
       {/* 1. TOP HEADER (Chuẩn Concept PNG) */}
       <header className="sticky top-0 z-40 bg-[#090D18]/95 backdrop-blur-md border-b border-[#1E2D42] px-3.5 py-2 flex items-center justify-between">
         <Link

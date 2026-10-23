@@ -454,212 +454,212 @@ export function DesktopView({
       </section>
 
       {/* =========================================================================
-          CỘT 3 (PHẢI): PROFILE DOSSIER & ATTRIBUTES (Typography Game Cao Cấp)
+          CỘT 3 (PHẢI): PROFILE DOSSIER & ATTRIBUTES (Typography Chuẩn Thiết Kế)
           ========================================================================= */}
-      <section className="w-[380px] lg:w-[400px] xl:w-[420px] flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
-        {/* Header Profile: Tên, Title, Vai Trò và Logo UME CORPS */}
-        <div className="p-3.5 border-b border-[#1E2D42] bg-[#0E1626]/70">
+      <section className="w-[390px] lg:w-[410px] xl:w-[430px] flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
+        {/* Header Profile: Tên 30px+, Title, Vai Trò và Logo UME CORPS */}
+        <div className="p-4 border-b border-[#1E2D42] bg-[#0E1626]/75">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="flex items-center gap-1 text-[11px] font-mono font-bold text-[#00D4FF] uppercase tracking-wider">
-                <span>❖ CLASS</span>
+              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#00D4FF] uppercase tracking-wider">
+                <span>❖ CLASS PILOT</span>
               </div>
-              <h1 className="text-2xl font-black text-white tracking-tight mt-0.5 font-mono">
+              <h1 className="text-3xl font-black text-white tracking-tight mt-1 font-mono">
                 {activeCharacter.classCharacterName}
               </h1>
-              <div className="text-xs font-semibold text-[#A7B6C8] mt-0.5">
+              <div className="text-sm font-semibold text-[#CBD5E1] mt-0.5">
                 {activeCharacter.title}
               </div>
-              <div className="text-[11px] text-[#7D90A6] mt-0.5">
+              <div className="text-xs font-mono font-bold text-[#00D4FF] mt-1">
                 {activeCharacter.role}
               </div>
             </div>
 
             {/* Logo Faction / Corps (UME MEDICAL CORPS chuẩn Concept) */}
-            <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0A0F1A] border border-[#1E2D42] shrink-0">
-              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#00D4FF]/10 text-[#00D4FF]">
+            <div className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-[#0A0F1A] border border-[#1E2D42] shrink-0">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#00D4FF]/10 text-[#00D4FF]">
                 <Shield className="w-4 h-4 text-[#00D4FF]" />
               </div>
-              <span className="text-[8px] font-mono font-black text-[#A7B6C8] uppercase tracking-tighter mt-1">
+              <span className="text-[9px] font-mono font-black text-[#A7B6C8] uppercase tracking-wider mt-1">
                 UME CORPS
               </span>
             </div>
           </div>
 
           {/* Hàng 3 Badges Nổi Bật: Medic (Xanh Lá), Rescue (Xanh Cyan), SHD+ENE (Tím) */}
-          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/40">
-              <Heart className="w-3 h-3 text-[#10B981]" />
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/40">
+              <Heart className="w-3.5 h-3.5 text-[#10B981]" />
               <span>Medic</span>
             </span>
 
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/40">
-              <Shield className="w-3 h-3 text-[#00D4FF]" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/40">
+              <Shield className="w-3.5 h-3.5 text-[#00D4FF]" />
               <span>Rescue</span>
             </span>
 
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/40">
-              <Zap className="w-3 h-3 text-[#8B5CF6]" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/40">
+              <Zap className="w-3.5 h-3.5 text-[#8B5CF6]" />
               <span>SHD + ENE</span>
             </span>
           </div>
 
-          {/* Đoạn mô tả ngắn (Short Description) */}
-          <p className="text-xs text-[#CBD5E1] leading-relaxed mt-2.5">
+          {/* Đoạn mô tả ngắn (Short Description: 15-16px, dễ đọc) */}
+          <p className="text-sm sm:text-base text-[#CBD5E1] leading-relaxed mt-3">
             {activeCharacter.shortDescription}
           </p>
         </div>
 
         {/* Nội Dung Cuộn Tách Bạch: Base Attributes, Traits, và Tabs Chi Tiết */}
-        <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 scrollbar-thin scrollbar-thumb-[#1E2D42]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#1E2D42]">
           {/* SECTION: | BASE ATTRIBUTES (6 Thanh Đo Màu Sắc) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_6px_#00D4FF]" />
-              <h3 className="text-xs font-black uppercase font-mono tracking-wider text-white">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
+              <h3 className="text-sm font-black uppercase font-mono tracking-wider text-white">
                 BASE ATTRIBUTES
               </h3>
             </div>
 
             {/* Grid 2 cột cho 6 chỉ số: ATK, DEF, AGI bên trái; ENE, SHD, LUK bên phải */}
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-2.5 rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] font-mono text-xs">
+            <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5 p-3 rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] font-mono text-xs">
               {/* ATK - Đỏ */}
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#EF4444] font-bold flex items-center gap-1 text-[11px]">
-                  <Crosshair className="w-3 h-3" />
+                <span className="text-[#EF4444] font-bold flex items-center gap-1 text-xs">
+                  <Crosshair className="w-3.5 h-3.5" />
                   <span>ATK</span>
                 </span>
-                <div className="flex-1 h-2 bg-[#1A2638] rounded-full overflow-hidden mx-1">
+                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
                   <div
                     className="h-full bg-[#EF4444] rounded-full shadow-[0_0_6px_#EF4444]"
                     style={{ width: `${(activeCharacter.baseAttributes.atk / 10) * 100}%` }}
                   />
                 </div>
-                <span className="text-white font-bold w-3 text-right">{activeCharacter.baseAttributes.atk}</span>
+                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.atk}</span>
               </div>
 
               {/* ENE - Vàng Cam */}
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#F59E0B] font-bold flex items-center gap-1 text-[11px]">
-                  <Zap className="w-3 h-3" />
+                <span className="text-[#F59E0B] font-bold flex items-center gap-1 text-xs">
+                  <Zap className="w-3.5 h-3.5" />
                   <span>ENE</span>
                 </span>
-                <div className="flex-1 h-2 bg-[#1A2638] rounded-full overflow-hidden mx-1">
+                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
                   <div
                     className="h-full bg-[#F59E0B] rounded-full shadow-[0_0_6px_#F59E0B]"
                     style={{ width: `${(activeCharacter.baseAttributes.ene / 10) * 100}%` }}
                   />
                 </div>
-                <span className="text-white font-bold w-3 text-right">{activeCharacter.baseAttributes.ene}</span>
+                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.ene}</span>
               </div>
 
               {/* DEF - Xanh Dương */}
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#3B82F6] font-bold flex items-center gap-1 text-[11px]">
-                  <Shield className="w-3 h-3" />
+                <span className="text-[#3B82F6] font-bold flex items-center gap-1 text-xs">
+                  <Shield className="w-3.5 h-3.5" />
                   <span>DEF</span>
                 </span>
-                <div className="flex-1 h-2 bg-[#1A2638] rounded-full overflow-hidden mx-1">
+                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
                   <div
                     className="h-full bg-[#3B82F6] rounded-full shadow-[0_0_6px_#3B82F6]"
                     style={{ width: `${(activeCharacter.baseAttributes.def / 10) * 100}%` }}
                   />
                 </div>
-                <span className="text-white font-bold w-3 text-right">{activeCharacter.baseAttributes.def}</span>
+                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.def}</span>
               </div>
 
               {/* SHD - Tím */}
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#8B5CF6] font-bold flex items-center gap-1 text-[11px]">
-                  <Shield className="w-3 h-3" />
+                <span className="text-[#8B5CF6] font-bold flex items-center gap-1 text-xs">
+                  <Shield className="w-3.5 h-3.5" />
                   <span>SHD</span>
                 </span>
-                <div className="flex-1 h-2 bg-[#1A2638] rounded-full overflow-hidden mx-1">
+                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
                   <div
                     className="h-full bg-[#8B5CF6] rounded-full shadow-[0_0_6px_#8B5CF6]"
                     style={{ width: `${(activeCharacter.baseAttributes.shd / 10) * 100}%` }}
                   />
                 </div>
-                <span className="text-white font-bold w-3 text-right">{activeCharacter.baseAttributes.shd}</span>
+                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.shd}</span>
               </div>
 
               {/* AGI - Xanh Lục */}
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#10B981] font-bold flex items-center gap-1 text-[11px]">
-                  <Sparkles className="w-3 h-3" />
+                <span className="text-[#10B981] font-bold flex items-center gap-1 text-xs">
+                  <Sparkles className="w-3.5 h-3.5" />
                   <span>AGI</span>
                 </span>
-                <div className="flex-1 h-2 bg-[#1A2638] rounded-full overflow-hidden mx-1">
+                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
                   <div
                     className="h-full bg-[#10B981] rounded-full shadow-[0_0_6px_#10B981]"
                     style={{ width: `${(activeCharacter.baseAttributes.agi / 10) * 100}%` }}
                   />
                 </div>
-                <span className="text-white font-bold w-3 text-right">{activeCharacter.baseAttributes.agi}</span>
+                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.agi}</span>
               </div>
 
               {/* LUK - Hồng Tím */}
               <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#EC4899] font-bold flex items-center gap-1 text-[11px]">
-                  <Award className="w-3 h-3" />
+                <span className="text-[#EC4899] font-bold flex items-center gap-1 text-xs">
+                  <Award className="w-3.5 h-3.5" />
                   <span>LUK</span>
                 </span>
-                <div className="flex-1 h-2 bg-[#1A2638] rounded-full overflow-hidden mx-1">
+                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
                   <div
                     className="h-full bg-[#EC4899] rounded-full shadow-[0_0_6px_#EC4899]"
                     style={{ width: `${(activeCharacter.baseAttributes.luk / 10) * 100}%` }}
                   />
                 </div>
-                <span className="text-white font-bold w-3 text-right">{activeCharacter.baseAttributes.luk}</span>
+                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.luk}</span>
               </div>
             </div>
           </div>
 
-          {/* SECTION: | TRAITS (2 Ô Card Song Song) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_6px_#00D4FF]" />
-              <h3 className="text-xs font-black uppercase font-mono tracking-wider text-white">
-                TRAITS
+          {/* SECTION: | TRAITS (2 Ô Card Song Song - Không Cắt Ellipsis Tên Trait) */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
+              <h3 className="text-sm font-black uppercase font-mono tracking-wider text-white">
+                TRAITS & THIÊN PHÚ
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {/* Trait 1: Bàn Tay Cứu Hộ */}
-              <div className="p-2 rounded-xl bg-[#0B111E]/80 border border-[#10B981]/40 flex items-start gap-2">
-                <div className="w-6 h-6 rounded-lg bg-[#10B981]/15 text-[#10B981] flex items-center justify-center shrink-0">
-                  <Heart className="w-3.5 h-3.5 text-[#10B981]" />
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* Trait 1 */}
+              <div className="p-3 rounded-xl bg-[#0B111E]/80 border border-[#10B981]/40 flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#10B981]/15 text-[#10B981] flex items-center justify-center shrink-0 mt-0.5">
+                  <Heart className="w-4 h-4 text-[#10B981]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white truncate font-mono">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-white font-mono break-words leading-tight">
                       {activeCharacter.traits[0]?.name || 'Bàn Tay Cứu Hộ'}
                     </span>
-                    <span className="text-[9px] font-mono text-[#10B981] uppercase font-bold">
+                    <span className="text-[9px] font-mono text-[#10B981] uppercase font-bold shrink-0">
                       Passive
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#A7B6C8] mt-0.5 leading-snug">
+                  <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
                     {activeCharacter.traits[0]?.description || '+30% hiệu quả hồi phục Medic'}
                   </p>
                 </div>
               </div>
 
-              {/* Trait 2: Mái Khiên Nhân Ái */}
-              <div className="p-2 rounded-xl bg-[#0B111E]/80 border border-[#00D4FF]/40 flex items-start gap-2">
-                <div className="w-6 h-6 rounded-lg bg-[#00D4FF]/15 text-[#00D4FF] flex items-center justify-center shrink-0">
-                  <Shield className="w-3.5 h-3.5 text-[#00D4FF]" />
+              {/* Trait 2 */}
+              <div className="p-3 rounded-xl bg-[#0B111E]/80 border border-[#00D4FF]/40 flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#00D4FF]/15 text-[#00D4FF] flex items-center justify-center shrink-0 mt-0.5">
+                  <Shield className="w-4 h-4 text-[#00D4FF]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-white truncate font-mono">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-white font-mono break-words leading-tight">
                       {activeCharacter.traits[1]?.name || 'Mái Khiên Nhân Ái'}
                     </span>
-                    <span className="text-[9px] font-mono text-[#00D4FF] uppercase font-bold">
+                    <span className="text-[9px] font-mono text-[#00D4FF] uppercase font-bold shrink-0">
                       Passive
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#A7B6C8] mt-0.5 leading-snug">
+                  <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
                     {activeCharacter.traits[1]?.description || '+30% Shield Recovery từ kỹ năng'}
                   </p>
                 </div>
@@ -668,9 +668,9 @@ export function DesktopView({
           </div>
 
           {/* 4 TABS: THÔNG TIN CƠ BẢN / STORY / GEAR / GALLERY */}
-          <div className="pt-1">
+          <div className="pt-2">
             <Tabs value={activeTab} onValueChange={onTabChange} variant="segmented" className="w-full">
-              <TabsList className="mb-2.5 grid grid-cols-4">
+              <TabsList className="mb-3 grid grid-cols-4">
                 <TabsTrigger value="overview">THÔNG TIN</TabsTrigger>
                 <TabsTrigger value="story">STORY</TabsTrigger>
                 <TabsTrigger value="gear">GEAR</TabsTrigger>
@@ -679,33 +679,33 @@ export function DesktopView({
 
               {/* Tab 1: THÔNG TIN CƠ BẢN */}
               <TabsContent value="overview">
-                <div className="rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] p-2.5 text-xs space-y-1.5">
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
-                    <span className="text-[#7D90A6]">Giới tính / Tuổi:</span>
+                <div className="rounded-xl bg-[#0B111E]/85 border border-[#1E2D42] p-3.5 text-sm space-y-2.5">
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
+                    <span className="text-[#7D90A6] font-medium">Giới tính / Tuổi:</span>
                     <span className="font-semibold text-white">Nữ · 24 tuổi</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
-                    <span className="text-[#7D90A6]">Xuất thân:</span>
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
+                    <span className="text-[#7D90A6] font-medium">Xuất thân:</span>
                     <span className="font-semibold text-white">Khu dân cư y tế quỹ đạo Elysia</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
-                    <span className="text-[#7D90A6]">Đào tạo:</span>
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
+                    <span className="text-[#7D90A6] font-medium">Đào tạo:</span>
                     <span className="font-semibold text-white">Học viện Quân y Không gian</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
-                    <span className="text-[#7D90A6]">Chuyên môn:</span>
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
+                    <span className="text-[#7D90A6] font-medium">Chuyên môn:</span>
                     <span className="font-semibold text-white">Cứu hộ, hồi phục, hỗ trợ khiên</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
-                    <span className="text-[#7D90A6]">Tính cách:</span>
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
+                    <span className="text-[#7D90A6] font-medium">Tính cách:</span>
                     <span className="font-semibold text-white">Ấm áp, kiên trì, giàu lòng trắc ẩn</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
-                    <span className="text-[#7D90A6]">Điểm yếu:</span>
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
+                    <span className="text-[#7D90A6] font-medium">Điểm yếu:</span>
                     <span className="font-semibold text-[#F59E0B]">Khó chấp nhận bỏ lại người khác</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[#7D90A6]">Ước mơ:</span>
+                    <span className="text-[#7D90A6] font-medium">Ước mơ:</span>
                     <span className="font-semibold text-[#00D4FF]">Không một tín hiệu cứu hộ bị lãng quên</span>
                   </div>
                 </div>
@@ -732,17 +732,53 @@ export function DesktopView({
           </div>
         </div>
 
-        {/* NÚT CHỌN NHÂN VẬT DƯỚI CÙNG (Cố Định Ở Chân Panel, Không Che Lấp Nội Dung Cuộn) */}
-        <div className="p-3 border-t border-[#1E2D42] bg-[#0E1626]/90 shrink-0">
-          <button
-            type="button"
-            onClick={() => onOpenArtViewer(selectedArtwork || undefined)}
-            className="w-full py-2.5 px-4 rounded-xl font-mono font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 bg-gradient-to-r from-[#0088FF] via-[#00B4D8] to-[#00D4FF] text-white hover:brightness-110 active:scale-98 transition-all shadow-[0_0_15px_rgba(0,180,216,0.4)] cursor-pointer"
-          >
-            <span>CHỌN NHÂN VẬT</span>
-            <ChevronRight className="w-4 h-4 text-white" />
-          </button>
-        </div>
+        {/* CONTEXTUAL FOOTER THEO TỪNG TAB (Chuẩn Yêu Cầu Của Chủ Dự Án) */}
+        {activeTab === 'gallery' && (
+          <div className="p-3.5 border-t border-[#1E2D42] bg-[#0E1626]/95 shrink-0 flex items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-mono font-bold text-[#7D90A6] uppercase tracking-wider">
+                BỘ SƯU TẬP
+              </span>
+              <span className="text-xs font-mono font-bold text-[#00D4FF]">
+                {activeCharacter.artworks.filter((a) => a.isAvailableOnDisk).length} ẢNH KHẢ DỤNG
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const firstAvailable =
+                  activeCharacter.artworks.find((a) => a.isAvailableOnDisk) ||
+                  activeCharacter.artworks[0]
+                onOpenArtViewer(firstAvailable)
+              }}
+              className="py-2.5 px-4 rounded-xl font-mono font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 bg-gradient-to-r from-[#0088FF] via-[#00B4D8] to-[#00D4FF] text-white hover:brightness-110 active:scale-98 transition-all shadow-[0_0_15px_rgba(0,180,216,0.4)] cursor-pointer"
+            >
+              <Maximize2 className="w-4 h-4 text-white" />
+              <span>XEM TOÀN BỘ {activeCharacter.artworks.filter((a) => a.isAvailableOnDisk).length} ẢNH</span>
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'overview' && (
+          <div className="p-3 border-t border-[#1E2D42] bg-[#0E1626]/95 shrink-0 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+              <span className="text-xs font-mono text-[#A7B6C8]">
+                TRẠNG THÁI: <span className="text-white font-bold">SẴN SÀNG ĐIỀU ĐỘNG</span>
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => onOpenArtViewer(selectedArtwork || undefined)}
+              className="py-2 px-3.5 rounded-lg border border-[#00D4FF]/40 bg-[#00D4FF]/10 hover:bg-[#00D4FF]/20 text-[#00D4FF] font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              <span>SOI TRANH HD</span>
+            </button>
+          </div>
+        )}
+
+        {/* Tab 'story' và 'gear' HOÀN TOÀN KHÔNG render footer để nhường 100% diện tích cuộn */}
       </section>
     </div>
   )

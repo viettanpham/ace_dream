@@ -187,6 +187,8 @@ export function PilotProfileV2({
           hasNext={hasNextArtwork}
           onPrev={handlePrevArtwork}
           onNext={handleNextArtwork}
+          currentIndex={currentArtworkIndex >= 0 ? currentArtworkIndex + 1 : 1}
+          totalCount={activeCharacter.artworks.length || 1}
         />
       )}
     </div>

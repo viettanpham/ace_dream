@@ -458,14 +458,25 @@ export function recordLoginAttempt(ip: string, success: boolean): void {
 /**
  * Verifies admin credentials against multi-account store
  */
+export interface VerifyCredentialsResult {
+  success: boolean;
+  user?: AdminUser;
+  errorCode?: 'SYSTEM_NOT_INITIALIZED' | 'ACCOUNT_NOT_FOUND' | 'INVALID_PASSWORD' | 'UNKNOWN';
+  error?: string;
+}
+
+/**
+ * Verifies admin credentials against multi-account store
+ */
 export function verifyAdminCredentials(
   username: string,
   password: string
-): { success: boolean; user?: AdminUser; error?: string } {
+): VerifyCredentialsResult {
   const store = loadAdminStore();
   if (Object.keys(store.accounts).length === 0) {
     return {
       success: false,
+      errorCode: 'SYSTEM_NOT_INITIALIZED',
       error: 'Hệ thống chưa được khởi tạo tài khoản Quản trị viên.',
     };
   }
@@ -474,7 +485,11 @@ export function verifyAdminCredentials(
   const account = store.accounts[cleanUser];
 
   if (!account) {
-    return { success: false, error: 'Tên đăng nhập hoặc mật khẩu không chính xác.' };
+    return {
+      success: false,
+      errorCode: 'ACCOUNT_NOT_FOUND',
+      error: `Tài khoản '${username.trim()}' không tồn tại trong danh sách quản trị viên.`,
+    };
   }
 
   const computedHash = hashPassword(password, account.salt);
@@ -485,7 +500,11 @@ export function verifyAdminCredentials(
   );
 
   if (!isMatch) {
-    return { success: false, error: 'Tên đăng nhập hoặc mật khẩu không chính xác.' };
+    return {
+      success: false,
+      errorCode: 'INVALID_PASSWORD',
+      error: `Mật khẩu không chính xác cho tài khoản '${account.username}'. Vui lòng kiểm tra lại mật khẩu đã thiết lập.`,
+    };
   }
 
   return {
@@ -595,6 +614,7 @@ export function verifySessionToken(tokenString: string): {
 
 /**
  * Verifies an incoming HTTP NextRequest for Admin authorization.
+ * Supports both Cookie session and Authorization: Bearer fallback (essential for AI Studio iframe).
  * Optionally checks CSRF header for mutation endpoints (POST/PUT/DELETE).
  */
 export function verifyAdminRequest(
@@ -607,8 +627,18 @@ export function verifyAdminRequest(
   error?: string;
   status: number;
 } {
-  const cookieToken = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
-  if (!cookieToken) {
+  // 1. Try extracting token from Cookie first
+  let token = req.cookies.get(ADMIN_COOKIE_NAME)?.value;
+
+  // 2. Fallback to Authorization: Bearer header (crucial when third-party cookies are blocked in AI Studio iframe)
+  if (!token) {
+    const authHeader = req.headers.get('authorization')?.trim();
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+      token = authHeader.substring(7).trim();
+    }
+  }
+
+  if (!token) {
     return {
       authorized: false,
       error: 'Chưa đăng nhập quyền Quản trị viên (Admin Session Required).',
@@ -616,7 +646,7 @@ export function verifyAdminRequest(
     };
   }
 
-  const session = verifySessionToken(cookieToken);
+  const session = verifySessionToken(token);
   if (!session.valid || !session.user) {
     return {
       authorized: false,
@@ -645,14 +675,14 @@ export function verifyAdminRequest(
 }
 
 /**
- * Sets session cookie onto an outgoing NextResponse
+ * Sets session cookie onto an outgoing NextResponse.
+ * Configured with SameSite=None and Secure=true to support AI Studio iframe embedding and Cloud Run HTTPS.
  */
 export function attachSessionCookie(res: NextResponse, cookieValue: string, expiresAt: number): void {
-  const isProd = process.env.NODE_ENV === 'production';
   res.cookies.set(ADMIN_COOKIE_NAME, cookieValue, {
     httpOnly: true,
-    secure: isProd,
-    sameSite: 'lax',
+    secure: true,
+    sameSite: 'none',
     path: '/',
     expires: new Date(expiresAt),
   });
@@ -664,8 +694,8 @@ export function attachSessionCookie(res: NextResponse, cookieValue: string, expi
 export function clearSessionCookie(res: NextResponse): void {
   res.cookies.set(ADMIN_COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: true,
+    sameSite: 'none',
     path: '/',
     maxAge: 0,
   });

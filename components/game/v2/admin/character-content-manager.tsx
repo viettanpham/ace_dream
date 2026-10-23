@@ -121,12 +121,36 @@ export function CharacterContentManager({
   // Profile Edit State
   const [profileForm, setProfileForm] = useState<Partial<CharacterProfileContentRecord>>({});
 
+  // Auth Headers Helper with Bearer fallback for iframe cookie drop
+  const getAuthHeaders = useCallback(
+    (extraHeaders: Record<string, string> = {}, includeCsrf = false) => {
+      const headers: Record<string, string> = { ...extraHeaders };
+      if (typeof window !== 'undefined') {
+        const token = sessionStorage.getItem('starfront_admin_session_token');
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+      if (includeCsrf && csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+      return headers;
+    },
+    [csrfToken]
+  );
+
   // 1. Check Auth Status
   const checkAuth = useCallback(async () => {
     setAuthLoading(true);
     setLoginError(null);
     try {
-      const res = await fetch('/api/admin/auth/me');
+      let headers: Record<string, string> = {};
+      if (typeof window !== 'undefined') {
+        const token = sessionStorage.getItem('starfront_admin_session_token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch('/api/admin/auth/me', { headers });
       const data = await res.json();
       if (data.authenticated && data.csrfToken) {
         setIsAuthenticated(true);
@@ -160,7 +184,9 @@ export function CharacterContentManager({
     setDataLoading(true);
     setActionFeedback(null);
     try {
-      const res = await fetch('/api/admin/character-content');
+      const res = await fetch('/api/admin/character-content', {
+        headers: getAuthHeaders(),
+      });
       const data = await res.json();
       if (res.ok && data.success) {
         setManifest(data.manifest);
@@ -181,7 +207,7 @@ export function CharacterContentManager({
     } finally {
       setDataLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, getAuthHeaders]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -203,11 +229,11 @@ export function CharacterContentManager({
 
     if (needsSetup) {
       if (password !== confirmPassword) {
-        setLoginError('Mật khẩu xác nhận không khớp. Vui lòng nhập lại.');
+        setLoginError('[VALIDATION_ERROR] Mật khẩu xác nhận không khớp. Vui lòng nhập lại.');
         return;
       }
       if (password.length < 8) {
-        setLoginError('Mật khẩu phải có độ dài tối thiểu 8 ký tự.');
+        setLoginError('[VALIDATION_ERROR] Mật khẩu phải có độ dài tối thiểu 8 ký tự.');
         return;
       }
     }
@@ -229,15 +255,19 @@ export function CharacterContentManager({
         setIsAuthenticated(true);
         setAdminUser(data.user || { username: username.trim(), role: 'admin' });
         setCsrfToken(data.csrfToken || '');
+        if (typeof window !== 'undefined' && data.sessionToken) {
+          sessionStorage.setItem('starfront_admin_session_token', data.sessionToken);
+        }
         setNeedsSetup(false);
         setPassword('');
         setConfirmPassword('');
         await loadManifest();
       } else {
-        setLoginError(data.error || 'Đăng nhập không thành công.');
+        const prefix = data.errorCode ? `[${data.errorCode}] ` : '';
+        setLoginError(`${prefix}${data.error || 'Đăng nhập không thành công.'}`);
       }
     } catch (err: any) {
-      setLoginError(err.message || 'Lỗi kết nối máy chủ.');
+      setLoginError(`[NETWORK_ERROR] ${err.message || 'Lỗi kết nối máy chủ.'}`);
     } finally {
       setAuthLoading(false);
     }
@@ -246,10 +276,16 @@ export function CharacterContentManager({
   // Handle Logout
   const handleLogout = async () => {
     try {
-      await fetch('/api/admin/auth/logout', { method: 'POST' });
+      await fetch('/api/admin/auth/logout', {
+        method: 'POST',
+        headers: getAuthHeaders({}, true),
+      });
     } catch {
       // Continue client cleanup
     } finally {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('starfront_admin_session_token');
+      }
       setIsAuthenticated(false);
       setAdminUser(null);
       setCsrfToken('');
@@ -285,10 +321,7 @@ export function CharacterContentManager({
     try {
       const res = await fetch('/api/admin/auth/change-password', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrfToken,
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }, true),
         body: JSON.stringify(changePassForm),
       });
       const data = await res.json();
@@ -359,9 +392,7 @@ export function CharacterContentManager({
 
       const res = await fetch('/api/admin/artwork/upload', {
         method: 'POST',
-        headers: {
-          'x-csrf-token': csrfToken,
-        },
+        headers: getAuthHeaders({}, true),
         body: formData,
       });
 
@@ -408,10 +439,7 @@ export function CharacterContentManager({
     try {
       const res = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrfToken,
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }, true),
         body: JSON.stringify(body),
       });
       const data = await res.json();

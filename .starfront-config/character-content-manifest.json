@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 29,
-  "updatedAt": "2026-10-23T18:16:13.473Z",
+  "revision": 31,
+  "updatedAt": "2026-10-23T18:46:40.914Z",
   "updatedBy": "system_bootstrap",
   "profiles": {
     "alviss": {
@@ -960,7 +960,7 @@
         "publicationStatus": "PUBLISHED",
         "editorialStatus": "APPROVED",
         "contentReadiness": "VERIFIED",
-        "publishedAt": "2026-10-23T18:16:13.473Z",
+        "publishedAt": "2026-10-23T18:46:40.914Z",
         "version": "1.0.0",
         "title": "Ánh sáng cuối cùng tại Elysia",
         "summary": "Quyết định định mệnh giữa đoàn tàu hàng trăm bệnh nhân và đội ngũ đồng đội bị cô lập.",
@@ -1045,6 +1045,24 @@
     "nova": {}
   },
   "auditLog": [
+    {
+      "id": "audit-1792781200914",
+      "timestamp": "2026-10-23T18:46:40.914Z",
+      "action": "STORY_PUBLISH",
+      "targetPilotId": "valentine",
+      "targetId": "chap-01",
+      "user": "admin123",
+      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành PUBLISHED"
+    },
+    {
+      "id": "audit-1792781200908",
+      "timestamp": "2026-10-23T18:46:40.908Z",
+      "action": "STORY_HIDE",
+      "targetPilotId": "valentine",
+      "targetId": "chap-01",
+      "user": "admin123",
+      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành HIDDEN"
+    },
     {
       "id": "audit-1792779373473",
       "timestamp": "2026-10-23T18:16:13.473Z",

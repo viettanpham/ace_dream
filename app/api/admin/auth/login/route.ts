@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
+          errorCode: 'AUTH_RATE_LIMITED',
           error: `Quá nhiều lần thử thất bại. Vui lòng thử lại sau ${rateCheck.retryAfterSeconds} giây.`,
         },
         { status: 429 }
@@ -32,6 +33,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           needsSetup: true,
+          errorCode: 'AUTH_SYSTEM_NOT_INITIALIZED',
           error: 'Hệ thống Quản trị chưa được khởi tạo. Vui lòng tạo tài khoản Admin lần đầu.',
         },
         { status: 400 }
@@ -43,7 +45,11 @@ export async function POST(req: NextRequest) {
 
     if (!username || !password) {
       return NextResponse.json(
-        { success: false, error: 'Vui lòng cung cấp đầy đủ tên đăng nhập và mật khẩu.' },
+        {
+          success: false,
+          errorCode: 'AUTH_MISSING_FIELDS',
+          error: 'Vui lòng cung cấp đầy đủ tên đăng nhập và mật khẩu.',
+        },
         { status: 400 }
       );
     }
@@ -52,8 +58,19 @@ export async function POST(req: NextRequest) {
     const authResult = verifyAdminCredentials(username, password);
     if (!authResult.success || !authResult.user) {
       recordLoginAttempt(ip, false);
+      const safeCode =
+        authResult.errorCode === 'ACCOUNT_NOT_FOUND'
+          ? 'AUTH_ACCOUNT_NOT_FOUND'
+          : authResult.errorCode === 'INVALID_PASSWORD'
+          ? 'AUTH_INVALID_CREDENTIALS'
+          : 'AUTH_AUTHENTICATION_FAILED';
+
       return NextResponse.json(
-        { success: false, error: authResult.error || 'Đăng nhập không thành công.' },
+        {
+          success: false,
+          errorCode: safeCode,
+          error: authResult.error || 'Đăng nhập không thành công.',
+        },
         { status: 401 }
       );
     }
@@ -66,6 +83,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Đăng nhập Quản trị viên thành công.',
       user: authResult.user,
+      sessionToken: cookieValue, // Returned for iframe sessionStorage fallback
       csrfToken,
       expiresAt,
     });
@@ -74,7 +92,11 @@ export async function POST(req: NextRequest) {
     return res;
   } catch (err) {
     return NextResponse.json(
-      { success: false, error: `Lỗi máy chủ: ${err instanceof Error ? err.message : 'Unknown'}` },
+      {
+        success: false,
+        errorCode: 'AUTH_SERVER_ERROR',
+        error: `Lỗi máy chủ: ${err instanceof Error ? err.message : 'Unknown'}`,
+      },
       { status: 500 }
     );
   }

@@ -8,6 +8,7 @@ import {
   GalleryArtwork,
 } from '@/lib/game/v2/character-profile-data'
 import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
+import { PilotAvatar } from './pilot-avatar'
 import {
   Tabs,
   TabsList,
@@ -98,23 +99,11 @@ export function MobileInfoView({
                     : 'bg-[#0B111E]/80 border-[#1E2D42]'
                 }`}
               >
-                <div
-                  className={`relative w-10 h-10 rounded-lg overflow-hidden bg-[#0A0F1A] border ${
-                    isSelected ? 'border-[#00D4FF]' : 'border-[#1E2D42]'
-                  }`}
-                >
-                  <Image
-                    src={resolveImageUrl(char.portraitAssetPath)}
-                    alt={char.classCharacterName}
-                    fill
-                    referrerPolicy="no-referrer"
-                    className="object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.src = resolveImageUrl('/images/valentine-portrait.webp')
-                    }}
-                  />
-                </div>
+                <PilotAvatar
+                  character={char}
+                  isSelected={isSelected}
+                  className="w-10 h-10"
+                />
                 <span
                   className={`text-[10px] font-bold font-mono truncate max-w-[60px] ${
                     isSelected ? 'text-[#00D4FF]' : 'text-[#A7B6C8]'

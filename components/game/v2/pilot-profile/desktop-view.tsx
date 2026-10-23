@@ -16,6 +16,7 @@ import {
 import { StoryTab } from './tabs/story-tab'
 import { GearCompatTab } from './tabs/gear-compat-tab'
 import { GalleryTab } from './tabs/gallery-tab'
+import { PilotAvatar } from './pilot-avatar'
 import {
   Maximize2,
   Radar,
@@ -29,6 +30,8 @@ import {
   Play,
   Crosshair,
   Award,
+  VideoOff,
+  CheckCircle2,
 } from 'lucide-react'
 
 interface DesktopViewProps {
@@ -55,12 +58,14 @@ export function DesktopView({
   const [mainImageError, setMainImageError] = useState<boolean>(false)
   const [carouselIndex, setCarouselIndex] = useState<number>(0)
   const [selectedArtwork, setSelectedArtwork] = useState<GalleryArtwork | null>(null)
+  const [showTrailerNotice, setShowTrailerNotice] = useState<boolean>(false)
 
   // Reset khi đổi phi công
   useEffect(() => {
     setMainImageError(false)
     setCarouselIndex(0)
     setSelectedArtwork(null)
+    setShowTrailerNotice(false)
   }, [activeCharacter.id])
 
   // Artworks của nhân vật hiện tại cho carousel dưới chân
@@ -91,26 +96,26 @@ export function DesktopView({
   const currentDisplayImage = selectedArtwork?.path || activeCharacter.fullbodyAssetPath
 
   return (
-    <div className="w-full h-[calc(100vh-56px)] min-h-[700px] flex gap-3.5 p-3.5 lg:p-4 bg-[#070A12] text-[#F1F5F9] overflow-hidden select-none">
+    <div className="w-full h-[calc(100vh-56px)] min-h-[720px] flex gap-3 p-3 lg:p-3.5 bg-[#070A12] text-[#F1F5F9] overflow-hidden select-none">
       {/* =========================================================================
-          CỘT 1 (TRÁI): CHARACTER CLASS ROSTER (Chuẩn 100% Concept Approved PNG)
+          CỘT 1 (TRÁI): CHARACTER CLASS ROSTER (12 Pilot Canonical)
           ========================================================================= */}
-      <aside className="w-64 lg:w-72 flex flex-col rounded-2xl bg-[#090D18]/90 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
+      <aside className="w-60 lg:w-64 flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
         {/* Header Cột: | CHARACTER CLASS */}
-        <div className="p-3.5 border-b border-[#1E2D42] bg-[#0E1626]/70 flex items-center justify-between">
+        <div className="p-3 border-b border-[#1E2D42] bg-[#0E1626]/80 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-1 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
-            <h2 className="text-xs font-black uppercase tracking-wider text-[#F1F5F9] font-mono">
+            <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
+            <h2 className="text-xs font-black uppercase tracking-wider text-white font-mono">
               CHARACTER CLASS
             </h2>
           </div>
-          <span className="text-[10px] font-mono font-bold text-[#00D4FF] bg-[#00D4FF]/10 px-2 py-0.5 rounded border border-[#00D4FF]/30">
-            {roster.length} PILOTS
+          <span className="text-[10px] font-mono font-bold text-[#00D4FF] bg-[#00D4FF]/10 px-1.5 py-0.5 rounded border border-[#00D4FF]/30">
+            {roster.length}
           </span>
         </div>
 
-        {/* Danh sách 12 Pilot - Thẻ Card Chữ Nhật Bo Góc */}
-        <div className="flex-1 overflow-y-auto p-2.5 space-y-2 scrollbar-thin scrollbar-thumb-[#1E2D42]">
+        {/* Danh sách 12 Pilot - Dùng PilotAvatar chuẩn, không fallback sai */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1.5 scrollbar-thin scrollbar-thumb-[#1E2D42]">
           {roster.map((char) => {
             const isSelected = char.id === activeCharacter.id
 
@@ -118,35 +123,18 @@ export function DesktopView({
               <div
                 key={char.id}
                 onClick={() => onSelectCharacter(char)}
-                className={`group relative rounded-xl border transition-all duration-200 cursor-pointer flex items-center p-2 gap-3 ${
+                className={`group relative rounded-xl border transition-all duration-200 cursor-pointer flex items-center p-2 gap-2.5 ${
                   isSelected
                     ? 'bg-gradient-to-r from-[#142338] via-[#102035] to-[#0D1828] border-[#00D4FF] shadow-[0_0_15px_rgba(0,212,255,0.25)] ring-1 ring-[#00D4FF]/60'
                     : 'bg-[#0B111E]/70 border-[#1A2638] hover:border-[#2C415E] hover:bg-[#101A2B]'
                 }`}
               >
-                {/* Avatar Hình Chữ Nhật Bo Góc */}
-                <div
-                  className={`relative w-14 h-11 rounded-lg overflow-hidden bg-[#0A0F1A] border shrink-0 transition-transform duration-200 group-hover:scale-102 ${
-                    isSelected
-                      ? 'border-[#00D4FF] shadow-[0_0_8px_rgba(0,212,255,0.4)]'
-                      : 'border-[#1E2D42]'
-                  }`}
-                >
-                  <Image
-                    src={resolveImageUrl(char.portraitAssetPath)}
-                    alt={char.classCharacterName}
-                    fill
-                    referrerPolicy="no-referrer"
-                    className="object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.src = resolveImageUrl('/images/valentine-portrait.webp')
-                    }}
-                  />
-                  {isSelected && (
-                    <div className="absolute inset-0 border border-[#00D4FF]/40 rounded-lg pointer-events-none" />
-                  )}
-                </div>
+                {/* Avatar Roster Chuyên Biệt Cho Từng Pilot (Fortuna/Aria có icon riêng) */}
+                <PilotAvatar
+                  character={char}
+                  isSelected={isSelected}
+                  className="w-12 h-10 shrink-0"
+                />
 
                 {/* Thông tin: Tên Pilot & Vai Trò (Class Subtitle) */}
                 <div className="min-w-0 flex-1">
@@ -160,7 +148,7 @@ export function DesktopView({
                     </h3>
                   </div>
                   <p
-                    className={`text-[11px] truncate mt-0.5 ${
+                    className={`text-[10px] truncate mt-0.5 ${
                       isSelected ? 'text-[#00D4FF] font-semibold' : 'text-[#7D90A6]'
                     }`}
                   >
@@ -170,39 +158,39 @@ export function DesktopView({
 
                 {/* Active Indicator Bar */}
                 {isSelected && (
-                  <div className="w-1 h-6 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF] shrink-0" />
+                  <div className="w-1 h-5 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF] shrink-0" />
                 )}
               </div>
             )
           })}
         </div>
 
-        {/* Nút mũi tên cuộn danh sách dưới chân */}
-        <div className="p-1.5 border-t border-[#1E2D42] bg-[#0A0F1A]/80 flex justify-center text-[#7D90A6]">
-          <ChevronDown className="w-4 h-4 animate-bounce text-[#00D4FF]" />
+        {/* Cuộn danh sách hint */}
+        <div className="p-1 border-t border-[#1E2D42] bg-[#0A0F1A]/80 flex justify-center text-[#7D90A6]">
+          <ChevronDown className="w-3.5 h-3.5 text-[#00D4FF]/70" />
         </div>
       </aside>
 
       {/* =========================================================================
-          CỘT 2 (GIỮA): CENTER VISUAL SHOWCASE (Chuẩn 100% Concept Approved PNG)
+          CỘT 2 (GIỮA): CENTER VISUAL STAGE (Visual Hero Hoành Tráng Liền Mạch)
           ========================================================================= */}
-      <section className="flex-1 relative rounded-2xl bg-[#090D18]/90 border border-[#1E2D42] overflow-hidden shadow-2xl flex flex-col justify-between">
-        {/* Background Visual: Trạm Không Gian Quỹ Đạo Elysia & Hành Tinh Xanh */}
+      <section className="flex-1 relative rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl flex flex-col justify-between">
+        {/* Background Visual Layers: Bầu Trời Sao, Trạm Quỹ Đạo & Hành Tinh Xanh */}
         <div
           className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${
             backgroundMode === 'tactical'
-              ? 'opacity-100 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-950/50 via-[#070A12] to-[#070A12]'
-              : 'opacity-100 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-950/40 via-[#070A12] to-[#070A12]'
+              ? 'opacity-100 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-950/60 via-[#070A12] to-[#070A12]'
+              : 'opacity-100 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/40 via-[#090D18] to-[#070A12]'
           }`}
         />
 
-        {/* Lớp nền trạm vũ trụ tinh xảo */}
-        <div className="absolute inset-0 pointer-events-none opacity-25 bg-[radial-gradient(#00d4ff15_1px,transparent_1px)] [background-size:16px_16px]" />
+        {/* Họa tiết ánh sáng trạm vũ trụ tinh xảo */}
+        <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#00d4ff15_1px,transparent_1px)] [background-size:20px_20px]" />
 
         {/* Tactical HUD Overlay khi bật chế độ Radar */}
         {backgroundMode === 'tactical' && (
-          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,#00d4ff0d_1px,transparent_1px),linear-gradient(to_bottom,#00d4ff0d_1px,transparent_1px)] bg-[size:28px_28px] z-10">
-            <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-[11px] font-mono text-[#00D4FF] px-3.5 py-1.5 rounded-lg bg-[#070A12]/90 border border-[#00D4FF]/30 backdrop-blur-md">
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,#00d4ff0d_1px,transparent_1px),linear-gradient(to_bottom,#00d4ff0d_1px,transparent_1px)] bg-[size:32px_32px] z-10">
+            <div className="absolute top-3 left-4 right-4 flex items-center justify-between text-[11px] font-mono text-[#00D4FF] px-3.5 py-1.5 rounded-lg bg-[#070A12]/90 border border-[#00D4FF]/40 backdrop-blur-md shadow-lg">
               <span className="flex items-center gap-2">
                 <Radar className="w-3.5 h-3.5 animate-spin text-[#00D4FF]" />
                 <span className="font-bold tracking-wider">TACTICAL HUD // RADAR GRID ONLINE</span>
@@ -212,39 +200,50 @@ export function DesktopView({
           </div>
         )}
 
-        {/* 1. KHU VỰC TRUNG TÂM: TRANH TOÀN THÂN & QUOTE NỔI BÊN TRÁI */}
-        <div className="relative flex-1 flex items-center justify-center p-2 z-10 overflow-hidden">
-          {/* Quote Chữ Nghiêng Nổi Bật Bên Trái Artwork (Chuẩn Concept PNG) */}
-          <div className="absolute left-6 top-1/3 -translate-y-1/2 z-20 max-w-[240px] pointer-events-none drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] hidden xl:block">
-            <p className="text-sm lg:text-base italic font-serif text-white/95 leading-relaxed tracking-wide font-normal">
-              "{activeCharacter.characterQuote}"
-            </p>
+        {/* 1. KHU VỰC TRUNG TÂM: VISUAL HERO ARTWORK & QUOTE BÊN TRÁI */}
+        <div className="relative flex-1 flex items-center justify-center z-10 overflow-hidden w-full h-full">
+          {/* Quote Chữ Nghiêng Bay Bổng Bên Trái Artwork (Có background tương phản an toàn) */}
+          <div className="absolute left-6 top-1/4 z-20 max-w-[260px] pointer-events-none hidden xl:block">
+            <div className="p-3 rounded-xl bg-black/40 border-l-2 border-[#00D4FF] backdrop-blur-xs">
+              <p className="text-sm lg:text-base italic font-serif text-white/95 leading-relaxed tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                "{activeCharacter.characterQuote}"
+              </p>
+            </div>
           </div>
 
-          {/* Nhân Vật Toàn Thân Cực Đại */}
-          <div className="relative w-full h-[62vh] max-h-[640px] flex items-center justify-center">
+          {/* Visual Hero Nhân Vật Lớn (Toàn màn hình sân khấu, không còn khung chữ nhật nhỏ) */}
+          <div className="relative w-full h-full flex items-end justify-center pb-2">
             {!mainImageError ? (
-              <Image
-                src={resolveImageUrl(currentDisplayImage)}
-                alt={activeCharacter.classCharacterName}
-                fill
-                priority
-                referrerPolicy="no-referrer"
-                className="object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.85)] filter hover:brightness-105 transition-all duration-300"
-                onError={() => setMainImageError(true)}
-              />
+              <div className="relative w-full h-[76vh] max-h-[780px] flex items-end justify-center">
+                <Image
+                  src={resolveImageUrl(currentDisplayImage)}
+                  alt={activeCharacter.classCharacterName}
+                  fill
+                  priority
+                  referrerPolicy="no-referrer"
+                  className="object-contain object-bottom drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)] filter hover:brightness-105 transition-all duration-300"
+                  onError={() => setMainImageError(true)}
+                />
+                {/* Lớp bóng mờ nhẹ nhàng ở chân giúp nhân vật hòa vào sàn trạm không gian */}
+                <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#090D18] via-[#090D18]/70 to-transparent pointer-events-none" />
+              </div>
             ) : (
-              <div className="max-w-sm text-center p-6 rounded-2xl bg-[#0B111E]/90 border border-[#1E2D42] space-y-2">
-                <p className="text-xs font-mono text-[#F59E0B] font-bold uppercase">
-                  ARCHIVE PENDING
+              <div className="max-w-sm text-center p-8 rounded-2xl bg-[#0B111E]/95 border border-[#1E2D42] shadow-2xl space-y-3 mb-12">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-[#142338] border border-[#1E2D42] flex items-center justify-center text-[#F59E0B]">
+                  <Sparkles className="w-7 h-7" />
+                </div>
+                <p className="text-xs font-mono text-[#F59E0B] font-bold uppercase tracking-wider">
+                  CONCEPT APPROVED // ART PENDING
                 </p>
-                <h4 className="text-base font-bold text-white">{activeCharacter.classCharacterName}</h4>
-                <p className="text-xs text-[#A7B6C8]">Artwork toàn thân đang đồng bộ.</p>
+                <h4 className="text-lg font-bold text-white font-mono">{activeCharacter.classCharacterName}</h4>
+                <p className="text-xs text-[#A7B6C8] leading-relaxed">
+                  Artwork toàn thân độ phân giải cao của phi công này đang được số hóa đóng gói cho bản phát hành FND-8.
+                </p>
               </div>
             )}
           </div>
 
-          {/* HAI ĐIỀU KHIỂN BỐI CẢNH ĐỐI XỨNG HAI BÊN HÔNG NHÂN VẬT (Chuẩn Concept Approved) */}
+          {/* HAI ĐIỀU KHIỂN BỐI CẢNH ĐỐI XỨNG HAI BÊN HÔNG NHÂN VẬT */}
           {/* Nút Trái: Tiêu Chuẩn */}
           <button
             type="button"
@@ -280,37 +279,45 @@ export function DesktopView({
           </button>
         </div>
 
-        {/* 2. DƯỚI CHÂN ARTWORK: TRAILER CARD & CAROUSEL 4 THUMBNAILS (Chuẩn 100% Concept PNG) */}
-        <div className="relative z-20 px-4 py-3 border-t border-[#1E2D42] bg-[#0A0F1A]/95 backdrop-blur-md flex items-center justify-between gap-4">
-          {/* Card Bên Trái: CHARACTER TRAILER */}
-          <button
-            type="button"
-            onClick={() => onOpenArtViewer()}
-            className="flex items-center gap-3 px-3 py-2 rounded-xl bg-[#101A2B] border border-[#1E2D42] hover:border-[#00D4FF] hover:bg-[#142338] transition-all cursor-pointer group shadow-sm shrink-0"
-            title="Xem Character Media & Artwork HD"
-          >
-            <div className="relative w-12 h-8 rounded overflow-hidden bg-black/60 border border-[#1E2D42] shrink-0 flex items-center justify-center">
-              <Image
-                src={resolveImageUrl(activeCharacter.portraitAssetPath)}
-                alt="Trailer"
-                fill
-                referrerPolicy="no-referrer"
-                className="object-cover opacity-80 group-hover:opacity-100 transition-opacity"
-              />
-              <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                <Play className="w-3.5 h-3.5 text-white fill-white group-hover:scale-110 transition-transform" />
+        {/* 2. DƯỚI CHÂN SÂN KHẤU: TRAILER PREVIEW & CAROUSEL THUMBNAILS NHỎ GỌN */}
+        <div className="relative z-20 px-3.5 py-2.5 border-t border-[#1E2D42] bg-[#0A0F1A]/95 backdrop-blur-md flex items-center justify-between gap-3">
+          {/* Card Bên Trái: CHARACTER TRAILER (Trạng Thái Thật: Sắp Ra Mắt) */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowTrailerNotice(!showTrailerNotice)}
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#101A2B] border border-[#1E2D42] hover:border-[#00D4FF] hover:bg-[#142338] transition-all cursor-pointer group shadow-sm"
+              title="Thông tin Character Trailer"
+            >
+              <div className="relative w-10 h-7 rounded overflow-hidden bg-black/60 border border-[#1E2D42] shrink-0 flex items-center justify-center">
+                <Play className="w-3.5 h-3.5 text-[#00D4FF] fill-[#00D4FF]/40 group-hover:scale-110 transition-transform" />
               </div>
-            </div>
-            <div className="text-left">
-              <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-white group-hover:text-[#00D4FF] transition-colors flex items-center gap-1">
-                <span>CHARACTER TRAILER</span>
-                <ChevronRight className="w-3 h-3 text-[#00D4FF]" />
+              <div className="text-left">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-white group-hover:text-[#00D4FF] transition-colors flex items-center gap-1">
+                  <span>CHARACTER TRAILER</span>
+                  <span className="text-[9px] text-[#F59E0B] font-mono bg-[#F59E0B]/10 px-1 rounded border border-[#F59E0B]/30">
+                    SẮP CÓ
+                  </span>
+                </div>
+                <span className="text-[9px] font-mono text-[#7D90A6]">HD MEDIA SPOTLIGHT</span>
               </div>
-              <span className="text-[9px] font-mono text-[#7D90A6]">HD MEDIA SPOTLIGHT</span>
-            </div>
-          </button>
+            </button>
 
-          {/* Dải Carousel Thumbnail Bên Phải với nút < và > */}
+            {/* Popover thông báo trailer */}
+            {showTrailerNotice && (
+              <div className="absolute left-0 bottom-12 z-50 w-64 p-3 rounded-xl bg-[#090D18] border border-[#1E2D42] shadow-2xl space-y-1.5 text-xs text-[#CBD5E1]">
+                <div className="flex items-center justify-between text-[#00D4FF] font-mono font-bold text-[11px]">
+                  <span>TRAILER MEDIA</span>
+                  <button onClick={() => setShowTrailerNotice(false)} className="text-[#A7B6C8] hover:text-white">✕</button>
+                </div>
+                <p className="text-[11px] text-[#A7B6C8] leading-relaxed">
+                  Trailer giới thiệu cinematic và lồng tiếng của phi công <strong>{activeCharacter.classCharacterName}</strong> đang trong quá trình hậu kỳ cho phiên bản FND-8.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Dải Carousel Thumbnail Nhỏ Gọn Bên Phải */}
           <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
             {/* Nút Prev Carousel */}
             <button
@@ -318,7 +325,7 @@ export function DesktopView({
               onClick={handlePrevCarousel}
               disabled={carouselIndex === 0}
               aria-label="Hình ảnh trước"
-              className={`p-1.5 rounded-lg border transition-all ${
+              className={`p-1 rounded-lg border transition-all ${
                 carouselIndex === 0
                   ? 'border-[#1E2D42]/40 text-[#475569] cursor-not-allowed'
                   : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] cursor-pointer'
@@ -328,7 +335,7 @@ export function DesktopView({
             </button>
 
             {/* Thumbnails strip (4 ảnh ngang) */}
-            <div className="flex items-center gap-2 overflow-hidden">
+            <div className="flex items-center gap-1.5 overflow-hidden">
               {availableArtworks.slice(carouselIndex, carouselIndex + 4).map((art) => {
                 const isArtSelected = selectedArtwork?.id === art.id || (!selectedArtwork && art.category === 'base')
 
@@ -340,7 +347,7 @@ export function DesktopView({
                       setSelectedArtwork(art)
                       onOpenArtViewer(art)
                     }}
-                    className={`relative w-16 h-11 lg:w-20 lg:h-12 rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                    className={`relative w-14 h-10 lg:w-16 lg:h-11 rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
                       isArtSelected
                         ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/40 shadow-[0_0_8px_rgba(0,212,255,0.4)]'
                         : 'border-[#1E2D42] opacity-75 hover:opacity-100 hover:border-[#2C415E]'
@@ -365,7 +372,7 @@ export function DesktopView({
               onClick={handleNextCarousel}
               disabled={carouselIndex >= maxCarouselPages}
               aria-label="Hình ảnh tiếp theo"
-              className={`p-1.5 rounded-lg border transition-all ${
+              className={`p-1 rounded-lg border transition-all ${
                 carouselIndex >= maxCarouselPages
                   ? 'border-[#1E2D42]/40 text-[#475569] cursor-not-allowed'
                   : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] cursor-pointer'
@@ -373,16 +380,26 @@ export function DesktopView({
             >
               <ChevronRight className="w-4 h-4" />
             </button>
+
+            {/* Nút Phóng To Immersive Viewer */}
+            <button
+              type="button"
+              onClick={() => onOpenArtViewer(selectedArtwork || undefined)}
+              className="p-1.5 rounded-lg border border-[#1E2D42] hover:border-[#00D4FF] text-[#A7B6C8] hover:text-[#00D4FF] bg-[#101A2B] transition-colors ml-1 cursor-pointer"
+              title="Phóng to toàn màn hình (Immersive Viewer)"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </section>
 
       {/* =========================================================================
-          CỘT 3 (PHẢI): PROFILE DOSSIER & ATTRIBUTES (Chuẩn 100% Concept Approved PNG)
+          CỘT 3 (PHẢI): PROFILE DOSSIER & ATTRIBUTES (Typography Game Cao Cấp)
           ========================================================================= */}
-      <section className="w-[430px] lg:w-[460px] flex flex-col rounded-2xl bg-[#090D18]/90 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
-        {/* Header Profile: Tên, Title, Vai Trò và Logo UME MEDICAL CORPS */}
-        <div className="p-4 border-b border-[#1E2D42] bg-[#0E1626]/60">
+      <section className="w-[410px] lg:w-[440px] flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
+        {/* Header Profile: Tên, Title, Vai Trò và Logo UME CORPS */}
+        <div className="p-3.5 border-b border-[#1E2D42] bg-[#0E1626]/70">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-1 text-[11px] font-mono font-bold text-[#00D4FF] uppercase tracking-wider">
@@ -401,8 +418,8 @@ export function DesktopView({
 
             {/* Logo Faction / Corps (UME MEDICAL CORPS chuẩn Concept) */}
             <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-[#0A0F1A] border border-[#1E2D42] shrink-0">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#00D4FF]/10 text-[#00D4FF]">
-                <Shield className="w-5 h-5 text-[#00D4FF]" />
+              <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[#00D4FF]/10 text-[#00D4FF]">
+                <Shield className="w-4 h-4 text-[#00D4FF]" />
               </div>
               <span className="text-[8px] font-mono font-black text-[#A7B6C8] uppercase tracking-tighter mt-1">
                 UME CORPS
@@ -411,47 +428,45 @@ export function DesktopView({
           </div>
 
           {/* Hàng 3 Badges Nổi Bật: Medic (Xanh Lá), Rescue (Xanh Cyan), SHD+ENE (Tím) */}
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/40">
-              <Heart className="w-3.5 h-3.5 text-[#10B981]" />
+          <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/40">
+              <Heart className="w-3 h-3 text-[#10B981]" />
               <span>Medic</span>
             </span>
 
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/40">
-              <Shield className="w-3.5 h-3.5 text-[#00D4FF]" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/40">
+              <Shield className="w-3 h-3 text-[#00D4FF]" />
               <span>Rescue</span>
             </span>
 
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/40">
-              <Zap className="w-3.5 h-3.5 text-[#8B5CF6]" />
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/40">
+              <Zap className="w-3 h-3 text-[#8B5CF6]" />
               <span>SHD + ENE</span>
             </span>
           </div>
 
           {/* Đoạn mô tả ngắn (Short Description) */}
-          <p className="text-xs text-[#CBD5E1] leading-relaxed mt-3">
+          <p className="text-xs text-[#CBD5E1] leading-relaxed mt-2.5">
             {activeCharacter.shortDescription}
           </p>
         </div>
 
-        {/* Nội Dung Cuộn: Base Attributes, Traits, và Tabs Chi Tiết */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#1E2D42]">
-          {/* SECTION: | BASE ATTRIBUTES (6 Thanh Đo Màu Sắc Đầy Đủ) */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_6px_#00D4FF]" />
-                <h3 className="text-xs font-black uppercase font-mono tracking-wider text-white">
-                  BASE ATTRIBUTES
-                </h3>
-              </div>
+        {/* Nội Dung Cuộn Tách Bạch: Base Attributes, Traits, và Tabs Chi Tiết */}
+        <div className="flex-1 overflow-y-auto p-3.5 space-y-3.5 scrollbar-thin scrollbar-thumb-[#1E2D42]">
+          {/* SECTION: | BASE ATTRIBUTES (6 Thanh Đo Màu Sắc) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_6px_#00D4FF]" />
+              <h3 className="text-xs font-black uppercase font-mono tracking-wider text-white">
+                BASE ATTRIBUTES
+              </h3>
             </div>
 
             {/* Grid 2 cột cho 6 chỉ số: ATK, DEF, AGI bên trái; ENE, SHD, LUK bên phải */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 p-3 rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] font-mono text-xs">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 p-2.5 rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] font-mono text-xs">
               {/* ATK - Đỏ */}
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[#EF4444] font-bold flex items-center gap-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[#EF4444] font-bold flex items-center gap-1 text-[11px]">
                   <Crosshair className="w-3 h-3" />
                   <span>ATK</span>
                 </span>
@@ -465,8 +480,8 @@ export function DesktopView({
               </div>
 
               {/* ENE - Vàng Cam */}
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[#F59E0B] font-bold flex items-center gap-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[#F59E0B] font-bold flex items-center gap-1 text-[11px]">
                   <Zap className="w-3 h-3" />
                   <span>ENE</span>
                 </span>
@@ -480,8 +495,8 @@ export function DesktopView({
               </div>
 
               {/* DEF - Xanh Dương */}
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[#3B82F6] font-bold flex items-center gap-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[#3B82F6] font-bold flex items-center gap-1 text-[11px]">
                   <Shield className="w-3 h-3" />
                   <span>DEF</span>
                 </span>
@@ -495,8 +510,8 @@ export function DesktopView({
               </div>
 
               {/* SHD - Tím */}
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[#8B5CF6] font-bold flex items-center gap-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[#8B5CF6] font-bold flex items-center gap-1 text-[11px]">
                   <Shield className="w-3 h-3" />
                   <span>SHD</span>
                 </span>
@@ -510,8 +525,8 @@ export function DesktopView({
               </div>
 
               {/* AGI - Xanh Lục */}
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[#10B981] font-bold flex items-center gap-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[#10B981] font-bold flex items-center gap-1 text-[11px]">
                   <Sparkles className="w-3 h-3" />
                   <span>AGI</span>
                 </span>
@@ -525,8 +540,8 @@ export function DesktopView({
               </div>
 
               {/* LUK - Hồng Tím */}
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[#EC4899] font-bold flex items-center gap-1">
+              <div className="flex items-center justify-between gap-1.5">
+                <span className="text-[#EC4899] font-bold flex items-center gap-1 text-[11px]">
                   <Award className="w-3 h-3" />
                   <span>LUK</span>
                 </span>
@@ -541,8 +556,8 @@ export function DesktopView({
             </div>
           </div>
 
-          {/* SECTION: | TRAITS (2 Ô Card Nằm Ngang Chuẩn Concept) */}
-          <div className="space-y-2">
+          {/* SECTION: | TRAITS (2 Ô Card Song Song) */}
+          <div className="space-y-1.5">
             <div className="flex items-center gap-1.5">
               <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_6px_#00D4FF]" />
               <h3 className="text-xs font-black uppercase font-mono tracking-wider text-white">
@@ -550,11 +565,11 @@ export function DesktopView({
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-2 gap-2">
               {/* Trait 1: Bàn Tay Cứu Hộ */}
-              <div className="p-2.5 rounded-xl bg-[#0B111E]/80 border border-[#10B981]/40 flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#10B981]/15 text-[#10B981] flex items-center justify-center shrink-0">
-                  <Heart className="w-4 h-4 text-[#10B981]" />
+              <div className="p-2 rounded-xl bg-[#0B111E]/80 border border-[#10B981]/40 flex items-start gap-2">
+                <div className="w-6 h-6 rounded-lg bg-[#10B981]/15 text-[#10B981] flex items-center justify-center shrink-0">
+                  <Heart className="w-3.5 h-3.5 text-[#10B981]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
@@ -572,9 +587,9 @@ export function DesktopView({
               </div>
 
               {/* Trait 2: Mái Khiên Nhân Ái */}
-              <div className="p-2.5 rounded-xl bg-[#0B111E]/80 border border-[#00D4FF]/40 flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#00D4FF]/15 text-[#00D4FF] flex items-center justify-center shrink-0">
-                  <Shield className="w-4 h-4 text-[#00D4FF]" />
+              <div className="p-2 rounded-xl bg-[#0B111E]/80 border border-[#00D4FF]/40 flex items-start gap-2">
+                <div className="w-6 h-6 rounded-lg bg-[#00D4FF]/15 text-[#00D4FF] flex items-center justify-center shrink-0">
+                  <Shield className="w-3.5 h-3.5 text-[#00D4FF]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between">
@@ -594,39 +609,39 @@ export function DesktopView({
           </div>
 
           {/* 4 TABS: THÔNG TIN CƠ BẢN / STORY / GEAR / GALLERY */}
-          <div className="pt-2">
+          <div className="pt-1">
             <Tabs value={activeTab} onValueChange={onTabChange} variant="segmented" className="w-full">
-              <TabsList className="mb-3 grid grid-cols-4">
+              <TabsList className="mb-2.5 grid grid-cols-4">
                 <TabsTrigger value="overview">THÔNG TIN</TabsTrigger>
                 <TabsTrigger value="story">STORY</TabsTrigger>
                 <TabsTrigger value="gear">GEAR</TabsTrigger>
                 <TabsTrigger value="gallery">GALLERY</TabsTrigger>
               </TabsList>
 
-              {/* Tab 1: THÔNG TIN CƠ BẢN (Bảng Báo Cáo Chuẩn Concept PNG) */}
+              {/* Tab 1: THÔNG TIN CƠ BẢN */}
               <TabsContent value="overview">
-                <div className="rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] p-3 text-xs space-y-2">
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1.5">
+                <div className="rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] p-2.5 text-xs space-y-1.5">
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
                     <span className="text-[#7D90A6]">Giới tính / Tuổi:</span>
                     <span className="font-semibold text-white">Nữ · 24 tuổi</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1.5">
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
                     <span className="text-[#7D90A6]">Xuất thân:</span>
                     <span className="font-semibold text-white">Khu dân cư y tế quỹ đạo Elysia</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1.5">
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
                     <span className="text-[#7D90A6]">Đào tạo:</span>
                     <span className="font-semibold text-white">Học viện Quân y Không gian</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1.5">
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
                     <span className="text-[#7D90A6]">Chuyên môn:</span>
                     <span className="font-semibold text-white">Cứu hộ, hồi phục, hỗ trợ khiên</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1.5">
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
                     <span className="text-[#7D90A6]">Tính cách:</span>
                     <span className="font-semibold text-white">Ấm áp, kiên trì, giàu lòng trắc ẩn</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1.5">
+                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-1">
                     <span className="text-[#7D90A6]">Điểm yếu:</span>
                     <span className="font-semibold text-[#F59E0B]">Khó chấp nhận bỏ lại người khác</span>
                   </div>
@@ -658,15 +673,15 @@ export function DesktopView({
           </div>
         </div>
 
-        {/* NÚT CHỌN NHÂN VẬT DƯỚI CÙNG (Chuẩn 100% Concept Approved PNG) */}
-        <div className="p-3.5 border-t border-[#1E2D42] bg-[#0E1626]/80">
+        {/* NÚT CHỌN NHÂN VẬT DƯỚI CÙNG (Cố Định Ở Chân Panel, Không Che Lấp Nội Dung Cuộn) */}
+        <div className="p-3 border-t border-[#1E2D42] bg-[#0E1626]/90 shrink-0">
           <button
             type="button"
-            onClick={() => onOpenArtViewer()}
-            className="w-full py-3 px-4 rounded-xl font-mono font-bold text-sm tracking-wider uppercase flex items-center justify-center gap-2 bg-gradient-to-r from-[#0088FF] via-[#00B4D8] to-[#00D4FF] text-white hover:brightness-110 active:scale-98 transition-all shadow-[0_0_20px_rgba(0,180,216,0.5)] cursor-pointer"
+            onClick={() => onOpenArtViewer(selectedArtwork || undefined)}
+            className="w-full py-2.5 px-4 rounded-xl font-mono font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 bg-gradient-to-r from-[#0088FF] via-[#00B4D8] to-[#00D4FF] text-white hover:brightness-110 active:scale-98 transition-all shadow-[0_0_15px_rgba(0,180,216,0.4)] cursor-pointer"
           >
             <span>CHỌN NHÂN VẬT</span>
-            <ChevronRight className="w-5 h-5 text-white" />
+            <ChevronRight className="w-4 h-4 text-white" />
           </button>
         </div>
       </section>

@@ -47,8 +47,19 @@ export interface SessionPayload {
 export const ADMIN_COOKIE_NAME = 'starfront_admin_session';
 export const SESSION_DURATION_MS = 12 * 60 * 60 * 1000; // 12 hours
 
-const AUTH_CONFIG_FILE = path.join(process.cwd(), '.starfront-config', 'admin-auth.json');
-const SECRET_KEY_FILE = path.join(process.cwd(), '.starfront-config', 'session-secret.key');
+function getAuthConfigFile(): string {
+  if (process.env.STARFRONT_AUTH_FILE_PATH && process.env.STARFRONT_AUTH_FILE_PATH.trim().length > 0) {
+    return process.env.STARFRONT_AUTH_FILE_PATH.trim();
+  }
+  return path.join(process.cwd(), '.starfront-config', 'admin-auth.json');
+}
+
+function getSecretKeyFile(): string {
+  if (process.env.STARFRONT_SESSION_KEY_PATH && process.env.STARFRONT_SESSION_KEY_PATH.trim().length > 0) {
+    return process.env.STARFRONT_SESSION_KEY_PATH.trim();
+  }
+  return path.join(process.cwd(), '.starfront-config', 'session-secret.key');
+}
 
 // In-memory rate-limiter: IP -> { attempts: number, lockUntil: number, resetAt: number }
 interface RateLimitRecord {
@@ -66,9 +77,10 @@ function getSessionSigningSecret(): string {
     return process.env.ADMIN_SESSION_SECRET.trim();
   }
 
+  const secretFile = getSecretKeyFile();
   try {
-    if (fs.existsSync(SECRET_KEY_FILE)) {
-      const secret = fs.readFileSync(SECRET_KEY_FILE, 'utf-8').trim();
+    if (fs.existsSync(secretFile)) {
+      const secret = fs.readFileSync(secretFile, 'utf-8').trim();
       if (secret.length >= 32) return secret;
     }
   } catch {
@@ -77,9 +89,9 @@ function getSessionSigningSecret(): string {
 
   const generated = crypto.randomBytes(32).toString('hex');
   try {
-    const dir = path.dirname(SECRET_KEY_FILE);
+    const dir = path.dirname(secretFile);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(SECRET_KEY_FILE, generated, 'utf-8');
+    fs.writeFileSync(secretFile, generated, 'utf-8');
   } catch {
     // If read-only, generated stays in memory for process lifetime
   }
@@ -103,9 +115,10 @@ export function loadAdminStore(): AdminStoreData {
     updatedAt: new Date().toISOString(),
   };
 
+  const authFile = getAuthConfigFile();
   try {
-    if (fs.existsSync(AUTH_CONFIG_FILE)) {
-      const raw = fs.readFileSync(AUTH_CONFIG_FILE, 'utf-8');
+    if (fs.existsSync(authFile)) {
+      const raw = fs.readFileSync(authFile, 'utf-8');
       const parsed = JSON.parse(raw);
 
       if (parsed.accounts && typeof parsed.accounts === 'object') {
@@ -130,39 +143,73 @@ export function loadAdminStore(): AdminStoreData {
     console.warn('[AdminAuth] Error reading admin auth store, using clean in-memory copy:', err);
   }
 
-  // Auto-bootstrap from environment variables if provided (idempotent, no overwrite)
+  // Auto-bootstrap or sync from environment variables if provided
   let mutated = false;
 
   // Primary Admin: 'admin' via STARFRONT_ADMIN_PRIMARY_PASSWORD
   const primaryEnvPass = process.env.STARFRONT_ADMIN_PRIMARY_PASSWORD;
-  if (primaryEnvPass && primaryEnvPass.trim().length >= 8 && !store.accounts['admin']) {
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hash = hashPassword(primaryEnvPass.trim(), salt);
-    const now = new Date().toISOString();
-    store.accounts['admin'] = {
-      username: 'admin',
-      salt,
-      hash,
-      createdAt: now,
-      updatedAt: now,
-    };
-    mutated = true;
+  if (primaryEnvPass && primaryEnvPass.trim().length >= 8) {
+    const existing = store.accounts['admin'];
+    const shouldUpdate =
+      !existing ||
+      process.env.STARFRONT_ADMIN_SYNC_SECRETS === 'true' ||
+      process.env.STARFRONT_ADMIN_RESET_CREDENTIALS === 'true';
+
+    if (shouldUpdate) {
+      let isSame = false;
+      if (existing) {
+        const testHash = hashPassword(primaryEnvPass.trim(), existing.salt);
+        if (testHash === existing.hash) {
+          isSame = true;
+        }
+      }
+      if (!isSame) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hash = hashPassword(primaryEnvPass.trim(), salt);
+        const now = new Date().toISOString();
+        store.accounts['admin'] = {
+          username: 'admin',
+          salt,
+          hash,
+          createdAt: existing?.createdAt || now,
+          updatedAt: now,
+        };
+        mutated = true;
+      }
+    }
   }
 
   // Backup Admin: 'admin123' via STARFRONT_ADMIN_BACKUP_PASSWORD
   const backupEnvPass = process.env.STARFRONT_ADMIN_BACKUP_PASSWORD;
-  if (backupEnvPass && backupEnvPass.trim().length >= 8 && !store.accounts['admin123']) {
-    const salt = crypto.randomBytes(16).toString('hex');
-    const hash = hashPassword(backupEnvPass.trim(), salt);
-    const now = new Date().toISOString();
-    store.accounts['admin123'] = {
-      username: 'admin123',
-      salt,
-      hash,
-      createdAt: now,
-      updatedAt: now,
-    };
-    mutated = true;
+  if (backupEnvPass && backupEnvPass.trim().length >= 8) {
+    const existing = store.accounts['admin123'];
+    const shouldUpdate =
+      !existing ||
+      process.env.STARFRONT_ADMIN_SYNC_SECRETS === 'true' ||
+      process.env.STARFRONT_ADMIN_RESET_CREDENTIALS === 'true';
+
+    if (shouldUpdate) {
+      let isSame = false;
+      if (existing) {
+        const testHash = hashPassword(backupEnvPass.trim(), existing.salt);
+        if (testHash === existing.hash) {
+          isSame = true;
+        }
+      }
+      if (!isSame) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hash = hashPassword(backupEnvPass.trim(), salt);
+        const now = new Date().toISOString();
+        store.accounts['admin123'] = {
+          username: 'admin123',
+          salt,
+          hash,
+          createdAt: existing?.createdAt || now,
+          updatedAt: now,
+        };
+        mutated = true;
+      }
+    }
   }
 
   // Legacy single env check (ADMIN_USERNAME & ADMIN_PASSWORD)
@@ -195,18 +242,51 @@ export function loadAdminStore(): AdminStoreData {
  */
 export function saveAdminStore(store: AdminStoreData): boolean {
   try {
-    const dir = path.dirname(AUTH_CONFIG_FILE);
+    const authFile = getAuthConfigFile();
+    const dir = path.dirname(authFile);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
     store.updatedAt = new Date().toISOString();
-    const tmp = `${AUTH_CONFIG_FILE}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
+    const tmp = `${authFile}.tmp.${Date.now()}.${crypto.randomBytes(4).toString('hex')}`;
     fs.writeFileSync(tmp, JSON.stringify(store, null, 2), 'utf-8');
-    fs.renameSync(tmp, AUTH_CONFIG_FILE);
+    fs.renameSync(tmp, authFile);
     return true;
   } catch (err) {
     console.error('[AdminAuth] Failed to write admin auth store:', err);
     return false;
   }
+}
+
+/**
+ * Server-only emergency credential reset using a provided secret
+ */
+export function resetAdminCredentialsWithSecret(
+  username: string,
+  newPassword: string
+): { success: boolean; error?: string } {
+  const cleanUser = username.trim().toLowerCase();
+  if (cleanUser !== 'admin' && cleanUser !== 'admin123') {
+    return { success: false, error: 'Chỉ hỗ trợ đặt lại mật khẩu cho tài khoản admin hoặc admin123.' };
+  }
+  if (!newPassword || newPassword.trim().length < 8) {
+    return { success: false, error: 'Mật khẩu mới phải có tối thiểu 8 ký tự.' };
+  }
+  const store = loadAdminStore();
+  const salt = crypto.randomBytes(16).toString('hex');
+  const hash = hashPassword(newPassword.trim(), salt);
+  const now = new Date().toISOString();
+  store.accounts[cleanUser] = {
+    username: cleanUser === 'admin123' ? 'admin123' : 'admin',
+    salt,
+    hash,
+    createdAt: store.accounts[cleanUser]?.createdAt || now,
+    updatedAt: now,
+  };
+  const saved = saveAdminStore(store);
+  if (!saved) {
+    return { success: false, error: 'Không thể ghi tệp lưu trữ credentials.' };
+  }
+  return { success: true };
 }
 
 /**

@@ -575,12 +575,19 @@ export class CharacterContentStore {
     user: string
   ): Promise<{ success: boolean; error?: string }> {
     const chapter = await this.getChapter(pilotId, chapterId, true);
-    if (!chapter) {
+    const manifest = await this.getManifest();
+    const manifestPub = manifest.storyPublications[pilotId]?.[chapterId];
+
+    if (!chapter && !manifestPub) {
       return { success: false, error: `Không tìm thấy chương ${chapterId} của phi công ${pilotId}.` };
     }
 
+    const metaToCheck = chapter
+      ? { editorialStatus: chapter.editorialStatus, contentReadiness: chapter.contentReadiness }
+      : { editorialStatus: manifestPub!.editorialStatus, contentReadiness: manifestPub!.contentReadiness };
+
     if (targetStatus === 'PUBLISHED') {
-      const check = validateCanPublishChapter(chapter);
+      const check = validateCanPublishChapter(metaToCheck);
       if (!check.canPublish) {
         return { success: false, error: check.reason || 'Chương không đủ điều kiện xuất bản.' };
       }
@@ -592,11 +599,11 @@ export class CharacterContentStore {
       }
 
       const existing = current.storyPublications[pilotId][chapterId] || {
-        editorialStatus: chapter.editorialStatus,
-        contentReadiness: chapter.contentReadiness,
-        version: chapter.version,
-        title: chapter.title,
-        summary: chapter.summary,
+        editorialStatus: metaToCheck.editorialStatus,
+        contentReadiness: metaToCheck.contentReadiness,
+        version: chapter?.version || manifestPub?.version || '1.0.0',
+        title: chapter?.title || manifestPub?.title || chapterId,
+        summary: chapter?.summary || manifestPub?.summary || '',
       };
 
       current.storyPublications[pilotId][chapterId] = {

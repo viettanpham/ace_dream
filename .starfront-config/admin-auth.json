@@ -1,7 +1,20 @@
 {
-  "username": "admin",
-  "salt": "a6e410e9d024b9ea8df397828ff8f3bf",
-  "hash": "cf03328f9fb6d9587479e0b7fe9417240a1fe98e9c5de0b57b094b38c6705ee34dfa1a06fe200fac39705150cd8421f98182e8493c58675053920d402768b5b2",
-  "createdAt": "2026-10-23T16:33:45.573Z",
-  "updatedAt": "2026-10-23T16:33:45.573Z"
+  "version": 2,
+  "accounts": {
+    "admin": {
+      "username": "admin",
+      "salt": "74ff23c45f7fe1aaaa84fd954121a844",
+      "hash": "00d039254721d431e9ef9cb1c43bee900addbefde3bf56988be359bbdf826f0f0c836360e4fbdf3fa4a4c259d870eedc12c39f037b9e0c06c8340d275ae66d17",
+      "createdAt": "2026-10-23T16:33:45.573Z",
+      "updatedAt": "2026-10-23T18:18:55.717Z"
+    },
+    "admin123": {
+      "username": "admin123",
+      "salt": "39c48affcbef15a57b285ee5def95431",
+      "hash": "9f273964a8e2b4844c390bdf66141f0d6243ab5c3cd7b7458536a5dbfbce372c26e94e37fb2b9b0f09b6c3b8ced1971643bb092842774bff76b5f97b3f34666c",
+      "createdAt": "2026-10-23T18:12:37.561Z",
+      "updatedAt": "2026-10-23T18:18:55.717Z"
+    }
+  },
+  "updatedAt": "2026-10-23T18:18:55.947Z"
 }

@@ -20,19 +20,17 @@ import {
 } from '../lib/game/auth/admin-auth';
 
 describe('STARFRONT WORLD V2 — ADMINCP AUTH & SECURITY E2E TEST SUITE (10 CASES)', () => {
-  const TEST_CONFIG_DIR = path.join(process.cwd(), '.starfront-config');
-  const TEST_AUTH_FILE = path.join(TEST_CONFIG_DIR, 'admin-auth.json');
-  let originalAuthFileBackup: string | null = null;
+  const TEST_AUTH_FILE = path.join('/tmp', 'starfront-test-admin-auth.json');
+  process.env.STARFRONT_AUTH_FILE_PATH = TEST_AUTH_FILE;
 
-  // Backup existing file before tests
-  if (fs.existsSync(TEST_AUTH_FILE)) {
-    originalAuthFileBackup = fs.readFileSync(TEST_AUTH_FILE, 'utf-8');
-  }
-
-  // Helper to restore
-  const restoreAuth = () => {
-    if (originalAuthFileBackup) {
-      fs.writeFileSync(TEST_AUTH_FILE, originalAuthFileBackup, 'utf-8');
+  // Helper to cleanup
+  const cleanupAuth = () => {
+    try {
+      if (fs.existsSync(TEST_AUTH_FILE)) {
+        fs.unlinkSync(TEST_AUTH_FILE);
+      }
+    } catch {
+      // ignore
     }
   };
 
@@ -223,7 +221,7 @@ describe('STARFRONT WORLD V2 — ADMINCP AUTH & SECURITY E2E TEST SUITE (10 CASE
     assert.ok(migrated.accounts['admin'], 'Tài khoản legacy admin phải được chuyển vào accounts');
     assert.strictEqual(migrated.accounts['admin'].salt, legacyJson.salt);
 
-    // Restore backup
-    restoreAuth();
+    // Cleanup test file
+    cleanupAuth();
   });
 });

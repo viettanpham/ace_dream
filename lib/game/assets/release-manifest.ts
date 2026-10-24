@@ -17,6 +17,12 @@ import {
   computeCdnBaseUrl,
 } from './runtime-asset-config';
 import { CANONICAL_CORE_26_ASSETS } from './github-release-validator';
+import {
+  fetchHierarchicalIndex,
+  fetchPilotManifest,
+  invalidateHierarchicalManifestCache,
+  HIERARCHICAL_PILOT_NAMES,
+} from './hierarchical-manifest';
 
 export type AssetCategory =
   | 'portrait'
@@ -591,57 +597,52 @@ export async function fetchReleaseManifest(
       }
     }
 
-    // 2. For non-R1 releases (or R2 candidates), check for pilot-v2-artworks.json
+    // 2. For non-R1 releases (or R2 candidates), query Discovery Index (images/manifest.json)
+    // and load each Pilot manifest (images/pilots/<pilotId>/manifest.json).
+    // Categories with status="not_configured" are automatically skipped with zero HTTP overhead.
     if (tag !== CANONICAL_ACTIVE_VERSION) {
       try {
-        const v2ManifestUrl = `${cdnBase}/manifests/pilot-v2-artworks.json`;
-        let p2Res = await fetch(v2ManifestUrl, {
-          method: 'GET',
-          headers: { Accept: 'application/json', 'User-Agent': 'STARFRONT-World-AssetManager/2.0' },
-          signal: AbortSignal.timeout(4000),
-        });
+        const indexManifest = await fetchHierarchicalIndex(cdnBase, tag);
 
-        // If not found on CDN (e.g. branch version1-r2 before GitHub tag), fallback to raw GitHub
-        if (!p2Res.ok) {
-          const rawGitUrl = `https://raw.githubusercontent.com/${CANONICAL_REPOSITORY}/version1-r2/starfront-world-assets/manifests/pilot-v2-artworks.json`;
-          p2Res = await fetch(rawGitUrl, {
-            method: 'GET',
-            headers: { Accept: 'application/json', 'User-Agent': 'STARFRONT-World-AssetManager/2.0' },
-            signal: AbortSignal.timeout(4000),
-          });
-        }
+        // Process pilots category if configured
+        if (indexManifest?.categories?.pilots?.status === 'configured') {
+          const pilotsDict = indexManifest.categories.pilots.pilots || {};
+          const pilotIds = Object.keys(pilotsDict);
 
-        if (p2Res.ok) {
-          const p2Data = await p2Res.json();
-          if (Array.isArray(p2Data?.assets)) {
-            for (const item of p2Data.assets) {
-              const fileName = item.filename || item.fileName || '';
-              const pilotId = item.pilotId || inferPilotId(fileName);
-              const relativePath = item.path || `images/pilots/${pilotId}/${fileName}`;
-              const category = normalizeCategory(item.category || item.role, fileName);
+          for (const pid of pilotIds) {
+            const pilotManifest = await fetchPilotManifest(cdnBase, tag, pid, indexManifest);
+            if (pilotManifest && Array.isArray(pilotManifest.artworks)) {
+              for (const art of pilotManifest.artworks) {
+                // Only approved artworks are processed
+                if (art.status && art.status !== 'approved') continue;
 
-              assetsMap.set(relativePath, {
-                fileName,
-                relativePath,
-                sizeBytes: item.byteSize || item.sizeBytes,
-                sizeKB: item.byteSize ? +(item.byteSize / 1024).toFixed(2) : undefined,
-                format: 'webp',
-                width: item.width,
-                height: item.height,
-                category,
-                rawCategory: item.category || item.role,
-                pilotId,
-                pilotName: PILOT_NAMES_MAP[pilotId] || pilotId,
-                group: item.role,
-                targetUsage: 'pilot-v2-dossier',
-                sha256: item.sha256,
-                cdnUrl: `${cdnBase}/${relativePath}`,
-              });
+                const fileName = art.filename;
+                const relativePath = art.path || `images/pilots/${pid}/${fileName}`;
+                const category = normalizeCategory(art.category || art.role, fileName);
+
+                assetsMap.set(relativePath, {
+                  fileName,
+                  relativePath,
+                  sizeBytes: art.byteSize,
+                  sizeKB: art.byteSize ? +(art.byteSize / 1024).toFixed(2) : undefined,
+                  format: 'webp',
+                  width: art.width,
+                  height: art.height,
+                  category,
+                  rawCategory: art.role,
+                  pilotId: pid,
+                  pilotName: HIERARCHICAL_PILOT_NAMES[pid] || PILOT_NAMES_MAP[pid] || pid,
+                  group: art.role,
+                  targetUsage: 'pilot-v2-dossier',
+                  sha256: art.sha256,
+                  cdnUrl: art.cdnUrl || `${cdnBase}/${relativePath}`,
+                });
+              }
             }
           }
         }
       } catch {
-        // Continue with base assets if pilot-v2-artworks is unavailable
+        // Fallback or continue if hierarchical index unavailable
       }
     }
 
@@ -697,8 +698,13 @@ function buildCanonicalR1Manifest(tag: string, cdnBase: string): ReleaseManifest
 /**
  * Clear in-memory manifest cache (for tests/forced refresh)
  */
-export function clearManifestCache(): void {
-  manifestCache.clear();
+export function clearManifestCache(tag?: string): void {
+  if (tag) {
+    manifestCache.delete(tag);
+  } else {
+    manifestCache.clear();
+  }
+  invalidateHierarchicalManifestCache(tag);
 }
 
 /**

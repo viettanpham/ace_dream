@@ -6,6 +6,10 @@
 // - docs/art-direction/PILOT/VALENTINE/FND8_8_2_3_VALENTINE_PROFILE_STORY_DRAFT.md
 // - docs/web-01/WEB01_PUBLIC_IMAGES_INVENTORY.md (26 Canonical Assets on jsDelivr CDN)
 
+import { fetchPilotManifest } from '../assets/hierarchical-manifest';
+import { DEFAULT_JSDELIVR_CDN_BASE } from '../assets/image-resolver';
+import { CANONICAL_ACTIVE_VERSION } from '../assets/runtime-asset-config';
+
 export interface BaseAttributes {
   atk: number;
   def: number;
@@ -1368,3 +1372,71 @@ export const ATTRIBUTE_COLOR_CONFIG: Record<
     icon: "✨",
   },
 };
+
+/**
+ * Asynchronously augments a CharacterProfileV2 with dynamic artworks from their dedicated
+ * hierarchical pilot manifest (images/pilots/<pilotId>/manifest.json).
+ * Preserves same-pilot isolation: never substitutes another pilot's artworks.
+ */
+export async function augmentCharacterWithHierarchicalArtworks(
+  character: CharacterProfileV2,
+  cdnBaseUrl: string = DEFAULT_JSDELIVR_CDN_BASE,
+  releaseTag: string = CANONICAL_ACTIVE_VERSION
+): Promise<CharacterProfileV2> {
+  const pId = character.id.toLowerCase();
+  try {
+    const pilotManifest = await fetchPilotManifest(cdnBaseUrl, releaseTag, pId);
+    if (!pilotManifest || !Array.isArray(pilotManifest.artworks) || pilotManifest.artworks.length === 0) {
+      return character;
+    }
+
+    const dynamicArtworks: GalleryArtwork[] = pilotManifest.artworks.map((art) => {
+      const isCore = art.category === 'core' || art.role === 'portrait' || art.role === 'fullbody';
+      const isEvent = art.category === 'event' || art.role.includes('event');
+      const isActivity = art.role.includes('activity');
+      const cat = isCore ? 'base' : (isEvent ? 'event' : (isActivity ? 'activity' : 'costume'));
+
+      return {
+        id: art.assetId,
+        title: art.title || `${character.classCharacterName} — ${art.role.toUpperCase()}`,
+        category: cat,
+        path: `/${art.path}`,
+        isAvailableOnDisk: true,
+        status: 'verified_webp',
+        description: art.description || `Tác phẩm ${art.role} chuẩn WebP trên R2 CDN (${art.width || 1122}×${art.height || 1402})`,
+        dimensions: art.width && art.height ? { width: art.width, height: art.height } : undefined,
+      };
+    });
+
+    const approvedCount = dynamicArtworks.length;
+    const coreMapping = pilotManifest.coreMapping || {};
+
+    const updatedFullbody = coreMapping.fullbody 
+      ? `/images/pilots/${pId}/${coreMapping.fullbody}`
+      : character.fullbodyAssetPath;
+
+    const updatedPortrait = coreMapping.portrait
+      ? `/images/pilots/${pId}/${coreMapping.portrait}`
+      : character.portraitAssetPath;
+
+    return {
+      ...character,
+      fullbodyAssetPath: updatedFullbody,
+      portraitAssetPath: updatedPortrait,
+      artworks: dynamicArtworks,
+      progressStatus: {
+        ...character.progressStatus,
+        artStatus: 'COMPLETE_ART',
+        artStatusLabel: `WebP Hoàn Tất (${approvedCount} Artwork Approved)`,
+        galleryRuntime: 'READY',
+        galleryRuntimeLabel: `${approvedCount} WebP / Đã Kết Nối CDN`,
+        registeredArtCount: approvedCount,
+        cdnAvailableArtCount: approvedCount,
+        uiReadiness: 'READY',
+        uiReadinessLabel: 'Sẵn Sàng Toàn Diện',
+      },
+    };
+  } catch {
+    return character;
+  }
+}

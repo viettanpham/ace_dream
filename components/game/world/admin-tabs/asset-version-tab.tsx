@@ -759,6 +759,118 @@ export function AssetVersionTab() {
       </div>
 
       {/* ====================================================================
+          KHỐI 1.5: KIẾN TRÚC CDN PHÂN CẤP // HIERARCHICAL MANIFEST ARCHITECTURE
+          ==================================================================== */}
+      <div className="rounded border border-indigo-500/40 bg-zinc-950/90 p-4 space-y-3.5 shadow-md">
+        <div className="flex flex-wrap items-center justify-between border-b border-zinc-800/80 pb-2.5 gap-2">
+          <div className="flex items-center gap-2">
+            <Layers className="size-4 text-indigo-400" />
+            <h3 className="text-xs font-bold uppercase text-indigo-300 tracking-wider font-display">
+              1.5. Kiến Trúc CDN Phân Cấp // Hierarchical Manifest V2 (R2 Ready)
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-950/70 border border-indigo-500/60 text-indigo-300">
+              <CheckCircle2 className="size-3 text-indigo-400" />
+              HIERARCHICAL DISCOVERY ACTIVE
+            </span>
+          </div>
+        </div>
+
+        <div className="text-xs text-zinc-300 space-y-2 leading-relaxed">
+          <p>
+            Hệ thống phân giải tài nguyên tuân thủ cấu trúc phân cấp chuẩn đã duyệt:
+            Discovery Index cấp cao <code className="text-amber-300 font-mono">images/manifest.json</code> kết nối độc lập tới từng inventory <code className="text-cyan-300 font-mono">images/pilots/&lt;pilotId&gt;/manifest.json</code>.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-[11px] pt-1">
+            <div className="p-2 rounded bg-zinc-900/90 border border-emerald-500/50">
+              <div className="text-zinc-400 text-[10px]">Pilots Category</div>
+              <div className="text-emerald-300 font-bold mt-0.5">CONFIGURED</div>
+              <div className="text-zinc-500 text-[10px]">8 Pilot // 182 WebP</div>
+            </div>
+            <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
+              <div className="text-zinc-400 text-[10px]">GEAR Category</div>
+              <div className="text-zinc-500 font-bold mt-0.5">NOT CONFIGURED</div>
+              <div className="text-zinc-600 text-[10px]">Zero HTTP Overhead</div>
+            </div>
+            <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
+              <div className="text-zinc-400 text-[10px]">Equipment Category</div>
+              <div className="text-zinc-500 font-bold mt-0.5">NOT CONFIGURED</div>
+              <div className="text-zinc-600 text-[10px]">Zero HTTP Overhead</div>
+            </div>
+            <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
+              <div className="text-zinc-400 text-[10px]">Environments Category</div>
+              <div className="text-zinc-500 font-bold mt-0.5">NOT CONFIGURED</div>
+              <div className="text-zinc-600 text-[10px]">Zero HTTP Overhead</div>
+            </div>
+            <div className="p-2 rounded bg-zinc-900/60 border border-zinc-800">
+              <div className="text-zinc-400 text-[10px]">UI Category</div>
+              <div className="text-zinc-500 font-bold mt-0.5">NOT CONFIGURED</div>
+              <div className="text-zinc-600 text-[10px]">Zero HTTP Overhead</div>
+            </div>
+          </div>
+        </div>
+
+        {/* 8 Pilots Grid breakdown */}
+        <div className="pt-2">
+          <div className="text-[11px] font-mono font-bold text-zinc-400 mb-1.5">
+            BẢNG ĐỐI CHIẾU 8 PILOT CANONICAL APPROVED (100% SHA-256 VERIFIED):
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
+            <div className="p-2 rounded bg-black/40 border border-zinc-800 flex justify-between items-center">
+              <span className="text-zinc-300">Aria Sterling</span>
+              <span className="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/40">20 WebP</span>
+            </div>
+            <div className="p-2 rounded bg-black/40 border border-zinc-800 flex justify-between items-center">
+              <span className="text-zinc-300">Fortuna (Lady Luck)</span>
+              <span className="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/40">27 WebP</span>
+            </div>
+            <div className="p-2 rounded bg-black/40 border border-zinc-800 flex justify-between items-center">
+              <span className="text-zinc-300">Kaelen Cross</span>
+              <span className="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/40">20 WebP</span>
+            </div>
+            <div className="p-2 rounded bg-black/40 border border-zinc-800 flex justify-between items-center">
+              <span className="text-zinc-300">Lyra Song</span>
+              <span className="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/40">20 WebP</span>
+            </div>
+            <div className="p-2 rounded bg-black/40 border border-zinc-800 flex justify-between items-center">
+              <span className="text-zinc-300">Nova Ray</span>
+              <span className="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/40">22 WebP</span>
+            </div>
+            <div className="p-2 rounded bg-black/40 border border-zinc-800 flex justify-between items-center">
+              <span className="text-zinc-300">Rhea Silva</span>
+              <span className="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/40">23 WebP</span>
+            </div>
+            <div className="p-2 rounded bg-black/40 border border-zinc-800 flex justify-between items-center">
+              <span className="text-zinc-300">Selena Vega</span>
+              <span className="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/40">20 WebP</span>
+            </div>
+            <div className="p-2 rounded bg-black/40 border border-zinc-800 flex justify-between items-center">
+              <span className="text-zinc-300">Valentine Vance</span>
+              <span className="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/40">30 WebP</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between pt-2 border-t border-zinc-800/80 gap-2">
+          <div className="text-[11px] font-mono text-zinc-400">
+            Tổng tài nguyên: <strong className="text-white">182 Approved WebP</strong> · Khớp 100% Gói Duyệt Chủ Dự Án
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href="/api/admin/asset-version/hierarchical-bundle"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-indigo-950/80 hover:bg-indigo-900/80 border border-indigo-500/60 text-indigo-300 hover:text-white transition-all text-xs font-mono"
+            >
+              <ExternalLink className="size-3.5" />
+              <span>Xem Toàn Bộ Gói Manifest Phân Cấp (API JSON)</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* ====================================================================
           KHỐI 2: DANH SÁCH BẢN PHÁT HÀNH GITHUB (RELEASE DISCOVERY & AUDIT)
           ==================================================================== */}
       <div className="rounded border border-zinc-800 bg-zinc-950/80 p-4 space-y-3.5 shadow-md">

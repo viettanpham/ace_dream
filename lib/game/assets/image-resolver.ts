@@ -4,6 +4,8 @@
  * Supports Local filesystem, jsDelivr CDN, and future Cloudflare R2 / Custom CDN.
  */
 
+import { invalidateHierarchicalManifestCache } from './hierarchical-manifest';
+
 export type AssetStorageMode = 'local' | 'jsdelivr' | 'r2' | 'custom';
 
 export interface ImageResolverConfig {
@@ -162,6 +164,7 @@ let clientActiveRuntimeConfig: {
 /**
  * Sets the active runtime configuration for all client-side image resolutions.
  * Strictly active in browser environments only — never leaks between SSR requests.
+ * Automatically invalidates hierarchical manifest caches on switch.
  */
 export function setClientActiveRuntimeConfig(
   config: {
@@ -170,6 +173,7 @@ export function setClientActiveRuntimeConfig(
   } | null
 ): void {
   if (typeof window === 'undefined') return;
+  invalidateHierarchicalManifestCache();
   if (!config || !config.cdnBaseUrl) {
     clientActiveRuntimeConfig = null;
     return;
@@ -186,6 +190,23 @@ export function setClientActiveRuntimeConfig(
     mode,
     cdnBaseUrl: config.cdnBaseUrl,
   };
+}
+
+/**
+ * Resolves a pilot's artwork directly using hierarchical path convention:
+ * images/pilots/<pilotId>/<filename>
+ * Guarantees same-pilot isolation: never resolves to a different pilot.
+ */
+export function resolvePilotArtwork(
+  pilotId: string,
+  filename: string,
+  overrideConfig?: Partial<ImageResolverConfig>
+): string {
+  const pId = pilotId.toLowerCase().trim();
+  const cleanFile = filename.trim();
+  if (!cleanFile) return '';
+  const relPath = `images/pilots/${pId}/${cleanFile}`;
+  return resolveImageUrl(relPath, overrideConfig);
 }
 
 /**

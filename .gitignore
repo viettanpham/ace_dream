@@ -17,3 +17,8 @@ node_modules
 # External Asset Staging & Backups (WEB-01.2)
 starfront-world-assets/
 *.zip
+
+# Local Admin & Auth Data (Not for production repository commits)
+data/*.json
+data/*.key
+*.tmp.*

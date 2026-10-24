@@ -1,0 +1,55 @@
+name: Validate and Generate Universal Asset Manifests (R3)
+
+on:
+  push:
+    branches:
+      - main
+      - version2-r1
+    paths:
+      - 'starfront-world-assets/images/**'
+      - 'starfront-world-assets/stories/**'
+      - 'scripts/**'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release Tag for Manifest (e.g. v3.0-assets-r3)'
+        required: false
+        default: 'v3.0-assets-r3'
+
+jobs:
+  validate-and-generate:
+    name: Build & Audit R3 Manifests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Manifest Generator
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.release_tag || 'v3.0-assets-r3' }}
+        run: |
+          node scripts/generate-asset-index.mjs
+
+      - name: Audit Clean Working Tree & Commit Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action [R3 Generator]"
+          
+          if [[ -n $(git status -s) ]]; then
+            echo "Changes detected, committing updated manifests..."
+            git add starfront-world-assets/
+            git commit -m "chore(manifest): auto-generate universal R3 asset manifests [skip ci]"
+            git push origin HEAD
+          else
+            echo "Clean tree: All manifests are already synchronized and idempotent."
+          fi

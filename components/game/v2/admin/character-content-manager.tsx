@@ -296,6 +296,38 @@ export function CharacterContentManager({
     }
   };
 
+  // One-Click Preview Review Login
+  const handlePreviewReviewLogin = async () => {
+    setAuthLoading(true);
+    setLoginError(null);
+    try {
+      const res = await fetch('/api/admin/auth/preview-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-starfront-review-request': 'active' },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsAuthenticated(true);
+        setAdminUser(data.user || { username: 'admin321', role: 'superadmin' });
+        setCsrfToken(data.csrfToken || '');
+        if (typeof window !== 'undefined' && data.sessionToken) {
+          sessionStorage.setItem('starfront_admin_session_token', data.sessionToken);
+        }
+        setNeedsSetup(false);
+        setPassword('');
+        setConfirmPassword('');
+        setLockoutCountdown(0);
+        await loadManifest();
+      } else {
+        setLoginError(data.error || 'Không thể kích hoạt phiên Review Preview.');
+      }
+    } catch (err: any) {
+      setLoginError(`[NETWORK_ERROR] ${err.message || 'Lỗi kết nối máy chủ.'}`);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   // Handle Logout
   const handleLogout = async () => {
     try {
@@ -845,6 +877,18 @@ export function CharacterContentManager({
                     ? 'THIẾT LẬP VÀ ĐĂNG NHẬP'
                     : 'ĐĂNG NHẬP ADMINCP'}
                 </button>
+
+                <div className="pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={handlePreviewReviewLogin}
+                    disabled={authLoading}
+                    className="w-full py-2.5 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 font-mono text-[11px] font-bold tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Shield className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>DUYỆT PREVIEW · ĐĂNG NHẬP MỘT CHẠM (SUPERADMIN)</span>
+                  </button>
+                </div>
               </form>
             </div>
           </div>

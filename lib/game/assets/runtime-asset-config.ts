@@ -57,38 +57,39 @@ export interface StorageStatus {
 
 export const CANONICAL_REPOSITORY = 'viettanpham/starfront-assets';
 export const CANONICAL_ASSET_ROOT = 'starfront-world-assets';
-export const CANONICAL_ACTIVE_VERSION = 'v2.0-assets-r1';
+export const CANONICAL_ACTIVE_VERSION = 'v2.0-assets-r2';
 
 export const DEFAULT_RUNTIME_ASSET_CONFIG: RuntimeAssetConfig = {
   schemaVersion: 1,
-  revision: 1,
+  revision: 2,
   provider: 'jsdelivr',
   repository: CANONICAL_REPOSITORY,
   assetRoot: CANONICAL_ASSET_ROOT,
   activeVersion: CANONICAL_ACTIVE_VERSION,
   cdnBaseUrl: `https://cdn.jsdelivr.net/gh/${CANONICAL_REPOSITORY}@${CANONICAL_ACTIVE_VERSION}/${CANONICAL_ASSET_ROOT}`,
-  previousVersion: null,
-  previousCdnBaseUrl: null,
-  updatedAt: '2026-10-22T20:25:00.000Z',
+  previousVersion: 'v2.0-assets-r1',
+  previousCdnBaseUrl: `https://cdn.jsdelivr.net/gh/${CANONICAL_REPOSITORY}@v2.0-assets-r1/${CANONICAL_ASSET_ROOT}`,
+  updatedAt: '2026-10-24T00:00:00.000Z',
   updatedBy: 'system_bootstrap',
-  comment: 'Default verified production release r1 (26 core WebP assets)',
+  comment: 'Active verified production release r2 (200 WebP assets across 9 canonical pilots)',
   manifestMetadata: {
-    totalAssets: 26,
-    validatedAt: '2026-10-22T20:25:00.000Z',
+    totalAssets: 200,
+    manifestSha256: '49414e7a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e',
+    validatedAt: '2026-10-24T00:00:00.000Z',
   },
 };
 
 export const DEFAULT_PUBLIC_ASSET_CONFIG: PublicRuntimeAssetConfig = {
   schemaVersion: 1,
-  revision: 1,
+  revision: 2,
   provider: 'jsdelivr',
   repository: CANONICAL_REPOSITORY,
   assetRoot: CANONICAL_ASSET_ROOT,
   activeVersion: CANONICAL_ACTIVE_VERSION,
   cdnBaseUrl: `https://cdn.jsdelivr.net/gh/${CANONICAL_REPOSITORY}@${CANONICAL_ACTIVE_VERSION}/${CANONICAL_ASSET_ROOT}`,
-  previousVersion: null,
-  updatedAt: '2026-10-22T20:25:00.000Z',
-  totalAssets: 26,
+  previousVersion: 'v2.0-assets-r1',
+  updatedAt: '2026-10-24T00:00:00.000Z',
+  totalAssets: 200,
 };
 
 /**

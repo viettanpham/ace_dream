@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "chapterId": "chap-01",
+  "chapterNumber": 1,
+  "pilotId": "valentine",
+  "characterName": "Valentine",
+  "title": "Ánh sáng cuối cùng tại Elysia",
+  "editorialStatus": "APPROVED",
+  "contentStatus": "FULL_PROSE",
+  "publicationStatus": "PUBLISHED",
+  "publishedAt": "2026-10-23T08:00:00.000Z",
+  "version": "1.0.0",
+  "readingTimeMinutes": 6,
+  "wordCount": 780,
+  "summary": "Quyết định định mệnh giữa đoàn tàu hàng trăm bệnh nhân và đội ngũ đồng đội bị cô lập.",
+  "quote": "“Tôi không hứa rằng mọi người sẽ không bị thương. Nhưng tôi hứa sẽ làm tất cả những gì có thể để đưa họ trở về.”",
+  "sceneAnchors": [
+    {
+      "anchorId": "val-ch01-scene-academy",
+      "placementTag": "val-ch01-scene-academy",
+      "fallbackParagraphIndex": 2,
+      "assetId": "valentine-portrait",
+      "artworkUrl": "images/pilots/valentine/valentine-portrait.webp",
+      "caption": "Valentine trong những ngày đầu tốt nghiệp Học viện Quân y Không gian",
+      "aspectRatio": "1:1"
+    },
+    {
+      "anchorId": "val-ch01-scene-evac",
+      "placementTag": "val-ch01-scene-evac",
+      "fallbackParagraphIndex": 4,
+      "assetId": "valentine-fullbody",
+      "artworkUrl": "images/pilots/valentine/valentine-fullbody.webp",
+      "caption": "Valentine điều phối phi đội sơ tán Mercy Wing trong cuộc phong tỏa Elysia",
+      "aspectRatio": "portrait"
+    },
+    {
+      "anchorId": "val-ch01-scene-resolve",
+      "placementTag": "val-ch01-scene-resolve",
+      "fallbackParagraphIndex": 7,
+      "assetId": "valentine-activity-001",
+      "artworkUrl": "images/pilots/valentine/valentine-activity-001.webp",
+      "caption": "Lời thề bảo vệ sinh mạng và lý tưởng của phi đội Mercy Wing",
+      "aspectRatio": "portrait"
+    }
+  ],
+  "content": "Elysia từng là một khu dân cư quỹ đạo nổi tiếng bởi những trung tâm y tế và hành lang vận tải nhân đạo. Valentine lớn lên giữa tiếng động cơ tàu cứu thương, những ca trực kéo dài của mẹ và những câu chuyện về người cha thường xuyên đi cùng các đoàn cứu trợ xa xôi.\n\nTừ nhỏ, cô đã tin rằng cứu một sinh mạng không chỉ là chữa lành vết thương, mà còn là cho người đó cơ hội trở về với gia đình.\n\n<!-- story-anchor: val-ch01-scene-academy -->\nSau khi tốt nghiệp Học viện Quân y Không gian, Valentine gia nhập một đơn vị cứu hộ chiến trường. Khác với nhiều phi công tìm kiếm chiến thắng hoặc danh tiếng, cô quan tâm nhiều hơn đến số người trở về sau mỗi nhiệm vụ. Đồng đội thường nhớ đến nụ cười bình thản của cô, kể cả giữa những tình huống nguy hiểm nhất.\n\nRồi một cuộc sơ tán quy mô lớn tại Elysia đã thay đổi mọi thứ.\n\n<!-- story-anchor: val-ch01-scene-evac -->\nTrong lúc tuyến phòng thủ sụp đổ, Valentine nhận được hai tín hiệu cầu cứu cùng một thời điểm. Một đến từ đoàn vận tải chở hàng trăm bệnh nhân; tín hiệu còn lại phát ra từ một nhóm đồng đội đang mắc kẹt trong khu vực bị phong tỏa bức xạ.\n\nKhông còn đủ thời gian và nhiên liệu cho cả hai chuyến bay, cô phải đưa ra lựa chọn cứu đoàn vận tải.\n\nHàng trăm người đã sống sót trở về đất liền. Nhưng nhóm đồng đội kia không bao giờ trở về nữa.\n\nValentine được trao bằng khen danh dự vì quyết định kiên định ấy. Nhưng cô chưa từng trưng bày nó trong phòng truyền thống.\n\n<!-- story-anchor: val-ch01-scene-resolve -->\nTừ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiến trường và vận hành trường lực khiên cứu hộ. Cô hiểu rằng mình không thể sửa chữa quá khứ đau thương, nhưng tin rằng mỗi sinh mạng được cứu hôm nay chính là lý do xứng đáng nhất để tiếp tục xuất kích."
+}

@@ -87,6 +87,7 @@ export interface PilotManifest {
 
 // Canonical display names for pilots
 export const HIERARCHICAL_PILOT_NAMES: Record<string, string> = {
+  alviss: 'Alviss Sterling',
   aria: 'Aria Sterling',
   fortuna: 'Fortuna (Lady Luck)',
   kaelen: 'Kaelen Cross',
@@ -124,6 +125,13 @@ function makeCacheKey(releaseTag: string, manifestPath: string): string {
   return `${releaseTag}:${manifestPath}`;
 }
 
+function formatNeutralArtworkTitle(pilotId: string, filename: string): string {
+  const pName = HIERARCHICAL_PILOT_NAMES[pilotId] || pilotId.charAt(0).toUpperCase() + pilotId.slice(1);
+  const clean = filename.replace(/\.webp$/i, '').replace(/^[a-z]+-/i, '').replace(/-/g, ' ');
+  const capitalized = clean.charAt(0).toUpperCase() + clean.slice(1);
+  return `${pName} - ${capitalized}`;
+}
+
 /**
  * Fetch discovery index: images/manifest.json
  */
@@ -154,24 +162,87 @@ export async function fetchHierarchicalIndex(
     });
 
     if (res.ok) {
-      const indexData = (await res.json()) as HierarchicalIndexManifest;
-      hierarchicalCache.set(cacheKey, { data: indexData, expiresAt: now + HIERARCHICAL_CACHE_TTL });
-      return indexData;
+      const indexData = (await res.json()) as any;
+
+      // Handle new R2 schema: { schemaVersion: 1, categories: [{ id: "pilots", manifest: "images/pilots/manifest.json" }] }
+      if (Array.isArray(indexData.categories)) {
+        const pilotsCategoryDef = indexData.categories.find((c: any) => c.id === 'pilots');
+        let pilotIds: string[] = ['alviss', 'kaelen', 'lyra', 'selena', 'valentine', 'fortuna', 'aria', 'rhea', 'nova'];
+
+        if (pilotsCategoryDef?.manifest) {
+          try {
+            const pRes = await fetch(`${normalizedBase}/${pilotsCategoryDef.manifest}`, {
+              headers: { Accept: 'application/json' },
+              signal: AbortSignal.timeout(3000),
+            });
+            if (pRes.ok) {
+              const pData = await pRes.json();
+              if (Array.isArray(pData.pilots)) {
+                pilotIds = pData.pilots;
+              }
+            }
+          } catch {
+            // Keep default 9 pilots
+          }
+        }
+
+        const pilotsMap: Record<string, HierarchicalPilotEntry> = {};
+        for (const pid of pilotIds) {
+          pilotsMap[pid] = {
+            manifest: `images/pilots/${pid}/files.json`,
+            count: 0,
+            name: HIERARCHICAL_PILOT_NAMES[pid] || pid,
+          };
+        }
+
+        const normalizedIndex: HierarchicalIndexManifest = {
+          schemaVersion: 'starfront-hierarchical-index-v2',
+          packageName: 'starfront-world-assets',
+          generatedAt: new Date().toISOString(),
+          sourceRepo: CANONICAL_REPOSITORY,
+          activeReleaseTag: releaseTag,
+          rootPath: 'images',
+          categories: {
+            pilots: {
+              status: 'configured',
+              basePath: 'images/pilots',
+              indexManifest: 'images/pilots/manifest.json',
+              pilotCount: pilotIds.length,
+              pilots: pilotsMap,
+            },
+            gear: { status: 'not_configured', note: 'Chỉ mục GEAR khi được cấu hình' },
+            equipment: { status: 'not_configured', note: 'Chỉ mục Equipment khi được cấu hình' },
+            environments: { status: 'not_configured', note: 'Chỉ mục Environment khi được cấu hình' },
+            ui: { status: 'not_configured', note: 'Chỉ mục UI khi được cấu hình' },
+          },
+        };
+
+        hierarchicalCache.set(cacheKey, { data: normalizedIndex, expiresAt: now + HIERARCHICAL_CACHE_TTL });
+        return normalizedIndex;
+      }
+
+      // Existing format
+      if (indexData.categories && typeof indexData.categories === 'object' && !Array.isArray(indexData.categories)) {
+        hierarchicalCache.set(cacheKey, { data: indexData, expiresAt: now + HIERARCHICAL_CACHE_TTL });
+        return indexData as HierarchicalIndexManifest;
+      }
     }
   } catch {
     // CDN fetch failed or timed out, attempt raw GitHub fallback or synthesis
   }
 
   // Graceful Decomposition Fallback:
-  // If images/manifest.json is not yet uploaded to the CDN release (e.g. branch version1-r2 before GitHub tag),
-  // fetch manifests/pilot-v2-artworks.json and synthesize the canonical hierarchical structure in memory.
   const synthesized = await synthesizeHierarchicalIndexFromRemoteV2(cdnBaseUrl, releaseTag);
   hierarchicalCache.set(cacheKey, { data: synthesized, expiresAt: now + HIERARCHICAL_CACHE_TTL });
   return synthesized;
 }
 
 /**
- * Fetch per-pilot manifest: images/pilots/<pilotId>/manifest.json
+ * Fetch per-pilot manifest:
+ * Supports:
+ * 1. Dedicated images/pilots/<pilotId>/manifest.json (if committed)
+ * 2. Dynamic aggregation of files.json + gallery.json from CDN R2
+ * 3. Fallback to synthesis from V2 catalog
  */
 export async function fetchPilotManifest(
   cdnBaseUrl: string,
@@ -190,8 +261,9 @@ export async function fetchPilotManifest(
   }
 
   const normalizedBase = cdnBaseUrl.endsWith('/') ? cdnBaseUrl.slice(0, -1) : cdnBaseUrl;
-  const targetUrl = `${normalizedBase}/${manifestPath}`;
 
+  // 1. Try dedicated per-pilot manifest.json
+  const targetUrl = `${normalizedBase}/${manifestPath}`;
   try {
     const res = await fetch(targetUrl, {
       method: 'GET',
@@ -199,12 +271,11 @@ export async function fetchPilotManifest(
         Accept: 'application/json',
         'User-Agent': 'STARFRONT-HierarchicalCDN/2.0',
       },
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(3000),
     });
 
     if (res.ok) {
       const pilotData = (await res.json()) as PilotManifest;
-      // Filter out rejected, draft, hidden artworks (Approved only)
       const approvedArtworks = pilotData.artworks.filter(
         (a) => !a.status || a.status === 'approved'
       ).map((a) => ({
@@ -225,10 +296,96 @@ export async function fetchPilotManifest(
       return finalPilotManifest;
     }
   } catch {
-    // Fall back to synthesis
+    // Continue to files.json + gallery.json check
   }
 
-  // If per-pilot manifest was not found on remote (404), synthesize from V2 catalog
+  // 2. Dynamic CDN R2 aggregation: files.json (CI/CD files) + gallery.json (editorial metadata)
+  try {
+    const filesUrl = `${normalizedBase}/images/pilots/${pId}/files.json`;
+    const galleryUrl = `${normalizedBase}/images/pilots/${pId}/gallery.json`;
+
+    const [filesRes, galleryRes] = await Promise.allSettled([
+      fetch(filesUrl, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(4000) }),
+      fetch(galleryUrl, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(4000) }),
+    ]);
+
+    if (filesRes.status === 'fulfilled' && filesRes.value.ok) {
+      const filesJson = await filesRes.value.json();
+      let galleryJson: any = null;
+      if (galleryRes.status === 'fulfilled' && galleryRes.value.ok) {
+        galleryJson = await galleryRes.value.json().catch(() => null);
+      }
+
+      const filesList = Array.isArray(filesJson.files) ? filesJson.files : [];
+      if (filesList.length > 0) {
+        const galleryArtworksMap = galleryJson?.artworks || {};
+        const coreMapping: Record<string, string> = {};
+        const artworks: PilotArtworkManifestItem[] = [];
+
+        for (let idx = 0; idx < filesList.length; idx++) {
+          const item = filesList[idx];
+          const filename = item.filename;
+          const role = item.role || 'other';
+          const editMeta = galleryArtworksMap[filename] || {};
+
+          const isCore = role === 'fullbody' || role === 'portrait' || role === 'combat' || role === 'closeup' || role === 'activity';
+          if (isCore && !coreMapping[role]) {
+            coreMapping[role] = filename;
+          }
+
+          const category: PilotArtworkManifestItem['category'] =
+            editMeta.category || (isCore ? 'core' : role.startsWith('event') ? 'event' : role.startsWith('story') ? 'story' : 'outfit');
+
+          const title = editMeta.title || formatNeutralArtworkTitle(pId, filename);
+          const description = editMeta.description || undefined;
+
+          artworks.push({
+            assetId: item.assetId || `${pId}-${filename.replace(/\.webp$/i, '')}`,
+            filename,
+            path: `images/pilots/${pId}/${filename}`,
+            role,
+            category,
+            status: 'approved',
+            sha256: item.sha256,
+            byteSize: item.bytes,
+            width: item.width,
+            height: item.height,
+            aspectRatio: item.width && item.height ? `${item.width}:${item.height}` : undefined,
+            title,
+            description,
+            cdnUrl: `${normalizedBase}/images/pilots/${pId}/${filename}`,
+          });
+        }
+
+        // Sort artworks: order in gallery.json first, then index
+        artworks.sort((a, b) => {
+          const orderA = galleryArtworksMap[a.filename]?.order ?? 999;
+          const orderB = galleryArtworksMap[b.filename]?.order ?? 999;
+          return orderA - orderB;
+        });
+
+        const r2PilotManifest: PilotManifest = {
+          schemaVersion: 'starfront-pilot-manifest-v2',
+          pilotId: pId,
+          pilotName: HIERARCHICAL_PILOT_NAMES[pId] || pId,
+          totalAssets: filesList.length,
+          approvedAssetsCount: artworks.length,
+          coreMapping,
+          artworks,
+        };
+
+        hierarchicalCache.set(cacheKey, {
+          data: r2PilotManifest,
+          expiresAt: now + HIERARCHICAL_CACHE_TTL,
+        });
+        return r2PilotManifest;
+      }
+    }
+  } catch {
+    // Continue to synthesis fallback
+  }
+
+  // 3. Fallback to synthesis from V2 catalog
   const synthesized = await synthesizePilotManifestFromRemoteV2(cdnBaseUrl, releaseTag, pId);
   if (synthesized) {
     hierarchicalCache.set(cacheKey, {

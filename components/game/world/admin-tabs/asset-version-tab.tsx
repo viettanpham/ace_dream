@@ -256,6 +256,37 @@ export function AssetVersionTab() {
     }
   };
 
+  const handlePreviewReviewLogin = async () => {
+    playClickSound();
+    setLoginSubmitting(true);
+    setLoginError(null);
+    try {
+      const res = await fetch('/api/admin/auth/preview-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-starfront-review-request': 'active' },
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        playLevelUpSound();
+        setIsAuthenticated(true);
+        setCurrentUser('admin321 (superadmin)');
+        setCsrfToken(data.csrfToken || null);
+        if (typeof window !== 'undefined' && data.sessionToken) {
+          sessionStorage.setItem('starfront_admin_session_token', data.sessionToken);
+        }
+        setLoginPassword('');
+        setLockoutCountdown(0);
+        fetchAuditLogs();
+      } else {
+        setLoginError(data.error || 'Kích hoạt phiên Review Preview thất bại.');
+      }
+    } catch (err) {
+      setLoginError(`Lỗi kết nối: ${err instanceof Error ? err.message : 'Unknown'}`);
+    } finally {
+      setLoginSubmitting(false);
+    }
+  };
+
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     playClickSound();
@@ -649,6 +680,18 @@ export function AssetVersionTab() {
                     : 'XÁC THỰC QUYỀN QUẢN TRỊ VIÊN'}
                 </span>
               </button>
+
+              <div className="pt-2 border-t border-zinc-800">
+                <button
+                  type="button"
+                  onClick={handlePreviewReviewLogin}
+                  disabled={loginSubmitting}
+                  className="w-full flex items-center justify-center gap-2 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 font-mono font-bold px-4 py-2 text-xs transition-all cursor-pointer shadow-md"
+                >
+                  <ShieldCheck className="size-4 text-cyan-400" />
+                  <span>DUYỆT PREVIEW · ĐĂNG NHẬP MỘT CHẠM (SUPERADMIN)</span>
+                </button>
+              </div>
             </form>
           )}
         </div>

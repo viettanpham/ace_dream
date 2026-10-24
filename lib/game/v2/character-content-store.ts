@@ -403,7 +403,54 @@ export class CharacterContentStore {
     const chapters: StoryChapterMeta[] = [];
     const pilotStoriesDir = path.join(STORIES_DIR_PATH, pilotId);
 
-    // Scan physical files in stories/{pilotId}/
+    // 1. Check for canonical stories/<pilotId>/manifest.json first
+    const storyManifestPath = path.join(pilotStoriesDir, 'manifest.json');
+    if (fs.existsSync(storyManifestPath)) {
+      try {
+        const rawManifest = fs.readFileSync(storyManifestPath, 'utf-8');
+        const parsedStoryManifest = JSON.parse(rawManifest);
+        if (Array.isArray(parsedStoryManifest.chapters)) {
+          for (const chap of parsedStoryManifest.chapters) {
+            const chapterMeta: StoryChapterMeta = {
+              chapterId: chap.chapterId,
+              chapterNumber: chap.chapterNumber,
+              pilotId,
+              characterName: parsedStoryManifest.pilotName || pilotId,
+              title: chap.title,
+              version: '1.0.0',
+              summary: chap.summary || '',
+              quote: chap.quote,
+              editorialStatus: chap.editorialStatus || 'HOLD',
+              contentReadiness: chap.contentStatus === 'FULL_PROSE' ? 'FULL_BODY_IMPORTED' : 'SUMMARY_ONLY',
+              publicationStatus: chap.publicationStatus === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
+              estimatedReadTimeMinutes: chap.readingTimeMinutes || 4,
+              readingTimeMinutes: chap.readingTimeMinutes || 4,
+              wordCount: chap.wordCount || 300,
+              updatedAt: '2026-10-24T00:00:00.000Z',
+              sceneAnchors: chap.sceneAnchors || [],
+            };
+
+            // Overlay publication state from runtime manifest if customized
+            const pubRecord = pilotPubs[chapterMeta.chapterId];
+            if (pubRecord) {
+              if (pubRecord.publicationStatus) chapterMeta.publicationStatus = pubRecord.publicationStatus;
+              if (pubRecord.editorialStatus) chapterMeta.editorialStatus = pubRecord.editorialStatus;
+            }
+
+            if (includeUnpublished || chapterMeta.publicationStatus === 'PUBLISHED') {
+              chapters.push(chapterMeta);
+            }
+          }
+
+          chapters.sort((a, b) => a.chapterNumber - b.chapterNumber);
+          return chapters;
+        }
+      } catch (err) {
+        console.warn(`[CharacterContentStore] Error parsing ${storyManifestPath}:`, err);
+      }
+    }
+
+    // 2. Scan physical files in stories/{pilotId}/ (.meta.json)
     if (fs.existsSync(pilotStoriesDir)) {
       const files = fs.readdirSync(pilotStoriesDir);
       const metaFiles = files.filter((f) => f.endsWith('.meta.json'));
@@ -444,6 +491,72 @@ export class CharacterContentStore {
   ): Promise<StoryChapterFull | null> {
     const pilotStoriesDir = path.join(STORIES_DIR_PATH, pilotId);
     if (!fs.existsSync(pilotStoriesDir)) return null;
+
+    // Check manifest.json first
+    const storyManifestPath = path.join(pilotStoriesDir, 'manifest.json');
+    if (fs.existsSync(storyManifestPath)) {
+      try {
+        const rawManifest = fs.readFileSync(storyManifestPath, 'utf-8');
+        const parsedStoryManifest = JSON.parse(rawManifest);
+        const chapDef = parsedStoryManifest.chapters?.find(
+          (c: any) => c.chapterId === chapterId || `chap-${String(c.chapterNumber).padStart(2, '0')}` === chapterId
+        );
+
+        if (chapDef) {
+          const manifest = await this.getManifest();
+          const pubRecord = manifest.storyPublications[pilotId]?.[chapDef.chapterId];
+          const publicationStatus = pubRecord?.publicationStatus || (chapDef.publicationStatus === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT');
+
+          if (!includeUnpublished && publicationStatus !== 'PUBLISHED') {
+            return null;
+          }
+
+          // Check if standalone JSON exists: chapter-01.json
+          const paddedNum = String(chapDef.chapterNumber).padStart(2, '0');
+          const jsonPath = path.join(pilotStoriesDir, `chapter-${paddedNum}.json`);
+          let content = '';
+
+          if (fs.existsSync(jsonPath)) {
+            try {
+              const chapJson = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+              content = chapJson.content || '';
+            } catch {
+              // fallback
+            }
+          }
+
+          // Fallback to .md file if content is still empty
+          if (!content) {
+            const mdPath = path.join(pilotStoriesDir, `chapter-${paddedNum}.md`);
+            if (fs.existsSync(mdPath)) {
+              content = fs.readFileSync(mdPath, 'utf-8');
+            }
+          }
+
+          return {
+            chapterId: chapDef.chapterId,
+            chapterNumber: chapDef.chapterNumber,
+            pilotId,
+            characterName: parsedStoryManifest.pilotName || pilotId,
+            title: chapDef.title,
+            version: '1.0.0',
+            summary: chapDef.summary || '',
+            quote: chapDef.quote,
+            editorialStatus: pubRecord?.editorialStatus || chapDef.editorialStatus || 'HOLD',
+            contentReadiness: chapDef.contentStatus === 'FULL_PROSE' ? 'FULL_BODY_IMPORTED' : 'SUMMARY_ONLY',
+            publicationStatus,
+            estimatedReadTimeMinutes: chapDef.readingTimeMinutes || 4,
+            readingTimeMinutes: chapDef.readingTimeMinutes || 4,
+            wordCount: content ? content.split(/\s+/).length : (chapDef.wordCount || 300),
+            updatedAt: '2026-10-24T00:00:00.000Z',
+            sceneAnchors: chapDef.sceneAnchors || [],
+            content,
+          };
+        }
+      } catch (err) {
+        console.warn(`[CharacterContentStore] Error reading manifest chapter ${chapterId}:`, err);
+      }
+    }
 
     // Look for chapter-{NN}.meta.json with matching chapterId
     const files = fs.readdirSync(pilotStoriesDir);

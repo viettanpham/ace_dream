@@ -29,6 +29,7 @@ import {
   StorySceneAnchor,
 } from '@/lib/game/v2/character-content-types';
 import { V2_ROSTER_CHARACTERS } from '@/lib/game/v2/character-profile-data';
+import { resolveImageUrl } from '@/lib/game/assets/image-resolver';
 
 export interface ImmersiveStoryReaderProps {
   pilotId: CanonicalPilotId;
@@ -527,7 +528,7 @@ export function ImmersiveStoryReader({
               <div className="w-11 h-11 rounded-lg overflow-hidden border border-cyan-500/50 bg-black shrink-0 relative">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={pilotData?.avatarUrl || '/images/valentine-portrait.webp'}
+                  src={resolveImageUrl(pilotData?.portraitAssetPath || `images/pilots/${pilotId}/${pilotId}-portrait.webp`)}
                   alt={pilotName}
                   className="w-full h-full object-cover object-top"
                 />
@@ -537,7 +538,7 @@ export function ImmersiveStoryReader({
                   {pilotData?.fullLoreName?.toUpperCase() || pilotName.toUpperCase()}
                 </div>
                 <div className="text-[10px] font-mono text-cyan-400 font-medium tracking-wider truncate">
-                  {pilotData?.callsign?.toUpperCase() || 'SR-MEDIC'} // {pilotData?.originPlanet?.toUpperCase() || 'ELYSIA'}
+                  {pilotData?.callsign?.toUpperCase() || 'MERCY WING'} // {pilotData?.roleCategory?.toUpperCase() || 'SUPPORT'}
                 </div>
               </div>
             </div>
@@ -641,7 +642,7 @@ export function ImmersiveStoryReader({
             <div className="w-9 h-9 rounded-lg overflow-hidden border border-cyan-500/50 bg-black mb-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={pilotData?.avatarUrl || '/images/valentine-portrait.webp'}
+                src={resolveImageUrl(pilotData?.portraitAssetPath || `images/pilots/${pilotId}/${pilotId}-portrait.webp`)}
                 alt={pilotName}
                 className="w-full h-full object-cover"
               />
@@ -986,12 +987,12 @@ export function ImmersiveStoryReader({
             <div className="relative rounded-xl overflow-hidden border border-cyan-800/60 bg-black shadow-xl shadow-cyan-950/40 mb-3 group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={activeArtwork.artworkUrl}
+                src={resolveImageUrl(activeArtwork.artworkUrl)}
                 alt={activeArtwork.title || 'Scene Artwork'}
                 className="w-full h-auto max-h-[460px] object-cover object-top transition-transform duration-500 group-hover:scale-102 cursor-pointer"
                 onClick={() =>
                   setViewerImage({
-                    url: activeArtwork.artworkUrl!,
+                    url: resolveImageUrl(activeArtwork.artworkUrl)!,
                     title: activeArtwork.title || 'Ký ức tại Elysia',
                     caption: activeArtwork.caption,
                   })
@@ -1003,7 +1004,7 @@ export function ImmersiveStoryReader({
                 <button
                   onClick={() =>
                     setViewerImage({
-                      url: activeArtwork.artworkUrl!,
+                      url: resolveImageUrl(activeArtwork.artworkUrl)!,
                       title: activeArtwork.title || 'Ký ức tại Elysia',
                       caption: activeArtwork.caption,
                     })
@@ -1106,7 +1107,7 @@ export function ImmersiveStoryReader({
           </button>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={viewerImage.url}
+            src={resolveImageUrl(viewerImage.url)}
             alt={viewerImage.title}
             className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl"
           />

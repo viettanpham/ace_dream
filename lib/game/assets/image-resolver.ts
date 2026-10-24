@@ -20,7 +20,7 @@ export interface ImageResolverConfig {
  * Subdirectory: starfront-world-assets
  */
 export const DEFAULT_JSDELIVR_CDN_BASE =
-  'https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets';
+  'https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r2/starfront-world-assets';
 
 /**
  * Returns current configuration from environment variables or safe defaults.

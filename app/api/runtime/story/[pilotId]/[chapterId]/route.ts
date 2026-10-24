@@ -65,7 +65,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 caption: 'Ký ức tại Elysia — Minh họa gắn với phân cảnh hiện tại',
                 description: 'Một lựa chọn đã thay đổi hành trình của Valentine.',
                 aspectRatio: 'portrait',
-                artworkUrl: '/images/valentine-portrait.webp',
+                artworkUrl: 'images/pilots/valentine/valentine-portrait.webp',
                 assetId: 'valentine-portrait',
               },
               {
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
                 caption: 'Phi đội sơ tán và nhiệm vụ khẩn cấp tại vành đai Elysia',
                 description: 'Khoảnh khắc đối mặt với hai tín hiệu cầu cứu cùng lúc.',
                 aspectRatio: 'portrait',
-                artworkUrl: '/images/valentine-fullbody.webp',
+                artworkUrl: 'images/pilots/valentine/valentine-fullbody.webp',
                 assetId: 'valentine-fullbody',
               }
             ] : [],

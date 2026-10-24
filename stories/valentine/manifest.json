@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "pilotId": "valentine",
+  "pilotName": "Valentine Aurelia Vance",
+  "callsign": "Mercy Wing",
+  "totalChapters": 10,
+  "roadmapStatus": "PHASE_V2_MVP",
+  "chapters": [
+    {
+      "chapterId": "chap-01",
+      "chapterNumber": 1,
+      "title": "Ánh sáng cuối cùng tại Elysia",
+      "editorialStatus": "APPROVED",
+      "contentStatus": "FULL_PROSE",
+      "publicationStatus": "PUBLISHED",
+      "file": "chapter-01.json",
+      "sourceProseMarkdown": "chapter-01.md",
+      "summary": "Quyết định định mệnh giữa đoàn tàu hàng trăm bệnh nhân và đội ngũ đồng đội bị cô lập.",
+      "quote": "“Tôi không hứa rằng mọi người sẽ không bị thương. Nhưng tôi hứa sẽ làm tất cả những gì có thể để đưa họ trở về.”",
+      "readingTimeMinutes": 6,
+      "wordCount": 780,
+      "sceneAnchors": [
+        {
+          "anchorId": "val-ch01-scene-academy",
+          "title": "Học viện Quân y Không gian",
+          "caption": "Valentine trong những ngày đầu tốt nghiệp Học viện Quân y Không gian",
+          "assetId": "valentine-portrait",
+          "artworkUrl": "images/pilots/valentine/valentine-portrait.webp",
+          "aspectRatio": "1:1"
+        },
+        {
+          "anchorId": "val-ch01-scene-evac",
+          "title": "Phi đội Cứu hộ Mercy Wing",
+          "caption": "Valentine điều phối phi đội sơ tán Mercy Wing trong cuộc phong tỏa Elysia",
+          "assetId": "valentine-fullbody",
+          "artworkUrl": "images/pilots/valentine/valentine-fullbody.webp",
+          "aspectRatio": "portrait"
+        },
+        {
+          "anchorId": "val-ch01-scene-resolve",
+          "title": "Nguyện ước không bao giờ lãng quên",
+          "caption": "Lời thề bảo vệ sinh mạng và lý tưởng của phi đội Mercy Wing",
+          "assetId": "valentine-activity-001",
+          "artworkUrl": "images/pilots/valentine/valentine-activity-001.webp",
+          "aspectRatio": "portrait"
+        }
+      ]
+    },
+    {
+      "chapterId": "chap-02",
+      "chapterNumber": 2,
+      "title": "Ca trực đầu tiên tại Trạm Cứu hộ Quỹ đạo",
+      "editorialStatus": "APPROVED",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Thử thách đầu tiên khi tiếp quản buồng lái tàu cứu thương bọc thép trong cơn bão điện từ.",
+      "readingTimeMinutes": 4,
+      "wordCount": 180,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-03",
+      "chapterNumber": 3,
+      "title": "Tín hiệu bị cô lập ở Vành đai Asteroid",
+      "editorialStatus": "APPROVED",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hành trình đơn độc vượt qua bãi mảnh vỡ để cứu sống một phi công tiêm kích bị trúng đạn.",
+      "readingTimeMinutes": 4,
+      "wordCount": 190,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-04",
+      "chapterNumber": 4,
+      "title": "Lằn ranh đỏ giữa hai mệnh lệnh",
+      "editorialStatus": "APPROVED",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Sự giằng xé giữa quy tắc quân sự và lương tâm của một bác sĩ cứu trợ tiền tuyến.",
+      "readingTimeMinutes": 5,
+      "wordCount": 210,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-05",
+      "chapterNumber": 5,
+      "title": "Học viện Y sinh Không gian và Lời thề",
+      "editorialStatus": "PROVISIONAL",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Những năm tháng rèn luyện nghiêm ngặt trước khi khoác lên mình bộ giáp Mercy Wing.",
+      "readingTimeMinutes": 4,
+      "wordCount": 160,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-06",
+      "chapterNumber": 6,
+      "title": "Chuyến bay thử nghiệm của Mercy Wing",
+      "editorialStatus": "PROVISIONAL",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Giai đoạn thử nghiệm hệ thống khiên năng lượng tái tạo kép trên nguyên mẫu mecha y tế.",
+      "readingTimeMinutes": 4,
+      "wordCount": 170,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-07",
+      "chapterNumber": 7,
+      "title": "Bí mật bên dưới tầng ngầm Elysia",
+      "editorialStatus": "HOLD",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hồ sơ niêm phong cấp độ II. Chưa mở khóa nội dung.",
+      "readingTimeMinutes": 3,
+      "wordCount": 95,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-08",
+      "chapterNumber": 8,
+      "title": "Bức màn che phủ cuộc sơ tán",
+      "editorialStatus": "HOLD",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hồ sơ niêm phong cấp độ II. Chưa mở khóa nội dung.",
+      "readingTimeMinutes": 3,
+      "wordCount": 95,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-09",
+      "chapterNumber": 9,
+      "title": "Đối đầu trong giông bão",
+      "editorialStatus": "HOLD",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hồ sơ niêm phong cấp độ III. Chưa mở khóa nội dung.",
+      "readingTimeMinutes": 3,
+      "wordCount": 90,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-10",
+      "chapterNumber": 10,
+      "title": "Nguyện ước không bao giờ lãng quên",
+      "editorialStatus": "HOLD",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hồ sơ niêm phong cấp độ tối cao. Chưa mở khóa nội dung.",
+      "readingTimeMinutes": 3,
+      "wordCount": 90,
+      "sceneAnchors": []
+    }
+  ]
+}

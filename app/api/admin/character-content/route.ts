@@ -26,6 +26,18 @@ export async function GET(req: NextRequest) {
     const store = getCharacterContentStore();
     const manifest = await store.getManifest();
 
+    // Hydrate stories map for all canonical pilots so manifest.stories[pId] is never undefined
+    const storiesMap: Record<string, { chapters: any[] }> = {};
+    for (const pId of CANONICAL_PILOT_IDS) {
+      try {
+        const chapters = await store.getStoryChapters(pId, true);
+        storiesMap[pId] = { chapters: chapters || [] };
+      } catch {
+        storiesMap[pId] = { chapters: [] };
+      }
+    }
+    manifest.stories = storiesMap;
+
     return NextResponse.json({
       success: true,
       user: auth.user.username,

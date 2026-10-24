@@ -120,6 +120,19 @@ const CANONICAL_R1_PATHS = new Set([
   'images/valentine-uniform-001.webp',
 ]);
 
+// 9 canonical V2 pilots migrated to hierarchical paths on v2.0-assets-r2:
+const V2_MIGRATED_PILOT_IDS = [
+  'valentine',
+  'fortuna',
+  'aria',
+  'rhea',
+  'nova',
+  'kaelen',
+  'lyra',
+  'selena',
+  'alviss',
+];
+
   // Normalize path without leading slash
   let cleanPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
 
@@ -144,6 +157,15 @@ const CANONICAL_R1_PATHS = new Set([
       const legacyPath = `images/${filename}`;
       if (CANONICAL_R1_PATHS.has(legacyPath)) {
         cleanPath = legacyPath;
+      }
+    }
+  } else if (!config.cdnBaseUrl.includes('@v2.0-assets-r1') && cleanPath.startsWith('images/') && !cleanPath.startsWith('images/pilots/')) {
+    // On v2.0-assets-r2 and newer, normalize flat pilot filenames to hierarchical images/pilots/<pilotId>/<filename>
+    const filename = cleanPath.replace(/^images\//, '');
+    for (const pId of V2_MIGRATED_PILOT_IDS) {
+      if (filename.startsWith(`${pId}-`)) {
+        cleanPath = `images/pilots/${pId}/${filename}`;
+        break;
       }
     }
   }

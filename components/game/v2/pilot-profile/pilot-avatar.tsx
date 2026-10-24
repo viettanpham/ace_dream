@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 
-// 8 canonical pilots confirmed available on CDN jsDelivr
+// 12 canonical pilots confirmed available on CDN jsDelivr / R2
 export const VERIFIED_CANONICAL_PILOT_IDS = [
   'valentine',
   'marcus',
@@ -23,6 +23,10 @@ export const VERIFIED_CANONICAL_PILOT_IDS = [
   'kaelen',
   'lyra',
   'selena',
+  'fortuna',
+  'aria',
+  'rhea',
+  'nova',
 ]
 
 interface PilotAvatarProps {

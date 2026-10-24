@@ -9,37 +9,37 @@ export const dynamic = 'force-dynamic';
 /**
  * Preview Review Mode Auth Session Endpoint
  * POST /api/admin/auth/preview-session
- * Allows verified reviewer / project owner one-click inspection in Preview / Dev environment.
- * Generates valid HMAC-signed session with superadmin privileges.
+ * 
+ * SECURITY DIRECTIVE:
+ * Cơ chế cấp quyền superadmin ẩn danh không xác thực trên Cloud Run public bị VÔ HIỆU HÓA
+ * để ngăn chặn việc người dùng vãng lai tự động chiếm quyền AdminCP.
+ * Yêu cầu đăng nhập chuẩn thông qua /api/admin/auth/login bằng mật khẩu Quản trị viên.
  */
 export async function POST(req: NextRequest) {
   try {
-    const isDevOrPreview =
-      process.env.NODE_ENV !== 'production' ||
-      Boolean(process.env.K_SERVICE) ||
-      Boolean(process.env.GOOGLE_CLOUD_PROJECT) ||
-      process.env.STARFRONT_PREVIEW_MODE === 'true';
+    // Only allow if a dedicated backend preview secret key is explicitly set and matches
+    const expectedSecret = process.env.STARFRONT_PREVIEW_SECRET_KEY;
+    const providedSecret =
+      req.headers.get('x-starfront-preview-secret') ||
+      req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
 
-    // Verify origin / preview header or environment
-    const reviewHeader = req.headers.get('x-starfront-review-request');
-    const isAllowed = isDevOrPreview || reviewHeader === 'active';
-
-    if (!isAllowed) {
+    if (!expectedSecret || !providedSecret || providedSecret !== expectedSecret) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Chế độ Preview Review chỉ khả dụng trong môi trường thử nghiệm và đánh giá hệ thống.',
+          error:
+            'Cơ chế cấp quyền một chạm ẩn danh đã bị vô hiệu hóa để bảo đảm an toàn hệ thống trên môi trường công khai. Vui lòng đăng nhập với tài khoản Quản trị viên (admin/admin321) cùng mật khẩu đã thiết lập.',
         },
         { status: 403 }
       );
     }
 
-    // Provision superadmin review session
+    // Provision superadmin review session if authentic secret is provided
     const { cookieValue, csrfToken, expiresAt } = createSessionToken('admin321', 'superadmin');
 
     const res = NextResponse.json({
       success: true,
-      message: 'Phiên đánh giá Quản trị viên (Superadmin Review Session) đã được kích hoạt thành công.',
+      message: 'Phiên đánh giá Quản trị viên (Superadmin Review Session) đã được xác thực an toàn.',
       user: {
         username: 'admin321',
         role: 'superadmin',
@@ -62,3 +62,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+

@@ -296,38 +296,6 @@ export function CharacterContentManager({
     }
   };
 
-  // One-Click Preview Review Login
-  const handlePreviewReviewLogin = async () => {
-    setAuthLoading(true);
-    setLoginError(null);
-    try {
-      const res = await fetch('/api/admin/auth/preview-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-starfront-review-request': 'active' },
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setIsAuthenticated(true);
-        setAdminUser(data.user || { username: 'admin321', role: 'superadmin' });
-        setCsrfToken(data.csrfToken || '');
-        if (typeof window !== 'undefined' && data.sessionToken) {
-          sessionStorage.setItem('starfront_admin_session_token', data.sessionToken);
-        }
-        setNeedsSetup(false);
-        setPassword('');
-        setConfirmPassword('');
-        setLockoutCountdown(0);
-        await loadManifest();
-      } else {
-        setLoginError(data.error || 'Không thể kích hoạt phiên Review Preview.');
-      }
-    } catch (err: any) {
-      setLoginError(`[NETWORK_ERROR] ${err.message || 'Lỗi kết nối máy chủ.'}`);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   // Handle Logout
   const handleLogout = async () => {
     try {
@@ -878,16 +846,10 @@ export function CharacterContentManager({
                     : 'ĐĂNG NHẬP ADMINCP'}
                 </button>
 
-                <div className="pt-3 border-t border-slate-800">
-                  <button
-                    type="button"
-                    onClick={handlePreviewReviewLogin}
-                    disabled={authLoading}
-                    className="w-full py-2.5 rounded bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-300 font-mono text-[11px] font-bold tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <Shield className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>DUYỆT PREVIEW · ĐĂNG NHẬP MỘT CHẠM (SUPERADMIN)</span>
-                  </button>
+                <div className="pt-3 border-t border-slate-800 text-center">
+                  <p className="text-[11px] font-mono text-slate-500">
+                    Bảo mật: Xác thực mật khẩu bắt buộc cho mọi phiên Quản trị viên.
+                  </p>
                 </div>
               </form>
             </div>
@@ -906,11 +868,11 @@ export function CharacterContentManager({
               <div className="flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 gap-1 scrollbar-thin">
                 {CANONICAL_PILOT_IDS.map((pId) => {
                   const isSelected = selectedPilot === pId;
-                  const profile = manifest?.profiles[pId];
-                  const artCount = manifest?.artworks[pId]?.length || 0;
-                  const chapters = manifest?.stories[pId]?.chapters || [];
+                  const profile = manifest?.profiles?.[pId];
+                  const artCount = manifest?.artworks?.[pId]?.length || 0;
+                  const chapters = manifest?.stories?.[pId]?.chapters || [];
                   const publishedCount = chapters.filter(
-                    (c) => c.publicationStatus === 'PUBLISHED'
+                    (c) => c && c.publicationStatus === 'PUBLISHED'
                   ).length;
 
                   return (
@@ -1086,7 +1048,7 @@ export function CharacterContentManager({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-900">
-                        {(manifest?.stories[selectedPilot]?.chapters || []).map((chap) => {
+                        {(manifest?.stories?.[selectedPilot]?.chapters || []).map((chap) => {
                           const isPublished = chap.publicationStatus === 'PUBLISHED';
                           const canPublishCheck = validateCanPublishChapter(chap);
 
@@ -1238,7 +1200,7 @@ export function CharacterContentManager({
 
                   {/* Artwork Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(manifest?.artworks[selectedPilot] || []).map((art) => (
+                    {(manifest?.artworks?.[selectedPilot] || []).map((art) => (
                       <div
                         key={art.artworkId}
                         className="rounded-lg border border-slate-800 bg-slate-950/80 overflow-hidden flex flex-col group"
@@ -1246,7 +1208,7 @@ export function CharacterContentManager({
                         <div className="relative aspect-[4/3] bg-black/60 overflow-hidden">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={art.localPath || art.sourceUrl}
+                            src={resolveImageUrl(art.localPath || art.sourceUrl || art.path)}
                             alt={art.label}
                             className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
                           />
@@ -1418,14 +1380,14 @@ export function CharacterContentManager({
                     <div className="text-xs font-mono font-bold text-slate-200 flex items-center justify-between">
                       <span>STORAGE STATUS</span>
                       <span className="text-cyan-400">
-                        {manifest?.storageStatus?.provider.toUpperCase() || 'LOCAL'}
+                        {manifest?.storageStatus?.provider?.toUpperCase() || 'LOCAL'}
                       </span>
                     </div>
                     <p className="text-xs text-slate-400">
                       {manifest?.storageStatus?.message || 'Sẵn sàng lưu trữ bền vững.'}
                     </p>
                     <div className="text-[10px] font-mono text-slate-500 pt-2 border-t border-slate-900 flex justify-between">
-                      <span>Mã trạng thái: {manifest?.storageStatus?.code}</span>
+                      <span>Mã trạng thái: {manifest?.storageStatus?.code || 'READY'}</span>
                       <span>
                         Đồng bộ lần cuối:{' '}
                         {manifest?.storageStatus?.lastSyncTimestamp
@@ -1451,15 +1413,15 @@ export function CharacterContentManager({
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-900 font-mono text-[11px]">
-                          {(manifest?.auditTrail || []).slice(0, 20).map((log, idx) => (
+                          {(((manifest?.auditTrail || manifest?.auditLog || []) as any[])).slice(0, 20).map((log, idx) => (
                             <tr key={idx} className="hover:bg-slate-900/30">
                               <td className="py-2 px-3 text-slate-500 whitespace-nowrap">
-                                {new Date(log.timestamp).toLocaleTimeString()}
+                                {log?.timestamp ? new Date(log.timestamp).toLocaleTimeString() : '—'}
                               </td>
-                              <td className="py-2 px-3 text-cyan-400">{log.operator}</td>
-                              <td className="py-2 px-3 text-slate-300">{log.action}</td>
+                              <td className="py-2 px-3 text-cyan-400">{log?.operator || log?.user || 'admin'}</td>
+                              <td className="py-2 px-3 text-slate-300">{log?.action || 'INSPECT'}</td>
                               <td className="py-2 px-3 text-slate-400 truncate max-w-xs">
-                                {log.details}
+                                {log?.details || '—'}
                               </td>
                             </tr>
                           ))}

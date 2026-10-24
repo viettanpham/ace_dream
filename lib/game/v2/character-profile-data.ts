@@ -168,6 +168,13 @@ export const PILOT_V2_CORE_MAPPINGS: Record<string, CorePilotAssetMapping> = {
     closeup: '/images/pilots/nova/nova-closeup.webp',
     activity: '/images/pilots/nova/nova-activity.webp',
   },
+  alviss: {
+    fullbody: '/images/pilots/alviss/alviss-fullbody.webp',
+    portrait: '/images/pilots/alviss/alviss-portrait.webp',
+    combat: '/images/pilots/alviss/alviss-combat.webp',
+    closeup: '/images/pilots/alviss/alviss-closeup.webp',
+    activity: '/images/pilots/alviss/alviss-activity.webp',
+  },
 };
 
 /**

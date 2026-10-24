@@ -120,6 +120,37 @@ export function PilotProfileV2({
     };
   }, []);
 
+  // Fetch dynamic gallery for active pilot from CDN R2 (files.json & gallery.json)
+  useEffect(() => {
+    let isCancelled = false;
+    fetch(`/api/runtime/gallery/${activePilotId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isCancelled && data.success && Array.isArray(data.artworks)) {
+          const galleryArts: GalleryArtwork[] = data.artworks.map((a: any) => ({
+            id: a.assetId || a.artworkId || a.filename,
+            title: a.title || a.label || a.filename,
+            category: a.category || 'lore',
+            path: a.path || a.sourceUrl,
+            isAvailableOnDisk: true,
+            status: 'verified_webp',
+            description: a.description || '',
+          }));
+          setDynamicArtworks((prev) => ({
+            ...prev,
+            [activePilotId]: galleryArts,
+          }));
+        }
+      })
+      .catch(() => {
+        // Silently preserve existing artworks on network interruption
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activePilotId]);
+
   // Find active pilot data and merge dynamic overlay
   const activeCharacter: CharacterProfileV2 = useMemo(() => {
     const base = V2_ROSTER_CHARACTERS.find((c) => c.id === activePilotId) || V2_ROSTER_CHARACTERS[0];

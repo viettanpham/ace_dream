@@ -14,7 +14,15 @@
       "hash": "9f273964a8e2b4844c390bdf66141f0d6243ab5c3cd7b7458536a5dbfbce372c26e94e37fb2b9b0f09b6c3b8ced1971643bb092842774bff76b5f97b3f34666c",
       "createdAt": "2026-10-23T18:12:37.561Z",
       "updatedAt": "2026-10-23T18:18:55.717Z"
+    },
+    "admin321": {
+      "username": "admin321",
+      "role": "superadmin",
+      "salt": "73bb2f37c12f7a1c22636577a4fedf7b",
+      "hash": "29db39c401a0d1d198501228f736e527d19cbbf7829cb9918f1b40ed87eadc497b926325efa71933bef1614c162d23e85b061ec3d4a43ec23d0bfad51aaea016",
+      "createdAt": "2026-10-24T09:17:43.129Z",
+      "updatedAt": "2026-10-24T09:17:43.129Z"
     }
   },
-  "updatedAt": "2026-10-23T18:18:55.947Z"
+  "updatedAt": "2026-10-24T09:17:43.130Z"
 }

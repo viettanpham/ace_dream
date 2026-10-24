@@ -84,7 +84,10 @@ export async function POST(req: NextRequest) {
 
     // 4. Record success, create session & CSRF token
     recordLoginAttempt(ip, true, scope);
-    const { cookieValue, csrfToken, expiresAt } = createSessionToken(authResult.user.username);
+    const { cookieValue, csrfToken, expiresAt } = createSessionToken(
+      authResult.user.username,
+      authResult.user.role
+    );
 
     const res = NextResponse.json({
       success: true,

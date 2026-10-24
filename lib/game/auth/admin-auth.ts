@@ -18,12 +18,13 @@ import * as path from 'path';
 
 export interface AdminUser {
   username: string;
-  role: 'admin';
+  role: 'admin' | 'superadmin';
   createdAt?: string;
 }
 
 export interface AdminCredentialsRecord {
   username: string;
+  role?: 'admin' | 'superadmin';
   salt: string;
   hash: string;
   createdAt: string;
@@ -38,7 +39,7 @@ export interface AdminStoreData {
 
 export interface SessionPayload {
   username: string;
-  role: 'admin';
+  role: 'admin' | 'superadmin';
   issuedAt: number;
   expiresAt: number;
   csrfToken: string;
@@ -132,6 +133,7 @@ export function loadAdminStore(): AdminStoreData {
         const key = parsed.username.toLowerCase();
         store.accounts[key] = {
           username: parsed.username,
+          role: 'admin',
           salt: parsed.salt,
           hash: parsed.hash,
           createdAt: parsed.createdAt || new Date().toISOString(),
@@ -150,32 +152,26 @@ export function loadAdminStore(): AdminStoreData {
   const primaryEnvPass = process.env.STARFRONT_ADMIN_PRIMARY_PASSWORD;
   if (primaryEnvPass && primaryEnvPass.trim().length >= 8) {
     const existing = store.accounts['admin'];
-    const shouldUpdate =
-      !existing ||
-      process.env.STARFRONT_ADMIN_SYNC_SECRETS === 'true' ||
-      process.env.STARFRONT_ADMIN_RESET_CREDENTIALS === 'true';
-
-    if (shouldUpdate) {
-      let isSame = false;
-      if (existing) {
-        const testHash = hashPassword(primaryEnvPass.trim(), existing.salt);
-        if (testHash === existing.hash) {
-          isSame = true;
-        }
+    let isSame = false;
+    if (existing) {
+      const testHash = hashPassword(primaryEnvPass.trim(), existing.salt);
+      if (testHash === existing.hash) {
+        isSame = true;
       }
-      if (!isSame) {
-        const salt = crypto.randomBytes(16).toString('hex');
-        const hash = hashPassword(primaryEnvPass.trim(), salt);
-        const now = new Date().toISOString();
-        store.accounts['admin'] = {
-          username: 'admin',
-          salt,
-          hash,
-          createdAt: existing?.createdAt || now,
-          updatedAt: now,
-        };
-        mutated = true;
-      }
+    }
+    if (!isSame) {
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = hashPassword(primaryEnvPass.trim(), salt);
+      const now = new Date().toISOString();
+      store.accounts['admin'] = {
+        username: 'admin',
+        role: existing?.role || 'admin',
+        salt,
+        hash,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+      };
+      mutated = true;
     }
   }
 
@@ -183,32 +179,53 @@ export function loadAdminStore(): AdminStoreData {
   const backupEnvPass = process.env.STARFRONT_ADMIN_BACKUP_PASSWORD;
   if (backupEnvPass && backupEnvPass.trim().length >= 8) {
     const existing = store.accounts['admin123'];
-    const shouldUpdate =
-      !existing ||
-      process.env.STARFRONT_ADMIN_SYNC_SECRETS === 'true' ||
-      process.env.STARFRONT_ADMIN_RESET_CREDENTIALS === 'true';
+    let isSame = false;
+    if (existing) {
+      const testHash = hashPassword(backupEnvPass.trim(), existing.salt);
+      if (testHash === existing.hash) {
+        isSame = true;
+      }
+    }
+    if (!isSame) {
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = hashPassword(backupEnvPass.trim(), salt);
+      const now = new Date().toISOString();
+      store.accounts['admin123'] = {
+        username: 'admin123',
+        role: existing?.role || 'admin',
+        salt,
+        hash,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+      };
+      mutated = true;
+    }
+  }
 
-    if (shouldUpdate) {
-      let isSame = false;
-      if (existing) {
-        const testHash = hashPassword(backupEnvPass.trim(), existing.salt);
-        if (testHash === existing.hash) {
-          isSame = true;
-        }
+  // Third Admin: 'admin321' with role 'superadmin' via STARFRONT_ADMIN_THIRD_PASSWORD
+  const thirdEnvPass = process.env.STARFRONT_ADMIN_THIRD_PASSWORD;
+  if (thirdEnvPass && thirdEnvPass.trim().length >= 8) {
+    const existing = store.accounts['admin321'];
+    let isSame = false;
+    if (existing) {
+      const testHash = hashPassword(thirdEnvPass.trim(), existing.salt);
+      if (testHash === existing.hash && existing.role === 'superadmin') {
+        isSame = true;
       }
-      if (!isSame) {
-        const salt = crypto.randomBytes(16).toString('hex');
-        const hash = hashPassword(backupEnvPass.trim(), salt);
-        const now = new Date().toISOString();
-        store.accounts['admin123'] = {
-          username: 'admin123',
-          salt,
-          hash,
-          createdAt: existing?.createdAt || now,
-          updatedAt: now,
-        };
-        mutated = true;
-      }
+    }
+    if (!isSame) {
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = hashPassword(thirdEnvPass.trim(), salt);
+      const now = new Date().toISOString();
+      store.accounts['admin321'] = {
+        username: 'admin321',
+        role: 'superadmin',
+        salt,
+        hash,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+      };
+      mutated = true;
     }
   }
 
@@ -221,6 +238,7 @@ export function loadAdminStore(): AdminStoreData {
       const now = new Date().toISOString();
       store.accounts[legacyUser] = {
         username: process.env.ADMIN_USERNAME.trim(),
+        role: 'admin',
         salt,
         hash,
         createdAt: now,
@@ -536,7 +554,7 @@ export function verifyAdminCredentials(
     success: true,
     user: {
       username: account.username,
-      role: 'admin',
+      role: account.role || 'admin',
       createdAt: account.createdAt,
     },
   };
@@ -545,7 +563,10 @@ export function verifyAdminCredentials(
 /**
  * Creates a cryptographically signed session token
  */
-export function createSessionToken(username: string): {
+export function createSessionToken(
+  username: string,
+  role: 'admin' | 'superadmin' = 'admin'
+): {
   cookieValue: string;
   csrfToken: string;
   expiresAt: number;
@@ -556,7 +577,7 @@ export function createSessionToken(username: string): {
 
   const payload: SessionPayload = {
     username,
-    role: 'admin',
+    role,
     issuedAt: now,
     expiresAt,
     csrfToken,

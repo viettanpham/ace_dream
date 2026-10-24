@@ -150,14 +150,26 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                       Hồ Sơ Cốt Truyện Đang Được Niêm Phong
                     </h5>
                     <p className="text-xs sm:text-sm text-[#A7B6C8] max-w-md mx-auto leading-relaxed">
-                      Chương {activeChapter.number} thuộc giai đoạn phát triển sau (HOLD). Nội dung chưa được giải mã nhằm đảm bảo bí mật chiến dịch Starfront.
+                      Chương {activeChapter.number} thuộc giai đoạn phát triển sau (HOLD). Nội dung chưa được giải mã công khai nhằm đảm bảo bí mật chiến dịch Starfront.
                     </p>
+                    {onOpenReader && (
+                      <div className="pt-3">
+                        <button
+                          type="button"
+                          onClick={() => onOpenReader(activeChapter.id)}
+                          className="px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 hover:bg-cyan-950/40 text-cyan-300 font-mono text-xs uppercase tracking-wider transition-all inline-flex items-center gap-2 cursor-pointer"
+                        >
+                          <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>XEM TRƯỚC BIÊN TẬP // REVIEW MODE</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
                 <div className="space-y-5">
                   {/* HERO IMMERSIVE READER CTA BANNER */}
-                  {hasFullProse && onOpenReader && (
+                  {onOpenReader && (
                     <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/80 via-[#10243E] to-slate-900 border border-cyan-500/50 shadow-lg shadow-cyan-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -177,7 +189,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                         className="px-4 py-2.5 rounded-lg bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider hover:bg-cyan-400 hover:shadow-cyan-500/30 shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                       >
                         <BookOpen className="w-4 h-4" />
-                        <span>ĐỌC TOÀN VĂN // READER</span>
+                        <span>MỞ IMMERSIVE READER</span>
                       </button>
                     </div>
                   )}

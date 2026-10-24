@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Shield,
   Layers,
@@ -28,6 +28,7 @@ import {
   LogOut,
   Key,
   UploadCloud,
+  ArrowUpDown,
 } from 'lucide-react';
 import {
   CANONICAL_PILOT_IDS,
@@ -39,6 +40,7 @@ import {
   StoryChapterMeta,
   validateCanPublishChapter,
 } from '@/lib/game/v2/character-content-types';
+import { resolveImageUrl } from '@/lib/game/assets/image-resolver';
 
 export interface CharacterContentManagerProps {
   isOpen?: boolean;
@@ -108,9 +110,18 @@ export function CharacterContentManager({
   // Data state
   const [dataLoading, setDataLoading] = useState(false);
   const [manifest, setManifest] = useState<CharacterContentManifest | null>(null);
-  const [selectedPilot, setSelectedPilot] = useState<CanonicalPilotId>(initialPilotId);
+  const [selectedPilot, setSelectedPilot] = useState<CanonicalPilotId>(initialPilotId || 'valentine');
+  const [pilotSortMode, setPilotSortMode] = useState<'editorial' | 'canonical'>('editorial');
   const [activeAdminTab, setActiveAdminTab] = useState<'artworks' | 'story' | 'profile' | 'audit'>('story');
   const [actionFeedback, setActionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // 12 pilots display order: Valentine first in editorial mode, canonical order otherwise
+  const displayPilots = useMemo<CanonicalPilotId[]>(() => {
+    if (pilotSortMode === 'editorial') {
+      return ['valentine', ...CANONICAL_PILOT_IDS.filter((p) => p !== 'valentine')];
+    }
+    return CANONICAL_PILOT_IDS;
+  }, [pilotSortMode]);
 
   // Story Editor Modal State
   const [editingChapter, setEditingChapter] = useState<{
@@ -861,12 +872,20 @@ export function CharacterContentManager({
             <aside className="w-full md:w-60 border-b md:border-b-0 md:border-r border-slate-900 bg-[#040812] flex flex-col shrink-0">
               <div className="p-3 border-b border-slate-900 text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center justify-between">
                 <span>12 PHI CÔNG CANONICAL</span>
-                <span className="text-cyan-400">V2.0</span>
+                <button
+                  type="button"
+                  onClick={() => setPilotSortMode((prev) => (prev === 'editorial' ? 'canonical' : 'editorial'))}
+                  className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[9px] font-mono text-cyan-300 hover:border-cyan-500 hover:text-cyan-200 flex items-center gap-1 cursor-pointer"
+                  title="Thay đổi thứ tự sắp xếp danh sách"
+                >
+                  <ArrowUpDown className="w-2.5 h-2.5" />
+                  <span>{pilotSortMode === 'editorial' ? 'Valentine đầu' : 'Thứ tự C01-C12'}</span>
+                </button>
               </div>
 
-              {/* Pilot List Buttons */}
+              {/* Pilot List Buttons (Valentine first in editorial mode) */}
               <div className="flex md:flex-col overflow-x-auto md:overflow-y-auto p-2 gap-1 scrollbar-thin">
-                {CANONICAL_PILOT_IDS.map((pId) => {
+                {displayPilots.map((pId) => {
                   const isSelected = selectedPilot === pId;
                   const profile = manifest?.profiles?.[pId];
                   const artCount = manifest?.artworks?.[pId]?.length || 0;
@@ -1090,11 +1109,37 @@ export function CharacterContentManager({
                                 )}
                               </td>
 
-                              {/* Content Readiness */}
+                              {/* Content Status & Verification */}
                               <td className="py-3 px-3">
-                                <span className="text-[11px] font-mono text-slate-300">
-                                  {chap.contentReadiness}
-                                </span>
+                                {chap.contentStatus === 'FULL_PROSE' || chap.contentReadiness === 'FULL_BODY_IMPORTED' ? (
+                                  <div className="space-y-1">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> TOÀN VĂN SẴN SÀNG
+                                    </span>
+                                    <div className="text-[10px] font-mono text-slate-500">
+                                      {chap.wordCount ? `${chap.wordCount} từ` : 'Đã nhập văn xuôi'}
+                                    </div>
+                                  </div>
+                                ) : chap.editorialStatus === 'APPROVED' ? (
+                                  <div className="space-y-1">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950/90 text-amber-300 border border-amber-600/80">
+                                      <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
+                                      <span>Đã duyệt cốt truyện — Chưa nhập toàn văn</span>
+                                    </span>
+                                    <div className="text-[10px] font-mono text-amber-500/80">
+                                      SUMMARY_ONLY ({chap.readingTimeMinutes || 4}p đọc tóm tắt)
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-800">
+                                      <Clock className="w-3 h-3 text-slate-500" /> TÓM TẮT ĐỀ CƯƠNG
+                                    </span>
+                                    <div className="text-[10px] font-mono text-slate-500">
+                                      Chưa mở khóa biên soạn
+                                    </div>
+                                  </div>
+                                )}
                               </td>
 
                               {/* Publication Status */}
@@ -1121,10 +1166,12 @@ export function CharacterContentManager({
                               {/* Actions */}
                               <td className="py-3 px-3 text-right space-x-1.5 whitespace-nowrap">
                                 <button
+                                  type="button"
                                   onClick={() => handleOpenChapterEditor(chap)}
-                                  className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-[11px] font-mono text-slate-300 hover:text-cyan-300 hover:border-cyan-700"
+                                  className="px-2 py-1 rounded bg-slate-900 border border-slate-700 text-[11px] font-mono text-slate-300 hover:text-cyan-300 hover:border-cyan-700 cursor-pointer"
+                                  title="Xem trước và biên soạn toàn văn chương"
                                 >
-                                  Soạn thảo
+                                  Xem & Soạn thảo
                                 </button>
 
                                 {isPublished ? (
@@ -1205,11 +1252,15 @@ export function CharacterContentManager({
                         key={art.artworkId}
                         className="rounded-lg border border-slate-800 bg-slate-950/80 overflow-hidden flex flex-col group"
                       >
-                        <div className="relative aspect-[4/3] bg-black/60 overflow-hidden">
+                        <div className="relative aspect-[4/3] bg-black/60 overflow-hidden flex items-center justify-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={resolveImageUrl(art.localPath || art.sourceUrl || art.path)}
+                            src={resolveImageUrl(art.localPath || art.sourceUrl || (art as any).path) || '/placeholder.svg'}
                             alt={art.label}
+                            onError={(e) => {
+                              // Fallback on broken image without crashing
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
                             className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
                           />
                           <div className="absolute top-2 left-2 flex items-center gap-1">

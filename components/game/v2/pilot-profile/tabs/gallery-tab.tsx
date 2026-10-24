@@ -71,12 +71,15 @@ export function GalleryTab({ character, onSelectArtwork }: GalleryTabProps) {
     };
   }, [character.id, character.classCharacterName]);
 
-  // If dynamic artworks exist from CDN R2, use them as canonical verified artworks
-  const verifiedArtworks = dynamicArtworks.length > 0
-    ? dynamicArtworks
-    : character.artworks.filter((a) => a.isAvailableOnDisk);
+  // If character.artworks is authoritative from parent, prioritize it directly
+  const verifiedArtworks =
+    character.artworks.length > 0
+      ? character.artworks.filter((a) => a.isAvailableOnDisk !== false)
+      : (dynamicArtworks.length > 0 ? dynamicArtworks : character.artworks);
 
-  const archiveArtworks = character.artworks.filter((a) => !a.isAvailableOnDisk && !dynamicArtworks.some((d) => d.id === a.id));
+  const archiveArtworks = character.artworks.filter(
+    (a) => a.isAvailableOnDisk === false && !verifiedArtworks.some((v) => v.id === a.id)
+  );
 
   return (
     <div className="space-y-6">
@@ -126,7 +129,7 @@ export function GalleryTab({ character, onSelectArtwork }: GalleryTabProps) {
                   <div className="absolute inset-0 bg-[#070A12]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white">
                     <div className="px-3 py-1.5 rounded-lg bg-[#06B6D4] text-[#070A12] font-mono font-bold text-xs flex items-center gap-1.5 shadow-lg">
                       <ZoomIn className="w-3.5 h-3.5" />
-                      <span>Soi Tranh Chi Tiết</span>
+                      <span>Xem Toàn Màn Hình</span>
                     </div>
                   </div>
 
@@ -164,18 +167,18 @@ export function GalleryTab({ character, onSelectArtwork }: GalleryTabProps) {
                     <button
                       type="button"
                       onClick={() => setActiveMetaDetail(activeMetaDetail?.id === art.id ? null : art)}
-                      className="inline-flex items-center gap-1 hover:text-cyan-400 text-[11px] text-slate-400 transition-colors"
-                      title="Xem thông số kỹ thuật"
+                      className="inline-flex items-center gap-1 hover:text-cyan-400 text-[11px] text-slate-400 transition-colors cursor-pointer"
+                      title="Xem thông tin chi tiết tác phẩm"
                     >
                       <Info className="w-3 h-3 text-cyan-400" />
-                      <span>{activeMetaDetail?.id === art.id ? 'Ẩn thông số' : 'Thông số'}</span>
+                      <span>{activeMetaDetail?.id === art.id ? 'Ẩn thông tin' : 'Thông tin ảnh'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => onSelectArtwork(art)}
-                      className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold transition-colors"
+                      className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold transition-colors cursor-pointer"
                     >
-                      <span>Mở xem</span>
+                      <span>Xem ảnh</span>
                       <ZoomIn className="w-3 h-3" />
                     </button>
                   </div>

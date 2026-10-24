@@ -126,16 +126,31 @@ export function PilotProfileV2({
     fetch(`/api/runtime/gallery/${activePilotId}`)
       .then((res) => res.json())
       .then((data) => {
-        if (!isCancelled && data.success && Array.isArray(data.artworks)) {
-          const galleryArts: GalleryArtwork[] = data.artworks.map((a: any) => ({
-            id: a.assetId || a.artworkId || a.filename,
-            title: a.title || a.label || a.filename,
-            category: a.category || 'lore',
-            path: a.path || a.sourceUrl,
-            isAvailableOnDisk: true,
-            status: 'verified_webp',
-            description: a.description || '',
-          }));
+        if (!isCancelled && data.success && Array.isArray(data.artworks) && data.artworks.length > 0) {
+          const galleryArts: GalleryArtwork[] = data.artworks.map((a: any) => {
+            const rawTitle = a.title || a.label || a.filename || 'Tác phẩm';
+            let naturalTitle = rawTitle;
+            
+            // Tự nhiên hóa tiêu đề trang phục
+            const outfitMatch = rawTitle.match(/outfit[-_\s]*(\d+)/i) || (a.filename || '').match(/outfit[-_\s]*(\d+)/i);
+            if (outfitMatch) {
+              naturalTitle = `Trang phục ${outfitMatch[1].padStart(3, '0')}`;
+            }
+
+            const cleanPath = a.path ? (a.path.startsWith('/') ? a.path : `/${a.path}`) : (a.sourceUrl || '');
+
+            return {
+              id: a.assetId || a.artworkId || a.filename,
+              title: naturalTitle,
+              category: a.category || 'lore',
+              path: cleanPath,
+              isAvailableOnDisk: true,
+              status: 'verified_webp' as const,
+              description: a.description || `Định dạng WebP tối ưu (${a.width || 1122}×${a.height || 1402}px)`,
+              dimensions: a.width && a.height ? { width: a.width, height: a.height } : undefined,
+            };
+          });
+
           setDynamicArtworks((prev) => ({
             ...prev,
             [activePilotId]: galleryArts,
@@ -152,22 +167,18 @@ export function PilotProfileV2({
   }, [activePilotId]);
 
   // Find active pilot data and merge dynamic overlay
+  // SINGLE SOURCE OF TRUTH: If dynamic artworks are loaded from R2, use them exclusively
   const activeCharacter: CharacterProfileV2 = useMemo(() => {
     const base = V2_ROSTER_CHARACTERS.find((c) => c.id === activePilotId) || V2_ROSTER_CHARACTERS[0];
     const dynUpdates = dynamicProfileUpdates[base.id];
-    const extraArts = dynamicArtworks[base.id] || [];
+    const r2Arts = dynamicArtworks[base.id];
 
-    let mergedArtworks = [...base.artworks];
-    for (const art of extraArts) {
-      if (!mergedArtworks.some((a) => a.id === art.id || a.path === art.path)) {
-        mergedArtworks.push(art);
-      }
-    }
+    const authoritativeArtworks = r2Arts && r2Arts.length > 0 ? r2Arts : base.artworks;
 
     return {
       ...base,
       ...dynUpdates,
-      artworks: mergedArtworks,
+      artworks: authoritativeArtworks,
     };
   }, [activePilotId, dynamicProfileUpdates, dynamicArtworks]);
 
@@ -189,15 +200,11 @@ export function PilotProfileV2({
     setActivePilotId(V2_ROSTER_CHARACTERS[nextIndex].id);
   };
 
-  // Open Art Viewer with contextual list
+  // Open Art Viewer with contextual list (Uses authoritative activeCharacter.artworks)
   const handleOpenArtViewer = (art?: GalleryArtwork, contextList?: GalleryArtwork[]) => {
-    let targetList: GalleryArtwork[] = [];
-    if (contextList && contextList.length > 0) {
-      targetList = contextList;
-    } else {
-      const verifiedOnly = activeCharacter.artworks.filter((a) => a.isAvailableOnDisk);
-      targetList = verifiedOnly.length > 0 ? verifiedOnly : activeCharacter.artworks;
-    }
+    const targetList: GalleryArtwork[] =
+      contextList && contextList.length > 0 ? contextList : activeCharacter.artworks;
+
     setViewerContextList(targetList);
 
     if (art) {
@@ -206,24 +213,13 @@ export function PilotProfileV2({
       if (targetList.length > 0) {
         setViewerArtwork(targetList[0]);
       } else {
-        const isVerifiedOnDisk = [
-          'valentine',
-          'marcus',
-          'alviss',
-          'eric',
-          'victor',
-          'kaelen',
-          'lyra',
-          'selena',
-        ].includes(activeCharacter.id);
-
         setViewerArtwork({
           id: activeCharacter.id + '-fullbody',
           title: activeCharacter.classCharacterName + ' — Tranh Toàn Thân Chiến Trường',
           category: 'base',
           path: activeCharacter.fullbodyAssetPath,
-          isAvailableOnDisk: isVerifiedOnDisk,
-          status: isVerifiedOnDisk ? 'verified_webp' : 'archive_pending',
+          isAvailableOnDisk: true,
+          status: 'verified_webp',
           description: activeCharacter.shortDescription,
         });
       }
@@ -231,11 +227,7 @@ export function PilotProfileV2({
     setIsViewerOpen(true);
   };
 
-  const currentViewerArtworks =
-    viewerContextList ||
-    (activeCharacter.artworks.filter((a) => a.isAvailableOnDisk).length > 0
-      ? activeCharacter.artworks.filter((a) => a.isAvailableOnDisk)
-      : activeCharacter.artworks);
+  const currentViewerArtworks = viewerContextList || activeCharacter.artworks;
 
   const currentArtworkIndex = currentViewerArtworks.findIndex(
     (a) => a.id === viewerArtwork?.id || a.path === viewerArtwork?.path
@@ -283,10 +275,7 @@ export function PilotProfileV2({
               backgroundMode={backgroundMode}
               onToggleBackgroundMode={setBackgroundMode}
               onOpenArtViewer={(art) =>
-                handleOpenArtViewer(
-                  art,
-                  activeCharacter.artworks.filter((a) => a.isAvailableOnDisk)
-                )
+                handleOpenArtViewer(art, activeCharacter.artworks)
               }
               activeTab={activeTab}
               onTabChange={setActiveTab}

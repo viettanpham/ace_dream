@@ -29,6 +29,7 @@ import {
   Heart,
   Zap,
   Play,
+  Pause,
   Crosshair,
   Award,
   VideoOff,
@@ -67,6 +68,7 @@ export function DesktopView({
   const [carouselIndex, setCarouselIndex] = useState<number>(0)
   const [selectedArtwork, setSelectedArtwork] = useState<GalleryArtwork | null>(null)
   const [showTrailerNotice, setShowTrailerNotice] = useState<boolean>(false)
+  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(false)
 
   // Load saved roster mode from preferences on mount
   useEffect(() => {
@@ -86,6 +88,7 @@ export function DesktopView({
     setCarouselIndex(0)
     setSelectedArtwork(null)
     setShowTrailerNotice(false)
+    setIsSlideshowPlaying(false)
   }, [activeCharacter.id])
 
   // Artworks của nhân vật hiện tại cho carousel dưới chân
@@ -103,13 +106,50 @@ export function DesktopView({
         },
       ]
 
-  // Carousel 4 thumbnails visible at a time
-  const maxCarouselPages = Math.max(0, availableArtworks.length - 4)
+  // Auto Slideshow (6s interval, 300ms crossfade, respect tab visibility)
+  useEffect(() => {
+    if (!isSlideshowPlaying || availableArtworks.length <= 1) return
+
+    const timer = setInterval(() => {
+      setSelectedArtwork((current) => {
+        const curIdx = availableArtworks.findIndex((a) => a.id === current?.id)
+        const nextIdx = (curIdx + 1) % availableArtworks.length
+        return availableArtworks[nextIdx]
+      })
+    }, 6000)
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsSlideshowPlaying(false)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [isSlideshowPlaying, availableArtworks])
+
+  // Carousel thumbnail pagination
+  const visibleThumbnailsCount = 5
+  const maxCarouselPages = Math.max(0, availableArtworks.length - visibleThumbnailsCount)
   const handlePrevCarousel = () => {
     setCarouselIndex((prev) => Math.max(0, prev - 1))
   }
   const handleNextCarousel = () => {
     setCarouselIndex((prev) => Math.min(maxCarouselPages, prev + 1))
+  }
+
+  // Handle clicking thumbnail: change active showcase artwork without opening Fullscreen
+  const handleSelectThumbnail = (art: GalleryArtwork) => {
+    setSelectedArtwork(art)
+    setIsSlideshowPlaying(false) // Pause slideshow on user interaction
+    const el = document.getElementById(`thumb-${art.id}`)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+    }
   }
 
   // Display image path (chọn từ carousel hoặc mặc định fullbody)
@@ -272,17 +312,21 @@ export function DesktopView({
             </div>
           </div>
 
-          {/* Visual Hero Nhân Vật Lớn (Toàn màn hình sân khấu, không còn khung chữ nhật nhỏ) */}
+          {/* Visual Hero Nhân Vật Lớn (Toàn màn hình sân khấu, click để xem toàn màn hình) */}
           <div className="relative w-full h-full flex items-end justify-center pb-2">
             {!mainImageError ? (
-              <div className="relative w-full h-full flex items-end justify-center">
+              <div
+                onClick={() => onOpenArtViewer(selectedArtwork || availableArtworks[0])}
+                className="relative w-full h-full flex items-end justify-center cursor-zoom-in group"
+                title="Nhấp để xem toàn màn hình tác phẩm này"
+              >
                 <Image
                   src={resolveImageUrl(currentDisplayImage)}
                   alt={activeCharacter.classCharacterName}
                   fill
                   priority
                   referrerPolicy="no-referrer"
-                  className="object-contain object-bottom drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)] filter hover:brightness-105 transition-all duration-300"
+                  className="object-contain object-bottom drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)] filter group-hover:brightness-105 transition-all duration-300"
                   onError={() => setMainImageError(true)}
                 />
                 {/* Lớp bóng mờ nhẹ nhàng ở chân giúp nhân vật hòa vào sàn trạm không gian */}
@@ -378,15 +422,41 @@ export function DesktopView({
             )}
           </div>
 
-          {/* Dải Carousel Thumbnail Nhỏ Gọn Bên Phải */}
+          {/* Dải Điều Khiển & Thumbnail Carousel Đầy Đủ Bên Phải */}
           <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+            {/* Nút MỞ GALLERY CTA trực tiếp sang Tab Gallery của pilot */}
+            <button
+              type="button"
+              onClick={() => onTabChange('gallery')}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#00D4FF]/10 hover:bg-[#00D4FF]/20 border border-[#00D4FF]/40 text-[#00D4FF] font-mono text-[11px] font-bold transition-all cursor-pointer shadow-sm shrink-0"
+              title="Mở toàn bộ Thư Viện Ảnh (Gallery)"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>MỞ GALLERY ({availableArtworks.length})</span>
+            </button>
+
+            {/* Nút Auto Slideshow (6s) */}
+            <button
+              type="button"
+              onClick={() => setIsSlideshowPlaying(!isSlideshowPlaying)}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 font-mono text-[10px] shrink-0 ${
+                isSlideshowPlaying
+                  ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-[#00D4FF] font-bold shadow-[0_0_8px_rgba(0,212,255,0.3)]'
+                  : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] bg-[#101A2B]'
+              }`}
+              title={isSlideshowPlaying ? 'Tạm dừng trình chiếu tự động (6s)' : 'Tự động trình chiếu bộ ảnh (6s)'}
+            >
+              {isSlideshowPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span className="hidden xl:inline">{isSlideshowPlaying ? 'DỪNG' : 'AUTO'}</span>
+            </button>
+
             {/* Nút Prev Carousel */}
             <button
               type="button"
               onClick={handlePrevCarousel}
               disabled={carouselIndex === 0}
               aria-label="Hình ảnh trước"
-              className={`p-1 rounded-lg border transition-all ${
+              className={`p-1 rounded-lg border transition-all shrink-0 ${
                 carouselIndex === 0
                   ? 'border-[#1E2D42]/40 text-[#475569] cursor-not-allowed'
                   : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] cursor-pointer'
@@ -395,25 +465,25 @@ export function DesktopView({
               <ChevronLeft className="w-4 h-4" />
             </button>
 
-            {/* Thumbnails strip (4 ảnh ngang) */}
+            {/* Thumbnails strip (Hiển thị đầy đủ bộ ảnh từ R2, scroll ngang) */}
             <div className="flex items-center gap-1.5 overflow-hidden">
-              {availableArtworks.slice(carouselIndex, carouselIndex + 4).map((art) => {
-                const isArtSelected = selectedArtwork?.id === art.id || (!selectedArtwork && art.category === 'base')
+              {availableArtworks.slice(carouselIndex, carouselIndex + visibleThumbnailsCount).map((art) => {
+                const isArtSelected =
+                  selectedArtwork?.id === art.id ||
+                  (!selectedArtwork && (art.category === 'base' || art.id === availableArtworks[0]?.id));
 
                 return (
                   <button
                     key={art.id}
+                    id={`thumb-${art.id}`}
                     type="button"
-                    onClick={() => {
-                      setSelectedArtwork(art)
-                      onOpenArtViewer(art)
-                    }}
-                    className={`relative w-14 h-10 lg:w-16 lg:h-11 rounded-lg overflow-hidden border transition-all cursor-pointer shrink-0 ${
+                    onClick={() => handleSelectThumbnail(art)}
+                    className={`relative w-12 h-9 sm:w-14 sm:h-10 lg:w-16 lg:h-11 rounded-lg overflow-hidden border transition-all duration-200 cursor-pointer shrink-0 ${
                       isArtSelected
-                        ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/40 shadow-[0_0_8px_rgba(0,212,255,0.4)]'
+                        ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/60 shadow-[0_0_12px_rgba(0,212,255,0.5)] scale-105 z-10'
                         : 'border-[#1E2D42] opacity-75 hover:opacity-100 hover:border-[#2C415E]'
                     }`}
-                    title={art.title}
+                    title={`${art.title} (Nhấp để hiển thị trên sân khấu)`}
                   >
                     <Image
                       src={resolveImageUrl(art.path)}
@@ -423,7 +493,7 @@ export function DesktopView({
                       className="object-cover"
                     />
                   </button>
-                )
+                );
               })}
             </div>
 
@@ -433,7 +503,7 @@ export function DesktopView({
               onClick={handleNextCarousel}
               disabled={carouselIndex >= maxCarouselPages}
               aria-label="Hình ảnh tiếp theo"
-              className={`p-1 rounded-lg border transition-all ${
+              className={`p-1 rounded-lg border transition-all shrink-0 ${
                 carouselIndex >= maxCarouselPages
                   ? 'border-[#1E2D42]/40 text-[#475569] cursor-not-allowed'
                   : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] cursor-pointer'
@@ -442,12 +512,12 @@ export function DesktopView({
               <ChevronRight className="w-4 h-4" />
             </button>
 
-            {/* Nút Phóng To Immersive Viewer */}
+            {/* Nút Phóng To Immersive Viewer tại ảnh hiện tại */}
             <button
               type="button"
-              onClick={() => onOpenArtViewer(selectedArtwork || undefined)}
-              className="p-1.5 rounded-lg border border-[#1E2D42] hover:border-[#00D4FF] text-[#A7B6C8] hover:text-[#00D4FF] bg-[#101A2B] transition-colors ml-1 cursor-pointer"
-              title="Phóng to toàn màn hình (Immersive Viewer)"
+              onClick={() => onOpenArtViewer(selectedArtwork || availableArtworks[0])}
+              className="p-1.5 rounded-lg border border-[#1E2D42] hover:border-[#00D4FF] text-[#A7B6C8] hover:text-[#00D4FF] bg-[#101A2B] transition-colors ml-1 cursor-pointer shrink-0"
+              title="Xem toàn màn hình tác phẩm này (Immersive Viewer)"
             >
               <Maximize2 className="w-4 h-4" />
             </button>

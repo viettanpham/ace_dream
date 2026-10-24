@@ -177,9 +177,41 @@ export function ImmersiveStoryReader({
         onSelectChapter(newChapId);
       }
       setMobileDrawerOpen(false);
+      try {
+        if (typeof window !== 'undefined' && pilotId) {
+          localStorage.setItem(
+            `starfront_reading_progress_${pilotId}`,
+            JSON.stringify({
+              chapterId: newChapId,
+              progress: 0,
+              updatedAt: Date.now(),
+            })
+          );
+        }
+      } catch {
+        // Ignore storage errors
+      }
     },
-    [onSelectChapter]
+    [onSelectChapter, pilotId]
   );
+
+  // Sync scroll reading progress to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && pilotId && activeChapterId && readingProgress > 0) {
+      try {
+        localStorage.setItem(
+          `starfront_reading_progress_${pilotId}`,
+          JSON.stringify({
+            chapterId: activeChapterId,
+            progress: readingProgress,
+            updatedAt: Date.now(),
+          })
+        );
+      } catch {
+        // Ignore storage errors
+      }
+    }
+  }, [pilotId, activeChapterId, readingProgress]);
 
   // Parse markdown into blocks
   const contentBlocks = useMemo(() => {

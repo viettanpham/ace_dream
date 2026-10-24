@@ -65,6 +65,12 @@ def create_ci_tools_zip():
 
 if __name__ == "__main__":
     print("--- BUILDING CHECKPOINT 2.1 EXPORT PACKAGES ---")
+    if not os.path.exists(STAGING_DIR):
+        print(f"Staging directory missing, building from verified source...")
+        build_script = os.path.join(PROJECT_ROOT, "scripts", "build-r3-staging-package.mjs")
+        if os.path.exists(build_script):
+            import subprocess
+            subprocess.run(["node", build_script], check=True)
     create_asset_data_zip()
     create_ci_tools_zip()
     print("--- PACKAGING COMPLETE ---")

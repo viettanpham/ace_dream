@@ -15,7 +15,7 @@ node_modules
 .DS_Store
 
 # External Asset Staging & Backups (WEB-01.2)
-starfront-world-assets/
+/starfront-world-assets/
 *.zip
 !public/starfront-r3-asset-data.zip
 !public/starfront-r3-ci-tools.zip

@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 2,
+  "pilotId": "valentine",
+  "chapterId": "chap-03",
+  "chapterNumber": 3,
+  "title": "Tín hiệu bị cô lập ở Vành đai Asteroid",
+  "canonicalLibraryTitle": "Đôi Cánh Mang Hy Vọng",
+  "sourceConflict": true,
+  "conflictDetails": "Tiêu đề runtime là 'Tín hiệu bị cô lập ở Vành đai Asteroid', tiêu đề Library canonical là 'Đôi Cánh Mang Hy Vọng'. Đang giữ tiêu đề runtime và chờ tác giả duyệt đồng bộ.",
+  "editorialStatus": "APPROVED",
+  "contentStatus": "SUMMARY_ONLY",
+  "publicationStatus": "REVIEW_ONLY",
+  "version": "1.0.0",
+  "readingTimeMinutes": 4,
+  "wordCount": 190,
+  "summary": "Hành trình đơn độc vượt qua bãi mảnh vỡ để cứu sống một phi công tiêm kích bị trúng đạn.",
+  "quote": "“Chừng nào còn một tín hiệu cầu cứu, tôi sẽ không bỏ lại ai phía sau.”",
+  "sceneAnchors": [
+    {
+      "sceneId": "scene-03-activity",
+      "anchorId": "val-ch03-scene-activity",
+      "placementTag": "val-ch03-scene-activity",
+      "sceneTitle": "Trực ca Phòng khám Quỹ đạo",
+      "caption": "Khoảnh khắc chăm sóc thương binh tại trạm tiền phương trong bão mảnh vỡ",
+      "assetId": "valentine-activity-001",
+      "artworkUrl": "/images/valentine-activity-001.webp",
+      "aspectRatio": "portrait",
+      "artworks": [
+        {
+          "assetId": "valentine-activity-001",
+          "placement": "primary",
+          "caption": "Khoảnh khắc chăm sóc thương binh tại trạm tiền phương trong bão mảnh vỡ",
+          "artworkUrl": "/images/valentine-activity-001.webp"
+        }
+      ]
+    }
+  ],
+  "blocks": [],
+  "content": "> **BẢN THẢO TÓM TẮT (SUMMARY_ONLY) — CHỜ PHÊ DUYỆT TOÀN VĂN TÁC GIẢ**\n\n**Tóm tắt nội dung:**\nHành trình đơn độc vượt qua bãi mảnh vỡ asteroid dày đặc để cứu sống một phi công tiêm kích bị trúng đạn trôi dạt. Valentine đã mạo hiểm điều động trường lực khiên bao bọc cả hai phi thuyền, vượt qua giới hạn cảnh báo nhiệt của động cơ."
+}

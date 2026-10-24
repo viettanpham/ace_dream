@@ -782,9 +782,16 @@ export function ImmersiveStoryReader({
                   BIÊN NIÊN SỬ CANONICAL V2 // CHƯƠNG {String(meta.chapterNumber).padStart(2, '0')}
                 </div>
 
-                <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-white tracking-wide mb-4 leading-tight">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-white tracking-wide mb-3 leading-tight">
                   {meta.title}
                 </h1>
+
+                {meta.canonicalLibraryTitle && meta.canonicalLibraryTitle !== meta.title && (
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-950/70 border border-amber-500/50 text-[11px] font-mono text-amber-300 mb-4">
+                    <span>Checkpoint Library: <strong>{meta.canonicalLibraryTitle}</strong></span>
+                    <span className="text-[10px] text-amber-400/80">· Chờ tác giả duyệt</span>
+                  </div>
+                )}
 
                 {meta.quote && (
                   <p className="text-sm sm:text-base font-serif italic text-slate-300/90 max-w-xl mx-auto leading-relaxed mb-2">

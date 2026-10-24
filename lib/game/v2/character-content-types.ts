@@ -153,12 +153,36 @@ export interface StorySceneAnchor {
   aspectRatio?: '16:9' | '4:3' | '1:1' | 'portrait' | string;
 }
 
+export interface StoryBlockArtwork {
+  assetId: string;
+  placement?: string;
+  caption?: string;
+  artworkUrl?: string;
+}
+
+export interface StoryBlock {
+  id?: string;
+  type: 'paragraph' | 'heading' | 'dialogue' | 'divider' | 'scene' | 'quote';
+  text?: string;
+  level?: number;
+  speaker?: string;
+  source?: string;
+  sceneId?: string;
+  anchorId?: string;
+  sceneTitle?: string;
+  caption?: string;
+  artworks?: StoryBlockArtwork[];
+}
+
 export interface StoryChapterMeta {
   chapterId: string;
   chapterNumber: number;
   pilotId: CanonicalPilotId;
   characterName: string;
   title: string;
+  canonicalLibraryTitle?: string;
+  sourceConflict?: boolean;
+  conflictDetails?: string;
   version: string;
   summary: string;
   quote?: string;
@@ -176,6 +200,7 @@ export interface StoryChapterMeta {
   };
   anchors?: StorySceneAnchor[];
   sceneAnchors?: StorySceneAnchor[];
+  blocks?: StoryBlock[];
   updatedAt: string;
   updatedBy?: string;
 }

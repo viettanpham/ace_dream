@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import {
   CharacterProfileV2,
@@ -45,7 +45,7 @@ interface DesktopViewProps {
   onSelectCharacter: (char: CharacterProfileV2) => void
   backgroundMode: 'standard' | 'tactical'
   onToggleBackgroundMode: (mode: 'standard' | 'tactical') => void
-  onOpenArtViewer: (artwork?: GalleryArtwork) => void
+  onOpenArtViewer: (artwork?: GalleryArtwork, contextList?: GalleryArtwork[]) => void
   activeTab: string
   onTabChange: (tab: string) => void
   onOpenReader?: (chapterId: string) => void
@@ -66,9 +66,11 @@ export function DesktopView({
   const [rosterMode, setRosterMode] = useState<'mini' | 'full'>('mini')
   const [mainImageError, setMainImageError] = useState<boolean>(false)
   const [carouselIndex, setCarouselIndex] = useState<number>(0)
-  const [selectedArtwork, setSelectedArtwork] = useState<GalleryArtwork | null>(null)
+  const [selectedArtworkIndex, setSelectedArtworkIndex] = useState<number>(0)
   const [showTrailerNotice, setShowTrailerNotice] = useState<boolean>(false)
-  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(false)
+  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(true)
+  const userPausedRef = useRef<boolean>(false)
+  const isTabHiddenRef = useRef<boolean>(false)
 
   // Load saved roster mode from preferences on mount
   useEffect(() => {
@@ -81,15 +83,6 @@ export function DesktopView({
     setRosterMode(nextMode)
     saveV2UIPreferences({ pilotRosterMode: nextMode })
   }
-
-  // Reset khi đổi phi công
-  useEffect(() => {
-    setMainImageError(false)
-    setCarouselIndex(0)
-    setSelectedArtwork(null)
-    setShowTrailerNotice(false)
-    setIsSlideshowPlaying(false)
-  }, [activeCharacter.id])
 
   // Artworks của nhân vật hiện tại cho carousel dưới chân
   const availableArtworks = activeCharacter.artworks && activeCharacter.artworks.length > 0
@@ -106,36 +99,64 @@ export function DesktopView({
         },
       ]
 
-  // Auto Slideshow (6s interval, 300ms crossfade, respect tab visibility)
+  // Reset khi đổi phi công (Mặc định Auto Slideshow bật nếu >= 2 ảnh)
+  useEffect(() => {
+    setMainImageError(false)
+    setCarouselIndex(0)
+    setSelectedArtworkIndex(0)
+    setShowTrailerNotice(false)
+    userPausedRef.current = false
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (prefersReducedMotion || availableArtworks.length <= 1) {
+      setIsSlideshowPlaying(false)
+    } else {
+      setIsSlideshowPlaying(true)
+    }
+  }, [activeCharacter.id])
+
+  // Tự động bật khi availableArtworks được nạp đầy đủ (từ fetch R2) nếu chưa bị user pause
+  useEffect(() => {
+    if (availableArtworks.length > 1 && !userPausedRef.current) {
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (!prefersReducedMotion) {
+        setIsSlideshowPlaying(true)
+      }
+    } else if (availableArtworks.length <= 1) {
+      setIsSlideshowPlaying(false)
+    }
+  }, [availableArtworks.length])
+
+  // Auto Slideshow (chu kỳ 6s, tạm dừng khi tab ẩn, không nhảy dồn ảnh)
   useEffect(() => {
     if (!isSlideshowPlaying || availableArtworks.length <= 1) return
 
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setIsSlideshowPlaying(false)
-      return
+    const handleVisibility = () => {
+      isTabHiddenRef.current = document.hidden
     }
+    document.addEventListener('visibilitychange', handleVisibility)
 
     const timer = setInterval(() => {
-      setSelectedArtwork((current) => {
-        const curIdx = availableArtworks.findIndex((a) => a.id === current?.id)
-        const nextIdx = (curIdx + 1) % availableArtworks.length
-        return availableArtworks[nextIdx]
+      if (document.hidden || isTabHiddenRef.current) {
+        return
+      }
+
+      setSelectedArtworkIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % availableArtworks.length
+        return nextIndex
       })
     }, 6000)
-
-    const handleVisibility = () => {
-      if (document.hidden) {
-        setIsSlideshowPlaying(false)
-      }
-    }
-
-    document.addEventListener('visibilitychange', handleVisibility)
 
     return () => {
       clearInterval(timer)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [isSlideshowPlaying, availableArtworks])
+  }, [isSlideshowPlaying, availableArtworks.length])
 
   // Carousel thumbnail pagination
   const visibleThumbnailsCount = 5
@@ -147,18 +168,45 @@ export function DesktopView({
     setCarouselIndex((prev) => Math.min(maxCarouselPages, prev + 1))
   }
 
-  // Handle clicking thumbnail: change active showcase artwork without opening Fullscreen
-  const handleSelectThumbnail = (art: GalleryArtwork) => {
-    setSelectedArtwork(art)
-    setIsSlideshowPlaying(false) // Pause slideshow on user interaction
+  // Tự động cuộn dải thumbnail hiển thị theo ảnh đang chọn
+  useEffect(() => {
+    if (selectedArtworkIndex < carouselIndex) {
+      setCarouselIndex(selectedArtworkIndex)
+    } else if (selectedArtworkIndex >= carouselIndex + visibleThumbnailsCount) {
+      setCarouselIndex(selectedArtworkIndex - visibleThumbnailsCount + 1)
+    }
+
+    const currentArt = availableArtworks[selectedArtworkIndex]
+    if (currentArt) {
+      const el = document.getElementById(`thumb-${currentArt.id}`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      }
+    }
+  }, [selectedArtworkIndex, availableArtworks, carouselIndex, visibleThumbnailsCount])
+
+  // Tương tác bấm nút Play/Pause
+  const handleToggleSlideshow = () => {
+    if (availableArtworks.length <= 1) return
+    const nextState = !isSlideshowPlaying
+    setIsSlideshowPlaying(nextState)
+    userPausedRef.current = !nextState
+  }
+
+  // Handle clicking thumbnail: chọn ảnh lớn, tạm dừng slideshow
+  const handleSelectThumbnail = (art: GalleryArtwork, index: number) => {
+    setSelectedArtworkIndex(index)
+    setIsSlideshowPlaying(false)
+    userPausedRef.current = true
     const el = document.getElementById(`thumb-${art.id}`)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     }
   }
 
-  // Display image path (chọn từ carousel hoặc mặc định fullbody)
-  const currentDisplayImage = selectedArtwork?.path || activeCharacter.fullbodyAssetPath
+  // Display image & artwork hiện tại
+  const currentArtwork = availableArtworks[selectedArtworkIndex] || availableArtworks[0]
+  const currentDisplayImage = currentArtwork?.path || activeCharacter.fullbodyAssetPath
 
   return (
     <div className="w-full h-full min-h-[640px] flex gap-3 p-3 lg:p-3.5 bg-[#070A12] text-[#F1F5F9] overflow-hidden select-none">
@@ -323,7 +371,8 @@ export function DesktopView({
               <div
                 onClick={() => {
                   setIsSlideshowPlaying(false)
-                  onOpenArtViewer(selectedArtwork || availableArtworks[0])
+                  userPausedRef.current = true
+                  onOpenArtViewer(currentArtwork, availableArtworks)
                 }}
                 className="relative w-full h-full flex items-end justify-center cursor-zoom-in group"
                 title="Nhấp để xem toàn màn hình tác phẩm này"
@@ -447,16 +496,31 @@ export function DesktopView({
             {/* Nút Auto Slideshow (6s) */}
             <button
               type="button"
-              onClick={() => setIsSlideshowPlaying(!isSlideshowPlaying)}
-              className={`p-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 font-mono text-[10px] shrink-0 ${
-                isSlideshowPlaying
-                  ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-[#00D4FF] font-bold shadow-[0_0_8px_rgba(0,212,255,0.3)]'
-                  : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] bg-[#101A2B]'
+              onClick={handleToggleSlideshow}
+              disabled={availableArtworks.length <= 1}
+              className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 font-mono text-[10px] shrink-0 ${
+                availableArtworks.length <= 1
+                  ? 'border-[#1E2D42]/40 text-[#475569] cursor-not-allowed opacity-50'
+                  : isSlideshowPlaying
+                  ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-[#00D4FF] font-bold shadow-[0_0_8px_rgba(0,212,255,0.3)] cursor-pointer'
+                  : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] bg-[#101A2B] cursor-pointer'
               }`}
-              title={isSlideshowPlaying ? 'Tạm dừng trình chiếu tự động (6s)' : 'Tự động trình chiếu bộ ảnh (6s)'}
+              title={
+                availableArtworks.length <= 1
+                  ? 'Cần từ 2 tác phẩm trở lên để bật Auto Slideshow'
+                  : isSlideshowPlaying
+                  ? 'Tạm dừng trình chiếu tự động (6s)'
+                  : 'Tự động trình chiếu bộ ảnh (6s)'
+              }
             >
-              {isSlideshowPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              <span className="hidden xl:inline">{isSlideshowPlaying ? 'DỪNG' : 'AUTO'}</span>
+              {isSlideshowPlaying && availableArtworks.length > 1 ? (
+                <Pause className="w-3.5 h-3.5 text-[#00D4FF]" />
+              ) : (
+                <Play className="w-3.5 h-3.5 text-[#A7B6C8]" />
+              )}
+              <span className="hidden xl:inline">
+                {isSlideshowPlaying && availableArtworks.length > 1 ? 'DỪNG' : 'AUTO'}
+              </span>
             </button>
 
             {/* Nút Prev Carousel */}
@@ -476,17 +540,16 @@ export function DesktopView({
 
             {/* Thumbnails strip (Hiển thị đầy đủ bộ ảnh từ R2, scroll ngang) */}
             <div className="flex items-center gap-1.5 overflow-hidden">
-              {availableArtworks.slice(carouselIndex, carouselIndex + visibleThumbnailsCount).map((art) => {
-                const isArtSelected =
-                  selectedArtwork?.id === art.id ||
-                  (!selectedArtwork && (art.category === 'base' || art.id === availableArtworks[0]?.id));
+              {availableArtworks.slice(carouselIndex, carouselIndex + visibleThumbnailsCount).map((art, sliceIdx) => {
+                const actualIndex = carouselIndex + sliceIdx
+                const isArtSelected = selectedArtworkIndex === actualIndex
 
                 return (
                   <button
                     key={art.id}
                     id={`thumb-${art.id}`}
                     type="button"
-                    onClick={() => handleSelectThumbnail(art)}
+                    onClick={() => handleSelectThumbnail(art, actualIndex)}
                     className={`relative w-12 h-9 sm:w-14 sm:h-10 lg:w-16 lg:h-11 rounded-lg overflow-hidden border transition-all duration-200 cursor-pointer shrink-0 ${
                       isArtSelected
                         ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/60 shadow-[0_0_12px_rgba(0,212,255,0.5)] scale-105 z-10'
@@ -526,7 +589,8 @@ export function DesktopView({
               type="button"
               onClick={() => {
                 setIsSlideshowPlaying(false)
-                onOpenArtViewer(selectedArtwork || availableArtworks[0])
+                userPausedRef.current = true
+                onOpenArtViewer(currentArtwork, availableArtworks)
               }}
               className="p-1.5 rounded-lg border border-[#1E2D42] hover:border-[#00D4FF] text-[#A7B6C8] hover:text-[#00D4FF] bg-[#101A2B] transition-colors ml-1 cursor-pointer shrink-0"
               title="Xem toàn màn hình tác phẩm này (Immersive Viewer)"
@@ -853,7 +917,11 @@ export function DesktopView({
             </div>
             <button
               type="button"
-              onClick={() => onOpenArtViewer(selectedArtwork || undefined)}
+              onClick={() => {
+                setIsSlideshowPlaying(false)
+                userPausedRef.current = true
+                onOpenArtViewer(currentArtwork, availableArtworks)
+              }}
               className="py-2 px-3.5 rounded-lg border border-[#00D4FF]/40 bg-[#00D4FF]/10 hover:bg-[#00D4FF]/20 text-[#00D4FF] font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
               <Maximize2 className="w-3.5 h-3.5" />

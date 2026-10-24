@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 49,
-  "updatedAt": "2026-10-24T04:41:08.380Z",
+  "revision": 51,
+  "updatedAt": "2026-10-24T15:54:26.041Z",
   "updatedBy": "system_bootstrap",
   "profiles": {
     "alviss": {
@@ -20,7 +20,7 @@
       "lorePersonality": "Tự tin, nhiệt huyết, yêu tự do",
       "loreWeakness": "Đôi khi quá liều lĩnh trong truy kích",
       "loreDream": "Bảo vệ hòa bình vành đai",
-      "updatedAt": "2026-10-24T04:41:07.183Z",
+      "updatedAt": "2026-10-24T15:54:26.041Z",
       "updatedBy": "lead_architect",
       "quote": "Không một tấm khiên nào vỡ dưới sự giám sát của tôi."
     },
@@ -305,7 +305,7 @@
         "status": "verified",
         "description": "Cảnh Alviss điều khiển pháo đài chắn asteroid.",
         "priority": 90,
-        "createdAt": "2026-10-24T04:41:07.182Z",
+        "createdAt": "2026-10-24T15:54:26.039Z",
         "updatedBy": "lead_architect"
       }
     ],
@@ -1106,6 +1106,24 @@
   },
   "auditLog": [
     {
+      "id": "audit-1792857266041",
+      "timestamp": "2026-10-24T15:54:26.041Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "alviss",
+      "user": "lead_architect",
+      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
+    },
+    {
+      "id": "audit-1792857266040",
+      "timestamp": "2026-10-24T15:54:26.040Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "alviss",
+      "targetId": "test_alviss_action_01",
+      "user": "lead_architect",
+      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
+    },
+    {
       "id": "audit-1792816868380",
       "timestamp": "2026-10-24T04:41:08.380Z",
       "action": "STORY_PUBLISH",
@@ -1536,15 +1554,6 @@
       "targetId": "test_alviss_action_01",
       "user": "lead_architect",
       "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
-    },
-    {
-      "id": "audit-init-001",
-      "timestamp": "2026-10-23T08:00:00.000Z",
-      "action": "STORY_PUBLISH",
-      "targetPilotId": "valentine",
-      "targetId": "chap-01",
-      "user": "system_bootstrap",
-      "details": "Initial publication of Valentine Chapter 01 (Verified Prose Body)"
     }
   ]
 }

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "pilotId": "valentine",
+  "chapterId": "chap-06",
+  "chapterNumber": 6,
+  "title": "Chuyến bay thử nghiệm của Mercy Wing",
+  "canonicalLibraryTitle": "Thiên Thần Trong Ánh Đèn Trắng",
+  "sourceConflict": true,
+  "conflictDetails": "Tiêu đề runtime là 'Chuyến bay thử nghiệm của Mercy Wing', tiêu đề Library canonical là 'Thiên Thần Trong Ánh Đèn Trắng'. Bản thảo PROVISIONAL đang giữ tiêu đề runtime và chờ tác giả duyệt đồng bộ.",
+  "editorialStatus": "PROVISIONAL",
+  "contentStatus": "SUMMARY_ONLY",
+  "publicationStatus": "REVIEW_ONLY",
+  "version": "1.0.0",
+  "readingTimeMinutes": 4,
+  "wordCount": 170,
+  "summary": "Giai đoạn thử nghiệm hệ thống khiên năng lượng tái tạo kép trên nguyên mẫu mecha y tế.",
+  "quote": "“Khiên chắn không được tạo ra để ngăn chặn kẻ thù, nó sinh ra để bảo vệ những người không thể tự vệ.”",
+  "sceneAnchors": [],
+  "blocks": [],
+  "content": "> **BẢN THẢO TẠM THỜI (PROVISIONAL / SUMMARY_ONLY) — CHỜ PHÊ DUYỆT TÁC GIẢ**\n\n**Tóm tắt nội dung:**\nGiai đoạn thử nghiệm đầy rủi ro của nguyên mẫu cơ giáp y tế Mercy Wing trang bị máy phát trường lực khiên kép. Valentine tình nguyện là phi công thử nghiệm đầu tiên chịu tải gia tốc cực đại để chứng minh tính khả thi của hệ thống cấp cứu dã chiến."
+}

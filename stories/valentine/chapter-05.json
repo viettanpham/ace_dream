@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "pilotId": "valentine",
+  "chapterId": "chap-05",
+  "chapterNumber": 5,
+  "title": "Học viện Y sinh Không gian và Lời thề",
+  "canonicalLibraryTitle": "Những Người Không Trở Về",
+  "sourceConflict": true,
+  "conflictDetails": "Tiêu đề runtime là 'Học viện Y sinh Không gian và Lời thề', tiêu đề Library canonical là 'Những Người Không Trở Về'. Bản thảo PROVISIONAL đang giữ tiêu đề runtime và chờ tác giả duyệt đồng bộ.",
+  "editorialStatus": "PROVISIONAL",
+  "contentStatus": "SUMMARY_ONLY",
+  "publicationStatus": "REVIEW_ONLY",
+  "version": "1.0.0",
+  "readingTimeMinutes": 4,
+  "wordCount": 160,
+  "summary": "Những năm tháng rèn luyện nghiêm ngặt trước khi khoác lên mình bộ giáp Mercy Wing.",
+  "quote": "“Lời thề y đức trên mặt đất đã thiêng liêng, trong không gian vô tận nó còn là sự cam kết bằng mạng sống.”",
+  "sceneAnchors": [],
+  "blocks": [],
+  "content": "> **BẢN THẢO TẠM THỜI (PROVISIONAL / SUMMARY_ONLY) — CHỜ PHÊ DUYỆT TÁC GIẢ**\n\n**Tóm tắt nội dung:**\nHồi tưởng về những năm tháng rèn luyện nghiêm ngặt tại Học viện Y sinh Không gian Elysia. Lễ tuyên thệ bảo vệ sinh mạng và nguồn gốc hình thành lý tưởng cứu hộ của Valentine trước khi bước vào thực địa tác chiến không gian."
+}

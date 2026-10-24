@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 2,
+  "pilotId": "valentine",
+  "chapterId": "chap-02",
+  "chapterNumber": 2,
+  "title": "Ca trực đầu tiên tại Trạm Cứu hộ Quỹ đạo",
+  "canonicalLibraryTitle": "Lời Thề Dưới Những Vì Sao",
+  "sourceConflict": true,
+  "conflictDetails": "Tiêu đề runtime là 'Ca trực đầu tiên tại Trạm Cứu hộ Quỹ đạo', tiêu đề Library canonical là 'Lời Thề Dưới Những Vì Sao'. Đang giữ tiêu đề runtime và chờ tác giả duyệt đồng bộ.",
+  "editorialStatus": "APPROVED",
+  "contentStatus": "SUMMARY_ONLY",
+  "publicationStatus": "REVIEW_ONLY",
+  "version": "1.0.0",
+  "readingTimeMinutes": 4,
+  "wordCount": 180,
+  "summary": "Thử thách đầu tiên khi tiếp quản buồng lái tàu cứu thương bọc thép trong cơn bão điện từ.",
+  "quote": "“Mỗi nhịp tim được giữ lại giữa bão từ đều là một kỳ tích đáng để đánh đổi.”",
+  "sceneAnchors": [
+    {
+      "sceneId": "scene-02-uniform",
+      "anchorId": "val-ch02-scene-uniform",
+      "placementTag": "val-ch02-scene-uniform",
+      "sceneTitle": "Quân phục Sĩ quan Cứu trợ",
+      "caption": "Đồng phục chỉ huy đội cứu hộ không gian với phù hiệu Mercy Wing",
+      "assetId": "valentine-uniform-001",
+      "artworkUrl": "/images/valentine-uniform-001.webp",
+      "aspectRatio": "portrait",
+      "artworks": [
+        {
+          "assetId": "valentine-uniform-001",
+          "placement": "primary",
+          "caption": "Đồng phục chỉ huy đội cứu hộ không gian với phù hiệu Mercy Wing",
+          "artworkUrl": "/images/valentine-uniform-001.webp"
+        }
+      ]
+    }
+  ],
+  "blocks": [],
+  "content": "> **BẢN THẢO TÓM TẮT (SUMMARY_ONLY) — CHỜ PHÊ DUYỆT TOÀN VĂN TÁC GIẢ**\n\n**Tóm tắt nội dung:**\nThử thách đầu tiên khi tiếp quản buồng lái tàu cứu thương bọc thép trong cơn bão điện từ. Valentine phải đưa ra các quyết định điều hướng hiểm nghèo khi hệ thống định vị vệ tinh tê liệt hoàn toàn, đặt tính mạng kíp lái và thương binh vào trực giác của người phi công quân y."
+}

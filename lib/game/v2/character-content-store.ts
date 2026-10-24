@@ -411,23 +411,38 @@ export class CharacterContentStore {
         const parsedStoryManifest = JSON.parse(rawManifest);
         if (Array.isArray(parsedStoryManifest.chapters)) {
           for (const chap of parsedStoryManifest.chapters) {
+            const paddedNum = String(chap.chapterNumber).padStart(2, '0');
+            const jsonPath = path.join(pilotStoriesDir, chap.file || `chapter-${paddedNum}.json`);
+            let jsonMeta: any = null;
+            if (fs.existsSync(jsonPath)) {
+              try {
+                jsonMeta = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+              } catch {
+                // fallback
+              }
+            }
+
             const chapterMeta: StoryChapterMeta = {
               chapterId: chap.chapterId,
               chapterNumber: chap.chapterNumber,
               pilotId,
               characterName: parsedStoryManifest.pilotName || pilotId,
-              title: chap.title,
-              version: '1.0.0',
-              summary: chap.summary || '',
-              quote: chap.quote,
-              editorialStatus: chap.editorialStatus || 'HOLD',
-              contentReadiness: chap.contentStatus === 'FULL_PROSE' ? 'FULL_BODY_IMPORTED' : 'SUMMARY_ONLY',
+              title: jsonMeta?.title || chap.title,
+              canonicalLibraryTitle: jsonMeta?.canonicalLibraryTitle || chap.canonicalLibraryTitle,
+              sourceConflict: jsonMeta?.sourceConflict ?? chap.sourceConflict ?? false,
+              conflictDetails: jsonMeta?.conflictDetails || chap.conflictDetails,
+              version: jsonMeta?.version || '1.0.0',
+              summary: jsonMeta?.summary || chap.summary || '',
+              quote: jsonMeta?.quote || chap.quote,
+              editorialStatus: jsonMeta?.editorialStatus || chap.editorialStatus || 'HOLD',
+              contentReadiness: (jsonMeta?.contentStatus || chap.contentStatus) === 'FULL_PROSE' ? 'FULL_BODY_IMPORTED' : 'SUMMARY_ONLY',
               publicationStatus: chap.publicationStatus === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT',
-              estimatedReadTimeMinutes: chap.readingTimeMinutes || 4,
-              readingTimeMinutes: chap.readingTimeMinutes || 4,
-              wordCount: chap.wordCount || 300,
+              estimatedReadTimeMinutes: jsonMeta?.readingTimeMinutes || chap.readingTimeMinutes || 4,
+              readingTimeMinutes: jsonMeta?.readingTimeMinutes || chap.readingTimeMinutes || 4,
+              wordCount: jsonMeta?.wordCount || chap.wordCount || 300,
               updatedAt: '2026-10-24T00:00:00.000Z',
-              sceneAnchors: chap.sceneAnchors || [],
+              sceneAnchors: (jsonMeta?.sceneAnchors && jsonMeta.sceneAnchors.length > 0) ? jsonMeta.sceneAnchors : (chap.sceneAnchors || []),
+              blocks: jsonMeta?.blocks || [],
             };
 
             // Overlay publication state from runtime manifest if customized
@@ -513,12 +528,13 @@ export class CharacterContentStore {
 
           // Check if standalone JSON exists: chapter-01.json
           const paddedNum = String(chapDef.chapterNumber).padStart(2, '0');
-          const jsonPath = path.join(pilotStoriesDir, `chapter-${paddedNum}.json`);
+          const jsonPath = path.join(pilotStoriesDir, chapDef.file || `chapter-${paddedNum}.json`);
           let content = '';
+          let chapJson: any = null;
 
           if (fs.existsSync(jsonPath)) {
             try {
-              const chapJson = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
+              chapJson = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
               content = chapJson.content || '';
             } catch {
               // fallback
@@ -527,7 +543,7 @@ export class CharacterContentStore {
 
           // Fallback to .md file if content is still empty
           if (!content) {
-            const mdPath = path.join(pilotStoriesDir, `chapter-${paddedNum}.md`);
+            const mdPath = path.join(pilotStoriesDir, chapDef.sourceProseMarkdown || `chapter-${paddedNum}.md`);
             if (fs.existsSync(mdPath)) {
               content = fs.readFileSync(mdPath, 'utf-8');
             }
@@ -538,18 +554,22 @@ export class CharacterContentStore {
             chapterNumber: chapDef.chapterNumber,
             pilotId,
             characterName: parsedStoryManifest.pilotName || pilotId,
-            title: chapDef.title,
-            version: '1.0.0',
-            summary: chapDef.summary || '',
-            quote: chapDef.quote,
-            editorialStatus: pubRecord?.editorialStatus || chapDef.editorialStatus || 'HOLD',
-            contentReadiness: chapDef.contentStatus === 'FULL_PROSE' ? 'FULL_BODY_IMPORTED' : 'SUMMARY_ONLY',
+            title: chapJson?.title || chapDef.title,
+            canonicalLibraryTitle: chapJson?.canonicalLibraryTitle || chapDef.canonicalLibraryTitle,
+            sourceConflict: chapJson?.sourceConflict ?? chapDef.sourceConflict ?? false,
+            conflictDetails: chapJson?.conflictDetails || chapDef.conflictDetails,
+            version: chapJson?.version || '1.0.0',
+            summary: chapJson?.summary || chapDef.summary || '',
+            quote: chapJson?.quote || chapDef.quote,
+            editorialStatus: pubRecord?.editorialStatus || chapJson?.editorialStatus || chapDef.editorialStatus || 'HOLD',
+            contentReadiness: (chapJson?.contentStatus || chapDef.contentStatus) === 'FULL_PROSE' ? 'FULL_BODY_IMPORTED' : 'SUMMARY_ONLY',
             publicationStatus,
-            estimatedReadTimeMinutes: chapDef.readingTimeMinutes || 4,
-            readingTimeMinutes: chapDef.readingTimeMinutes || 4,
-            wordCount: content ? content.split(/\s+/).length : (chapDef.wordCount || 300),
+            estimatedReadTimeMinutes: chapJson?.readingTimeMinutes || chapDef.readingTimeMinutes || 4,
+            readingTimeMinutes: chapJson?.readingTimeMinutes || chapDef.readingTimeMinutes || 4,
+            wordCount: content ? content.split(/\s+/).filter(Boolean).length : (chapDef.wordCount || 300),
             updatedAt: '2026-10-24T00:00:00.000Z',
-            sceneAnchors: chapDef.sceneAnchors || [],
+            sceneAnchors: (chapJson?.sceneAnchors && chapJson.sceneAnchors.length > 0) ? chapJson.sceneAnchors : (chapDef.sceneAnchors || []),
+            blocks: chapJson?.blocks || [],
             content,
           };
         }

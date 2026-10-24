@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 2,
+  "pilotId": "valentine",
+  "chapterId": "chap-04",
+  "chapterNumber": 4,
+  "title": "Lằn ranh đỏ giữa hai mệnh lệnh",
+  "canonicalLibraryTitle": "Một Ngày Không Tiếng Còi Báo Động",
+  "sourceConflict": true,
+  "conflictDetails": "Tiêu đề runtime là 'Lằn ranh đỏ giữa hai mệnh lệnh', tiêu đề Library canonical là 'Một Ngày Không Tiếng Còi Báo Động'. Đang giữ tiêu đề runtime và chờ tác giả duyệt đồng bộ.",
+  "editorialStatus": "APPROVED",
+  "contentStatus": "SUMMARY_ONLY",
+  "publicationStatus": "REVIEW_ONLY",
+  "version": "1.0.0",
+  "readingTimeMinutes": 5,
+  "wordCount": 210,
+  "summary": "Sự giằng xé giữa quy tắc quân sự và lương tâm của một bác sĩ cứu trợ tiền tuyến.",
+  "quote": "“Mệnh lệnh có thể quy định quyền hạn, nhưng không thể ra lệnh cho trái tim ngừng bảo vệ đồng loại.”",
+  "sceneAnchors": [
+    {
+      "sceneId": "scene-04-casual",
+      "anchorId": "val-ch04-scene-casual",
+      "placementTag": "val-ch04-scene-casual",
+      "sceneTitle": "Trang Phục Thường Nhật Elysia",
+      "caption": "Khoảnh khắc trầm tư trong ngày nghỉ hiếm hoi trước khi đối diện với quyết định cam go",
+      "assetId": "valentine-casual",
+      "artworkUrl": "/images/valentine-casual.webp",
+      "aspectRatio": "portrait",
+      "artworks": [
+        {
+          "assetId": "valentine-casual",
+          "placement": "primary",
+          "caption": "Khoảnh khắc trầm tư trong ngày nghỉ hiếm hoi trước khi đối diện với quyết định cam go",
+          "artworkUrl": "/images/valentine-casual.webp"
+        }
+      ]
+    }
+  ],
+  "blocks": [],
+  "content": "> **BẢN THẢO TÓM TẮT (SUMMARY_ONLY) — CHỜ PHÊ DUYỆT TOÀN VĂN TÁC GIẢ**\n\n**Tóm tắt nội dung:**\nSự giằng xé sâu sắc giữa quy tắc kỷ luật quân sự nghiêm ngặt và y đức cứu người. Đứng trước lệnh rút quân ngay lập tức để bảo toàn hạm đội, Valentine đã bất tuân mệnh lệnh rút lui để tiếp tục mở trường khiên cứu viện thêm 15 phút, cứu sống toàn bộ phân đội tiếp tế hậu cần."
+}

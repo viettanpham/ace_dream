@@ -18,6 +18,8 @@ import {
   Image as ImageIcon,
   ZoomIn,
   Grid,
+  Play,
+  Pause,
 } from 'lucide-react'
 
 interface MobileArtViewProps {
@@ -53,6 +55,9 @@ export function MobileArtView({
 }: MobileArtViewProps) {
   const [imageError, setImageError] = useState<boolean>(false)
   const [selectedArtworkIndex, setSelectedArtworkIndex] = useState<number>(0)
+  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(true)
+  const userPausedRef = useRef<boolean>(false)
+  const isTabHiddenRef = useRef<boolean>(false)
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [touchEndX, setTouchEndX] = useState<number | null>(null)
   const thumbnailRowRef = useRef<HTMLDivElement>(null)
@@ -87,11 +92,57 @@ export function MobileArtView({
         },
       ]
 
-  // Reset index khi đổi phi công
+  // Reset index khi đổi phi công (Mặc định bật slideshow nếu >= 2 ảnh)
   useEffect(() => {
     setImageError(false)
     setSelectedArtworkIndex(0)
+    userPausedRef.current = false
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (prefersReducedMotion || displayArtworks.length <= 1) {
+      setIsSlideshowPlaying(false)
+    } else {
+      setIsSlideshowPlaying(true)
+    }
   }, [character.id])
+
+  // Tự động bật khi danh sách artwork cập nhật nếu chưa bị user pause
+  useEffect(() => {
+    if (displayArtworks.length > 1 && !userPausedRef.current) {
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (!prefersReducedMotion) {
+        setIsSlideshowPlaying(true)
+      }
+    } else if (displayArtworks.length <= 1) {
+      setIsSlideshowPlaying(false)
+    }
+  }, [displayArtworks.length])
+
+  // Auto Slideshow (chu kỳ 6s trên mobile, không nhảy dồn khi ẩn tab)
+  useEffect(() => {
+    if (!isSlideshowPlaying || displayArtworks.length <= 1) return
+
+    const handleVisibility = () => {
+      isTabHiddenRef.current = document.hidden
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
+    const timer = setInterval(() => {
+      if (document.hidden || isTabHiddenRef.current) return
+
+      setSelectedArtworkIndex((prev) => (prev + 1) % displayArtworks.length)
+    }, 6000)
+
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  }, [isSlideshowPlaying, displayArtworks.length])
 
   // Lấy tác phẩm hiện tại
   const currentArtwork: GalleryArtwork = displayArtworks[selectedArtworkIndex] || displayArtworks[0]
@@ -106,17 +157,31 @@ export function MobileArtView({
     }
   }, [selectedArtworkIndex])
 
-  // Chuyển tranh tiếp theo / trước đó
+  // Chuyển tranh tiếp theo / trước đó (Tạm dừng slideshow khi người dùng chủ động chuyển)
   const handlePrevArtwork = () => {
+    setIsSlideshowPlaying(false)
+    userPausedRef.current = true
     setSelectedArtworkIndex((prev) => (prev > 0 ? prev - 1 : displayArtworks.length - 1))
   }
 
   const handleNextArtwork = () => {
+    setIsSlideshowPlaying(false)
+    userPausedRef.current = true
     setSelectedArtworkIndex((prev) => (prev < displayArtworks.length - 1 ? prev + 1 : 0))
   }
 
-  // Mở viewer với đúng tranh đang chọn
+  // Bật/tắt Auto Slideshow thủ công
+  const handleToggleSlideshow = () => {
+    if (displayArtworks.length <= 1) return
+    const nextState = !isSlideshowPlaying
+    setIsSlideshowPlaying(nextState)
+    userPausedRef.current = !nextState
+  }
+
+  // Mở viewer với đúng tranh đang chọn (Tạm dừng slideshow)
   const handleOpenCurrentInViewer = () => {
+    setIsSlideshowPlaying(false)
+    userPausedRef.current = true
     onOpenArtViewer(currentArtwork, displayArtworks)
   }
 
@@ -282,11 +347,46 @@ export function MobileArtView({
             </div>
           )}
 
-          {/* Huy hiệu số thứ tự tác phẩm trên sân khấu */}
-          <div className="absolute top-2 left-4 z-20">
+          {/* Huy hiệu số thứ tự tác phẩm trên sân khấu & Nút Auto Slideshow */}
+          <div className="absolute top-2 left-4 z-20 flex items-center gap-1.5">
             <span className="px-2.5 py-1 rounded-full bg-[#090D18]/90 border border-[#00D4FF]/40 text-xs font-mono font-bold text-[#00D4FF] backdrop-blur-md shadow-lg">
               {selectedArtworkIndex + 1} / {displayArtworks.length}
             </span>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleSlideshow();
+              }}
+              disabled={displayArtworks.length <= 1}
+              className={`px-2 py-1 rounded-full border text-[11px] font-mono font-bold flex items-center gap-1 backdrop-blur-md shadow-lg transition-all ${
+                displayArtworks.length <= 1
+                  ? 'bg-[#090D18]/90 border-[#1E2D42]/40 text-[#475569] cursor-not-allowed opacity-50'
+                  : isSlideshowPlaying
+                  ? 'bg-[#00D4FF]/20 border-[#00D4FF] text-[#00D4FF] cursor-pointer'
+                  : 'bg-[#090D18]/90 border-[#1E2D42] text-[#A7B6C8] cursor-pointer'
+              }`}
+              title={
+                displayArtworks.length <= 1
+                  ? 'Cần từ 2 tác phẩm trở lên để bật Auto Slideshow'
+                  : isSlideshowPlaying
+                  ? 'Tạm dừng Auto Slideshow (6s)'
+                  : 'Bật Auto Slideshow (6s)'
+              }
+            >
+              {isSlideshowPlaying && displayArtworks.length > 1 ? (
+                <>
+                  <Pause className="w-3 h-3 text-[#00D4FF]" />
+                  <span>DỪNG</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3 h-3 text-[#A7B6C8]" />
+                  <span>AUTO</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
 
@@ -366,7 +466,11 @@ export function MobileArtView({
                 <button
                   key={art.id}
                   type="button"
-                  onClick={() => setSelectedArtworkIndex(idx)}
+                  onClick={() => {
+                    setSelectedArtworkIndex(idx);
+                    setIsSlideshowPlaying(false);
+                    userPausedRef.current = true;
+                  }}
                   className={`relative w-16 h-14 rounded-xl overflow-hidden border shrink-0 transition-all cursor-pointer ${
                     isSelected
                       ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/60 shadow-[0_0_12px_rgba(0,212,255,0.6)] scale-105 z-10'

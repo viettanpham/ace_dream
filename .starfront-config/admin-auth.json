@@ -18,11 +18,11 @@
     "admin321": {
       "username": "admin321",
       "role": "superadmin",
-      "salt": "8421869ff0330a1d851efe787d7e3e67",
-      "hash": "df022c126cb0c45dcd0f857969c0d8271cc4f2a4ebd3249e436b259f8e66532413f60fe35ba12cd6ac318cb5b0e473468ee09b9a17dda9b7be93fea75f9125a7",
+      "salt": "3daa074f247f34c44496368986ff8e88",
+      "hash": "fc797bd0b695db13124505e3fcd678d8e66d911a07c53b445b8c771e928d9ed5888aa00fb5eaa714f3df99abec06a0583805e26d24aaa6fef694bc1e0bdd803e",
       "createdAt": "2026-10-24T09:17:43.129Z",
-      "updatedAt": "2026-10-24T14:34:41.342Z"
+      "updatedAt": "2026-10-24T15:54:27.668Z"
     }
   },
-  "updatedAt": "2026-10-24T14:34:41.342Z"
+  "updatedAt": "2026-10-24T15:54:27.669Z"
 }

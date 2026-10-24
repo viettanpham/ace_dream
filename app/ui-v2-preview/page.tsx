@@ -90,9 +90,9 @@ export default function UIV2PreviewPage() {
         {/* Left Zone: Single, prominent QUAY LẠI V1 action */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <Link
-            href="/"
+            href="/v1"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#142338] border border-[#26384D] text-[#F1F5F9] font-medium hover:border-[#06B6D4] hover:bg-[#1E3553] active:bg-[#0F1C2E] transition-all min-h-[44px] text-xs sm:text-sm shrink-0 shadow-xs"
-            title="Quay lại giao diện Starfront V1 tại /"
+            title="Quay lại giao diện Starfront V1 tại /v1"
           >
             <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-[#06B6D4] shrink-0" />
             <span className="font-bold tracking-wide">QUAY LẠI V1</span>
@@ -103,9 +103,9 @@ export default function UIV2PreviewPage() {
           {/* Desktop Version Control Switcher (Hidden on narrow mobile screens) */}
           <div className="hidden md:flex items-center gap-1 p-1 bg-[#0F172A] border border-[#26384D] rounded-xl text-xs font-mono">
             <Link
-              href="/"
+              href="/v1"
               className="px-2.5 py-1 rounded-lg text-[#A7B6C8] hover:text-[#F1F5F9] hover:bg-[#142338]/80 transition-colors min-h-[32px] flex items-center justify-center font-medium"
-              title="Chuyển sang Starfront V1 (/)"
+              title="Chuyển sang Starfront V1 (/v1)"
             >
               STARFRONT V1
             </Link>

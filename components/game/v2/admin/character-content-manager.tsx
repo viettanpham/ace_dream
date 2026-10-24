@@ -120,7 +120,7 @@ export function CharacterContentManager({
     if (pilotSortMode === 'editorial') {
       return ['valentine', ...CANONICAL_PILOT_IDS.filter((p) => p !== 'valentine')];
     }
-    return CANONICAL_PILOT_IDS;
+    return [...CANONICAL_PILOT_IDS];
   }, [pilotSortMode]);
 
   // Story Editor Modal State
@@ -147,6 +147,23 @@ export function CharacterContentManager({
 
   // Profile Edit State
   const [profileForm, setProfileForm] = useState<Partial<CharacterProfileContentRecord>>({});
+
+  // Artwork Fullscreen / Lightbox Inspector State
+  const [previewArtworkModal, setPreviewArtworkModal] = useState<any | null>(null);
+
+  // Safe Artwork URL Resolver using shared resolver
+  const getArtworkUrl = useCallback((art: any): string => {
+    if (!art) return '';
+    const rawPath = art.localPath || art.sourceUrl || art.path || '';
+    if (rawPath) {
+      return resolveImageUrl(rawPath);
+    }
+    if (art.assetId) {
+      const pid = art.pilotId || selectedPilot;
+      return resolveImageUrl(`images/pilots/${pid}/${art.assetId}.webp`);
+    }
+    return '';
+  }, [selectedPilot]);
 
   // Auth Headers Helper with Bearer fallback for iframe cookie drop
   const getAuthHeaders = useCallback(
@@ -1247,59 +1264,88 @@ export function CharacterContentManager({
 
                   {/* Artwork Grid */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(manifest?.artworks?.[selectedPilot] || []).map((art) => (
-                      <div
-                        key={art.artworkId}
-                        className="rounded-lg border border-slate-800 bg-slate-950/80 overflow-hidden flex flex-col group"
-                      >
-                        <div className="relative aspect-[4/3] bg-black/60 overflow-hidden flex items-center justify-center">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={resolveImageUrl(art.localPath || art.sourceUrl || (art as any).path) || '/placeholder.svg'}
-                            alt={art.label}
-                            onError={(e) => {
-                              // Fallback on broken image without crashing
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                            className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
-                          />
-                          <div className="absolute top-2 left-2 flex items-center gap-1">
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/70 text-cyan-300 border border-white/10 uppercase">
-                              {art.roleCategory}
-                            </span>
-                            <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/70 text-slate-300 border border-white/10 uppercase">
-                              {art.category}
-                            </span>
-                          </div>
+                    {(manifest?.artworks?.[selectedPilot] || []).map((art, idx) => {
+                      const artKey = art.artworkId || (art as any).assetId || `art-${selectedPilot}-${idx}`;
+                      const label = art.label || (art as any).title || (art as any).assetId || 'Tác phẩm';
+                      const roleCategory = art.roleCategory || (art as any).slot || (art as any).role || 'fullbody';
+                      const category = art.category || 'lore';
+                      const verification = art.verificationStatus || (art as any).status || 'VERIFIED';
+                      const imgSrc = getArtworkUrl(art);
 
-                          <button
-                            onClick={() => handleDeleteArtwork(art.artworkId)}
-                            className="absolute top-2 right-2 p-1.5 rounded bg-rose-950/80 text-rose-300 hover:bg-rose-900 border border-rose-800 opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="Xóa artwork"
+                      return (
+                        <div
+                          key={artKey}
+                          className="rounded-lg border border-slate-800 bg-slate-950/80 overflow-hidden flex flex-col group hover:border-cyan-500/50 transition-colors"
+                        >
+                          <div
+                            onClick={() => setPreviewArtworkModal(art)}
+                            className="relative aspect-[4/3] bg-black/60 overflow-hidden flex items-center justify-center cursor-pointer"
+                            title="Nhấp để xem chi tiết & toàn màn hình tác phẩm"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                            {imgSrc ? (
+                              /* eslint-disable-next-line @next/next/no-img-element */
+                              <img
+                                src={imgSrc}
+                                alt={label}
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                                className="w-full h-full object-cover object-top transition-transform group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="text-xs font-mono text-slate-600">CHƯA CÓ ĐƯỜNG DẪN TỆP</div>
+                            )}
 
-                        <div className="p-3 flex-1 flex flex-col justify-between">
-                          <div>
-                            <div className="text-xs font-semibold text-slate-200 truncate">
-                              {art.label}
+                            <div className="absolute top-2 left-2 flex items-center gap-1 pointer-events-none">
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/75 text-cyan-300 border border-white/10 uppercase">
+                                {roleCategory}
+                              </span>
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/75 text-slate-300 border border-white/10 uppercase">
+                                {category}
+                              </span>
                             </div>
-                            <div className="text-[10px] text-slate-400 line-clamp-2 mt-0.5 italic">
-                              {art.description || 'Chưa có mô tả bối cảnh.'}
+
+                            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/80 text-[10px] font-mono text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 border border-cyan-800/60 pointer-events-none">
+                              <Eye className="w-3 h-3" />
+                              <span>XEM TOÀN MÀN HÌNH</span>
                             </div>
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteArtwork(art.artworkId || (art as any).assetId);
+                              }}
+                              className="absolute top-2 right-2 p-1.5 rounded bg-rose-950/80 text-rose-300 hover:bg-rose-900 border border-rose-800 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              title="Xóa artwork"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
 
-                          <div className="mt-3 pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-mono text-slate-500">
-                            <span>{art.aspectRatio || '3:4'}</span>
-                            <span className="text-emerald-400 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" /> {art.verificationStatus}
-                            </span>
+                          <div className="p-3 flex-1 flex flex-col justify-between">
+                            <div>
+                              <div
+                                onClick={() => setPreviewArtworkModal(art)}
+                                className="text-xs font-semibold text-slate-200 truncate cursor-pointer hover:text-cyan-300 transition-colors"
+                              >
+                                {label}
+                              </div>
+                              <div className="text-[10px] text-slate-400 line-clamp-2 mt-0.5 italic">
+                                {art.description || 'Chưa có mô tả bối cảnh.'}
+                              </div>
+                            </div>
+
+                            <div className="mt-3 pt-2 border-t border-slate-900 flex items-center justify-between text-[10px] font-mono text-slate-500">
+                              <span>{art.aspectRatio || '3:4'}</span>
+                              <span className="text-emerald-400 flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> {verification}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1989,6 +2035,101 @@ export function CharacterContentManager({
           </div>
         </div>
       )}
+
+      {/* Fullscreen Artwork Lightbox Modal for AdminCP */}
+      {previewArtworkModal && (
+        <div className="fixed inset-0 z-70 bg-black/95 flex items-center justify-center p-3 sm:p-6 select-none animate-in fade-in duration-200">
+          <div className="w-full max-w-4xl max-h-[92vh] bg-[#070D18] border border-cyan-700/80 rounded-2xl flex flex-col shadow-2xl overflow-hidden">
+            <header className="h-12 border-b border-slate-800 px-4 flex items-center justify-between shrink-0 bg-[#0A1324]">
+              <div className="flex items-center gap-2 min-w-0">
+                <ImageIcon className="w-4 h-4 text-cyan-400 shrink-0" />
+                <h3 className="text-xs font-mono font-bold text-slate-100 uppercase truncate">
+                  XEM CHI TIẾT TÁC PHẨM // {previewArtworkModal.label || previewArtworkModal.title || previewArtworkModal.assetId}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewArtworkModal(null)}
+                className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition-colors"
+                title="Đóng (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </header>
+
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0 bg-[#030712]">
+              {/* Image Preview Canvas */}
+              <div className="flex-1 flex items-center justify-center p-4 bg-black/80 overflow-hidden relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={getArtworkUrl(previewArtworkModal)}
+                  alt={previewArtworkModal.label || previewArtworkModal.title}
+                  className="max-h-[55vh] md:max-h-[75vh] max-w-full object-contain drop-shadow-2xl"
+                />
+              </div>
+
+              {/* Metadata Panel */}
+              <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-slate-800 bg-[#070E1C] p-4 flex flex-col justify-between overflow-y-auto space-y-4">
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-[10px] font-mono text-cyan-500 font-bold uppercase tracking-wider">
+                      THÔNG TIN TÁC PHẨM
+                    </div>
+                    <div className="text-sm font-bold text-white mt-1 break-words">
+                      {previewArtworkModal.label || previewArtworkModal.title || previewArtworkModal.assetId}
+                    </div>
+                    {previewArtworkModal.description && (
+                      <p className="text-xs text-slate-400 mt-1 italic leading-relaxed">
+                        {previewArtworkModal.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t border-slate-800/80 text-xs font-mono">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Asset ID:</span>
+                      <span className="text-cyan-400 truncate max-w-[150px]">{previewArtworkModal.assetId || previewArtworkModal.artworkId || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Phân loại:</span>
+                      <span className="text-slate-200 uppercase">{previewArtworkModal.category || 'lore'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Vai trò / Slot:</span>
+                      <span className="text-slate-200 uppercase">{previewArtworkModal.roleCategory || previewArtworkModal.slot || 'fullbody'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Tỷ lệ khung:</span>
+                      <span className="text-slate-200">{previewArtworkModal.aspectRatio || '3:4'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">Trạng thái:</span>
+                      <span className="text-emerald-400 font-bold">{previewArtworkModal.verificationStatus || previewArtworkModal.status || 'VERIFIED'}</span>
+                    </div>
+                    <div className="flex flex-col pt-1">
+                      <span className="text-slate-500">Đường dẫn tệp:</span>
+                      <span className="text-[10px] text-slate-300 break-all bg-slate-950 p-1.5 rounded border border-slate-900 mt-1">
+                        {previewArtworkModal.localPath || previewArtworkModal.sourceUrl || previewArtworkModal.path || ('images/pilots/' + selectedPilot + '/' + previewArtworkModal.assetId + '.webp')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-slate-800 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewArtworkModal(null)}
+                    className="px-4 py-1.5 rounded bg-cyan-600 hover:bg-cyan-500 text-xs font-mono font-bold text-slate-950 cursor-pointer"
+                  >
+                    ĐÓNG
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

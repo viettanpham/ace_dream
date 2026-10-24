@@ -161,9 +161,9 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
 
           {/* Nút Quay Lại V1 (Hợp lệ theo chính sách V1/V2 coexistence) */}
           <Link
-            href="/"
+            href="/v1"
             className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0E1626] border border-[#1E2D42] hover:border-[#00D4FF] text-[#A7B6C8] hover:text-[#00D4FF] text-xs font-mono font-bold transition-all cursor-pointer"
-            title="Quay lại Starfront World V1"
+            title="Quay lại Starfront World V1 (/v1)"
           >
             <ChevronLeft className="w-4 h-4 text-[#00D4FF]" />
             <span className="hidden sm:inline">QUAY LẠI V1</span>
@@ -411,7 +411,7 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
               {/* Drawer Footer */}
               <div className="pt-3 border-t border-[#1E2D42]">
                 <Link
-                  href="/"
+                  href="/v1"
                   onClick={() => setIsMobileDrawerOpen(false)}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#0E1626] border border-[#1E2D42] text-[#A7B6C8] text-xs font-mono font-bold"
                 >

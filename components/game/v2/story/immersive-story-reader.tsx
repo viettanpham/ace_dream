@@ -80,6 +80,7 @@ export function ImmersiveStoryReader({
   const [readingProgress, setReadingProgress] = useState<number>(0);
   const [activeAnchorId, setActiveAnchorId] = useState<string | null>(null);
   const [currentArtworkIndex, setCurrentArtworkIndex] = useState<number>(0);
+  const [artworkFitMode, setArtworkFitMode] = useState<'contain' | 'cover'>('contain');
 
   // Modals
   const [viewerImage, setViewerImage] = useState<{
@@ -619,9 +620,9 @@ export function ImmersiveStoryReader({
                       )}
                     </div>
 
-                    {/* Chapter Title */}
+                    {/* Chapter Title (Wraps up to 2 lines cleanly) */}
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate leading-tight">
+                      <div className="text-xs font-medium line-clamp-2 break-words leading-snug">
                         {chap.title}
                       </div>
                     </div>
@@ -816,32 +817,32 @@ export function ImmersiveStoryReader({
                           data-anchor-id={block.anchorId}
                           className="pt-4 pb-2 my-6 border-t border-cyan-950/40 relative font-sans"
                         >
-                          {/* Anchor Card Block Matching Concept Visual */}
+                          {/* Anchor Card Block Matching Concept Visual (Subdued and softened) */}
                           <div
-                            className={`p-3.5 rounded-lg border transition-all ${
+                            className={`p-3 rounded-lg border transition-all ${
                               isAnchorActive
-                                ? 'bg-[#061528] border-cyan-500/70 shadow-sm shadow-cyan-950'
-                                : 'bg-[#040c1a] border-slate-900/80'
+                                ? 'bg-cyan-950/20 border-cyan-500/40 shadow-xs'
+                                : 'bg-[#040c1a]/50 border-slate-900/60'
                             }`}
                           >
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-2">
-                                <span className="w-1.5 h-4 bg-cyan-400 rounded-full inline-block" />
-                                <span className="text-[11px] font-mono uppercase tracking-wider text-cyan-400 font-bold">
+                                <span className="w-1.5 h-3.5 bg-cyan-400/80 rounded-full inline-block" />
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold">
                                   PHÂN CẢNH {String(idx + 1).padStart(2, '0')}
                                 </span>
-                                <LinkIcon className="w-3.5 h-3.5 text-cyan-500/70" />
+                                <LinkIcon className="w-3 h-3 text-cyan-500/60" />
                               </div>
                               {scene?.artworkUrl && (
                                 <button
                                   onClick={() => {
                                     setViewerImage({
-                                      url: scene.artworkUrl!,
+                                      url: resolveImageUrl(scene.artworkUrl)!,
                                       title: scene.title || 'Minh họa phân cảnh',
                                       caption: scene.caption,
                                     });
                                   }}
-                                  className="lg:hidden flex items-center gap-1 text-[10px] font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800"
+                                  className="lg:hidden flex items-center gap-1 text-[10px] font-mono text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800/80 cursor-pointer"
                                 >
                                   <ImageIcon className="w-3 h-3" />
                                   <span>XEM ẢNH</span>
@@ -849,7 +850,7 @@ export function ImmersiveStoryReader({
                               )}
                             </div>
 
-                            <h3 className="text-sm font-bold text-white mb-0.5 font-sans">
+                            <h3 className="text-xs sm:text-sm font-bold text-white mb-0.5 font-sans">
                               {scene?.title || `Bối Cảnh [${block.anchorId}]`}
                             </h3>
 
@@ -859,15 +860,15 @@ export function ImmersiveStoryReader({
 
                             {/* Mobile inline artwork (State 4) */}
                             {scene?.artworkUrl && (
-                              <div className="lg:hidden mt-3 rounded-lg overflow-hidden border border-slate-800 bg-black">
+                              <div className="lg:hidden mt-3 rounded-lg overflow-hidden border border-slate-800/80 bg-black">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img
-                                  src={scene.artworkUrl}
+                                  src={resolveImageUrl(scene.artworkUrl)}
                                   alt={scene.title}
                                   className="w-full h-auto object-cover max-h-72 cursor-pointer"
                                   onClick={() =>
                                     setViewerImage({
-                                      url: scene.artworkUrl!,
+                                      url: resolveImageUrl(scene.artworkUrl)!,
                                       title: scene.title || 'Minh họa phân cảnh',
                                       caption: scene.caption,
                                     })
@@ -983,7 +984,7 @@ export function ImmersiveStoryReader({
                 <span>MINH HỌA PHÂN CẢNH</span>
               </span>
 
-              {/* Artwork Prev / Next Stepper */}
+              {/* Artwork Prev / Next Stepper & Fit Mode */}
               <div className="flex items-center gap-1.5 text-slate-400">
                 <button
                   onClick={() =>
@@ -1012,16 +1013,27 @@ export function ImmersiveStoryReader({
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
+                <button
+                  onClick={() => setArtworkFitMode((m) => (m === 'contain' ? 'cover' : 'contain'))}
+                  className="ml-1 px-1.5 py-0.5 rounded bg-slate-950 border border-slate-800 text-[10px] font-mono font-bold text-cyan-400 hover:text-cyan-300 hover:border-cyan-700 cursor-pointer"
+                  title={artworkFitMode === 'contain' ? 'Chế độ hiện tại: Vừa khung (FIT). Bấm để chuyển sang Phủ khung (FILL).' : 'Chế độ hiện tại: Phủ khung (FILL). Bấm để chuyển sang Vừa khung (FIT).'}
+                >
+                  {artworkFitMode === 'contain' ? 'FIT' : 'FILL'}
+                </button>
               </div>
             </div>
 
             {/* Large High-Fidelity Artwork Card */}
-            <div className="relative rounded-xl overflow-hidden border border-cyan-800/60 bg-black shadow-xl shadow-cyan-950/40 mb-3 group">
+            <div className="relative rounded-xl overflow-hidden border border-cyan-800/60 bg-black shadow-xl shadow-cyan-950/40 mb-3 group flex items-center justify-center min-h-[300px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={resolveImageUrl(activeArtwork.artworkUrl)}
                 alt={activeArtwork.title || 'Scene Artwork'}
-                className="w-full h-auto max-h-[460px] object-cover object-top transition-transform duration-500 group-hover:scale-102 cursor-pointer"
+                className={`w-full transition-transform duration-500 group-hover:scale-102 cursor-pointer ${
+                  artworkFitMode === 'contain'
+                    ? 'h-auto max-h-[460px] object-contain bg-black'
+                    : 'h-[420px] object-cover object-top'
+                }`}
                 onClick={() =>
                   setViewerImage({
                     url: resolveImageUrl(activeArtwork.artworkUrl)!,

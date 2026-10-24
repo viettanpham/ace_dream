@@ -110,6 +110,11 @@ export function DesktopView({
   useEffect(() => {
     if (!isSlideshowPlaying || availableArtworks.length <= 1) return
 
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setIsSlideshowPlaying(false)
+      return
+    }
+
     const timer = setInterval(() => {
       setSelectedArtwork((current) => {
         const curIdx = availableArtworks.findIndex((a) => a.id === current?.id)
@@ -316,17 +321,21 @@ export function DesktopView({
           <div className="relative w-full h-full flex items-end justify-center pb-2">
             {!mainImageError ? (
               <div
-                onClick={() => onOpenArtViewer(selectedArtwork || availableArtworks[0])}
+                onClick={() => {
+                  setIsSlideshowPlaying(false)
+                  onOpenArtViewer(selectedArtwork || availableArtworks[0])
+                }}
                 className="relative w-full h-full flex items-end justify-center cursor-zoom-in group"
                 title="Nhấp để xem toàn màn hình tác phẩm này"
               >
                 <Image
+                  key={currentDisplayImage}
                   src={resolveImageUrl(currentDisplayImage)}
                   alt={activeCharacter.classCharacterName}
                   fill
                   priority
                   referrerPolicy="no-referrer"
-                  className="object-contain object-bottom drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)] filter group-hover:brightness-105 transition-all duration-300"
+                  className="object-contain object-bottom drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)] filter group-hover:brightness-105 transition-opacity duration-300 animate-in fade-in-0 duration-300"
                   onError={() => setMainImageError(true)}
                 />
                 {/* Lớp bóng mờ nhẹ nhàng ở chân giúp nhân vật hòa vào sàn trạm không gian */}
@@ -515,7 +524,10 @@ export function DesktopView({
             {/* Nút Phóng To Immersive Viewer tại ảnh hiện tại */}
             <button
               type="button"
-              onClick={() => onOpenArtViewer(selectedArtwork || availableArtworks[0])}
+              onClick={() => {
+                setIsSlideshowPlaying(false)
+                onOpenArtViewer(selectedArtwork || availableArtworks[0])
+              }}
               className="p-1.5 rounded-lg border border-[#1E2D42] hover:border-[#00D4FF] text-[#A7B6C8] hover:text-[#00D4FF] bg-[#101A2B] transition-colors ml-1 cursor-pointer shrink-0"
               title="Xem toàn màn hình tác phẩm này (Immersive Viewer)"
             >

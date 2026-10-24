@@ -167,6 +167,7 @@ export interface StoryChapterMeta {
   wordCount?: number;
   editorialStatus: EditorialStatus;
   contentReadiness: ContentReadiness;
+  contentStatus?: 'FULL_PROSE' | 'SUMMARY_ONLY' | string;
   publicationStatus: PublicationStatus;
   publishedAt?: string;
   provenance?: {

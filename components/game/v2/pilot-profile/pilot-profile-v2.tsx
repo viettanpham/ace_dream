@@ -55,8 +55,11 @@ export function PilotProfileV2({
   const [viewerContextList, setViewerContextList] = useState<GalleryArtwork[] | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState<boolean>(false);
 
-  // Dynamic Content Overlays (fetched from /api/runtime/character-content)
-  const [dynamicArtworks, setDynamicArtworks] = useState<Record<string, GalleryArtwork[]>>({});
+  // Dynamic Content Overlays
+  // Dedicated state for CDN R2 dynamic gallery (files.json + gallery.json)
+  const [r2GalleryArtworks, setR2GalleryArtworks] = useState<Record<string, GalleryArtwork[]>>({});
+  // Dedicated state for AdminCP manual uploads/edits
+  const [adminCustomArtworks, setAdminCustomArtworks] = useState<Record<string, GalleryArtwork[]>>({});
   const [dynamicProfileUpdates, setDynamicProfileUpdates] = useState<Record<string, Partial<CharacterProfileV2>>>({});
 
   // Viewport resize listener
@@ -81,17 +84,17 @@ export function PilotProfileV2({
             for (const [pId, arts] of Object.entries(data.artworks)) {
               if (Array.isArray(arts)) {
                 mappedArts[pId] = arts.map((a: any) => ({
-                  id: a.artworkId,
-                  title: a.label,
+                  id: a.artworkId || a.assetId || a.filename,
+                  title: a.label || a.title || 'Tác phẩm',
                   category: a.category || 'lore',
-                  path: a.localPath || a.sourceUrl,
-                  isAvailableOnDisk: a.verificationStatus === 'VERIFIED',
-                  status: a.verificationStatus === 'VERIFIED' ? 'verified_webp' : 'archive_pending',
+                  path: a.localPath || a.sourceUrl || a.path,
+                  isAvailableOnDisk: a.verificationStatus === 'VERIFIED' || a.status === 'published',
+                  status: (a.verificationStatus === 'VERIFIED' || a.status === 'published') ? 'verified_webp' : 'archive_pending',
                   description: a.description,
                 }));
               }
             }
-            setDynamicArtworks(mappedArts);
+            setAdminCustomArtworks(mappedArts);
           }
 
           if (data.profiles) {
@@ -121,6 +124,7 @@ export function PilotProfileV2({
   }, []);
 
   // Fetch dynamic gallery for active pilot from CDN R2 (files.json & gallery.json)
+  // Single Source of Truth for the entire pilot artwork collection (e.g. Valentine 35, Fortuna 30, Rhea 23, etc.)
   useEffect(() => {
     let isCancelled = false;
     fetch(`/api/runtime/gallery/${activePilotId}`)
@@ -130,14 +134,19 @@ export function PilotProfileV2({
           const galleryArts: GalleryArtwork[] = data.artworks.map((a: any) => {
             const rawTitle = a.title || a.label || a.filename || 'Tác phẩm';
             let naturalTitle = rawTitle;
-            
-            // Tự nhiên hóa tiêu đề trang phục
-            const outfitMatch = rawTitle.match(/outfit[-_\s]*(\d+)/i) || (a.filename || '').match(/outfit[-_\s]*(\d+)/i);
+
+            // Chuẩn hóa tên trang phục nếu chưa có tên biên tập riêng
+            const outfitMatch =
+              rawTitle.match(/outfit[-_\s]*(\d+)/i) ||
+              (a.filename || '').match(/outfit[-_\s]*(\d+)/i) ||
+              (a.assetId || '').match(/outfit[-_\s]*(\d+)/i);
             if (outfitMatch) {
               naturalTitle = `Trang phục ${outfitMatch[1].padStart(3, '0')}`;
             }
 
-            const cleanPath = a.path ? (a.path.startsWith('/') ? a.path : `/${a.path}`) : (a.sourceUrl || '');
+            const cleanPath = a.path
+              ? (a.path.startsWith('/') ? a.path.slice(1) : a.path)
+              : (a.sourceUrl || `images/pilots/${activePilotId}/${a.filename}`);
 
             return {
               id: a.assetId || a.artworkId || a.filename,
@@ -146,12 +155,15 @@ export function PilotProfileV2({
               path: cleanPath,
               isAvailableOnDisk: true,
               status: 'verified_webp' as const,
-              description: a.description || `Định dạng WebP tối ưu (${a.width || 1122}×${a.height || 1402}px)`,
-              dimensions: a.width && a.height ? { width: a.width, height: a.height } : undefined,
+              description:
+                a.description ||
+                `Định dạng WebP tối ưu (${a.width || 1122}×${a.height || 1402}px)`,
+              dimensions:
+                a.width && a.height ? { width: a.width, height: a.height } : undefined,
             };
           });
 
-          setDynamicArtworks((prev) => ({
+          setR2GalleryArtworks((prev) => ({
             ...prev,
             [activePilotId]: galleryArts,
           }));
@@ -171,16 +183,28 @@ export function PilotProfileV2({
   const activeCharacter: CharacterProfileV2 = useMemo(() => {
     const base = V2_ROSTER_CHARACTERS.find((c) => c.id === activePilotId) || V2_ROSTER_CHARACTERS[0];
     const dynUpdates = dynamicProfileUpdates[base.id];
-    const r2Arts = dynamicArtworks[base.id];
+    const r2Arts = r2GalleryArtworks[base.id];
+    const customArts = adminCustomArtworks[base.id] || [];
 
-    const authoritativeArtworks = r2Arts && r2Arts.length > 0 ? r2Arts : base.artworks;
+    let authoritativeArtworks: GalleryArtwork[] = base.artworks;
+    if (r2Arts && r2Arts.length > 0) {
+      authoritativeArtworks = [...r2Arts];
+      // Append any custom uploaded artwork from AdminCP not in R2
+      for (const custom of customArts) {
+        if (!authoritativeArtworks.some((a) => a.id === custom.id || a.path === custom.path)) {
+          authoritativeArtworks.push(custom);
+        }
+      }
+    } else if (customArts.length > 0) {
+      authoritativeArtworks = [...base.artworks, ...customArts];
+    }
 
     return {
       ...base,
       ...dynUpdates,
       artworks: authoritativeArtworks,
     };
-  }, [activePilotId, dynamicProfileUpdates, dynamicArtworks]);
+  }, [activePilotId, dynamicProfileUpdates, r2GalleryArtworks, adminCustomArtworks]);
 
   // Reset viewer context when pilot changes
   useEffect(() => {
@@ -203,12 +227,21 @@ export function PilotProfileV2({
   // Open Art Viewer with contextual list (Uses authoritative activeCharacter.artworks)
   const handleOpenArtViewer = (art?: GalleryArtwork, contextList?: GalleryArtwork[]) => {
     const targetList: GalleryArtwork[] =
-      contextList && contextList.length > 0 ? contextList : activeCharacter.artworks;
+      contextList && contextList.length >= activeCharacter.artworks.length
+        ? contextList
+        : activeCharacter.artworks;
 
     setViewerContextList(targetList);
 
     if (art) {
-      setViewerArtwork(art);
+      // Find matching item in targetList
+      const matched = targetList.find(
+        (a) =>
+          a.id === art.id ||
+          a.path === art.path ||
+          (art.path && a.path.endsWith(art.path.split('/').pop() || '###'))
+      );
+      setViewerArtwork(matched || art);
     } else {
       if (targetList.length > 0) {
         setViewerArtwork(targetList[0]);
@@ -229,9 +262,14 @@ export function PilotProfileV2({
 
   const currentViewerArtworks = viewerContextList || activeCharacter.artworks;
 
-  const currentArtworkIndex = currentViewerArtworks.findIndex(
-    (a) => a.id === viewerArtwork?.id || a.path === viewerArtwork?.path
-  );
+  const currentArtworkIndex = currentViewerArtworks.findIndex((a) => {
+    if (!viewerArtwork) return false;
+    if (a.id === viewerArtwork.id) return true;
+    if (a.path === viewerArtwork.path) return true;
+    const filenameA = a.path.split('/').pop();
+    const filenameV = viewerArtwork.path?.split('/').pop();
+    return Boolean(filenameA && filenameV && filenameA === filenameV);
+  });
   const hasPrevArtwork = currentArtworkIndex > 0;
   const hasNextArtwork =
     currentArtworkIndex >= 0 && currentArtworkIndex < currentViewerArtworks.length - 1;

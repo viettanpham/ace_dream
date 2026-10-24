@@ -24,6 +24,23 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
   const [activeChapterId, setActiveChapterId] = useState<string>(
     character.chapters.length > 0 ? character.chapters[0].id : 'chap-01'
   );
+  const [savedProgress, setSavedProgress] = useState<{ chapterId: string; progress: number } | null>(null);
+
+  React.useEffect(() => {
+    try {
+      if (typeof window !== 'undefined' && character.id) {
+        const raw = localStorage.getItem(`starfront_reading_progress_${character.id}`);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.chapterId) {
+            setSavedProgress(parsed);
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [character.id]);
 
   const activeChapter =
     character.chapters.find((c) => c.id === activeChapterId) || character.chapters[0];
@@ -34,6 +51,50 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
 
   return (
     <div className="space-y-6">
+      {/* 0. HERO STORY MODE ENTRY CTA (Prominent at top, accessible without deep scrolling) */}
+      <div className="relative rounded-2xl bg-gradient-to-r from-[#071324] via-[#0C1E38] to-[#071324] border border-[#00D4FF]/40 p-4 sm:p-5 shadow-xl shadow-cyan-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/30">
+              IMMERSIVE STORY READER
+            </span>
+            <span className="text-[11px] font-mono text-[#CBD5E1]">
+              10 Chương Biên Niên Ký
+            </span>
+            <span className="text-[10px] font-mono text-[#34D399] bg-[#34D399]/10 px-2 py-0.5 rounded border border-[#34D399]/30">
+              Chương 01: Toàn Văn Sẵn Sàng
+            </span>
+          </div>
+          <h3 className="text-base sm:text-lg font-bold text-white tracking-wide flex items-center gap-2">
+            <span>Biên Niên Sử Không Gian // {character.classCharacterName}</span>
+          </h3>
+          <p className="text-xs text-[#94A3B8] leading-relaxed max-w-xl">
+            Trải nghiệm toàn văn chương truyện với giao diện đọc 3 cột, đồng bộ phân cảnh bối cảnh và bộ sưu tập minh họa WebP HD.
+          </p>
+          {savedProgress && savedProgress.progress > 0 && (
+            <div className="flex items-center gap-2 text-xs font-mono text-[#34D399] pt-0.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#34D399]" />
+              <span>Tiến độ đọc: Chương {savedProgress.chapterId.replace('chap-', '')} ({savedProgress.progress}%)</span>
+            </div>
+          )}
+        </div>
+
+        {onOpenReader && (
+          <button
+            type="button"
+            onClick={() => onOpenReader(savedProgress?.chapterId || activeChapterId || 'chap-01')}
+            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0099CC] hover:from-[#38BDF8] hover:to-[#00D4FF] text-[#070A12] font-mono font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 active:scale-95 cursor-pointer shrink-0"
+          >
+            <BookOpen className="w-5 h-5 text-[#070A12]" />
+            <span>
+              {savedProgress && savedProgress.progress > 0
+                ? `TIẾP TỤC ĐỌC (CHƯƠNG ${savedProgress.chapterId.replace('chap-', '')})`
+                : 'MỞ CHẾ ĐỘ ĐỌC TRUYỆN'}
+            </span>
+          </button>
+        )}
+      </div>
+
       {/* 1. TỔNG QUAN TIỂU SỬ */}
       <Card variant="panel" className="border-[#26384D] bg-[#0F172A]/90">
         <CardHeader bordered className="py-3 px-4">

@@ -71,11 +71,11 @@ export function GalleryTab({ character, onSelectArtwork }: GalleryTabProps) {
     };
   }, [character.id, character.classCharacterName]);
 
-  // If character.artworks is authoritative from parent, prioritize it directly
+  // Single Source of Truth: Prioritize parent character.artworks collection (e.g. 35 artworks for Valentine)
   const verifiedArtworks =
-    character.artworks.length > 0
+    character.artworks.length >= dynamicArtworks.length && character.artworks.length > 0
       ? character.artworks.filter((a) => a.isAvailableOnDisk !== false)
-      : (dynamicArtworks.length > 0 ? dynamicArtworks : character.artworks);
+      : (dynamicArtworks.length > 0 ? dynamicArtworks : character.artworks.filter((a) => a.isAvailableOnDisk !== false));
 
   const archiveArtworks = character.artworks.filter(
     (a) => a.isAvailableOnDisk === false && !verifiedArtworks.some((v) => v.id === a.id)

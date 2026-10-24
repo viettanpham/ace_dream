@@ -53,6 +53,8 @@ export function MobileArtView({
 }: MobileArtViewProps) {
   const [imageError, setImageError] = useState<boolean>(false)
   const [selectedArtworkIndex, setSelectedArtworkIndex] = useState<number>(0)
+  const [touchStartX, setTouchStartX] = useState<number | null>(null)
+  const [touchEndX, setTouchEndX] = useState<number | null>(null)
   const thumbnailRowRef = useRef<HTMLDivElement>(null)
 
   // Lọc danh sách tác phẩm hợp lệ
@@ -215,14 +217,30 @@ export function MobileArtView({
         </button>
       </div>
 
-      {/* 3. KHU VỰC SÂN KHẤU TRANH HERO Ở TRUNG TÂM */}
-      <div className="relative flex-1 flex items-center justify-center p-2 z-10 overflow-hidden min-h-[380px]">
+      {/* 3. KHU VỰC SÂN KHẤU TRANH HERO Ở TRUNG TÂM (Hỗ trợ lướt vuốt Swipe Left/Right) */}
+      <div
+        className="relative flex-1 flex items-center justify-center p-2 z-10 overflow-hidden min-h-[380px]"
+        onTouchStart={(e) => setTouchStartX(e.targetTouches[0].clientX)}
+        onTouchMove={(e) => setTouchEndX(e.targetTouches[0].clientX)}
+        onTouchEnd={() => {
+          if (touchStartX !== null && touchEndX !== null) {
+            const distance = touchStartX - touchEndX
+            if (distance > 50) {
+              handleNextArtwork()
+            } else if (distance < -50) {
+              handlePrevArtwork()
+            }
+          }
+          setTouchStartX(null)
+          setTouchEndX(null)
+        }}
+      >
         {/* Nút Prev Artwork bên trái */}
         <button
           type="button"
           onClick={handlePrevArtwork}
           aria-label="Tác phẩm trước"
-          className="absolute left-2 z-20 w-11 h-11 rounded-full bg-[#090D18]/90 border border-[#1E2D42] text-white flex items-center justify-center active:scale-95 shadow-2xl cursor-pointer hover:border-[#00D4FF] hover:text-[#00D4FF]"
+          className="absolute left-2 z-20 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-[#090D18]/90 border border-[#1E2D42] text-white flex items-center justify-center active:scale-95 shadow-2xl cursor-pointer hover:border-[#00D4FF] hover:text-[#00D4FF]"
           title="Tác phẩm trước"
         >
           <ChevronLeft className="w-6 h-6 text-[#00D4FF]" />
@@ -233,7 +251,7 @@ export function MobileArtView({
           type="button"
           onClick={handleNextArtwork}
           aria-label="Tác phẩm tiếp theo"
-          className="absolute right-2 z-20 w-11 h-11 rounded-full bg-[#090D18]/90 border border-[#1E2D42] text-white flex items-center justify-center active:scale-95 shadow-2xl cursor-pointer hover:border-[#00D4FF] hover:text-[#00D4FF]"
+          className="absolute right-2 z-20 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-[#090D18]/90 border border-[#1E2D42] text-white flex items-center justify-center active:scale-95 shadow-2xl cursor-pointer hover:border-[#00D4FF] hover:text-[#00D4FF]"
           title="Tác phẩm tiếp theo"
         >
           <ChevronRight className="w-6 h-6 text-[#00D4FF]" />
@@ -272,12 +290,12 @@ export function MobileArtView({
           </div>
         </div>
 
-        {/* Floating Side Tools trên cạnh phải (2D HUD, Zoom, Fullscreen) */}
+        {/* Floating Side Tools trên cạnh phải (2D HUD, Zoom, Fullscreen) >= 44px */}
         <div className="absolute right-3 top-3 z-20 flex flex-col gap-2">
           <button
             type="button"
             onClick={() => onToggleBackgroundMode(backgroundMode === 'standard' ? 'tactical' : 'standard')}
-            className={`w-10 h-10 rounded-xl border flex items-center justify-center text-xs font-mono font-bold shadow-lg transition-all ${
+            className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl border flex items-center justify-center text-xs font-mono font-bold shadow-lg transition-all ${
               backgroundMode === 'tactical'
                 ? 'bg-[#00D4FF] text-[#070A12] border-[#00D4FF]'
                 : 'bg-[#090D18]/90 border-[#1E2D42] text-[#00D4FF]'
@@ -290,7 +308,7 @@ export function MobileArtView({
           <button
             type="button"
             onClick={handleOpenCurrentInViewer}
-            className="w-10 h-10 rounded-xl bg-[#090D18]/90 border border-[#1E2D42] text-[#00D4FF] hover:border-[#00D4FF] flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-[#090D18]/90 border border-[#1E2D42] text-[#00D4FF] hover:border-[#00D4FF] flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
             title="Kính lúp zoom chi tiết"
           >
             <ZoomIn className="w-5 h-5" />
@@ -299,7 +317,7 @@ export function MobileArtView({
           <button
             type="button"
             onClick={handleOpenCurrentInViewer}
-            className="w-10 h-10 rounded-xl bg-[#090D18]/90 border border-[#1E2D42] text-[#00D4FF] hover:border-[#00D4FF] flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-[#090D18]/90 border border-[#1E2D42] text-[#00D4FF] hover:border-[#00D4FF] flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
             title="Toàn màn hình"
           >
             <Maximize2 className="w-5 h-5" />

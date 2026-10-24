@@ -1,6 +1,6 @@
 {
-  "summary":  "Bản thiết kế kiến trúc và kế hoạch triển khai toàn diện Universal CDN Content Foundation cho toàn bộ 12 Pilot canonical và các Pilot tương lai trong STARFRONT WORLD V2. Bao gồm audit chi tiết hai repository, sơ đồ phân cấp Universal Manifest, JSON Schemas chuẩn hóa (Gallery + Story), kế hoạch di chuyển Valentine, thiết kế Universal Content Resolver, Auto Slideshow Fullscreen Viewer, quy trình CI/CD GitHub Actions Release R3 và lộ trình triển khai 4 giai đoạn an toàn.",
-  "updatedAt":  "2026-10-24T16:34:18.714447250Z",
+  "summary":  "Bản hiệu chỉnh kế hoạch kiến trúc Universal CDN Content Foundation R3 theo 7 yêu cầu của Chủ dự án: Xác minh chuẩn xác 12 Pilot canonical FND-8 (4 Nam / 8 Nữ); phân định rõ dữ liệu mẫu minh họa vs dữ liệu quét thực tế; kiểm tra workflow CDN nhánh version2-r1 (báo UNVERIFIED và phương án thủ công); chính sách bảo mật Story (Public vs Private, Valentine chỉ công bố Ch01); quy trình chuyển release bền vững và rollback; kiểm kê toàn diện Docs & Legacy Test Scripts; cập nhật lộ trình triển khai 5 checkpoint có kiểm soát.",
+  "updatedAt":  "2026-10-24T16:54:35.067271254Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

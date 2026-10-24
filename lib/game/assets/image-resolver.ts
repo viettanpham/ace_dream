@@ -89,8 +89,37 @@ export function resolveImageUrl(
     return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   }
 
+const CANONICAL_R1_PATHS = new Set([
+  'images/aegis-gear.webp',
+  'images/falcon-gear.webp',
+  'images/vanguard-gear.webp',
+  'images/marcus-portrait.webp',
+  'images/marcus-fullbody.webp',
+  'images/valentine-portrait.webp',
+  'images/valentine-fullbody.webp',
+  'images/alviss-portrait.webp',
+  'images/alviss-fullbody.webp',
+  'images/eric-portrait.webp',
+  'images/eric-fullbody.webp',
+  'images/lyra-portrait.webp',
+  'images/lyra-fullbody.webp',
+  'images/kaelen-portrait.webp',
+  'images/kaelen-fullbody.webp',
+  'images/selena-portrait.webp',
+  'images/selena-fullbody.webp',
+  'images/victor-portrait.webp',
+  'images/victor-fullbody.webp',
+  'images/valentine-activity-001.webp',
+  'images/valentine-casual.webp',
+  'images/valentine-closeup.webp',
+  'images/valentine-combat.webp',
+  'images/valentine-event-001.webp',
+  'images/valentine-story-001.webp',
+  'images/valentine-uniform-001.webp',
+]);
+
   // Normalize path without leading slash
-  const cleanPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
+  let cleanPath = trimmed.startsWith('/') ? trimmed.slice(1) : trimmed;
 
   const clientConfig = typeof window !== 'undefined' ? clientActiveRuntimeConfig : null;
   const config = {
@@ -102,6 +131,19 @@ export function resolveImageUrl(
   // Local mode fallback
   if (config.mode === 'local' || !config.cdnBaseUrl) {
     return `/${cleanPath}`;
+  }
+
+  // If remote CDN is on v2.0-assets-r1 (legacy release where images/pilots/ did not exist),
+  // fallback to the pilot's own legacy asset in images/ when available (never substitute another pilot)
+  if (config.cdnBaseUrl.includes('@v2.0-assets-r1') && cleanPath.startsWith('images/pilots/')) {
+    const parts = cleanPath.split('/');
+    if (parts.length >= 4) {
+      const filename = parts[3];
+      const legacyPath = `images/${filename}`;
+      if (CANONICAL_R1_PATHS.has(legacyPath)) {
+        cleanPath = legacyPath;
+      }
+    }
   }
 
   // Remote CDN mode: strip any trailing slash from base URL

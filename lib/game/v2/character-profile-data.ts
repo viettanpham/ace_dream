@@ -88,6 +88,107 @@ export interface CharacterProfileV2 {
   progressStatus: CharacterProgressStatus;
 }
 
+export interface CorePilotAssetMapping {
+  fullbody: string;
+  portrait: string;
+  combat?: string;
+  closeup?: string;
+  activity?: string;
+}
+
+export const PILOT_LEGACY_ASSETS: Record<string, { fullbody: string; portrait: string }> = {
+  marcus: { fullbody: '/images/marcus-fullbody.webp', portrait: '/images/marcus-portrait.webp' },
+  valentine: { fullbody: '/images/valentine-fullbody.webp', portrait: '/images/valentine-portrait.webp' },
+  alviss: { fullbody: '/images/alviss-fullbody.webp', portrait: '/images/alviss-portrait.webp' },
+  eric: { fullbody: '/images/eric-fullbody.webp', portrait: '/images/eric-portrait.webp' },
+  lyra: { fullbody: '/images/lyra-fullbody.webp', portrait: '/images/lyra-portrait.webp' },
+  kaelen: { fullbody: '/images/kaelen-fullbody.webp', portrait: '/images/kaelen-portrait.webp' },
+  selena: { fullbody: '/images/selena-fullbody.webp', portrait: '/images/selena-portrait.webp' },
+  victor: { fullbody: '/images/victor-fullbody.webp', portrait: '/images/victor-portrait.webp' },
+};
+
+export const PILOT_V2_CORE_MAPPINGS: Record<string, CorePilotAssetMapping> = {
+  kaelen: {
+    fullbody: '/images/pilots/kaelen/kaelen-fullbody.webp',
+    portrait: '/images/pilots/kaelen/kaelen-portrait.webp',
+    combat: '/images/pilots/kaelen/kaelen-combat.webp',
+    closeup: '/images/pilots/kaelen/kaelen-closeup.webp',
+    activity: '/images/pilots/kaelen/kaelen-activity.webp',
+  },
+  lyra: {
+    fullbody: '/images/pilots/lyra/lyra-fullbody.webp',
+    portrait: '/images/pilots/lyra/lyra-portrait.webp',
+    combat: '/images/pilots/lyra/lyra-combat.webp',
+    closeup: '/images/pilots/lyra/lyra-closeup.webp',
+    activity: '/images/pilots/lyra/lyra-activity.webp',
+  },
+  selena: {
+    fullbody: '/images/pilots/selena/selena-fullbody.webp',
+    portrait: '/images/pilots/selena/selena-portrait.webp',
+    combat: '/images/pilots/selena/selena-combat.webp',
+    closeup: '/images/pilots/selena/selena-closeup.webp',
+    activity: '/images/pilots/selena/selena-activity.webp',
+  },
+  valentine: {
+    fullbody: '/images/pilots/valentine/valentine-fullbody.webp',
+    portrait: '/images/pilots/valentine/valentine-portrait.webp',
+    combat: '/images/pilots/valentine/valentine-combat.webp',
+    closeup: '/images/pilots/valentine/valentine-closeup.webp',
+    activity: '/images/pilots/valentine/valentine-activity-001.webp',
+  },
+  fortuna: {
+    fullbody: '/images/pilots/fortuna/fortuna-fullbody.webp',
+    portrait: '/images/pilots/fortuna/fortuna-portrait.webp',
+    combat: '/images/pilots/fortuna/fortuna-combat.webp',
+    closeup: '/images/pilots/fortuna/fortuna-closeup.webp',
+    activity: '/images/pilots/fortuna/fortuna-activity.webp',
+  },
+  aria: {
+    fullbody: '/images/pilots/aria/aria-fullbody.webp',
+    portrait: '/images/pilots/aria/aria-portrait.webp',
+    combat: '/images/pilots/aria/aria-combat.webp',
+    closeup: '/images/pilots/aria/aria-closeup.webp',
+    activity: '/images/pilots/aria/aria-activity.webp',
+  },
+  rhea: {
+    fullbody: '/images/pilots/rhea/rhea-fullbody.webp',
+    portrait: '/images/pilots/rhea/rhea-portrait-command.webp',
+    combat: '/images/pilots/rhea/rhea-combat.webp',
+    closeup: '/images/pilots/rhea/rhea-closeup.webp',
+    activity: '/images/pilots/rhea/rhea-activity.webp',
+  },
+  nova: {
+    fullbody: '/images/pilots/nova/nova-fullbody.webp',
+    portrait: '/images/pilots/nova/nova-portrait.webp',
+    combat: '/images/pilots/nova/nova-combat.webp',
+    closeup: '/images/pilots/nova/nova-closeup.webp',
+    activity: '/images/pilots/nova/nova-activity.webp',
+  },
+};
+
+/**
+ * Resolves a pilot's core asset path, prioritizing V2 path (images/pilots/<pilotId>/)
+ * while safely falling back to that pilot's own legacy asset if V2 is unavailable.
+ * Never uses Valentine as a fallback for other pilots.
+ */
+export function resolvePilotCoreAsset(
+  pilotId: string,
+  role: 'fullbody' | 'portrait' | 'combat' | 'closeup' | 'activity',
+  preferV2 = true
+): string {
+  const pId = pilotId.toLowerCase();
+  if (preferV2 && PILOT_V2_CORE_MAPPINGS[pId]?.[role]) {
+    return PILOT_V2_CORE_MAPPINGS[pId][role]!;
+  }
+  if (PILOT_LEGACY_ASSETS[pId]?.[role as 'fullbody' | 'portrait']) {
+    return PILOT_LEGACY_ASSETS[pId][role as 'fullbody' | 'portrait'];
+  }
+  if (PILOT_V2_CORE_MAPPINGS[pId]?.[role]) {
+    return PILOT_V2_CORE_MAPPINGS[pId][role]!;
+  }
+  return '';
+}
+
 // 12 Archetypes chuẩn FND-8 (4 Nam / 8 Nữ) — Tổng thuộc tính mỗi nhân vật đúng 20 điểm
 export const V2_ROSTER_CHARACTERS: CharacterProfileV2[] = [
   // C08: Valentine Aurelia Vance (Reference Lead Profile)
@@ -139,8 +240,8 @@ export const V2_ROSTER_CHARACTERS: CharacterProfileV2[] = [
       { label: "Điểm yếu", value: "Khó chấp nhận việc phải bỏ lại người khác" },
       { label: "Ước mơ", value: "Không một tín hiệu cầu cứu nào bị lãng quên" },
     ],
-    fullbodyAssetPath: "/images/valentine-fullbody.webp",
-    portraitAssetPath: "/images/valentine-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("valentine", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("valentine", "portrait"),
     storySummary:
       "Valentine sinh ra ở vành đai quỹ đạo Elysia, nơi các đoàn tàu y tế thường xuyên đi qua những tuyến biên giới nguy hiểm. Cô trưởng thành trong môi trường cứu hộ và tin rằng sức mạnh của người phi công nằm ở số người có thể đưa trở về an toàn.",
     chapters: [
@@ -409,8 +510,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Tính cách", value: "Tự tin, nhiệt huyết, yêu tự do" },
       { label: "Điểm yếu", value: "Đôi khi quá liều lĩnh trong truy kích" },
     ],
-    fullbodyAssetPath: "/images/alviss-fullbody.webp",
-    portraitAssetPath: "/images/alviss-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("alviss", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("alviss", "portrait"),
     storySummary:
       "Alviss là một trong những phi công tiêm kích trẻ tuổi nhất từng tốt nghiệp thủ khoa khoa bay cơ động. Anh đam mê cảm giác bẻ lái xuyên qua bão bức xạ và coi tốc độ là chìa khóa mở lối qua mọi phòng tuyến.",
     chapters: [
@@ -511,8 +612,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Đào tạo", value: "Sư đoàn Pháo binh Thiết giáp" },
       { label: "Chuyên môn", value: "Pháo hạng nặng, oanh tạc diện rộng" },
     ],
-    fullbodyAssetPath: "/images/eric-fullbody.webp",
-    portraitAssetPath: "/images/eric-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("eric", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("eric", "portrait"),
     storySummary: "Hồ sơ chỉ huy hỏa lực pháo binh bọc thép kiên cường.",
     chapters: [
       {
@@ -588,8 +689,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Xuất thân", value: "Tổng bộ Chỉ huy Hạm đội Starfront" },
       { label: "Chuyên môn", value: "Chỉ huy chiến dịch, điều phối hạm đội" },
     ],
-    fullbodyAssetPath: "/images/marcus-fullbody.webp",
-    portraitAssetPath: "/images/marcus-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("marcus", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("marcus", "portrait"),
     storySummary: "Hồ sơ chỉ huy trưởng lực lượng cơ động tiên phong.",
     chapters: [
       {
@@ -664,8 +765,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Giới tính / Tuổi", value: "Nam · 42 tuổi" },
       { label: "Chuyên môn", value: "Bảo hộ đội hình, chống chịu hỏa lực cực hạn" },
     ],
-    fullbodyAssetPath: "/images/victor-fullbody.webp",
-    portraitAssetPath: "/images/victor-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("victor", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("victor", "portrait"),
     storySummary: "Hồ sơ chỉ huy phòng thủ tiền tuyến giàu kinh nghiệm trận mạc.",
     chapters: [
       {
@@ -740,8 +841,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Giới tính / Tuổi", value: "Nữ · 26 tuổi" },
       { label: "Chuyên môn", value: "Thu thập tình báo, né tránh, gây nhiễu radar" },
     ],
-    fullbodyAssetPath: "/images/kaelen-fullbody.webp",
-    portraitAssetPath: "/images/kaelen-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("kaelen", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("kaelen", "portrait"),
     storySummary: "Hồ sơ lưu trữ tình báo chiến lược bí mật.",
     chapters: [
       {
@@ -816,8 +917,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Giới tính / Tuổi", value: "Nữ · 21 tuổi" },
       { label: "Chuyên môn", value: "Cơ động né tránh, quấy rối đội hình đối phương" },
     ],
-    fullbodyAssetPath: "/images/lyra-fullbody.webp",
-    portraitAssetPath: "/images/lyra-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("lyra", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("lyra", "portrait"),
     storySummary: "Hồ sơ nữ phi công cơ động tinh vân xuất sắc.",
     chapters: [
       {
@@ -892,8 +993,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Giới tính / Tuổi", value: "Nữ · 27 tuổi" },
       { label: "Chuyên môn", value: "Chùm hạt ion, pháo plasma định hướng" },
     ],
-    fullbodyAssetPath: "/images/selena-fullbody.webp",
-    portraitAssetPath: "/images/selena-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("selena", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("selena", "portrait"),
     storySummary: "Hồ sơ nữ xạ thủ năng lượng cao cấp với dòng dõi quý tộc vũ trụ.",
     chapters: [
       {
@@ -969,8 +1070,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Chuyên môn", value: "Đàm phán chiến lược, phân tích rủi ro, thời cơ" },
       { label: "Phong cách", value: "Đầm công sở đen viền vàng sang trọng, tất đen tinh tế" },
     ],
-    fullbodyAssetPath: "/images/fortuna-fullbody.webp",
-    portraitAssetPath: "/images/fortuna-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("fortuna", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("fortuna", "portrait"),
     storySummary: "Hồ sơ điệp viên và cố vấn chiến lược cấp cao tại các sòng bài ngoại giao không gian.",
     chapters: [
       {
@@ -1037,8 +1138,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Chuyên môn", value: "Điều hướng không gian, tiếp tế năng lượng trường lực" },
       { label: "Phong cách", value: "Váy phi công ngắn xanh viền neon, tóc xanh biển năng động" },
     ],
-    fullbodyAssetPath: "/images/aria-fullbody.webp",
-    portraitAssetPath: "/images/aria-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("aria", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("aria", "portrait"),
     storySummary: "Hồ sơ sĩ quan điều phối bay được mến mộ nhất tại đài không lưu hạm đội.",
     chapters: [
       {
@@ -1105,8 +1206,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Chuyên môn", value: "Hộ tống đoàn tàu vận tải, đánh chặn tên lửa hành trình" },
       { label: "Phong cách", value: "Bộ giáp chiến đấu đen tím ôm sát và áo choàng ngắn oai nghiêm" },
     ],
-    fullbodyAssetPath: "/images/rhea-fullbody.webp",
-    portraitAssetPath: "/images/rhea-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("rhea", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("rhea", "portrait"),
     storySummary: "Hồ sơ hộ vệ chỉ huy kỳ cựu với thành tích 100% đoàn tàu hộ tống an toàn cập bến.",
     chapters: [
       {
@@ -1173,8 +1274,8 @@ Từ đó, Valentine chuyên sâu nghiên cứu công nghệ hồi phục chiế
       { label: "Chuyên môn", value: "Đột phá phòng tuyến, thử nghiệm khí tài nguyên mẫu" },
       { label: "Phong cách", value: "Bộ đồ bay bạc cam khí động học, mái tóc bạc ngắn cá tính" },
     ],
-    fullbodyAssetPath: "/images/nova-fullbody.webp",
-    portraitAssetPath: "/images/nova-portrait.webp",
+    fullbodyAssetPath: resolvePilotCoreAsset("nova", "fullbody"),
+    portraitAssetPath: resolvePilotCoreAsset("nova", "portrait"),
     storySummary: "Hồ sơ phi công thử nghiệm liều lĩnh nhất của Viện Nghiên cứu Khí tài Tác chiến.",
     chapters: [
       {

@@ -94,6 +94,10 @@ const PILOT_NAMES_MAP: Record<string, string> = {
   kaelen: 'Kaelen Cross',
   selena: 'Selena Vega',
   victor: 'Victor Sterling',
+  fortuna: 'Fortuna (Lady Luck)',
+  aria: 'Aria Sterling',
+  rhea: 'Rhea Silva',
+  nova: 'Nova Ray',
   helena: 'Helena Drake',
   boris: 'Boris Vance',
   selene: 'Selene Vega',
@@ -115,6 +119,10 @@ export function inferPilotId(fileName: string): string {
   if (lower.startsWith('kaelen-')) return 'kaelen';
   if (lower.startsWith('selena-')) return 'selena';
   if (lower.startsWith('victor-')) return 'victor';
+  if (lower.startsWith('fortuna-')) return 'fortuna';
+  if (lower.startsWith('aria-')) return 'aria';
+  if (lower.startsWith('rhea-')) return 'rhea';
+  if (lower.startsWith('nova-')) return 'nova';
   if (lower.startsWith('helena-')) return 'helena';
   if (lower.startsWith('boris-')) return 'boris';
   if (lower.startsWith('selene-')) return 'selene';
@@ -129,21 +137,23 @@ export function normalizeCategory(rawCat?: string, fileName = ''): AssetCategory
   const cat = (rawCat || '').toLowerCase();
   const file = fileName.toLowerCase();
 
-  if (cat.includes('portrait') || file.includes('-portrait.')) return 'portrait';
-  if (cat.includes('fullbody') || file.includes('-fullbody.')) return 'fullbody';
-  if (cat.includes('combat') || file.includes('-combat.')) return 'combat';
-  if (cat.includes('closeup') || file.includes('-closeup.')) return 'closeup';
-  if (cat.includes('activity') || file.includes('-activity-')) return 'activity';
+  if (cat.includes('portrait') || file.includes('-portrait.') || file.includes('-portrait-') || file === 'portrait' || file.startsWith('portrait-')) return 'portrait';
+  if (cat.includes('fullbody') || file.includes('-fullbody.') || file === 'fullbody') return 'fullbody';
+  if (cat.includes('combat') || file.includes('-combat.') || file === 'combat') return 'combat';
+  if (cat.includes('closeup') || file.includes('-closeup.') || file === 'closeup') return 'closeup';
+  if (cat.includes('activity') || file.includes('-activity-') || file.includes('-activity.') || file === 'activity' || file.startsWith('activity-')) return 'activity';
   if (
     cat.includes('outfit') ||
     cat.includes('uniform') ||
     cat.includes('casual') ||
+    file.includes('-outfit-') ||
     file.includes('-uniform-') ||
-    file.includes('-casual.')
+    file.includes('-casual.') ||
+    file.includes('-casual-')
   )
     return 'outfit';
-  if (cat.includes('story') || file.includes('-story-')) return 'story';
-  if (cat.includes('gear') || file.includes('-gear.')) return 'gear';
+  if (cat.includes('story') || file.includes('-story-') || file.includes('-story.')) return 'story';
+  if (cat.includes('gear') || file.includes('-gear.') || file === 'gear') return 'gear';
 
   return 'other';
 }
@@ -537,51 +547,117 @@ export async function fetchReleaseManifest(
       signal: AbortSignal.timeout(6000),
     });
 
+    let raw: any = null;
+    let isR1Fallback = false;
+
     if (!res.ok) {
       // Fallback for r1 or if manifest is missing on CDN
       if (tag === CANONICAL_ACTIVE_VERSION) {
-        const fallbackManifest = buildCanonicalR1Manifest(tag, cdnBase);
-        manifestCache.set(tag, { manifest: fallbackManifest, expiresAt: now + MANIFEST_CACHE_TTL });
-        return fallbackManifest;
+        raw = { assets: CANONICAL_R1_MANIFEST_DATA, totalFiles: CANONICAL_R1_MANIFEST_DATA.length };
+        isR1Fallback = true;
+      } else {
+        throw new Error(`Không thể tải manifest từ CDN (HTTP ${res.status}): ${manifestUrl}`);
       }
-      throw new Error(`Không thể tải manifest từ CDN (HTTP ${res.status}): ${manifestUrl}`);
+    } else {
+      raw = await res.json();
     }
 
-    const raw = await res.json();
-    const assetsList: ManifestAssetItem[] = Array.isArray(raw.assets)
-      ? raw.assets.map((item: any) => {
-          const fileName = item.fileName || item.relativePath?.replace('images/', '') || '';
-          const pilotId = inferPilotId(fileName);
-          const category = normalizeCategory(item.category, fileName);
-          return {
-            fileName,
-            relativePath: item.relativePath || `images/${fileName}`,
-            sizeBytes: item.sizeBytes,
-            sizeKB: item.sizeKB || (item.sizeBytes ? +(item.sizeBytes / 1024).toFixed(2) : undefined),
-            format: item.format || 'webp',
-            width: item.width,
-            height: item.height,
-            category,
-            rawCategory: item.category,
-            pilotId,
-            pilotName: PILOT_NAMES_MAP[pilotId] || 'Khác',
-            group: item.group,
-            targetUsage: item.targetUsage,
-            sha256: item.sha256,
-            cdnUrl: `${cdnBase}/${item.relativePath || `images/${fileName}`}`,
-          };
-        })
-      : [];
+    const assetsMap = new Map<string, ManifestAssetItem>();
+
+    // 1. Map base assets from assets-manifest.json
+    if (Array.isArray(raw?.assets)) {
+      for (const item of raw.assets) {
+        const fileName = item.fileName || item.relativePath?.replace('images/', '') || '';
+        const pilotId = item.pilotId || inferPilotId(fileName);
+        const category = normalizeCategory(item.category, fileName);
+        const relativePath = item.relativePath || `images/${fileName}`;
+        assetsMap.set(relativePath, {
+          fileName,
+          relativePath,
+          sizeBytes: item.sizeBytes,
+          sizeKB: item.sizeKB || (item.sizeBytes ? +(item.sizeBytes / 1024).toFixed(2) : undefined),
+          format: item.format || 'webp',
+          width: item.width,
+          height: item.height,
+          category,
+          rawCategory: item.category,
+          pilotId,
+          pilotName: PILOT_NAMES_MAP[pilotId] || 'Khác',
+          group: item.group,
+          targetUsage: item.targetUsage,
+          sha256: item.sha256,
+          cdnUrl: `${cdnBase}/${relativePath}`,
+        });
+      }
+    }
+
+    // 2. For non-R1 releases (or R2 candidates), check for pilot-v2-artworks.json
+    if (tag !== CANONICAL_ACTIVE_VERSION) {
+      try {
+        const v2ManifestUrl = `${cdnBase}/manifests/pilot-v2-artworks.json`;
+        let p2Res = await fetch(v2ManifestUrl, {
+          method: 'GET',
+          headers: { Accept: 'application/json', 'User-Agent': 'STARFRONT-World-AssetManager/2.0' },
+          signal: AbortSignal.timeout(4000),
+        });
+
+        // If not found on CDN (e.g. branch version1-r2 before GitHub tag), fallback to raw GitHub
+        if (!p2Res.ok) {
+          const rawGitUrl = `https://raw.githubusercontent.com/${CANONICAL_REPOSITORY}/version1-r2/starfront-world-assets/manifests/pilot-v2-artworks.json`;
+          p2Res = await fetch(rawGitUrl, {
+            method: 'GET',
+            headers: { Accept: 'application/json', 'User-Agent': 'STARFRONT-World-AssetManager/2.0' },
+            signal: AbortSignal.timeout(4000),
+          });
+        }
+
+        if (p2Res.ok) {
+          const p2Data = await p2Res.json();
+          if (Array.isArray(p2Data?.assets)) {
+            for (const item of p2Data.assets) {
+              const fileName = item.filename || item.fileName || '';
+              const pilotId = item.pilotId || inferPilotId(fileName);
+              const relativePath = item.path || `images/pilots/${pilotId}/${fileName}`;
+              const category = normalizeCategory(item.category || item.role, fileName);
+
+              assetsMap.set(relativePath, {
+                fileName,
+                relativePath,
+                sizeBytes: item.byteSize || item.sizeBytes,
+                sizeKB: item.byteSize ? +(item.byteSize / 1024).toFixed(2) : undefined,
+                format: 'webp',
+                width: item.width,
+                height: item.height,
+                category,
+                rawCategory: item.category || item.role,
+                pilotId,
+                pilotName: PILOT_NAMES_MAP[pilotId] || pilotId,
+                group: item.role,
+                targetUsage: 'pilot-v2-dossier',
+                sha256: item.sha256,
+                cdnUrl: `${cdnBase}/${relativePath}`,
+              });
+            }
+          }
+        }
+      } catch {
+        // Continue with base assets if pilot-v2-artworks is unavailable
+      }
+    }
+
+    const assetsList = Array.from(assetsMap.values());
+    const totalSizeBytes = assetsList.reduce((acc, a) => acc + (a.sizeBytes || 0), 0);
+    const totalSizeMB = +(totalSizeBytes / (1024 * 1024)).toFixed(2);
 
     const manifest: ReleaseManifest = {
-      schemaVersion: raw.schemaVersion || '1.0.0',
-      packageName: raw.packageName || 'starfront-world-assets',
+      schemaVersion: raw?.schemaVersion || '1.0.0',
+      packageName: raw?.packageName || 'starfront-world-assets',
       releaseTag: tag,
-      generatedAt: raw.generatedAt || new Date().toISOString(),
-      totalFiles: raw.totalFiles || assetsList.length,
-      totalSizeBytes: raw.totalSizeBytes,
-      totalSizeMB: raw.totalSizeMB,
-      baseCdnPattern: raw.baseCdnPattern,
+      generatedAt: raw?.generatedAt || new Date().toISOString(),
+      totalFiles: assetsList.length,
+      totalSizeBytes,
+      totalSizeMB,
+      baseCdnPattern: raw?.baseCdnPattern,
       cdnBaseUrl: cdnBase,
       assets: assetsList,
     };

@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Terminal,
   Lock,
+  Clock,
   LogIn,
   LogOut,
   User,
@@ -58,6 +59,22 @@ export function AssetVersionTab() {
   const [setupConfirmPassword, setSetupConfirmPassword] = useState('');
   const [setupError, setSetupError] = useState<string | null>(null);
   const [setupSubmitting, setSetupSubmitting] = useState(false);
+  const [lockoutCountdown, setLockoutCountdown] = useState<number>(0);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    if (lockoutCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutCountdown]);
 
   // --------------------------------------------------------------------------
   // RELEASES & VALIDATION STATE
@@ -91,13 +108,32 @@ export function AssetVersionTab() {
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
 
+  // Helper to attach Authorization: Bearer token (crucial for AI Studio iframe embedding)
+  const getAuthHeaders = useCallback(
+    (extra: Record<string, string> = {}, includeCsrf = false) => {
+      const headers: Record<string, string> = { ...extra };
+      if (typeof window !== 'undefined') {
+        const token = sessionStorage.getItem('starfront_admin_session_token');
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      }
+      if (includeCsrf && csrfToken) {
+        headers['x-csrf-token'] = csrfToken;
+      }
+      return headers;
+    },
+    [csrfToken]
+  );
+
   // --------------------------------------------------------------------------
   // 1. CHECK AUTHENTICATION STATUS
   // --------------------------------------------------------------------------
   const checkAuth = useCallback(async () => {
     try {
       setAuthLoading(true);
-      const res = await fetch('/api/admin/auth/me', { method: 'GET' });
+      const res = await fetch('/api/admin/auth/me', {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         setIsAuthenticated(Boolean(data.authenticated));
@@ -112,7 +148,7 @@ export function AssetVersionTab() {
     } finally {
       setAuthLoading(false);
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   useEffect(() => {
     checkAuth();
@@ -155,7 +191,10 @@ export function AssetVersionTab() {
     if (!isAuthenticated) return;
     try {
       setAuditLoading(true);
-      const res = await fetch('/api/admin/asset-version/audit?limit=15', { method: 'GET' });
+      const res = await fetch('/api/admin/asset-version/audit?limit=15', {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.success && Array.isArray(data.logs)) {
@@ -167,7 +206,7 @@ export function AssetVersionTab() {
     } finally {
       setAuditLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, getAuthHeaders]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -187,7 +226,7 @@ export function AssetVersionTab() {
       const res = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+        body: JSON.stringify({ username: loginUsername, password: loginPassword, scope: 'v1' }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
@@ -195,10 +234,20 @@ export function AssetVersionTab() {
         setIsAuthenticated(true);
         setCurrentUser(data.user?.username || loginUsername);
         setCsrfToken(data.csrfToken || null);
+        if (typeof window !== 'undefined' && data.sessionToken) {
+          sessionStorage.setItem('starfront_admin_session_token', data.sessionToken);
+        }
         setLoginPassword('');
+        setLockoutCountdown(0);
         fetchAuditLogs();
       } else {
-        setLoginError(data.error || 'Đăng nhập không thành công.');
+        if (res.status === 429 || data.errorCode === 'AUTH_RATE_LIMITED') {
+          const retrySec = data.retryAfterSeconds || Number(res.headers.get('Retry-After')) || 60;
+          setLockoutCountdown(retrySec);
+          setLoginError(`Quá nhiều lần thử thất bại. Vui lòng thử lại sau ${retrySec} giây.`);
+        } else {
+          setLoginError(data.error || 'Đăng nhập không thành công.');
+        }
       }
     } catch (err) {
       setLoginError(`Lỗi kết nối: ${err instanceof Error ? err.message : 'Unknown'}`);
@@ -233,6 +282,10 @@ export function AssetVersionTab() {
         setNeedsSetup(false);
         setCurrentUser(data.user?.username || setupUsername);
         setCsrfToken(data.csrfToken || null);
+        if (typeof window !== 'undefined' && data.sessionToken) {
+          sessionStorage.setItem('starfront_admin_session_token', data.sessionToken);
+        }
+        setLockoutCountdown(0);
         fetchAuditLogs();
       } else {
         setSetupError(data.error || 'Khởi tạo tài khoản thất bại.');
@@ -247,9 +300,15 @@ export function AssetVersionTab() {
   const handleLogout = async () => {
     playClickSound();
     try {
-      await fetch('/api/admin/auth/logout', { method: 'POST' });
+      await fetch('/api/admin/auth/logout', {
+        method: 'POST',
+        headers: getAuthHeaders({}, true),
+      });
     } catch {
       // Ignore
+    }
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('starfront_admin_session_token');
     }
     setIsAuthenticated(false);
     setCurrentUser(null);
@@ -323,10 +382,7 @@ export function AssetVersionTab() {
     try {
       const res = await fetch('/api/admin/asset-version', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrfToken || '',
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }, true),
         body: JSON.stringify({
           action: 'ACTIVATE',
           targetVersion: selectedTag,
@@ -377,10 +433,7 @@ export function AssetVersionTab() {
     try {
       const res = await fetch('/api/admin/asset-version', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-csrf-token': csrfToken || '',
-        },
+        headers: getAuthHeaders({ 'Content-Type': 'application/json' }, true),
         body: JSON.stringify({
           action: 'ROLLBACK',
           expectedRevision: activeConfig.revision,
@@ -545,11 +598,19 @@ export function AssetVersionTab() {
           ) : (
             /* Login Form */
             <form onSubmit={handleLogin} className="space-y-3.5 max-w-md">
-              {loginError && (
+              {lockoutCountdown > 0 ? (
+                <div className="p-3 rounded bg-amber-950/70 border border-amber-500/80 text-amber-200 text-xs flex items-center gap-2">
+                  <Clock className="size-4 text-amber-400 shrink-0 animate-pulse" />
+                  <span>
+                    Tài khoản tạm thời bị khóa do nhập sai nhiều lần. Vui lòng thử lại sau{' '}
+                    <strong className="font-mono text-amber-300 font-bold text-sm">{lockoutCountdown}</strong> giây.
+                  </span>
+                </div>
+              ) : loginError ? (
                 <div className="p-2.5 rounded bg-rose-950/60 border border-rose-500/60 text-rose-300 text-xs">
                   {loginError}
                 </div>
-              )}
+              ) : null}
               <div>
                 <label className="block text-xs font-mono text-zinc-400 mb-1">Tên đăng nhập:</label>
                 <input
@@ -572,15 +633,21 @@ export function AssetVersionTab() {
               </div>
               <button
                 type="submit"
-                disabled={loginSubmitting}
-                className="w-full flex items-center justify-center gap-2 rounded bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold px-4 py-2 text-xs transition-all cursor-pointer shadow-md"
+                disabled={loginSubmitting || lockoutCountdown > 0}
+                className="w-full flex items-center justify-center gap-2 rounded bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold px-4 py-2 text-xs transition-all cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loginSubmitting ? (
                   <RefreshCw className="size-4 animate-spin" />
+                ) : lockoutCountdown > 0 ? (
+                  <Clock className="size-4 animate-pulse text-amber-950" />
                 ) : (
                   <LogIn className="size-4" />
                 )}
-                <span>XÁC THỰC QUYỀN QUẢN TRỊ VIÊN</span>
+                <span>
+                  {lockoutCountdown > 0
+                    ? `TẠM KHÓA (${lockoutCountdown}S) — VUI LÒNG ĐỢI`
+                    : 'XÁC THỰC QUYỀN QUẢN TRỊ VIÊN'}
+                </span>
               </button>
             </form>
           )}

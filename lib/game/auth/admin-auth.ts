@@ -406,12 +406,24 @@ export function changeAdminPassword(
   return { success: true };
 }
 
+// Generates composite key for isolating rate limits per interface scope and IP
+function getRateLimitKey(ip: string, scope = 'v1'): string {
+  const cleanScope = (scope || 'v1').toLowerCase().trim();
+  const cleanIp = (ip || '127.0.0.1').trim();
+  return `${cleanScope}:${cleanIp}`;
+}
+
 /**
- * Checks rate limiting for login IP address (Max 5 attempts in 15 minutes)
+ * Checks rate limiting for login IP address and interface scope (V1/V2 isolation)
+ * (Max 5 failed attempts in 15 minutes)
  */
-export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfterSeconds?: number } {
+export function checkLoginRateLimit(
+  ip: string,
+  scope = 'v1'
+): { allowed: boolean; retryAfterSeconds?: number } {
+  const key = getRateLimitKey(ip, scope);
   const now = Date.now();
-  const record = loginRateLimitMap.get(ip);
+  const record = loginRateLimitMap.get(key);
   if (!record) {
     return { allowed: true };
   }
@@ -424,7 +436,7 @@ export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfterS
   }
 
   if (record.resetAt <= now) {
-    loginRateLimitMap.delete(ip);
+    loginRateLimitMap.delete(key);
     return { allowed: true };
   }
 
@@ -432,16 +444,17 @@ export function checkLoginRateLimit(ip: string): { allowed: boolean; retryAfterS
 }
 
 /**
- * Records a login attempt for rate limiting
+ * Records a login attempt for rate limiting (isolated by scope:ip)
  */
-export function recordLoginAttempt(ip: string, success: boolean): void {
+export function recordLoginAttempt(ip: string, success: boolean, scope = 'v1'): void {
+  const key = getRateLimitKey(ip, scope);
   const now = Date.now();
   if (success) {
-    loginRateLimitMap.delete(ip);
+    loginRateLimitMap.delete(key);
     return;
   }
 
-  const record = loginRateLimitMap.get(ip) || {
+  const record = loginRateLimitMap.get(key) || {
     attempts: 0,
     resetAt: now + 15 * 60 * 1000,
     lockUntil: 0,
@@ -452,7 +465,19 @@ export function recordLoginAttempt(ip: string, success: boolean): void {
     // Lock for 15 minutes
     record.lockUntil = now + 15 * 60 * 1000;
   }
-  loginRateLimitMap.set(ip, record);
+  loginRateLimitMap.set(key, record);
+}
+
+/**
+ * Clears rate limit records (for testing or administrative unlock)
+ */
+export function clearLoginRateLimit(ip?: string, scope?: string): void {
+  if (ip) {
+    const key = getRateLimitKey(ip, scope || 'v1');
+    loginRateLimitMap.delete(key);
+  } else {
+    loginRateLimitMap.clear();
+  }
 }
 
 /**

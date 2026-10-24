@@ -13,17 +13,27 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+    const body = await req.json().catch(() => ({}));
+    const scope = (body?.scope || req.headers.get('x-admin-scope') || 'v1').toLowerCase().trim();
+    const { username, password } = body || {};
 
-    // 1. Check rate limit
-    const rateCheck = checkLoginRateLimit(ip);
+    // 1. Check rate limit (isolated by scope:ip)
+    const rateCheck = checkLoginRateLimit(ip, scope);
     if (!rateCheck.allowed) {
+      const retryAfter = rateCheck.retryAfterSeconds || 60;
       return NextResponse.json(
         {
           success: false,
           errorCode: 'AUTH_RATE_LIMITED',
-          error: `Quá nhiều lần thử thất bại. Vui lòng thử lại sau ${rateCheck.retryAfterSeconds} giây.`,
+          error: `Quá nhiều lần thử thất bại. Vui lòng thử lại sau ${retryAfter} giây.`,
+          retryAfterSeconds: retryAfter,
         },
-        { status: 429 }
+        {
+          status: 429,
+          headers: {
+            'Retry-After': String(retryAfter),
+          },
+        }
       );
     }
 
@@ -40,9 +50,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
-    const { username, password } = body || {};
-
     if (!username || !password) {
       return NextResponse.json(
         {
@@ -57,7 +64,7 @@ export async function POST(req: NextRequest) {
     // 3. Verify credentials
     const authResult = verifyAdminCredentials(username, password);
     if (!authResult.success || !authResult.user) {
-      recordLoginAttempt(ip, false);
+      recordLoginAttempt(ip, false, scope);
       const safeCode =
         authResult.errorCode === 'ACCOUNT_NOT_FOUND'
           ? 'AUTH_ACCOUNT_NOT_FOUND'
@@ -76,7 +83,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Record success, create session & CSRF token
-    recordLoginAttempt(ip, true);
+    recordLoginAttempt(ip, true, scope);
     const { cookieValue, csrfToken, expiresAt } = createSessionToken(authResult.user.username);
 
     const res = NextResponse.json({

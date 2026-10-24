@@ -60,8 +60,24 @@ export function CharacterContentManager({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [registeredUsernames, setRegisteredUsernames] = useState<string[]>([]);
   const [adminUser, setAdminUser] = useState<{ username: string; role: string } | null>(null);
-  const [csrfToken, setCsrfToken] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [csrfToken, setCsrfToken] = useState<string>('');
+  const [lockoutCountdown, setLockoutCountdown] = useState<number>(0);
+
+  // Lockout countdown timer
+  useEffect(() => {
+    if (lockoutCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutCountdown]);
 
   // Change Password Modal State
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
@@ -243,7 +259,7 @@ export function CharacterContentManager({
       const endpoint = needsSetup ? '/api/admin/auth/setup' : '/api/admin/auth/login';
       const payload = needsSetup
         ? { username: username.trim(), password, confirmPassword }
-        : { username: username.trim(), password };
+        : { username: username.trim(), password, scope: 'v2' };
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -261,10 +277,17 @@ export function CharacterContentManager({
         setNeedsSetup(false);
         setPassword('');
         setConfirmPassword('');
+        setLockoutCountdown(0);
         await loadManifest();
       } else {
-        const prefix = data.errorCode ? `[${data.errorCode}] ` : '';
-        setLoginError(`${prefix}${data.error || 'Đăng nhập không thành công.'}`);
+        if (res.status === 429 || data.errorCode === 'AUTH_RATE_LIMITED') {
+          const retrySec = data.retryAfterSeconds || Number(res.headers.get('Retry-After')) || 60;
+          setLockoutCountdown(retrySec);
+          setLoginError(`[AUTH_RATE_LIMITED] Quá nhiều lần thử thất bại. Vui lòng thử lại sau ${retrySec} giây.`);
+        } else {
+          const prefix = data.errorCode ? `[${data.errorCode}] ` : '';
+          setLoginError(`${prefix}${data.error || 'Đăng nhập không thành công.'}`);
+        }
       }
     } catch (err: any) {
       setLoginError(`[NETWORK_ERROR] ${err.message || 'Lỗi kết nối máy chủ.'}`);
@@ -725,11 +748,19 @@ export function CharacterContentManager({
                 </p>
               </div>
 
-              {loginError && (
+              {lockoutCountdown > 0 ? (
+                <div className="p-3 mb-4 rounded bg-amber-950/70 border border-amber-500/80 text-amber-200 text-xs flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                  <span>
+                    Tài khoản tạm thời bị khóa do nhập sai nhiều lần. Thử lại sau{' '}
+                    <strong className="font-mono text-amber-300 font-bold text-sm">{lockoutCountdown}</strong> giây.
+                  </span>
+                </div>
+              ) : loginError ? (
                 <div className="p-3 mb-4 rounded bg-rose-950/50 border border-rose-800 text-rose-300 text-xs">
                   {loginError}
                 </div>
-              )}
+              ) : null}
 
               {/* Quick Account Selector when already configured */}
               {!needsSetup && registeredUsernames.length > 0 && (
@@ -803,10 +834,12 @@ export function CharacterContentManager({
 
                 <button
                   type="submit"
-                  disabled={authLoading}
-                  className="w-full py-2.5 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50"
+                  disabled={authLoading || lockoutCountdown > 0}
+                  className="w-full py-2.5 rounded bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {authLoading
+                  {lockoutCountdown > 0
+                    ? `TẠM KHÓA (${lockoutCountdown}S) — VUI LÒNG ĐỢI`
+                    : authLoading
                     ? 'Đang xác thực...'
                     : needsSetup
                     ? 'THIẾT LẬP VÀ ĐĂNG NHẬP'

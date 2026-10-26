@@ -134,8 +134,8 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
   return (
     <div className="space-y-6">
       {/* 0. HERO STORY MODE ENTRY CTA */}
-      <div className="relative rounded-2xl bg-gradient-to-r from-[#071324] via-[#0C1E38] to-[#071324] border border-[#00D4FF]/40 p-4 sm:p-5 shadow-xl shadow-cyan-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1.5 min-w-0">
+      <div className="relative rounded-2xl bg-gradient-to-b from-[#071324] via-[#0C1E38] to-[#071324] border border-[#00D4FF]/40 p-4 sm:p-5 shadow-xl shadow-cyan-950/40 flex flex-col gap-4">
+        <div className="space-y-2 w-full">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/30">
               IMMERSIVE STORY READER // CDN R3
@@ -156,7 +156,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
           <h3 className="text-base sm:text-lg font-bold text-white tracking-wide flex items-center gap-2">
             <span>Biên Niên Sử Không Gian // {character.classCharacterName}</span>
           </h3>
-          <p className="text-xs text-[#94A3B8] leading-relaxed max-w-xl">
+          <p className="text-xs text-[#94A3B8] leading-relaxed w-full">
             Toàn bộ danh mục chương truyện từ CDN R3. Trải nghiệm chế độ đọc 3 cột với bối cảnh phân cảnh và minh họa WebP HD.
           </p>
           {savedProgress && savedProgress.progress > 0 && (
@@ -171,7 +171,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
           <button
             type="button"
             onClick={() => handleLaunchReader(activeChapter?.chapterId || 'chap-01')}
-            className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0099CC] hover:from-[#38BDF8] hover:to-[#00D4FF] text-[#070A12] font-mono font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 active:scale-95 cursor-pointer shrink-0"
+            className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0099CC] hover:from-[#38BDF8] hover:to-[#00D4FF] text-[#070A12] font-mono font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 active:scale-98 cursor-pointer"
           >
             <BookOpen className="w-5 h-5 text-[#070A12]" />
             <span>
@@ -283,15 +283,15 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                 <div className="space-y-5">
                   {/* Hero Reader CTA Banner */}
                   {onOpenReader && (
-                    <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/80 via-[#10243E] to-slate-900 border border-cyan-500/50 shadow-lg shadow-cyan-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="space-y-1">
+                    <div className="p-4 rounded-xl bg-gradient-to-b from-cyan-950/90 via-[#10243E] to-slate-900 border border-cyan-500/50 shadow-lg shadow-cyan-950/40 flex flex-col gap-3.5 w-full">
+                      <div className="space-y-1 w-full">
                         <div className="flex items-center gap-2">
                           <Sparkles className="w-4 h-4 text-cyan-400" />
                           <span className="text-[11px] font-mono uppercase tracking-widest text-cyan-300 font-bold">
                             TRẢI NGHIỆM ĐỌC ĐẮM CHÌM // IMMERSIVE 3-COLUMN
                           </span>
                         </div>
-                        <p className="text-xs text-slate-300">
+                        <p className="text-xs text-slate-300 leading-relaxed">
                           Bao gồm bối cảnh phân cảnh đồng bộ, minh họa artwork và bộ chỉnh kích cỡ văn xuôi.
                         </p>
                       </div>
@@ -299,10 +299,10 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                       <button
                         type="button"
                         onClick={() => handleLaunchReader(activeChapter.chapterId)}
-                        className="px-4 py-2.5 rounded-lg bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider hover:bg-cyan-400 hover:shadow-cyan-500/30 shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                        className="w-full py-2.5 px-4 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider hover:shadow-cyan-500/30 shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                       >
-                        <BookOpen className="w-4 h-4" />
-                        <span>MỞ CHẾ ĐỘ ĐỌC TRUYỆN</span>
+                        <BookOpen className="w-4 h-4 text-slate-950" />
+                        <span>MỞ CHẾ ĐỘ ĐỌC TRUYỆN TOÀN MÀN HÌNH</span>
                       </button>
                     </div>
                   )}
@@ -383,7 +383,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex flex-col gap-3 w-full">
             {chapters.map((chap) => {
               const isAvailable = Boolean(chap.contentAvailable);
               const isSelected = chap.chapterId === activeChapterId;
@@ -392,15 +392,15 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                 <div
                   key={`card-${chap.chapterId}`}
                   onClick={() => handleLaunchReader(chap.chapterId)}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 group ${
+                  className={`w-full p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 group ${
                     isSelected
                       ? 'bg-[#0f2138] border-[#00D4FF] shadow-md shadow-cyan-950/50'
                       : 'bg-[#071120]/80 border-[#26384D] hover:border-[#3B526D] hover:bg-[#0c1a2e]'
                   }`}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-2 w-full">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#070A12] border border-[#26384D] text-[#00D4FF]">
+                      <span className="px-2.5 py-0.5 rounded text-[11px] font-mono font-bold bg-[#070A12] border border-[#26384D] text-[#00D4FF]">
                         CHƯƠNG {chap.chapterNumber < 10 ? `0${chap.chapterNumber}` : chap.chapterNumber}
                       </span>
                       {isAvailable ? (
@@ -416,11 +416,11 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                       )}
                     </div>
 
-                    <h5 className="text-sm font-bold text-[#F1F5F9] group-hover:text-[#00D4FF] transition-colors line-clamp-1">
+                    <h5 className="text-sm font-bold text-[#F1F5F9] group-hover:text-[#00D4FF] transition-colors leading-snug">
                       {chap.title}
                     </h5>
 
-                    <p className="text-xs text-[#94A3B8] line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-[#94A3B8] leading-relaxed line-clamp-2">
                       {chap.summary}
                     </p>
                   </div>

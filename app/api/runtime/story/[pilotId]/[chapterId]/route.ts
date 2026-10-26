@@ -31,6 +31,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       );
     }
 
+    const { searchParams } = new URL(req.url);
+    const cdnVersionParam = searchParams.get('cdnVersion')?.trim();
+    const cdnBaseUrlParam = searchParams.get('cdnBaseUrl')?.trim();
+
+    const { getDynamicStoryCdnPointer, setDynamicStoryCdnPointer } = await import('@/lib/game/v2/universal-content-resolver');
+    if (cdnBaseUrlParam) {
+      setDynamicStoryCdnPointer(cdnBaseUrlParam, cdnVersionParam || 'custom');
+    } else if (cdnVersionParam) {
+      const cleanVer = cdnVersionParam.startsWith('v') ? cdnVersionParam : `v3.0-assets-${cdnVersionParam}`;
+      const url = `https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@${cleanVer}/starfront-world-assets`;
+      setDynamicStoryCdnPointer(url, cleanVer);
+    }
+
     const isDevOrPreview =
       process.env.NODE_ENV !== 'production' ||
       process.env.STARFRONT_STORY_REVIEW_MODE === 'true';
@@ -38,7 +51,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const adminAuth = verifyAdminRequest(req, false);
     const isAdminOrReview = adminAuth.authorized || isDevOrPreview;
 
-    // 1. Fetch from Universal Content Resolver (R3 first)
+    const activePointer = getDynamicStoryCdnPointer();
+
+    // 1. Fetch from Universal Content Resolver (R3 / Dynamic CDN first)
     const chapterData = await universalContentResolver.getStoryChapterProse(
       cleanPilotId,
       cleanChapterId,
@@ -58,6 +73,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         blocks: chapterData.blocks,
         sceneAnchors: chapterData.sceneAnchors,
         isReviewMode: isAdminOrReview,
+        cdnPointer: activePointer,
       });
     }
 

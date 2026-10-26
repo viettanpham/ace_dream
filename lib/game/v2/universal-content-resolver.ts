@@ -88,12 +88,42 @@ function getLocalStagingPath(subPath: string): string | null {
   return null;
 }
 
+// Dynamic Story CDN Pointer State (allows seamless pointer switching across R3/R4/R5 without React rebuilds)
+let dynamicStoryCdnBaseUrl: string | null = null;
+let dynamicStoryVersion: string | null = null;
+
+export function setDynamicStoryCdnPointer(url: string | null, version: string | null = null): void {
+  dynamicStoryCdnBaseUrl = url ? (url.endsWith('/') ? url.slice(0, -1) : url) : null;
+  dynamicStoryVersion = version;
+  resolverCache.clear();
+}
+
+export function getDynamicStoryCdnPointer(): { baseUrl: string; version: string; isOverridden: boolean } {
+  if (dynamicStoryCdnBaseUrl) {
+    return {
+      baseUrl: dynamicStoryCdnBaseUrl,
+      version: dynamicStoryVersion || 'custom',
+      isOverridden: true,
+    };
+  }
+  return {
+    baseUrl: getEffectiveCdnBaseUrl(),
+    version: R3_RELEASE_TAG,
+    isOverridden: false,
+  };
+}
+
 /**
  * Helper to fetch JSON from remote URL with timeout and local staging fallback
  */
-async function fetchWithFallback<T>(relativeSubPath: string, timeoutMs: number = 4000): Promise<T | null> {
+async function fetchWithFallback<T>(
+  relativeSubPath: string,
+  timeoutMs: number = 4000,
+  customCdnBase?: string
+): Promise<T | null> {
   const cleanSub = relativeSubPath.startsWith('/') ? relativeSubPath.slice(1) : relativeSubPath;
-  const cacheKey = `r3:${cleanSub}`;
+  const cdnBase = customCdnBase || getDynamicStoryCdnPointer().baseUrl;
+  const cacheKey = `cdn:${cdnBase}:${cleanSub}`;
   const now = Date.now();
 
   const cached = resolverCache.get(cacheKey);
@@ -101,7 +131,6 @@ async function fetchWithFallback<T>(relativeSubPath: string, timeoutMs: number =
     return cached.data as T;
   }
 
-  const cdnBase = getEffectiveCdnBaseUrl();
   const remoteUrl = `${cdnBase}/${cleanSub}`;
 
   // 1. Try remote CDN fetch

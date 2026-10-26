@@ -129,8 +129,14 @@ export function ArtViewer({
   const initialShowcaseItem = useMemo<ShowcaseArtwork>(() => {
     const cleanPath = imageSrc.startsWith('/') ? imageSrc.slice(1) : imageSrc
     const assetId = cleanPath.split('/').pop() || 'art'
-    const identityKey = buildArtworkIdentityKey(currentPilotId, assetId, cleanPath)
-    const meta = CANONICAL_PILOT_METADATA[currentPilotId as CanonicalPilotId]
+    
+    // Auto-detect pilotId from canonical path pattern: images/pilots/<pilotId>/...
+    const pathMatch = cleanPath.match(/^images\/pilots\/([a-z0-9-_]+)\//i)
+    const effectivePilotId = (pathMatch ? pathMatch[1] : currentPilotId).toLowerCase().trim()
+    const identityKey = buildArtworkIdentityKey(effectivePilotId, assetId, cleanPath)
+    const meta = CANONICAL_PILOT_METADATA[effectivePilotId as CanonicalPilotId]
+    const effectivePilotName = meta?.name ? meta.name.split(' ')[0] : (effectivePilotId === currentPilotId ? currentPilotName : effectivePilotId.toUpperCase())
+    const effectiveCallsign = meta?.callsign || (effectivePilotId === currentPilotId ? currentPilotCallsign : '')
 
     return {
       identityKey,
@@ -139,16 +145,16 @@ export function ArtViewer({
       path: cleanPath,
       resolvedUrl: resolveImageUrl(cleanPath) || '',
       title: title || 'Artwork Inspector',
-      description: description || `Tác phẩm chuẩn hóa của phi công ${currentPilotName}.`,
+      description: description || `Tác phẩm chuẩn hóa của phi công ${effectivePilotName}.`,
       curatedDescription: description,
       category: category || 'lore',
       isAvailableOnDisk: isAvailableOnDisk !== false,
       status: 'verified_webp',
-      pilotId: currentPilotId,
-      pilotName: currentPilotName,
-      pilotCallsign: currentPilotCallsign || meta?.callsign || '',
+      pilotId: effectivePilotId,
+      pilotName: effectivePilotName,
+      pilotCallsign: effectiveCallsign,
       pilotGender: meta?.gender || 'Female',
-      pilotPortraitPath: `images/pilots/${currentPilotId}/${currentPilotId}-portrait.webp`,
+      pilotPortraitPath: `images/pilots/${effectivePilotId}/${effectivePilotId}-portrait.webp`,
     }
   }, [imageSrc, title, description, category, isAvailableOnDisk, currentPilotId, currentPilotName, currentPilotCallsign])
 
@@ -228,26 +234,32 @@ export function ArtViewer({
       const converted: ShowcaseArtwork[] = artworks.map((a) => {
         const cleanPath = a.path.startsWith('/') ? a.path.slice(1) : a.path
         const assetId = a.id || cleanPath.split('/').pop() || 'art'
-        const meta = CANONICAL_PILOT_METADATA[currentPilotId as CanonicalPilotId]
+        
+        // Auto-detect pilotId from artwork object or path
+        const pathMatch = cleanPath.match(/^images\/pilots\/([a-z0-9-_]+)\//i)
+        const itemPilotId = (a.pilotId || (pathMatch ? pathMatch[1] : currentPilotId)).toLowerCase().trim()
+        const meta = CANONICAL_PILOT_METADATA[itemPilotId as CanonicalPilotId]
+        const cleanPilotName = a.pilotName || (meta?.name ? meta.name.split(' ')[0] : (itemPilotId === currentPilotId ? currentPilotName : itemPilotId.toUpperCase()))
+        const cleanPilotCallsign = a.pilotCallsign || meta?.callsign || ''
 
         return {
-          identityKey: buildArtworkIdentityKey(currentPilotId, assetId, cleanPath),
+          identityKey: buildArtworkIdentityKey(itemPilotId, assetId, cleanPath),
           assetId,
           filename: cleanPath.split('/').pop() || 'art.webp',
           path: cleanPath,
           resolvedUrl: resolveImageUrl(cleanPath) || '',
           title: a.title,
-          description: a.description || `Tác phẩm của ${currentPilotName}.`,
+          description: a.description || `Tác phẩm của ${cleanPilotName}.`,
           curatedDescription: a.description,
           category: a.category || 'lore',
           dimensions: a.dimensions,
           isAvailableOnDisk: a.isAvailableOnDisk !== false,
           status: a.status || 'verified_webp',
-          pilotId: currentPilotId,
-          pilotName: currentPilotName,
-          pilotCallsign: currentPilotCallsign || meta?.callsign || '',
+          pilotId: itemPilotId,
+          pilotName: cleanPilotName,
+          pilotCallsign: cleanPilotCallsign,
           pilotGender: meta?.gender || 'Female',
-          pilotPortraitPath: `images/pilots/${currentPilotId}/${currentPilotId}-portrait.webp`,
+          pilotPortraitPath: `images/pilots/${itemPilotId}/${itemPilotId}-portrait.webp`,
         }
       })
 
@@ -1199,7 +1211,8 @@ export function ArtViewer({
                 <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={resolveImageUrl(currentArtwork.pilotPortraitPath)}
+                    key={currentArtwork.pilotId}
+                    src={resolveImageUrl(currentArtwork.pilotPortraitPath || `images/pilots/${currentArtwork.pilotId}/${currentArtwork.pilotId}-portrait.webp`)}
                     alt={currentArtwork.pilotName}
                     className="w-full h-full object-cover object-top"
                     onError={(e) => {

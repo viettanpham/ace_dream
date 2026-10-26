@@ -697,256 +697,254 @@ export function DesktopView({
           </p>
         </div>
 
-        {/* Nội Dung Cuộn Tách Bạch: Base Attributes, Traits, và Tabs Chi Tiết */}
+        {/* Nội Dung Cuộn Tách Bạch: Tabs Chi Tiết Trên Đầu Giải Phóng 100% Diện Tích Cho Story */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#1E2D42] min-h-0">
-          {/* SECTION: | BASE ATTRIBUTES (6 Thanh Đo Màu Sắc) */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
-              <h3 className="text-sm font-black uppercase font-mono tracking-wider text-white">
-                BASE ATTRIBUTES
-              </h3>
-            </div>
+          <Tabs value={activeTab} onValueChange={onTabChange} variant="segmented" className="w-full flex flex-col">
+            <TabsList className="mb-4 grid grid-cols-4 shrink-0">
+              <TabsTrigger value="overview">THÔNG TIN</TabsTrigger>
+              <TabsTrigger value="story">STORY</TabsTrigger>
+              <TabsTrigger value="gear">GEAR</TabsTrigger>
+              <TabsTrigger value="gallery">GALLERY</TabsTrigger>
+            </TabsList>
 
-            {/* Grid 2 cột cho 6 chỉ số: ATK, DEF, AGI bên trái; ENE, SHD, LUK bên phải */}
-            <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5 p-3 rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] font-mono text-xs">
-              {/* ATK - Đỏ */}
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#EF4444] font-bold flex items-center gap-1 text-xs">
-                  <Crosshair className="w-3.5 h-3.5" />
-                  <span>ATK</span>
-                </span>
-                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                  <div
-                    className="h-full bg-[#EF4444] rounded-full shadow-[0_0_6px_#EF4444]"
-                    style={{ width: `${(activeCharacter.baseAttributes.atk / 10) * 100}%` }}
-                  />
+            {/* Tab 1: THÔNG TIN CƠ BẢN + ATTRIBUTES + TRAITS */}
+            <TabsContent value="overview" className="space-y-4 mt-0">
+              {/* SECTION: | BASE ATTRIBUTES (6 Thanh Đo Màu Sắc) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
+                  <h3 className="text-sm font-black uppercase font-mono tracking-wider text-white">
+                    BASE ATTRIBUTES
+                  </h3>
                 </div>
-                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.atk}</span>
-              </div>
 
-              {/* ENE - Vàng Cam */}
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#F59E0B] font-bold flex items-center gap-1 text-xs">
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>ENE</span>
-                </span>
-                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                  <div
-                    className="h-full bg-[#F59E0B] rounded-full shadow-[0_0_6px_#F59E0B]"
-                    style={{ width: `${(activeCharacter.baseAttributes.ene / 10) * 100}%` }}
-                  />
-                </div>
-                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.ene}</span>
-              </div>
-
-              {/* DEF - Xanh Dương */}
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#3B82F6] font-bold flex items-center gap-1 text-xs">
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>DEF</span>
-                </span>
-                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                  <div
-                    className="h-full bg-[#3B82F6] rounded-full shadow-[0_0_6px_#3B82F6]"
-                    style={{ width: `${(activeCharacter.baseAttributes.def / 10) * 100}%` }}
-                  />
-                </div>
-                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.def}</span>
-              </div>
-
-              {/* SHD - Tím */}
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#8B5CF6] font-bold flex items-center gap-1 text-xs">
-                  <Shield className="w-3.5 h-3.5" />
-                  <span>SHD</span>
-                </span>
-                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                  <div
-                    className="h-full bg-[#8B5CF6] rounded-full shadow-[0_0_6px_#8B5CF6]"
-                    style={{ width: `${(activeCharacter.baseAttributes.shd / 10) * 100}%` }}
-                  />
-                </div>
-                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.shd}</span>
-              </div>
-
-              {/* AGI - Xanh Lục */}
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#10B981] font-bold flex items-center gap-1 text-xs">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>AGI</span>
-                </span>
-                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                  <div
-                    className="h-full bg-[#10B981] rounded-full shadow-[0_0_6px_#10B981]"
-                    style={{ width: `${(activeCharacter.baseAttributes.agi / 10) * 100}%` }}
-                  />
-                </div>
-                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.agi}</span>
-              </div>
-
-              {/* LUK - Hồng Tím */}
-              <div className="flex items-center justify-between gap-1.5">
-                <span className="text-[#EC4899] font-bold flex items-center gap-1 text-xs">
-                  <Award className="w-3.5 h-3.5" />
-                  <span>LUK</span>
-                </span>
-                <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                  <div
-                    className="h-full bg-[#EC4899] rounded-full shadow-[0_0_6px_#EC4899]"
-                    style={{ width: `${(activeCharacter.baseAttributes.luk / 10) * 100}%` }}
-                  />
-                </div>
-                <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.luk}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* SECTION: | TRAITS (2 Ô Card Song Song - Không Cắt Ellipsis Tên Trait) */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
-              <h3 className="text-sm font-black uppercase font-mono tracking-wider text-white">
-                TRAITS & THIÊN PHÚ
-              </h3>
-            </div>
-
-            <div className={`grid ${activeCharacter.traits.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-2.5`}>
-              {activeCharacter.traits.map((trait, idx) => {
-                const isMedic = trait.iconType === 'medic';
-                const isShield = trait.iconType === 'shield';
-                const isFire = trait.iconType === 'firepower';
-                const isAgi = trait.iconType === 'agility';
-
-                const borderClass = isMedic
-                  ? 'border-[#10B981]/40'
-                  : isShield
-                  ? 'border-[#00D4FF]/40'
-                  : isFire
-                  ? 'border-[#EF4444]/40'
-                  : isAgi
-                  ? 'border-[#06B6D4]/40'
-                  : 'border-[#F59E0B]/40';
-
-                const iconBgClass = isMedic
-                  ? 'bg-[#10B981]/15 text-[#10B981]'
-                  : isShield
-                  ? 'bg-[#00D4FF]/15 text-[#00D4FF]'
-                  : isFire
-                  ? 'bg-[#EF4444]/15 text-[#EF4444]'
-                  : isAgi
-                  ? 'bg-[#06B6D4]/15 text-[#06B6D4]'
-                  : 'bg-[#F59E0B]/15 text-[#F59E0B]';
-
-                const badgeTextClass = isMedic
-                  ? 'text-[#10B981]'
-                  : isShield
-                  ? 'text-[#00D4FF]'
-                  : isFire
-                  ? 'text-[#EF4444]'
-                  : isAgi
-                  ? 'text-[#06B6D4]'
-                  : 'text-[#F59E0B]';
-
-                const IconTrait = isMedic
-                  ? Heart
-                  : isShield
-                  ? Shield
-                  : isFire
-                  ? Crosshair
-                  : isAgi
-                  ? Sparkles
-                  : Zap;
-
-                return (
-                  <div
-                    key={trait.id || idx}
-                    className={`p-3 rounded-xl bg-[#0B111E]/80 border ${borderClass} flex items-start gap-2.5`}
-                  >
-                    <div className={`w-7 h-7 rounded-lg ${iconBgClass} flex items-center justify-center shrink-0 mt-0.5`}>
-                      <IconTrait className="w-4 h-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-xs font-bold text-white font-mono break-words leading-tight">
-                          {trait.name}
-                        </span>
-                        <span className={`text-[9px] font-mono uppercase font-bold shrink-0 ${badgeTextClass}`}>
-                          {trait.type}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
-                        {trait.description}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* 4 TABS: THÔNG TIN CƠ BẢN / STORY / GEAR / GALLERY */}
-          <div className="pt-2">
-            <Tabs value={activeTab} onValueChange={onTabChange} variant="segmented" className="w-full">
-              <TabsList className="mb-3 grid grid-cols-4">
-                <TabsTrigger value="overview">THÔNG TIN</TabsTrigger>
-                <TabsTrigger value="story">STORY</TabsTrigger>
-                <TabsTrigger value="gear">GEAR</TabsTrigger>
-                <TabsTrigger value="gallery">GALLERY</TabsTrigger>
-              </TabsList>
-
-              {/* Tab 1: THÔNG TIN CƠ BẢN (Động từ activeCharacter.basicInfo) */}
-              <TabsContent value="overview">
-                <div className="rounded-xl bg-[#0B111E]/85 border border-[#1E2D42] p-3.5 text-sm space-y-2.5">
-                  {activeCharacter.basicInfo && activeCharacter.basicInfo.length > 0 ? (
-                    activeCharacter.basicInfo.map((info, idx) => (
+                {/* Grid 2 cột cho 6 chỉ số: ATK, DEF, AGI bên trái; ENE, SHD, LUK bên phải */}
+                <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5 p-3 rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] font-mono text-xs">
+                  {/* ATK - Đỏ */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-[#EF4444] font-bold flex items-center gap-1 text-xs">
+                      <Crosshair className="w-3.5 h-3.5" />
+                      <span>ATK</span>
+                    </span>
+                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
                       <div
-                        key={idx}
-                        className={`flex items-center justify-between ${
-                          idx < activeCharacter.basicInfo.length - 1
-                            ? 'border-b border-[#1E2D42]/60 pb-2'
-                            : ''
+                        className="h-full bg-[#EF4444] rounded-full shadow-[0_0_6px_#EF4444]"
+                        style={{ width: `${(activeCharacter.baseAttributes.atk / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.atk}</span>
+                  </div>
+
+                  {/* ENE - Vàng Cam */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-[#F59E0B] font-bold flex items-center gap-1 text-xs">
+                      <Zap className="w-3.5 h-3.5" />
+                      <span>ENE</span>
+                    </span>
+                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
+                      <div
+                        className="h-full bg-[#F59E0B] rounded-full shadow-[0_0_6px_#F59E0B]"
+                        style={{ width: `${(activeCharacter.baseAttributes.ene / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.ene}</span>
+                  </div>
+
+                  {/* DEF - Xanh Dương */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-[#3B82F6] font-bold flex items-center gap-1 text-xs">
+                      <Shield className="w-3.5 h-3.5" />
+                      <span>DEF</span>
+                    </span>
+                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
+                      <div
+                        className="h-full bg-[#3B82F6] rounded-full shadow-[0_0_6px_#3B82F6]"
+                        style={{ width: `${(activeCharacter.baseAttributes.def / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.def}</span>
+                  </div>
+
+                  {/* SHD - Tím */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-[#8B5CF6] font-bold flex items-center gap-1 text-xs">
+                      <Shield className="w-3.5 h-3.5" />
+                      <span>SHD</span>
+                    </span>
+                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
+                      <div
+                        className="h-full bg-[#8B5CF6] rounded-full shadow-[0_0_6px_#8B5CF6]"
+                        style={{ width: `${(activeCharacter.baseAttributes.shd / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.shd}</span>
+                  </div>
+
+                  {/* AGI - Xanh Lục */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-[#10B981] font-bold flex items-center gap-1 text-xs">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>AGI</span>
+                    </span>
+                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
+                      <div
+                        className="h-full bg-[#10B981] rounded-full shadow-[0_0_6px_#10B981]"
+                        style={{ width: `${(activeCharacter.baseAttributes.agi / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.agi}</span>
+                  </div>
+
+                  {/* LUK - Hồng Tím */}
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-[#EC4899] font-bold flex items-center gap-1 text-xs">
+                      <Award className="w-3.5 h-3.5" />
+                      <span>LUK</span>
+                    </span>
+                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
+                      <div
+                        className="h-full bg-[#EC4899] rounded-full shadow-[0_0_6px_#EC4899]"
+                        style={{ width: `${(activeCharacter.baseAttributes.luk / 10) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.luk}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION: | TRAITS (2 Ô Card Song Song - Không Cắt Ellipsis Tên Trait) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
+                  <h3 className="text-sm font-black uppercase font-mono tracking-wider text-white">
+                    TRAITS & THIÊN PHÚ
+                  </h3>
+                </div>
+
+                <div className={`grid ${activeCharacter.traits.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-2.5`}>
+                  {activeCharacter.traits.map((trait, idx) => {
+                    const isMedic = trait.iconType === 'medic';
+                    const isShield = trait.iconType === 'shield';
+                    const isFire = trait.iconType === 'firepower';
+                    const isAgi = trait.iconType === 'agility';
+
+                    const borderClass = isMedic
+                      ? 'border-[#10B981]/40'
+                      : isShield
+                      ? 'border-[#00D4FF]/40'
+                      : isFire
+                      ? 'border-[#EF4444]/40'
+                      : isAgi
+                      ? 'border-[#06B6D4]/40'
+                      : 'border-[#F59E0B]/40';
+
+                    const iconBgClass = isMedic
+                      ? 'bg-[#10B981]/15 text-[#10B981]'
+                      : isShield
+                      ? 'bg-[#00D4FF]/15 text-[#00D4FF]'
+                      : isFire
+                      ? 'bg-[#EF4444]/15 text-[#EF4444]'
+                      : isAgi
+                      ? 'bg-[#06B6D4]/15 text-[#06B6D4]'
+                      : 'bg-[#F59E0B]/15 text-[#F59E0B]';
+
+                    const badgeTextClass = isMedic
+                      ? 'text-[#10B981]'
+                      : isShield
+                      ? 'text-[#00D4FF]'
+                      : isFire
+                      ? 'text-[#EF4444]'
+                      : isAgi
+                      ? 'text-[#06B6D4]'
+                      : 'text-[#F59E0B]';
+
+                    const IconTrait = isMedic
+                      ? Heart
+                      : isShield
+                      ? Shield
+                      : isFire
+                      ? Crosshair
+                      : isAgi
+                      ? Sparkles
+                      : Zap;
+
+                    return (
+                      <div
+                        key={trait.id || idx}
+                        className={`p-3 rounded-xl bg-[#0B111E]/80 border ${borderClass} flex items-start gap-2.5`}
+                      >
+                        <div className={`w-7 h-7 rounded-lg ${iconBgClass} flex items-center justify-center shrink-0 mt-0.5`}>
+                          <IconTrait className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-bold text-white font-mono break-words leading-tight">
+                              {trait.name}
+                            </span>
+                            <span className={`text-[9px] font-mono uppercase font-bold shrink-0 ${badgeTextClass}`}>
+                              {trait.type}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
+                            {trait.description}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Thông tin chi tiết */}
+              <div className="rounded-xl bg-[#0B111E]/85 border border-[#1E2D42] p-3.5 text-sm space-y-2.5">
+                {activeCharacter.basicInfo && activeCharacter.basicInfo.length > 0 ? (
+                  activeCharacter.basicInfo.map((info, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex items-center justify-between ${
+                        idx < activeCharacter.basicInfo.length - 1
+                          ? 'border-b border-[#1E2D42]/60 pb-2'
+                          : ''
+                      }`}
+                    >
+                      <span className="text-[#7D90A6] font-medium">{info.label}:</span>
+                      <span
+                        className={`font-semibold text-right max-w-[230px] truncate ${
+                          info.label.includes('Điểm yếu')
+                            ? 'text-[#F59E0B]'
+                            : info.label.includes('Ước mơ')
+                            ? 'text-[#00D4FF]'
+                            : 'text-white'
                         }`}
                       >
-                        <span className="text-[#7D90A6] font-medium">{info.label}:</span>
-                        <span
-                          className={`font-semibold text-right max-w-[230px] truncate ${
-                            info.label.includes('Điểm yếu')
-                              ? 'text-[#F59E0B]'
-                              : info.label.includes('Ước mơ')
-                              ? 'text-[#00D4FF]'
-                              : 'text-white'
-                          }`}
-                        >
-                          {info.value}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-xs text-[#A7B6C8] p-2">Thông tin nhân vật đang được cập nhật.</div>
-                  )}
-                </div>
-              </TabsContent>
+                        {info.value}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-xs text-[#A7B6C8] p-2">Thông tin nhân vật đang được cập nhật.</div>
+                )}
+              </div>
+            </TabsContent>
 
-              {/* Tab 2: STORY (10 Chapters) */}
-              <TabsContent value="story">
-                <StoryTab character={activeCharacter} onOpenReader={onOpenReader} />
-              </TabsContent>
+            {/* Tab 2: STORY (10 Chapters) */}
+            <TabsContent value="story" className="mt-0">
+              <StoryTab character={activeCharacter} onOpenReader={onOpenReader} />
+            </TabsContent>
 
-              {/* Tab 3: GEAR COMPATIBILITY */}
-              <TabsContent value="gear">
-                <GearCompatTab character={activeCharacter} />
-              </TabsContent>
+            {/* Tab 3: GEAR COMPATIBILITY */}
+            <TabsContent value="gear" className="mt-0">
+              <GearCompatTab character={activeCharacter} />
+            </TabsContent>
 
-              {/* Tab 4: GALLERY */}
-              <TabsContent value="gallery">
-                <GalleryTab
-                  character={activeCharacter}
-                  onSelectArtwork={(art) => onOpenArtViewer(art)}
-                />
-              </TabsContent>
-            </Tabs>
-          </div>
+            {/* Tab 4: GALLERY */}
+            <TabsContent value="gallery" className="mt-0">
+              <GalleryTab
+                character={activeCharacter}
+                onSelectArtwork={(art) => onOpenArtViewer(art)}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* CONTEXTUAL FOOTER THEO TỪNG TAB (Chuẩn Yêu Cầu Của Chủ Dự Án) */}

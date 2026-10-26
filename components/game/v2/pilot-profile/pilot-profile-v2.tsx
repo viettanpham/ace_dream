@@ -237,12 +237,9 @@ export function PilotProfileV2({
     setViewerContextList(targetList);
 
     if (art) {
-      // Find matching item in targetList
+      // Find matching item in targetList strictly by exact path or id
       const matched = targetList.find(
-        (a) =>
-          a.id === art.id ||
-          a.path === art.path ||
-          (art.path && a.path.endsWith(art.path.split('/').pop() || '###'))
+        (a) => a.path === art.path || a.id === art.id
       );
       setViewerArtwork(matched || art);
     } else {
@@ -267,11 +264,7 @@ export function PilotProfileV2({
 
   const currentArtworkIndex = currentViewerArtworks.findIndex((a) => {
     if (!viewerArtwork) return false;
-    if (a.id === viewerArtwork.id) return true;
-    if (a.path === viewerArtwork.path) return true;
-    const filenameA = a.path.split('/').pop();
-    const filenameV = viewerArtwork.path?.split('/').pop();
-    return Boolean(filenameA && filenameV && filenameA === filenameV);
+    return a.path === viewerArtwork.path || a.id === viewerArtwork.id;
   });
   const hasPrevArtwork = currentArtworkIndex > 0;
   const hasNextArtwork =

@@ -31,21 +31,19 @@ import {
   Compass,
 } from 'lucide-react'
 import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
-import { CanonicalPilotId, CANONICAL_PILOT_IDS } from '@/lib/game/v2/character-content-types'
-
-export interface GalleryItemData {
-  id: string
-  title: string
-  category?: string
-  path: string
-  isAvailableOnDisk?: boolean
-  status?: 'verified_webp' | 'archive_pending' | string
-  description?: string
-  dimensions?: { width: number; height: number }
-  pilotId?: string
-  pilotName?: string
-  pilotCallsign?: string
-}
+import {
+  CANONICAL_12_PILOT_IDS,
+  CANONICAL_PILOT_METADATA,
+  CanonicalPilotId,
+} from '@/lib/game/v2/universal-content-types'
+import {
+  ShowcaseArtwork,
+  buildArtworkIdentityKey,
+  fetchShowcasePilotGallery,
+  createShuffleBag,
+  preloadAndDecodeImage,
+  preloadShowcaseQueue,
+} from '@/lib/game/v2/gallery-showcase-engine'
 
 export interface ArtViewerProps {
   isOpen: boolean
@@ -65,49 +63,28 @@ export interface ArtViewerProps {
   currentIndex?: number
   totalCount?: number
   // V2 Showcase Extensions
-  artworks?: GalleryItemData[]
+  artworks?: Array<{
+    id: string
+    title: string
+    path: string
+    category?: string
+    description?: string
+    isAvailableOnDisk?: boolean
+    status?: string
+    dimensions?: { width: number; height: number }
+    pilotId?: string
+    pilotName?: string
+    pilotCallsign?: string
+  }>
   currentPilotId?: string
   currentPilotName?: string
   currentPilotCallsign?: string
   allPilots?: Array<{ id: string; name: string; callsign: string }>
-  onSelectArtwork?: (artwork: GalleryItemData, pilotId?: string) => void
+  onSelectArtwork?: (artwork: any, pilotId?: string) => void
 }
 
 const DEFAULT_SPEEDS = [4, 6, 10] as const
 type SlideshowSpeed = (typeof DEFAULT_SPEEDS)[number]
-
-const CANONICAL_PILOT_FALLBACKS: Array<{ id: string; name: string; callsign: string }> = [
-  { id: 'valentine', name: 'Valentine', callsign: 'Mercy Wing' },
-  { id: 'alviss', name: 'Alviss', callsign: 'Sky Strider' },
-  { id: 'eric', name: 'Eric', callsign: 'Thunder Cannon' },
-  { id: 'marcus', name: 'Marcus', callsign: 'Aegis Commander' },
-  { id: 'victor', name: 'Victor', callsign: 'Iron Bulwark' },
-  { id: 'kaelen', name: 'Kaelen', callsign: 'Void Stalker' },
-  { id: 'lyra', name: 'Lyra', callsign: 'Prism Nova' },
-  { id: 'selena', name: 'Selena', callsign: 'Silver Phantom' },
-  { id: 'fortuna', name: 'Fortuna', callsign: 'Gambit Lady' },
-  { id: 'aria', name: 'Aria', callsign: 'Echo Siren' },
-  { id: 'rhea', name: 'Rhea', callsign: 'Chrono Weaver' },
-  { id: 'nova', name: 'Nova', callsign: 'Aero Comet' },
-]
-
-/**
- * Fisher-Yates Shuffle with No-Immediate-Repeat constraint
- */
-function shuffleBagWithNoRepeat<T extends { id: string }>(items: T[], lastId?: string): T[] {
-  if (items.length <= 1) return [...items]
-  const array = [...items]
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[array[i], array[j]] = [array[j], array[i]]
-  }
-  // Ensure the first item of the new bag is not identical to the last shown item
-  if (lastId && array[0].id === lastId && array.length > 1) {
-    const swapTarget = Math.floor(Math.random() * (array.length - 1)) + 1
-    ;[array[0], array[swapTarget]] = [array[swapTarget], array[0]]
-  }
-  return array
-}
 
 export function ArtViewer({
   isOpen,
@@ -116,7 +93,7 @@ export function ArtViewer({
   imageAlt = 'Starfront Artwork',
   title = 'Artwork Inspector',
   subtitle,
-  category,
+  category = 'lore',
   description,
   tags = [],
   onPrev,
@@ -130,12 +107,56 @@ export function ArtViewer({
   currentPilotId = 'valentine',
   currentPilotName = 'Valentine',
   currentPilotCallsign = 'Mercy Wing',
-  allPilots = CANONICAL_PILOT_FALLBACKS,
+  allPilots,
   onSelectArtwork,
 }: ArtViewerProps) {
-  // Zoom & Pan Canvas states
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [loadError, setLoadError] = useState<boolean>(false)
+  // Pilot Canonical Info Map
+  const canonicalPilots = useMemo(() => {
+    return CANONICAL_12_PILOT_IDS.map((pId) => {
+      const meta = CANONICAL_PILOT_METADATA[pId]
+      return {
+        id: pId,
+        name: meta?.name ? meta.name.split(' ')[0] : pId,
+        fullName: meta?.name || pId,
+        callsign: meta?.callsign || '',
+        gender: meta?.gender || 'Female',
+        portraitPath: `images/pilots/${pId}/${pId}-portrait.webp`,
+      }
+    })
+  }, [])
+
+  // Initial Artwork Setup
+  const initialShowcaseItem = useMemo<ShowcaseArtwork>(() => {
+    const cleanPath = imageSrc.startsWith('/') ? imageSrc.slice(1) : imageSrc
+    const assetId = cleanPath.split('/').pop() || 'art'
+    const identityKey = buildArtworkIdentityKey(currentPilotId, assetId, cleanPath)
+    const meta = CANONICAL_PILOT_METADATA[currentPilotId as CanonicalPilotId]
+
+    return {
+      identityKey,
+      assetId,
+      filename: assetId,
+      path: cleanPath,
+      resolvedUrl: resolveImageUrl(cleanPath) || '',
+      title: title || 'Artwork Inspector',
+      description: description || `Tác phẩm chuẩn hóa của phi công ${currentPilotName}.`,
+      curatedDescription: description,
+      category: category || 'lore',
+      isAvailableOnDisk: isAvailableOnDisk !== false,
+      status: 'verified_webp',
+      pilotId: currentPilotId,
+      pilotName: currentPilotName,
+      pilotCallsign: currentPilotCallsign || meta?.callsign || '',
+      pilotGender: meta?.gender || 'Female',
+      pilotPortraitPath: `images/pilots/${currentPilotId}/${currentPilotId}-portrait.webp`,
+    }
+  }, [imageSrc, title, description, category, isAvailableOnDisk, currentPilotId, currentPilotName, currentPilotCallsign])
+
+  // =========================================================================
+  // AUTHORITATIVE SINGLE SOURCE OF TRUTH: currentArtwork
+  // =========================================================================
+  const [currentArtwork, setCurrentArtwork] = useState<ShowcaseArtwork>(initialShowcaseItem)
+  const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
   const [naturalDimensions, setNaturalDimensions] = useState<{ width: number; height: number } | null>(null)
   const [currentScale, setCurrentScale] = useState<number>(1)
 
@@ -149,7 +170,7 @@ export function ArtViewer({
   const [speedSeconds, setSpeedSeconds] = useState<SlideshowSpeed>(() => {
     if (typeof window !== 'undefined') {
       const saved = sessionStorage.getItem('starfront_slideshow_speed')
-      if (saved && (saved === '4' || saved === '6' || saved === '10')) {
+      if (saved === '4' || saved === '6' || saved === '10') {
         return parseInt(saved, 10) as SlideshowSpeed
       }
     }
@@ -160,84 +181,25 @@ export function ArtViewer({
   // Random Showcase State
   const [isRandomMode, setIsRandomMode] = useState<boolean>(false)
   const [selectedPilotIds, setSelectedPilotIds] = useState<string[]>(() => [currentPilotId])
-  const [pilotsArtworksMap, setPilotsArtworksMap] = useState<Record<string, GalleryItemData[]>>(() => {
-    if (currentPilotId && artworks.length > 0) {
-      return {
-        [currentPilotId]: artworks.map((a) => ({
-          ...a,
-          pilotId: currentPilotId,
-          pilotName: currentPilotName,
-          pilotCallsign: currentPilotCallsign,
-        })),
-      }
-    }
-    return {}
-  })
+  const [pilotsArtworksMap, setPilotsArtworksMap] = useState<Record<string, ShowcaseArtwork[]>>({})
   const [loadingPilotIds, setLoadingPilotIds] = useState<Record<string, boolean>>({})
 
-  // Shuffle Bag & Random History
-  const [randomBag, setRandomBag] = useState<GalleryItemData[]>([])
-  const [randomBagIndex, setRandomBagIndex] = useState<number>(0)
+  // Shuffle Bag
+  const [shuffleBag, setShuffleBag] = useState<ShowcaseArtwork[]>([])
+  const [shuffleIndex, setShuffleIndex] = useState<number>(0)
 
-  // Internal Active Item Tracker
-  const [activeItem, setActiveItem] = useState<GalleryItemData>({
-    id: imageSrc,
-    title,
-    path: imageSrc,
-    category,
-    description,
-    isAvailableOnDisk,
-    pilotId: currentPilotId,
-    pilotName: currentPilotName,
-    pilotCallsign: currentPilotCallsign,
-  })
-
+  // Refs for race conditions and timers
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const transitionTokenRef = useRef<number>(0)
   const wasPlayingBeforeBackgroundRef = useRef<boolean>(false)
 
-  // Sync active item when props change
-  useEffect(() => {
-    setActiveItem({
-      id: imageSrc,
-      title: title || 'Artwork Inspector',
-      path: imageSrc,
-      category,
-      description,
-      isAvailableOnDisk,
-      pilotId: currentPilotId,
-      pilotName: currentPilotName,
-      pilotCallsign: currentPilotCallsign,
-    })
-  }, [imageSrc, title, category, description, isAvailableOnDisk, currentPilotId, currentPilotName, currentPilotCallsign])
-
-  // Update current pilot artworks in cache if provided
-  useEffect(() => {
-    if (currentPilotId && artworks.length > 0) {
-      setPilotsArtworksMap((prev) => ({
-        ...prev,
-        [currentPilotId]: artworks.map((a) => ({
-          ...a,
-          pilotId: currentPilotId,
-          pilotName: currentPilotName,
-          pilotCallsign: currentPilotCallsign,
-        })),
-      }))
-    }
-  }, [currentPilotId, currentPilotName, currentPilotCallsign, artworks])
-
-  // Reset transform whenever active item changes
+  // Sync initial artwork when modal opens or primary props change externally
   useEffect(() => {
     if (isOpen) {
-      setIsLoading(true)
-      setLoadError(!activeItem.isAvailableOnDisk)
-      setNaturalDimensions(null)
-      setCurrentScale(1)
-      if (transformRef.current) {
-        transformRef.current.resetTransform()
-      }
+      setCurrentArtwork(initialShowcaseItem)
     }
-  }, [isOpen, activeItem.path, activeItem.isAvailableOnDisk])
+  }, [isOpen, initialShowcaseItem])
 
   // Lock body scroll when open
   useEffect(() => {
@@ -249,7 +211,7 @@ export function ArtViewer({
     }
   }, [isOpen])
 
-  // Pause helper: pause slideshow and clear timer on manual user interaction
+  // Helper: Pause slideshow on any user interaction
   const pauseSlideshow = useCallback(() => {
     if (isPlaying) {
       setIsPlaying(false)
@@ -260,185 +222,239 @@ export function ArtViewer({
     }
   }, [isPlaying])
 
-  // Fetch gallery for a pilot if not already loaded
-  const loadPilotGallery = useCallback(
-    async (pilotId: string) => {
-      if (pilotsArtworksMap[pilotId]?.length > 0) return pilotsArtworksMap[pilotId]
+  // Pre-populate current pilot's artworks from props
+  useEffect(() => {
+    if (currentPilotId && artworks.length > 0) {
+      const converted: ShowcaseArtwork[] = artworks.map((a) => {
+        const cleanPath = a.path.startsWith('/') ? a.path.slice(1) : a.path
+        const assetId = a.id || cleanPath.split('/').pop() || 'art'
+        const meta = CANONICAL_PILOT_METADATA[currentPilotId as CanonicalPilotId]
 
-      setLoadingPilotIds((prev) => ({ ...prev, [pilotId]: true }))
-      try {
-        const res = await fetch(`/api/runtime/gallery/${pilotId}`)
-        const data = await res.json()
-        if (data.success && Array.isArray(data.artworks)) {
-          const pilotMeta = allPilots.find((p) => p.id === pilotId)
-          const cleanArts: GalleryItemData[] = data.artworks.map((a: any) => {
-            const cleanPath = a.path
-              ? a.path.startsWith('/')
-                ? a.path.slice(1)
-                : a.path
-              : a.sourceUrl || `images/pilots/${pilotId}/${a.filename}`
-
-            return {
-              id: a.assetId || a.filename || a.id,
-              title: a.title || a.label || a.filename || 'Tác phẩm',
-              path: cleanPath,
-              category: a.category || a.roleCategory || 'lore',
-              description: a.curatedDescription || a.description,
-              isAvailableOnDisk: a.isAvailableOnDisk !== false,
-              status: a.status || 'verified_webp',
-              dimensions: a.width && a.height ? { width: a.width, height: a.height } : undefined,
-              pilotId,
-              pilotName: pilotMeta?.name || pilotId,
-              pilotCallsign: pilotMeta?.callsign || '',
-            }
-          })
-
-          setPilotsArtworksMap((prev) => ({
-            ...prev,
-            [pilotId]: cleanArts,
-          }))
-          return cleanArts
+        return {
+          identityKey: buildArtworkIdentityKey(currentPilotId, assetId, cleanPath),
+          assetId,
+          filename: cleanPath.split('/').pop() || 'art.webp',
+          path: cleanPath,
+          resolvedUrl: resolveImageUrl(cleanPath) || '',
+          title: a.title,
+          description: a.description || `Tác phẩm của ${currentPilotName}.`,
+          curatedDescription: a.description,
+          category: a.category || 'lore',
+          dimensions: a.dimensions,
+          isAvailableOnDisk: a.isAvailableOnDisk !== false,
+          status: a.status || 'verified_webp',
+          pilotId: currentPilotId,
+          pilotName: currentPilotName,
+          pilotCallsign: currentPilotCallsign || meta?.callsign || '',
+          pilotGender: meta?.gender || 'Female',
+          pilotPortraitPath: `images/pilots/${currentPilotId}/${currentPilotId}-portrait.webp`,
         }
-      } catch (err) {
-        console.warn(`Failed to fetch gallery for pilot ${pilotId}:`, err)
-      } finally {
-        setLoadingPilotIds((prev) => ({ ...prev, [pilotId]: false }))
-      }
-      return []
-    },
-    [allPilots, pilotsArtworksMap]
-  )
+      })
 
-  // Collect pool of available artworks for Random Mode
-  const randomPool = useMemo(() => {
-    const list: GalleryItemData[] = []
+      setPilotsArtworksMap((prev) => ({
+        ...prev,
+        [currentPilotId]: converted,
+      }))
+    }
+  }, [currentPilotId, currentPilotName, currentPilotCallsign, artworks])
+
+  // Load a pilot's artworks into memory cache
+  const loadPilotArtworks = useCallback(async (pilotId: string) => {
+    if (pilotsArtworksMap[pilotId]?.length > 0) return pilotsArtworksMap[pilotId]
+
+    setLoadingPilotIds((prev) => ({ ...prev, [pilotId]: true }))
+    try {
+      const items = await fetchShowcasePilotGallery(pilotId)
+      setPilotsArtworksMap((prev) => ({
+        ...prev,
+        [pilotId]: items,
+      }))
+      return items
+    } catch (err) {
+      console.warn(`[ArtViewer] Failed to load artworks for ${pilotId}:`, err)
+      return []
+    } finally {
+      setLoadingPilotIds((prev) => ({ ...prev, [pilotId]: false }))
+    }
+  }, [pilotsArtworksMap])
+
+  // Preload initial selected pilots
+  useEffect(() => {
+    if (isOpen) {
+      for (const pId of selectedPilotIds) {
+        if (!pilotsArtworksMap[pId]) {
+          loadPilotArtworks(pId)
+        }
+      }
+    }
+  }, [isOpen, selectedPilotIds, loadPilotArtworks, pilotsArtworksMap])
+
+  // Combined pool for Random Mode
+  const randomPool = useMemo<ShowcaseArtwork[]>(() => {
+    const pool: ShowcaseArtwork[] = []
     for (const pId of selectedPilotIds) {
-      const pArts = pilotsArtworksMap[pId]
-      if (Array.isArray(pArts)) {
-        for (const item of pArts) {
-          if (item && item.isAvailableOnDisk !== false) {
-            list.push(item)
+      const list = pilotsArtworksMap[pId]
+      if (Array.isArray(list)) {
+        for (const item of list) {
+          if (item && item.isAvailableOnDisk) {
+            pool.push(item)
           }
         }
       }
     }
-    return list
+    return pool
   }, [selectedPilotIds, pilotsArtworksMap])
 
-  // Initialize or re-shuffle bag when randomPool changes or when toggling Random Mode
+  // Initialize or re-create Shuffle Bag whenever randomPool changes or Random Mode is toggled
   useEffect(() => {
     if (isRandomMode) {
       if (randomPool.length > 0) {
-        const newBag = shuffleBagWithNoRepeat(randomPool, activeItem.id)
-        setRandomBag(newBag)
-        setRandomBagIndex(0)
+        const bag = createShuffleBag(randomPool, currentArtwork.identityKey)
+        setShuffleBag(bag)
+        setShuffleIndex(0)
       } else {
-        setRandomBag([])
-        setRandomBagIndex(0)
+        setShuffleBag([])
+        setShuffleIndex(0)
       }
     }
   }, [isRandomMode, randomPool.length])
 
-  // Advance Next Artwork (Sequential or Random)
+  // =========================================================================
+  // ATOMIC TRANSITION ENGINE
+  // Never show new metadata with old image. Never show black screen.
+  // =========================================================================
+  const transitionToArtwork = useCallback(
+    async (targetArtwork: ShowcaseArtwork) => {
+      if (!targetArtwork || targetArtwork.identityKey === currentArtwork.identityKey) {
+        return
+      }
+
+      // Generate a new sequence token to cancel previous in-flight transitions
+      const token = ++transitionTokenRef.current
+      setIsTransitioning(true)
+
+      const targetUrl = targetArtwork.resolvedUrl || resolveImageUrl(targetArtwork.path)
+
+      // Preload & decode image in background
+      const success = await preloadAndDecodeImage(targetUrl, 6000)
+
+      // If another transition was initiated in the meantime, abort this one
+      if (token !== transitionTokenRef.current) {
+        return
+      }
+
+      if (success || !targetArtwork.isAvailableOnDisk) {
+        // ATOMIC COMMIT: Synchronously switch both image and metadata together
+        setCurrentArtwork(targetArtwork)
+        setIsTransitioning(false)
+        if (transformRef.current) {
+          transformRef.current.resetTransform()
+          setCurrentScale(1)
+        }
+        if (onSelectArtwork) {
+          onSelectArtwork(targetArtwork, targetArtwork.pilotId)
+        }
+      } else {
+        // If target image failed to load / timeout:
+        setIsTransitioning(false)
+        if (isRandomMode && shuffleBag.length > 1) {
+          // Skip broken image and try next in shuffle bag
+          const nextIdx = (shuffleIndex + 1) % shuffleBag.length
+          setShuffleIndex(nextIdx)
+          transitionToArtwork(shuffleBag[nextIdx])
+        }
+      }
+    },
+    [currentArtwork.identityKey, isRandomMode, shuffleBag, shuffleIndex, onSelectArtwork]
+  )
+
+  // Advance Next (Sequential or Random)
   const handleAdvanceNext = useCallback(() => {
-    if (isRandomMode && randomBag.length > 0) {
-      let nextIdx = randomBagIndex + 1
-      let currentBag = randomBag
+    if (isRandomMode && shuffleBag.length > 0) {
+      let nextIdx = shuffleIndex + 1
+      let currentBag = shuffleBag
 
       if (nextIdx >= currentBag.length) {
-        // Refill and reshuffle bag
-        currentBag = shuffleBagWithNoRepeat(randomPool, currentBag[currentBag.length - 1]?.id)
-        setRandomBag(currentBag)
+        // Bag exhausted: refill and reshuffle bag
+        currentBag = createShuffleBag(randomPool, currentBag[currentBag.length - 1]?.identityKey)
+        setShuffleBag(currentBag)
         nextIdx = 0
       }
 
-      setRandomBagIndex(nextIdx)
-      const nextArtwork = currentBag[nextIdx]
-      if (nextArtwork) {
-        setActiveItem(nextArtwork)
-        if (onSelectArtwork) {
-          onSelectArtwork(nextArtwork, nextArtwork.pilotId)
-        }
+      setShuffleIndex(nextIdx)
+      const nextTarget = currentBag[nextIdx]
+      if (nextTarget) {
+        transitionToArtwork(nextTarget)
       }
     } else {
       // Sequential Mode
-      if (hasNext && onNext) {
+      const currentList = pilotsArtworksMap[currentPilotId] || []
+      if (currentList.length > 0) {
+        const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
+        const nextIdx = (curIdx + 1) % currentList.length
+        transitionToArtwork(currentList[nextIdx])
+      } else if (hasNext && onNext) {
         onNext()
-      } else if (artworks.length > 0) {
-        // Internal loop
-        const currentIdx = artworks.findIndex(
-          (a) => a.path === activeItem.path || a.id === activeItem.id
-        )
-        const nextIdx = (currentIdx + 1) % artworks.length
-        const nextArtwork = artworks[nextIdx]
-        if (nextArtwork) {
-          setActiveItem(nextArtwork)
-          if (onSelectArtwork) {
-            onSelectArtwork(nextArtwork, currentPilotId)
-          }
-        }
       }
     }
-  }, [isRandomMode, randomBag, randomBagIndex, randomPool, hasNext, onNext, artworks, activeItem, onSelectArtwork, currentPilotId])
+  }, [isRandomMode, shuffleBag, shuffleIndex, randomPool, pilotsArtworksMap, currentPilotId, currentArtwork.identityKey, hasNext, onNext, transitionToArtwork])
 
-  // Advance Previous Artwork
+  // Advance Prev (Sequential or Random)
   const handleAdvancePrev = useCallback(() => {
-    if (isRandomMode && randomBag.length > 0) {
-      const prevIdx = (randomBagIndex - 1 + randomBag.length) % randomBag.length
-      setRandomBagIndex(prevIdx)
-      const prevArtwork = randomBag[prevIdx]
-      if (prevArtwork) {
-        setActiveItem(prevArtwork)
-        if (onSelectArtwork) {
-          onSelectArtwork(prevArtwork, prevArtwork.pilotId)
-        }
+    if (isRandomMode && shuffleBag.length > 0) {
+      const prevIdx = (shuffleIndex - 1 + shuffleBag.length) % shuffleBag.length
+      setShuffleIndex(prevIdx)
+      const prevTarget = shuffleBag[prevIdx]
+      if (prevTarget) {
+        transitionToArtwork(prevTarget)
       }
     } else {
       // Sequential Mode
-      if (hasPrev && onPrev) {
+      const currentList = pilotsArtworksMap[currentPilotId] || []
+      if (currentList.length > 0) {
+        const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
+        const prevIdx = (curIdx - 1 + currentList.length) % currentList.length
+        transitionToArtwork(currentList[prevIdx])
+      } else if (hasPrev && onPrev) {
         onPrev()
-      } else if (artworks.length > 0) {
-        const currentIdx = artworks.findIndex(
-          (a) => a.path === activeItem.path || a.id === activeItem.id
-        )
-        const prevIdx = (currentIdx - 1 + artworks.length) % artworks.length
-        const prevArtwork = artworks[prevIdx]
-        if (prevArtwork) {
-          setActiveItem(prevArtwork)
-          if (onSelectArtwork) {
-            onSelectArtwork(prevArtwork, currentPilotId)
+      }
+    }
+  }, [isRandomMode, shuffleBag, shuffleIndex, pilotsArtworksMap, currentPilotId, currentArtwork.identityKey, hasPrev, onPrev, transitionToArtwork])
+
+  // Preload Queue (Preload 2-3 upcoming images ahead of time)
+  useEffect(() => {
+    const urlsToPreload: string[] = []
+
+    if (isRandomMode && shuffleBag.length > 1) {
+      for (let i = 1; i <= 3; i++) {
+        const idx = (shuffleIndex + i) % shuffleBag.length
+        const item = shuffleBag[idx]
+        if (item?.resolvedUrl) {
+          urlsToPreload.push(item.resolvedUrl)
+        }
+      }
+    } else {
+      const currentList = pilotsArtworksMap[currentPilotId] || []
+      if (currentList.length > 1) {
+        const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
+        if (curIdx >= 0) {
+          for (let i = 1; i <= 2; i++) {
+            const idx = (curIdx + i) % currentList.length
+            const item = currentList[idx]
+            if (item?.resolvedUrl) {
+              urlsToPreload.push(item.resolvedUrl)
+            }
           }
         }
       }
     }
-  }, [isRandomMode, randomBag, randomBagIndex, hasPrev, onPrev, artworks, activeItem, onSelectArtwork, currentPilotId])
 
-  // Preload next image (Maximum 1 next image ahead)
-  useEffect(() => {
-    let nextTarget: GalleryItemData | null = null
-    if (isRandomMode && randomBag.length > 0) {
-      const nextIdx = (randomBagIndex + 1) % randomBag.length
-      nextTarget = randomBag[nextIdx]
-    } else if (artworks.length > 0) {
-      const currentIdx = artworks.findIndex(
-        (a) => a.path === activeItem.path || a.id === activeItem.id
-      )
-      if (currentIdx >= 0) {
-        const nextIdx = (currentIdx + 1) % artworks.length
-        nextTarget = artworks[nextIdx]
-      }
+    if (urlsToPreload.length > 0) {
+      preloadShowcaseQueue(urlsToPreload, 2)
     }
+  }, [isRandomMode, shuffleBag, shuffleIndex, pilotsArtworksMap, currentPilotId, currentArtwork.identityKey])
 
-    if (nextTarget && nextTarget.path) {
-      const nextResolved = resolveImageUrl(nextTarget.path)
-      if (nextResolved) {
-        const preloader = new window.Image()
-        preloader.src = nextResolved
-      }
-    }
-  }, [isRandomMode, randomBag, randomBagIndex, artworks, activeItem.path, activeItem.id])
-
-  // Handle Slideshow Timer
+  // Slideshow Timer Effect
   useEffect(() => {
     if (!isOpen || !isPlaying) {
       if (timerRef.current) {
@@ -460,9 +476,9 @@ export function ArtViewer({
     }
   }, [isOpen, isPlaying, speedSeconds, handleAdvanceNext])
 
-  // Browser Tab Visibility Handling (Stop timer when tab hidden, resume without skipping when returned)
+  // Browser Visibility Change: Stop timer when tab is hidden, resume without skipping
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const handleVisibility = () => {
       if (document.hidden) {
         wasPlayingBeforeBackgroundRef.current = isPlaying
         if (timerRef.current) {
@@ -476,13 +492,13 @@ export function ArtViewer({
       }
     }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange)
+    document.addEventListener('visibilitychange', handleVisibility)
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [isPlaying, isOpen])
 
-  // Clean timer on unmount or close
+  // Clean timer on unmount / close
   useEffect(() => {
     if (!isOpen) {
       setIsPlaying(false)
@@ -497,8 +513,6 @@ export function ArtViewer({
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!isOpen) return
-
-      // Don't intercept typing in inputs
       if (['input', 'textarea'].includes((e.target as HTMLElement)?.tagName?.toLowerCase())) {
         return
       }
@@ -538,6 +552,7 @@ export function ArtViewer({
       } else if (e.key === '0') {
         e.preventDefault()
         transformRef.current?.resetTransform()
+        setCurrentScale(1)
       }
     },
     [isOpen, showInfoDrawer, showPilotDrawer, isCleanView, pauseSlideshow, handleAdvancePrev, handleAdvanceNext, onClose]
@@ -550,9 +565,48 @@ export function ArtViewer({
 
   if (!isOpen) return null
 
-  const resolvedUrl = resolveImageUrl(activeItem.path)
+  // Speed selection
+  const handleSelectSpeed = (s: SlideshowSpeed) => {
+    setSpeedSeconds(s)
+    setShowSpeedSelector(false)
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('starfront_slideshow_speed', String(s))
+    }
+  }
 
-  // 100% Actual size calculation
+  // Toggle pilot selection in Random Showcase
+  const handleTogglePilot = async (pilotId: string) => {
+    pauseSlideshow()
+    let next: string[]
+    if (selectedPilotIds.includes(pilotId)) {
+      if (selectedPilotIds.length === 1) return // Keep at least one
+      next = selectedPilotIds.filter((id) => id !== pilotId)
+    } else {
+      next = [...selectedPilotIds, pilotId]
+      await loadPilotArtworks(pilotId)
+    }
+    setSelectedPilotIds(next)
+  }
+
+  // Select all 12 pilots
+  const handleSelectAllPilots = async () => {
+    pauseSlideshow()
+    const allIds = canonicalPilots.map((p) => p.id)
+    setSelectedPilotIds(allIds)
+    for (const p of canonicalPilots) {
+      if (!pilotsArtworksMap[p.id]) {
+        loadPilotArtworks(p.id)
+      }
+    }
+  }
+
+  // Select only current pilot
+  const handleSelectOnlyCurrent = () => {
+    pauseSlideshow()
+    setSelectedPilotIds([currentPilotId])
+  }
+
+  // Actual 100% Size Calculation
   const handleSetActualSize = () => {
     pauseSlideshow()
     if (!transformRef.current || !naturalDimensions) return
@@ -569,68 +623,30 @@ export function ArtViewer({
     transformRef.current.setTransform(0, 0, actualScale)
   }
 
-  // Speed selection handler
-  const handleSelectSpeed = (s: SlideshowSpeed) => {
-    setSpeedSeconds(s)
-    setShowSpeedSelector(false)
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('starfront_slideshow_speed', String(s))
-    }
-  }
+  const effectiveTotal = isRandomMode
+    ? randomPool.length
+    : (pilotsArtworksMap[currentPilotId]?.length || totalCount || artworks.length || 1)
 
-  // Toggle pilot in Random Showcase
-  const handleTogglePilot = async (pilotId: string) => {
-    pauseSlideshow()
-    let nextSelected: string[]
-    if (selectedPilotIds.includes(pilotId)) {
-      if (selectedPilotIds.length === 1) return // Keep at least one
-      nextSelected = selectedPilotIds.filter((id) => id !== pilotId)
-    } else {
-      nextSelected = [...selectedPilotIds, pilotId]
-      // Preload gallery for this pilot if not in cache
-      await loadPilotGallery(pilotId)
-    }
-    setSelectedPilotIds(nextSelected)
-  }
-
-  // Select all pilots
-  const handleSelectAllPilots = async () => {
-    pauseSlideshow()
-    const allIds = allPilots.map((p) => p.id)
-    setSelectedPilotIds(allIds)
-    // Preload missing galleries in background
-    for (const p of allPilots) {
-      if (!pilotsArtworksMap[p.id]) {
-        loadPilotGallery(p.id)
-      }
-    }
-  }
-
-  // Deselect all except current pilot
-  const handleDeselectAllPilots = () => {
-    pauseSlideshow()
-    setSelectedPilotIds([currentPilotId])
-  }
-
-  const effectivePilotName = activeItem.pilotName || currentPilotName
-  const effectiveCallsign = activeItem.pilotCallsign || currentPilotCallsign
-  const effectiveTotal = isRandomMode ? randomPool.length : (totalCount || artworks.length || 1)
-  const effectiveIndex = isRandomMode ? randomBagIndex + 1 : (currentIndex || 1)
+  const effectiveIndex = isRandomMode
+    ? shuffleIndex + 1
+    : (pilotsArtworksMap[currentPilotId]?.findIndex((a) => a.identityKey === currentArtwork.identityKey) ?? -1) >= 0
+    ? (pilotsArtworksMap[currentPilotId].findIndex((a) => a.identityKey === currentArtwork.identityKey) + 1)
+    : (currentIndex || 1)
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={activeItem.title}
+      aria-label={currentArtwork.title}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl select-none animate-in fade-in duration-200"
     >
       {/* =================================================================== */}
-      {/* 1. TOP FLOATING HEADER HUD                                          */}
+      {/* 1. TOP HEADER HUD (Clean, Authoritative Metadata)                   */}
       {/* =================================================================== */}
       {!isCleanView && (
         <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-4 z-40 flex items-center justify-between gap-2 pointer-events-none transition-all duration-300">
-          {/* Left: Metadata Badge & Pilot Info */}
-          <div className="flex items-center gap-2 pointer-events-auto bg-[#090D18]/90 border border-[#1E2D42] backdrop-blur-md px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-mono text-[#F1F5F9] shadow-2xl max-w-[calc(100vw-80px)] sm:max-w-xl">
+          {/* Metadata Pill */}
+          <div className="flex items-center gap-2 pointer-events-auto bg-[#090D18]/92 border border-[#1E2D42] backdrop-blur-md px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-mono text-[#F1F5F9] shadow-2xl max-w-[calc(100vw-76px)] sm:max-w-2xl">
             {isRandomMode ? (
               <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-500/50 shrink-0">
                 <Shuffle className="w-3 h-3 text-amber-400 animate-pulse" />
@@ -640,21 +656,28 @@ export function ArtViewer({
               <Sparkles className="w-3.5 h-3.5 text-[#00D4FF] shrink-0" />
             )}
 
-            {/* Counter Badge */}
+            {/* Counter */}
             <span className="whitespace-nowrap text-[11px] font-mono font-black text-[#00D4FF] bg-[#00D4FF]/15 px-2.5 py-0.5 rounded-full border border-[#00D4FF]/40 tracking-wider shrink-0">
               ẢNH {String(effectiveIndex).padStart(2, '0')} / {String(effectiveTotal).padStart(2, '0')}
             </span>
 
-            {/* Pilot Identity Badge */}
-            <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-mono font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/60 shrink-0 uppercase">
-              <span>{effectivePilotName}</span>
-              {effectiveCallsign && <span className="text-slate-400">· {effectiveCallsign}</span>}
+            {/* Authoritative Pilot Badge */}
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/60 shrink-0 uppercase">
+              <span>{currentArtwork.pilotName}</span>
+              {currentArtwork.pilotCallsign && (
+                <span className="text-slate-400">· {currentArtwork.pilotCallsign}</span>
+              )}
             </span>
 
             {/* Artwork Title */}
-            <span className="font-bold truncate text-white">{activeItem.title}</span>
+            <span className="font-bold truncate text-white min-w-0">{currentArtwork.title}</span>
 
-            {/* Quick Info Toggle */}
+            {/* In-Flight Transition Indicator */}
+            {isTransitioning && (
+              <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0 ml-1" />
+            )}
+
+            {/* Info Drawer Button */}
             <button
               type="button"
               onClick={() => {
@@ -668,12 +691,12 @@ export function ArtViewer({
             </button>
           </div>
 
-          {/* Right: Close Fullscreen Button */}
+          {/* Close Button */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Đóng viewer (Esc)"
-            className="pointer-events-auto w-11 h-11 rounded-full bg-[#090D18]/90 border border-[#1E2D42] hover:border-[#EF4444] text-[#CBD5E1] hover:text-[#EF4444] hover:bg-rose-950/40 flex items-center justify-center transition-all shadow-2xl cursor-pointer active:scale-95 shrink-0"
+            className="pointer-events-auto w-11 h-11 rounded-full bg-[#090D18]/92 border border-[#1E2D42] hover:border-[#EF4444] text-[#CBD5E1] hover:text-[#EF4444] hover:bg-rose-950/40 flex items-center justify-center transition-all shadow-2xl cursor-pointer active:scale-95 shrink-0"
             title="Đóng viewer (Esc)"
           >
             <X className="w-5 h-5" />
@@ -681,12 +704,12 @@ export function ArtViewer({
         </div>
       )}
 
-      {/* Clean View Toggle Back Icon (When HUD is hidden) */}
+      {/* Clean View Exit Pill */}
       {isCleanView && (
         <button
           type="button"
           onClick={() => setIsCleanView(false)}
-          className="absolute top-4 right-4 z-40 px-3 py-1.5 rounded-full bg-black/70 hover:bg-black/90 border border-[#1E2D42] text-xs font-mono text-cyan-300 flex items-center gap-1.5 backdrop-blur-md shadow-2xl cursor-pointer transition-all animate-in fade-in"
+          className="absolute top-4 right-4 z-40 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-black border border-[#1E2D42] text-xs font-mono text-cyan-300 flex items-center gap-1.5 backdrop-blur-md shadow-2xl cursor-pointer transition-all animate-in fade-in"
           title="Bật lại thanh điều khiển (H)"
         >
           <Eye className="w-3.5 h-3.5 text-cyan-400" />
@@ -695,7 +718,7 @@ export function ArtViewer({
       )}
 
       {/* =================================================================== */}
-      {/* 2. PREVIOUS / NEXT ARROWS                                           */}
+      {/* 2. PREVIOUS / NEXT SIDE ARROWS                                      */}
       {/* =================================================================== */}
       {!isCleanView && (
         <>
@@ -728,33 +751,22 @@ export function ArtViewer({
       )}
 
       {/* =================================================================== */}
-      {/* 3. MAIN CANVAS WITH ZOOM, PAN, PINCH                                */}
+      {/* 3. ZOOM CANVAS & IMAGE ELEMENT                                      */}
       {/* =================================================================== */}
       <div className="relative w-full h-full flex items-center justify-center overflow-hidden">
-        {/* Loading Spinner */}
-        {isLoading && !loadError && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-black/40">
-            <Loader2 className="w-8 h-8 text-[#00D4FF] animate-spin" />
-            <span className="text-xs font-mono text-[#00D4FF]">Đang nạp tác phẩm WebP HD...</span>
-          </div>
-        )}
-
-        {/* Fallback Archive Card */}
-        {loadError && (
+        {/* Missing / Archive Fallback */}
+        {!currentArtwork.isAvailableOnDisk ? (
           <div className="z-20 max-w-sm text-center p-6 rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] shadow-2xl space-y-3 mx-4">
             <div className="w-14 h-14 mx-auto rounded-2xl bg-[#142338] border border-[#1E2D42] flex items-center justify-center text-[#F59E0B]">
               <FileArchive className="w-7 h-7" />
             </div>
-            <h4 className="text-base font-bold text-white font-mono">{activeItem.title}</h4>
-            <p className="text-xs font-mono text-[#00D4FF]">{effectivePilotName}</p>
+            <h4 className="text-base font-bold text-white font-mono">{currentArtwork.title}</h4>
+            <p className="text-xs font-mono text-[#00D4FF]">{currentArtwork.pilotName}</p>
             <p className="text-xs text-[#CBD5E1] leading-relaxed">
               Tác phẩm này đang ở danh mục chờ phát hành WebP trên CDN. Toàn bộ thông số metadata vẫn được bảo toàn.
             </p>
           </div>
-        )}
-
-        {/* Image Transform Canvas */}
-        {!loadError && (
+        ) : (
           <TransformWrapper
             ref={transformRef}
             initialScale={1}
@@ -770,37 +782,28 @@ export function ArtViewer({
                   setCurrentScale(state.scale)
                 }
               },
-              onPanningStart: () => {
-                pauseSlideshow()
-              },
-              onPinchingStart: () => {
-                pauseSlideshow()
-              },
+              onPanningStart: () => pauseSlideshow(),
+              onPinchingStart: () => pauseSlideshow(),
             } as any)}
           >
-            {({ zoomIn, zoomOut, resetTransform }) => (
+            {() => (
               <TransformComponent
                 wrapperClass="!w-full !h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
                 contentClass="flex items-center justify-center min-w-full min-h-full"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={resolvedUrl}
-                  alt={imageAlt || activeItem.title}
+                  key={currentArtwork.identityKey}
+                  src={currentArtwork.resolvedUrl}
+                  alt={currentArtwork.title}
                   draggable={false}
                   className="max-w-[94vw] max-h-[86vh] object-contain select-none transition-opacity duration-200 drop-shadow-[0_25px_50px_rgba(0,0,0,0.95)]"
-                  style={{ opacity: isLoading ? 0 : 1 }}
                   onLoad={(e) => {
-                    setIsLoading(false)
                     const target = e.currentTarget
                     setNaturalDimensions({
                       width: target.naturalWidth,
                       height: target.naturalHeight,
                     })
-                  }}
-                  onError={() => {
-                    setIsLoading(false)
-                    setLoadError(true)
                   }}
                 />
               </TransformComponent>
@@ -810,19 +813,17 @@ export function ArtViewer({
       </div>
 
       {/* =================================================================== */}
-      {/* 4. BOTTOM FLOATING CONTROL DOCK (Compact & Sleek)                   */}
+      {/* 4. BOTTOM FLOATING CONTROL DOCK (Safe Area, Responsive)             */}
       {/* =================================================================== */}
       {!isCleanView && (
-        <div className="absolute bottom-4 sm:bottom-5 z-40 flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#090D18]/92 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl text-[#CBD5E1] max-w-[96vw] overflow-x-auto scrollbar-none">
-          {/* PLAY / PAUSE BUTTON */}
+        <div className="absolute bottom-4 sm:bottom-6 z-40 flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#090D18]/92 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl text-[#CBD5E1] max-w-[96vw] overflow-x-auto scrollbar-none pb-[env(safe-area-inset-bottom,0px)]">
+          {/* PLAY / PAUSE */}
           <button
             type="button"
-            onClick={() => {
-              setIsPlaying((prev) => !prev)
-            }}
+            onClick={() => setIsPlaying((prev) => !prev)}
             title={isPlaying ? 'Tạm dừng slideshow (Space)' : 'Bật tự động trình chiếu (Space)'}
             aria-label="Play or Pause Slideshow"
-            className={`p-2 rounded-full font-bold transition-all cursor-pointer flex items-center justify-center ${
+            className={`p-2 rounded-full font-bold transition-all cursor-pointer flex items-center justify-center shrink-0 ${
               isPlaying
                 ? 'bg-cyan-500 text-slate-950 shadow-[0_0_12px_rgba(0,212,255,0.6)]'
                 : 'hover:bg-[#142338] hover:text-[#00D4FF]'
@@ -831,12 +832,12 @@ export function ArtViewer({
             {isPlaying ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
           </button>
 
-          {/* SLIDESHOW SPEED SELECTOR (4s / 6s / 10s) */}
-          <div className="relative">
+          {/* SLIDESHOW SPEED MENU */}
+          <div className="relative shrink-0">
             <button
               type="button"
               onClick={() => setShowSpeedSelector((prev) => !prev)}
-              title="Chọn khoảng cách chuyển ảnh"
+              title="Chọn tốc độ chuyển ảnh"
               className="px-2 py-1 text-[11px] font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer flex items-center gap-1"
             >
               <Clock className="w-3 h-3 text-cyan-400" />
@@ -866,16 +867,16 @@ export function ArtViewer({
 
           <div className="h-4 w-px bg-[#1E2D42] mx-0.5 shrink-0" />
 
-          {/* RANDOM SHOWCASE TOGGLE */}
+          {/* RANDOM SHOWCASE BUTTON */}
           <button
             type="button"
             onClick={() => {
               pauseSlideshow()
               setIsRandomMode((prev) => !prev)
             }}
-            title={isRandomMode ? 'Tắt chế độ Random (R)' : 'Bật Random Showcase 12 Pilot (R)'}
+            title={isRandomMode ? 'Tắt Random (R)' : 'Bật Random Showcase 12 Pilot (R)'}
             aria-label="Toggle Random Showcase"
-            className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
               isRandomMode
                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
                 : 'hover:bg-[#142338] hover:text-[#00D4FF]'
@@ -885,7 +886,7 @@ export function ArtViewer({
             <span className="hidden sm:inline">Random</span>
           </button>
 
-          {/* PILOT FILTER PANEL BUTTON */}
+          {/* PILOT SELECTOR PANEL TOGGLE */}
           <button
             type="button"
             onClick={() => {
@@ -894,7 +895,7 @@ export function ArtViewer({
             }}
             title="Chọn danh sách phi công trình chiếu"
             aria-label="Chọn phi công trình chiếu"
-            className={`p-1.5 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+            className={`p-1.5 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${
               showPilotDrawer
                 ? 'bg-cyan-950 border border-cyan-500 text-cyan-300'
                 : 'hover:bg-[#142338] hover:text-[#00D4FF]'
@@ -915,7 +916,7 @@ export function ArtViewer({
             }}
             title="Thu nhỏ"
             aria-label="Thu nhỏ"
-            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -929,7 +930,7 @@ export function ArtViewer({
             }}
             title="Phóng to"
             aria-label="Phóng to"
-            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -940,40 +941,42 @@ export function ArtViewer({
             onClick={() => {
               pauseSlideshow()
               transformRef.current?.resetTransform()
+              setCurrentScale(1)
             }}
             title="Vừa khung hình (Fit)"
             aria-label="Vừa khung hình"
-            className="px-2 py-1 text-xs font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer"
+            className="px-2 py-1 text-xs font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
           >
             Fit
           </button>
 
-          {/* 100% ACTUAL SIZE */}
+          {/* 100% SIZE */}
           <button
             type="button"
             onClick={handleSetActualSize}
             title="Kích thước thực 100%"
             aria-label="Kích thước thực"
-            className="px-2 py-1 text-xs font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer hidden sm:block"
+            className="px-2 py-1 text-xs font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer hidden sm:block shrink-0"
           >
             100%
           </button>
 
-          {/* SCALE DISPLAY */}
-          <span className="text-[11px] font-mono font-bold text-[#00D4FF] px-1.5 min-w-[38px] text-center hidden sm:inline-block">
+          {/* SCALE BADGE */}
+          <span className="text-[11px] font-mono font-bold text-[#00D4FF] px-1.5 min-w-[38px] text-center hidden sm:inline-block shrink-0">
             {Math.round(currentScale * 100)}%
           </span>
 
-          {/* RESET VIEW */}
+          {/* RESET */}
           <button
             type="button"
             onClick={() => {
               pauseSlideshow()
               transformRef.current?.resetTransform()
+              setCurrentScale(1)
             }}
             title="Đặt lại góc nhìn (0)"
             aria-label="Đặt lại góc nhìn"
-            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
@@ -984,14 +987,14 @@ export function ArtViewer({
           <button
             type="button"
             onClick={() => setIsCleanView(true)}
-            title="Xem ảnh sạch không HUD (H)"
+            title="Ẩn toàn bộ controls (H)"
             aria-label="Ẩn toàn bộ controls"
-            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
           >
             <EyeOff className="w-4 h-4" />
           </button>
 
-          {/* TOGGLE INFO DRAWER */}
+          {/* INFO DRAWER TOGGLE */}
           <button
             type="button"
             onClick={() => {
@@ -1000,7 +1003,7 @@ export function ArtViewer({
             }}
             title={showInfoDrawer ? 'Ẩn thông tin (I)' : 'Xem thông tin tác phẩm (I)'}
             aria-label="Bật tắt thông tin chi tiết tác phẩm"
-            className={`p-1.5 rounded-full transition-colors cursor-pointer ${
+            className={`p-1.5 rounded-full transition-colors cursor-pointer shrink-0 ${
               showInfoDrawer ? 'bg-[#00D4FF] text-[#070A12]' : 'hover:bg-[#142338] hover:text-[#00D4FF]'
             }`}
           >
@@ -1010,7 +1013,7 @@ export function ArtViewer({
       )}
 
       {/* =================================================================== */}
-      {/* 5. PILOT SELECTION DRAWER (FOR RANDOM SHOWCASE)                     */}
+      {/* 5. VISUAL PILOT SELECTOR DRAWER (With Portrait & Gender Icons)     */}
       {/* =================================================================== */}
       {showPilotDrawer && (
         <>
@@ -1022,7 +1025,7 @@ export function ArtViewer({
           <div
             role="region"
             aria-label="Bộ chọn phi công trình chiếu ngẫu nhiên"
-            className="fixed z-50 rounded-2xl bg-[#090D18]/98 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 inset-x-3 bottom-3 max-h-[80vh] sm:inset-x-auto sm:left-4 sm:top-16 sm:bottom-20 sm:w-84 sm:max-h-none"
+            className="fixed z-50 rounded-2xl bg-[#090D18]/98 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl p-4 sm:p-5 flex flex-col justify-between transition-all duration-200 inset-x-3 bottom-3 max-h-[78vh] sm:inset-x-auto sm:left-4 sm:top-16 sm:bottom-20 sm:w-96 sm:max-h-none overflow-hidden"
           >
             <div className="space-y-3 flex-1 overflow-y-auto pr-1 scrollbar-thin">
               {/* Header */}
@@ -1030,7 +1033,7 @@ export function ArtViewer({
                 <div className="flex items-center gap-2">
                   <Shuffle className="w-4 h-4 text-amber-400" />
                   <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-                    CHỌN PILOT TRÌNH CHIẾU
+                    CHỌN PHI CÔNG TRÌNH CHIẾU
                   </span>
                 </div>
                 <button
@@ -1042,8 +1045,8 @@ export function ArtViewer({
                 </button>
               </div>
 
-              {/* Action Buttons: Select All / Deselect All */}
-              <div className="flex items-center justify-between text-[11px] font-mono pt-1">
+              {/* Quick Actions */}
+              <div className="flex items-center justify-between text-[11px] font-mono pt-0.5">
                 <button
                   type="button"
                   onClick={handleSelectAllPilots}
@@ -1053,7 +1056,7 @@ export function ArtViewer({
                 </button>
                 <button
                   type="button"
-                  onClick={handleDeselectAllPilots}
+                  onClick={handleSelectOnlyCurrent}
                   className="px-2.5 py-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 cursor-pointer"
                 >
                   Chỉ Pilot Hiện Tại
@@ -1061,16 +1064,17 @@ export function ArtViewer({
               </div>
 
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                Hệ thống sẽ trộn ngẫu nhiên toàn bộ tranh từ các phi công được đánh dấu và đảm bảo không lặp lại hai ảnh liên tiếp.
+                Tất cả tranh từ các phi công được chọn sẽ được đưa vào Shuffle Bag ngẫu nhiên, đảm bảo không bao giờ trùng hai ảnh liên tiếp.
               </p>
 
-              {/* 12 Pilot Checkbox List */}
+              {/* 12 Pilot List with Portrait & Metadata */}
               <div className="space-y-1.5 pt-1">
-                {allPilots.map((p) => {
+                {canonicalPilots.map((p) => {
                   const isChecked = selectedPilotIds.includes(p.id)
                   const pArts = pilotsArtworksMap[p.id]
                   const count = pArts ? pArts.length : null
                   const isLoadingThis = loadingPilotIds[p.id]
+                  const portraitUrl = resolveImageUrl(p.portraitPath)
 
                   return (
                     <button
@@ -1084,22 +1088,55 @@ export function ArtViewer({
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
+                        {/* Checkbox Icon */}
                         {isChecked ? (
                           <CheckSquare className="w-4 h-4 text-cyan-400 shrink-0" />
                         ) : (
                           <Square className="w-4 h-4 text-slate-500 shrink-0" />
                         )}
-                        <div className="truncate">
-                          <div className="text-xs font-mono font-bold">{p.name}</div>
+
+                        {/* Pilot Portrait Thumbnail */}
+                        <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={portraitUrl}
+                            alt={p.name}
+                            className="w-full h-full object-cover object-top"
+                            onError={(e) => {
+                              // Fallback on missing image
+                              ;(e.currentTarget as HTMLElement).style.display = 'none'
+                            }}
+                          />
+                        </div>
+
+                        {/* Identity & Gender */}
+                        <div className="truncate min-w-0">
+                          <div className="text-xs font-mono font-bold flex items-center gap-1.5">
+                            <span className="truncate">{p.name}</span>
+                            <span
+                              className={`text-[9px] px-1 py-0.2 rounded font-bold ${
+                                p.gender === 'Female'
+                                  ? 'bg-pink-950/80 text-pink-300 border border-pink-800/60'
+                                  : 'bg-blue-950/80 text-blue-300 border border-blue-800/60'
+                              }`}
+                            >
+                              {p.gender === 'Female' ? '♀ Nữ' : '♂ Nam'}
+                            </span>
+                          </div>
                           <div className="text-[10px] text-slate-500 truncate">{p.callsign}</div>
                         </div>
                       </div>
 
-                      <div className="shrink-0 text-[10px] font-mono">
+                      {/* Count Badge / Spinner */}
+                      <div className="shrink-0 text-[10px] font-mono ml-2">
                         {isLoadingThis ? (
                           <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
                         ) : count !== null ? (
-                          <span className={`px-2 py-0.5 rounded ${count > 0 ? 'bg-cyan-950 text-cyan-300' : 'bg-slate-900 text-slate-500'}`}>
+                          <span
+                            className={`px-2 py-0.5 rounded font-bold ${
+                              count > 0 ? 'bg-cyan-950 text-cyan-300' : 'bg-slate-900 text-slate-500'
+                            }`}
+                          >
                             {count} ảnh
                           </span>
                         ) : (
@@ -1112,6 +1149,7 @@ export function ArtViewer({
               </div>
             </div>
 
+            {/* Footer */}
             <div className="pt-3 border-t border-[#1E2D42] text-[11px] font-mono text-cyan-400 text-center shrink-0">
               Tổng số tranh sẵn sàng: {randomPool.length} tác phẩm
             </div>
@@ -1120,7 +1158,7 @@ export function ArtViewer({
       )}
 
       {/* =================================================================== */}
-      {/* 6. RESPONSIVE METADATA INFO PANEL (Desktop Side / Mobile Sheet)      */}
+      {/* 6. AUTHORITATIVE METADATA INFO DRAWER (Desktop Side / Mobile Sheet)  */}
       {/* =================================================================== */}
       {showInfoDrawer && (
         <>
@@ -1132,7 +1170,7 @@ export function ArtViewer({
           <div
             role="region"
             aria-label="Thông tin chi tiết tác phẩm"
-            className="fixed z-50 rounded-2xl bg-[#090D18]/98 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl p-5 flex flex-col justify-between transition-all duration-200 inset-x-0 bottom-0 max-h-[75vh] rounded-b-none border-b-0 animate-in slide-in-from-bottom sm:inset-x-auto sm:right-4 sm:top-16 sm:bottom-20 sm:w-88 sm:max-h-none sm:rounded-2xl sm:border-b sm:animate-in sm:slide-in-from-right"
+            className="fixed z-50 rounded-2xl bg-[#090D18]/98 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl p-5 flex flex-col justify-between transition-all duration-200 inset-x-0 bottom-0 max-h-[75vh] rounded-b-none border-b-0 animate-in slide-in-from-bottom sm:inset-x-auto sm:right-4 sm:top-16 sm:bottom-20 sm:w-88 sm:max-h-none sm:rounded-2xl sm:border-b sm:animate-in sm:slide-in-from-right overflow-hidden"
           >
             {/* Mobile Drag Handle */}
             <div className="sm:hidden w-12 h-1 bg-[#24354D] rounded-full mx-auto mb-3 shrink-0" />
@@ -1156,40 +1194,58 @@ export function ArtViewer({
                 </button>
               </div>
 
-              {/* Pilot Info Card */}
-              <div className="p-3 rounded-xl bg-[#0E1626] border border-[#20324B] space-y-1">
-                <div className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest font-bold">
-                  PHI CÔNG LIÊN KẾT
+              {/* Pilot Card */}
+              <div className="p-3.5 rounded-xl bg-[#0E1626] border border-[#20324B] flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg overflow-hidden bg-slate-900 border border-slate-700 shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={resolveImageUrl(currentArtwork.pilotPortraitPath)}
+                    alt={currentArtwork.pilotName}
+                    className="w-full h-full object-cover object-top"
+                    onError={(e) => {
+                      ;(e.currentTarget as HTMLElement).style.display = 'none'
+                    }}
+                  />
                 </div>
-                <div className="text-sm font-bold text-white font-mono">{effectivePilotName}</div>
-                {effectiveCallsign && (
-                  <div className="text-xs font-mono text-slate-400">Biệt hiệu: {effectiveCallsign}</div>
-                )}
+                <div className="min-w-0">
+                  <div className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest font-bold">
+                    PHI CÔNG LIÊN KẾT
+                  </div>
+                  <div className="text-sm font-bold text-white font-mono truncate">
+                    {currentArtwork.pilotName}
+                  </div>
+                  {currentArtwork.pilotCallsign && (
+                    <div className="text-xs font-mono text-slate-400 truncate">
+                      Biệt hiệu: {currentArtwork.pilotCallsign}
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Full Artwork Title */}
+              {/* Artwork Title */}
               <div>
                 <h3 className="text-base sm:text-lg font-bold text-white font-mono leading-snug">
-                  {activeItem.title}
+                  {currentArtwork.title}
                 </h3>
-                {subtitle && <p className="text-xs text-[#00D4FF] font-semibold mt-1">{subtitle}</p>}
               </div>
 
               {/* Category */}
-              {activeItem.category && (
+              {currentArtwork.category && (
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#142338] text-[#00D4FF] border border-[#00D4FF]/30 uppercase">
                   <Layers className="w-3.5 h-3.5 text-[#00D4FF]" />
-                  <span>Phân Loại: {activeItem.category}</span>
+                  <span>Phân Loại: {currentArtwork.category}</span>
                 </div>
               )}
 
-              {/* Full Description from JSON */}
+              {/* Curated Description from Canonical JSON */}
               <div className="space-y-1">
                 <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#94A3B8]">
                   Mô Tả Bối Cảnh Thực Tế:
                 </span>
                 <p className="text-sm text-[#F1F5F9] leading-relaxed">
-                  {activeItem.description || 'Tác phẩm nghệ thuật chuẩn hóa chính thức của Starfront World.'}
+                  {currentArtwork.curatedDescription ||
+                    currentArtwork.description ||
+                    'Tác phẩm nghệ thuật chuẩn hóa chính thức của Starfront World.'}
                 </p>
               </div>
 
@@ -1200,8 +1256,8 @@ export function ArtViewer({
                   <span className="text-white font-bold">
                     {naturalDimensions
                       ? `${naturalDimensions.width} × ${naturalDimensions.height} px`
-                      : activeItem.dimensions
-                      ? `${activeItem.dimensions.width} × ${activeItem.dimensions.height} px`
+                      : currentArtwork.dimensions
+                      ? `${currentArtwork.dimensions.width} × ${currentArtwork.dimensions.height} px`
                       : 'Đang đọc...'}
                   </span>
                 </div>
@@ -1209,7 +1265,7 @@ export function ArtViewer({
                   <span>Trạng thái WebP:</span>
                   <span className="text-[#34D399] font-bold flex items-center gap-1">
                     <Sparkles className="w-3 h-3 text-[#34D399]" />
-                    <span>{activeItem.isAvailableOnDisk ? 'Đã xác thực' : 'Chờ đồng bộ'}</span>
+                    <span>{currentArtwork.isAvailableOnDisk ? 'Đã xác thực' : 'Chờ đồng bộ'}</span>
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-[#A7B6C8]">

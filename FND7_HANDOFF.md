@@ -138,6 +138,25 @@ Khi bắt đầu lượt tiếp theo, kỹ sư / AI Studio sẽ triển khai **P
   * Kiểm tra 12 Pilot canonical endpoints: 100% hợp lệ, không có lỗi 404.
   * Typecheck `tsc --noEmit`: 0 lỗi. Build `compile_applet`: Succeeded.
 
+---
+
+### 9. KHẮC PHỤC TRIỆT ĐỂ IMAGE-METADATA IDENTITY & PRELOAD STABILITY
+- **Phân tích nguyên nhân gốc (Root Cause Analysis)**:
+  * *Nguyên nhân 1 (Path Matching Flaw)*: Trong `pilot-profile-v2.tsx`, hàm `handleOpenArtViewer` và `currentArtworkIndex` trước đây sử dụng so sánh lỏng `a.path.endsWith(filename)`. Khi hai phi công khác nhau cùng có filename trùng (ví dụ `outfit-005.webp`), tác phẩm của Fortuna bị ghi đè nhầm bằng metadata và index của Valentine.
+  * *Nguyên nhân 2 (Props Desync)*: Khi chế độ Random Showcase chọn sang ảnh của phi công B (ví dụ Fortuna), hàm callback cập nhật artwork nhưng component cha vẫn truyền `currentPilotId={activeCharacter.id}` (vẫn là Valentine), dẫn đến `useEffect` nội bộ của ArtViewer ghi đè lại tên và callsign của Valentine lên ảnh của Fortuna.
+  * *Nguyên nhân 3 (Race Condition & Flicker)*: Cập nhật metadata ngay khi nhấn nút Next trước khi ảnh mới tải xong làm người xem thấy "Metadata của ảnh mới nhưng hình của ảnh cũ" hoặc bị kẹt màn hình đen khi mạng chậm.
+- **Giải pháp triệt để đã triển khai**:
+  * **Khóa định danh toàn cầu (`identityKey`)**: Chuẩn hóa cấu trúc `ShowcaseArtwork` với khóa định danh bất biến `${pilotId}::${assetId}::${path}`. Mọi component và React key đều đọc từ `currentArtwork` duy nhất này.
+  * **Atomic Image Transition**: Không bao giờ đổi metadata trước khi ảnh mục tiêu đã nạp và decode thành công. Giữ nguyên 100% ảnh cũ và metadata cũ trên màn hình trong lúc nạp ảnh mới ở nền; khi ảnh mới decode xong thì cập nhật đồng thời cả hình và metadata cùng một thời điểm.
+  * **Preload Queue có giới hạn Concurrency**: Tự động tải trước 2–3 ảnh tiếp theo trong Shuffle Bag với timeout 7s, chống treo loading vô hạn và tự động skip ảnh lỗi.
+  * **Visual Pilot Selector**: Mỗi Pilot trong danh sách 12 phi công hiển thị kèm ảnh chân dung Portrait thực tế từ CDN R3, tên, callsign, icon giới tính (♀ Nữ / ♂ Nam), số lượng tranh khả dụng và spinner nạp. Checkbox không bị khóa.
+  * **Fullscreen Safe Area**: Toolbar ở đáy hỗ trợ `pb-[env(safe-area-inset-bottom,0px)]` không bị cắt mép dưới trên mobile/desktop. Popup và drawer có scrollbar độc lập không bị tràn viền.
+- **Kết quả kiểm thử chuyên sâu**:
+  * Bộ test `tests/verify-gallery-random-identity.ts`: **35/35 lần chuyển ảnh Random đều KHỚP 100% với JSON gốc** (Valentine + Fortuna + Lyra + Selena với 121 tác phẩm).
+  * Kiểm tra đụng độ filename: 100% các filename trùng nhau đều được phân tách biệt lập hoàn toàn nhờ `identityKey`.
+  * `tsc --noEmit` PASS (0 lỗi), `compile_applet` PASS (Build succeeded).
+
+
 
 
 

@@ -1,0 +1,141 @@
+{
+  "schemaVersion": "starfront-curated-metadata-v1",
+  "pilotId": "nova",
+  "pilotName": "Nova Ray",
+  "callsign": "Solar Flare",
+  "totalArtworks": 22,
+  "artworksMeta": {
+    "nova-activity.webp": {
+      "title": "Hoạt động",
+      "subtitle": "Nova",
+      "category": "activity",
+      "order": 1
+    },
+    "nova-closeup.webp": {
+      "title": "Cận cảnh",
+      "subtitle": "Nova",
+      "category": "closeup",
+      "order": 2
+    },
+    "nova-combat.webp": {
+      "title": "Chiến đấu",
+      "subtitle": "Nova",
+      "category": "combat",
+      "order": 3
+    },
+    "nova-fullbody.webp": {
+      "title": "Tranh toàn thân",
+      "subtitle": "Nova",
+      "category": "fullbody",
+      "order": 4
+    },
+    "nova-outfit-001.webp": {
+      "title": "Outfit 001",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 5
+    },
+    "nova-outfit-002.webp": {
+      "title": "Outfit 002",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 6
+    },
+    "nova-outfit-003.webp": {
+      "title": "Outfit 003",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 7
+    },
+    "nova-outfit-004.webp": {
+      "title": "Outfit 004",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 8
+    },
+    "nova-outfit-005.webp": {
+      "title": "Outfit 005",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 9
+    },
+    "nova-outfit-006.webp": {
+      "title": "Outfit 006",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 10
+    },
+    "nova-outfit-007.webp": {
+      "title": "Outfit 007",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 11
+    },
+    "nova-outfit-008.webp": {
+      "title": "Outfit 008",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 12
+    },
+    "nova-outfit-009.webp": {
+      "title": "Outfit 009",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 13
+    },
+    "nova-outfit-010.webp": {
+      "title": "Outfit 010",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 14
+    },
+    "nova-outfit-011.webp": {
+      "title": "Outfit 011",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 15
+    },
+    "nova-outfit-012.webp": {
+      "title": "Outfit 012",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 16
+    },
+    "nova-outfit-013.webp": {
+      "title": "Outfit 013",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 17
+    },
+    "nova-outfit-014.webp": {
+      "title": "Outfit 014",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 18
+    },
+    "nova-outfit-015.webp": {
+      "title": "Outfit 015",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 19
+    },
+    "nova-outfit-016.webp": {
+      "title": "Outfit 016",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 20
+    },
+    "nova-outfit-017.webp": {
+      "title": "Outfit 017",
+      "subtitle": "Nova",
+      "category": "outfit",
+      "order": 21
+    },
+    "nova-portrait.webp": {
+      "title": "Chân dung",
+      "subtitle": "Nova",
+      "category": "portrait",
+      "order": 22
+    }
+  }
+}

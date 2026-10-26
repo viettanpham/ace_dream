@@ -1,0 +1,147 @@
+{
+  "schemaVersion": "starfront-curated-metadata-v1",
+  "pilotId": "rhea",
+  "pilotName": "Rhea Silva",
+  "callsign": "Vanguard Aegis",
+  "totalArtworks": 23,
+  "artworksMeta": {
+    "rhea-activity.webp": {
+      "title": "Hoạt động",
+      "subtitle": "Rhea",
+      "category": "activity",
+      "order": 1
+    },
+    "rhea-closeup.webp": {
+      "title": "Cận cảnh",
+      "subtitle": "Rhea",
+      "category": "closeup",
+      "order": 2
+    },
+    "rhea-combat.webp": {
+      "title": "Chiến đấu",
+      "subtitle": "Rhea",
+      "category": "combat",
+      "order": 3
+    },
+    "rhea-command-perspective.webp": {
+      "title": "Command Perspective",
+      "subtitle": "Rhea",
+      "category": "command-perspective",
+      "order": 4
+    },
+    "rhea-command-reach.webp": {
+      "title": "Command Reach",
+      "subtitle": "Rhea",
+      "category": "command-reach",
+      "order": 5
+    },
+    "rhea-fullbody.webp": {
+      "title": "Tranh toàn thân",
+      "subtitle": "Rhea",
+      "category": "fullbody",
+      "order": 6
+    },
+    "rhea-outfit-001.webp": {
+      "title": "Outfit 001",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 7
+    },
+    "rhea-outfit-002.webp": {
+      "title": "Outfit 002",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 8
+    },
+    "rhea-outfit-003.webp": {
+      "title": "Outfit 003",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 9
+    },
+    "rhea-outfit-004.webp": {
+      "title": "Outfit 004",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 10
+    },
+    "rhea-outfit-005.webp": {
+      "title": "Outfit 005",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 11
+    },
+    "rhea-outfit-006.webp": {
+      "title": "Outfit 006",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 12
+    },
+    "rhea-outfit-007.webp": {
+      "title": "Outfit 007",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 13
+    },
+    "rhea-outfit-008.webp": {
+      "title": "Outfit 008",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 14
+    },
+    "rhea-outfit-009.webp": {
+      "title": "Outfit 009",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 15
+    },
+    "rhea-outfit-010.webp": {
+      "title": "Outfit 010",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 16
+    },
+    "rhea-outfit-011.webp": {
+      "title": "Outfit 011",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 17
+    },
+    "rhea-outfit-012.webp": {
+      "title": "Outfit 012",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 18
+    },
+    "rhea-outfit-013.webp": {
+      "title": "Outfit 013",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 19
+    },
+    "rhea-outfit-014.webp": {
+      "title": "Outfit 014",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 20
+    },
+    "rhea-outfit-015.webp": {
+      "title": "Outfit 015",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 21
+    },
+    "rhea-outfit-016.webp": {
+      "title": "Outfit 016",
+      "subtitle": "Rhea",
+      "category": "outfit",
+      "order": 22
+    },
+    "rhea-portrait-command.webp": {
+      "title": "Portrait Command",
+      "subtitle": "Rhea",
+      "category": "portrait-command",
+      "order": 23
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "starfront-gallery-v3",
+  "pilotId": "eric",
+  "pilotName": "Eric Vance",
+  "totalAssets": 2,
+  "approvedAssets": 2,
+  "coreMapping": {
+    "portrait": "eric-portrait.webp",
+    "fullbody": "eric-fullbody.webp"
+  },
+  "artworks": [
+    {
+      "assetId": "eric-portrait",
+      "filename": "eric-portrait.webp",
+      "path": "images/eric-portrait.webp",
+      "role": "core_portrait",
+      "category": "core",
+      "title": "Chân Dung Đại Diện — Eric Vance",
+      "description": "Ảnh chân dung chuẩn canonical V1 của Eric Vance.",
+      "width": 1024,
+      "height": 1024,
+      "aspectRatio": "1:1",
+      "byteSize": 120000,
+      "sha256": "CANONICAL_V1_CORE_ASSET",
+      "status": "approved"
+    },
+    {
+      "assetId": "eric-fullbody",
+      "filename": "eric-fullbody.webp",
+      "path": "images/eric-fullbody.webp",
+      "role": "core_fullbody",
+      "category": "core",
+      "title": "Tranh Toàn Thân — Eric Vance",
+      "description": "Bản vẽ toàn thân trang phục chiến đấu chuẩn của Eric Vance.",
+      "width": 1024,
+      "height": 1536,
+      "aspectRatio": "2:3",
+      "byteSize": 240000,
+      "sha256": "CANONICAL_V1_CORE_ASSET",
+      "status": "approved"
+    }
+  ]
+}

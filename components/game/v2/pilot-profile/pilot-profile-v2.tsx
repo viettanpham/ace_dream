@@ -156,10 +156,13 @@ export function PilotProfileV2({
               isAvailableOnDisk: true,
               status: 'verified_webp' as const,
               description:
+                a.curatedDescription ||
                 a.description ||
                 `Định dạng WebP tối ưu (${a.width || 1122}×${a.height || 1402}px)`,
               dimensions:
                 a.width && a.height ? { width: a.width, height: a.height } : undefined,
+              sha256: a.sha256,
+              byteSize: a.byteSize,
             };
           });
 

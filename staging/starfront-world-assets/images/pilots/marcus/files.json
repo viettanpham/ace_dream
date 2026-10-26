@@ -1,0 +1,34 @@
+{
+  "files": [
+    {
+      "assetId": "marcus-portrait",
+      "filename": "marcus-portrait.webp",
+      "path": "images/marcus-portrait.webp",
+      "role": "core_portrait",
+      "category": "core",
+      "title": "Chân Dung Đại Diện — Marcus Ray",
+      "description": "Ảnh chân dung chuẩn canonical V1 của Marcus Ray.",
+      "width": 1024,
+      "height": 1024,
+      "aspectRatio": "1:1",
+      "byteSize": 120000,
+      "sha256": "CANONICAL_V1_CORE_ASSET",
+      "status": "approved"
+    },
+    {
+      "assetId": "marcus-fullbody",
+      "filename": "marcus-fullbody.webp",
+      "path": "images/marcus-fullbody.webp",
+      "role": "core_fullbody",
+      "category": "core",
+      "title": "Tranh Toàn Thân — Marcus Ray",
+      "description": "Bản vẽ toàn thân trang phục chiến đấu chuẩn của Marcus Ray.",
+      "width": 1024,
+      "height": 1536,
+      "aspectRatio": "2:3",
+      "byteSize": 240000,
+      "sha256": "CANONICAL_V1_CORE_ASSET",
+      "status": "approved"
+    }
+  ]
+}

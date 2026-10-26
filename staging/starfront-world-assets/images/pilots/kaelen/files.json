@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "pilotId": "kaelen",
+  "total": 20,
+  "files": [
+    {
+      "assetId": "kaelen-activity",
+      "filename": "kaelen-activity.webp",
+      "role": "activity",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 336238,
+      "sha256": "3afbf0a254249c4a9140160d7afe0666bfeae8b892ef99f7b83e5fa3002e55a5"
+    },
+    {
+      "assetId": "kaelen-closeup",
+      "filename": "kaelen-closeup.webp",
+      "role": "closeup",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 383688,
+      "sha256": "d6e89c2adfac2f0e39b4bb70571a4da83076525ba840bc5f6fbbcc2739513e55"
+    },
+    {
+      "assetId": "kaelen-combat",
+      "filename": "kaelen-combat.webp",
+      "role": "combat",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 331262,
+      "sha256": "a9846a41d4a343705dcecb3bc6e533189532ac56790b83860d25c538df2d746f"
+    },
+    {
+      "assetId": "kaelen-fullbody",
+      "filename": "kaelen-fullbody.webp",
+      "role": "fullbody",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 375136,
+      "sha256": "5cf0932c63d3a4fc46897d5700887f1df9c46ca09ad69822c3e9f1e9b9afdde2"
+    },
+    {
+      "assetId": "kaelen-outfit-001",
+      "filename": "kaelen-outfit-001.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 413926,
+      "sha256": "e42514e69e060e2f40486a3c4806162c5a0cc27147033d12064e0602b5cf8aa0"
+    },
+    {
+      "assetId": "kaelen-outfit-002",
+      "filename": "kaelen-outfit-002.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 332534,
+      "sha256": "368bf1862bfb3238853ec86175ac843212825c60935f631f2089c347ff89a1d7"
+    },
+    {
+      "assetId": "kaelen-outfit-003",
+      "filename": "kaelen-outfit-003.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 426996,
+      "sha256": "acd6c3ad6686fe3da19366f18a3692fe4456a3c877150ebf4d9484e177cc00ba"
+    },
+    {
+      "assetId": "kaelen-outfit-004",
+      "filename": "kaelen-outfit-004.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 379080,
+      "sha256": "c068ba9df7d4159201f52d4f9c4ec2933a2ed78448972b3305bffc8294d6a69e"
+    },
+    {
+      "assetId": "kaelen-outfit-005",
+      "filename": "kaelen-outfit-005.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 311334,
+      "sha256": "0c1761ec9cf850efa1a044308ab5cf5fc8a5a04d3f664bae070cbf03f3ccebd7"
+    },
+    {
+      "assetId": "kaelen-outfit-006",
+      "filename": "kaelen-outfit-006.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 546960,
+      "sha256": "edb6795c08d03e1fcb7f712f4f0ecd10f19706ba33843405f79f0d38eea8dee6"
+    },
+    {
+      "assetId": "kaelen-outfit-007",
+      "filename": "kaelen-outfit-007.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 495538,
+      "sha256": "e2b71f5e1f72a33f66945ba4c096b2518370094f672bf1d64064a90b78944d30"
+    },
+    {
+      "assetId": "kaelen-outfit-008",
+      "filename": "kaelen-outfit-008.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 450268,
+      "sha256": "9ce2fe96a10b4a64f6f854b1812801c00cbb41723d200eafa956116a5f92ba66"
+    },
+    {
+      "assetId": "kaelen-outfit-009",
+      "filename": "kaelen-outfit-009.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 373114,
+      "sha256": "4b875ab83fa485fa552e390b9106e03edae96cd420ef50309564ba9f54f14989"
+    },
+    {
+      "assetId": "kaelen-outfit-010",
+      "filename": "kaelen-outfit-010.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 447786,
+      "sha256": "593a8f934e397cee69b4235b249c4e8c57372e922539702a3aa5a2e9e04b7bfb"
+    },
+    {
+      "assetId": "kaelen-outfit-011",
+      "filename": "kaelen-outfit-011.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 451478,
+      "sha256": "fbdfb1c1c8139861b85c7c4cb7f50275c96c12086b2bc09958a224ec9c673cd5"
+    },
+    {
+      "assetId": "kaelen-outfit-012",
+      "filename": "kaelen-outfit-012.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 436972,
+      "sha256": "4ff3f08feb92f96b07cddde33a9e2fcd80cad5e0a56abe220402e469f8c88a2f"
+    },
+    {
+      "assetId": "kaelen-outfit-013",
+      "filename": "kaelen-outfit-013.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 411994,
+      "sha256": "fc28964be3e87a306dab8a2f35a1fc9af21435588e044efdc17a1a11d8bfa57a"
+    },
+    {
+      "assetId": "kaelen-outfit-014",
+      "filename": "kaelen-outfit-014.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 476064,
+      "sha256": "35d9f22892bbbe43feac2b2a626ea6879bcdd2073cc110e145b27e44859aab58"
+    },
+    {
+      "assetId": "kaelen-outfit-015",
+      "filename": "kaelen-outfit-015.webp",
+      "role": "outfit",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 335962,
+      "sha256": "15f3cf6bb3848c9dd3af01922c0acbd83277f3768f207c527be1d92a0cceb0a2"
+    },
+    {
+      "assetId": "kaelen-portrait",
+      "filename": "kaelen-portrait.webp",
+      "role": "portrait",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 324438,
+      "sha256": "4c97d5df8576706e7fe3ae0f5b281d1470a62598e7e821b4f79175432c936821"
+    }
+  ]
+}

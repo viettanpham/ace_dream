@@ -20,7 +20,7 @@ export interface ImageResolverConfig {
  * Subdirectory: starfront-world-assets
  */
 export const DEFAULT_JSDELIVR_CDN_BASE =
-  'https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r2/starfront-world-assets';
+  'https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v3.0-assets-r3/starfront-world-assets';
 
 /**
  * Returns current configuration from environment variables or safe defaults.
@@ -120,7 +120,7 @@ const CANONICAL_R1_PATHS = new Set([
   'images/valentine-uniform-001.webp',
 ]);
 
-// 9 canonical V2 pilots migrated to hierarchical paths on v2.0-assets-r2:
+// 12 canonical V2 pilots migrated to hierarchical paths on v3.0-assets-r3:
 const V2_MIGRATED_PILOT_IDS = [
   'valentine',
   'fortuna',
@@ -131,6 +131,9 @@ const V2_MIGRATED_PILOT_IDS = [
   'lyra',
   'selena',
   'alviss',
+  'eric',
+  'marcus',
+  'victor',
 ];
 
   // Normalize path without leading slash

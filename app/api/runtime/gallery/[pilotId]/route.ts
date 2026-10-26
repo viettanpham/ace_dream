@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { universalContentResolver } from '@/lib/game/v2/universal-content-resolver';
 import { fetchPilotManifest } from '@/lib/game/assets/hierarchical-manifest';
 import { assetConfigStore } from '@/lib/game/assets/runtime-asset-config';
 
@@ -9,16 +10,31 @@ interface RouteParams {
 }
 
 /**
- * Dynamic Gallery API per Pilot
+ * Dynamic Gallery API per Pilot (CP3-A Universal CDN R3)
  * GET /api/runtime/gallery/[pilotId]
- * Fetches dynamic artwork list from files.json + gallery.json on the active CDN release (e.g. v2.0-assets-r2)
+ * Fetches dynamic artwork list from R3 gallery.json + files.json
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     const { pilotId } = await params;
     const cleanPilotId = pilotId.toLowerCase().trim();
-    const config = assetConfigStore.getConfigSync();
 
+    // 1. Try Universal Content Resolver (R3 first, deduplicated with curated descriptions)
+    const galleryR3 = await universalContentResolver.getPilotGallery(cleanPilotId);
+    if (galleryR3 && galleryR3.artworks.length > 0) {
+      return NextResponse.json({
+        success: true,
+        pilotId: cleanPilotId,
+        pilotName: galleryR3.pilotName,
+        totalAssets: galleryR3.totalAssets,
+        approvedAssetsCount: galleryR3.approvedAssetsCount,
+        artworks: galleryR3.artworks,
+        coreMapping: galleryR3.coreMapping,
+      });
+    }
+
+    // 2. Fallback to hierarchical manifest engine
+    const config = assetConfigStore.getConfigSync();
     const pilotManifest = await fetchPilotManifest(config.cdnBaseUrl, config.activeVersion, cleanPilotId);
     if (!pilotManifest) {
       return NextResponse.json(

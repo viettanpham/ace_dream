@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "releaseTag": "v3.0-assets-r3",
+  "totalPilots": 12,
+  "pilots": [
+    "alviss",
+    "eric",
+    "marcus",
+    "victor",
+    "kaelen",
+    "lyra",
+    "selena",
+    "valentine",
+    "fortuna",
+    "aria",
+    "rhea",
+    "nova"
+  ]
+}

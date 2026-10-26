@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "pilotId": "selena",
+  "total": 20,
+  "files": [
+    {
+      "assetId": "selena-activity",
+      "filename": "selena-activity.webp",
+      "role": "activity",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 541102,
+      "sha256": "eeac7e859eb56920b7bb0506d802a135c828d726d67231584dd30e351e3d574d"
+    },
+    {
+      "assetId": "selena-closeup",
+      "filename": "selena-closeup.webp",
+      "role": "closeup",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 366824,
+      "sha256": "55041edab0cdbe6a9cf5aed112b02b1913b600a5c8fe3c0530bc5fd4a9f516e6"
+    },
+    {
+      "assetId": "selena-combat",
+      "filename": "selena-combat.webp",
+      "role": "combat",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 557970,
+      "sha256": "1e37e8e04ac1bc5321e8862932ed9c08e91065ecab25f4517f67df7f2528613d"
+    },
+    {
+      "assetId": "selena-fullbody",
+      "filename": "selena-fullbody.webp",
+      "role": "fullbody",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 464262,
+      "sha256": "1dabda2d381870b0e5bea444ba2cbcacf90052d852499eb883237dc40f190740"
+    },
+    {
+      "assetId": "selena-outfit-001",
+      "filename": "selena-outfit-001.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 555472,
+      "sha256": "d56a6cb2a5af947e6d4413ebc413bcd7e43569997cbc54451deccc716cc8cfdb"
+    },
+    {
+      "assetId": "selena-outfit-002",
+      "filename": "selena-outfit-002.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 498736,
+      "sha256": "d187aa1065994202dc11cf6630bdbc580a8bc7e99ca63653434788e608654f82"
+    },
+    {
+      "assetId": "selena-outfit-003",
+      "filename": "selena-outfit-003.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 499392,
+      "sha256": "ffb2a7cf326a60ccf0cb0d313307a754f3235d6262c386bf749c9acc4e1eb9a6"
+    },
+    {
+      "assetId": "selena-outfit-004",
+      "filename": "selena-outfit-004.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 449464,
+      "sha256": "c7df5f34c8f97a2009abc013018da3b6e9088b9240cc0af4ce8399543f8e06e1"
+    },
+    {
+      "assetId": "selena-outfit-005",
+      "filename": "selena-outfit-005.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 357308,
+      "sha256": "f43134a67e68f567ee2e7c45a8a6675cbb675a925a032d789dcc66de369ae31a"
+    },
+    {
+      "assetId": "selena-outfit-006",
+      "filename": "selena-outfit-006.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 474460,
+      "sha256": "1b939a8c03d56e71b887d55a1718de45c88b7da1e501183634066c6bdccfac26"
+    },
+    {
+      "assetId": "selena-outfit-007",
+      "filename": "selena-outfit-007.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 444962,
+      "sha256": "20c2116c839506dadef169de0871e2ba223ac98e0884a02160edc5ab04071a97"
+    },
+    {
+      "assetId": "selena-outfit-008",
+      "filename": "selena-outfit-008.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 536632,
+      "sha256": "002eb50bef022892aef2e7dfca6d9cca919c362f1c5f6f185ebbdfd4ca2f0664"
+    },
+    {
+      "assetId": "selena-outfit-009",
+      "filename": "selena-outfit-009.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 494694,
+      "sha256": "4dc39ff0ec144b9d78ec303f6c62acefaee1d80690e7f92b3f11cea46ced90ee"
+    },
+    {
+      "assetId": "selena-outfit-010",
+      "filename": "selena-outfit-010.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 541478,
+      "sha256": "8ef546f0317a7681d97a765e031dcfd050a7585fd2b0d2ac14f38daf05d1f339"
+    },
+    {
+      "assetId": "selena-outfit-011",
+      "filename": "selena-outfit-011.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 557966,
+      "sha256": "b6a0fbc67ddcb97dd9ab566848df7c030bb37300ce29389447a57b58e895bff3"
+    },
+    {
+      "assetId": "selena-outfit-012",
+      "filename": "selena-outfit-012.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 607000,
+      "sha256": "4e5a6beee8a1698ef024132ee9d565a8598106607136db378877f2d543549714"
+    },
+    {
+      "assetId": "selena-outfit-013",
+      "filename": "selena-outfit-013.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 549454,
+      "sha256": "011960c71b8fbf71886211afbdef9ddc9cab9c5a9273b22e1690c125a7cee446"
+    },
+    {
+      "assetId": "selena-outfit-014",
+      "filename": "selena-outfit-014.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 575766,
+      "sha256": "39033b33986d9484b2240e0217def0e69ad89e3abe68444e238fede7a2c23dfc"
+    },
+    {
+      "assetId": "selena-outfit-015",
+      "filename": "selena-outfit-015.webp",
+      "role": "outfit",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 493694,
+      "sha256": "189ebf1a5080811302d9c29f8a15021f01d46ae6b4efbdec447cdf81ba2e467f"
+    },
+    {
+      "assetId": "selena-portrait",
+      "filename": "selena-portrait.webp",
+      "role": "portrait",
+      "width": 1122,
+      "height": 1402,
+      "bytes": 405704,
+      "sha256": "bf8d2c13cc6607cfd2e0847d69872b20fec820bd03cd0de4ce895871db8437fb"
+    }
+  ]
+}

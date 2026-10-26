@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "starfront-curated-metadata-v1",
+  "pilotId": "alviss",
+  "pilotName": "Alviss Sterling",
+  "callsign": "Black Gale",
+  "totalArtworks": 10,
+  "artworksMeta": {
+    "alviss-activity.webp": {
+      "title": "Hoạt động",
+      "subtitle": "Alviss",
+      "category": "activity",
+      "order": 1
+    },
+    "alviss-closeup.webp": {
+      "title": "Cận cảnh",
+      "subtitle": "Alviss",
+      "category": "closeup",
+      "order": 2
+    },
+    "alviss-combat.webp": {
+      "title": "Chiến đấu",
+      "subtitle": "Alviss",
+      "category": "combat",
+      "order": 3
+    },
+    "alviss-fullbody.webp": {
+      "title": "Tranh toàn thân",
+      "subtitle": "Alviss",
+      "category": "fullbody",
+      "order": 4
+    },
+    "alviss-outfit-001.webp": {
+      "title": "Outfit 001",
+      "subtitle": "Alviss",
+      "category": "outfit",
+      "order": 5
+    },
+    "alviss-outfit-002.webp": {
+      "title": "Outfit 002",
+      "subtitle": "Alviss",
+      "category": "outfit",
+      "order": 6
+    },
+    "alviss-outfit-003.webp": {
+      "title": "Outfit 003",
+      "subtitle": "Alviss",
+      "category": "outfit",
+      "order": 7
+    },
+    "alviss-outfit-004.webp": {
+      "title": "Outfit 004",
+      "subtitle": "Alviss",
+      "category": "outfit",
+      "order": 8
+    },
+    "alviss-outfit-005.webp": {
+      "title": "Outfit 005",
+      "subtitle": "Alviss",
+      "category": "outfit",
+      "order": 9
+    },
+    "alviss-portrait.webp": {
+      "title": "Chân dung",
+      "subtitle": "Alviss",
+      "category": "portrait",
+      "order": 10
+    }
+  }
+}

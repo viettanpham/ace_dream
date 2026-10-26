@@ -1,20 +1,20 @@
 {
   "$schema": "https://starfront.internal/schemas/asset-config-v1.json",
   "schemaVersion": 1,
-  "revision": 2,
+  "revision": 3,
   "provider": "jsdelivr",
   "repository": "viettanpham/starfront-assets",
   "assetRoot": "starfront-world-assets",
-  "activeVersion": "v2.0-assets-r2",
-  "cdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r2/starfront-world-assets",
-  "previousVersion": "v2.0-assets-r1",
-  "previousCdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r1/starfront-world-assets",
-  "updatedAt": "2026-10-24T00:00:00.000Z",
+  "activeVersion": "v3.0-assets-r3",
+  "cdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v3.0-assets-r3/starfront-world-assets",
+  "previousVersion": "v2.0-assets-r2",
+  "previousCdnBaseUrl": "https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v2.0-assets-r2/starfront-world-assets",
+  "updatedAt": "2026-10-25T00:00:00.000Z",
   "updatedBy": "system_bootstrap",
-  "comment": "Active verified production release r2 (200 WebP assets across 9 canonical pilots)",
+  "comment": "Active verified production release r3 (247 artworks, 12 pilot dynamic story & gallery catalogs)",
   "manifestMetadata": {
-    "totalAssets": 200,
-    "manifestSha256": "49414e7a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e",
-    "validatedAt": "2026-10-24T00:00:00.000Z"
+    "totalAssets": 247,
+    "manifestSha256": "c6c119e8fa800e838e5e9fb72b0b9a3c71d303c7a8f5b4e8240683ced6db8642",
+    "validatedAt": "2026-10-25T00:00:00.000Z"
   }
 }

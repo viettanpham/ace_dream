@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "starfront-curated-metadata-v1",
+  "pilotId": "lyra",
+  "pilotName": "Lyra Song",
+  "callsign": "Starling Swift",
+  "totalArtworks": 20,
+  "artworksMeta": {
+    "lyra-activity.webp": {
+      "title": "Hoạt động",
+      "subtitle": "Lyra",
+      "category": "activity",
+      "order": 1
+    },
+    "lyra-casual.webp": {
+      "title": "Trang phục đời thường",
+      "subtitle": "Lyra",
+      "category": "casual",
+      "order": 2
+    },
+    "lyra-closeup.webp": {
+      "title": "Cận cảnh",
+      "subtitle": "Lyra",
+      "category": "closeup",
+      "order": 3
+    },
+    "lyra-combat.webp": {
+      "title": "Chiến đấu",
+      "subtitle": "Lyra",
+      "category": "combat",
+      "order": 4
+    },
+    "lyra-fullbody.webp": {
+      "title": "Tranh toàn thân",
+      "subtitle": "Lyra",
+      "category": "fullbody",
+      "order": 5
+    },
+    "lyra-outfit-001.webp": {
+      "title": "Outfit 001",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 6
+    },
+    "lyra-outfit-002.webp": {
+      "title": "Outfit 002",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 7
+    },
+    "lyra-outfit-003.webp": {
+      "title": "Outfit 003",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 8
+    },
+    "lyra-outfit-004.webp": {
+      "title": "Outfit 004",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 9
+    },
+    "lyra-outfit-005.webp": {
+      "title": "Outfit 005",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 10
+    },
+    "lyra-outfit-006.webp": {
+      "title": "Outfit 006",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 11
+    },
+    "lyra-outfit-007.webp": {
+      "title": "Outfit 007",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 12
+    },
+    "lyra-outfit-008.webp": {
+      "title": "Outfit 008",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 13
+    },
+    "lyra-outfit-009.webp": {
+      "title": "Outfit 009",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 14
+    },
+    "lyra-outfit-010.webp": {
+      "title": "Outfit 010",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 15
+    },
+    "lyra-outfit-011.webp": {
+      "title": "Outfit 011",
+      "subtitle": "Lyra",
+      "category": "outfit",
+      "order": 16
+    },
+    "lyra-pilot-001.webp": {
+      "title": "Pilot 001",
+      "subtitle": "Lyra",
+      "category": "pilot",
+      "order": 17
+    },
+    "lyra-portrait.webp": {
+      "title": "Chân dung",
+      "subtitle": "Lyra",
+      "category": "portrait",
+      "order": 18
+    },
+    "lyra-uniform-001.webp": {
+      "title": "Đồng phục 001",
+      "subtitle": "Lyra",
+      "category": "uniform",
+      "order": 19
+    },
+    "lyra-uniform-002.webp": {
+      "title": "Đồng phục 002",
+      "subtitle": "Lyra",
+      "category": "uniform",
+      "order": 20
+    }
+  }
+}

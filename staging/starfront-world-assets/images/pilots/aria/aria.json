@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "starfront-curated-metadata-v1",
+  "pilotId": "aria",
+  "pilotName": "Aria Sterling",
+  "callsign": "Blue Horizon",
+  "totalArtworks": 20,
+  "artworksMeta": {
+    "aria-activity.webp": {
+      "title": "Hoạt động",
+      "subtitle": "Aria",
+      "category": "activity",
+      "order": 1
+    },
+    "aria-closeup.webp": {
+      "title": "Cận cảnh",
+      "subtitle": "Aria",
+      "category": "closeup",
+      "order": 2
+    },
+    "aria-combat.webp": {
+      "title": "Chiến đấu",
+      "subtitle": "Aria",
+      "category": "combat",
+      "order": 3
+    },
+    "aria-fullbody.webp": {
+      "title": "Tranh toàn thân",
+      "subtitle": "Aria",
+      "category": "fullbody",
+      "order": 4
+    },
+    "aria-outfit-001.webp": {
+      "title": "Outfit 001",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 5
+    },
+    "aria-outfit-002.webp": {
+      "title": "Outfit 002",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 6
+    },
+    "aria-outfit-003.webp": {
+      "title": "Outfit 003",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 7
+    },
+    "aria-outfit-004.webp": {
+      "title": "Outfit 004",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 8
+    },
+    "aria-outfit-005.webp": {
+      "title": "Outfit 005",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 9
+    },
+    "aria-outfit-006.webp": {
+      "title": "Outfit 006",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 10
+    },
+    "aria-outfit-007.webp": {
+      "title": "Outfit 007",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 11
+    },
+    "aria-outfit-008.webp": {
+      "title": "Outfit 008",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 12
+    },
+    "aria-outfit-009.webp": {
+      "title": "Outfit 009",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 13
+    },
+    "aria-outfit-010.webp": {
+      "title": "Outfit 010",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 14
+    },
+    "aria-outfit-011.webp": {
+      "title": "Outfit 011",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 15
+    },
+    "aria-outfit-012.webp": {
+      "title": "Outfit 012",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 16
+    },
+    "aria-outfit-013.webp": {
+      "title": "Outfit 013",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 17
+    },
+    "aria-outfit-014.webp": {
+      "title": "Outfit 014",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 18
+    },
+    "aria-outfit-015.webp": {
+      "title": "Outfit 015",
+      "subtitle": "Aria",
+      "category": "outfit",
+      "order": 19
+    },
+    "aria-portrait.webp": {
+      "title": "Chân dung",
+      "subtitle": "Aria",
+      "category": "portrait",
+      "order": 20
+    }
+  }
+}

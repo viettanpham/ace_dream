@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "pilotId": "alviss",
+  "total": 10,
+  "files": [
+    {
+      "assetId": "alviss-activity",
+      "filename": "alviss-activity.webp",
+      "role": "activity",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 371654,
+      "sha256": "278d388fb65704434f49a3e4327ed3a856e910179e227b1ac16cb309b621db26"
+    },
+    {
+      "assetId": "alviss-closeup",
+      "filename": "alviss-closeup.webp",
+      "role": "closeup",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 423942,
+      "sha256": "56ba6c67e7ed8ec83bdcec7a0354936eede48d02b3a8b1d41e248b19e736d1bc"
+    },
+    {
+      "assetId": "alviss-combat",
+      "filename": "alviss-combat.webp",
+      "role": "combat",
+      "width": 1086,
+      "height": 1448,
+      "bytes": 477698,
+      "sha256": "91c32ad55319df7804329b7ceb9f561788c08b36891d5da4463ea43e8e044c04"
+    },
+    {
+      "assetId": "alviss-fullbody",
+      "filename": "alviss-fullbody.webp",
+      "role": "fullbody",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 360006,
+      "sha256": "17172b9636c1467f448c66c399026c2d46a3eff01c9b53f135aceff782078c69"
+    },
+    {
+      "assetId": "alviss-outfit-001",
+      "filename": "alviss-outfit-001.webp",
+      "role": "outfit",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 325622,
+      "sha256": "038dab55f3fadd214681089cd625e5e00a2911616370f86a2908f71dea35dfb6"
+    },
+    {
+      "assetId": "alviss-outfit-002",
+      "filename": "alviss-outfit-002.webp",
+      "role": "outfit",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 312342,
+      "sha256": "f7fe8b4990bfeb074ffd03daefb06b55f59d5706da7e53783433b920c1d4da63"
+    },
+    {
+      "assetId": "alviss-outfit-003",
+      "filename": "alviss-outfit-003.webp",
+      "role": "outfit",
+      "width": 1536,
+      "height": 1024,
+      "bytes": 359920,
+      "sha256": "deaaac66e6a075fba8c57ccc2e82a1e225aba59a8ae52c7704d793e995d866b6"
+    },
+    {
+      "assetId": "alviss-outfit-004",
+      "filename": "alviss-outfit-004.webp",
+      "role": "outfit",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 408938,
+      "sha256": "78b9b93a0b8e196be48ebb4b7a5772d7c717ba345fc62a9a0b9fabaa741ff460"
+    },
+    {
+      "assetId": "alviss-outfit-005",
+      "filename": "alviss-outfit-005.webp",
+      "role": "outfit",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 344464,
+      "sha256": "26131dd55efe8f9855b9cbe2bc11345a3a5533a25c3e90f4f8b340ad2069ff6f"
+    },
+    {
+      "assetId": "alviss-portrait",
+      "filename": "alviss-portrait.webp",
+      "role": "portrait",
+      "width": 1024,
+      "height": 1536,
+      "bytes": 353090,
+      "sha256": "51ba2cd5206f8c64835339ce79436c3fd82fc28f0f5716d93e26a0583046f21a"
+    }
+  ]
+}

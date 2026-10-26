@@ -48,7 +48,7 @@ export function GalleryTab({ character, onSelectArtwork }: GalleryTabProps) {
               path: `/${item.path}`,
               isAvailableOnDisk: true,
               status: 'verified_webp',
-              description: item.description || `Định dạng WebP tối ưu (${item.width || 1122}×${item.height || 1402}px, ${(Number(item.byteSize || 0) / 1024).toFixed(0)} KB)`,
+              description: item.curatedDescription || item.description || `Định dạng WebP tối ưu (${item.width || 1122}×${item.height || 1402}px, ${(Number(item.byteSize || 0) / 1024).toFixed(0)} KB)`,
               dimensions: item.width && item.height ? { width: item.width, height: item.height } : undefined,
               sha256: item.sha256,
               byteSize: item.byteSize,

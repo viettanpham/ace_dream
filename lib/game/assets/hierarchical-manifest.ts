@@ -317,32 +317,76 @@ export async function fetchPilotManifest(
       }
 
       const filesList = Array.isArray(filesJson.files) ? filesJson.files : [];
-      if (filesList.length > 0) {
-        const galleryArtworksMap = galleryJson?.artworks || {};
-        const coreMapping: Record<string, string> = {};
+      const galleryArtworksList = Array.isArray(galleryJson?.artworks) ? galleryJson.artworks : [];
+      const galleryArtworksMap: Record<string, any> = {};
+      if (galleryArtworksList.length > 0) {
+        for (const gItem of galleryArtworksList) {
+          if (gItem.filename) galleryArtworksMap[gItem.filename] = gItem;
+          if (gItem.assetId) galleryArtworksMap[gItem.assetId] = gItem;
+        }
+      } else if (galleryJson?.artworks && typeof galleryJson.artworks === 'object') {
+        Object.assign(galleryArtworksMap, galleryJson.artworks);
+      }
+
+      if (filesList.length > 0 || galleryArtworksList.length > 0) {
+        const coreMapping: Record<string, string> = { ...(galleryJson?.coreMapping || {}) };
         const artworks: PilotArtworkManifestItem[] = [];
 
-        for (let idx = 0; idx < filesList.length; idx++) {
-          const item = filesList[idx];
-          const filename = item.filename;
-          const role = item.role || 'other';
-          const editMeta = galleryArtworksMap[filename] || {};
+        // If galleryJson already has complete artwork array, prioritize it
+        if (galleryArtworksList.length > 0) {
+          for (const item of galleryArtworksList) {
+            const filename = item.filename || `${item.assetId}.webp`;
+            const role = item.role || 'other';
+            const isCore = role === 'fullbody' || role === 'portrait' || role === 'combat' || role === 'closeup' || role === 'activity';
+            if (isCore && !coreMapping[role]) {
+              coreMapping[role] = filename;
+            }
 
-          const isCore = role === 'fullbody' || role === 'portrait' || role === 'combat' || role === 'closeup' || role === 'activity';
-          if (isCore && !coreMapping[role]) {
-            coreMapping[role] = filename;
+            const category: PilotArtworkManifestItem['category'] =
+              item.category || (isCore ? 'core' : role.startsWith('event') ? 'event' : role.startsWith('story') ? 'story' : 'outfit');
+
+            const title = item.title || formatNeutralArtworkTitle(pId, filename);
+            const description = item.curatedDescription || item.description || undefined;
+
+            artworks.push({
+              assetId: item.assetId || `${pId}-${filename.replace(/\.webp$/i, '')}`,
+              filename,
+              path: item.path || `images/pilots/${pId}/${filename}`,
+              role,
+              category,
+              title,
+              description,
+              sha256: item.sha256,
+              byteSize: item.byteSize,
+              width: item.width,
+              height: item.height,
+              aspectRatio: item.aspectRatio,
+              status: item.status || 'approved',
+              cdnUrl: `${normalizedBase}/${item.path || `images/pilots/${pId}/${filename}`}`,
+            });
           }
+        } else {
+          for (let idx = 0; idx < filesList.length; idx++) {
+            const item = filesList[idx];
+            const filename = item.filename;
+            const role = item.role || 'other';
+            const editMeta = galleryArtworksMap[filename] || {};
 
-          const category: PilotArtworkManifestItem['category'] =
-            editMeta.category || (isCore ? 'core' : role.startsWith('event') ? 'event' : role.startsWith('story') ? 'story' : 'outfit');
+            const isCore = role === 'fullbody' || role === 'portrait' || role === 'combat' || role === 'closeup' || role === 'activity';
+            if (isCore && !coreMapping[role]) {
+              coreMapping[role] = filename;
+            }
 
-          const title = editMeta.title || formatNeutralArtworkTitle(pId, filename);
-          const description = editMeta.description || undefined;
+            const category: PilotArtworkManifestItem['category'] =
+              editMeta.category || (isCore ? 'core' : role.startsWith('event') ? 'event' : role.startsWith('story') ? 'story' : 'outfit');
 
-          artworks.push({
-            assetId: item.assetId || `${pId}-${filename.replace(/\.webp$/i, '')}`,
-            filename,
-            path: `images/pilots/${pId}/${filename}`,
+            const title = editMeta.title || formatNeutralArtworkTitle(pId, filename);
+            const description = editMeta.curatedDescription || editMeta.description || undefined;
+
+            artworks.push({
+              assetId: item.assetId || `${pId}-${filename.replace(/\.webp$/i, '')}`,
+              filename,
+              path: `images/pilots/${pId}/${filename}`,
             role,
             category,
             status: 'approved',
@@ -356,6 +400,7 @@ export async function fetchPilotManifest(
             cdnUrl: `${normalizedBase}/images/pilots/${pId}/${filename}`,
           });
         }
+      }
 
         // Sort artworks: order in gallery.json first, then index
         artworks.sort((a, b) => {

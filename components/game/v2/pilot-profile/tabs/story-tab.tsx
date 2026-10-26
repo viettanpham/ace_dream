@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { CharacterProfileV2 } from '@/lib/game/v2/character-profile-data';
+import React, { useState, useEffect } from 'react';
+import { CharacterProfileV2, StoryChapter } from '@/lib/game/v2/character-profile-data';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/game/v2/ui';
 import {
   BookOpen,
@@ -10,8 +10,8 @@ import {
   Clock,
   Quote,
   Sparkles,
-  Maximize2,
   ExternalLink,
+  Layers,
 } from 'lucide-react';
 
 interface StoryTabProps {
@@ -19,14 +19,29 @@ interface StoryTabProps {
   onOpenReader?: (chapterId: string) => void;
 }
 
+interface DynamicChapterItem {
+  chapterId: string;
+  chapterNumber: number;
+  title: string;
+  summary: string;
+  quote?: string;
+  editorialStatus: string;
+  contentStatus: string;
+  publicationStatus: string;
+  contentAvailable: boolean;
+  isComingSoon: boolean;
+  readingTimeMinutes?: number;
+  wordCount?: number;
+}
+
 export function StoryTab({ character, onOpenReader }: StoryTabProps) {
-  // Default selected chapter is the first approved chapter
-  const [activeChapterId, setActiveChapterId] = useState<string>(
-    character.chapters.length > 0 ? character.chapters[0].id : 'chap-01'
-  );
+  const [chapters, setChapters] = useState<DynamicChapterItem[]>([]);
+  const [loadingManifest, setLoadingManifest] = useState<boolean>(true);
+  const [activeChapterId, setActiveChapterId] = useState<string>('chap-01');
   const [savedProgress, setSavedProgress] = useState<{ chapterId: string; progress: number } | null>(null);
 
-  React.useEffect(() => {
+  // Read saved progress from localStorage
+  useEffect(() => {
     try {
       if (typeof window !== 'undefined' && character.id) {
         const raw = localStorage.getItem(`starfront_reading_progress_${character.id}`);
@@ -42,34 +57,114 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
     }
   }, [character.id]);
 
-  const activeChapter =
-    character.chapters.find((c) => c.id === activeChapterId) || character.chapters[0];
+  // Fetch dynamic chapter catalog from R3 Universal Content Resolver
+  useEffect(() => {
+    let isCancelled = false;
+    setLoadingManifest(true);
 
-  const hasFullProse = Boolean(
-    activeChapter && (activeChapter.id === 'chap-01' || activeChapter.content)
-  );
+    fetch(`/api/runtime/story?pilotId=${character.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isCancelled && data.success && Array.isArray(data.chapters) && data.chapters.length > 0) {
+          const mapped: DynamicChapterItem[] = data.chapters.map((ch: any) => ({
+            chapterId: ch.chapterId || `chap-${String(ch.chapterNumber).padStart(2, '0')}`,
+            chapterNumber: ch.chapterNumber || 1,
+            title: ch.title || `Chương ${String(ch.chapterNumber).padStart(2, '0')}`,
+            summary: ch.summary || 'Hồ sơ cốt truyện đang được xây dựng.',
+            quote: ch.quote,
+            editorialStatus: ch.editorialStatus || 'NOT_STARTED',
+            contentStatus: ch.contentStatus || 'MISSING',
+            publicationStatus: ch.publicationStatus || 'NOT_PUBLISHED',
+            contentAvailable: Boolean(ch.contentAvailable),
+            isComingSoon: ch.isComingSoon !== undefined ? ch.isComingSoon : !ch.contentAvailable,
+            readingTimeMinutes: ch.readingTimeMinutes,
+            wordCount: ch.wordCount,
+          }));
+
+          setChapters(mapped);
+          if (!mapped.some((c) => c.chapterId === activeChapterId)) {
+            setActiveChapterId(mapped[0].chapterId);
+          }
+        } else {
+          // Fallback to static chapters from character data
+          const fallback: DynamicChapterItem[] = character.chapters.map((ch) => ({
+            chapterId: ch.id,
+            chapterNumber: ch.number,
+            title: ch.title,
+            summary: ch.summary,
+            quote: ch.quote,
+            editorialStatus: ch.status,
+            contentStatus: ch.content ? 'FULL_BODY_IMPORTED' : 'MISSING',
+            publicationStatus: ch.status === 'APPROVED' && ch.number === 1 ? 'PUBLISHED' : 'DRAFT',
+            contentAvailable: Boolean(ch.number === 1 && (ch.content || character.id === 'valentine')),
+            isComingSoon: !(ch.number === 1 && (ch.content || character.id === 'valentine')),
+          }));
+          setChapters(fallback);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          // Fallback gracefully on network error
+          const fallback: DynamicChapterItem[] = character.chapters.map((ch) => ({
+            chapterId: ch.id,
+            chapterNumber: ch.number,
+            title: ch.title,
+            summary: ch.summary,
+            quote: ch.quote,
+            editorialStatus: ch.status,
+            contentStatus: ch.content ? 'FULL_BODY_IMPORTED' : 'MISSING',
+            publicationStatus: ch.status === 'APPROVED' && ch.number === 1 ? 'PUBLISHED' : 'DRAFT',
+            contentAvailable: Boolean(ch.number === 1 && (ch.content || character.id === 'valentine')),
+            isComingSoon: !(ch.number === 1 && (ch.content || character.id === 'valentine')),
+          }));
+          setChapters(fallback);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) setLoadingManifest(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [character.id, character.chapters]);
+
+  const activeChapter =
+    chapters.find((c) => c.chapterId === activeChapterId) || chapters[0];
+
+  const isValentineCh01 =
+    character.id === 'valentine' &&
+    (activeChapter?.chapterId === 'chap-01' || activeChapter?.chapterNumber === 1);
+
+  const canReadActiveChapter = activeChapter?.contentAvailable || isValentineCh01;
 
   return (
     <div className="space-y-6">
-      {/* 0. HERO STORY MODE ENTRY CTA (Prominent at top, accessible without deep scrolling) */}
+      {/* 0. HERO STORY MODE ENTRY CTA */}
       <div className="relative rounded-2xl bg-gradient-to-r from-[#071324] via-[#0C1E38] to-[#071324] border border-[#00D4FF]/40 p-4 sm:p-5 shadow-xl shadow-cyan-950/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="space-y-1.5 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/30">
-              IMMERSIVE STORY READER
+              IMMERSIVE STORY READER // CDN R3
             </span>
             <span className="text-[11px] font-mono text-[#CBD5E1]">
-              10 Chương Biên Niên Ký
+              {chapters.length} Chương Biên Niên Ký
             </span>
-            <span className="text-[10px] font-mono text-[#34D399] bg-[#34D399]/10 px-2 py-0.5 rounded border border-[#34D399]/30">
-              Chương 01: Toàn Văn Sẵn Sàng
-            </span>
+            {character.id === 'valentine' ? (
+              <span className="text-[10px] font-mono text-[#34D399] bg-[#34D399]/10 px-2 py-0.5 rounded border border-[#34D399]/30">
+                Chương 01: Toàn Văn Sẵn Sàng
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono text-[#FBBF24] bg-[#FBBF24]/10 px-2 py-0.5 rounded border border-[#FBBF24]/30">
+                Chương 01–07: Đang Phát Triển
+              </span>
+            )}
           </div>
           <h3 className="text-base sm:text-lg font-bold text-white tracking-wide flex items-center gap-2">
             <span>Biên Niên Sử Không Gian // {character.classCharacterName}</span>
           </h3>
           <p className="text-xs text-[#94A3B8] leading-relaxed max-w-xl">
-            Trải nghiệm toàn văn chương truyện với giao diện đọc 3 cột, đồng bộ phân cảnh bối cảnh và bộ sưu tập minh họa WebP HD.
+            Toàn bộ danh mục chương truyện từ CDN R3. Trải nghiệm chế độ đọc 3 cột với bối cảnh phân cảnh và minh họa WebP HD.
           </p>
           {savedProgress && savedProgress.progress > 0 && (
             <div className="flex items-center gap-2 text-xs font-mono text-[#34D399] pt-0.5">
@@ -79,10 +174,10 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
           )}
         </div>
 
-        {onOpenReader && (
+        {onOpenReader && canReadActiveChapter && (
           <button
             type="button"
-            onClick={() => onOpenReader(savedProgress?.chapterId || activeChapterId || 'chap-01')}
+            onClick={() => onOpenReader(savedProgress?.chapterId || activeChapter?.chapterId || 'chap-01')}
             className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0099CC] hover:from-[#38BDF8] hover:to-[#00D4FF] text-[#070A12] font-mono font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 active:scale-95 cursor-pointer shrink-0"
           >
             <BookOpen className="w-5 h-5 text-[#070A12]" />
@@ -116,42 +211,39 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#26384D] pb-2 gap-1">
           <h3 className="text-sm font-bold uppercase tracking-wider text-[#F1F5F9] flex items-center gap-2">
-            <span>Biên Niên Ký (10 Chương Lộ Trình)</span>
+            <span>Danh Mục Chương (R3 Story Manifest)</span>
           </h3>
           <span className="text-xs font-mono text-[#06B6D4]">
-            Chương 01–04: APPROVED · 05–06: PROVISIONAL · 07–10: HOLD
+            {loadingManifest ? 'Đang nạp manifest CDN...' : `${chapters.length} Chương Đã Khai Báo`}
           </span>
         </div>
 
-        {/* Chapter Selection Horizontal Rail on Mobile / List on Desktop */}
+        {/* Chapter Selection Horizontal Rail */}
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-          {character.chapters.map((chap) => {
-            const isActive = chap.id === activeChapterId;
-            const isHold = chap.status === 'HOLD';
-            const isProvisional = chap.status === 'PROVISIONAL';
+          {chapters.map((chap) => {
+            const isActive = chap.chapterId === activeChapterId;
+            const isAvailable = chap.contentAvailable || (character.id === 'valentine' && chap.chapterNumber === 1);
 
             return (
               <button
-                key={chap.id}
+                key={chap.chapterId}
                 type="button"
-                onClick={() => setActiveChapterId(chap.id)}
+                onClick={() => setActiveChapterId(chap.chapterId)}
                 className={`min-h-[44px] px-3.5 py-2 rounded-xl text-left font-mono transition-all shrink-0 flex items-center gap-2 border text-xs sm:text-sm cursor-pointer select-none ${
                   isActive
                     ? 'bg-[#142338] border-[#06B6D4] text-[#F1F5F9] shadow-md shadow-[#06B6D4]/10'
-                    : isHold
-                    ? 'bg-[#070A12]/60 border-[#26384D]/40 text-[#A7B6C8]/60 hover:text-[#A7B6C8] hover:border-[#26384D]'
-                    : 'bg-[#0F172A] border-[#26384D] text-[#A7B6C8] hover:text-[#F1F5F9] hover:border-[#3B526D]'
+                    : isAvailable
+                    ? 'bg-[#0F172A] border-[#26384D] text-[#A7B6C8] hover:text-[#F1F5F9] hover:border-[#3B526D]'
+                    : 'bg-[#070A12]/60 border-[#26384D]/40 text-[#A7B6C8]/60 hover:text-[#A7B6C8] hover:border-[#26384D]'
                 }`}
               >
-                {isHold ? (
-                  <Lock className="w-3.5 h-3.5 text-[#F87171] shrink-0" />
-                ) : isProvisional ? (
-                  <Clock className="w-3.5 h-3.5 text-[#FBBF24] shrink-0" />
-                ) : (
+                {isAvailable ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
+                ) : (
+                  <Clock className="w-3.5 h-3.5 text-[#FBBF24] shrink-0" />
                 )}
                 <span className="font-bold">
-                  {chap.number < 10 ? `0${chap.number}` : chap.number}
+                  {chap.chapterNumber < 10 ? `0${chap.chapterNumber}` : chap.chapterNumber}
                 </span>
                 <span className="truncate max-w-[120px] sm:max-w-[160px] font-sans font-medium">
                   {chap.title}
@@ -161,14 +253,14 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
           })}
         </div>
 
-        {/* Active Chapter Reader Card */}
+        {/* Active Chapter Card */}
         {activeChapter && (
           <Card variant="panel" className="border-[#26384D] bg-[#0F172A]/90 overflow-hidden">
             <CardHeader bordered className="p-4 sm:p-5 bg-[#142338]/40">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="px-2.5 py-1 rounded-lg bg-[#070A12] border border-[#26384D] text-xs font-mono font-bold text-[#06B6D4]">
-                    CHƯƠNG {activeChapter.number < 10 ? `0${activeChapter.number}` : activeChapter.number}
+                    CHƯƠNG {activeChapter.chapterNumber < 10 ? `0${activeChapter.chapterNumber}` : activeChapter.chapterNumber}
                   </span>
                   <h4 className="text-base sm:text-lg font-bold text-[#F1F5F9]">
                     {activeChapter.title}
@@ -176,23 +268,15 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Status Badge */}
-                  {activeChapter.status === 'APPROVED' && (
+                  {canReadActiveChapter ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      ĐÃ PHÊ DUYỆT (APPROVED)
+                      ĐÃ XUẤT BẢN // PUBLISHED
                     </span>
-                  )}
-                  {activeChapter.status === 'PROVISIONAL' && (
+                  ) : (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#FBBF24]/15 text-[#FBBF24] border border-[#FBBF24]/30">
                       <Clock className="w-3.5 h-3.5" />
-                      TẠM THỜI (PROVISIONAL)
-                    </span>
-                  )}
-                  {activeChapter.status === 'HOLD' && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#F87171]/15 text-[#F87171] border border-[#F87171]/30">
-                      <Lock className="w-3.5 h-3.5" />
-                      NIÊM PHONG (HOLD)
+                      ĐANG PHÁT TRIỂN // COMING SOON
                     </span>
                   )}
                 </div>
@@ -200,36 +284,9 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
             </CardHeader>
 
             <CardContent className="p-4 sm:p-6 sm:py-7">
-              {/* If chapter is HOLD */}
-              {activeChapter.status === 'HOLD' ? (
-                <div className="py-12 text-center space-y-4">
-                  <div className="w-14 h-14 mx-auto rounded-2xl bg-[#142338] border border-[#26384D] flex items-center justify-center text-[#F87171]">
-                    <Lock className="w-7 h-7" />
-                  </div>
-                  <div className="space-y-1">
-                    <h5 className="text-base font-bold text-[#F1F5F9]">
-                      Hồ Sơ Cốt Truyện Đang Được Niêm Phong
-                    </h5>
-                    <p className="text-xs sm:text-sm text-[#A7B6C8] max-w-md mx-auto leading-relaxed">
-                      Chương {activeChapter.number} thuộc giai đoạn phát triển sau (HOLD). Nội dung chưa được giải mã công khai nhằm đảm bảo bí mật chiến dịch Starfront.
-                    </p>
-                    {onOpenReader && (
-                      <div className="pt-3">
-                        <button
-                          type="button"
-                          onClick={() => onOpenReader(activeChapter.id)}
-                          className="px-4 py-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-500 hover:bg-cyan-950/40 text-cyan-300 font-mono text-xs uppercase tracking-wider transition-all inline-flex items-center gap-2 cursor-pointer"
-                        >
-                          <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>XEM TRƯỚC BIÊN TẬP // REVIEW MODE</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
+              {canReadActiveChapter ? (
                 <div className="space-y-5">
-                  {/* HERO IMMERSIVE READER CTA BANNER */}
+                  {/* Hero Reader CTA Banner */}
                   {onOpenReader && (
                     <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/80 via-[#10243E] to-slate-900 border border-cyan-500/50 shadow-lg shadow-cyan-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                       <div className="space-y-1">
@@ -246,11 +303,11 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
 
                       <button
                         type="button"
-                        onClick={() => onOpenReader(activeChapter.id)}
+                        onClick={() => onOpenReader(activeChapter.chapterId)}
                         className="px-4 py-2.5 rounded-lg bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider hover:bg-cyan-400 hover:shadow-cyan-500/30 shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                       >
                         <BookOpen className="w-4 h-4" />
-                        <span>MỞ IMMERSIVE READER</span>
+                        <span>MỞ CHẾ ĐỘ ĐỌC TRUYỆN</span>
                       </button>
                     </div>
                   )}
@@ -271,38 +328,35 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                     </div>
                   )}
 
-                  {/* Prose Content Preview */}
-                  {activeChapter.content ? (
-                    <div className="space-y-4 pt-2">
-                      <div className="story-reader max-w-prose space-y-4 text-[15px] sm:text-[16px] text-[#E2E8F0] leading-[1.8] font-serif">
-                        {activeChapter.content
-                          .split('\n\n')
-                          .slice(0, 3)
-                          .map((paragraph, pIdx) => (
-                            <p key={pIdx}>{paragraph}</p>
-                          ))}
-                      </div>
-
-                      {onOpenReader && (
-                        <div className="pt-2">
-                          <button
-                            type="button"
-                            onClick={() => onOpenReader(activeChapter.id)}
-                            className="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-400 hover:text-cyan-300 underline underline-offset-4"
-                          >
-                            <span>Xem tiếp toàn bộ diễn biến trong Immersive Reader</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
+                  {/* Quick reading stats */}
+                  <div className="flex items-center gap-4 text-xs font-mono text-slate-400 pt-1">
+                    <span>Thời gian đọc: ~{activeChapter.readingTimeMinutes || 6} phút</span>
+                    <span>·</span>
+                    <span>Dung lượng: ~{activeChapter.wordCount || 780} từ</span>
+                    <span>·</span>
+                    <span>3 Phân cảnh minh họa WebP</span>
+                  </div>
+                </div>
+              ) : (
+                /* COMING SOON / ĐANG PHÁT TRIỂN STATE */
+                <div className="py-10 text-center space-y-4">
+                  <div className="w-14 h-14 mx-auto rounded-2xl bg-[#142338] border border-[#26384D] flex items-center justify-center text-[#FBBF24]">
+                    <Clock className="w-7 h-7" />
+                  </div>
+                  <div className="space-y-2 max-w-lg mx-auto">
+                    <h5 className="text-base font-bold text-[#F1F5F9]">
+                      Chương {activeChapter.chapterNumber}: {activeChapter.title}
+                    </h5>
+                    <div className="inline-block px-3 py-1 rounded-full text-xs font-mono font-semibold bg-amber-950/40 border border-amber-800/60 text-amber-300">
+                      Đang phát triển / Coming Soon
                     </div>
-                  ) : (
-                    <div className="py-6 text-center space-y-2 border border-dashed border-[#26384D] rounded-xl p-4">
-                      <p className="text-xs sm:text-sm text-[#A7B6C8]">
-                        Đoạn văn xuôi chi tiết cho chương này đang được biên tập theo tiến độ duyệt nội dung.
-                      </p>
-                    </div>
-                  )}
+                    <p className="text-xs sm:text-sm text-[#A7B6C8] leading-relaxed pt-1">
+                      {activeChapter.summary}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Hồ sơ biên niên sử không gian của phi công {character.classCharacterName} cho chương này đang được đội ngũ biên tập hoàn thiện và sẽ xuất bản qua các bản cập nhật cốt truyện tiếp theo của Starfront World.
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>

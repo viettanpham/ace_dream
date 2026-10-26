@@ -231,6 +231,7 @@ export interface StoryBlock {
   speakerCallsign?: string;
   level?: 1 | 2 | 3;
   sceneId?: string;
+  anchorId?: string;
   sceneTitle?: string;
   caption?: string;
   artworks?: UniversalSceneAnchorArtworkRef[];

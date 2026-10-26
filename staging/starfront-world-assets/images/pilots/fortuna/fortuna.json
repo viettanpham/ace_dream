@@ -1,0 +1,189 @@
+{
+  "schemaVersion": "starfront-curated-metadata-v1",
+  "pilotId": "fortuna",
+  "pilotName": "Fortuna",
+  "callsign": "Lady Luck",
+  "totalArtworks": 30,
+  "artworksMeta": {
+    "fortuna-activity.webp": {
+      "title": "Hoạt động",
+      "subtitle": "Fortuna",
+      "category": "activity",
+      "order": 1
+    },
+    "fortuna-closeup.webp": {
+      "title": "Cận cảnh",
+      "subtitle": "Fortuna",
+      "category": "closeup",
+      "order": 2
+    },
+    "fortuna-combat.webp": {
+      "title": "Chiến đấu",
+      "subtitle": "Fortuna",
+      "category": "combat",
+      "order": 3
+    },
+    "fortuna-fullbody.webp": {
+      "title": "Tranh toàn thân",
+      "subtitle": "Fortuna",
+      "category": "fullbody",
+      "order": 4
+    },
+    "fortuna-outfit-001.webp": {
+      "title": "Outfit 001",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 5
+    },
+    "fortuna-outfit-002.webp": {
+      "title": "Outfit 002",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 6
+    },
+    "fortuna-outfit-003.webp": {
+      "title": "Outfit 003",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 7
+    },
+    "fortuna-outfit-004.webp": {
+      "title": "Outfit 004",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 8
+    },
+    "fortuna-outfit-005.webp": {
+      "title": "Outfit 005",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 9
+    },
+    "fortuna-outfit-006.webp": {
+      "title": "Outfit 006",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 10
+    },
+    "fortuna-outfit-007.webp": {
+      "title": "Outfit 007",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 11
+    },
+    "fortuna-outfit-008.webp": {
+      "title": "Outfit 008",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 12
+    },
+    "fortuna-outfit-009.webp": {
+      "title": "Outfit 009",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 13
+    },
+    "fortuna-outfit-010.webp": {
+      "title": "Outfit 010",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 14
+    },
+    "fortuna-outfit-011.webp": {
+      "title": "Outfit 011",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 15
+    },
+    "fortuna-outfit-012.webp": {
+      "title": "Outfit 012",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 16
+    },
+    "fortuna-outfit-013.webp": {
+      "title": "Outfit 013",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 17
+    },
+    "fortuna-outfit-014.webp": {
+      "title": "Outfit 014",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 18
+    },
+    "fortuna-outfit-015.webp": {
+      "title": "Outfit 015",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 19
+    },
+    "fortuna-outfit-016.webp": {
+      "title": "Outfit 016",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 20
+    },
+    "fortuna-outfit-017.webp": {
+      "title": "Outfit 017",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 21
+    },
+    "fortuna-outfit-018.webp": {
+      "title": "Outfit 018",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 22
+    },
+    "fortuna-outfit-019.webp": {
+      "title": "Outfit 019",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 23
+    },
+    "fortuna-outfit-020.webp": {
+      "title": "Outfit 020",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 24
+    },
+    "fortuna-outfit-021.webp": {
+      "title": "Outfit 021",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 25
+    },
+    "fortuna-outfit-022.webp": {
+      "title": "Outfit 022",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 26
+    },
+    "fortuna-outfit-023.webp": {
+      "title": "Outfit 023",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 27
+    },
+    "fortuna-outfit-024.webp": {
+      "title": "Outfit 024",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 28
+    },
+    "fortuna-outfit-025.webp": {
+      "title": "Outfit 025",
+      "subtitle": "Fortuna",
+      "category": "outfit",
+      "order": 29
+    },
+    "fortuna-portrait.webp": {
+      "title": "Chân dung",
+      "subtitle": "Fortuna",
+      "category": "portrait",
+      "order": 30
+    }
+  }
+}

@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "starfront-curated-metadata-v1",
+  "pilotId": "kaelen",
+  "pilotName": "Kaelen Cross",
+  "callsign": "Shadow Fang",
+  "totalArtworks": 20,
+  "artworksMeta": {
+    "kaelen-activity.webp": {
+      "title": "Hoạt động",
+      "subtitle": "Kaelen",
+      "category": "activity",
+      "order": 1
+    },
+    "kaelen-closeup.webp": {
+      "title": "Cận cảnh",
+      "subtitle": "Kaelen",
+      "category": "closeup",
+      "order": 2
+    },
+    "kaelen-combat.webp": {
+      "title": "Chiến đấu",
+      "subtitle": "Kaelen",
+      "category": "combat",
+      "order": 3
+    },
+    "kaelen-fullbody.webp": {
+      "title": "Tranh toàn thân",
+      "subtitle": "Kaelen",
+      "category": "fullbody",
+      "order": 4
+    },
+    "kaelen-outfit-001.webp": {
+      "title": "Outfit 001",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 5
+    },
+    "kaelen-outfit-002.webp": {
+      "title": "Outfit 002",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 6
+    },
+    "kaelen-outfit-003.webp": {
+      "title": "Outfit 003",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 7
+    },
+    "kaelen-outfit-004.webp": {
+      "title": "Outfit 004",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 8
+    },
+    "kaelen-outfit-005.webp": {
+      "title": "Outfit 005",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 9
+    },
+    "kaelen-outfit-006.webp": {
+      "title": "Outfit 006",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 10
+    },
+    "kaelen-outfit-007.webp": {
+      "title": "Outfit 007",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 11
+    },
+    "kaelen-outfit-008.webp": {
+      "title": "Outfit 008",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 12
+    },
+    "kaelen-outfit-009.webp": {
+      "title": "Outfit 009",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 13
+    },
+    "kaelen-outfit-010.webp": {
+      "title": "Outfit 010",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 14
+    },
+    "kaelen-outfit-011.webp": {
+      "title": "Outfit 011",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 15
+    },
+    "kaelen-outfit-012.webp": {
+      "title": "Outfit 012",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 16
+    },
+    "kaelen-outfit-013.webp": {
+      "title": "Outfit 013",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 17
+    },
+    "kaelen-outfit-014.webp": {
+      "title": "Outfit 014",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 18
+    },
+    "kaelen-outfit-015.webp": {
+      "title": "Outfit 015",
+      "subtitle": "Kaelen",
+      "category": "outfit",
+      "order": 19
+    },
+    "kaelen-portrait.webp": {
+      "title": "Chân dung",
+      "subtitle": "Kaelen",
+      "category": "portrait",
+      "order": 20
+    }
+  }
+}

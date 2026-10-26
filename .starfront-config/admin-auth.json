@@ -3,10 +3,10 @@
   "accounts": {
     "admin": {
       "username": "admin",
-      "salt": "b07f2ffcdece93ca997d6bdd38bd5e73",
-      "hash": "4b8e1add7955222efaf82d7d8d43d5614191331e19de0e5cb2203187344f1a8f37584953671694706dfbba4b491d12c9bd65e6040be3f448626182cdd71f5811",
+      "salt": "11c658a0710496dae0af075f33acbe20",
+      "hash": "c4cf46a99383ac507f1d1a2f83502f6f8dba9f23aeb94ee95e5e887bf36ab100b5dcedd366ef5e7c9c9185cb9a50c1f7c0b540a9584fb13824dc2101f82cb250",
       "createdAt": "2026-10-23T16:33:45.573Z",
-      "updatedAt": "2026-10-24T10:41:05.782Z"
+      "updatedAt": "2026-10-26T08:13:53.943Z"
     },
     "admin123": {
       "username": "admin123",
@@ -24,5 +24,5 @@
       "updatedAt": "2026-10-24T15:54:27.668Z"
     }
   },
-  "updatedAt": "2026-10-24T15:54:27.669Z"
+  "updatedAt": "2026-10-26T08:13:53.943Z"
 }

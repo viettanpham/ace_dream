@@ -175,6 +175,7 @@ export function CharacterContentManager({
         const token = sessionStorage.getItem('starfront_admin_session_token');
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
+          headers['x-admin-session-token'] = token;
         }
       }
       if (includeCsrf && csrfToken) {
@@ -193,7 +194,10 @@ export function CharacterContentManager({
       let headers: Record<string, string> = {};
       if (typeof window !== 'undefined') {
         const token = sessionStorage.getItem('starfront_admin_session_token');
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+          headers['x-admin-session-token'] = token;
+        }
       }
 
       const res = await fetch('/api/admin/auth/me', { headers });

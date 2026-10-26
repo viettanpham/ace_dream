@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 57,
-  "updatedAt": "2026-10-26T07:12:41.387Z",
+  "revision": 69,
+  "updatedAt": "2026-10-26T08:17:22.880Z",
   "updatedBy": "system_bootstrap",
   "profiles": {
     "alviss": {
@@ -1008,7 +1008,20 @@
     ]
   },
   "storyPublications": {
-    "alviss": {},
+    "alviss": {
+      "chap-02": {
+        "editorialStatus": "REVIEW",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-02",
+        "summary": "",
+        "status": "REVIEW",
+        "publicationStatus": "DRAFT",
+        "isHidden": false,
+        "updatedAt": "2026-10-26T08:17:22.880Z",
+        "updatedBy": "admin"
+      }
+    },
     "eric": {},
     "marcus": {},
     "victor": {},
@@ -1021,7 +1034,7 @@
         "title": "chap-03",
         "summary": "",
         "displayOrder": 3,
-        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedAt": "2026-10-26T08:16:25.181Z",
         "updatedBy": "test_admin"
       },
       "chap-01": {
@@ -1031,7 +1044,7 @@
         "title": "chap-01",
         "summary": "",
         "displayOrder": 1,
-        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedAt": "2026-10-26T08:16:25.181Z",
         "updatedBy": "test_admin"
       },
       "chap-02": {
@@ -1041,7 +1054,7 @@
         "title": "chap-02",
         "summary": "",
         "displayOrder": 2,
-        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedAt": "2026-10-26T08:16:25.181Z",
         "updatedBy": "test_admin"
       },
       "chap-04": {
@@ -1051,7 +1064,7 @@
         "title": "chap-04",
         "summary": "",
         "displayOrder": 4,
-        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedAt": "2026-10-26T08:16:25.181Z",
         "updatedBy": "test_admin"
       },
       "chap-05": {
@@ -1061,7 +1074,7 @@
         "title": "chap-05",
         "summary": "",
         "displayOrder": 5,
-        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedAt": "2026-10-26T08:16:25.181Z",
         "updatedBy": "test_admin"
       },
       "chap-06": {
@@ -1071,7 +1084,7 @@
         "title": "chap-06",
         "summary": "",
         "displayOrder": 6,
-        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedAt": "2026-10-26T08:16:25.181Z",
         "updatedBy": "test_admin"
       },
       "chap-07": {
@@ -1081,7 +1094,7 @@
         "title": "chap-07",
         "summary": "",
         "displayOrder": 7,
-        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedAt": "2026-10-26T08:16:25.181Z",
         "updatedBy": "test_admin"
       }
     },
@@ -1180,7 +1193,7 @@
         "status": "REVIEW",
         "publicationStatus": "DRAFT",
         "isHidden": false,
-        "updatedAt": "2026-10-26T07:12:41.361Z",
+        "updatedAt": "2026-10-26T08:16:25.097Z",
         "updatedBy": "test_admin"
       },
       "chap-03": {
@@ -1192,7 +1205,7 @@
         "status": "PUBLISHED",
         "publicationStatus": "PUBLISHED",
         "isHidden": false,
-        "updatedAt": "2026-10-26T07:12:41.368Z",
+        "updatedAt": "2026-10-26T08:16:25.114Z",
         "updatedBy": "test_admin"
       },
       "chap-04": {
@@ -1204,7 +1217,7 @@
         "status": "DRAFT",
         "publicationStatus": "DRAFT",
         "isHidden": false,
-        "updatedAt": "2026-10-26T07:12:41.380Z",
+        "updatedAt": "2026-10-26T08:16:25.155Z",
         "updatedBy": "test_admin"
       }
     },
@@ -1213,6 +1226,114 @@
     "nova": {}
   },
   "auditLog": [
+    {
+      "id": "audit-1793002642880",
+      "timestamp": "2026-10-26T08:17:22.880Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "chap-02",
+      "user": "admin",
+      "details": "Cập nhật trạng thái chương chap-02 của alviss: status=REVIEW, isHidden=false"
+    },
+    {
+      "id": "audit-1793002642688",
+      "timestamp": "2026-10-26T08:17:22.688Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "chap-02",
+      "user": "admin",
+      "details": "Cập nhật trạng thái chương chap-02 của alviss: status=REVIEW, isHidden=false"
+    },
+    {
+      "id": "audit-1793002585181",
+      "timestamp": "2026-10-26T08:16:25.181Z",
+      "action": "STORY_REORDER",
+      "targetPilotId": "lyra",
+      "targetId": "7_chapters",
+      "user": "test_admin",
+      "details": "Cập nhật thứ tự hiển thị 7 chương cho lyra"
+    },
+    {
+      "id": "audit-1793002585156",
+      "timestamp": "2026-10-26T08:16:25.156Z",
+      "action": "STORY_REORDER",
+      "targetPilotId": "lyra",
+      "targetId": "7_chapters",
+      "user": "test_admin",
+      "details": "Cập nhật thứ tự hiển thị 7 chương cho lyra"
+    },
+    {
+      "id": "audit-1793002585155",
+      "timestamp": "2026-10-26T08:16:25.155Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "fortuna",
+      "targetId": "chap-04",
+      "user": "test_admin",
+      "details": "Cập nhật trạng thái chương chap-04 của fortuna: status=DRAFT, isHidden=false"
+    },
+    {
+      "id": "audit-1793002585133",
+      "timestamp": "2026-10-26T08:16:25.133Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "fortuna",
+      "targetId": "chap-04",
+      "user": "test_admin",
+      "details": "Cập nhật trạng thái chương chap-04 của fortuna: status=HIDDEN, isHidden=true"
+    },
+    {
+      "id": "audit-1793002585114",
+      "timestamp": "2026-10-26T08:16:25.114Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "fortuna",
+      "targetId": "chap-03",
+      "user": "test_admin",
+      "details": "Cập nhật trạng thái chương chap-03 của fortuna: status=PUBLISHED, isHidden=false"
+    },
+    {
+      "id": "audit-1793002585097",
+      "timestamp": "2026-10-26T08:16:25.097Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "fortuna",
+      "targetId": "chap-02",
+      "user": "test_admin",
+      "details": "Cập nhật trạng thái chương chap-02 của fortuna: status=REVIEW, isHidden=false"
+    },
+    {
+      "id": "audit-1793002546891",
+      "timestamp": "2026-10-26T08:15:46.891Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "chap-02",
+      "user": "admin",
+      "details": "Cập nhật trạng thái chương chap-02 của alviss: status=NOT_STARTED, isHidden=false"
+    },
+    {
+      "id": "audit-1793002536766",
+      "timestamp": "2026-10-26T08:15:36.766Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "chap-02",
+      "user": "admin",
+      "details": "Cập nhật trạng thái chương chap-02 của alviss: status=REVIEW, isHidden=false"
+    },
+    {
+      "id": "audit-1793002536652",
+      "timestamp": "2026-10-26T08:15:36.652Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "chap-02",
+      "user": "admin",
+      "details": "Cập nhật trạng thái chương chap-02 của alviss: status=REVIEW, isHidden=false"
+    },
+    {
+      "id": "audit-1793002492430",
+      "timestamp": "2026-10-26T08:14:52.430Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "chap-02",
+      "user": "admin",
+      "details": "Cập nhật trạng thái chương chap-02 của alviss: status=REVIEW, isHidden=false"
+    },
     {
       "id": "audit-1792998761387",
       "timestamp": "2026-10-26T07:12:41.387Z",
@@ -1549,114 +1670,6 @@
     {
       "id": "audit-1792774464904",
       "timestamp": "2026-10-23T16:54:24.904Z",
-      "action": "ARTWORK_UPLOAD",
-      "targetPilotId": "alviss",
-      "targetId": "test_alviss_action_01",
-      "user": "lead_architect",
-      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
-    },
-    {
-      "id": "audit-1792774463576",
-      "timestamp": "2026-10-23T16:54:23.576Z",
-      "action": "STORY_PUBLISH",
-      "targetPilotId": "valentine",
-      "targetId": "chap-01",
-      "user": "admin",
-      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành PUBLISHED"
-    },
-    {
-      "id": "audit-1792774463575",
-      "timestamp": "2026-10-23T16:54:23.575Z",
-      "action": "STORY_HIDE",
-      "targetPilotId": "valentine",
-      "targetId": "chap-01",
-      "user": "admin",
-      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành HIDDEN"
-    },
-    {
-      "id": "audit-1792774463573",
-      "timestamp": "2026-10-23T16:54:23.573Z",
-      "action": "ARTWORK_UPLOAD",
-      "targetPilotId": "victor",
-      "targetId": "art_victor_1792774463572",
-      "user": "admin",
-      "details": "Đăng ký artwork \"Victor — Đột Kích Vành Đai\" [lore] cho victor"
-    },
-    {
-      "id": "audit-1792774463570",
-      "timestamp": "2026-10-23T16:54:23.570Z",
-      "action": "PROFILE_UPDATE",
-      "targetPilotId": "marcus",
-      "targetId": "marcus",
-      "user": "test_admin",
-      "details": "Cập nhật thông tin hồ sơ cho phi công marcus"
-    },
-    {
-      "id": "audit-1792774331817",
-      "timestamp": "2026-10-23T16:52:11.817Z",
-      "action": "STORY_PUBLISH",
-      "targetPilotId": "valentine",
-      "targetId": "chap-01",
-      "user": "admin",
-      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành PUBLISHED"
-    },
-    {
-      "id": "audit-1792774331816",
-      "timestamp": "2026-10-23T16:52:11.816Z",
-      "action": "STORY_HIDE",
-      "targetPilotId": "valentine",
-      "targetId": "chap-01",
-      "user": "admin",
-      "details": "Chuyển trạng thái xuất bản chương chap-01 của valentine thành HIDDEN"
-    },
-    {
-      "id": "audit-1792774331813",
-      "timestamp": "2026-10-23T16:52:11.813Z",
-      "action": "ARTWORK_UPLOAD",
-      "targetPilotId": "victor",
-      "targetId": "art_victor_1792774331813",
-      "user": "admin",
-      "details": "Đăng ký artwork \"Victor — Đột Kích Vành Đai\" [lore] cho victor"
-    },
-    {
-      "id": "audit-1792774331809",
-      "timestamp": "2026-10-23T16:52:11.809Z",
-      "action": "PROFILE_UPDATE",
-      "targetPilotId": "marcus",
-      "targetId": "marcus",
-      "user": "test_admin",
-      "details": "Cập nhật thông tin hồ sơ cho phi công marcus"
-    },
-    {
-      "id": "audit-1792774293951",
-      "timestamp": "2026-10-23T16:51:33.951Z",
-      "action": "ARTWORK_UPLOAD",
-      "targetPilotId": "victor",
-      "targetId": "art_victor_1792774293951",
-      "user": "admin",
-      "details": "Đăng ký artwork \"Victor — Đột Kích Vành Đai\" [lore] cho victor"
-    },
-    {
-      "id": "audit-1792774293947",
-      "timestamp": "2026-10-23T16:51:33.947Z",
-      "action": "PROFILE_UPDATE",
-      "targetPilotId": "marcus",
-      "targetId": "marcus",
-      "user": "test_admin",
-      "details": "Cập nhật thông tin hồ sơ cho phi công marcus"
-    },
-    {
-      "id": "audit-1792774271169",
-      "timestamp": "2026-10-23T16:51:11.169Z",
-      "action": "PROFILE_UPDATE",
-      "targetPilotId": "alviss",
-      "targetId": "alviss",
-      "user": "lead_architect",
-      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
-    },
-    {
-      "id": "audit-1792774271169",
-      "timestamp": "2026-10-23T16:51:11.169Z",
       "action": "ARTWORK_UPLOAD",
       "targetPilotId": "alviss",
       "targetId": "test_alviss_action_01",

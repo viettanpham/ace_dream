@@ -84,6 +84,20 @@ export function PilotAvatar({
             <span className="text-[10px] font-mono font-black text-rose-300 mt-0.5 tracking-tighter">NV</span>
           </div>
         )
+      case 'marcus':
+        return (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-blue-950 via-slate-900 to-black text-blue-400 p-1">
+            <Shield className="w-5 h-5 text-blue-400 animate-pulse" />
+            <span className="text-[10px] font-mono font-black text-blue-300 mt-0.5 tracking-tighter">MA</span>
+          </div>
+        )
+      case 'victor':
+        return (
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-amber-950 via-slate-900 to-black text-amber-500 p-1">
+            <Shield className="w-5 h-5 text-amber-500 animate-pulse" />
+            <span className="text-[10px] font-mono font-black text-amber-300 mt-0.5 tracking-tighter">VI</span>
+          </div>
+        )
       default:
         return (
           <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-black text-[#00D4FF] p-1">
@@ -96,8 +110,11 @@ export function PilotAvatar({
     }
   }
 
-  // If pilot does not have verified CDN artwork or network failed, render dedicated placeholder
-  if (!isVerified || hasError) {
+  // Marcus and Victor currently do not have portrait WebP on CDN R3 (fallback to dedicated initials badge)
+  const lacksCdnPortrait = character.id === 'marcus' || character.id === 'victor'
+
+  // If pilot lacks CDN portrait, is not verified, or network failed, render dedicated placeholder
+  if (lacksCdnPortrait || !isVerified || hasError) {
     return (
       <div
         className={`relative rounded-lg overflow-hidden border shrink-0 ${

@@ -717,6 +717,16 @@ export function verifyAdminRequest(
     }
   }
 
+  // 3. Fallback to custom session headers (x-admin-session-token / x-session-token)
+  if (!token) {
+    const sessionHeader =
+      req.headers.get('x-admin-session-token')?.trim() ||
+      req.headers.get('x-session-token')?.trim();
+    if (sessionHeader) {
+      token = sessionHeader;
+    }
+  }
+
   if (!token) {
     return {
       authorized: false,

@@ -11,7 +11,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'cdn.jsdelivr.net',
-        pathname: '/gh/viettanpham/starfront-assets@**',
+        pathname: '/**',
       },
     ],
   },

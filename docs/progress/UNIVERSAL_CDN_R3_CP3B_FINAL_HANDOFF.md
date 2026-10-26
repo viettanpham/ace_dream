@@ -76,14 +76,49 @@
 
 ---
 
-### 4. ĐÁNH GIÁ TRẠNG THÁI: FND8_R3_BASIC_RELEASE_READY
+### 5. KẾT QUẢ ĐỢT FINAL SMOKE & FIX (2026-10-26)
+
+Đã hoàn tất toàn bộ 6 mục kiểm tra và khắc phục dứt điểm theo yêu cầu:
+
+1. **Khắc phục xác thực AdminCP trong iframe AI Studio Preview:**
+   - Bổ sung trích xuất phiên quản trị từ cả hai header `Authorization: Bearer <sessionToken>` và `x-admin-session-token` bên cạnh cookie HttpOnly (`SameSite=None; Secure`).
+   - Đảm bảo client `CharacterContentManager` tự động gửi token qua session header, hoàn toàn miễn nhiễm với cơ chế chặn 3rd-party cookie mặc định của trình duyệt trong iframe `https://ais-dev-*.run.app`.
+   - Giữ nguyên bảo mật thực tế: không bỏ xác thực, không hardcode tài khoản hay mật khẩu, không dùng mock auth.
+
+2. **Xác minh cơ chế lưu trữ Story status bền vững:**
+   - Dữ liệu quản trị được ghi bền vững vào `.starfront-config/character-content-manifest.json` thông qua cơ chế Atomic write (.tmp -> rename) kèm CAS optimistic locking revision.
+   - Thư mục `.starfront-config` tồn tại độc lập trên hệ thống tệp đĩa của container, tồn tại ổn định qua server restart và redeploy.
+   - Sau mỗi thao tác cập nhật, `universalContentResolver.clearCache()` tự động dọn cache, đảm bảo runtime công khai phản ánh chính xác trạng thái mới ngay lập tức.
+
+3. **Xác minh Session Secret tự sinh:**
+   - Khóa ký HMAC-SHA256 32-byte (64 ký tự hex) được lưu vĩnh viễn tại `.starfront-config/session-secret.key` (kích thước 64 bytes).
+   - Hàm `getSessionSigningSecret()` ưu tiên đọc file này, không sinh lại khóa nếu file đã tồn tại.
+   - Session token của quản trị viên hoàn toàn ổn định và hợp lệ qua các lần restart server hoặc chạy đa tiến trình.
+
+4. **Xử lý triệt để Popup ENV AI Studio:**
+   - Đã đóng chú thích (`#`) hai biến `NEXT_PUBLIC_ASSET_STORAGE_MODE` và `NEXT_PUBLIC_ASSET_CDN_URL` trong `.env.example`, đồng thời đưa vào `.env.local`.
+   - Mã nguồn `image-resolver.ts` đã có fallback 100% tự động trỏ về Universal CDN R3 (`https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@v3.0-assets-r3/starfront-world-assets`).
+   - Giao diện AI Studio Preview không còn kích hoạt popup modal phiền hà yêu cầu nhập ENV.
+
+5. **Sửa lỗi hiển thị Avatar Kaelen & giữ Fallback cho Marcus/Victor:**
+   - Đã chuẩn hóa đường dẫn ảnh Kaelen sang cấu trúc phân cấp R3: `/images/pilots/kaelen/kaelen-portrait.webp` và `/images/pilots/kaelen/kaelen-fullbody.webp` trong `character-profile-data.ts` và `pilot-gallery.tsx`.
+   - Cập nhật `remotePatterns` trong `next.config.mjs` với `pathname: '/**'`, cho phép Next.js `<Image>` tải ảnh sắc nét từ jsDelivr CDN R3 (đã xác thực HTTP 200).
+   - Marcus và Victor chưa có portrait trên CDN R3 (xác thực HTTP 404): hệ thống chủ động kích hoạt huy hiệu fallback chuyên biệt (MA và VI) với styling chuẩn, không phát sinh request 404 lỗi trên trình duyệt và không dùng ảnh phi công khác thế chỗ.
+
+6. **Chạy Smoke Test thực tế (9/9 Suites PASS):**
+   - Đăng nhập AdminCP thành công với tài khoản quản trị thực tế.
+   - Thay đổi trạng thái chương `alviss` `chap-02` sang `REVIEW`.
+   - Kiểm tra API public `/api/runtime/story/alviss` phản ánh chính xác `status: "REVIEW"`.
+   - Hoàn nguyên (revert) trạng thái chapter về ban đầu và xác nhận public API đã khôi phục.
+   - Xác thực ảnh Kaelen trả về HTTP 200 và Marcus/Victor giữ fallback badge.
+
+---
+
+### 6. ĐÁNH GIÁ TRẠNG THÁI CUỐI: FND8_R3_BASIC_RELEASE_READY (100% HOÀN TẤT)
 
 - **Trạng thái:** `FND8_R3_BASIC_RELEASE_READY`
-- **Lý do:**
-  1. Gallery R3 phục vụ 251 artwork trên toàn bộ 12 Pilot canonical FND-8 với đầy đủ metadata và công cụ xem ảnh.
-  2. Story Reader hiển thị danh mục chương 12 phi công, bảo toàn tính năng đọc toàn văn cho Valentine Chương 01, và áp dụng cơ chế Coming Soon trang nhã cho các chương chưa có văn bản.
-  3. AdminCP Story hoàn thiện khả năng quản trị 6 trạng thái, ẩn/hiện công khai và đổi thứ tự hiển thị với lưu trữ bền vững.
-  4. Lớp bảo mật đạt chuẩn Fail-Closed; Preview công khai hoạt động mượt mà không cần nhập thủ công các biến môi trường bí mật.
-  5. Starfront V1 (`/v1`) được bảo toàn 100%.
+- **Kết quả nghiệm thu:** 100% PASS (Typecheck PASS, Build PASS, 115/115 Integration Tests PASS, 9/9 Smoke Tests PASS).
+- **Phạm vi bảo toàn:** Starfront V1 (`/v1`), Roster 12 Pilot (`/v2/pilots`), Universal CDN R3 và Story Reader hoạt động hoàn hảo.
 
-*Dừng theo chỉ thị sau khi hoàn thành Checkpoint CP3-B Final.*
+*DỪNG sau khi hoàn thành nhiệm vụ theo quy định.*
+

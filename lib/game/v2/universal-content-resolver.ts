@@ -32,6 +32,7 @@ import { resolveImageUrl, getResolverConfig } from '../assets/image-resolver';
 import { assetConfigStore } from '../assets/runtime-asset-config';
 import fs from 'node:fs';
 import path from 'node:path';
+import { V2_ROSTER_CHARACTERS } from './character-profile-data';
 
 // Canonical R3 Constants
 export const DEFAULT_CDN_R3_BASE =
@@ -385,11 +386,42 @@ export class UniversalContentResolver {
     const storySubPath = `stories/pilots/${cleanId}/manifest.json`;
     let manifest = await fetchWithFallback<UniversalPilotStoryManifest>(storySubPath);
 
-    // Ensure manifest exists with canonical chapters
-    const targetMinChapters = cleanId === 'valentine' ? 10 : 7;
+    const rosterChar = V2_ROSTER_CHARACTERS.find((c) => c.id === cleanId);
+    const targetMinChapters = cleanId === 'valentine' ? 10 : (rosterChar?.chapters.length || 7);
     let rawChaptersList: any[] = [];
     if (manifest && Array.isArray(manifest.chapters)) {
       rawChaptersList = [...manifest.chapters];
+    }
+
+    // Merge from canonical V2_ROSTER_CHARACTERS
+    if (rosterChar && Array.isArray(rosterChar.chapters)) {
+      for (const rc of rosterChar.chapters) {
+        const existing = rawChaptersList.find((c: any) => c.chapterNumber === rc.number);
+        if (existing) {
+          if (!existing.title || existing.title.startsWith('Chương ') || existing.title.startsWith('chap-')) {
+            existing.title = rc.title;
+          }
+          if (!existing.summary || existing.summary.includes('đang được đội ngũ biên tập hoàn thiện')) {
+            existing.summary = rc.summary;
+          }
+          if (!existing.quote && rc.quote) {
+            existing.quote = rc.quote;
+          }
+        } else {
+          rawChaptersList.push({
+            chapterId: rc.id && rc.id.startsWith('chap-') ? rc.id : `chap-${String(rc.number).padStart(2, '0')}`,
+            chapterNumber: rc.number,
+            title: rc.title,
+            editorialStatus: rc.status || (rc.number <= 2 ? 'PROVISIONAL' : 'NOT_STARTED'),
+            contentStatus: 'MISSING',
+            publicationStatus: 'NOT_PUBLISHED',
+            summary: rc.summary,
+            quote: rc.quote,
+            contentAvailable: false,
+            isComingSoon: true,
+          });
+        }
+      }
     }
 
     const existingNumbers = new Set(rawChaptersList.map((c: any) => c.chapterNumber));
@@ -410,12 +442,12 @@ export class UniversalContentResolver {
     }
 
     if (!manifest) {
-      const pilotName = CANONICAL_PILOT_METADATA[cleanId as CanonicalPilotId]?.name || cleanId;
+      const pilotName = rosterChar?.classCharacterName || CANONICAL_PILOT_METADATA[cleanId as CanonicalPilotId]?.name || cleanId;
       manifest = {
         schemaVersion: 'starfront-pilot-story-v1',
         pilotId: cleanId,
         pilotName,
-        callsign: CANONICAL_PILOT_METADATA[cleanId as CanonicalPilotId]?.callsign || '',
+        callsign: rosterChar?.callsign || CANONICAL_PILOT_METADATA[cleanId as CanonicalPilotId]?.callsign || '',
         totalChapters: rawChaptersList.length,
         publishedChaptersCount: cleanId === 'valentine' ? 1 : 0,
         chapters: rawChaptersList,
@@ -478,15 +510,26 @@ export class UniversalContentResolver {
       const isAvailable = hasSubstantiveContent && isPublished;
       const isComingSoon = !isAvailable;
 
+      const isOverrideTitleValid = Boolean(
+        override?.title &&
+        override.title.trim().length > 0 &&
+        !override.title.startsWith('chap-') &&
+        !override.title.startsWith('chapter-')
+      );
+      const effectiveTitle = isOverrideTitleValid
+        ? override.title.trim()
+        : (ch.title || `Chương ${String(ch.chapterNumber).padStart(2, '0')}`);
+
+      const effectiveSummary = (override?.summary && override.summary.trim().length > 0)
+        ? override.summary.trim()
+        : (ch.summary || `Hồ sơ biên niên sử không gian của phi công cho Chương ${ch.chapterNumber} đang được đội ngũ biên tập hoàn thiện.`);
+
       resolvedChapters.push({
         chapterId: ch.chapterId,
         chapterNumber: ch.chapterNumber,
-        title: override?.title || ch.title || `Chương ${String(ch.chapterNumber).padStart(2, '0')}`,
+        title: effectiveTitle,
         canonicalLibraryTitle: ch.canonicalLibraryTitle,
-        summary:
-          override?.summary ||
-          ch.summary ||
-          `Hồ sơ biên niên sử không gian của phi công cho Chương ${ch.chapterNumber} đang được đội ngũ biên tập hoàn thiện.`,
+        summary: effectiveSummary,
         quote: override?.quote || ch.quote,
         editorialStatus: effectiveEditorialStatus,
         contentStatus: ch.contentStatus || 'MISSING',
@@ -536,12 +579,15 @@ export class UniversalContentResolver {
     // 1. Check pilot story manifest first to verify chapter existence
     const catalog = await this.getPilotStoryCatalog(cleanId, isAdminOrReview);
     const normalizedTarget = cleanChapId.replace(/^chapter-/, 'chap-');
+    const numMatch = cleanChapId.match(/\d+/);
+    const targetNum = numMatch ? parseInt(numMatch[0], 10) : null;
     const chapterMeta = catalog?.chapters.find(
       (c) =>
         c.chapterId === cleanChapId ||
         c.chapterId === normalizedTarget ||
         `chap-${String(c.chapterNumber).padStart(2, '0')}` === normalizedTarget ||
-        `chapter-${String(c.chapterNumber).padStart(2, '0')}` === cleanChapId
+        `chapter-${String(c.chapterNumber).padStart(2, '0')}` === cleanChapId ||
+        (targetNum !== null && c.chapterNumber === targetNum)
     );
 
     // If chapter is an unwritten / in-development chapter
@@ -564,6 +610,8 @@ export class UniversalContentResolver {
             quote: chapterMeta.quote,
             readingTimeMinutes: chapterMeta.readingTimeMinutes,
             wordCount: chapterMeta.wordCount,
+            contentAvailable: false,
+            isComingSoon: true,
           },
           content: '',
           blocks: [],
@@ -653,6 +701,8 @@ export class UniversalContentResolver {
         readingTimeMinutes: chapterContent.readingTimeMinutes || chapterMeta.readingTimeMinutes,
         wordCount: chapterContent.wordCount || chapterMeta.wordCount,
         file: chapterMeta.file,
+        contentAvailable: true,
+        isComingSoon: false,
       },
       content: fullProseText,
       blocks,

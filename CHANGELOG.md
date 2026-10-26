@@ -2,6 +2,27 @@
 
 Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án **STARFRONT** được ghi lại tại đây theo trình tự thời gian đảo ngược (mới nhất lên đầu).
 
+## [V2.0 — Final Fix] — STARFRONT WORLD V2: Khắc Phục Hoàn Thiện Giao Diện Story UI & Điều Hướng Biên Niên Ký
+
+*Đã hoàn thành 100% việc sửa đổi trực tiếp Story UI theo đúng yêu cầu: Đồng bộ danh mục động 7 chương (và 10 chương cho Valentine) cho toàn bộ 12 phi công canonical; khắc phục lỗi chỉ mở Chapter 01 và cho phép chọn bất kỳ chương nào từ Profile chuyển thẳng vào Story Reader đúng `pilotId` và `chapterId`; tách biệt rành mạch giữa trạng thái biên tập (`APPROVED`, `HOLD`) và tính khả dụng nội dung thực tế (`contentAvailable`, `isComingSoon`); hiển thị trang ĐANG PHÁT TRIỂN / COMING SOON chuẩn xác với số chương, tiêu đề tiếng Việt và tóm tắt canonical đã thẩm định; loại bỏ hoàn toàn các ổ khóa Lock giả lập "Hồ Sơ Niêm Phong"; bảo đảm không gọi API lỗi 404, không văn xuôi giả mạo và đồng bộ 100% trạng thái điều hướng giữa Profile và Story Reader.*
+
+### Các cải tiến chi tiết:
+- **1. Đồng Bộ Danh Mục Động Toàn Roster**:
+  * Cập nhật danh mục 7 chương canonical tiếng Việt cho Fortuna, Aria, Rhea, Nova và toàn bộ 12 phi công trong `lib/game/v2/character-profile-data.ts`.
+  * `UniversalContentResolver` kết hợp dữ liệu giữa CDN R3 `manifest.json`, cấu hình AdminCP và hồ sơ canonical, tự động bỏ qua placeholder `chap-xx` để hiển thị tiêu đề và tóm tắt chuẩn xác.
+- **2. Khắc Phục Luồng Điều Hướng Character Profile → Story Reader**:
+  * Cả giao diện Desktop và Mobile đều cho phép nhấp chọn trực tiếp bất kỳ chương nào trên Horizontal Rail hoặc Chapter Directory Card để mở Story Reader ở đúng `chapterId` (không bị reset về `chap-01`).
+  * Nút Hero CTA tự động cập nhật theo chương đang kích hoạt (`XEM CHƯƠNG XX TRONG STORY READER` / `MỞ CHẾ ĐỘ ĐỌC TRUYỆN`).
+- **3. Trải Nghiệm Coming Soon Văn Minh & Minh Bạch**:
+  * Các chương chưa có toàn văn văn xuôi (Valentine Ch02–10, Fortuna Ch01–07, Aria Ch01–07...) được hiển thị dạng **ĐANG PHÁT TRIỂN // COMING SOON** với tiêu đề, tóm tắt và lời dẫn chuẩn, kèm nút `[ĐỌC CHƯƠNG 01 (NẾU CÓ TOÀN VĂN)]` và `[QUAY LẠI HỒ SƠ PHI CÔNG]`.
+  * Trạng thái biên tập nội bộ (`APPROVED`, `HOLD`) được định vị lại thành ghi chú quy trình xuất bản, không làm người dùng lầm tưởng đã có văn bản hoặc chặn truy cập của người dùng.
+- **4. Kiểm Thử & Xác Minh Độc Lập**:
+  * Chạy test suite `scripts/verify-story-ui-final.ts` kiểm thử toàn bộ 12 phi công, kiểm chứng Valentine Ch01 (có văn xuôi) cùng Ch02, Ch03, Ch07 (Coming Soon); Fortuna Ch01, Ch03, Ch07; Aria Ch01, Ch03, Ch07.
+  * Xác minh tính năng lọc `HIDDEN` trong AdminCP: chương ẩn biến mất khỏi public UI nhưng vẫn hiển thị trong AdminCP.
+  * Typecheck `tsc --noEmit` và `compile_applet` PASS 100%, dev server trả về HTTP 200 cho toàn bộ các route V1, V2, và API runtime.
+
+---
+
 ## [Phase 6.31] — STARFRONT WORLD: Điều Phối Nhiệm Vụ & Hộp Lưu Trữ Tác Chiến (Mission Dispatch & Operations Archive)
 
 *Đã hoàn thành 100% Phase 6.31 theo đúng roadmap STARFRONT: Thiết lập hệ thống điều phối nhiệm vụ chiến lược với giới hạn người chơi trực tiếp tham gia tối đa 1 nhiệm vụ tại một thời điểm; cơ chế chuyển giao tự động cho NPC đồn trú (NPC Takeover) khi hết hạn PREPARE; mô phỏng tác chiến NPC-only với kết quả thực tế vào WORLD; cấu trúc mục tiêu chuẩn hóa tái sử dụng cho 6 hình thái tác chiến; kho lưu trữ Operations Archive có hạn ngạch bounded FIFO riêng biệt; nhật ký dòng thời gian Action Timeline xác thực không spam per-tick; giao diện Command Desk & Admin CP trực quan; bảo toàn 100% Save Schema V1, Checksum CRC32 và RPG Save V4 (100% tests PASS, compile & lint thành công).*

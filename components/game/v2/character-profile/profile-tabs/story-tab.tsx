@@ -6,37 +6,36 @@ import { BookOpen, Lock, AlertCircle, CheckCircle2, ChevronRight } from "lucide-
 
 interface StoryTabProps {
   character: CharacterProfileV2
+  onOpenReader?: (chapterId: string) => void
 }
 
-export function StoryTab({ character }: StoryTabProps) {
+export function StoryTab({ character, onOpenReader }: StoryTabProps) {
   const [activeChapterIndex, setActiveChapterIndex] = useState<number>(0)
   const chapters = character.chapters
   const activeChapter = chapters[activeChapterIndex] || chapters[0]
 
-  const getStatusBadge = (status: StoryChapter["status"]) => {
-    switch (status) {
-      case "APPROVED":
-        return (
-          <span className="inline-flex items-center gap-1 rounded bg-emerald-950/80 border border-emerald-500/50 px-2 py-0.5 text-xs font-mono font-bold text-emerald-300">
-            <CheckCircle2 className="size-3" />
-            <span>APPROVED</span>
-          </span>
-        )
-      case "PROVISIONAL":
-        return (
-          <span className="inline-flex items-center gap-1 rounded bg-amber-950/80 border border-amber-500/50 px-2 py-0.5 text-xs font-mono font-bold text-amber-300">
-            <AlertCircle className="size-3" />
-            <span>PROVISIONAL</span>
-          </span>
-        )
-      case "HOLD":
-      default:
-        return (
-          <span className="inline-flex items-center gap-1 rounded bg-slate-900 border border-slate-700 px-2 py-0.5 text-xs font-mono font-medium text-slate-400">
-            <Lock className="size-3" />
-            <span>HOLD</span>
-          </span>
-        )
+  const getStatusBadge = (chap: StoryChapter) => {
+    const isAvailable = Boolean(chap.content)
+    if (isAvailable) {
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-emerald-950/80 border border-emerald-500/50 px-2 py-0.5 text-xs font-mono font-bold text-emerald-300">
+          <CheckCircle2 className="size-3" />
+          <span>CÓ VĂN XUÔI</span>
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center gap-1 rounded bg-amber-950/80 border border-amber-500/50 px-2 py-0.5 text-xs font-mono font-bold text-amber-300">
+        <AlertCircle className="size-3" />
+        <span>COMING SOON</span>
+      </span>
+    )
+  }
+
+  const handleLaunchReader = (chapterId?: string) => {
+    const targetId = chapterId || (activeChapter ? `chap-${String(activeChapter.number).padStart(2, '0')}` : 'chap-01')
+    if (onOpenReader) {
+      onOpenReader(targetId)
     }
   }
 
@@ -55,14 +54,14 @@ export function StoryTab({ character }: StoryTabProps) {
         </p>
       </section>
 
-      {/* 2. LỘ TRÌNH 10 CHƯƠNG BIÊN NIÊN (10-CHAPTER ROADMAP) */}
+      {/* 2. LỘ TRÌNH CHƯƠNG BIÊN NIÊN */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h4 className="text-sm font-bold tracking-wider text-slate-300 uppercase">
-            Danh Sách Biên Niên Ký (10 Chương)
+            Danh Sách Biên Niên Ký ({chapters.length} Chương)
           </h4>
           <span className="text-xs text-slate-400 font-mono">
-            Chương {activeChapter ? activeChapter.number : 1}/10
+            Chương {activeChapter ? activeChapter.number : 1}/{chapters.length}
           </span>
         </div>
 
@@ -70,35 +69,35 @@ export function StoryTab({ character }: StoryTabProps) {
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
           {chapters.map((chap, idx) => {
             const isSelected = idx === activeChapterIndex
-            const isHold = chap.status === "HOLD"
+            const chapId = `chap-${String(chap.number).padStart(2, '0')}`
 
             return (
               <button
                 key={chap.id}
-                onClick={() => setActiveChapterIndex(idx)}
+                onClick={() => {
+                  setActiveChapterIndex(idx)
+                  handleLaunchReader(chapId)
+                }}
                 className={`flex shrink-0 items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition-all cursor-pointer min-h-[44px] ${
                   isSelected
                     ? "border-cyan-400 bg-cyan-950/80 text-cyan-200 shadow-[0_0_10px_rgba(6,182,212,0.3)] font-bold"
-                    : isHold
-                    ? "border-slate-800/80 bg-slate-950/60 text-slate-500 hover:text-slate-400"
                     : "border-slate-800 bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white"
                 }`}
+                title={`Nhấn để mở Chương ${chap.number} trong Story Reader`}
               >
                 <span>Chương {String(chap.number).padStart(2, "0")}</span>
-                {chap.status === "APPROVED" && (
+                {chap.content ? (
                   <span className="size-1.5 rounded-full bg-emerald-400" />
-                )}
-                {chap.status === "PROVISIONAL" && (
+                ) : (
                   <span className="size-1.5 rounded-full bg-amber-400" />
                 )}
-                {chap.status === "HOLD" && <Lock className="size-3 text-slate-600" />}
               </button>
             )
           })}
         </div>
       </section>
 
-      {/* 3. KHU VỰC ĐỌC NỘI DUNG CHƯƠNG ĐANG CHỌN (READING PROSE VIEW) */}
+      {/* 3. KHU VỰC ĐỌC NỘI DUNG CHƯƠNG ĐANG CHỌN */}
       {activeChapter && (
         <article className="rounded-lg border border-slate-800 bg-slate-900/70 p-5 sm:p-6 shadow-md space-y-4">
           {/* Header Chương */}
@@ -107,7 +106,7 @@ export function StoryTab({ character }: StoryTabProps) {
               <span className="text-xs font-mono font-bold tracking-widest text-cyan-400 uppercase">
                 Chương {String(activeChapter.number).padStart(2, "0")}
               </span>
-              {getStatusBadge(activeChapter.status)}
+              {getStatusBadge(activeChapter)}
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-white tracking-wide">
               {activeChapter.title}
@@ -117,7 +116,7 @@ export function StoryTab({ character }: StoryTabProps) {
             </p>
           </div>
 
-          {/* Nội Dung Chương Đầy Đủ */}
+          {/* Nội Dung Chương Đầy Đủ hoặc Coming Soon */}
           {activeChapter.content ? (
             <div className="space-y-4 max-w-prose">
               {activeChapter.content.split("\n\n").map((para, pIdx) => {
@@ -141,34 +140,29 @@ export function StoryTab({ character }: StoryTabProps) {
                 )
               })}
             </div>
-          ) : activeChapter.status === "APPROVED" ? (
-            <div className="rounded-md border border-slate-800 bg-slate-950/70 p-5 text-center space-y-2">
-              <p className="text-base text-slate-300 font-medium">
-                Nội dung chi tiết của Chương {String(activeChapter.number).padStart(2, "0")} đã được phê duyệt cốt truyện và đang trong giai đoạn hoàn thiện văn bản văn xuôi.
-              </p>
-              <p className="text-xs text-slate-500 font-mono">
-                Dự kiến phát hành ở bản cập nhật tiếp theo.
-              </p>
-            </div>
-          ) : activeChapter.status === "PROVISIONAL" ? (
-            <div className="rounded-md border border-amber-500/30 bg-amber-950/20 p-5 text-center space-y-2">
-              <AlertCircle className="size-6 text-amber-400 mx-auto" />
-              <p className="text-base text-amber-200 font-medium">
-                Bản thảo sơ bộ — Chưa phát hành chính thức
-              </p>
-              <p className="text-xs text-amber-400/80">
-                Nội dung đang được nhóm biên tập rà soát cùng bối cảnh thế giới STARFRONT WORLD.
-              </p>
-            </div>
           ) : (
-            <div className="rounded-md border border-slate-800 bg-slate-950/80 p-6 text-center space-y-2">
-              <Lock className="size-6 text-slate-500 mx-auto" />
-              <p className="text-base text-slate-400 font-medium">
-                Hồ Sơ Niêm Phong / Chưa Mở Khóa
-              </p>
-              <p className="text-xs text-slate-600 font-mono">
-                Cần hoàn thành các chương trước hoặc đạt cấp độ tác chiến theo quy định.
-              </p>
+            <div className="rounded-md border border-amber-500/30 bg-amber-950/20 p-5 text-center space-y-3">
+              <AlertCircle className="size-6 text-amber-400 mx-auto" />
+              <div className="space-y-1">
+                <p className="text-base text-amber-200 font-bold">
+                  Đang phát triển / Coming Soon
+                </p>
+                <p className="text-xs text-slate-400 max-w-md mx-auto">
+                  Nội dung chi tiết của Chương {String(activeChapter.number).padStart(2, "0")} đang được đội ngũ biên tập hoàn thiện và sẽ ra mắt trong bản cập nhật cốt truyện tiếp theo.
+                </p>
+              </div>
+
+              {onOpenReader && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => handleLaunchReader(`chap-${String(activeChapter.number).padStart(2, "0")}`)}
+                    className="px-4 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono text-xs uppercase tracking-wider font-bold transition-all cursor-pointer"
+                  >
+                    Xem chi tiết trong Story Reader
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

@@ -929,15 +929,15 @@ export function ImmersiveStoryReader({
                           <div className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold">
                             ĐANG PHÁT TRIỂN // COMING SOON
                           </div>
-                          <h3 className="text-sm sm:text-base font-bold text-white">
+                          <h3 className="text-base sm:text-lg font-bold text-white">
                             Chương {String(meta.chapterNumber).padStart(2, '0')}: {meta.title}
                           </h3>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider bg-amber-950/80 text-amber-300 border border-amber-500/40">
-                          TRẠNG THÁI BIÊN TẬP: {meta.editorialStatus}
+                        <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider bg-slate-900 text-slate-300 border border-slate-700">
+                          TIẾN ĐỘ: ĐANG SOẠN THẢO VĂN XUÔI
                         </span>
                       </div>
                     </div>
@@ -963,10 +963,10 @@ export function ImmersiveStoryReader({
                   <div className="p-4 rounded-xl border border-slate-900 bg-slate-950/70 text-xs text-slate-400 leading-relaxed space-y-1">
                     <div className="font-semibold text-slate-300 flex items-center gap-1.5 font-mono text-[11px]">
                       <Info className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>LƯU Ý QUY TRÌNH BIÊN TẬP</span>
+                      <span>QUY CHUẨN XUẤT BẢN CỐT TRUYỆN</span>
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Trạng thái biên tập ({meta.editorialStatus}) chỉ phản ánh giai đoạn xây dựng bối cảnh nội bộ, không chứng minh văn bản hoàn chỉnh đã được phát hành. Hệ thống bảo đảm không phát sinh văn bản giả và không tạo request lỗi 404.
+                      Ghi chú biên tập: Trạng thái ({meta.editorialStatus}) phản ánh quy trình thẩm định cốt truyện nội bộ, không chứng minh văn bản văn xuôi hoàn chỉnh đã phát hành. Chương hiển thị đầy đủ thông tin bối cảnh đã kiểm chứng, không phát sinh văn bản giả và không tạo request lỗi 404.
                     </p>
                   </div>
 

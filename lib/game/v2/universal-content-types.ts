@@ -205,6 +205,8 @@ export interface UniversalStoryChapterMeta {
   wordCount: number;
   sha256?: string;
   sceneAnchors?: UniversalStorySceneAnchor[];
+  contentAvailable?: boolean;
+  isComingSoon?: boolean;
 }
 
 export interface UniversalPilotStoryManifest {

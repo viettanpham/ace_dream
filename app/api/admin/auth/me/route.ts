@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       isDevPreview,
       registeredUsernames: registeredUsernames.length > 0 ? registeredUsernames : [authCheck.user.username],
       user: authCheck.user,
-      csrfToken: authCheck.csrfToken || csrfToken,
+      csrfToken: csrfToken,
       sessionToken: cookieValue,
     });
   }

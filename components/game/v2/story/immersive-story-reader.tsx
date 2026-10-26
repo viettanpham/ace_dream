@@ -22,6 +22,7 @@ import {
   Eye,
   EyeOff,
   Layers,
+  BookOpen,
 } from 'lucide-react';
 import {
   CanonicalPilotId,
@@ -68,6 +69,13 @@ export function ImmersiveStoryReader({
   const [meta, setMeta] = useState<StoryChapterMeta | null>(null);
   const [rawContent, setRawContent] = useState<string>('');
   const [isReviewMode, setIsReviewMode] = useState(true);
+
+  // Sync initialChapterId prop when changed externally
+  useEffect(() => {
+    if (initialChapterId && initialChapterId !== activeChapterId) {
+      setActiveChapterId(initialChapterId);
+    }
+  }, [initialChapterId]);
 
   // Layout states
   const [isNavigatorCollapsed, setIsNavigatorCollapsed] = useState(false);
@@ -353,30 +361,22 @@ export function ImmersiveStoryReader({
   const isArtworkPanelVisible = !isFocusMode && !isArtworkHidden && hasSceneArtworks;
   const isNavigatorVisible = !isFocusMode && !isNavigatorCollapsed;
 
-  // Status badge styling
-  const renderStatusBadge = (status: 'APPROVED' | 'PROVISIONAL' | 'HOLD') => {
-    switch (status) {
-      case 'APPROVED':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-emerald-950/80 text-emerald-400 border border-emerald-500/40">
-            APPROVED
-          </span>
-        );
-      case 'PROVISIONAL':
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-amber-950/80 text-amber-400 border border-amber-500/40">
-            PROVISIONAL
-          </span>
-        );
-      case 'HOLD':
-      default:
-        return (
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold tracking-wider bg-slate-900 text-slate-400 border border-slate-700/60 flex items-center gap-1">
-            <Lock className="w-2.5 h-2.5" />
-            <span>HOLD</span>
-          </span>
-        );
+  // Status badge styling: NEVER lock out a chapter. Clear distinction between content and editorial status.
+  const renderStatusBadge = (editorialStatus: string, hasContent: boolean = false) => {
+    if (hasContent) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 flex items-center gap-1">
+          <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
+          <span>CÓ VĂN XUÔI</span>
+        </span>
+      );
     }
+    return (
+      <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-amber-950/80 text-amber-400 border border-amber-500/40 flex items-center gap-1">
+        <Clock className="w-2.5 h-2.5 text-amber-400" />
+        <span>COMING SOON</span>
+      </span>
+    );
   };
 
   return (
@@ -590,8 +590,7 @@ export function ImmersiveStoryReader({
             <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
               {chapters.map((chap) => {
                 const isActive = chap.chapterId === activeChapterId;
-                const isHold = chap.editorialStatus === 'HOLD';
-                const isProvisional = chap.editorialStatus === 'PROVISIONAL';
+                const hasContent = Boolean(chap.contentAvailable);
 
                 return (
                   <button
@@ -600,24 +599,18 @@ export function ImmersiveStoryReader({
                     className={`w-full text-left p-2.5 rounded-lg transition-all flex items-center gap-2.5 border cursor-pointer select-none ${
                       isActive
                         ? 'bg-[#0a1e36] border-cyan-400/90 text-white shadow-md shadow-cyan-950/50'
-                        : isHold
-                        ? 'bg-slate-950/30 border-slate-900/60 text-slate-500 hover:text-slate-400 hover:border-slate-800'
                         : 'bg-slate-950/60 border-slate-900 text-slate-300 hover:text-white hover:border-slate-800 hover:bg-[#081224]'
                     }`}
                   >
-                    {/* Chapter Number / Lock / Thumbnail */}
+                    {/* Chapter Number */}
                     <div className="w-7 h-7 rounded bg-slate-900/80 border border-slate-800 flex items-center justify-center shrink-0">
-                      {isHold ? (
-                        <Lock className="w-3.5 h-3.5 text-slate-500" />
-                      ) : (
-                        <span
-                          className={`text-xs font-mono font-bold ${
-                            isActive ? 'text-cyan-400' : 'text-slate-400'
-                          }`}
-                        >
-                          {String(chap.chapterNumber).padStart(2, '0')}
-                        </span>
-                      )}
+                      <span
+                        className={`text-xs font-mono font-bold ${
+                          isActive ? 'text-cyan-400' : 'text-slate-300'
+                        }`}
+                      >
+                        {String(chap.chapterNumber).padStart(2, '0')}
+                      </span>
                     </div>
 
                     {/* Chapter Title (Wraps up to 2 lines cleanly) */}
@@ -627,9 +620,9 @@ export function ImmersiveStoryReader({
                       </div>
                     </div>
 
-                    {/* Editorial Badge */}
+                    {/* Status Badge */}
                     <div className="shrink-0">
-                      {renderStatusBadge(chap.editorialStatus)}
+                      {renderStatusBadge(chap.editorialStatus, hasContent)}
                     </div>
                   </button>
                 );
@@ -923,44 +916,81 @@ export function ImmersiveStoryReader({
                   })}
                 </article>
               ) : (
-                /* CHAPTER OUTLINE / DRAFT REVIEW VIEW (For Chapters 02–10) */
+                /* DEDICATED ĐANG PHÁT TRIỂN / COMING SOON VIEW */
                 <div className="space-y-6 py-6 font-sans">
-                  {/* Review Mode Banner */}
-                  <div className="p-4 rounded-xl border border-cyan-800/60 bg-gradient-to-r from-cyan-950/50 to-slate-950/80 space-y-2">
-                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-400 uppercase">
-                      <Clock className="w-4 h-4" />
-                      <span>HỒ SƠ XEM TRƯỚC BIÊN TẬP // STORY REVIEW MODE</span>
+                  {/* Coming Soon Hero Banner */}
+                  <div className="p-6 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-950/30 via-[#0a1526] to-slate-950/80 space-y-4">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                          <Clock className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <div className="text-[11px] font-mono uppercase tracking-widest text-amber-400 font-bold">
+                            ĐANG PHÁT TRIỂN // COMING SOON
+                          </div>
+                          <h3 className="text-sm sm:text-base font-bold text-white">
+                            Chương {String(meta.chapterNumber).padStart(2, '0')}: {meta.title}
+                          </h3>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold tracking-wider bg-amber-950/80 text-amber-300 border border-amber-500/40">
+                          TRẠNG THÁI BIÊN TẬP: {meta.editorialStatus}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Chương này đã có cốt truyện tổng thể được phê duyệt trong lộ trình 10 chương chính thức. Văn bản văn xuôi chi tiết đang trong giai đoạn hoàn thiện.
+
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                      Nội dung văn bản văn xuôi chi tiết của chương này đang được đội ngũ biên tập cốt truyện Starfront World hoàn thiện và sẽ ra mắt trong các bản cập nhật cốt truyện tiếp theo.
                     </p>
                   </div>
 
-                  {/* Summary Card */}
-                  <div className="p-5 rounded-xl border border-slate-800 bg-[#060e1d]/90 space-y-3">
-                    <div className="text-[11px] font-mono uppercase text-slate-400 tracking-wider">
-                      TÓM TẮT CỐT TRUYỆN ĐÃ PHÊ DUYỆT
+                  {/* Summary Card with Verified Canon Summary */}
+                  {meta.summary && (
+                    <div className="p-5 rounded-xl border border-slate-800 bg-[#060e1d]/90 space-y-2">
+                      <div className="text-[11px] font-mono uppercase text-cyan-400 tracking-wider font-semibold">
+                        TÓM TẮT BỐI CẢNH CANONICAL ĐÃ XÁC MINH
+                      </div>
+                      <p className="text-sm font-serif italic text-slate-200 leading-relaxed">
+                        &ldquo;{meta.summary}&rdquo;
+                      </p>
                     </div>
-                    <p className="text-sm font-serif italic text-slate-200 leading-relaxed">
-                      &ldquo;{meta.summary}&rdquo;
+                  )}
+
+                  {/* Editorial Clarification Note */}
+                  <div className="p-4 rounded-xl border border-slate-900 bg-slate-950/70 text-xs text-slate-400 leading-relaxed space-y-1">
+                    <div className="font-semibold text-slate-300 flex items-center gap-1.5 font-mono text-[11px]">
+                      <Info className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>LƯU Ý QUY TRÌNH BIÊN TẬP</span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Trạng thái biên tập ({meta.editorialStatus}) chỉ phản ánh giai đoạn xây dựng bối cảnh nội bộ, không chứng minh văn bản hoàn chỉnh đã được phát hành. Hệ thống bảo đảm không phát sinh văn bản giả và không tạo request lỗi 404.
                     </p>
                   </div>
 
-                  {/* Status Indicator */}
-                  <div className="p-5 rounded-xl border border-slate-900 bg-slate-950/60 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-bold text-slate-200">
-                        Trạng Thái Biên Tập: {meta.editorialStatus}
-                      </div>
-                      <div className="text-[11px] text-slate-500 font-mono mt-0.5">
-                        {meta.editorialStatus === 'APPROVED'
-                          ? 'Cốt truyện đã phê duyệt · Đang chờ xuất bản văn xuôi'
-                          : meta.editorialStatus === 'PROVISIONAL'
-                          ? 'Bản thảo sơ bộ · Cần rà soát bối cảnh thế giới'
-                          : 'Hồ sơ niêm phong tối mật · Cần mở khóa theo tiến trình'}
-                      </div>
-                    </div>
-                    {renderStatusBadge(meta.editorialStatus)}
+                  {/* Quick Navigation Action Buttons */}
+                  <div className="pt-4 flex flex-wrap items-center gap-3">
+                    {chapters.some((c) => Boolean(c.contentAvailable)) && (
+                      <button
+                        type="button"
+                        onClick={() => handleSelectChapter('chap-01')}
+                        className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer shadow-md shadow-cyan-950/40"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>ĐỌC CHƯƠNG 01 (ĐÃ CÓ TOÀN VĂN)</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-4 py-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white font-mono font-semibold text-xs uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer"
+                    >
+                      <ArrowLeft className="w-4 h-4 text-cyan-400" />
+                      <span>QUAY LẠI HỒ SƠ PHI CÔNG</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -1120,23 +1150,24 @@ export function ImmersiveStoryReader({
             <div className="space-y-2 overflow-y-auto pr-1">
               {chapters.map((chap) => {
                 const isActive = chap.chapterId === activeChapterId;
+                const hasContent = Boolean(chap.contentAvailable);
                 return (
                   <button
                     key={chap.chapterId}
                     onClick={() => handleSelectChapter(chap.chapterId)}
-                    className={`w-full text-left p-3 rounded-lg border flex items-center justify-between ${
+                    className={`w-full text-left p-3 rounded-lg border flex items-center justify-between cursor-pointer transition-colors ${
                       isActive
                         ? 'bg-[#0a1e36] border-cyan-400 text-white'
-                        : 'bg-slate-950 border-slate-900 text-slate-300'
+                        : 'bg-slate-950 border-slate-900 text-slate-300 hover:bg-[#081224]'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-xs font-mono font-bold text-cyan-400">
+                      <span className="text-xs font-mono font-bold text-cyan-400 shrink-0">
                         {String(chap.chapterNumber).padStart(2, '0')}
                       </span>
                       <span className="text-xs font-medium truncate">{chap.title}</span>
                     </div>
-                    {renderStatusBadge(chap.editorialStatus)}
+                    {renderStatusBadge(chap.editorialStatus, hasContent)}
                   </button>
                 );
               })}

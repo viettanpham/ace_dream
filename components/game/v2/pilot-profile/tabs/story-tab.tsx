@@ -1,17 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { CharacterProfileV2, StoryChapter } from '@/lib/game/v2/character-profile-data';
+import { CharacterProfileV2 } from '@/lib/game/v2/character-profile-data';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/game/v2/ui';
 import {
   BookOpen,
-  Lock,
   CheckCircle2,
   Clock,
   Quote,
   Sparkles,
-  ExternalLink,
+  ChevronRight,
   Layers,
+  ArrowRight,
 } from 'lucide-react';
 
 interface StoryTabProps {
@@ -70,11 +70,15 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
     }
   }, [character.id]);
 
+  // Reset active chapter to chap-01 when character changes
+  useEffect(() => {
+    setActiveChapterId('chap-01');
+  }, [character.id]);
+
   // Fetch dynamic chapter catalog from R3 Universal Content Resolver
   useEffect(() => {
     let isCancelled = false;
     setLoadingManifest(true);
-    setActiveChapterId('chap-01');
 
     fetch(`/api/runtime/story?pilotId=${character.id}`)
       .then((res) => res.json())
@@ -96,41 +100,14 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
           }));
 
           setChapters(mapped);
-          setActiveChapterId(mapped[0]?.chapterId || 'chap-01');
-        } else {
-          // Fallback to static chapters from character data
-          const fallback: DynamicChapterItem[] = character.chapters.map((ch) => ({
-            chapterId: ch.id.startsWith('chap-') ? ch.id : `chap-${String(ch.number).padStart(2, '0')}`,
-            chapterNumber: ch.number,
-            title: ch.title,
-            summary: ch.summary,
-            quote: ch.quote,
-            editorialStatus: ch.status,
-            contentStatus: ch.content ? 'FULL_BODY_IMPORTED' : 'MISSING',
-            publicationStatus: ch.status === 'APPROVED' && ch.number === 1 ? 'PUBLISHED' : 'DRAFT',
-            contentAvailable: Boolean(ch.number === 1 && (ch.content || character.id === 'valentine')),
-            isComingSoon: !(ch.number === 1 && (ch.content || character.id === 'valentine')),
-          }));
-          setChapters(fallback);
+          setActiveChapterId((prev) => {
+            if (mapped.some((c) => c.chapterId === prev)) return prev;
+            return mapped[0]?.chapterId || 'chap-01';
+          });
         }
       })
-      .catch(() => {
-        if (!isCancelled) {
-          // Fallback gracefully on network error
-          const fallback: DynamicChapterItem[] = character.chapters.map((ch) => ({
-            chapterId: ch.id.startsWith('chap-') ? ch.id : `chap-${String(ch.number).padStart(2, '0')}`,
-            chapterNumber: ch.number,
-            title: ch.title,
-            summary: ch.summary,
-            quote: ch.quote,
-            editorialStatus: ch.status,
-            contentStatus: ch.content ? 'FULL_BODY_IMPORTED' : 'MISSING',
-            publicationStatus: ch.status === 'APPROVED' && ch.number === 1 ? 'PUBLISHED' : 'DRAFT',
-            contentAvailable: Boolean(ch.number === 1 && (ch.content || character.id === 'valentine')),
-            isComingSoon: !(ch.number === 1 && (ch.content || character.id === 'valentine')),
-          }));
-          setChapters(fallback);
-        }
+      .catch((err) => {
+        console.warn('Failed to load dynamic story catalog:', err);
       })
       .finally(() => {
         if (!isCancelled) setLoadingManifest(false);
@@ -139,12 +116,20 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
     return () => {
       isCancelled = true;
     };
-  }, [character.id, character.chapters]);
+  }, [character.id]);
 
   const activeChapter =
     chapters.find((c) => c.chapterId === activeChapterId) || chapters[0];
 
   const canReadActiveChapter = Boolean(activeChapter?.contentAvailable && !activeChapter?.isComingSoon);
+
+  const handleLaunchReader = (targetChapId?: string) => {
+    const idToOpen = targetChapId || activeChapter?.chapterId || 'chap-01';
+    setActiveChapterId(idToOpen);
+    if (onOpenReader) {
+      onOpenReader(idToOpen);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -158,7 +143,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
             <span className="text-[11px] font-mono text-[#CBD5E1]">
               {chapters.length} Chương Biên Niên Ký
             </span>
-            {character.id === 'valentine' ? (
+            {chapters.some((c) => c.contentAvailable) ? (
               <span className="text-[10px] font-mono text-[#34D399] bg-[#34D399]/10 px-2 py-0.5 rounded border border-[#34D399]/30">
                 Chương 01: Toàn Văn Sẵn Sàng
               </span>
@@ -182,17 +167,17 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
           )}
         </div>
 
-        {onOpenReader && canReadActiveChapter && (
+        {onOpenReader && (
           <button
             type="button"
-            onClick={() => onOpenReader(savedProgress?.chapterId || activeChapter?.chapterId || 'chap-01')}
+            onClick={() => handleLaunchReader(activeChapter?.chapterId || 'chap-01')}
             className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0099CC] hover:from-[#38BDF8] hover:to-[#00D4FF] text-[#070A12] font-mono font-extrabold text-xs sm:text-sm uppercase tracking-wider transition-all duration-200 flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 active:scale-95 cursor-pointer shrink-0"
           >
             <BookOpen className="w-5 h-5 text-[#070A12]" />
             <span>
-              {savedProgress && savedProgress.progress > 0
-                ? `TIẾP TỤC ĐỌC (CHƯƠNG ${savedProgress.chapterId.replace('chap-', '')})`
-                : 'MỞ CHẾ ĐỘ ĐỌC TRUYỆN'}
+              {canReadActiveChapter
+                ? `MỞ CHẾ ĐỘ ĐỌC (CHƯƠNG ${activeChapter?.chapterNumber ? String(activeChapter.chapterNumber).padStart(2, '0') : '01'})`
+                : `XEM TRONG STORY READER (CHƯƠNG ${activeChapter?.chapterNumber ? String(activeChapter.chapterNumber).padStart(2, '0') : '01'})`}
             </span>
           </button>
         )}
@@ -219,7 +204,8 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#26384D] pb-2 gap-1">
           <h3 className="text-sm font-bold uppercase tracking-wider text-[#F1F5F9] flex items-center gap-2">
-            <span>Danh Mục Chương (R3 Story Manifest)</span>
+            <Layers className="w-4 h-4 text-[#06B6D4]" />
+            <span>Danh Mục Chương (R3 Story Manifest // {chapters.length} Chương)</span>
           </h3>
           <span className="text-xs font-mono text-[#06B6D4]">
             {loadingManifest ? 'Đang nạp manifest CDN...' : `${chapters.length} Chương Đã Khai Báo`}
@@ -236,24 +222,25 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
               <button
                 key={chap.chapterId}
                 type="button"
-                onClick={() => setActiveChapterId(chap.chapterId)}
+                onClick={() => handleLaunchReader(chap.chapterId)}
                 className={`min-h-[44px] px-3.5 py-2 rounded-xl text-left font-mono transition-all shrink-0 flex items-center gap-2 border text-xs sm:text-sm cursor-pointer select-none ${
                   isActive
-                    ? 'bg-[#142338] border-[#06B6D4] text-[#F1F5F9] shadow-md shadow-[#06B6D4]/10'
+                    ? 'bg-[#142338] border-[#06B6D4] text-[#F1F5F9] shadow-md shadow-[#06B6D4]/20'
                     : isAvailable
                     ? 'bg-[#0F172A] border-[#26384D] text-[#A7B6C8] hover:text-[#F1F5F9] hover:border-[#3B526D]'
-                    : 'bg-[#070A12]/60 border-[#26384D]/40 text-[#A7B6C8]/60 hover:text-[#A7B6C8] hover:border-[#26384D]'
+                    : 'bg-[#070A12]/80 border-[#26384D]/60 text-[#CBD5E1]/80 hover:text-white hover:border-[#3B526D]'
                 }`}
+                title={`Nhấn để mở Chương ${chap.chapterNumber} trong Story Reader`}
               >
                 {isAvailable ? (
                   <CheckCircle2 className="w-3.5 h-3.5 text-[#34D399] shrink-0" />
                 ) : (
                   <Clock className="w-3.5 h-3.5 text-[#FBBF24] shrink-0" />
                 )}
-                <span className="font-bold">
+                <span className="font-bold text-[#00D4FF]">
                   {chap.chapterNumber < 10 ? `0${chap.chapterNumber}` : chap.chapterNumber}
                 </span>
-                <span className="truncate max-w-[120px] sm:max-w-[160px] font-sans font-medium">
+                <span className="truncate max-w-[130px] sm:max-w-[180px] font-sans font-medium">
                   {chap.title}
                 </span>
               </button>
@@ -279,7 +266,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                   {canReadActiveChapter ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      ĐÃ XUẤT BẢN // PUBLISHED
+                      ĐÃ XUẤT BẢN // SẴN SÀNG ĐỌC
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#FBBF24]/15 text-[#FBBF24] border border-[#FBBF24]/30">
@@ -311,7 +298,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
 
                       <button
                         type="button"
-                        onClick={() => onOpenReader(activeChapter.chapterId)}
+                        onClick={() => handleLaunchReader(activeChapter.chapterId)}
                         className="px-4 py-2.5 rounded-lg bg-cyan-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider hover:bg-cyan-400 hover:shadow-cyan-500/30 shadow-md transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
                       >
                         <BookOpen className="w-4 h-4" />
@@ -347,7 +334,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                 </div>
               ) : (
                 /* COMING SOON / ĐANG PHÁT TRIỂN STATE */
-                <div className="py-10 text-center space-y-4">
+                <div className="py-8 text-center space-y-4">
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-[#142338] border border-[#26384D] flex items-center justify-center text-[#FBBF24]">
                     <Clock className="w-7 h-7" />
                   </div>
@@ -364,13 +351,96 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
                     <p className="text-xs text-slate-500">
                       Hồ sơ biên niên sử không gian của phi công {character.classCharacterName} cho chương này đang được đội ngũ biên tập hoàn thiện và sẽ xuất bản qua các bản cập nhật cốt truyện tiếp theo của Starfront World.
                     </p>
+
+                    {onOpenReader && (
+                      <div className="pt-3">
+                        <button
+                          type="button"
+                          onClick={() => handleLaunchReader(activeChapter.chapterId)}
+                          className="px-5 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-mono font-bold text-xs uppercase tracking-wider transition-all inline-flex items-center gap-2 cursor-pointer shadow-sm"
+                        >
+                          <BookOpen className="w-4 h-4 text-amber-400" />
+                          <span>XEM TRONG STORY READER (CHƯƠNG {activeChapter.chapterNumber < 10 ? `0${activeChapter.chapterNumber}` : activeChapter.chapterNumber})</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </CardContent>
           </Card>
         )}
+
+        {/* 3. TOÀN BỘ DANH SÁCH CHƯƠNG BIÊN NIÊN KÝ (CHAPTER DIRECTORY) */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between border-b border-[#26384D] pb-2">
+            <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-[#A7B6C8] flex items-center gap-2">
+              <BookOpen className="w-3.5 h-3.5 text-[#00D4FF]" />
+              <span>DANH SÁCH CHI TIẾT TẤT CẢ CÁC CHƯƠNG ({chapters.length} CHƯƠNG)</span>
+            </h4>
+            <span className="text-[11px] font-mono text-slate-400">
+              Nhấn bất kỳ chương nào để mở Story Reader
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {chapters.map((chap) => {
+              const isAvailable = Boolean(chap.contentAvailable);
+              const isSelected = chap.chapterId === activeChapterId;
+
+              return (
+                <div
+                  key={`card-${chap.chapterId}`}
+                  onClick={() => handleLaunchReader(chap.chapterId)}
+                  className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-3 group ${
+                    isSelected
+                      ? 'bg-[#0f2138] border-[#00D4FF] shadow-md shadow-cyan-950/50'
+                      : 'bg-[#071120]/80 border-[#26384D] hover:border-[#3B526D] hover:bg-[#0c1a2e]'
+                  }`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-[#070A12] border border-[#26384D] text-[#00D4FF]">
+                        CHƯƠNG {chap.chapterNumber < 10 ? `0${chap.chapterNumber}` : chap.chapterNumber}
+                      </span>
+                      {isAvailable ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-[#34D399] bg-[#34D399]/10 px-2 py-0.5 rounded border border-[#34D399]/30">
+                          <CheckCircle2 className="w-3 h-3" />
+                          CÓ VĂN XUÔI
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-[#FBBF24] bg-[#FBBF24]/10 px-2 py-0.5 rounded border border-[#FBBF24]/30">
+                          <Clock className="w-3 h-3" />
+                          COMING SOON
+                        </span>
+                      )}
+                    </div>
+
+                    <h5 className="text-sm font-bold text-[#F1F5F9] group-hover:text-[#00D4FF] transition-colors line-clamp-1">
+                      {chap.title}
+                    </h5>
+
+                    <p className="text-xs text-[#94A3B8] line-clamp-2 leading-relaxed">
+                      {chap.summary}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-[#1C2C3E] text-xs font-mono">
+                    <span className="text-[#64748B]">
+                      {isAvailable ? '~6 phút đọc' : 'Đang hoàn thiện'}
+                    </span>
+                    <span className="text-[#00D4FF] group-hover:translate-x-1 transition-transform flex items-center gap-1 font-bold">
+                      <span>{isAvailable ? 'ĐỌC TOÀN VĂN' : 'XEM CHI TIẾT'}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+

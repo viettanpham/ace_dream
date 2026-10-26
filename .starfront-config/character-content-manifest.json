@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 87,
-  "updatedAt": "2026-10-26T09:37:52.219Z",
+  "revision": 89,
+  "updatedAt": "2026-10-26T11:35:26.155Z",
   "updatedBy": "system_bootstrap",
   "profiles": {
     "alviss": {
@@ -20,7 +20,7 @@
       "lorePersonality": "Tự tin, nhiệt huyết, yêu tự do",
       "loreWeakness": "Đôi khi quá liều lĩnh trong truy kích",
       "loreDream": "Bảo vệ hòa bình vành đai",
-      "updatedAt": "2026-10-24T15:54:26.041Z",
+      "updatedAt": "2026-10-26T11:35:26.155Z",
       "updatedBy": "lead_architect",
       "quote": "Không một tấm khiên nào vỡ dưới sự giám sát của tôi."
     },
@@ -305,7 +305,7 @@
         "status": "verified",
         "description": "Cảnh Alviss điều khiển pháo đài chắn asteroid.",
         "priority": 90,
-        "createdAt": "2026-10-24T15:54:26.039Z",
+        "createdAt": "2026-10-26T11:35:26.154Z",
         "updatedBy": "lead_architect"
       }
     ],
@@ -1227,6 +1227,24 @@
   },
   "auditLog": [
     {
+      "id": "audit-1793014526155",
+      "timestamp": "2026-10-26T11:35:26.155Z",
+      "action": "PROFILE_UPDATE",
+      "targetPilotId": "alviss",
+      "targetId": "alviss",
+      "user": "lead_architect",
+      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
+    },
+    {
+      "id": "audit-1793014526154",
+      "timestamp": "2026-10-26T11:35:26.154Z",
+      "action": "ARTWORK_UPLOAD",
+      "targetPilotId": "alviss",
+      "targetId": "test_alviss_action_01",
+      "user": "lead_architect",
+      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
+    },
+    {
       "id": "audit-1793007472219",
       "timestamp": "2026-10-26T09:37:52.219Z",
       "action": "STORY_REORDER",
@@ -1657,24 +1675,6 @@
       "targetId": "marcus",
       "user": "test_admin",
       "details": "Cập nhật thông tin hồ sơ cho phi công marcus"
-    },
-    {
-      "id": "audit-1792816679639",
-      "timestamp": "2026-10-24T04:37:59.639Z",
-      "action": "PROFILE_UPDATE",
-      "targetPilotId": "alviss",
-      "targetId": "alviss",
-      "user": "lead_architect",
-      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
-    },
-    {
-      "id": "audit-1792816679638",
-      "timestamp": "2026-10-24T04:37:59.638Z",
-      "action": "ARTWORK_UPLOAD",
-      "targetPilotId": "alviss",
-      "targetId": "test_alviss_action_01",
-      "user": "lead_architect",
-      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
     }
   ]
 }

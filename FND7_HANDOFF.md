@@ -73,3 +73,13 @@ Khi bắt đầu lượt tiếp theo, kỹ sư / AI Studio sẽ triển khai **P
 - **Không Reset WORLD**: Giữ nguyên toàn bộ save game và tiến trình đang chơi.
 - **Không tạo Engine song song**: Tái sử dụng triệt để `ProgressionEntity` của FND-2 và `CatalogRegistry` của FND-1.
 - **Tiếp tục theo đúng hợp đồng**: Mọi logic đã được đặc tả trong `docs/foundations/FND7_SHIP_FLEET_FEATURE.md`.
+
+---
+
+### 5. TRẠNG THÁI GIAO DIỆN V2 ĐỒNG HÀNH (FND8.2.3.x CHARACTER PROFILE BASIC + MD AUDIT)
+- **Đã hoàn thiện:** Character Profile Basic cho 12 phi công canonical (`alviss`, `eric`, `marcus`, `victor`, `kaelen`, `lyra`, `selena`, `valentine`, `fortuna`, `aria`, `rhea`, `nova`).
+- **Khắc phục lỗi dữ liệu:** Loại bỏ hoàn toàn các trường dữ liệu hardcode riêng của Valentine (Elysia, Mercy Wing, UME Corps...) khỏi giao diện của các phi công khác; chuyển đổi Faction/Division, Badges, Traits, Base Attributes, Dossier và Ma trận tương thích cơ giáp (Gear Compatibility) sang cơ chế động 100%.
+- **CDN R3 Gallery & Story:** Tích hợp trơn tru, hiển thị đầy đủ bộ ảnh và danh mục 7 chương canonical kèm trạng thái Đang Phát Triển / Coming Soon minh bạch.
+- **Báo cáo tài liệu MD:** Đã phân loại 4 nhóm tài liệu Markdown trong repo; bảo vệ nguyên trạng mã nguồn, không tự xóa file khi chưa có kho lưu trữ sao lưu được xác minh.
+- **Kiểm thử & Build:** Test tập trung PASS, `tsc --noEmit` PASS, `compile_applet` PASS.
+

@@ -623,33 +623,72 @@ export function DesktopView({
               </div>
             </div>
 
-            {/* Logo Faction / Corps (UME MEDICAL CORPS chuẩn Concept) */}
-            <div className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-[#0A0F1A] border border-[#1E2D42] shrink-0">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#00D4FF]/10 text-[#00D4FF]">
-                <Shield className="w-4 h-4 text-[#00D4FF]" />
-              </div>
-              <span className="text-[9px] font-mono font-black text-[#A7B6C8] uppercase tracking-wider mt-1">
-                UME CORPS
-              </span>
-            </div>
+            {/* Logo Faction / Corps (Động theo từng Pilot) */}
+            {(() => {
+              const corps =
+                activeCharacter.id === 'valentine'
+                  ? { name: 'UME CORPS', icon: Shield, color: 'text-[#00D4FF]' }
+                  : activeCharacter.roleCategory === 'attack'
+                  ? { name: 'STRIKE WING', icon: Crosshair, color: 'text-[#EF4444]' }
+                  : activeCharacter.roleCategory === 'defense'
+                  ? { name: 'AEGIS SQUAD', icon: Shield, color: 'text-[#3B82F6]' }
+                  : activeCharacter.roleCategory === 'support'
+                  ? { name: 'UME SUPPORT', icon: Heart, color: 'text-[#10B981]' }
+                  : { name: 'RECON CORPS', icon: Sparkles, color: 'text-[#8B5CF6]' };
+              const IconComp = corps.icon;
+              return (
+                <div className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-[#0A0F1A] border border-[#1E2D42] shrink-0">
+                  <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-white/5 ${corps.color}`}>
+                    <IconComp className="w-4 h-4" />
+                  </div>
+                  <span className="text-[9px] font-mono font-black text-[#A7B6C8] uppercase tracking-wider mt-1">
+                    {corps.name}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
 
-          {/* Hàng 3 Badges Nổi Bật: Medic (Xanh Lá), Rescue (Xanh Cyan), SHD+ENE (Tím) */}
+          {/* Hàng Badges Nổi Bật (Lấy động từ activeCharacter.tags) */}
           <div className="flex flex-wrap items-center gap-2 mt-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#10B981]/15 text-[#10B981] border border-[#10B981]/40">
-              <Heart className="w-3.5 h-3.5 text-[#10B981]" />
-              <span>Medic</span>
-            </span>
+            {activeCharacter.tags && activeCharacter.tags.length > 0 ? (
+              activeCharacter.tags.map((tag, idx) => {
+                const t = tag.toLowerCase();
+                let badgeClass = 'bg-[#00D4FF]/15 text-[#00D4FF] border-[#00D4FF]/40';
+                let IconTag = Zap;
+                if (t.includes('medic') || t.includes('rescue')) {
+                  badgeClass = 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/40';
+                  IconTag = Heart;
+                } else if (t.includes('atk') || t.includes('fighter') || t.includes('assault') || t.includes('sniper')) {
+                  badgeClass = 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/40';
+                  IconTag = Crosshair;
+                } else if (t.includes('shd') || t.includes('shield') || t.includes('def') || t.includes('tank')) {
+                  badgeClass = 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/40';
+                  IconTag = Shield;
+                } else if (t.includes('ene')) {
+                  badgeClass = 'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/40';
+                  IconTag = Zap;
+                } else if (t.includes('agi') || t.includes('agility') || t.includes('speed')) {
+                  badgeClass = 'bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/40';
+                  IconTag = Sparkles;
+                }
 
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/40">
-              <Shield className="w-3.5 h-3.5 text-[#00D4FF]" />
-              <span>Rescue</span>
-            </span>
-
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#8B5CF6]/15 text-[#8B5CF6] border border-[#8B5CF6]/40">
-              <Zap className="w-3.5 h-3.5 text-[#8B5CF6]" />
-              <span>SHD + ENE</span>
-            </span>
+                return (
+                  <span
+                    key={idx}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold border ${badgeClass}`}
+                  >
+                    <IconTag className="w-3.5 h-3.5" />
+                    <span>{tag}</span>
+                  </span>
+                );
+              })
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/40">
+                <Shield className="w-3.5 h-3.5" />
+                <span>{activeCharacter.roleCategory.toUpperCase()}</span>
+              </span>
+            )}
           </div>
 
           {/* Đoạn mô tả ngắn (Short Description: 15-16px, dễ đọc) */}
@@ -772,46 +811,77 @@ export function DesktopView({
               </h3>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* Trait 1 */}
-              <div className="p-3 rounded-xl bg-[#0B111E]/80 border border-[#10B981]/40 flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#10B981]/15 text-[#10B981] flex items-center justify-center shrink-0 mt-0.5">
-                  <Heart className="w-4 h-4 text-[#10B981]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-white font-mono break-words leading-tight">
-                      {activeCharacter.traits[0]?.name || 'Bàn Tay Cứu Hộ'}
-                    </span>
-                    <span className="text-[9px] font-mono text-[#10B981] uppercase font-bold shrink-0">
-                      Passive
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
-                    {activeCharacter.traits[0]?.description || '+30% hiệu quả hồi phục Medic'}
-                  </p>
-                </div>
-              </div>
+            <div className={`grid ${activeCharacter.traits.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-2.5`}>
+              {activeCharacter.traits.map((trait, idx) => {
+                const isMedic = trait.iconType === 'medic';
+                const isShield = trait.iconType === 'shield';
+                const isFire = trait.iconType === 'firepower';
+                const isAgi = trait.iconType === 'agility';
 
-              {/* Trait 2 */}
-              <div className="p-3 rounded-xl bg-[#0B111E]/80 border border-[#00D4FF]/40 flex items-start gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-[#00D4FF]/15 text-[#00D4FF] flex items-center justify-center shrink-0 mt-0.5">
-                  <Shield className="w-4 h-4 text-[#00D4FF]" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-white font-mono break-words leading-tight">
-                      {activeCharacter.traits[1]?.name || 'Mái Khiên Nhân Ái'}
-                    </span>
-                    <span className="text-[9px] font-mono text-[#00D4FF] uppercase font-bold shrink-0">
-                      Passive
-                    </span>
+                const borderClass = isMedic
+                  ? 'border-[#10B981]/40'
+                  : isShield
+                  ? 'border-[#00D4FF]/40'
+                  : isFire
+                  ? 'border-[#EF4444]/40'
+                  : isAgi
+                  ? 'border-[#06B6D4]/40'
+                  : 'border-[#F59E0B]/40';
+
+                const iconBgClass = isMedic
+                  ? 'bg-[#10B981]/15 text-[#10B981]'
+                  : isShield
+                  ? 'bg-[#00D4FF]/15 text-[#00D4FF]'
+                  : isFire
+                  ? 'bg-[#EF4444]/15 text-[#EF4444]'
+                  : isAgi
+                  ? 'bg-[#06B6D4]/15 text-[#06B6D4]'
+                  : 'bg-[#F59E0B]/15 text-[#F59E0B]';
+
+                const badgeTextClass = isMedic
+                  ? 'text-[#10B981]'
+                  : isShield
+                  ? 'text-[#00D4FF]'
+                  : isFire
+                  ? 'text-[#EF4444]'
+                  : isAgi
+                  ? 'text-[#06B6D4]'
+                  : 'text-[#F59E0B]';
+
+                const IconTrait = isMedic
+                  ? Heart
+                  : isShield
+                  ? Shield
+                  : isFire
+                  ? Crosshair
+                  : isAgi
+                  ? Sparkles
+                  : Zap;
+
+                return (
+                  <div
+                    key={trait.id || idx}
+                    className={`p-3 rounded-xl bg-[#0B111E]/80 border ${borderClass} flex items-start gap-2.5`}
+                  >
+                    <div className={`w-7 h-7 rounded-lg ${iconBgClass} flex items-center justify-center shrink-0 mt-0.5`}>
+                      <IconTrait className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-xs font-bold text-white font-mono break-words leading-tight">
+                          {trait.name}
+                        </span>
+                        <span className={`text-[9px] font-mono uppercase font-bold shrink-0 ${badgeTextClass}`}>
+                          {trait.type}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
+                        {trait.description}
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
-                    {activeCharacter.traits[1]?.description || '+30% Shield Recovery từ kỹ năng'}
-                  </p>
-                </div>
-              </div>
+                );
+              })}
             </div>
           </div>
 
@@ -825,37 +895,36 @@ export function DesktopView({
                 <TabsTrigger value="gallery">GALLERY</TabsTrigger>
               </TabsList>
 
-              {/* Tab 1: THÔNG TIN CƠ BẢN */}
+              {/* Tab 1: THÔNG TIN CƠ BẢN (Động từ activeCharacter.basicInfo) */}
               <TabsContent value="overview">
                 <div className="rounded-xl bg-[#0B111E]/85 border border-[#1E2D42] p-3.5 text-sm space-y-2.5">
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
-                    <span className="text-[#7D90A6] font-medium">Giới tính / Tuổi:</span>
-                    <span className="font-semibold text-white">Nữ · 24 tuổi</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
-                    <span className="text-[#7D90A6] font-medium">Xuất thân:</span>
-                    <span className="font-semibold text-white">Khu dân cư y tế quỹ đạo Elysia</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
-                    <span className="text-[#7D90A6] font-medium">Đào tạo:</span>
-                    <span className="font-semibold text-white">Học viện Quân y Không gian</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
-                    <span className="text-[#7D90A6] font-medium">Chuyên môn:</span>
-                    <span className="font-semibold text-white">Cứu hộ, hồi phục, hỗ trợ khiên</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
-                    <span className="text-[#7D90A6] font-medium">Tính cách:</span>
-                    <span className="font-semibold text-white">Ấm áp, kiên trì, giàu lòng trắc ẩn</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-[#1E2D42]/60 pb-2">
-                    <span className="text-[#7D90A6] font-medium">Điểm yếu:</span>
-                    <span className="font-semibold text-[#F59E0B]">Khó chấp nhận bỏ lại người khác</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#7D90A6] font-medium">Ước mơ:</span>
-                    <span className="font-semibold text-[#00D4FF]">Không một tín hiệu cứu hộ bị lãng quên</span>
-                  </div>
+                  {activeCharacter.basicInfo && activeCharacter.basicInfo.length > 0 ? (
+                    activeCharacter.basicInfo.map((info, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex items-center justify-between ${
+                          idx < activeCharacter.basicInfo.length - 1
+                            ? 'border-b border-[#1E2D42]/60 pb-2'
+                            : ''
+                        }`}
+                      >
+                        <span className="text-[#7D90A6] font-medium">{info.label}:</span>
+                        <span
+                          className={`font-semibold text-right max-w-[230px] truncate ${
+                            info.label.includes('Điểm yếu')
+                              ? 'text-[#F59E0B]'
+                              : info.label.includes('Ước mơ')
+                              ? 'text-[#00D4FF]'
+                              : 'text-white'
+                          }`}
+                        >
+                          {info.value}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-[#A7B6C8] p-2">Thông tin nhân vật đang được cập nhật.</div>
+                  )}
                 </div>
               </TabsContent>
 

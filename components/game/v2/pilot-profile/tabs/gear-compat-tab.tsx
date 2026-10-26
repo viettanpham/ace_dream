@@ -23,42 +23,151 @@ interface GearCompatibilityData {
 }
 
 export function GearCompatTab({ character }: GearCompatTabProps) {
-  // Canonical 3 Gear archetypes
-  const gearList: GearCompatibilityData[] = [
-    {
-      id: 'aegis',
-      name: 'Aegis Shield-Carrier',
-      classType: 'Heavy Protective Frame',
-      role: 'Phòng Thủ & Hồi Phục Khiên',
-      compatibilityRank: 'S',
-      rankColor: 'text-emerald-400 bg-emerald-950/60 border-emerald-500/40',
-      imagePath: '/images/aegis-gear.webp',
-      synergyReason:
-        'Cực kỳ tối ưu hóa với năng lực Mercy Wing và trường lực năng lượng ENE/SHD cao của Valentine.',
-    },
-    {
-      id: 'vanguard',
-      name: 'Vanguard Striker',
-      classType: 'Balanced Assault Frame',
-      role: 'Tấn Công Đa Năng Cận Chiến',
-      compatibilityRank: 'B',
-      rankColor: 'text-amber-400 bg-amber-950/60 border-amber-500/40',
-      imagePath: '/images/vanguard-gear.webp',
-      synergyReason:
-        'Tương thích trung bình. Đòi hỏi phi công phải điều chỉnh phong cách tiếp cận từ phòng thủ sang tấn công.',
-    },
-    {
-      id: 'falcon',
-      name: 'Falcon Interceptor',
-      classType: 'High-Speed Aerial Frame',
-      role: 'Tiêm Kích Tốc Độ Siêu Âm',
-      compatibilityRank: 'C',
-      rankColor: 'text-slate-400 bg-slate-900 border-slate-700',
-      imagePath: '/images/falcon-gear.webp',
-      synergyReason:
-        'Tiêu hao động năng cao, xung đột với hệ thống hồi phục sinh học và bộ điều áp y tế chuyên dụng.',
-    },
-  ]
+  // Canonical 3 Gear archetypes dynamically evaluated for each pilot archetype
+  const gearList: GearCompatibilityData[] = (() => {
+    const isSupport = character.roleCategory === 'support';
+    const isAttack = character.roleCategory === 'attack';
+    const isDefense = character.roleCategory === 'defense';
+
+    if (isAttack) {
+      return [
+        {
+          id: 'falcon',
+          name: 'Falcon Interceptor',
+          classType: 'High-Speed Aerial Frame',
+          role: 'Tiêm Kích Tốc Độ Siêu Âm',
+          compatibilityRank: 'S',
+          rankColor: 'text-emerald-400 bg-emerald-950/60 border-emerald-500/40',
+          imagePath: '/images/falcon-gear.webp',
+          synergyReason: `Đồng bộ thần kinh hoàn hảo với phong cách tốc độ và phản xạ tiến công nhạy bén của ${character.classCharacterName}.`,
+        },
+        {
+          id: 'vanguard',
+          name: 'Vanguard Striker',
+          classType: 'Balanced Assault Frame',
+          role: 'Tấn Công Đa Năng Cận Chiến',
+          compatibilityRank: 'A',
+          rankColor: 'text-cyan-400 bg-cyan-950/60 border-cyan-500/40',
+          imagePath: '/images/vanguard-gear.webp',
+          synergyReason: `Khung xung kích cân bằng tối ưu hóa tốt cho chuỗi tấn công tầm gần và đột phá đội hình địch.`,
+        },
+        {
+          id: 'aegis',
+          name: 'Aegis Shield-Carrier',
+          classType: 'Heavy Protective Frame',
+          role: 'Phòng Thủ & Hồi Phục Khiên',
+          compatibilityRank: 'C',
+          rankColor: 'text-slate-400 bg-slate-900 border-slate-700',
+          imagePath: '/images/aegis-gear.webp',
+          synergyReason: `Trọng lượng giáp hạng nặng hạn chế tính cơ động chớp nhoáng của phi công tác chiến tiến công.`,
+        },
+      ];
+    }
+
+    if (isDefense) {
+      return [
+        {
+          id: 'aegis',
+          name: 'Aegis Shield-Carrier',
+          classType: 'Heavy Protective Frame',
+          role: 'Phòng Thủ & Hồi Phục Khiên',
+          compatibilityRank: 'S',
+          rankColor: 'text-emerald-400 bg-emerald-950/60 border-emerald-500/40',
+          imagePath: '/images/aegis-gear.webp',
+          synergyReason: `Tương thích cấp tối đa với chuyên môn phòng thủ vững chắc và lá chắn trường lực kiên cố của ${character.classCharacterName}.`,
+        },
+        {
+          id: 'vanguard',
+          name: 'Vanguard Striker',
+          classType: 'Balanced Assault Frame',
+          role: 'Tấn Công Đa Năng Cận Chiến',
+          compatibilityRank: 'A',
+          rankColor: 'text-cyan-400 bg-cyan-950/60 border-cyan-500/40',
+          imagePath: '/images/vanguard-gear.webp',
+          synergyReason: `Độ bền vững cao, tạo tiền đề che chắn và phản công an toàn ở tuyến đầu chiến trường.`,
+        },
+        {
+          id: 'falcon',
+          name: 'Falcon Interceptor',
+          classType: 'High-Speed Aerial Frame',
+          role: 'Tiêm Kích Tốc Độ Siêu Âm',
+          compatibilityRank: 'C',
+          rankColor: 'text-slate-400 bg-slate-900 border-slate-700',
+          imagePath: '/images/falcon-gear.webp',
+          synergyReason: `Khung siêu âm có lớp giáp mỏng, không tương thích với phong cách bọc lót chống đỡ hỏa lực.`,
+        },
+      ];
+    }
+
+    if (isSupport) {
+      return [
+        {
+          id: 'aegis',
+          name: 'Aegis Shield-Carrier',
+          classType: 'Heavy Protective Frame',
+          role: 'Phòng Thủ & Hồi Phục Khiên',
+          compatibilityRank: 'S',
+          rankColor: 'text-emerald-400 bg-emerald-950/60 border-emerald-500/40',
+          imagePath: '/images/aegis-gear.webp',
+          synergyReason: `Cực kỳ tối ưu hóa với năng lực bảo hộ, tái tạo trường lực ENE/SHD của ${character.classCharacterName}.`,
+        },
+        {
+          id: 'vanguard',
+          name: 'Vanguard Striker',
+          classType: 'Balanced Assault Frame',
+          role: 'Tấn Công Đa Năng Cận Chiến',
+          compatibilityRank: 'B',
+          rankColor: 'text-amber-400 bg-amber-950/60 border-amber-500/40',
+          imagePath: '/images/vanguard-gear.webp',
+          synergyReason: `Tương thích trung bình. Đòi hỏi phi công phải điều chỉnh phong cách tiếp cận từ phòng thủ sang hỗ trợ tấn công.`,
+        },
+        {
+          id: 'falcon',
+          name: 'Falcon Interceptor',
+          classType: 'High-Speed Aerial Frame',
+          role: 'Tiêm Kích Tốc Độ Siêu Âm',
+          compatibilityRank: 'C',
+          rankColor: 'text-slate-400 bg-slate-900 border-slate-700',
+          imagePath: '/images/falcon-gear.webp',
+          synergyReason: `Tiêu hao động năng cao, xung đột với hệ thống hồi phục sinh học và bộ điều áp y tế chuyên dụng.`,
+        },
+      ];
+    }
+
+    // Default / Special Archetypes (Fortuna, Aria, Rhea, etc.)
+    return [
+      {
+        id: 'vanguard',
+        name: 'Vanguard Striker',
+        classType: 'Balanced Assault Frame',
+        role: 'Tấn Công Đa Năng Cận Chiến',
+        compatibilityRank: 'S',
+        rankColor: 'text-emerald-400 bg-emerald-950/60 border-emerald-500/40',
+        imagePath: '/images/vanguard-gear.webp',
+        synergyReason: `Khung cơ giáp đa năng cân bằng xuất sắc cho các nhiệm vụ tác chiến chiến thuật và điều phối của ${character.classCharacterName}.`,
+      },
+      {
+        id: 'falcon',
+        name: 'Falcon Interceptor',
+        classType: 'High-Speed Aerial Frame',
+        role: 'Tiêm Kích Tốc Độ Siêu Âm',
+        compatibilityRank: 'A',
+        rankColor: 'text-cyan-400 bg-cyan-950/60 border-cyan-500/40',
+        imagePath: '/images/falcon-gear.webp',
+        synergyReason: `Hỗ trợ trinh sát diện rộng và thu thập dữ liệu radar tác chiến tốc độ cao.`,
+      },
+      {
+        id: 'aegis',
+        name: 'Aegis Shield-Carrier',
+        classType: 'Heavy Protective Frame',
+        role: 'Phòng Thủ & Hồi Phục Khiên',
+        compatibilityRank: 'B',
+        rankColor: 'text-amber-400 bg-amber-950/60 border-amber-500/40',
+        imagePath: '/images/aegis-gear.webp',
+        synergyReason: `Bảo vệ tốt khi cần phòng ngự cố định nhưng giảm độ linh hoạt khi triển khai chiến thuật.`,
+      },
+    ];
+  })();
 
   return (
     <div className="space-y-6">

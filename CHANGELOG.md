@@ -2,7 +2,31 @@
 
 Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án **STARFRONT** được ghi lại tại đây theo trình tự thời gian đảo ngược (mới nhất lên đầu).
 
-## [V2.0 — Final Cross-Account ENV Cleanup] — Dọn Dẹp Biến Môi Trường Zero-Config Cho Tài Khoản Mới
+## [FND8.2.3.x] — Character Profile Basic & Dynamic 12-Pilot Dossier Experience + Source Markdown Audit
+
+*Đã hoàn thành 100% nhiệm vụ FND8.2.3.x theo phương châm IMPLEMENT + VERIFY + HANDOFF — MỘT LƯỢT DUY NHẤT: Hoàn thiện trải nghiệm Character Profile/Details cơ bản trên cả Desktop và Mobile cho toàn bộ 12 phi công canonical; loại bỏ hoàn toàn các trường dữ liệu hardcode riêng của Valentine trong các tab và bảng tác chiến; kết nối động Faction/Division, Badges phân loại, Traits, Base Attributes, Hồ sơ nhân thân, Ma trận tương thích cơ giáp (Gear Compatibility) và Gallery CDN R3; hoàn thành kiểm kê và lập báo cáo phân loại toàn bộ tài liệu Markdown (.md) trong repository với nguyên tắc bảo vệ dữ liệu an toàn, không tự xóa file khi chưa có kho lưu trữ sao lưu được xác minh; 100% tests PASS, tsc --noEmit PASS, Next.js build PASS.*
+
+### Các cải tiến chi tiết:
+- **1. Trải Nghiệm Character Profile 12 Phi Công Đồng Bộ & Động 100%**:
+  * **Faction & Corps Badge Động**: Tự động hiển thị huy hiệu và tổ chức chuẩn xác theo vai trò của từng phi công: Valentine (UME CORPS), Attack (STRIKE WING), Defense (AEGIS SQUAD), Support (UME SUPPORT), Special/Intel (RECON CORPS).
+  * **Tags & Badges Động**: Lấy động từ `activeCharacter.tags` với màu sắc nhận diện đặc trưng (Đỏ cho ATK/Assault/Fighter, Xanh lá cho Medic/Rescue, Xanh dương cho Defense/Shield, Vàng cho ENE, Xanh ngọc cho Agility/Speed).
+  * **Dossier & Thông Tin Nhân Thân Động**: Render động toàn bộ mảng `activeCharacter.basicInfo` trên cả Desktop `OverviewTab` và Mobile `MobileInfoView` (Hồ Sơ Tác Chiến), loại bỏ dứt điểm tình trạng phi công khác hiển thị quê quán Elysia hoặc ước mơ của Valentine.
+  * **Traits & Thiên Phú Động**: Render động danh sách Traits thực tế theo `activeCharacter.traits.map(...)` kèm icon chuẩn (`medic`, `firepower`, `agility`, `tactical`, `shield`), không hardcode ô thứ hai và không fallback giả lập sang trait của Valentine.
+  * **Ma Trận Tương Thích Cơ Giáp (Gear Compatibility Matrix)**: Tự động tính toán cấp độ tương thích (Rank S, A, B, C) và lý do đồng bộ sóng não dựa theo đặc trưng lớp nhân vật của từng phi công (Attack tối ưu Falcon S / Vanguard A, Defense tối ưu Aegis S / Vanguard A, Support tối ưu Aegis S / Vanguard B, Special tối ưu Vanguard S / Falcon A).
+- **2. Story & Gallery CDN R3 Kết Nối Liền Mạch**:
+  * Kết nối trực tiếp với CDN R3 Universal Content Resolver (`/api/runtime/story?pilotId=...` và `/api/runtime/gallery/...`).
+  * 12 phi công đều hiển thị 7 chương canonical (Valentine 10 chương), điều hướng chính xác vào `ImmersiveStoryReader` theo đúng `chapterId`, không bị reset về Chương 01.
+  * Trạng thái **ĐANG PHÁT TRIỂN // COMING SOON** minh bạch cho các chương chưa có văn bản toàn văn, tuyệt đối không tạo văn xuôi giả mạo hay lỗi HTTP 404.
+- **3. Kiểm Kê & Báo Cáo Phân Loại Tài Liệu Markdown (.md)**:
+  * Đã kiểm kê toàn bộ danh mục file `.md` trong repo và phân loại thành 4 nhóm rõ ràng.
+  * Tuân thủ nghiêm ngặt chỉ thị người dùng: Không tự xóa bất kỳ tài liệu lịch sử nào khỏi source khi chưa có kho sao lưu đích được xác minh.
+- **4. Kiểm Thử & Nghiệm Thu**:
+  * Tạo và chạy test suite `tests/character-profile-basic-fnd8-2-3.test.ts`: PASS 100% cả 5 subtests cho 12 phi công.
+  * Typecheck `tsc --noEmit` PASS (0 lỗi).
+  * `compile_applet` PASS (Next.js build succeeded).
+  * HTTP status 200 cho `/v2/pilots`, `/v1`, `/v2/admin`, và các API runtime.
+
+---
 
 *Đã hoàn thành 100% việc chuẩn hóa và làm sạch cấu hình môi trường phục vụ import/cross-account trên AI Studio: Loại bỏ toàn bộ các khai báo biến môi trường rỗng gây popup trong `.env.example`; tách bạch biến public CDN mặc định hoạt động ngay (Zero-Config) khỏi các biến private/advanced tùy chọn được chú thích; kiểm chứng thành công môi trường sạch hoàn toàn (không `.env.local`, không secret, không biến môi trường nạp trước) với 100% tính năng Public Preview (`/`, `/v1`, `/v2/pilots`, Gallery R3 35 ảnh, Story Reader 3 cột) hoạt động trơn tru; typecheck và build PASS 100%.*
 

@@ -154,8 +154,16 @@ export function MobileInfoView({
               {/* Header Danh Tính Nhân Vật */}
               <div className="p-4 rounded-2xl bg-[#0D1526]/95 border border-[#20324B] shadow-xl space-y-3">
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-[#10B981]/20 border border-[#10B981]/60 flex items-center justify-center text-[#10B981] shrink-0">
-                    <Heart className="w-6 h-6 text-[#10B981]" />
+                  <div className="w-10 h-10 rounded-xl bg-[#00D4FF]/10 border border-[#00D4FF]/40 flex items-center justify-center text-[#00D4FF] shrink-0">
+                    {activeCharacter.roleCategory === 'attack' ? (
+                      <Crosshair className="w-5 h-5 text-[#EF4444]" />
+                    ) : activeCharacter.roleCategory === 'defense' ? (
+                      <Shield className="w-5 h-5 text-[#3B82F6]" />
+                    ) : activeCharacter.roleCategory === 'support' ? (
+                      <Heart className="w-5 h-5 text-[#10B981]" />
+                    ) : (
+                      <Sparkles className="w-5 h-5 text-[#00D4FF]" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <h1 className="text-2xl font-black font-mono text-white tracking-wide leading-tight">
@@ -175,23 +183,38 @@ export function MobileInfoView({
                   "{activeCharacter.characterQuote}"
                 </div>
 
-                {/* Hàng Badges Đầy Đủ */}
+                {/* Hàng Badges Đầy Đủ (Lấy động từ activeCharacter.tags) */}
                 <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#8B5CF6]/20 text-[#A78BFA] border border-[#8B5CF6]/50">
-                    SHD
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#F59E0B]/20 text-[#FBBF24] border border-[#F59E0B]/50">
-                    ENE
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#00D4FF]/20 text-[#00D4FF] border border-[#00D4FF]/50">
-                    Support
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#10B981]/20 text-[#34D399] border border-[#10B981]/50">
-                    Medic
-                  </span>
-                  <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#00D4FF]/20 text-[#00D4FF] border border-[#00D4FF]/50">
-                    Rescue
-                  </span>
+                  {activeCharacter.tags && activeCharacter.tags.length > 0 ? (
+                    activeCharacter.tags.map((tag, idx) => {
+                      const t = tag.toLowerCase();
+                      let badgeClass = 'bg-[#00D4FF]/20 text-[#00D4FF] border-[#00D4FF]/50';
+                      if (t.includes('medic') || t.includes('rescue')) {
+                        badgeClass = 'bg-[#10B981]/20 text-[#34D399] border-[#10B981]/50';
+                      } else if (t.includes('atk') || t.includes('fighter') || t.includes('assault') || t.includes('sniper')) {
+                        badgeClass = 'bg-[#EF4444]/20 text-[#EF4444] border-[#EF4444]/50';
+                      } else if (t.includes('shd') || t.includes('shield') || t.includes('def') || t.includes('tank')) {
+                        badgeClass = 'bg-[#3B82F6]/20 text-[#60A5FA] border-[#3B82F6]/50';
+                      } else if (t.includes('ene')) {
+                        badgeClass = 'bg-[#F59E0B]/20 text-[#FBBF24] border-[#F59E0B]/50';
+                      } else if (t.includes('agi') || t.includes('agility') || t.includes('speed')) {
+                        badgeClass = 'bg-[#06B6D4]/20 text-[#22D3EE] border-[#06B6D4]/50';
+                      }
+
+                      return (
+                        <span
+                          key={idx}
+                          className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold border ${badgeClass}`}
+                        >
+                          {tag}
+                        </span>
+                      );
+                    })
+                  ) : (
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#00D4FF]/20 text-[#00D4FF] border border-[#00D4FF]/50">
+                      {activeCharacter.roleCategory.toUpperCase()}
+                    </span>
+                  )}
                 </div>
 
                 {/* Mô Tả Ngắn (15-16px, sáng rõ trên nền tối) */}
@@ -312,47 +335,80 @@ export function MobileInfoView({
                 </div>
 
                 <div className="space-y-2.5">
-                  <div className="p-3 rounded-xl bg-[#121E33] border border-[#10B981]/50 flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-[#10B981]/20 text-[#10B981] flex items-center justify-center shrink-0 mt-0.5">
-                      <Heart className="w-4 h-4 text-[#10B981]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-sm font-bold text-white font-mono">
-                          {activeCharacter.traits[0]?.name || 'Bàn Tay Cứu Hộ'}
-                        </span>
-                        <span className="text-[10px] font-mono text-[#34D399] uppercase font-bold px-1.5 py-0.5 rounded bg-[#10B981]/10 border border-[#10B981]/30">
-                          Passive
-                        </span>
-                      </div>
-                      <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
-                        {activeCharacter.traits[0]?.description || '+30% hiệu quả hồi phục Medic khi kích hoạt kỹ năng hỗ trợ.'}
-                      </p>
-                    </div>
-                  </div>
+                  {activeCharacter.traits.map((trait, idx) => {
+                    const isMedic = trait.iconType === 'medic';
+                    const isShield = trait.iconType === 'shield';
+                    const isFire = trait.iconType === 'firepower';
+                    const isAgi = trait.iconType === 'agility';
 
-                  <div className="p-3 rounded-xl bg-[#121E33] border border-[#00D4FF]/50 flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-[#00D4FF]/20 text-[#00D4FF] flex items-center justify-center shrink-0 mt-0.5">
-                      <Shield className="w-4 h-4 text-[#00D4FF]" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-sm font-bold text-white font-mono">
-                          {activeCharacter.traits[1]?.name || 'Mái Khiên Nhân Ái'}
-                        </span>
-                        <span className="text-[10px] font-mono text-[#00D4FF] uppercase font-bold px-1.5 py-0.5 rounded bg-[#00D4FF]/10 border border-[#00D4FF]/30">
-                          Passive
-                        </span>
+                    const borderClass = isMedic
+                      ? 'border-[#10B981]/50'
+                      : isShield
+                      ? 'border-[#00D4FF]/50'
+                      : isFire
+                      ? 'border-[#EF4444]/50'
+                      : isAgi
+                      ? 'border-[#06B6D4]/50'
+                      : 'border-[#F59E0B]/50';
+
+                    const iconBgClass = isMedic
+                      ? 'bg-[#10B981]/20 text-[#10B981]'
+                      : isShield
+                      ? 'bg-[#00D4FF]/20 text-[#00D4FF]'
+                      : isFire
+                      ? 'bg-[#EF4444]/20 text-[#EF4444]'
+                      : isAgi
+                      ? 'bg-[#06B6D4]/20 text-[#06B6D4]'
+                      : 'bg-[#F59E0B]/20 text-[#F59E0B]';
+
+                    const badgeClass = isMedic
+                      ? 'text-[#34D399] bg-[#10B981]/10 border-[#10B981]/30'
+                      : isShield
+                      ? 'text-[#00D4FF] bg-[#00D4FF]/10 border-[#00D4FF]/30'
+                      : isFire
+                      ? 'text-[#EF4444] bg-[#EF4444]/10 border-[#EF4444]/30'
+                      : isAgi
+                      ? 'text-[#06B6D4] bg-[#06B6D4]/10 border-[#06B6D4]/30'
+                      : 'text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/30';
+
+                    const IconTrait = isMedic
+                      ? Heart
+                      : isShield
+                      ? Shield
+                      : isFire
+                      ? Crosshair
+                      : isAgi
+                      ? Sparkles
+                      : Zap;
+
+                    return (
+                      <div
+                        key={trait.id || idx}
+                        className={`p-3 rounded-xl bg-[#121E33] border ${borderClass} flex items-start gap-3`}
+                      >
+                        <div className={`w-7 h-7 rounded-lg ${iconBgClass} flex items-center justify-center shrink-0 mt-0.5`}>
+                          <IconTrait className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-sm font-bold text-white font-mono">
+                              {trait.name}
+                            </span>
+                            <span className={`text-[10px] font-mono uppercase font-bold px-1.5 py-0.5 rounded border ${badgeClass}`}>
+                              {trait.type}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
+                            {trait.description}
+                          </p>
+                        </div>
                       </div>
-                      <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
-                        {activeCharacter.traits[1]?.description || '+30% Shield Recovery từ kỹ năng hỗ trợ, tái tạo trường lực.'}
-                      </p>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* SECTION: THÔNG TIN NHÂN VẬT (Bảng chi tiết rõ nét) */}
+              {/* SECTION: THÔNG TIN NHÂN VẬT (Bảng chi tiết rõ nét lấy động từ basicInfo) */}
               <div className="p-4 rounded-2xl bg-[#0D1526]/95 border border-[#20324B] shadow-xl space-y-3">
                 <div className="flex items-center gap-2 pb-1.5 border-b border-[#20324B]">
                   <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
@@ -362,42 +418,33 @@ export function MobileInfoView({
                 </div>
 
                 <div className="text-sm space-y-2.5">
-                  <div className="flex justify-between border-b border-[#20324B]/70 pb-2">
-                    <span className="text-[#94A3B8] font-medium">Giới tính / Tuổi:</span>
-                    <span className="font-semibold text-white">Nữ · 24 tuổi</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#20324B]/70 pb-2">
-                    <span className="text-[#94A3B8] font-medium">Tên đầy đủ:</span>
-                    <span className="font-semibold text-white">{activeCharacter.fullLoreName}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#20324B]/70 pb-2">
-                    <span className="text-[#94A3B8] font-medium">Callsign:</span>
-                    <span className="font-bold text-[#00D4FF]">{activeCharacter.callsign}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#20324B]/70 pb-2">
-                    <span className="text-[#94A3B8] font-medium">Xuất thân:</span>
-                    <span className="font-semibold text-white text-right max-w-[200px]">Khu dân cư y tế Elysia</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#20324B]/70 pb-2">
-                    <span className="text-[#94A3B8] font-medium">Đào tạo:</span>
-                    <span className="font-semibold text-white text-right max-w-[200px]">Học viện Quân y Không gian</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#20324B]/70 pb-2">
-                    <span className="text-[#94A3B8] font-medium">Chuyên môn:</span>
-                    <span className="font-semibold text-white text-right max-w-[200px]">Cứu hộ, hồi phục, khiên</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#20324B]/70 pb-2">
-                    <span className="text-[#94A3B8] font-medium">Tính cách:</span>
-                    <span className="font-semibold text-white text-right max-w-[200px]">Ấm áp, kiên trì, trắc ẩn</span>
-                  </div>
-                  <div className="flex justify-between border-b border-[#20324B]/70 pb-2">
-                    <span className="text-[#94A3B8] font-medium">Điểm yếu:</span>
-                    <span className="font-semibold text-[#FBBF24] text-right max-w-[200px]">Khó bỏ lại đồng đội</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#94A3B8] font-medium">Ước mơ:</span>
-                    <span className="font-semibold text-[#00D4FF] text-right max-w-[200px]">Không bỏ quên ai</span>
-                  </div>
+                  {activeCharacter.basicInfo && activeCharacter.basicInfo.length > 0 ? (
+                    activeCharacter.basicInfo.map((info, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex justify-between ${
+                          idx < activeCharacter.basicInfo.length - 1
+                            ? 'border-b border-[#20324B]/70 pb-2'
+                            : ''
+                        }`}
+                      >
+                        <span className="text-[#94A3B8] font-medium">{info.label}:</span>
+                        <span
+                          className={`font-semibold text-right max-w-[200px] truncate ${
+                            info.label.includes('Điểm yếu')
+                              ? 'text-[#FBBF24]'
+                              : info.label.includes('Ước mơ') || info.label.includes('Callsign')
+                              ? 'text-[#00D4FF]'
+                              : 'text-white'
+                          }`}
+                        >
+                          {info.value}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-xs text-[#94A3B8] py-2">Hồ sơ tác chiến đang được cập nhật.</div>
+                  )}
                 </div>
               </div>
 

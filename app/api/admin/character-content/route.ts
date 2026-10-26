@@ -26,12 +26,18 @@ export async function GET(req: NextRequest) {
     const store = getCharacterContentStore();
     const manifest = await store.getManifest();
 
-    // Hydrate stories map for all canonical pilots so manifest.stories[pId] is never undefined
+    // Hydrate stories map for all canonical pilots using Universal Content Resolver R3 (with store fallback)
+    const { universalContentResolver } = await import('@/lib/game/v2/universal-content-resolver');
     const storiesMap: Record<string, { chapters: any[] }> = {};
     for (const pId of CANONICAL_PILOT_IDS) {
       try {
-        const chapters = await store.getStoryChapters(pId, true);
-        storiesMap[pId] = { chapters: chapters || [] };
+        const catalog = await universalContentResolver.getPilotStoryCatalog(pId, true);
+        if (catalog && catalog.chapters.length > 0) {
+          storiesMap[pId] = { chapters: catalog.chapters };
+        } else {
+          const chapters = await store.getStoryChapters(pId, true);
+          storiesMap[pId] = { chapters: chapters || [] };
+        }
       } catch {
         storiesMap[pId] = { chapters: [] };
       }

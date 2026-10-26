@@ -15,9 +15,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const pilotIdParam = searchParams.get('pilotId')?.toLowerCase().trim();
 
-    const isDevOrPreview =
-      process.env.NODE_ENV !== 'production' ||
-      process.env.STARFRONT_STORY_REVIEW_MODE === 'true';
+    const { verifyAdminRequest } = await import('@/lib/game/auth/admin-auth');
+    const adminAuth = verifyAdminRequest(req, false);
+    const isAdminOrReview = adminAuth.authorized || process.env.STARFRONT_STORY_REVIEW_MODE === 'true';
 
     // 1. If specific pilot is requested:
     if (pilotIdParam) {
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       }
 
       // Try Universal Content Resolver first (R3 story manifest)
-      const storyCatalog = await universalContentResolver.getPilotStoryCatalog(pilotIdParam);
+      const storyCatalog = await universalContentResolver.getPilotStoryCatalog(pilotIdParam, isAdminOrReview);
       if (storyCatalog && storyCatalog.chapters.length > 0) {
         return NextResponse.json({
           success: true,
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
           totalChapters: storyCatalog.totalChapters,
           publishedChaptersCount: storyCatalog.publishedChaptersCount,
           chapters: storyCatalog.chapters,
-          isReviewMode: isDevOrPreview,
+          isReviewMode: isAdminOrReview,
         });
       }
 
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
         success: true,
         pilotId: pilotIdParam,
         chapters: published,
-        isReviewMode: isDevOrPreview,
+        isReviewMode: isAdminOrReview,
       });
     }
 

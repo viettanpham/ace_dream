@@ -132,11 +132,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
   const activeChapter =
     chapters.find((c) => c.chapterId === activeChapterId) || chapters[0];
 
-  const isValentineCh01 =
-    character.id === 'valentine' &&
-    (activeChapter?.chapterId === 'chap-01' || activeChapter?.chapterNumber === 1);
-
-  const canReadActiveChapter = activeChapter?.contentAvailable || isValentineCh01;
+  const canReadActiveChapter = Boolean(activeChapter?.contentAvailable);
 
   return (
     <div className="space-y-6">
@@ -222,7 +218,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
           {chapters.map((chap) => {
             const isActive = chap.chapterId === activeChapterId;
-            const isAvailable = chap.contentAvailable || (character.id === 'valentine' && chap.chapterNumber === 1);
+            const isAvailable = Boolean(chap.contentAvailable);
 
             return (
               <button

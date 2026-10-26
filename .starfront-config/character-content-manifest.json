@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "revision": 51,
-  "updatedAt": "2026-10-24T15:54:26.041Z",
+  "revision": 57,
+  "updatedAt": "2026-10-26T07:12:41.387Z",
   "updatedBy": "system_bootstrap",
   "profiles": {
     "alviss": {
@@ -1013,7 +1013,78 @@
     "marcus": {},
     "victor": {},
     "kaelen": {},
-    "lyra": {},
+    "lyra": {
+      "chap-03": {
+        "editorialStatus": "HOLD",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-03",
+        "summary": "",
+        "displayOrder": 3,
+        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedBy": "test_admin"
+      },
+      "chap-01": {
+        "editorialStatus": "HOLD",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-01",
+        "summary": "",
+        "displayOrder": 1,
+        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedBy": "test_admin"
+      },
+      "chap-02": {
+        "editorialStatus": "HOLD",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-02",
+        "summary": "",
+        "displayOrder": 2,
+        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedBy": "test_admin"
+      },
+      "chap-04": {
+        "editorialStatus": "HOLD",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-04",
+        "summary": "",
+        "displayOrder": 4,
+        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedBy": "test_admin"
+      },
+      "chap-05": {
+        "editorialStatus": "HOLD",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-05",
+        "summary": "",
+        "displayOrder": 5,
+        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedBy": "test_admin"
+      },
+      "chap-06": {
+        "editorialStatus": "HOLD",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-06",
+        "summary": "",
+        "displayOrder": 6,
+        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedBy": "test_admin"
+      },
+      "chap-07": {
+        "editorialStatus": "HOLD",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-07",
+        "summary": "",
+        "displayOrder": 7,
+        "updatedAt": "2026-10-26T07:12:41.387Z",
+        "updatedBy": "test_admin"
+      }
+    },
     "selena": {},
     "valentine": {
       "chap-01": {
@@ -1099,12 +1170,103 @@
         "summary": "Hồ sơ niêm phong cấp độ tối cao. Chưa mở khóa nội dung."
       }
     },
-    "fortuna": {},
+    "fortuna": {
+      "chap-02": {
+        "editorialStatus": "REVIEW",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-02",
+        "summary": "",
+        "status": "REVIEW",
+        "publicationStatus": "DRAFT",
+        "isHidden": false,
+        "updatedAt": "2026-10-26T07:12:41.361Z",
+        "updatedBy": "test_admin"
+      },
+      "chap-03": {
+        "editorialStatus": "APPROVED",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-03",
+        "summary": "",
+        "status": "PUBLISHED",
+        "publicationStatus": "PUBLISHED",
+        "isHidden": false,
+        "updatedAt": "2026-10-26T07:12:41.368Z",
+        "updatedBy": "test_admin"
+      },
+      "chap-04": {
+        "editorialStatus": "DRAFT",
+        "contentReadiness": "SUMMARY_ONLY",
+        "version": "1.0.0",
+        "title": "chap-04",
+        "summary": "",
+        "status": "DRAFT",
+        "publicationStatus": "DRAFT",
+        "isHidden": false,
+        "updatedAt": "2026-10-26T07:12:41.380Z",
+        "updatedBy": "test_admin"
+      }
+    },
     "aria": {},
     "rhea": {},
     "nova": {}
   },
   "auditLog": [
+    {
+      "id": "audit-1792998761387",
+      "timestamp": "2026-10-26T07:12:41.387Z",
+      "action": "STORY_REORDER",
+      "targetPilotId": "lyra",
+      "targetId": "7_chapters",
+      "user": "test_admin",
+      "details": "Cập nhật thứ tự hiển thị 7 chương cho lyra"
+    },
+    {
+      "id": "audit-1792998761380",
+      "timestamp": "2026-10-26T07:12:41.380Z",
+      "action": "STORY_REORDER",
+      "targetPilotId": "lyra",
+      "targetId": "7_chapters",
+      "user": "test_admin",
+      "details": "Cập nhật thứ tự hiển thị 7 chương cho lyra"
+    },
+    {
+      "id": "audit-1792998761380",
+      "timestamp": "2026-10-26T07:12:41.380Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "fortuna",
+      "targetId": "chap-04",
+      "user": "test_admin",
+      "details": "Cập nhật trạng thái chương chap-04 của fortuna: status=DRAFT, isHidden=false"
+    },
+    {
+      "id": "audit-1792998761374",
+      "timestamp": "2026-10-26T07:12:41.374Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "fortuna",
+      "targetId": "chap-04",
+      "user": "test_admin",
+      "details": "Cập nhật trạng thái chương chap-04 của fortuna: status=HIDDEN, isHidden=true"
+    },
+    {
+      "id": "audit-1792998761368",
+      "timestamp": "2026-10-26T07:12:41.368Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "fortuna",
+      "targetId": "chap-03",
+      "user": "test_admin",
+      "details": "Cập nhật trạng thái chương chap-03 của fortuna: status=PUBLISHED, isHidden=false"
+    },
+    {
+      "id": "audit-1792998761362",
+      "timestamp": "2026-10-26T07:12:41.362Z",
+      "action": "STORY_STATUS_UPDATE",
+      "targetPilotId": "fortuna",
+      "targetId": "chap-02",
+      "user": "test_admin",
+      "details": "Cập nhật trạng thái chương chap-02 của fortuna: status=REVIEW, isHidden=false"
+    },
     {
       "id": "audit-1792857266041",
       "timestamp": "2026-10-24T15:54:26.041Z",
@@ -1495,60 +1657,6 @@
     {
       "id": "audit-1792774271169",
       "timestamp": "2026-10-23T16:51:11.169Z",
-      "action": "ARTWORK_UPLOAD",
-      "targetPilotId": "alviss",
-      "targetId": "test_alviss_action_01",
-      "user": "lead_architect",
-      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
-    },
-    {
-      "id": "audit-1792772920942",
-      "timestamp": "2026-10-23T16:28:40.942Z",
-      "action": "PROFILE_UPDATE",
-      "targetPilotId": "alviss",
-      "targetId": "alviss",
-      "user": "lead_architect",
-      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
-    },
-    {
-      "id": "audit-1792772920939",
-      "timestamp": "2026-10-23T16:28:40.939Z",
-      "action": "ARTWORK_UPLOAD",
-      "targetPilotId": "alviss",
-      "targetId": "test_alviss_action_01",
-      "user": "lead_architect",
-      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
-    },
-    {
-      "id": "audit-1792772659129",
-      "timestamp": "2026-10-23T16:24:19.129Z",
-      "action": "PROFILE_UPDATE",
-      "targetPilotId": "alviss",
-      "targetId": "alviss",
-      "user": "lead_architect",
-      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
-    },
-    {
-      "id": "audit-1792772659127",
-      "timestamp": "2026-10-23T16:24:19.127Z",
-      "action": "ARTWORK_UPLOAD",
-      "targetPilotId": "alviss",
-      "targetId": "test_alviss_action_01",
-      "user": "lead_architect",
-      "details": "Đăng ký artwork \"Alviss — Tác Chiến Vành Đai Asteroid\" [lore] cho alviss"
-    },
-    {
-      "id": "audit-1792772640159",
-      "timestamp": "2026-10-23T16:24:00.159Z",
-      "action": "PROFILE_UPDATE",
-      "targetPilotId": "alviss",
-      "targetId": "alviss",
-      "user": "lead_architect",
-      "details": "Cập nhật thông tin hồ sơ cho phi công alviss"
-    },
-    {
-      "id": "audit-1792772640158",
-      "timestamp": "2026-10-23T16:24:00.158Z",
       "action": "ARTWORK_UPLOAD",
       "targetPilotId": "alviss",
       "targetId": "test_alviss_action_01",

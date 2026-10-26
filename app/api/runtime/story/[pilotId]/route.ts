@@ -24,17 +24,17 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const catalog = await universalContentResolver.getPilotStoryCatalog(cleanPilotId);
+    const { verifyAdminRequest } = await import('@/lib/game/auth/admin-auth');
+    const adminAuth = verifyAdminRequest(req, false);
+    const isAdminOrReview = adminAuth.authorized || process.env.STARFRONT_STORY_REVIEW_MODE === 'true';
+
+    const catalog = await universalContentResolver.getPilotStoryCatalog(cleanPilotId, isAdminOrReview);
     if (!catalog) {
       return NextResponse.json(
         { success: false, error: `Không tìm thấy danh mục cốt truyện cho phi công ${cleanPilotId}.` },
         { status: 404 }
       );
     }
-
-    const isDevOrPreview =
-      process.env.NODE_ENV !== 'production' ||
-      process.env.STARFRONT_STORY_REVIEW_MODE === 'true';
 
     return NextResponse.json({
       success: true,
@@ -44,7 +44,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       totalChapters: catalog.totalChapters,
       publishedChaptersCount: catalog.publishedChaptersCount,
       chapters: catalog.chapters,
-      isReviewMode: isDevOrPreview,
+      isReviewMode: isAdminOrReview,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';

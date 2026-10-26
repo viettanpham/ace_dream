@@ -29,6 +29,8 @@ import {
   Key,
   UploadCloud,
   ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
 } from 'lucide-react';
 import {
   CANONICAL_PILOT_IDS,
@@ -531,6 +533,83 @@ export function CharacterContentManager({
       setActionFeedback({
         type: 'success',
         message: result.data.message || `Đã chuyển chương sang ${targetStatus}.`,
+      });
+      await loadManifest();
+    } else {
+      setActionFeedback({ type: 'error', message: result.error! });
+    }
+  };
+
+  // Update specific chapter status (DRAFT, IN_PROGRESS, REVIEW, APPROVED, PUBLISHED, HIDDEN)
+  const handleUpdateChapterStatus = async (chapter: StoryChapterMeta, status: string) => {
+    setActionFeedback(null);
+    const result = await executeAdminAction('/api/admin/story', {
+      action: 'update_chapter_status',
+      pilotId: selectedPilot,
+      chapterId: chapter.chapterId,
+      status,
+      isHidden: status === 'HIDDEN',
+    });
+
+    if (result.success) {
+      setActionFeedback({
+        type: 'success',
+        message: result.data.message || `Đã chuyển chương sang trạng thái ${status}.`,
+      });
+      await loadManifest();
+    } else {
+      setActionFeedback({ type: 'error', message: result.error! });
+    }
+  };
+
+  // Toggle public visibility (Hide from public reader / Show on public reader)
+  const handleToggleChapterVisibility = async (chapter: StoryChapterMeta) => {
+    const nextHidden = !chapter.isHidden && chapter.publicationStatus !== 'HIDDEN' && (chapter as any).status !== 'HIDDEN';
+    setActionFeedback(null);
+    const result = await executeAdminAction('/api/admin/story', {
+      action: 'update_chapter_status',
+      pilotId: selectedPilot,
+      chapterId: chapter.chapterId,
+      status: nextHidden ? 'HIDDEN' : (chapter as any).status || chapter.publicationStatus || 'DRAFT',
+      isHidden: nextHidden,
+    });
+
+    if (result.success) {
+      setActionFeedback({
+        type: 'success',
+        message: nextHidden ? 'Đã ẩn chương khỏi giao diện public.' : 'Đã mở hiển thị công khai cho chương.',
+      });
+      await loadManifest();
+    } else {
+      setActionFeedback({ type: 'error', message: result.error! });
+    }
+  };
+
+  // Reorder chapter up or down
+  const handleReorderChapter = async (chapter: StoryChapterMeta, direction: 'up' | 'down') => {
+    const list = [...(manifest?.stories?.[selectedPilot]?.chapters || [])];
+    const currentIndex = list.findIndex((c) => c.chapterId === chapter.chapterId);
+    if (currentIndex < 0) return;
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= list.length) return;
+
+    // Swap
+    const temp = list[currentIndex];
+    list[currentIndex] = list[targetIndex];
+    list[targetIndex] = temp;
+
+    const orderedChapterIds = list.map((c) => c.chapterId);
+    setActionFeedback(null);
+    const result = await executeAdminAction('/api/admin/story', {
+      action: 'reorder_chapters',
+      pilotId: selectedPilot,
+      orderedChapterIds,
+    });
+
+    if (result.success) {
+      setActionFeedback({
+        type: 'success',
+        message: 'Đã cập nhật thứ tự chương thành công.',
       });
       await loadManifest();
     } else {
@@ -1075,25 +1154,44 @@ export function CharacterContentManager({
                     <table className="w-full text-left text-xs">
                       <thead className="bg-[#060c18] border-b border-slate-800 text-[10px] font-mono uppercase text-slate-400 tracking-wider">
                         <tr>
-                          <th className="py-2.5 px-3">Chương</th>
+                          <th className="py-2.5 px-3">Thứ tự</th>
                           <th className="py-2.5 px-3">Tiêu đề & Tóm tắt</th>
-                          <th className="py-2.5 px-3">Biên tập</th>
+                          <th className="py-2.5 px-3">Trạng thái Quản trị</th>
                           <th className="py-2.5 px-3">Nội dung</th>
-                          <th className="py-2.5 px-3">Xuất bản</th>
+                          <th className="py-2.5 px-3">Hiển thị Public</th>
                           <th className="py-2.5 px-3 text-right">Thao tác</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-900">
                         {(manifest?.stories?.[selectedPilot]?.chapters || []).map((chap) => {
-                          const isPublished = chap.publicationStatus === 'PUBLISHED';
-                          const canPublishCheck = validateCanPublishChapter(chap);
+                          const currentStatus = (chap as any).status || chap.publicationStatus || 'DRAFT';
+                          const isHiddenState = Boolean(chap.isHidden || chap.publicationStatus === 'HIDDEN' || (chap as any).status === 'HIDDEN');
+                          const hasContent = chap.contentStatus === 'FULL_PROSE' || chap.contentReadiness === 'FULL_BODY_IMPORTED' || (selectedPilot === 'valentine' && chap.chapterNumber === 1);
 
                           return (
                             <tr key={chap.chapterId} className="hover:bg-slate-900/40">
-                              <td className="py-3 px-3 font-mono font-bold text-cyan-400">
-                                {chap.chapterNumber < 10
-                                  ? `0${chap.chapterNumber}`
-                                  : chap.chapterNumber}
+                              <td className="py-3 px-3">
+                                <div className="flex items-center gap-1.5 font-mono font-bold text-cyan-400">
+                                  <span>{chap.chapterNumber < 10 ? `0${chap.chapterNumber}` : chap.chapterNumber}</span>
+                                  <div className="flex flex-col gap-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReorderChapter(chap, 'up')}
+                                      className="p-0.5 rounded hover:bg-slate-800 text-slate-500 hover:text-cyan-400 cursor-pointer"
+                                      title="Di chuyển lên trên"
+                                    >
+                                      <ArrowUp className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleReorderChapter(chap, 'down')}
+                                      className="p-0.5 rounded hover:bg-slate-800 text-slate-500 hover:text-cyan-400 cursor-pointer"
+                                      title="Di chuyển xuống dưới"
+                                    >
+                                      <ArrowDown className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
                               </td>
 
                               <td className="py-3 px-3">
@@ -1107,77 +1205,56 @@ export function CharacterContentManager({
                                 </div>
                               </td>
 
-                              {/* Editorial Status */}
+                              {/* Editorial Status Dropdown */}
                               <td className="py-3 px-3">
-                                {chap.editorialStatus === 'APPROVED' && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                                    <CheckCircle2 className="w-3 h-3" /> APPROVED
-                                  </span>
-                                )}
-                                {chap.editorialStatus === 'PROVISIONAL' && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-800">
-                                    <Clock className="w-3 h-3" /> PROVISIONAL
-                                  </span>
-                                )}
-                                {chap.editorialStatus === 'HOLD' && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-950 text-rose-400 border border-rose-800">
-                                    <Lock className="w-3 h-3" /> HOLD
-                                  </span>
-                                )}
+                                <select
+                                  value={currentStatus}
+                                  onChange={(e) => handleUpdateChapterStatus(chap, e.target.value)}
+                                  className="bg-slate-900 border border-slate-700 text-[11px] font-mono text-cyan-300 rounded px-2 py-1 outline-none hover:border-cyan-500 cursor-pointer"
+                                >
+                                  <option value="DRAFT">DRAFT (Bản thảo)</option>
+                                  <option value="IN_PROGRESS">IN_PROGRESS (Đang viết)</option>
+                                  <option value="REVIEW">REVIEW (Chờ duyệt)</option>
+                                  <option value="APPROVED">APPROVED (Đã duyệt)</option>
+                                  <option value="PUBLISHED">PUBLISHED (Xuất bản)</option>
+                                  <option value="HIDDEN">HIDDEN (Ẩn)</option>
+                                </select>
                               </td>
 
                               {/* Content Status & Verification */}
                               <td className="py-3 px-3">
-                                {chap.contentStatus === 'FULL_PROSE' || chap.contentReadiness === 'FULL_BODY_IMPORTED' ? (
-                                  <div className="space-y-1">
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700">
-                                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> TOÀN VĂN SẴN SÀNG
-                                    </span>
-                                    <div className="text-[10px] font-mono text-slate-500">
-                                      {chap.wordCount ? `${chap.wordCount} từ` : 'Đã nhập văn xuôi'}
-                                    </div>
-                                  </div>
-                                ) : chap.editorialStatus === 'APPROVED' ? (
-                                  <div className="space-y-1">
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950/90 text-amber-300 border border-amber-600/80">
-                                      <AlertTriangle className="w-3 h-3 text-amber-400 shrink-0" />
-                                      <span>Đã duyệt cốt truyện — Chưa nhập toàn văn</span>
-                                    </span>
-                                    <div className="text-[10px] font-mono text-amber-500/80">
-                                      SUMMARY_ONLY ({chap.readingTimeMinutes || 4}p đọc tóm tắt)
-                                    </div>
-                                  </div>
+                                {hasContent ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-700">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> TOÀN VĂN SẴN SÀNG
+                                  </span>
                                 ) : (
-                                  <div className="space-y-1">
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-800">
-                                      <Clock className="w-3 h-3 text-slate-500" /> TÓM TẮT ĐỀ CƯƠNG
-                                    </span>
-                                    <div className="text-[10px] font-mono text-slate-500">
-                                      Chưa mở khóa biên soạn
-                                    </div>
-                                  </div>
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950/70 text-amber-300 border border-amber-800">
+                                    <Clock className="w-3 h-3 text-amber-400" /> COMING SOON
+                                  </span>
                                 )}
                               </td>
 
-                              {/* Publication Status */}
+                              {/* Public Visibility Toggle */}
                               <td className="py-3 px-3">
-                                <span
-                                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                                    isPublished
-                                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-500'
-                                      : 'bg-slate-900 text-slate-400 border border-slate-800'
-                                  }`}
-                                >
-                                  {isPublished ? (
-                                    <>
-                                      <Eye className="w-3 h-3 text-cyan-400" /> PUBLISHED
-                                    </>
-                                  ) : (
-                                    <>
-                                      <EyeOff className="w-3 h-3 text-slate-500" /> HIDDEN
-                                    </>
-                                  )}
-                                </span>
+                                {isHiddenState ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleChapterVisibility(chap)}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800 hover:bg-rose-900 cursor-pointer"
+                                    title="Đang ẩn khỏi người đọc. Nhấp để công khai."
+                                  >
+                                    <EyeOff className="w-3 h-3" /> ĐANG ẨN (HIDDEN)
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleChapterVisibility(chap)}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700 hover:bg-cyan-900 cursor-pointer"
+                                    title="Đang hiển thị cho người đọc. Nhấp để ẩn."
+                                  >
+                                    <Eye className="w-3 h-3 text-cyan-400" /> CÔNG KHAI (PUBLIC)
+                                  </button>
+                                )}
                               </td>
 
                               {/* Actions */}
@@ -1190,32 +1267,6 @@ export function CharacterContentManager({
                                 >
                                   Xem & Soạn thảo
                                 </button>
-
-                                {isPublished ? (
-                                  <button
-                                    onClick={() => handleTogglePublication(chap)}
-                                    className="px-2 py-1 rounded bg-rose-950/80 border border-rose-800 text-[11px] font-mono text-rose-300 hover:bg-rose-900"
-                                  >
-                                    ẨN (OFF)
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => handleTogglePublication(chap)}
-                                    disabled={!canPublishCheck.canPublish}
-                                    title={
-                                      canPublishCheck.canPublish
-                                        ? 'Xuất bản chương truyện này'
-                                        : canPublishCheck.reason
-                                    }
-                                    className={`px-2 py-1 rounded border text-[11px] font-mono font-bold ${
-                                      canPublishCheck.canPublish
-                                        ? 'bg-cyan-500 text-slate-950 border-cyan-400 hover:bg-cyan-400'
-                                        : 'bg-slate-900/60 border-slate-800 text-slate-600 cursor-not-allowed'
-                                    }`}
-                                  >
-                                    XUẤT BẢN (ON)
-                                  </button>
-                                )}
                               </td>
                             </tr>
                           );

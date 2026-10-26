@@ -184,6 +184,9 @@ export interface ResolvedChapterItem {
   editorialStatus: string;
   contentStatus: string;
   publicationStatus: string;
+  status?: string;
+  isHidden?: boolean;
+  displayOrder?: number;
   contentAvailable: boolean;
   isComingSoon: boolean;
   readingTimeMinutes: number;
@@ -369,7 +372,10 @@ export class UniversalContentResolver {
   /**
    * 3. Fetches and sanitizes Pilot Story Catalog (Chapters 01–07)
    */
-  public async getPilotStoryCatalog(pilotId: string): Promise<ResolvedPilotStoryCatalog | null> {
+  public async getPilotStoryCatalog(
+    pilotId: string,
+    isAdminOrReview: boolean = false
+  ): Promise<ResolvedPilotStoryCatalog | null> {
     const cleanId = pilotId.toLowerCase().trim();
     if (!isCanonicalPilotId(cleanId)) {
       return null;
@@ -382,40 +388,95 @@ export class UniversalContentResolver {
       return null;
     }
 
-    const chapters: ResolvedChapterItem[] = manifest.chapters.map((ch: any) => {
-      const hasContentFile = Boolean(ch.file && ch.file.trim().length > 0);
-      const isPublished = ch.publicationStatus === 'PUBLISHED';
-      const isFullProse = ch.contentStatus === 'FULL_PROSE';
-      const isAvailable = hasContentFile && isPublished && isFullProse;
+    // Load admin persistent overrides from character-content-manifest.json if present
+    let adminOverrides: Record<string, any> = {};
+    try {
+      const manifestPath = path.join(process.cwd(), '.starfront-config', 'character-content-manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        const raw = fs.readFileSync(manifestPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (parsed?.storyPublications?.[cleanId]) {
+          adminOverrides = parsed.storyPublications[cleanId];
+        }
+      }
+    } catch {
+      // Continue with pure CDN defaults
+    }
 
-      return {
+    const resolvedChapters: ResolvedChapterItem[] = [];
+
+    for (const ch of manifest.chapters as any[]) {
+      const chapKey = ch.chapterId || `chap-${String(ch.chapterNumber).padStart(2, '0')}`;
+      const altKey = `chapter-${String(ch.chapterNumber).padStart(2, '0')}`;
+      const override = adminOverrides[chapKey] || adminOverrides[altKey] || adminOverrides[String(ch.chapterNumber)];
+
+      let effectiveStatus = override?.status || ch.editorialStatus || 'DRAFT';
+      let effectiveEditorialStatus = override?.editorialStatus || ch.editorialStatus || 'NOT_STARTED';
+      let effectivePublicationStatus = override?.publicationStatus || ch.publicationStatus || 'NOT_PUBLISHED';
+      let isHidden = Boolean(override?.isHidden ?? (override?.publicationStatus === 'HIDDEN' || override?.status === 'HIDDEN'));
+      const displayOrder = typeof override?.displayOrder === 'number' ? override.displayOrder : ch.chapterNumber;
+
+      if (override?.status === 'PUBLISHED') {
+        effectivePublicationStatus = 'PUBLISHED';
+        effectiveEditorialStatus = 'APPROVED';
+        isHidden = false;
+      } else if (override?.status === 'HIDDEN') {
+        effectivePublicationStatus = 'HIDDEN';
+        isHidden = true;
+      }
+
+      // 1. HIDDEN rule: If chapter is hidden and caller is not admin/review, exclude completely from public catalog!
+      if (isHidden && !isAdminOrReview) {
+        continue;
+      }
+
+      // 2. Content availability rule:
+      // Substantive content exists ONLY if file is provided and either contentStatus is FULL_PROSE or Valentine Ch01
+      const hasSubstantiveContent = Boolean(
+        (ch.file && ch.contentStatus === 'FULL_PROSE') ||
+        (cleanId === 'valentine' && (ch.chapterNumber === 1 || ch.chapterId === 'chap-01'))
+      );
+
+      // Chapter is only available to read if it is PUBLISHED and has substantive content
+      const isPublished = effectivePublicationStatus === 'PUBLISHED' && !isHidden;
+      const isAvailable = hasSubstantiveContent && isPublished;
+      const isComingSoon = !isAvailable;
+
+      resolvedChapters.push({
         chapterId: ch.chapterId,
         chapterNumber: ch.chapterNumber,
-        title: ch.title || `Chương ${String(ch.chapterNumber).padStart(2, '0')}`,
+        title: override?.title || ch.title || `Chương ${String(ch.chapterNumber).padStart(2, '0')}`,
         canonicalLibraryTitle: ch.canonicalLibraryTitle,
         summary:
+          override?.summary ||
           ch.summary ||
           `Hồ sơ biên niên sử không gian của phi công cho Chương ${ch.chapterNumber} đang được đội ngũ biên tập hoàn thiện.`,
-        quote: ch.quote,
-        editorialStatus: ch.editorialStatus || 'NOT_STARTED',
+        quote: override?.quote || ch.quote,
+        editorialStatus: effectiveEditorialStatus,
         contentStatus: ch.contentStatus || 'MISSING',
-        publicationStatus: ch.publicationStatus || 'NOT_PUBLISHED',
+        publicationStatus: effectivePublicationStatus,
+        status: effectiveStatus,
+        isHidden,
+        displayOrder,
         contentAvailable: isAvailable,
-        isComingSoon: !isAvailable,
+        isComingSoon,
         readingTimeMinutes: ch.readingTimeMinutes || 5,
-        wordCount: ch.wordCount || 0,
+        wordCount: override?.wordCount || ch.wordCount || 0,
         file: ch.file,
         sceneAnchorsCount: Array.isArray(ch.sceneAnchors) ? ch.sceneAnchors.length : 0,
-      };
-    });
+      });
+    }
+
+    // Sort chapters by displayOrder
+    resolvedChapters.sort((a, b) => (a.displayOrder ?? a.chapterNumber) - (b.displayOrder ?? b.chapterNumber));
 
     return {
       pilotId: cleanId,
       pilotName: manifest.pilotName || cleanId,
       callsign: manifest.callsign || '',
-      totalChapters: chapters.length,
-      publishedChaptersCount: chapters.filter((c) => c.contentAvailable).length,
-      chapters,
+      totalChapters: resolvedChapters.length,
+      publishedChaptersCount: resolvedChapters.filter((c) => c.contentAvailable).length,
+      chapters: resolvedChapters,
     };
   }
 
@@ -437,7 +498,7 @@ export class UniversalContentResolver {
     }
 
     // 1. Check pilot story manifest first to verify chapter existence
-    const catalog = await this.getPilotStoryCatalog(cleanId);
+    const catalog = await this.getPilotStoryCatalog(cleanId, isAdminOrReview);
     const normalizedTarget = cleanChapId.replace(/^chapter-/, 'chap-');
     const chapterMeta = catalog?.chapters.find(
       (c) =>

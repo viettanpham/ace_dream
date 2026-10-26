@@ -132,6 +132,14 @@ export interface ArtworkRegistration {
 // ----------------------------------------------------------------------------
 export type EditorialStatus = 'APPROVED' | 'PROVISIONAL' | 'HOLD';
 
+export type StoryEditorialState =
+  | 'DRAFT'
+  | 'IN_PROGRESS'
+  | 'REVIEW'
+  | 'APPROVED'
+  | 'PUBLISHED'
+  | 'HIDDEN';
+
 export type ContentReadiness =
   | 'MISSING'
   | 'SUMMARY_ONLY'
@@ -193,6 +201,11 @@ export interface StoryChapterMeta {
   contentReadiness: ContentReadiness;
   contentStatus?: 'FULL_PROSE' | 'SUMMARY_ONLY' | string;
   publicationStatus: PublicationStatus;
+  status?: StoryEditorialState | string;
+  isHidden?: boolean;
+  displayOrder?: number;
+  contentAvailable?: boolean;
+  isComingSoon?: boolean;
   publishedAt?: string;
   provenance?: {
     sourceDocument?: string;
@@ -214,13 +227,18 @@ export interface StoryChapterFull extends StoryChapterMeta {
 // 4. PERSISTENT CONTENT MANIFEST SCHEMA
 // ----------------------------------------------------------------------------
 export interface StoryPublicationRecord {
-  publicationStatus: PublicationStatus;
-  editorialStatus: EditorialStatus;
-  contentReadiness: ContentReadiness;
+  publicationStatus?: PublicationStatus;
+  editorialStatus?: EditorialStatus | string;
+  contentReadiness?: ContentReadiness;
+  status?: StoryEditorialState;
+  isHidden?: boolean;
+  displayOrder?: number;
   publishedAt?: string;
-  version: string;
-  title: string;
-  summary: string;
+  updatedAt?: string;
+  updatedBy?: string;
+  version?: string;
+  title?: string;
+  summary?: string;
   wordCount?: number;
 }
 

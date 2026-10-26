@@ -449,7 +449,7 @@ export class CharacterContentStore {
             const pubRecord = pilotPubs[chapterMeta.chapterId];
             if (pubRecord) {
               if (pubRecord.publicationStatus) chapterMeta.publicationStatus = pubRecord.publicationStatus;
-              if (pubRecord.editorialStatus) chapterMeta.editorialStatus = pubRecord.editorialStatus;
+              if (pubRecord.editorialStatus) chapterMeta.editorialStatus = pubRecord.editorialStatus as any;
             }
 
             if (includeUnpublished || chapterMeta.publicationStatus === 'PUBLISHED') {
@@ -480,7 +480,7 @@ export class CharacterContentStore {
           const pubRecord = pilotPubs[meta.chapterId];
           if (pubRecord) {
             meta.publicationStatus = pubRecord.publicationStatus;
-            meta.editorialStatus = pubRecord.editorialStatus || meta.editorialStatus;
+            meta.editorialStatus = (pubRecord.editorialStatus as any) || meta.editorialStatus;
             meta.contentReadiness = pubRecord.contentReadiness || meta.contentReadiness;
             if (pubRecord.publishedAt) meta.publishedAt = pubRecord.publishedAt;
           }
@@ -592,7 +592,7 @@ export class CharacterContentStore {
           const pubRecord = manifest.storyPublications[pilotId]?.[chapterId];
           if (pubRecord) {
             meta.publicationStatus = pubRecord.publicationStatus;
-            meta.editorialStatus = pubRecord.editorialStatus || meta.editorialStatus;
+            meta.editorialStatus = (pubRecord.editorialStatus as any) || meta.editorialStatus;
             meta.contentReadiness = pubRecord.contentReadiness || meta.contentReadiness;
           }
 
@@ -720,7 +720,7 @@ export class CharacterContentStore {
       : { editorialStatus: manifestPub!.editorialStatus, contentReadiness: manifestPub!.contentReadiness };
 
     if (targetStatus === 'PUBLISHED') {
-      const check = validateCanPublishChapter(metaToCheck);
+      const check = validateCanPublishChapter(metaToCheck as any);
       if (!check.canPublish) {
         return { success: false, error: check.reason || 'Chương không đủ điều kiện xuất bản.' };
       }
@@ -755,6 +755,125 @@ export class CharacterContentStore {
           targetId: chapterId,
           user,
           details: `Chuyển trạng thái xuất bản chương ${chapterId} của ${pilotId} thành ${targetStatus}`,
+        },
+      };
+    });
+  }
+
+  public async updateStoryChapterStatus(
+    pilotId: CanonicalPilotId,
+    chapterId: string,
+    params: {
+      status?: 'DRAFT' | 'IN_PROGRESS' | 'REVIEW' | 'APPROVED' | 'PUBLISHED' | 'HIDDEN';
+      editorialStatus?: string;
+      publicationStatus?: 'PUBLISHED' | 'HIDDEN' | 'DRAFT';
+      isHidden?: boolean;
+      displayOrder?: number;
+    },
+    user = 'admin'
+  ): Promise<{ success: boolean; chapter?: unknown; error?: string }> {
+    return this.updateManifest((current) => {
+      if (!current.storyPublications[pilotId]) {
+        current.storyPublications[pilotId] = {};
+      }
+
+      const existing = current.storyPublications[pilotId][chapterId] || {
+        editorialStatus: 'HOLD',
+        contentReadiness: 'SUMMARY_ONLY',
+        version: '1.0.0',
+        title: chapterId,
+        summary: '',
+      };
+
+      const targetStatus = params.status;
+      let effectivePubStatus = params.publicationStatus || existing.publicationStatus;
+      let effectiveEditStatus = params.editorialStatus || existing.editorialStatus;
+      let isHidden = params.isHidden ?? existing.isHidden ?? false;
+
+      if (targetStatus === 'PUBLISHED') {
+        effectivePubStatus = 'PUBLISHED';
+        effectiveEditStatus = 'APPROVED';
+        isHidden = false;
+      } else if (targetStatus === 'HIDDEN') {
+        effectivePubStatus = 'HIDDEN';
+        isHidden = true;
+      } else if (targetStatus === 'DRAFT') {
+        effectivePubStatus = 'DRAFT';
+        effectiveEditStatus = 'DRAFT';
+      } else if (targetStatus === 'IN_PROGRESS') {
+        effectivePubStatus = 'DRAFT';
+        effectiveEditStatus = 'IN_PROGRESS';
+      } else if (targetStatus === 'REVIEW') {
+        effectivePubStatus = 'DRAFT';
+        effectiveEditStatus = 'REVIEW';
+      } else if (targetStatus === 'APPROVED') {
+        effectiveEditStatus = 'APPROVED';
+      }
+
+      const updatedRecord = {
+        ...existing,
+        status: targetStatus || existing.status || (effectivePubStatus === 'PUBLISHED' ? 'PUBLISHED' : 'DRAFT'),
+        publicationStatus: effectivePubStatus,
+        editorialStatus: effectiveEditStatus,
+        isHidden,
+        displayOrder: typeof params.displayOrder === 'number' ? params.displayOrder : existing.displayOrder,
+        updatedAt: new Date().toISOString(),
+        updatedBy: user,
+      };
+
+      current.storyPublications[pilotId][chapterId] = updatedRecord;
+
+      return {
+        manifest: current,
+        auditEntry: {
+          id: `audit-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          action: 'STORY_STATUS_UPDATE',
+          targetPilotId: pilotId,
+          targetId: chapterId,
+          user,
+          details: `Cập nhật trạng thái chương ${chapterId} của ${pilotId}: status=${targetStatus || 'custom'}, isHidden=${isHidden}`,
+        },
+      };
+    });
+  }
+
+  public async reorderStoryChapters(
+    pilotId: CanonicalPilotId,
+    orderedChapterIds: string[],
+    user = 'admin'
+  ): Promise<{ success: boolean; error?: string }> {
+    return this.updateManifest((current) => {
+      if (!current.storyPublications[pilotId]) {
+        current.storyPublications[pilotId] = {};
+      }
+
+      orderedChapterIds.forEach((chapId, idx) => {
+        const existing = current.storyPublications[pilotId][chapId] || {
+          editorialStatus: 'HOLD',
+          contentReadiness: 'SUMMARY_ONLY',
+          version: '1.0.0',
+          title: chapId,
+          summary: '',
+        };
+        current.storyPublications[pilotId][chapId] = {
+          ...existing,
+          displayOrder: idx + 1,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user,
+        };
+      });
+
+      return {
+        manifest: current,
+        auditEntry: {
+          id: `audit-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          action: 'STORY_REORDER',
+          targetPilotId: pilotId,
+          targetId: `${orderedChapterIds.length}_chapters`,
+          user,
+          details: `Cập nhật thứ tự hiển thị ${orderedChapterIds.length} chương cho ${pilotId}`,
         },
       };
     });

@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
       }
 
       const saved = await store.saveChapter(pId, chapterId, meta || {}, markdownContent, auth.user.username);
+      const { universalContentResolver } = await import('@/lib/game/v2/universal-content-resolver');
+      universalContentResolver.clearCache();
       return NextResponse.json({
         success: true,
         message: `Đã lưu chương ${chapterId} của phi công ${pId} thành công.`,
@@ -94,10 +96,78 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const { universalContentResolver } = await import('@/lib/game/v2/universal-content-resolver');
+      universalContentResolver.clearCache();
+
       return NextResponse.json({
         success: true,
         message: `Đã chuyển chương ${chapterId} sang trạng thái ${targetStatus}.`,
         chapter: result.chapter,
+      });
+    }
+
+    if (action === 'update_chapter_status') {
+      const chapterId = body.chapterId as string;
+      const status = body.status as any;
+      const isHidden = typeof body.isHidden === 'boolean' ? body.isHidden : undefined;
+      const displayOrder = typeof body.displayOrder === 'number' ? body.displayOrder : undefined;
+
+      if (!chapterId) {
+        return NextResponse.json({ success: false, error: 'Thiếu chapterId.' }, { status: 400 });
+      }
+
+      const result = await store.updateStoryChapterStatus(
+        pId,
+        chapterId,
+        {
+          status,
+          isHidden,
+          displayOrder,
+          publicationStatus: body.publicationStatus,
+          editorialStatus: body.editorialStatus,
+        },
+        auth.user.username
+      );
+
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error || 'Không thể cập nhật trạng thái chương.' },
+          { status: 400 }
+        );
+      }
+
+      const { universalContentResolver } = await import('@/lib/game/v2/universal-content-resolver');
+      universalContentResolver.clearCache();
+
+      return NextResponse.json({
+        success: true,
+        message: `Đã cập nhật trạng thái chương ${chapterId} của phi công ${pId}.`,
+      });
+    }
+
+    if (action === 'reorder_chapters') {
+      const orderedChapterIds = body.orderedChapterIds as string[];
+      if (!Array.isArray(orderedChapterIds) || orderedChapterIds.length === 0) {
+        return NextResponse.json(
+          { success: false, error: 'orderedChapterIds phải là mảng danh sách ID chương.' },
+          { status: 400 }
+        );
+      }
+
+      const result = await store.reorderStoryChapters(pId, orderedChapterIds, auth.user.username);
+      if (!result.success) {
+        return NextResponse.json(
+          { success: false, error: result.error || 'Không thể cập nhật thứ tự chương.' },
+          { status: 400 }
+        );
+      }
+
+      const { universalContentResolver } = await import('@/lib/game/v2/universal-content-resolver');
+      universalContentResolver.clearCache();
+
+      return NextResponse.json({
+        success: true,
+        message: `Đã cập nhật thứ tự hiển thị ${orderedChapterIds.length} chương của ${pId}.`,
       });
     }
 

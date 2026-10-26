@@ -89,4 +89,23 @@ Khi bắt đầu lượt tiếp theo, kỹ sư / AI Studio sẽ triển khai **P
 - **Tối ưu tài liệu Markdown:** Tạo bản lưu trữ danh mục `docs/DOCUMENTATION_ARCHIVE_MANIFEST.md` phân loại chi tiết 62 tệp Markdown (4 tệp runtime/tests giữ nguyên, 24 tệp quy chuẩn canonical giữ nguyên, 3 tệp bàn giao giữ nguyên, 31 tệp báo cáo lịch sử sẵn sàng chuyển giao khi có kho ngoài). Không tự xóa tài liệu trong repo.
 - **Kiểm chứng hoàn tất:** Test clean-env PASS, test 12 phi công PASS, `tsc --noEmit` PASS, `compile_applet` PASS.
 
+---
+
+### 7. HOÀN THIỆN STORY READER POLISH & ADMINCP V1 / V2 VERSION SWITCH
+- **Story Reader & Navigation**:
+  * Đã xác minh toàn bộ Chapter 01–07 của 12 Pilot (và 10 Chapter của Valentine) đều nhấn mở được vào Story Reader từ cả Profile Desktop và Mobile.
+  * Chương chưa có văn xuôi hiển thị trang **ĐANG PHÁT TRIỂN // COMING SOON** sạch sẽ với icon đồng hồ `Clock`, tiêu đề, tóm tắt bối cảnh đã kiểm chứng; không có biểu tượng khóa `Lock` gây hiểu nhầm.
+  * Chỉ chương có `isHidden=true` mới bị lọc khỏi public catalog.
+  * Điều hướng từ Character Profile sang Story Reader giữ đúng `pilotId` và `chapterId` được chọn. Không tạo văn xuôi giả và không làm thay đổi trạng thái biên tập.
+- **AdminCP V1 / V2 Version Switcher**:
+  * Tích hợp bộ chuyển đổi phiên bản `[ V1: SYSTEM & WORLD ] | [ V2: CHARACTERS (12) ]` rõ ràng trên header của AdminCP (`/v2/admin`).
+  * Chọn `V1: SYSTEM & WORLD`: Mở `V1AdminWorkspace` quản trị hệ thống V1 thực tế (World Engine 30-Node Simulator, Tick Advancement, Speed Controls, Event Strategy Policy, Pilot Survival, Fleet Registry, Progression & Synergy Skills Level Cap, Reroll Tokens, Asset Version Releases & Audit).
+  * Chọn `V2: CHARACTERS (12)`: Mở `CharacterContentManager` quản lý nội dung 12 Pilot canonical.
+  * Giữ nguyên auth, session, permissions và dữ liệu độc lập của từng phiên bản; không làm lẫn lộn dữ liệu giữa V1 và V2.
+- **Kết quả kiểm thử**:
+  * Bộ test `tests/verify-story-ui-and-admin-switch.ts`: 19/19 tests PASS.
+  * Endpoints Valentine Ch01, Ch02, Ch03, Ch07, Ch10 và Fortuna Ch01, Ch07: PASS (HTTP 200, `isComingSoon: true`).
+  * `tsc --noEmit` PASS (0 errors), `compile_applet` PASS (Build succeeded).
+
+
 

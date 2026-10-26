@@ -11,7 +11,6 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   Clock,
-  Lock,
   AlertCircle,
   FileText,
   Link as LinkIcon,

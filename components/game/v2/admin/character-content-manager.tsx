@@ -48,12 +48,16 @@ export interface CharacterContentManagerProps {
   isOpen?: boolean;
   onClose?: () => void;
   initialPilotId?: CanonicalPilotId;
+  activeVersion?: 'v1' | 'v2';
+  onSwitchVersion?: (version: 'v1' | 'v2') => void;
 }
 
 export function CharacterContentManager({
   isOpen = true,
   onClose,
   initialPilotId = 'valentine',
+  activeVersion = 'v2',
+  onSwitchVersion,
 }: CharacterContentManagerProps) {
   // Auth state
   const [authLoading, setAuthLoading] = useState(true);
@@ -793,13 +797,29 @@ export function CharacterContentManager({
               <Shield className="w-4 h-4" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-cyan-400 font-bold">
                   ADMINCP V2 // CHARACTER CONTENT MANAGER
                 </span>
-                <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 font-mono">
-                  12 PILOTS
-                </span>
+
+                {/* VERSION TOGGLE SWITCH: V1 | V2 */}
+                <div className="flex items-center p-0.5 rounded-lg bg-slate-950 border border-cyan-800/80 text-[10px] font-mono">
+                  <button
+                    type="button"
+                    onClick={() => onSwitchVersion?.('v1')}
+                    className="px-2 py-0.5 rounded font-bold text-slate-400 hover:text-amber-300 hover:bg-slate-900 transition-all cursor-pointer flex items-center gap-1"
+                    title="Chuyển sang Quản trị Starfront V1 (World & System Engine)"
+                  >
+                    <span>V1: SYSTEM & WORLD</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-0.5 rounded font-bold bg-cyan-500 text-slate-950 shadow-xs cursor-default"
+                  >
+                    V2: CHARACTERS (12)
+                  </button>
+                </div>
+
                 {isDevPreview && (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/60 flex items-center gap-1 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />

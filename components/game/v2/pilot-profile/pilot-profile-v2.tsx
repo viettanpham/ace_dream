@@ -349,7 +349,7 @@ export function PilotProfileV2({
             />
           )}
 
-          {/* SHARED ART VIEWER MODAL */}
+          {/* SHARED ART VIEWER MODAL WITH FULLSCREEN SHOWCASE */}
           {viewerArtwork && (
             <ArtViewer
               isOpen={isViewerOpen}
@@ -368,6 +368,16 @@ export function PilotProfileV2({
               onNext={handleNextArtwork}
               currentIndex={currentArtworkIndex >= 0 ? currentArtworkIndex + 1 : 1}
               totalCount={currentViewerArtworks.length || 1}
+              artworks={currentViewerArtworks}
+              currentPilotId={activeCharacter.id}
+              currentPilotName={activeCharacter.classCharacterName}
+              currentPilotCallsign={activeCharacter.callsign}
+              allPilots={V2_ROSTER_CHARACTERS.map((c) => ({
+                id: c.id,
+                name: c.classCharacterName,
+                callsign: c.callsign,
+              }))}
+              onSelectArtwork={(art) => setViewerArtwork(art as any)}
             />
           )}
         </>

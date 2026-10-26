@@ -107,5 +107,37 @@ Khi bắt đầu lượt tiếp theo, kỹ sư / AI Studio sẽ triển khai **P
   * Endpoints Valentine Ch01, Ch02, Ch03, Ch07, Ch10 và Fortuna Ch01, Ch07: PASS (HTTP 200, `isComingSoon: true`).
   * `tsc --noEmit` PASS (0 errors), `compile_applet` PASS (Build succeeded).
 
+---
+
+### 8. HOÀN THIỆN GALLERY FULLSCREEN SHOWCASE
+- **Fullscreen Auto Slideshow**:
+  * Nút Play/Pause nổi bật trên thanh điều khiển đáy màn hình với phím tắt `Space`.
+  * Tùy chọn tốc độ chuyển ảnh: **4s / 6s / 10s** (mặc định 6s, lưu tùy chọn trong `sessionStorage`).
+  * Auto mặc định **OFF** khi mở lần đầu.
+  * Tự động **PAUSE và reset timer** khi người dùng tương tác: Next/Prev, kéo ảnh (pan/drag), phóng to/thu nhỏ (zoom), mở bảng thông tin (Info Drawer), mở bộ chọn Pilot, hoặc chọn ảnh thủ công.
+  * Lắng nghe sự kiện `visibilitychange`: Tự động dừng timer khi tab trình duyệt không còn active (`document.hidden`); khi quay lại tiếp tục timer trơn tru mà không nhảy dồn dập nhiều ảnh.
+  * Dọn dẹp timer (`clearInterval`) an toàn khi đóng fullscreen hoặc unmount component.
+  * Preload tối đa **1 ảnh kế tiếp** (`new Image().src = resolveImageUrl(nextPath)`), không tải trước hàng trăm ảnh lãng phí băng thông.
+- **Random Showcase — 12 Pilot**:
+  * Bổ sung nút chuyển đổi chế độ **Random Showcase** (phím tắt `R`).
+  * Panel chọn Pilot bằng checkbox với danh sách 12 Pilot canonical, hiển thị số lượng artwork của từng phi công.
+  * Nút thao tác nhanh: **"Chọn Tất Cả (12)"** và **"Chỉ Pilot Hiện Tại"**.
+  * Thuật toán **Shuffle Bag (Fisher-Yates)** với ràng buộc triệt để: **không bao giờ lặp lại 2 ảnh giống nhau liên tiếp** khi có nhiều ảnh.
+  * Lấy dữ liệu động từ manifest/CDN R3 thông qua Universal Resolver, tự động thích ứng với các phiên bản R3/R4/R5 tiếp theo, không hardcode số lượng ảnh.
+  * Chuyển đổi linh hoạt giữa Random và Sequential mà không làm sai lệch Gallery hiện hành.
+  * Nếu một Pilot chưa có ảnh hợp lệ trên CDN, hiển thị trạng thái "Chờ nạp / Chờ ảnh" rõ ràng và bỏ qua, không gây lỗi 404.
+- **Title & Description và Clean View**:
+  * Trình bày rõ ràng: Tên Pilot (`pilotName · callsign`), Tên tác phẩm (`title`), Thứ tự ảnh hiện tại / Tổng số (`ẢNH 05 / 35` hoặc `RANDOM · ẢNH 12 / 95`), Phân loại nhóm ảnh (`category`).
+  * Dùng trường `curatedDescription || description` thực tế từ Gallery JSON; tuyệt đối không suy diễn bằng AI tại runtime.
+  * Nút **Clean View / Ẩn HUD** (`EyeOff`, phím tắt `H`): Cho phép ẩn toàn bộ thanh điều khiển và mũi tên để chiêm ngưỡng tác phẩm nguyên bản 100%. Bấm nút khôi phục hoặc phím `H` để hiện lại controls.
+  * Giữ nguyên đầy đủ bộ điều khiển tương tác: Zoom In, Zoom Out, Fit to Screen, 100% Actual Size, Reset View, Next/Prev.
+- **Kết quả kiểm thử**:
+  * Bộ test `tests/verify-gallery-fullscreen-showcase.ts`: **19/19 tests PASS (100%)**.
+  * Valentine: 35 artwork hợp lệ.
+  * Trộn ngẫu nhiên 3 phi công (Valentine, Fortuna, Rhea): 95 artwork, không có bất kỳ 2 ảnh liên tiếp nào trùng lặp qua 10 vòng shuffle bag.
+  * Kiểm tra 12 Pilot canonical endpoints: 100% hợp lệ, không có lỗi 404.
+  * Typecheck `tsc --noEmit`: 0 lỗi. Build `compile_applet`: Succeeded.
+
+
 
 

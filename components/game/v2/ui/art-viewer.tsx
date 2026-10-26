@@ -125,14 +125,30 @@ export function ArtViewer({
     })
   }, [])
 
+  // Robust pilot detection from path or fallback
+  const detectPilotFromPath = useCallback((cleanPath: string, fallbackPilotId: string): string => {
+    // 1. Direct path matching images/pilots/<pilotId>/...
+    const dirMatch = cleanPath.match(/^images\/pilots\/([a-z0-9-_]+)\//i)
+    if (dirMatch && CANONICAL_12_PILOT_IDS.includes(dirMatch[1].toLowerCase() as any)) {
+      return dirMatch[1].toLowerCase()
+    }
+    // 2. Filename prefix matching <pilotId>-... (e.g. /images/fortuna-outfit-017.webp)
+    const filename = cleanPath.split('/').pop() || ''
+    for (const pId of CANONICAL_12_PILOT_IDS) {
+      if (filename.toLowerCase().startsWith(`${pId}-`)) {
+        return pId
+      }
+    }
+    return fallbackPilotId.toLowerCase()
+  }, [])
+
   // Initial Artwork Setup
   const initialShowcaseItem = useMemo<ShowcaseArtwork>(() => {
     const cleanPath = imageSrc.startsWith('/') ? imageSrc.slice(1) : imageSrc
     const assetId = cleanPath.split('/').pop() || 'art'
     
-    // Auto-detect pilotId from canonical path pattern: images/pilots/<pilotId>/...
-    const pathMatch = cleanPath.match(/^images\/pilots\/([a-z0-9-_]+)\//i)
-    const effectivePilotId = (pathMatch ? pathMatch[1] : currentPilotId).toLowerCase().trim()
+    // Auto-detect pilotId from canonical path pattern or filename prefix
+    const effectivePilotId = detectPilotFromPath(cleanPath, currentPilotId)
     const identityKey = buildArtworkIdentityKey(effectivePilotId, assetId, cleanPath)
     const meta = CANONICAL_PILOT_METADATA[effectivePilotId as CanonicalPilotId]
     const effectivePilotName = meta?.name ? meta.name.split(' ')[0] : (effectivePilotId === currentPilotId ? currentPilotName : effectivePilotId.toUpperCase())
@@ -156,7 +172,7 @@ export function ArtViewer({
       pilotGender: meta?.gender || 'Female',
       pilotPortraitPath: `images/pilots/${effectivePilotId}/${effectivePilotId}-portrait.webp`,
     }
-  }, [imageSrc, title, description, category, isAvailableOnDisk, currentPilotId, currentPilotName, currentPilotCallsign])
+  }, [imageSrc, title, description, category, isAvailableOnDisk, currentPilotId, currentPilotName, currentPilotCallsign, detectPilotFromPath])
 
   // =========================================================================
   // AUTHORITATIVE SINGLE SOURCE OF TRUTH: currentArtwork
@@ -199,12 +215,14 @@ export function ArtViewer({
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const transitionTokenRef = useRef<number>(0)
   const wasPlayingBeforeBackgroundRef = useRef<boolean>(false)
+  const prevIsOpenRef = useRef<boolean>(false)
 
-  // Sync initial artwork when modal opens or primary props change externally
+  // Sync initial artwork ONLY when modal opens (from closed state), never clobber during active transitions or random slideshow
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !prevIsOpenRef.current) {
       setCurrentArtwork(initialShowcaseItem)
     }
+    prevIsOpenRef.current = isOpen
   }, [isOpen, initialShowcaseItem])
 
   // Lock body scroll when open
@@ -1287,24 +1305,37 @@ export function ArtViewer({
                 </div>
               </div>
 
-              {/* Tags */}
-              {tags.length > 0 && (
-                <div className="space-y-1.5 pt-1">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#94A3B8]">
-                    Thẻ Phân Lớp:
-                  </span>
-                  <div className="flex flex-wrap gap-1.5">
-                    {tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[#142338] text-[#CBD5E1] border border-[#1E2D42]"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
+              {/* Dynamic Authoritative Tags from currentArtwork */}
+              {(() => {
+                const effectiveTags = Array.from(
+                  new Set(
+                    [
+                      currentArtwork.pilotName,
+                      currentArtwork.pilotCallsign,
+                      currentArtwork.category,
+                      currentArtwork.role,
+                    ].filter(Boolean) as string[]
+                  )
+                );
+                if (effectiveTags.length === 0) return null;
+                return (
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#94A3B8]">
+                      Thẻ Phân Lớp:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {effectiveTags.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-[#142338] text-[#CBD5E1] border border-[#1E2D42]"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             <div className="pt-3 border-t border-[#1E2D42] text-[11px] font-mono text-[#94A3B8] text-center shrink-0">

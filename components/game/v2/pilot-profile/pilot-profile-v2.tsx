@@ -370,7 +370,13 @@ export function PilotProfileV2({
                 name: c.classCharacterName,
                 callsign: c.callsign,
               }))}
-              onSelectArtwork={(art) => setViewerArtwork(art as any)}
+              onSelectArtwork={(art, pilotId) => {
+                setViewerArtwork(art as any);
+                const targetPilotId = pilotId || (art as any)?.pilotId;
+                if (targetPilotId && targetPilotId !== activePilotId) {
+                  setActivePilotId(targetPilotId);
+                }
+              }}
             />
           )}
         </>

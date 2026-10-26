@@ -1447,3 +1447,36 @@ export async function augmentCharacterWithHierarchicalArtworks(
     return character;
   }
 }
+
+/**
+ * Ensures a pilot profile contains full canonical chapters (10 for Valentine, 7 for all other 11 pilots)
+ */
+export function createCanonicalPilotChapters(
+  pilotId: string,
+  initialChapters: StoryChapter[] = []
+): StoryChapter[] {
+  const isValentine = pilotId === 'valentine';
+  const targetCount = isValentine ? 10 : 7;
+  const result: StoryChapter[] = [...initialChapters];
+  const existingNumbers = new Set(result.map((c) => c.number));
+
+  for (let num = 1; num <= targetCount; num++) {
+    if (!existingNumbers.has(num)) {
+      result.push({
+        id: `${pilotId}-chap-${String(num).padStart(2, '0')}`,
+        number: num,
+        title: `Chương ${String(num).padStart(2, '0')}`,
+        status: num <= 2 ? 'PROVISIONAL' : 'HOLD',
+        summary: `Hồ sơ biên niên sử không gian cho Chương ${num} đang được đội ngũ biên tập hoàn thiện.`,
+      });
+    }
+  }
+
+  return result.sort((a, b) => a.number - b.number);
+}
+
+// Hydrate all 12 canonical pilots with full chapter lists
+for (const char of V2_ROSTER_CHARACTERS) {
+  char.chapters = createCanonicalPilotChapters(char.id, char.chapters);
+}
+

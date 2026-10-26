@@ -58,6 +58,7 @@ export function CharacterContentManager({
   // Auth state
   const [authLoading, setAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isDevPreview, setIsDevPreview] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
@@ -202,12 +203,19 @@ export function CharacterContentManager({
 
       const res = await fetch('/api/admin/auth/me', { headers });
       const data = await res.json();
-      if (data.authenticated && data.csrfToken) {
+      if (data.authenticated) {
         setIsAuthenticated(true);
-        setCsrfToken(data.csrfToken);
+        setIsDevPreview(Boolean(data.isDevPreview));
+        if (data.csrfToken) {
+          setCsrfToken(data.csrfToken);
+        }
+        if (data.sessionToken && typeof window !== 'undefined') {
+          sessionStorage.setItem('starfront_admin_session_token', data.sessionToken);
+        }
         setAdminUser(data.user || null);
       } else {
         setIsAuthenticated(false);
+        setIsDevPreview(false);
         setNeedsSetup(Boolean(data.needsSetup));
         setAdminUser(null);
       }
@@ -219,6 +227,7 @@ export function CharacterContentManager({
       }
     } catch {
       setIsAuthenticated(false);
+      setIsDevPreview(false);
     } finally {
       setAuthLoading(false);
     }
@@ -791,6 +800,12 @@ export function CharacterContentManager({
                 <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 font-mono">
                   12 PILOTS
                 </span>
+                {isDevPreview && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-black bg-amber-500/20 text-amber-300 border border-amber-500/60 flex items-center gap-1 shadow-[0_0_8px_rgba(245,158,11,0.25)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    DEV PREVIEW
+                  </span>
+                )}
               </div>
               <h2 className="text-xs sm:text-sm font-semibold text-slate-100">
                 Quản Trị Hồ Sơ, Tác Phẩm & Biên Niên Ký

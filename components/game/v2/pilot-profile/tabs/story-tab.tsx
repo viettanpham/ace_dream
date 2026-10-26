@@ -35,7 +35,20 @@ interface DynamicChapterItem {
 }
 
 export function StoryTab({ character, onOpenReader }: StoryTabProps) {
-  const [chapters, setChapters] = useState<DynamicChapterItem[]>([]);
+  const [chapters, setChapters] = useState<DynamicChapterItem[]>(() =>
+    character.chapters.map((ch) => ({
+      chapterId: ch.id.startsWith('chap-') ? ch.id : `chap-${String(ch.number).padStart(2, '0')}`,
+      chapterNumber: ch.number,
+      title: ch.title,
+      summary: ch.summary,
+      quote: ch.quote,
+      editorialStatus: ch.status,
+      contentStatus: ch.content ? 'FULL_BODY_IMPORTED' : 'MISSING',
+      publicationStatus: ch.status === 'APPROVED' && ch.number === 1 ? 'PUBLISHED' : 'DRAFT',
+      contentAvailable: Boolean(ch.number === 1 && (ch.content || character.id === 'valentine')),
+      isComingSoon: !(ch.number === 1 && (ch.content || character.id === 'valentine')),
+    }))
+  );
   const [loadingManifest, setLoadingManifest] = useState<boolean>(true);
   const [activeChapterId, setActiveChapterId] = useState<string>('chap-01');
   const [savedProgress, setSavedProgress] = useState<{ chapterId: string; progress: number } | null>(null);
@@ -61,6 +74,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
   useEffect(() => {
     let isCancelled = false;
     setLoadingManifest(true);
+    setActiveChapterId('chap-01');
 
     fetch(`/api/runtime/story?pilotId=${character.id}`)
       .then((res) => res.json())
@@ -82,13 +96,11 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
           }));
 
           setChapters(mapped);
-          if (!mapped.some((c) => c.chapterId === activeChapterId)) {
-            setActiveChapterId(mapped[0].chapterId);
-          }
+          setActiveChapterId(mapped[0]?.chapterId || 'chap-01');
         } else {
           // Fallback to static chapters from character data
           const fallback: DynamicChapterItem[] = character.chapters.map((ch) => ({
-            chapterId: ch.id,
+            chapterId: ch.id.startsWith('chap-') ? ch.id : `chap-${String(ch.number).padStart(2, '0')}`,
             chapterNumber: ch.number,
             title: ch.title,
             summary: ch.summary,
@@ -106,7 +118,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
         if (!isCancelled) {
           // Fallback gracefully on network error
           const fallback: DynamicChapterItem[] = character.chapters.map((ch) => ({
-            chapterId: ch.id,
+            chapterId: ch.id.startsWith('chap-') ? ch.id : `chap-${String(ch.number).padStart(2, '0')}`,
             chapterNumber: ch.number,
             title: ch.title,
             summary: ch.summary,
@@ -132,7 +144,7 @@ export function StoryTab({ character, onOpenReader }: StoryTabProps) {
   const activeChapter =
     chapters.find((c) => c.chapterId === activeChapterId) || chapters[0];
 
-  const canReadActiveChapter = Boolean(activeChapter?.contentAvailable);
+  const canReadActiveChapter = Boolean(activeChapter?.contentAvailable && !activeChapter?.isComingSoon);
 
   return (
     <div className="space-y-6">

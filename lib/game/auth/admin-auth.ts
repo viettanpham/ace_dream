@@ -692,6 +692,25 @@ export function verifySessionToken(tokenString: string): {
 }
 
 /**
+/**
+ * Checks whether DEV ADMIN PREVIEW mode is active.
+ * STRICT CRITERIA:
+ * 1. MUST NOT be active in production under any circumstances (NODE_ENV !== 'production').
+ * 2. Active when STARFRONT_DEV_ADMIN_PREVIEW === 'true' or NEXT_PUBLIC_STARFRONT_DEV_ADMIN_PREVIEW === 'true',
+ *    or running under dev server (NODE_ENV === 'development').
+ */
+export function isDevAdminPreviewEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  return (
+    process.env.STARFRONT_DEV_ADMIN_PREVIEW === 'true' ||
+    process.env.NEXT_PUBLIC_STARFRONT_DEV_ADMIN_PREVIEW === 'true' ||
+    process.env.NODE_ENV === 'development'
+  );
+}
+
+/**
  * Verifies an incoming HTTP NextRequest for Admin authorization.
  * Supports both Cookie session and Authorization: Bearer fallback (essential for AI Studio iframe).
  * Optionally checks CSRF header for mutation endpoints (POST/PUT/DELETE).
@@ -728,6 +747,29 @@ export function verifyAdminRequest(
   }
 
   if (!token) {
+    // Fail-Closed for all state-mutating requests (POST/PUT/DELETE) without authentication
+    if (requireCsrf) {
+      return {
+        authorized: false,
+        error: 'Chưa đăng nhập quyền Quản trị viên (Admin Session Required).',
+        status: 401,
+      };
+    }
+
+    // DEV ADMIN PREVIEW MODE for Read-Only GET (Server-side verified, ONLY when NODE_ENV !== 'production' and dev preview is enabled)
+    if (isDevAdminPreviewEnabled()) {
+      const devUser: AdminUser = {
+        username: 'dev_preview_admin',
+        role: 'admin',
+      };
+      return {
+        authorized: true,
+        user: devUser,
+        csrfToken: 'dev-preview-csrf-token',
+        status: 200,
+      };
+    }
+
     return {
       authorized: false,
       error: 'Chưa đăng nhập quyền Quản trị viên (Admin Session Required).',

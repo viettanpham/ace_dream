@@ -26,6 +26,7 @@ import {
   CANONICAL_12_PILOT_IDS,
   CanonicalPilotId,
   isCanonicalPilotId,
+  CANONICAL_PILOT_METADATA,
 } from './universal-content-types';
 import { resolveImageUrl, getResolverConfig } from '../assets/image-resolver';
 import { assetConfigStore } from '../assets/runtime-asset-config';
@@ -382,10 +383,45 @@ export class UniversalContentResolver {
     }
 
     const storySubPath = `stories/pilots/${cleanId}/manifest.json`;
-    const manifest = await fetchWithFallback<UniversalPilotStoryManifest>(storySubPath);
+    let manifest = await fetchWithFallback<UniversalPilotStoryManifest>(storySubPath);
 
-    if (!manifest || !Array.isArray(manifest.chapters)) {
-      return null;
+    // Ensure manifest exists with canonical chapters
+    const targetMinChapters = cleanId === 'valentine' ? 10 : 7;
+    let rawChaptersList: any[] = [];
+    if (manifest && Array.isArray(manifest.chapters)) {
+      rawChaptersList = [...manifest.chapters];
+    }
+
+    const existingNumbers = new Set(rawChaptersList.map((c: any) => c.chapterNumber));
+    for (let num = 1; num <= targetMinChapters; num++) {
+      if (!existingNumbers.has(num)) {
+        rawChaptersList.push({
+          chapterId: `chap-${String(num).padStart(2, '0')}`,
+          chapterNumber: num,
+          title: `Chương ${String(num).padStart(2, '0')}`,
+          editorialStatus: num <= 2 ? 'PROVISIONAL' : 'NOT_STARTED',
+          contentStatus: 'MISSING',
+          publicationStatus: 'NOT_PUBLISHED',
+          summary: `Hồ sơ biên niên sử không gian của phi công cho Chương ${num} đang được đội ngũ biên tập hoàn thiện.`,
+          contentAvailable: false,
+          isComingSoon: true,
+        });
+      }
+    }
+
+    if (!manifest) {
+      const pilotName = CANONICAL_PILOT_METADATA[cleanId as CanonicalPilotId]?.name || cleanId;
+      manifest = {
+        schemaVersion: 'starfront-pilot-story-v1',
+        pilotId: cleanId,
+        pilotName,
+        callsign: CANONICAL_PILOT_METADATA[cleanId as CanonicalPilotId]?.callsign || '',
+        totalChapters: rawChaptersList.length,
+        publishedChaptersCount: cleanId === 'valentine' ? 1 : 0,
+        chapters: rawChaptersList,
+      };
+    } else {
+      manifest.chapters = rawChaptersList;
     }
 
     // Load admin persistent overrides from character-content-manifest.json if present
@@ -405,7 +441,7 @@ export class UniversalContentResolver {
 
     const resolvedChapters: ResolvedChapterItem[] = [];
 
-    for (const ch of manifest.chapters as any[]) {
+    for (const ch of rawChaptersList) {
       const chapKey = ch.chapterId || `chap-${String(ch.chapterNumber).padStart(2, '0')}`;
       const altKey = `chapter-${String(ch.chapterNumber).padStart(2, '0')}`;
       const override = adminOverrides[chapKey] || adminOverrides[altKey] || adminOverrides[String(ch.chapterNumber)];

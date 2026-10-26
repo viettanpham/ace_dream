@@ -2,6 +2,12 @@
 
 Toàn bộ các mốc phát triển và cập nhật kế hoạch của dự án **STARFRONT** được ghi lại tại đây theo trình tự thời gian đảo ngược (mới nhất lên đầu).
 
+## [V2.0 — Final Cross-Account ENV Cleanup] — Dọn Dẹp Biến Môi Trường Zero-Config Cho Tài Khoản Mới
+
+*Đã hoàn thành 100% việc chuẩn hóa và làm sạch cấu hình môi trường phục vụ import/cross-account trên AI Studio: Loại bỏ toàn bộ các khai báo biến môi trường rỗng gây popup trong `.env.example`; tách bạch biến public CDN mặc định hoạt động ngay (Zero-Config) khỏi các biến private/advanced tùy chọn được chú thích; kiểm chứng thành công môi trường sạch hoàn toàn (không `.env.local`, không secret, không biến môi trường nạp trước) với 100% tính năng Public Preview (`/`, `/v1`, `/v2/pilots`, Gallery R3 35 ảnh, Story Reader 3 cột) hoạt động trơn tru; typecheck và build PASS 100%.*
+
+---
+
 ## [V2.0 — Final Fix] — STARFRONT WORLD V2: Khắc Phục Hoàn Thiện Giao Diện Story UI & Điều Hướng Biên Niên Ký
 
 *Đã hoàn thành 100% việc sửa đổi trực tiếp Story UI theo đúng yêu cầu: Đồng bộ danh mục động 7 chương (và 10 chương cho Valentine) cho toàn bộ 12 phi công canonical; khắc phục lỗi chỉ mở Chapter 01 và cho phép chọn bất kỳ chương nào từ Profile chuyển thẳng vào Story Reader đúng `pilotId` và `chapterId`; tách biệt rành mạch giữa trạng thái biên tập (`APPROVED`, `HOLD`) và tính khả dụng nội dung thực tế (`contentAvailable`, `isComingSoon`); hiển thị trang ĐANG PHÁT TRIỂN / COMING SOON chuẩn xác với số chương, tiêu đề tiếng Việt và tóm tắt canonical đã thẩm định; loại bỏ hoàn toàn các ổ khóa Lock giả lập "Hồ Sơ Niêm Phong"; bảo đảm không gọi API lỗi 404, không văn xuôi giả mạo và đồng bộ 100% trạng thái điều hướng giữa Profile và Story Reader.*

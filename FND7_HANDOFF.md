@@ -20,6 +20,9 @@
   * Điểm nạp tập trung `lib/game/world/bootstrap.ts` đã kết nối 7 danh mục fleet.
   * Test suite `tests/world/phase-7-1-fleet-catalogs.test.ts`.
 - **Lỗi mở (Open Issues / Bugs):** `0` (Không có lỗi).
+- **Trạng thái Môi trường (Cross-Account ENV Readiness):**
+  * Đạt chuẩn **Zero-Config**: Không yêu cầu bất kỳ biến môi trường nào để chạy Public Preview (`/`, `/v1`, `/v2/pilots`, Gallery, Story Reader).
+  * `.env.example` đã được làm sạch, chuyển toàn bộ biến nâng cao sang dạng chú thích, loại bỏ popup bắt buộc khi import tài khoản mới.
 - **Trạng thái Typecheck & Build:**
   * `tsc --noEmit`: 0 lỗi.
   * Production Next.js build: Succeeded.

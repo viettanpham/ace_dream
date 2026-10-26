@@ -76,10 +76,17 @@ Khi bắt đầu lượt tiếp theo, kỹ sư / AI Studio sẽ triển khai **P
 
 ---
 
-### 5. TRẠNG THÁI GIAO DIỆN V2 ĐỒNG HÀNH (FND8.2.3.x CHARACTER PROFILE BASIC + MD AUDIT)
+### 5. TRẠNG THÁI GIAO DIỆN V2 ĐỒNG HÀNH (FND8.2.3.x CHARACTER PROFILE BASIC)
 - **Đã hoàn thiện:** Character Profile Basic cho 12 phi công canonical (`alviss`, `eric`, `marcus`, `victor`, `kaelen`, `lyra`, `selena`, `valentine`, `fortuna`, `aria`, `rhea`, `nova`).
-- **Khắc phục lỗi dữ liệu:** Loại bỏ hoàn toàn các trường dữ liệu hardcode riêng của Valentine (Elysia, Mercy Wing, UME Corps...) khỏi giao diện của các phi công khác; chuyển đổi Faction/Division, Badges, Traits, Base Attributes, Dossier và Ma trận tương thích cơ giáp (Gear Compatibility) sang cơ chế động 100%.
+- **Khắc phục lỗi dữ liệu:** Loại bỏ hoàn toàn các trường dữ liệu hardcode riêng của Valentine khỏi giao diện của các phi công khác; Faction/Division, Badges, Traits, Base Attributes, Dossier và Ma trận tương thích cơ giáp (Gear Compatibility) đều hoạt động theo cơ chế động 100%.
 - **CDN R3 Gallery & Story:** Tích hợp trơn tru, hiển thị đầy đủ bộ ảnh và danh mục 7 chương canonical kèm trạng thái Đang Phát Triển / Coming Soon minh bạch.
-- **Báo cáo tài liệu MD:** Đã phân loại 4 nhóm tài liệu Markdown trong repo; bảo vệ nguyên trạng mã nguồn, không tự xóa file khi chưa có kho lưu trữ sao lưu được xác minh.
-- **Kiểm thử & Build:** Test tập trung PASS, `tsc --noEmit` PASS, `compile_applet` PASS.
+
+---
+
+### 6. BẢO TRÌ NGUỒN CUỐI CÙNG (SOURCE MAINTENANCE FINAL)
+- **Xử lý triệt để Popup ENV AI Studio:** Chuyển 2 biến `NEXT_PUBLIC_ASSET_STORAGE_MODE` và `NEXT_PUBLIC_ASSET_CDN_URL` trong `.env.example` sang dạng hướng dẫn có chú thích (`#`). Nền tảng AI Studio không còn phát hiện biến bắt buộc un-commented để kích hoạt modal.
+- **Giá trị mặc định an toàn tuyệt đối:** Source code có sẵn hardcoded fallback chuẩn jsDelivr R3 (`v3.0-assets-r3`). Ứng dụng chạy trơn tru 100% khi `process.env` hoàn toàn không có biến nào.
+- **Tối ưu tài liệu Markdown:** Tạo bản lưu trữ danh mục `docs/DOCUMENTATION_ARCHIVE_MANIFEST.md` phân loại chi tiết 62 tệp Markdown (4 tệp runtime/tests giữ nguyên, 24 tệp quy chuẩn canonical giữ nguyên, 3 tệp bàn giao giữ nguyên, 31 tệp báo cáo lịch sử sẵn sàng chuyển giao khi có kho ngoài). Không tự xóa tài liệu trong repo.
+- **Kiểm chứng hoàn tất:** Test clean-env PASS, test 12 phi công PASS, `tsc --noEmit` PASS, `compile_applet` PASS.
+
 

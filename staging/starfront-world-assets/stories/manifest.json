@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "starfront-stories-index-v1",
+  "generatedAt": "2026-10-26T19:12:00.000Z",
+  "releaseTag": "v3.0-assets-r3",
+  "totalPilotsWithStories": 1,
+  "pilots": {
+    "valentine": {
+      "pilotId": "valentine",
+      "pilotName": "Valentine Aurelia Vance",
+      "callsign": "Mercy Wing",
+      "totalChapters": 10,
+      "publishedChapters": 1,
+      "manifest": "stories/pilots/valentine/manifest.json",
+      "availableChapters": ["chap-01"]
+    }
+  }
+}

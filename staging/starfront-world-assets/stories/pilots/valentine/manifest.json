@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 2,
+  "pilotId": "valentine",
+  "pilotName": "Valentine Aurelia Vance",
+  "callsign": "Mercy Wing",
+  "totalChapters": 10,
+  "roadmapStatus": "PHASE_V2_MVP",
+  "chapters": [
+    {
+      "chapterId": "chap-01",
+      "chapterNumber": 1,
+      "title": "Ánh sáng cuối cùng tại Elysia",
+      "canonicalLibraryTitle": "Ánh Sáng Cuối Cùng Tại Elysia",
+      "editorialStatus": "APPROVED",
+      "contentStatus": "FULL_PROSE",
+      "publicationStatus": "PUBLISHED",
+      "file": "chapter-01.json",
+      "sourceProseMarkdown": "chapter-01.md",
+      "summary": "Quyết định định mệnh giữa đoàn tàu hàng trăm bệnh nhân và đội ngũ đồng đội bị cô lập.",
+      "quote": "“Tôi không hứa rằng mọi người sẽ không bị thương. Nhưng tôi hứa sẽ làm tất cả những gì có thể để đưa họ trở về.”",
+      "readingTimeMinutes": 6,
+      "wordCount": 780,
+      "sceneAnchors": [
+        {
+          "anchorId": "val-ch01-scene-academy",
+          "title": "Học viện Quân y Không gian",
+          "caption": "Valentine trong những ngày đầu tốt nghiệp Học viện Quân y Không gian",
+          "assetId": "valentine-portrait",
+          "artworkUrl": "/images/valentine-portrait.webp",
+          "aspectRatio": "1:1"
+        },
+        {
+          "anchorId": "val-ch01-scene-evac",
+          "title": "Phi đội Cứu hộ Mercy Wing",
+          "caption": "Valentine điều phối phi đội sơ tán Mercy Wing trong cuộc phong tỏa Elysia",
+          "assetId": "valentine-fullbody",
+          "artworkUrl": "/images/valentine-fullbody.webp",
+          "aspectRatio": "portrait"
+        },
+        {
+          "anchorId": "val-ch01-scene-resolve",
+          "title": "Nguyện ước không bao giờ lãng quên",
+          "caption": "Lời thề bảo vệ sinh mạng và lý tưởng của phi đội Mercy Wing",
+          "assetId": "valentine-activity-001",
+          "artworkUrl": "/images/valentine-activity-001.webp",
+          "aspectRatio": "portrait"
+        }
+      ]
+    },
+    {
+      "chapterId": "chap-02",
+      "chapterNumber": 2,
+      "title": "Ca trực đầu tiên tại Trạm Cứu hộ Quỹ đạo",
+      "canonicalLibraryTitle": "Lời Thề Dưới Những Vì Sao",
+      "sourceConflict": true,
+      "editorialStatus": "APPROVED",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "file": "chapter-02.json",
+      "summary": "Thử thách đầu tiên khi tiếp quản buồng lái tàu cứu thương bọc thép trong cơn bão điện từ.",
+      "quote": "“Mỗi nhịp tim được giữ lại giữa bão từ đều là một kỳ tích đáng để đánh đổi.”",
+      "readingTimeMinutes": 4,
+      "wordCount": 180,
+      "sceneAnchors": [
+        {
+          "anchorId": "val-ch02-scene-uniform",
+          "title": "Quân phục Sĩ quan Cứu trợ",
+          "caption": "Đồng phục chỉ huy đội cứu hộ không gian với phù hiệu Mercy Wing",
+          "assetId": "valentine-uniform-001",
+          "artworkUrl": "/images/valentine-uniform-001.webp",
+          "aspectRatio": "portrait"
+        }
+      ]
+    },
+    {
+      "chapterId": "chap-03",
+      "chapterNumber": 3,
+      "title": "Tín hiệu bị cô lập ở Vành đai Asteroid",
+      "canonicalLibraryTitle": "Đôi Cánh Mang Hy Vọng",
+      "sourceConflict": true,
+      "editorialStatus": "APPROVED",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "file": "chapter-03.json",
+      "summary": "Hành trình đơn độc vượt qua bãi mảnh vỡ để cứu sống một phi công tiêm kích bị trúng đạn.",
+      "quote": "“Chừng nào còn một tín hiệu cầu cứu, tôi sẽ không bỏ lại ai phía sau.”",
+      "readingTimeMinutes": 4,
+      "wordCount": 190,
+      "sceneAnchors": [
+        {
+          "anchorId": "val-ch03-scene-activity",
+          "title": "Trực ca Phòng khám Quỹ đạo",
+          "caption": "Khoảnh khắc chăm sóc thương binh tại trạm tiền phương trong bão mảnh vỡ",
+          "assetId": "valentine-activity-001",
+          "artworkUrl": "/images/valentine-activity-001.webp",
+          "aspectRatio": "portrait"
+        }
+      ]
+    },
+    {
+      "chapterId": "chap-04",
+      "chapterNumber": 4,
+      "title": "Lằn ranh đỏ giữa hai mệnh lệnh",
+      "canonicalLibraryTitle": "Một Ngày Không Tiếng Còi Báo Động",
+      "sourceConflict": true,
+      "editorialStatus": "APPROVED",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "file": "chapter-04.json",
+      "summary": "Sự giằng xé giữa quy tắc quân sự và lương tâm của một bác sĩ cứu trợ tiền tuyến.",
+      "quote": "“Mệnh lệnh có thể quy định quyền hạn, nhưng không thể ra lệnh cho trái tim ngừng bảo vệ đồng loại.”",
+      "readingTimeMinutes": 5,
+      "wordCount": 210,
+      "sceneAnchors": [
+        {
+          "anchorId": "val-ch04-scene-casual",
+          "title": "Trang Phục Thường Nhật Elysia",
+          "caption": "Khoảnh khắc trầm tư trong ngày nghỉ hiếm hoi trước khi đối diện với quyết định cam go",
+          "assetId": "valentine-casual",
+          "artworkUrl": "/images/valentine-casual.webp",
+          "aspectRatio": "portrait"
+        }
+      ]
+    },
+    {
+      "chapterId": "chap-05",
+      "chapterNumber": 5,
+      "title": "Học viện Y sinh Không gian và Lời thề",
+      "canonicalLibraryTitle": "Những Người Không Trở Về",
+      "sourceConflict": true,
+      "editorialStatus": "PROVISIONAL",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "file": "chapter-05.json",
+      "summary": "Những năm tháng rèn luyện nghiêm ngặt trước khi khoác lên mình bộ giáp Mercy Wing.",
+      "quote": "“Lời thề y đức trên mặt đất đã thiêng liêng, trong không gian vô tận nó còn là sự cam kết bằng mạng sống.”",
+      "readingTimeMinutes": 4,
+      "wordCount": 160,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-06",
+      "chapterNumber": 6,
+      "title": "Chuyến bay thử nghiệm của Mercy Wing",
+      "canonicalLibraryTitle": "Thiên Thần Trong Ánh Đèn Trắng",
+      "sourceConflict": true,
+      "editorialStatus": "PROVISIONAL",
+      "contentStatus": "SUMMARY_ONLY",
+      "publicationStatus": "REVIEW_ONLY",
+      "file": "chapter-06.json",
+      "summary": "Giai đoạn thử nghiệm hệ thống khiên năng lượng tái tạo kép trên nguyên mẫu mecha y tế.",
+      "quote": "“Khiên chắn không được tạo ra để ngăn chặn kẻ thù, nó sinh ra để bảo vệ những người không thể tự vệ.”",
+      "readingTimeMinutes": 4,
+      "wordCount": 170,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-07",
+      "chapterNumber": 7,
+      "title": "Bí mật bên dưới tầng ngầm Elysia",
+      "canonicalLibraryTitle": "Bí mật bên dưới tầng ngầm Elysia",
+      "editorialStatus": "HOLD",
+      "contentStatus": "MISSING",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hồ sơ niêm phong cấp độ II. Chưa mở khóa nội dung.",
+      "readingTimeMinutes": 3,
+      "wordCount": 95,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-08",
+      "chapterNumber": 8,
+      "title": "Bức màn che phủ cuộc sơ tán",
+      "canonicalLibraryTitle": "Bức màn che phủ cuộc sơ tán",
+      "editorialStatus": "HOLD",
+      "contentStatus": "MISSING",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hồ sơ niêm phong cấp độ II. Chưa mở khóa nội dung.",
+      "readingTimeMinutes": 3,
+      "wordCount": 95,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-09",
+      "chapterNumber": 9,
+      "title": "Đối đầu trong giông bão",
+      "canonicalLibraryTitle": "Đối đầu trong giông bão",
+      "editorialStatus": "HOLD",
+      "contentStatus": "MISSING",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hồ sơ niêm phong cấp độ III. Chưa mở khóa nội dung.",
+      "readingTimeMinutes": 3,
+      "wordCount": 90,
+      "sceneAnchors": []
+    },
+    {
+      "chapterId": "chap-10",
+      "chapterNumber": 10,
+      "title": "Nguyện ước không bao giờ lãng quên",
+      "canonicalLibraryTitle": "Nguyện ước không bao giờ lãng quên",
+      "editorialStatus": "HOLD",
+      "contentStatus": "MISSING",
+      "publicationStatus": "REVIEW_ONLY",
+      "summary": "Hồ sơ niêm phong cấp độ tối cao. Chưa mở khóa nội dung.",
+      "readingTimeMinutes": 3,
+      "wordCount": 90,
+      "sceneAnchors": []
+    }
+  ]
+}

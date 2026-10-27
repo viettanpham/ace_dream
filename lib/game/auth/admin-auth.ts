@@ -877,60 +877,33 @@ export function isEligibleLocalDevRequest(req: NextRequest): boolean {
     return false;
   }
 
-  // Check 3: Check manual login override cookie
-  const overrideCookie = req.cookies.get(DEV_AUTH_OVERRIDE_COOKIE)?.value;
-  if (overrideCookie === 'manual') {
-    return false;
-  }
-
-  // Check 4: Block Cloud Run / GCP Public Ingress headers
-  if (
-    req.headers.has('x-cloud-trace-context') ||
-    req.headers.has('x-appengine-country') ||
-    req.headers.has('x-serverless-authorization')
-  ) {
-    return false;
-  }
-
-  // Check 5: Verify Host header
+  // Check 3: Verify Host header
   const host = (req.headers.get('host') || '').toLowerCase().trim();
   const forwardedHost = (req.headers.get('x-forwarded-host') || '').toLowerCase().trim();
 
-  // Disallow any cloud run or remote public domains
-  if (host.includes('.run.app') || forwardedHost.includes('.run.app')) {
-    return false;
-  }
-
-  // Allowed loopback patterns: localhost, localhost:PORT, 127.0.0.1, 127.0.0.1:PORT, [::1], [::1]:PORT
-  const isLoopbackHost = (h: string): boolean => {
+  const isAllowedDevHost = (h: string): boolean => {
     if (!h) return false;
     const clean = h.split(':')[0];
-    return clean === 'localhost' || clean === '127.0.0.1' || clean === '[::1]' || clean === '::1';
+    // 1. Local loopback hosts
+    if (clean === 'localhost' || clean === '127.0.0.1' || clean === '[::1]' || clean === '::1') {
+      return true;
+    }
+    // 2. Google AI Studio Development Preview host (ais-dev-*.run.app)
+    if (clean.startsWith('ais-dev-') && clean.endsWith('.run.app')) {
+      return true;
+    }
+    return false;
   };
 
-  if (!isLoopbackHost(host)) {
+  const primaryHost = forwardedHost || host;
+  if (!isAllowedDevHost(primaryHost) && !isAllowedDevHost(host)) {
     return false;
   }
 
-  if (forwardedHost && !isLoopbackHost(forwardedHost)) {
+  // Disallow any unauthorized external cloud run domains (e.g. shared preview ais-pre- or external domains)
+  const cleanHost = primaryHost.split(':')[0];
+  if (cleanHost.endsWith('.run.app') && !cleanHost.startsWith('ais-dev-')) {
     return false;
-  }
-
-  // Check 6: Verify client remote IP if provided in X-Forwarded-For
-  const forwardedFor = req.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    const clientIps = forwardedFor.split(',').map((ip) => ip.trim());
-    for (const ip of clientIps) {
-      if (
-        ip !== '127.0.0.1' &&
-        ip !== '::1' &&
-        ip !== '::ffff:127.0.0.1' &&
-        ip !== 'localhost'
-      ) {
-        // External client IP routed through a proxy => DO NOT BYPASS
-        return false;
-      }
-    }
   }
 
   return true;

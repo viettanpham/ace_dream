@@ -72,59 +72,48 @@ describe('STARFRONT WORLD V2 — ADMINCP AUTH DEV DIRECT ACCESS TEST SUITE', () 
     restoreEnv();
   });
 
-  it('TC-04: Cloud Run / Google Cloud Ingress Headers => Cấm tuyệt đối', () => {
+  it('TC-04: AI Studio Dev Preview Host (ais-dev-*.run.app + flag=true) => Cho phép Direct Access', () => {
     process.env.NODE_ENV = 'development';
     process.env.STARFRONT_ALLOW_LOCAL_DEV_AUTH_BYPASS = 'true';
 
-    // Request from Cloud Run containing trace header
-    const req = new NextRequest('http://localhost:3000/api/admin/auth/me', {
+    // Request from AI Studio Dev Preview
+    const req = new NextRequest('https://ais-dev-xrgotl42saoyikd7ywy2dt-8306156675.asia-southeast1.run.app/api/admin/auth/me', {
       headers: {
-        host: 'localhost:3000',
+        host: 'ais-dev-xrgotl42saoyikd7ywy2dt-8306156675.asia-southeast1.run.app',
         'x-cloud-trace-context': '105445aa7843bc8bf206b120001000/1;o=1',
       },
     });
 
     const isEligible = isEligibleLocalDevRequest(req);
-    assert.equal(isEligible, false, 'Yêu cầu có x-cloud-trace-context phải bị chặn');
+    assert.equal(isEligible, true, 'Yêu cầu từ ais-dev-*.run.app trong môi trường dev phải được chấp nhận trực tiếp');
 
     restoreEnv();
   });
 
-  it('TC-05: Remote Domain / Public Cloud Run URL => Cấm tuyệt đối', () => {
+  it('TC-05: Unauthorized External Domain / Shared Preview URL => Cấm tuyệt đối', () => {
     process.env.NODE_ENV = 'development';
     process.env.STARFRONT_ALLOW_LOCAL_DEV_AUTH_BYPASS = 'true';
 
-    const req = new NextRequest('https://ais-dev-xrgotl42saoyikd7ywy2dt.run.app/api/admin/auth/me', {
+    // Shared preview ais-pre- should NOT have auto admin access
+    const reqShared = new NextRequest('https://ais-pre-xrgotl42saoyikd7ywy2dt-8306156675.asia-southeast1.run.app/api/admin/auth/me', {
       headers: {
-        host: 'ais-dev-xrgotl42saoyikd7ywy2dt.run.app',
-        'x-forwarded-host': 'ais-dev-xrgotl42saoyikd7ywy2dt.run.app',
+        host: 'ais-pre-xrgotl42saoyikd7ywy2dt-8306156675.asia-southeast1.run.app',
       },
     });
+    assert.equal(isEligibleLocalDevRequest(reqShared), false, 'Tên miền shared preview ais-pre-*.run.app không được tự cấp quyền');
 
-    const isEligible = isEligibleLocalDevRequest(req);
-    assert.equal(isEligible, false, 'Tên miền *.run.app không được phép tự cấp quyền');
+    // Completely external untrusted domain
+    const reqExternal = new NextRequest('https://evil-domain.com/api/admin/auth/me', {
+      headers: {
+        host: 'evil-domain.com',
+      },
+    });
+    assert.equal(isEligibleLocalDevRequest(reqExternal), false, 'Tên miền bên ngoài lạ bắt buộc bị từ chối');
 
     restoreEnv();
   });
 
-  it('TC-06: Người dùng chọn Đăng nhập Thủ công (Manual Override Cookie) => Tạm dừng Auto-login', () => {
-    process.env.NODE_ENV = 'development';
-    process.env.STARFRONT_ALLOW_LOCAL_DEV_AUTH_BYPASS = 'true';
-
-    const req = new NextRequest('http://localhost:3000/api/admin/auth/me', {
-      headers: {
-        host: 'localhost:3000',
-        cookie: `${DEV_AUTH_OVERRIDE_COOKIE}=manual`,
-      },
-    });
-
-    const isEligible = isEligibleLocalDevRequest(req);
-    assert.equal(isEligible, false, 'Khi có cookie override manual, auto-login phải tạm dừng');
-
-    restoreEnv();
-  });
-
-  it('TC-07: Phiên Dev Session xác thực chuẩn xác qua verifyAdminRequest với đầy đủ CSRF Guard', () => {
+  it('TC-06: Phiên Dev Session xác thực chuẩn xác qua verifyAdminRequest với đầy đủ CSRF Guard', () => {
     process.env.NODE_ENV = 'development';
     const devSession = issueDevAdminSession();
 

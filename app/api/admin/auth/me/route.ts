@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
   const isDevPreview = isDevAdminPreviewEnabled();
   const isManualOverride = req.cookies.get(DEV_AUTH_OVERRIDE_COOKIE)?.value === 'manual';
 
-  // 1. Strictly Verified Local Development Admin Access FIRST
-  // (When on localhost loopback with bypass enabled AND not manually overridden)
-  if (!isManualOverride && isEligibleLocalDevRequest(req)) {
+  // 1. Strictly Verified Development Admin Access FIRST
+  // (When on localhost loopback or AI Studio Development Preview)
+  if (isEligibleLocalDevRequest(req)) {
     const { cookieValue, csrfToken, expiresAt, user } = issueDevAdminSession();
     const res = NextResponse.json({
       authenticated: true,

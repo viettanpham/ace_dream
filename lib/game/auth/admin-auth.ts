@@ -747,6 +747,21 @@ export function verifyAdminRequest(
   }
 
   if (!token) {
+    // Strictly Verified Local DEV Loopback Access
+    if (isEligibleLocalDevRequest(req)) {
+      const devSuperadmin: AdminUser = {
+        username: 'dev_local_admin',
+        role: 'superadmin',
+      };
+      const providedCsrf = req.headers.get('x-csrf-token')?.trim();
+      return {
+        authorized: true,
+        user: devSuperadmin,
+        csrfToken: providedCsrf || 'dev-local-csrf-token',
+        status: 200,
+      };
+    }
+
     // Fail-Closed for all state-mutating requests (POST/PUT/DELETE) without authentication
     if (requireCsrf) {
       return {
@@ -756,8 +771,9 @@ export function verifyAdminRequest(
       };
     }
 
-    // DEV ADMIN PREVIEW MODE for Read-Only GET (Server-side verified, ONLY when NODE_ENV !== 'production' and dev preview is enabled)
-    if (isDevAdminPreviewEnabled()) {
+    // DEV ADMIN PREVIEW MODE for Read-Only GET (Server-side verified, ONLY when NODE_ENV !== 'production' and dev preview is enabled and not manually overridden)
+    const isManualOverride = req.cookies.get(DEV_AUTH_OVERRIDE_COOKIE)?.value === 'manual';
+    if (!isManualOverride && isDevAdminPreviewEnabled()) {
       const devUser: AdminUser = {
         username: 'dev_preview_admin',
         role: 'admin',
@@ -835,4 +851,127 @@ export function clearSessionCookie(res: NextResponse): void {
     path: '/',
     maxAge: 0,
   });
+}
+
+export const DEV_AUTH_OVERRIDE_COOKIE = 'starfront_dev_auth_override';
+
+/**
+ * Checks whether an incoming request qualifies for strictly verified Local Development Admin Access.
+ * STRICT SECURITY CRITERIA:
+ * 1. Absolute block on production (process.env.NODE_ENV === 'production').
+ * 2. Explicit environment flag required: process.env.STARFRONT_ALLOW_LOCAL_DEV_AUTH_BYPASS === 'true'.
+ * 3. User must not have chosen manual login (cookie starfront_dev_auth_override === 'manual').
+ * 4. Must NOT originate from Cloud Run or external reverse proxies (blocks x-cloud-trace-context, external domains).
+ * 5. Host and x-forwarded-host must strictly resolve to local loopback (localhost or 127.0.0.1 or ::1).
+ * 6. Client IP (if present in x-forwarded-for) must strictly be loopback.
+ * 7. Fail-closed on any discrepancy.
+ */
+export function isEligibleLocalDevRequest(req: NextRequest): boolean {
+  // Check 1: Absolute block on production
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+
+  // Check 2: Explicit feature flag required
+  if (process.env.STARFRONT_ALLOW_LOCAL_DEV_AUTH_BYPASS !== 'true') {
+    return false;
+  }
+
+  // Check 3: Check manual login override cookie
+  const overrideCookie = req.cookies.get(DEV_AUTH_OVERRIDE_COOKIE)?.value;
+  if (overrideCookie === 'manual') {
+    return false;
+  }
+
+  // Check 4: Block Cloud Run / GCP Public Ingress headers
+  if (
+    req.headers.has('x-cloud-trace-context') ||
+    req.headers.has('x-appengine-country') ||
+    req.headers.has('x-serverless-authorization')
+  ) {
+    return false;
+  }
+
+  // Check 5: Verify Host header
+  const host = (req.headers.get('host') || '').toLowerCase().trim();
+  const forwardedHost = (req.headers.get('x-forwarded-host') || '').toLowerCase().trim();
+
+  // Disallow any cloud run or remote public domains
+  if (host.includes('.run.app') || forwardedHost.includes('.run.app')) {
+    return false;
+  }
+
+  // Allowed loopback patterns: localhost, localhost:PORT, 127.0.0.1, 127.0.0.1:PORT, [::1], [::1]:PORT
+  const isLoopbackHost = (h: string): boolean => {
+    if (!h) return false;
+    const clean = h.split(':')[0];
+    return clean === 'localhost' || clean === '127.0.0.1' || clean === '[::1]' || clean === '::1';
+  };
+
+  if (!isLoopbackHost(host)) {
+    return false;
+  }
+
+  if (forwardedHost && !isLoopbackHost(forwardedHost)) {
+    return false;
+  }
+
+  // Check 6: Verify client remote IP if provided in X-Forwarded-For
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    const clientIps = forwardedFor.split(',').map((ip) => ip.trim());
+    for (const ip of clientIps) {
+      if (
+        ip !== '127.0.0.1' &&
+        ip !== '::1' &&
+        ip !== '::ffff:127.0.0.1' &&
+        ip !== 'localhost'
+      ) {
+        // External client IP routed through a proxy => DO NOT BYPASS
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Issues a cryptographically signed developer session with superadmin role
+ */
+export function issueDevAdminSession(): {
+  cookieValue: string;
+  csrfToken: string;
+  expiresAt: number;
+  user: AdminUser;
+} {
+  const user: AdminUser = {
+    username: 'dev_local_admin',
+    role: 'superadmin',
+    createdAt: new Date().toISOString(),
+  };
+  const { cookieValue, csrfToken, expiresAt } = createSessionToken('dev_local_admin', 'superadmin');
+  return {
+    cookieValue,
+    csrfToken,
+    expiresAt,
+    user,
+  };
+}
+
+export function setDevAuthOverrideCookie(res: NextResponse, mode: 'manual' | 'auto'): void {
+  if (mode === 'manual') {
+    res.cookies.set(DEV_AUTH_OVERRIDE_COOKIE, 'manual', {
+      httpOnly: false,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+  } else {
+    res.cookies.set(DEV_AUTH_OVERRIDE_COOKIE, '', {
+      path: '/',
+      maxAge: 0,
+    });
+  }
 }

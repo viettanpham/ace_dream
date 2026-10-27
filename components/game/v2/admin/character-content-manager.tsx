@@ -63,6 +63,7 @@ export function CharacterContentManager({
   const [authLoading, setAuthLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isDevPreview, setIsDevPreview] = useState(false);
+  const [isDevLocalAutoLogin, setIsDevLocalAutoLogin] = useState(false);
   const [needsSetup, setNeedsSetup] = useState(false);
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
@@ -210,6 +211,7 @@ export function CharacterContentManager({
       if (data.authenticated) {
         setIsAuthenticated(true);
         setIsDevPreview(Boolean(data.isDevPreview));
+        setIsDevLocalAutoLogin(Boolean(data.isDevLocalAutoLogin));
         if (data.csrfToken) {
           setCsrfToken(data.csrfToken);
         }
@@ -220,6 +222,7 @@ export function CharacterContentManager({
       } else {
         setIsAuthenticated(false);
         setIsDevPreview(false);
+        setIsDevLocalAutoLogin(false);
         setNeedsSetup(Boolean(data.needsSetup));
         setAdminUser(null);
       }
@@ -363,6 +366,33 @@ export function CharacterContentManager({
       setPassword('');
       setConfirmPassword('');
       checkAuth();
+    }
+  };
+
+  // Handle Toggle DEV Local Auto-Login
+  const handleToggleDevAutoLogin = async (enable: boolean) => {
+    setAuthLoading(true);
+    setLoginError(null);
+    try {
+      await fetch('/api/admin/auth/dev-mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: enable ? 'enable_auto' : 'disable_auto' }),
+      });
+      if (!enable) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('starfront_admin_session_token');
+        }
+        setIsAuthenticated(false);
+        setIsDevLocalAutoLogin(false);
+        setAdminUser(null);
+        setCsrfToken('');
+      }
+      await checkAuth();
+    } catch {
+      setLoginError('Lỗi chuyển đổi chế độ đăng nhập.');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -836,18 +866,35 @@ export function CharacterContentManager({
           <div className="flex items-center gap-2">
             {isAuthenticated && adminUser && (
               <div className="hidden sm:flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/80 border border-cyan-800/80 text-[11px] font-mono text-cyan-300">
-                  <User className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="font-bold">{adminUser.username}</span>
-                </span>
-                <button
-                  onClick={() => setShowChangePasswordModal(true)}
-                  className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-[11px] font-mono text-slate-300 hover:text-cyan-300 hover:border-cyan-500 flex items-center gap-1"
-                  title="Đổi mật khẩu"
-                >
-                  <Key className="w-3 h-3" />
-                  <span>Đổi mật khẩu</span>
-                </button>
+                {isDevLocalAutoLogin ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/80 border border-emerald-700/80 text-[11px] font-mono text-emerald-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="font-bold">DEV LOCAL: {adminUser.username}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-950/80 border border-cyan-800/80 text-[11px] font-mono text-cyan-300">
+                    <User className="w-3.5 h-3.5 text-cyan-400" />
+                    <span className="font-bold">{adminUser.username}</span>
+                  </span>
+                )}
+                {isDevLocalAutoLogin ? (
+                  <button
+                    onClick={() => handleToggleDevAutoLogin(false)}
+                    className="px-2.5 py-1 rounded bg-amber-950/60 border border-amber-800 text-[11px] font-mono text-amber-300 hover:bg-amber-900 flex items-center gap-1"
+                    title="Chuyển sang chế độ Đăng nhập Thủ công"
+                  >
+                    <span>🔒 Đăng nhập thường</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowChangePasswordModal(true)}
+                    className="px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-[11px] font-mono text-slate-300 hover:text-cyan-300 hover:border-cyan-500 flex items-center gap-1"
+                    title="Đổi mật khẩu"
+                  >
+                    <Key className="w-3 h-3" />
+                    <span>Đổi mật khẩu</span>
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="px-2.5 py-1 rounded bg-rose-950/60 border border-rose-800 text-[11px] font-mono text-rose-300 hover:bg-rose-900 flex items-center gap-1"
@@ -992,9 +1039,17 @@ export function CharacterContentManager({
                     : 'ĐĂNG NHẬP ADMINCP'}
                 </button>
 
-                <div className="pt-3 border-t border-slate-800 text-center">
+                <div className="pt-3 border-t border-slate-800 text-center space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => handleToggleDevAutoLogin(true)}
+                    className="w-full py-2 px-3 rounded border border-emerald-600/50 bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 text-xs font-mono transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>⚡</span>
+                    <span>BẬT TỰ ĐỘNG ĐĂNG NHẬP DEV LOCAL (LOOPBACK)</span>
+                  </button>
                   <p className="text-[11px] font-mono text-slate-500">
-                    Bảo mật: Xác thực mật khẩu bắt buộc cho mọi phiên Quản trị viên.
+                    Bảo mật: Xác thực mật khẩu bắt buộc cho môi trường Staging / Production.
                   </p>
                 </div>
               </form>

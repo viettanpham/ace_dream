@@ -29,7 +29,38 @@ import {
   Users,
   Clock,
   Compass,
+  LayoutGrid,
 } from 'lucide-react'
+import { motion, AnimatePresence, type Variants } from 'motion/react'
+
+// Smooth sci-fi slide transition variants
+const slideVariants: Variants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 120 : -120,
+    opacity: 0,
+    scale: 0.96,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      x: { type: 'spring' as const, stiffness: 320, damping: 30, mass: 0.8 },
+      opacity: { duration: 0.25, ease: 'easeOut' },
+      scale: { duration: 0.25, ease: 'easeOut' },
+    },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -120 : 120,
+    opacity: 0,
+    scale: 0.96,
+    transition: {
+      x: { type: 'spring' as const, stiffness: 320, damping: 30, mass: 0.8 },
+      opacity: { duration: 0.18, ease: 'easeIn' },
+      scale: { duration: 0.18, ease: 'easeIn' },
+    },
+  }),
+}
 import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
 import {
   CANONICAL_12_PILOT_IDS,
@@ -181,10 +212,12 @@ export function ArtViewer({
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
   const [naturalDimensions, setNaturalDimensions] = useState<{ width: number; height: number } | null>(null)
   const [currentScale, setCurrentScale] = useState<number>(1)
+  const [slideDirection, setSlideDirection] = useState<number>(1) // 1: Next (right to left), -1: Prev (left to right)
 
   // HUD & Drawers
   const [showInfoDrawer, setShowInfoDrawer] = useState<boolean>(false)
   const [showPilotDrawer, setShowPilotDrawer] = useState<boolean>(false)
+  const [showFilmstrip, setShowFilmstrip] = useState<boolean>(false)
   const [isCleanView, setIsCleanView] = useState<boolean>(false)
 
   // Slideshow State
@@ -212,18 +245,28 @@ export function ArtViewer({
 
   // Refs for race conditions and timers
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
+  const filmstripRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const transitionTokenRef = useRef<number>(0)
   const wasPlayingBeforeBackgroundRef = useRef<boolean>(false)
   const prevIsOpenRef = useRef<boolean>(false)
 
-  // Sync initial artwork ONLY when modal opens (from closed state), never clobber during active transitions or random slideshow
+  // Sync initial artwork when modal opens or external prop changes
   useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      setCurrentArtwork(initialShowcaseItem)
+    if (isOpen) {
+      if (!prevIsOpenRef.current) {
+        setCurrentArtwork(initialShowcaseItem)
+      } else if (initialShowcaseItem.identityKey !== currentArtwork.identityKey) {
+        const currentList = pilotsArtworksMap[currentPilotId] || []
+        const oldIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
+        const newIdx = currentList.findIndex((a) => a.identityKey === initialShowcaseItem.identityKey)
+        const dir = newIdx >= oldIdx ? 1 : -1
+        setSlideDirection(dir)
+        setCurrentArtwork(initialShowcaseItem)
+      }
     }
     prevIsOpenRef.current = isOpen
-  }, [isOpen, initialShowcaseItem])
+  }, [isOpen, initialShowcaseItem, currentArtwork.identityKey, currentPilotId, pilotsArtworksMap])
 
   // Lock body scroll when open
   useEffect(() => {
@@ -350,13 +393,21 @@ export function ArtViewer({
   }, [isRandomMode, randomPool.length])
 
   // =========================================================================
-  // ATOMIC TRANSITION ENGINE
+  // ATOMIC TRANSITION ENGINE (With Smooth Slide Direction)
   // Never show new metadata with old image. Never show black screen.
   // =========================================================================
   const transitionToArtwork = useCallback(
-    async (targetArtwork: ShowcaseArtwork) => {
+    async (targetArtwork: ShowcaseArtwork, direction: number = 1) => {
       if (!targetArtwork || targetArtwork.identityKey === currentArtwork.identityKey) {
         return
+      }
+
+      setSlideDirection(direction)
+
+      // Reset zoom if zoomed in so slide is centered
+      if (transformRef.current && currentScale !== 1) {
+        transformRef.current.resetTransform()
+        setCurrentScale(1)
       }
 
       // Generate a new sequence token to cancel previous in-flight transitions
@@ -391,14 +442,14 @@ export function ArtViewer({
           // Skip broken image and try next in shuffle bag
           const nextIdx = (shuffleIndex + 1) % shuffleBag.length
           setShuffleIndex(nextIdx)
-          transitionToArtwork(shuffleBag[nextIdx])
+          transitionToArtwork(shuffleBag[nextIdx], 1)
         }
       }
     },
-    [currentArtwork.identityKey, isRandomMode, shuffleBag, shuffleIndex, onSelectArtwork]
+    [currentArtwork.identityKey, currentScale, isRandomMode, shuffleBag, shuffleIndex, onSelectArtwork]
   )
 
-  // Advance Next (Sequential or Random)
+  // Advance Next (Sequential or Random) with slideDirection = 1
   const handleAdvanceNext = useCallback(() => {
     if (isRandomMode && shuffleBag.length > 0) {
       let nextIdx = shuffleIndex + 1
@@ -414,42 +465,57 @@ export function ArtViewer({
       setShuffleIndex(nextIdx)
       const nextTarget = currentBag[nextIdx]
       if (nextTarget) {
-        transitionToArtwork(nextTarget)
+        transitionToArtwork(nextTarget, 1)
       }
     } else {
-      // Sequential Mode
+      // Sequential Mode for same pilot
       const currentList = pilotsArtworksMap[currentPilotId] || []
       if (currentList.length > 0) {
         const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
         const nextIdx = (curIdx + 1) % currentList.length
-        transitionToArtwork(currentList[nextIdx])
+        transitionToArtwork(currentList[nextIdx], 1)
       } else if (hasNext && onNext) {
+        setSlideDirection(1)
         onNext()
       }
     }
   }, [isRandomMode, shuffleBag, shuffleIndex, randomPool, pilotsArtworksMap, currentPilotId, currentArtwork.identityKey, hasNext, onNext, transitionToArtwork])
 
-  // Advance Prev (Sequential or Random)
+  // Advance Prev (Sequential or Random) with slideDirection = -1
   const handleAdvancePrev = useCallback(() => {
     if (isRandomMode && shuffleBag.length > 0) {
       const prevIdx = (shuffleIndex - 1 + shuffleBag.length) % shuffleBag.length
       setShuffleIndex(prevIdx)
       const prevTarget = shuffleBag[prevIdx]
       if (prevTarget) {
-        transitionToArtwork(prevTarget)
+        transitionToArtwork(prevTarget, -1)
       }
     } else {
-      // Sequential Mode
+      // Sequential Mode for same pilot
       const currentList = pilotsArtworksMap[currentPilotId] || []
       if (currentList.length > 0) {
         const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
         const prevIdx = (curIdx - 1 + currentList.length) % currentList.length
-        transitionToArtwork(currentList[prevIdx])
+        transitionToArtwork(currentList[prevIdx], -1)
       } else if (hasPrev && onPrev) {
+        setSlideDirection(-1)
         onPrev()
       }
     }
   }, [isRandomMode, shuffleBag, shuffleIndex, pilotsArtworksMap, currentPilotId, currentArtwork.identityKey, hasPrev, onPrev, transitionToArtwork])
+
+  // Select a specific artwork of the current pilot with auto-calculated slide direction
+  const handleSelectPilotArtwork = useCallback(
+    (targetArtwork: ShowcaseArtwork) => {
+      pauseSlideshow()
+      const currentList = pilotsArtworksMap[currentPilotId] || []
+      const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
+      const targetIdx = currentList.findIndex((a) => a.identityKey === targetArtwork.identityKey)
+      const dir = targetIdx >= curIdx ? 1 : -1
+      transitionToArtwork(targetArtwork, dir)
+    },
+    [currentArtwork.identityKey, currentPilotId, pauseSlideshow, pilotsArtworksMap, transitionToArtwork]
+  )
 
   // Preload Queue (Preload 2-3 upcoming images ahead of time)
   useEffect(() => {
@@ -553,6 +619,8 @@ export function ArtViewer({
           setShowInfoDrawer(false)
         } else if (showPilotDrawer) {
           setShowPilotDrawer(false)
+        } else if (showFilmstrip) {
+          setShowFilmstrip(false)
         } else if (isCleanView) {
           setIsCleanView(false)
         } else {
@@ -573,6 +641,9 @@ export function ArtViewer({
         e.preventDefault()
         pauseSlideshow()
         setShowInfoDrawer((prev) => !prev)
+      } else if (e.key === 't' || e.key === 'T') {
+        e.preventDefault()
+        setShowFilmstrip((prev) => !prev)
       } else if (e.key === 'h' || e.key === 'H') {
         e.preventDefault()
         setIsCleanView((prev) => !prev)
@@ -585,7 +656,7 @@ export function ArtViewer({
         setCurrentScale(1)
       }
     },
-    [isOpen, showInfoDrawer, showPilotDrawer, isCleanView, pauseSlideshow, handleAdvancePrev, handleAdvanceNext, onClose]
+    [isOpen, showInfoDrawer, showPilotDrawer, showFilmstrip, isCleanView, pauseSlideshow, handleAdvancePrev, handleAdvanceNext, onClose]
   )
 
   useEffect(() => {
@@ -652,6 +723,20 @@ export function ArtViewer({
     const actualScale = Math.max(1, Math.min(5, Math.max(scaleX, scaleY)))
     transformRef.current.setTransform(0, 0, actualScale)
   }
+
+  const currentPilotArtworks = useMemo(() => {
+    return pilotsArtworksMap[currentPilotId] || []
+  }, [pilotsArtworksMap, currentPilotId])
+
+  // Auto-scroll active thumbnail into center of filmstrip when artwork changes
+  useEffect(() => {
+    if (showFilmstrip && filmstripRef.current) {
+      const activeEl = filmstripRef.current.querySelector('[data-active="true"]') as HTMLElement
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      }
+    }
+  }, [currentArtwork.identityKey, showFilmstrip])
 
   const effectiveTotal = isRandomMode
     ? randomPool.length
@@ -821,21 +906,47 @@ export function ArtViewer({
                 wrapperClass="!w-full !h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
                 contentClass="flex items-center justify-center min-w-full min-h-full"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  key={currentArtwork.identityKey}
-                  src={currentArtwork.resolvedUrl}
-                  alt={currentArtwork.title}
-                  draggable={false}
-                  className="max-w-[94vw] max-h-[86vh] object-contain select-none transition-opacity duration-200 drop-shadow-[0_25px_50px_rgba(0,0,0,0.95)]"
-                  onLoad={(e) => {
-                    const target = e.currentTarget
-                    setNaturalDimensions({
-                      width: target.naturalWidth,
-                      height: target.naturalHeight,
-                    })
-                  }}
-                />
+                <AnimatePresence custom={slideDirection} mode="wait" initial={false}>
+                  <motion.div
+                    key={currentArtwork.identityKey}
+                    custom={slideDirection}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    drag={currentScale === 1 ? 'x' : false}
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(_, info) => {
+                      if (currentScale !== 1) return
+                      const swipeThreshold = 50
+                      const swipeVelocity = 350
+                      if (info.offset.x < -swipeThreshold || info.velocity.x < -swipeVelocity) {
+                        pauseSlideshow()
+                        handleAdvanceNext()
+                      } else if (info.offset.x > swipeThreshold || info.velocity.x > swipeVelocity) {
+                        pauseSlideshow()
+                        handleAdvancePrev()
+                      }
+                    }}
+                    className="flex items-center justify-center select-none will-change-transform"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={currentArtwork.resolvedUrl}
+                      alt={currentArtwork.title}
+                      draggable={false}
+                      className="max-w-[94vw] max-h-[86vh] object-contain select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.95)]"
+                      onLoad={(e) => {
+                        const target = e.currentTarget
+                        setNaturalDimensions({
+                          width: target.naturalWidth,
+                          height: target.naturalHeight,
+                        })
+                      }}
+                    />
+                  </motion.div>
+                </AnimatePresence>
               </TransformComponent>
             )}
           </TransformWrapper>
@@ -1024,6 +1135,24 @@ export function ArtViewer({
             <EyeOff className="w-4 h-4" />
           </button>
 
+          {/* FILMSTRIP TOGGLE (SAME PILOT ARTWORKS) */}
+          <button
+            type="button"
+            onClick={() => {
+              pauseSlideshow()
+              setShowFilmstrip((prev) => !prev)
+            }}
+            title={showFilmstrip ? 'Ẩn danh mục ảnh phi công (T)' : 'Xem danh mục ảnh cùng phi công (T)'}
+            aria-label="Xem danh mục ảnh cùng phi công"
+            className={`p-1.5 rounded-full transition-colors cursor-pointer shrink-0 ${
+              showFilmstrip
+                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_10px_rgba(0,212,255,0.6)] font-bold'
+                : 'hover:bg-[#142338] hover:text-[#00D4FF]'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
+
           {/* INFO DRAWER TOGGLE */}
           <button
             type="button"
@@ -1041,6 +1170,68 @@ export function ArtViewer({
           </button>
         </div>
       )}
+
+      {/* =================================================================== */}
+      {/* 4.5. THUMBNAIL FILMSTRIP DRAWER (Same Pilot Artwork Fast Switcher)  */}
+      {/* =================================================================== */}
+      <AnimatePresence>
+        {showFilmstrip && currentPilotArtworks.length > 0 && !isCleanView && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute bottom-20 sm:bottom-24 z-40 max-w-[95vw] sm:max-w-2xl px-3 py-2.5 rounded-2xl bg-[#090D18]/96 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl flex flex-col gap-1.5"
+          >
+            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
+              <span className="font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5" />
+                <span>BỘ SƯU TẬP {currentArtwork.pilotName.toUpperCase()} ({currentPilotArtworks.length})</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowFilmstrip(false)}
+                className="hover:text-white p-0.5 cursor-pointer text-slate-400"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div
+              ref={filmstripRef}
+              className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-thin scroll-smooth max-h-24"
+            >
+              {currentPilotArtworks.map((art, idx) => {
+                const isActive = art.identityKey === currentArtwork.identityKey
+                return (
+                  <button
+                    key={art.identityKey}
+                    type="button"
+                    data-active={isActive ? 'true' : 'false'}
+                    onClick={() => handleSelectPilotArtwork(art)}
+                    title={`Chuyển tới ảnh ${idx + 1}: ${art.title}`}
+                    className={`relative shrink-0 w-12 h-14 sm:w-14 sm:h-16 rounded-lg overflow-hidden border transition-all cursor-pointer ${
+                      isActive
+                        ? 'border-cyan-400 ring-2 ring-cyan-500/60 scale-105 shadow-md shadow-cyan-950 z-10'
+                        : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-600'
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={art.resolvedUrl}
+                      alt={art.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute bottom-0 inset-x-0 bg-black/85 text-[9px] font-mono font-bold text-center text-cyan-300 py-0.5">
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* =================================================================== */}
       {/* 5. VISUAL PILOT SELECTOR DRAWER (With Portrait & Gender Icons)     */}

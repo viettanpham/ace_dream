@@ -3,10 +3,8 @@
   "pilotId": "valentine",
   "chapterId": "chap-04",
   "chapterNumber": 4,
-  "title": "Lằn ranh đỏ giữa hai mệnh lệnh",
+  "title": "Một Ngày Không Tiếng Còi Báo Động",
   "canonicalLibraryTitle": "Một Ngày Không Tiếng Còi Báo Động",
-  "sourceConflict": true,
-  "conflictDetails": "Tiêu đề runtime là 'Lằn ranh đỏ giữa hai mệnh lệnh', tiêu đề Library canonical là 'Một Ngày Không Tiếng Còi Báo Động'. Đang giữ tiêu đề runtime và chờ tác giả duyệt đồng bộ.",
   "editorialStatus": "APPROVED",
   "contentStatus": "SUMMARY_ONLY",
   "publicationStatus": "REVIEW_ONLY",
@@ -36,5 +34,5 @@
     }
   ],
   "blocks": [],
-  "content": "> **BẢN THẢO TÓM TẮT (SUMMARY_ONLY) — CHỜ PHÊ DUYỆT TOÀN VĂN TÁC GIẢ**\n\n**Tóm tắt nội dung:**\nSự giằng xé sâu sắc giữa quy tắc kỷ luật quân sự nghiêm ngặt và y đức cứu người. Đứng trước lệnh rút quân ngay lập tức để bảo toàn hạm đội, Valentine đã bất tuân mệnh lệnh rút lui để tiếp tục mở trường khiên cứu viện thêm 15 phút, cứu sống toàn bộ phân đội tiếp tế hậu cần."
+  "content": "> **BẢN TÓM TẮT — CHƯA PHẢI TOÀN VĂN**\n\n**Tóm tắt nội dung:**\nSự giằng xé sâu sắc giữa quy tắc kỷ luật quân sự nghiêm ngặt và y đức cứu người. Đứng trước lệnh rút quân ngay lập tức để bảo toàn hạm đội, Valentine đã bất tuân mệnh lệnh rút lui để tiếp tục mở trường khiên cứu viện thêm 15 phút, cứu sống toàn bộ phân đội tiếp tế hậu cần."
 }

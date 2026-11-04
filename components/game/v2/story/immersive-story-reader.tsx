@@ -307,6 +307,23 @@ export function ImmersiveStoryReader({
     return sceneArtworks[currentArtworkIndex] || sceneArtworks[0];
   }, [sceneArtworks, currentArtworkIndex]);
 
+  // Navigation between readable chapters (only chapters with contentAvailable)
+  const currentChapterIndex = useMemo(() => {
+    return chapters.findIndex((c) => c.chapterId === activeChapterId);
+  }, [chapters, activeChapterId]);
+
+  const prevChapter = useMemo(() => {
+    if (currentChapterIndex <= 0) return null;
+    const prev = chapters[currentChapterIndex - 1];
+    return prev?.contentAvailable ? prev : null;
+  }, [chapters, currentChapterIndex]);
+
+  const nextChapter = useMemo(() => {
+    if (currentChapterIndex < 0 || currentChapterIndex >= chapters.length - 1) return null;
+    const next = chapters[currentChapterIndex + 1];
+    return next?.contentAvailable ? next : null;
+  }, [chapters, currentChapterIndex]);
+
   // Reading progress tracker via scroll
   const handleScroll = useCallback(() => {
     if (!readingColumnRef.current) return;
@@ -360,13 +377,29 @@ export function ImmersiveStoryReader({
   const isArtworkPanelVisible = !isFocusMode && !isArtworkHidden && hasSceneArtworks;
   const isNavigatorVisible = !isFocusMode && !isNavigatorCollapsed;
 
-  // Status badge styling: NEVER lock out a chapter. Clear distinction between content and editorial status.
-  const renderStatusBadge = (editorialStatus: string, hasContent: boolean = false) => {
-    if (hasContent) {
+  // Status badge styling: Clear distinction between content type and editorial status.
+  const renderStatusBadge = (editorialStatus: string, hasContent: boolean = false, contentStatus?: string) => {
+    if (contentStatus === 'FULL_PROSE') {
       return (
         <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 flex items-center gap-1">
           <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400" />
-          <span>CÓ VĂN XUÔI</span>
+          <span>TOÀN VĂN</span>
+        </span>
+      );
+    }
+    if (contentStatus === 'SUMMARY_ONLY' || (hasContent && editorialStatus !== 'HOLD' && editorialStatus !== 'MISSING')) {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 flex items-center gap-1">
+          <FileText className="w-2.5 h-2.5 text-cyan-400" />
+          <span>TÓM TẮT</span>
+        </span>
+      );
+    }
+    if (editorialStatus === 'HOLD' || editorialStatus === 'MISSING') {
+      return (
+        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider bg-slate-900 text-slate-500 border border-slate-800 flex items-center gap-1">
+          <Clock className="w-2.5 h-2.5 text-slate-500" />
+          <span>HOLD</span>
         </span>
       );
     }
@@ -621,7 +654,7 @@ export function ImmersiveStoryReader({
 
                     {/* Status Badge */}
                     <div className="shrink-0">
-                      {renderStatusBadge(chap.editorialStatus, hasContent)}
+                      {renderStatusBadge(chap.editorialStatus, hasContent, chap.contentStatus)}
                     </div>
                   </button>
                 );
@@ -797,6 +830,24 @@ export function ImmersiveStoryReader({
                   </p>
                 )}
               </div>
+
+              {/* Callout Banner for SUMMARY_ONLY Chapters */}
+              {(meta.contentStatus === 'SUMMARY_ONLY' || meta.chapterNumber >= 2) && (
+                <div className="mb-8 p-4 rounded-xl border border-amber-500/50 bg-gradient-to-r from-amber-950/40 via-amber-950/20 to-slate-950/60 text-amber-200 flex items-start gap-3 shadow-md font-sans text-left">
+                  <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-xs space-y-1">
+                    <div className="font-mono font-bold tracking-wider text-amber-300 uppercase flex items-center gap-2">
+                      <span>BẢN TÓM TẮT — CHƯA PHẢI TOÀN VĂN</span>
+                      <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-900/60 border border-amber-600/50 text-amber-200">
+                        DEV PREVIEW
+                      </span>
+                    </div>
+                    <p className="text-slate-300 leading-relaxed text-[12px]">
+                      Nội dung dưới đây là bản tóm tắt cốt truyện canonical được biên soạn từ tài liệu kiểm chứng phục vụ môi trường kiểm thử. Toàn văn văn xuôi chi tiết đang trong quy trình biên tập và sẽ được phát hành sau.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Prose Article (When full text is available, e.g. Chapter 01) */}
               {rawContent ? (
@@ -994,6 +1045,33 @@ export function ImmersiveStoryReader({
                 </div>
               )}
 
+              {/* Prev / Next Chapter Navigation */}
+              <div className="mt-12 pt-6 border-t border-cyan-950/80 flex items-center justify-between gap-3 font-sans">
+                <button
+                  type="button"
+                  disabled={!prevChapter}
+                  onClick={() => prevChapter && handleSelectChapter(prevChapter.chapterId)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-800 bg-slate-950 text-xs font-mono font-medium text-slate-300 hover:text-white hover:border-cyan-700 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4 text-cyan-400" />
+                  <span>CHƯƠNG TRƯỚC</span>
+                </button>
+
+                <span className="text-[11px] font-mono text-cyan-500 font-semibold">
+                  CHƯƠNG {meta ? String(meta.chapterNumber).padStart(2, '0') : '01'}
+                </span>
+
+                <button
+                  type="button"
+                  disabled={!nextChapter}
+                  onClick={() => nextChapter && handleSelectChapter(nextChapter.chapterId)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-cyan-800/80 bg-cyan-950/60 hover:bg-cyan-900/60 text-xs font-mono font-bold text-cyan-200 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer"
+                >
+                  <span>CHƯƠNG TIẾP</span>
+                  <ChevronRight className="w-4 h-4 text-cyan-400" />
+                </button>
+              </div>
+
               {/* End of Chapter Section */}
               <div className="mt-16 pt-8 border-t border-cyan-950/80 text-center font-sans">
                 <div className="w-10 h-0.5 bg-cyan-400/80 mx-auto mb-3" />
@@ -1166,7 +1244,7 @@ export function ImmersiveStoryReader({
                       </span>
                       <span className="text-xs font-medium truncate">{chap.title}</span>
                     </div>
-                    {renderStatusBadge(chap.editorialStatus, hasContent)}
+                    {renderStatusBadge(chap.editorialStatus, hasContent, chap.contentStatus)}
                   </button>
                 );
               })}

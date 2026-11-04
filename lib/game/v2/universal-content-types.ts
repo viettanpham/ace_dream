@@ -240,13 +240,15 @@ export interface StoryBlock {
 }
 
 export interface UniversalStoryChapterContent {
-  schemaVersion: 'starfront-story-chapter-v1';
+  schemaVersion: 'starfront-story-chapter-v1' | string;
   pilotId: string;
   chapterId: string;
   chapterNumber: number;
   title: string;
   subtitle?: string;
   quote?: string;
+  content?: string;
+  canonicalLibraryTitle?: string;
   editorialStatus: StoryEditorialStatus;
   contentStatus: StoryContentStatus;
   publicationStatus: StoryPublicationStatus;

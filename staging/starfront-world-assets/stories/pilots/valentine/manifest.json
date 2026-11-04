@@ -9,7 +9,7 @@
     {
       "chapterId": "chap-01",
       "chapterNumber": 1,
-      "title": "Ánh sáng cuối cùng tại Elysia",
+      "title": "Ánh Sáng Cuối Cùng Tại Elysia",
       "canonicalLibraryTitle": "Ánh Sáng Cuối Cùng Tại Elysia",
       "editorialStatus": "APPROVED",
       "contentStatus": "FULL_PROSE",
@@ -20,6 +20,8 @@
       "quote": "“Tôi không hứa rằng mọi người sẽ không bị thương. Nhưng tôi hứa sẽ làm tất cả những gì có thể để đưa họ trở về.”",
       "readingTimeMinutes": 6,
       "wordCount": 780,
+      "contentAvailable": true,
+      "isComingSoon": false,
       "sceneAnchors": [
         {
           "anchorId": "val-ch01-scene-academy",
@@ -50,9 +52,8 @@
     {
       "chapterId": "chap-02",
       "chapterNumber": 2,
-      "title": "Ca trực đầu tiên tại Trạm Cứu hộ Quỹ đạo",
+      "title": "Lời Thề Dưới Những Vì Sao",
       "canonicalLibraryTitle": "Lời Thề Dưới Những Vì Sao",
-      "sourceConflict": true,
       "editorialStatus": "APPROVED",
       "contentStatus": "SUMMARY_ONLY",
       "publicationStatus": "REVIEW_ONLY",
@@ -61,6 +62,8 @@
       "quote": "“Mỗi nhịp tim được giữ lại giữa bão từ đều là một kỳ tích đáng để đánh đổi.”",
       "readingTimeMinutes": 4,
       "wordCount": 180,
+      "contentAvailable": true,
+      "isComingSoon": false,
       "sceneAnchors": [
         {
           "anchorId": "val-ch02-scene-uniform",
@@ -75,9 +78,8 @@
     {
       "chapterId": "chap-03",
       "chapterNumber": 3,
-      "title": "Tín hiệu bị cô lập ở Vành đai Asteroid",
+      "title": "Đôi Cánh Mang Hy Vọng",
       "canonicalLibraryTitle": "Đôi Cánh Mang Hy Vọng",
-      "sourceConflict": true,
       "editorialStatus": "APPROVED",
       "contentStatus": "SUMMARY_ONLY",
       "publicationStatus": "REVIEW_ONLY",
@@ -86,6 +88,8 @@
       "quote": "“Chừng nào còn một tín hiệu cầu cứu, tôi sẽ không bỏ lại ai phía sau.”",
       "readingTimeMinutes": 4,
       "wordCount": 190,
+      "contentAvailable": true,
+      "isComingSoon": false,
       "sceneAnchors": [
         {
           "anchorId": "val-ch03-scene-activity",
@@ -100,9 +104,8 @@
     {
       "chapterId": "chap-04",
       "chapterNumber": 4,
-      "title": "Lằn ranh đỏ giữa hai mệnh lệnh",
+      "title": "Một Ngày Không Tiếng Còi Báo Động",
       "canonicalLibraryTitle": "Một Ngày Không Tiếng Còi Báo Động",
-      "sourceConflict": true,
       "editorialStatus": "APPROVED",
       "contentStatus": "SUMMARY_ONLY",
       "publicationStatus": "REVIEW_ONLY",
@@ -111,6 +114,8 @@
       "quote": "“Mệnh lệnh có thể quy định quyền hạn, nhưng không thể ra lệnh cho trái tim ngừng bảo vệ đồng loại.”",
       "readingTimeMinutes": 5,
       "wordCount": 210,
+      "contentAvailable": true,
+      "isComingSoon": false,
       "sceneAnchors": [
         {
           "anchorId": "val-ch04-scene-casual",
@@ -125,9 +130,8 @@
     {
       "chapterId": "chap-05",
       "chapterNumber": 5,
-      "title": "Học viện Y sinh Không gian và Lời thề",
+      "title": "Những Người Không Trở Về",
       "canonicalLibraryTitle": "Những Người Không Trở Về",
-      "sourceConflict": true,
       "editorialStatus": "PROVISIONAL",
       "contentStatus": "SUMMARY_ONLY",
       "publicationStatus": "REVIEW_ONLY",
@@ -136,14 +140,15 @@
       "quote": "“Lời thề y đức trên mặt đất đã thiêng liêng, trong không gian vô tận nó còn là sự cam kết bằng mạng sống.”",
       "readingTimeMinutes": 4,
       "wordCount": 160,
+      "contentAvailable": true,
+      "isComingSoon": false,
       "sceneAnchors": []
     },
     {
       "chapterId": "chap-06",
       "chapterNumber": 6,
-      "title": "Chuyến bay thử nghiệm của Mercy Wing",
+      "title": "Thiên Thần Trong Ánh Đèn Trắng",
       "canonicalLibraryTitle": "Thiên Thần Trong Ánh Đèn Trắng",
-      "sourceConflict": true,
       "editorialStatus": "PROVISIONAL",
       "contentStatus": "SUMMARY_ONLY",
       "publicationStatus": "REVIEW_ONLY",
@@ -152,6 +157,8 @@
       "quote": "“Khiên chắn không được tạo ra để ngăn chặn kẻ thù, nó sinh ra để bảo vệ những người không thể tự vệ.”",
       "readingTimeMinutes": 4,
       "wordCount": 170,
+      "contentAvailable": true,
+      "isComingSoon": false,
       "sceneAnchors": []
     },
     {
@@ -162,6 +169,8 @@
       "editorialStatus": "HOLD",
       "contentStatus": "MISSING",
       "publicationStatus": "REVIEW_ONLY",
+      "contentAvailable": false,
+      "isComingSoon": true,
       "summary": "Hồ sơ niêm phong cấp độ II. Chưa mở khóa nội dung.",
       "readingTimeMinutes": 3,
       "wordCount": 95,

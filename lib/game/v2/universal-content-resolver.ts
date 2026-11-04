@@ -527,17 +527,32 @@ export class UniversalContentResolver {
         continue;
       }
 
+      // Canonical Library Titles for Valentine (01-06)
+      const VALENTINE_CANON_LIBRARY_TITLES: Record<number, string> = {
+        1: 'Ánh Sáng Cuối Cùng Tại Elysia',
+        2: 'Lời Thề Dưới Những Vì Sao',
+        3: 'Đôi Cánh Mang Hy Vọng',
+        4: 'Một Ngày Không Tiếng Còi Báo Động',
+        5: 'Những Người Không Trở Về',
+        6: 'Thiên Thần Trong Ánh Đèn Trắng',
+      };
+
       // 2. Content availability rule:
-      // Substantive content exists ONLY if file is provided and either contentStatus is FULL_PROSE or Valentine Ch01
+      // Substantive content exists if file is provided and either contentStatus is FULL_PROSE or Valentine Chapters 01-06 (DEV Preview Basic Story)
+      const isValentineBasicChapter = cleanId === 'valentine' && ch.chapterNumber >= 1 && ch.chapterNumber <= 6;
+      const isValentineHoldChapter = cleanId === 'valentine' && ch.chapterNumber >= 7;
+
       const hasSubstantiveContent = Boolean(
         (ch.file && ch.contentStatus === 'FULL_PROSE') ||
-        (cleanId === 'valentine' && (ch.chapterNumber === 1 || ch.chapterId === 'chap-01'))
+        isValentineBasicChapter
       );
 
-      // Chapter is only available to read if it is PUBLISHED and has substantive content
-      const isPublished = effectivePublicationStatus === 'PUBLISHED' && !isHidden;
+      // Chapter is available to read if it has substantive content and (is published OR Valentine 01-06 in dev/review mode)
+      const isPublished = (effectivePublicationStatus === 'PUBLISHED' || isValentineBasicChapter) && !isHidden && !isValentineHoldChapter;
       const isAvailable = hasSubstantiveContent && isPublished;
-      const isComingSoon = !isAvailable;
+      const isComingSoon = !isAvailable || isValentineHoldChapter;
+
+      const canonTitle = cleanId === 'valentine' ? VALENTINE_CANON_LIBRARY_TITLES[ch.chapterNumber] : null;
 
       const isOverrideTitleValid = Boolean(
         override?.title &&
@@ -545,19 +560,21 @@ export class UniversalContentResolver {
         !override.title.startsWith('chap-') &&
         !override.title.startsWith('chapter-')
       );
-      const effectiveTitle = isOverrideTitleValid
+      const effectiveTitle = canonTitle || (isOverrideTitleValid
         ? override.title.trim()
-        : (ch.title || `Chương ${String(ch.chapterNumber).padStart(2, '0')}`);
+        : (ch.title || `Chương ${String(ch.chapterNumber).padStart(2, '0')}`));
 
       const effectiveSummary = (override?.summary && override.summary.trim().length > 0)
         ? override.summary.trim()
         : (ch.summary || `Hồ sơ biên niên sử không gian của phi công cho Chương ${ch.chapterNumber} đang được đội ngũ biên tập hoàn thiện.`);
 
+      const effectiveFile = ch.file || (isValentineBasicChapter ? `chapter-${String(ch.chapterNumber).padStart(2, '0')}.json` : undefined);
+
       resolvedChapters.push({
         chapterId: ch.chapterId,
         chapterNumber: ch.chapterNumber,
         title: effectiveTitle,
-        canonicalLibraryTitle: ch.canonicalLibraryTitle,
+        canonicalLibraryTitle: canonTitle || ch.canonicalLibraryTitle || effectiveTitle,
         summary: effectiveSummary,
         quote: override?.quote || ch.quote,
         editorialStatus: effectiveEditorialStatus,
@@ -570,7 +587,7 @@ export class UniversalContentResolver {
         isComingSoon,
         readingTimeMinutes: ch.readingTimeMinutes || 5,
         wordCount: override?.wordCount || ch.wordCount || 0,
-        file: ch.file,
+        file: effectiveFile,
         sceneAnchorsCount: Array.isArray(ch.sceneAnchors) ? ch.sceneAnchors.length : 0,
       });
     }
@@ -619,8 +636,10 @@ export class UniversalContentResolver {
         (targetNum !== null && c.chapterNumber === targetNum)
     );
 
+    const effectiveFile = chapterMeta?.file || (cleanId === 'valentine' && chapterMeta && chapterMeta.chapterNumber >= 1 && chapterMeta.chapterNumber <= 6 ? `chapter-${String(chapterMeta.chapterNumber).padStart(2, '0')}.json` : undefined);
+
     // If chapter is an unwritten / in-development chapter
-    if (!chapterMeta || !chapterMeta.contentAvailable || !chapterMeta.file) {
+    if (!chapterMeta || !chapterMeta.contentAvailable || !effectiveFile) {
       if (chapterMeta) {
         return {
           success: true,
@@ -651,13 +670,14 @@ export class UniversalContentResolver {
     }
 
     // 2. Fetch chapter content JSON file
-    const contentSubPath = `stories/pilots/${cleanId}/${chapterMeta.file}`;
+    const contentSubPath = `stories/pilots/${cleanId}/${effectiveFile}`;
     let chapterContent = await fetchWithFallback<UniversalStoryChapterContent>(contentSubPath);
 
-    // Local fallback for Valentine chapter 01 if needed
-    if (!chapterContent && cleanId === 'valentine' && (cleanChapId === 'chap-01' || cleanChapId === 'chapter-01')) {
+    // Local fallback for Valentine chapters (01-06) if needed
+    if (!chapterContent && cleanId === 'valentine') {
       try {
-        const localVal = path.join(process.cwd(), 'stories', 'valentine', 'chapter-01.json');
+        const candidateFile = effectiveFile || `${cleanChapId}.json`;
+        const localVal = path.join(process.cwd(), 'stories', 'valentine', candidateFile);
         if (fs.existsSync(localVal)) {
           chapterContent = JSON.parse(fs.readFileSync(localVal, 'utf-8'));
         }
@@ -670,13 +690,14 @@ export class UniversalContentResolver {
       return null;
     }
 
-    // Gatekeeper: only allow if published or admin/review
+    // Gatekeeper: allow if published, admin/review, or Valentine basic chapters (01-06) in DEV Preview
     const isPublished = chapterContent.publicationStatus === 'PUBLISHED';
-    if (!isPublished && !isAdminOrReview) {
+    const isValentineBasicAllowed = cleanId === 'valentine' && (chapterMeta.chapterNumber >= 1 && chapterMeta.chapterNumber <= 6);
+    if (!isPublished && !isAdminOrReview && !isValentineBasicAllowed) {
       return null; // Denied by gatekeeper
     }
 
-    // Build prose text from blocks
+    // Build prose text from blocks or fallback to content field (for SUMMARY_ONLY)
     const blocks: StoryBlock[] = Array.isArray(chapterContent.blocks) ? chapterContent.blocks : [];
     const proseParagraphs: string[] = [];
     const sceneAnchors: ResolvedStoryChapterProse['sceneAnchors'] = [];
@@ -711,7 +732,22 @@ export class UniversalContentResolver {
       }
     }
 
-    const fullProseText = proseParagraphs.join('\n\n');
+    let fullProseText = proseParagraphs.join('\n\n');
+    if (!fullProseText && chapterContent.content) {
+      fullProseText = chapterContent.content;
+    }
+
+    const VALENTINE_CANON_LIBRARY_TITLES: Record<number, string> = {
+      1: 'Ánh Sáng Cuối Cùng Tại Elysia',
+      2: 'Lời Thề Dưới Những Vì Sao',
+      3: 'Đôi Cánh Mang Hy Vọng',
+      4: 'Một Ngày Không Tiếng Còi Báo Động',
+      5: 'Những Người Không Trở Về',
+      6: 'Thiên Thần Trong Ánh Đèn Trắng',
+    };
+
+    const canonTitle = cleanId === 'valentine' ? VALENTINE_CANON_LIBRARY_TITLES[chapterMeta.chapterNumber] : null;
+    const finalTitle = canonTitle || chapterContent.title || chapterMeta.title;
 
     return {
       success: true,
@@ -721,7 +757,8 @@ export class UniversalContentResolver {
       meta: {
         chapterId: chapterMeta.chapterId,
         chapterNumber: chapterMeta.chapterNumber,
-        title: chapterContent.title || chapterMeta.title,
+        title: finalTitle,
+        canonicalLibraryTitle: canonTitle || chapterContent.canonicalLibraryTitle || chapterMeta.canonicalLibraryTitle || finalTitle,
         editorialStatus: chapterContent.editorialStatus,
         contentStatus: chapterContent.contentStatus,
         publicationStatus: chapterContent.publicationStatus,

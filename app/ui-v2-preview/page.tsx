@@ -16,7 +16,13 @@ import {
   Monitor,
   Sparkles,
   User,
+  Download,
+  FileArchive,
+  Terminal,
+  Check,
+  Loader2,
 } from 'lucide-react'
+import { Progress } from '@/components/ui/progress'
 import { PilotProfileV2 } from '@/components/game/v2/pilot-profile/pilot-profile-v2'
 import {
   Button,
@@ -53,7 +59,7 @@ import {
 } from '@/components/game/v2/ui'
 
 export default function UIV2PreviewPage() {
-  const [previewSection, setPreviewSection] = useState<'profile' | 'primitives'>('profile')
+  const [previewSection, setPreviewSection] = useState<'profile' | 'primitives' | 'download-r3'>('profile')
   const [viewportMode, setViewportMode] = useState<'responsive' | 'mobile' | 'tablet' | 'desktop'>('responsive')
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
@@ -61,6 +67,41 @@ export default function UIV2PreviewPage() {
   const [feedbackDemo, setFeedbackDemo] = useState<'loading' | 'empty' | 'error' | 'success'>('loading')
   const [isArtViewerDemoOpen, setIsArtViewerDemoOpen] = useState(false)
   const [artViewerDemoType, setArtViewerDemoType] = useState<'real' | 'archive'>('real')
+  const [downloadProgress, setDownloadProgress] = useState<{
+    data: number | null;
+    tools: number | null;
+  }>({
+    data: null,
+    tools: null,
+  })
+
+  const handleDownloadZip = (type: 'data' | 'tools', filename: string, url: string) => {
+    setDownloadProgress((prev) => ({ ...prev, [type]: 0 }))
+    const duration = 1800
+    const intervalTime = 60
+    const steps = duration / intervalTime
+    let currentStep = 0
+
+    const timer = setInterval(() => {
+      currentStep++
+      const currentPercent = Math.min(Math.round((currentStep / steps) * 100), 100)
+      setDownloadProgress((prev) => ({ ...prev, [type]: currentPercent }))
+
+      if (currentStep >= steps) {
+        clearInterval(timer)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = filename
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+
+        setTimeout(() => {
+          setDownloadProgress((prev) => ({ ...prev, [type]: null }))
+        }, 2500)
+      }
+    }, intervalTime)
+  }
 
   const isSimulatedMobile = viewportMode === 'mobile'
   const isSimulatedTablet = viewportMode === 'tablet'
@@ -210,6 +251,18 @@ export default function UIV2PreviewPage() {
             <Sliders className="w-4 h-4" />
             <span>UI PRIMITIVES HARNESS</span>
           </button>
+          <button
+            type="button"
+            onClick={() => setPreviewSection('download-r3')}
+            className={`min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+              previewSection === 'download-r3'
+                ? 'bg-[#06B6D4] text-[#070A12] shadow-sm shadow-cyan-500/20'
+                : 'bg-[#142338] text-[#A7B6C8] hover:text-[#F1F5F9] border border-[#26384D]'
+            }`}
+          >
+            <Download className="w-4 h-4" />
+            <span>TẢI GÓI CDN R3 (ZIP)</span>
+          </button>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -230,7 +283,7 @@ export default function UIV2PreviewPage() {
         <div className={viewportContainerStyles}>
           <PilotProfileV2 />
         </div>
-      ) : (
+      ) : previewSection === 'primitives' ? (
         <main className={`py-6 sm:py-8 space-y-10 ${viewportContainerStyles}`}>
         {/* Version Control Informational Status Banner (No duplicate button) */}
         <section className="p-4 sm:p-5 rounded-xl bg-[#0F172A] border border-[#26384D] shadow-sm">
@@ -727,6 +780,174 @@ export default function UIV2PreviewPage() {
           />
         </section>
       </main>
+      ) : (
+        /* Section Tải Gói CDN R3 (ZIP) với shadcn Progress Bar */
+        <main className={`py-6 sm:py-8 space-y-8 ${viewportContainerStyles}`}>
+          <div className="border-b border-[#26384D] pb-6">
+            <div className="flex items-center gap-3 text-[#06B6D4] font-mono text-sm mb-2">
+              <span className="px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/80 text-xs">
+                CHECKPOINT 2.1
+              </span>
+              <span className="text-xs sm:text-sm font-semibold">STARFRONT WORLD V2 — R3 CDN EXPORT PACKAGES</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#F1F5F9]">
+              Tải Gói Tích Hợp CDN R3 (Standalone ZIPs)
+            </h1>
+            <p className="text-[#A7B6C8] text-sm mt-2 leading-relaxed">
+              Dành cho Chủ dự án tích hợp sang GitHub repository{' '}
+              <code className="text-[#06B6D4] bg-[#0F172A] px-1.5 py-0.5 rounded border border-[#26384D]">
+                viettanpham/starfront-assets
+              </code>{' '}
+              trên nhánh <code className="text-amber-400 bg-[#0F172A] px-1.5 py-0.5 rounded border border-[#26384D]">version2-r1</code>.
+            </p>
+          </div>
+
+          <div className={gridTwoCols}>
+            {/* Package 1: Asset Data */}
+            <div className="p-6 rounded-xl bg-[#0F172A] border border-[#26384D] hover:border-[#06B6D4]/50 transition-all shadow-xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-lg bg-cyan-950/60 border border-cyan-800/60 flex items-center justify-center text-[#06B6D4]">
+                    <FileArchive className="w-6 h-6" />
+                  </div>
+                  <span className="text-xs font-mono text-[#A7B6C8] bg-[#142338] px-2 py-1 rounded border border-[#26384D]">
+                    42 Tệp · 52 KB
+                  </span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#F1F5F9]">Gói Dữ Liệu CDN R3</h2>
+                  <p className="text-xs text-[#A7B6C8] font-mono mt-1">starfront-r3-asset-data.zip</p>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Chứa toàn bộ cây phân cấp <code className="text-[#06B6D4]">starfront-world-assets/</code>:
+                  Discovery Index, 12 Pilot metadata (<code className="text-slate-200">files.json</code>,{' '}
+                  <code className="text-slate-200">gallery.json</code>,{' '}
+                  <code className="text-slate-200">&lt;pilotId&gt;.json</code>), và Story Valentine Chương 01.
+                </p>
+                <div className="p-3 bg-[#070A12] rounded-lg border border-[#26384D] font-mono text-xs text-[#A7B6C8] break-all space-y-1">
+                  <div className="text-slate-500 font-semibold">SHA-256 Checksum:</div>
+                  <div className="text-[#06B6D4]/90 text-[11px]">
+                    c6c119e8fa800e838e5e9fb72b0b9a3c71d303c7a8f5b4e8240683ced6db8642
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 space-y-3">
+                <button
+                  type="button"
+                  disabled={downloadProgress.data !== null && downloadProgress.data < 100}
+                  onClick={() => handleDownloadZip('data', 'starfront-r3-asset-data.zip', '/api/download-r3-package?type=data')}
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-[#06B6D4] hover:bg-[#06B6D4]/90 disabled:bg-[#06B6D4]/50 disabled:cursor-not-allowed text-[#070A12] font-semibold text-sm transition-colors shadow-lg shadow-cyan-950/50 cursor-pointer"
+                >
+                  {downloadProgress.data !== null && downloadProgress.data < 100 ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#070A12]" />
+                      Đang nén & chuẩn bị gói ({downloadProgress.data}%)...
+                    </>
+                  ) : downloadProgress.data === 100 ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-950" />
+                      Đã tải xuống hoàn tất (100%)
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Tải Gói Dữ Liệu R3 (ZIP)
+                    </>
+                  )}
+                </button>
+
+                {/* Progress bar shadcn cho Gói Dữ Liệu */}
+                {downloadProgress.data !== null && (
+                  <div className="space-y-1.5 animate-in fade-in duration-200">
+                    <div className="flex justify-between items-center text-xs font-mono">
+                      <span className="text-[#A7B6C8]">
+                        {downloadProgress.data === 100 ? 'Hoàn thành' : 'Tiến trình chuẩn bị dữ liệu'}
+                      </span>
+                      <span className="text-[#06B6D4] font-bold">{downloadProgress.data}%</span>
+                    </div>
+                    <Progress
+                      value={downloadProgress.data}
+                      className="h-2 bg-[#070A12] border-[#26384D]"
+                      indicatorClassName="bg-[#06B6D4] shadow-[0_0_8px_rgba(6,182,212,0.6)]"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Package 2: CI Tools */}
+            <div className="p-6 rounded-xl bg-[#0F172A] border border-[#26384D] hover:border-amber-500/50 transition-all shadow-xl flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="w-12 h-12 rounded-lg bg-amber-950/60 border border-amber-800/60 flex items-center justify-center text-amber-400">
+                    <Terminal className="w-6 h-6" />
+                  </div>
+                  <span className="text-xs font-mono text-[#A7B6C8] bg-[#142338] px-2 py-1 rounded border border-[#26384D]">
+                    3 Tệp · 6.6 KB
+                  </span>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#F1F5F9]">Gói Công Cụ CI/CD</h2>
+                  <p className="text-xs text-[#A7B6C8] font-mono mt-1">starfront-r3-ci-tools.zip</p>
+                </div>
+                <p className="text-sm text-slate-300 leading-relaxed">
+                  Chứa script nâng cấp <code className="text-amber-300">generate-asset-index.mjs</code>,
+                  template workflow <code className="text-amber-300">workflows/main.yml</code>, và hướng dẫn tích hợp chi tiết.
+                </p>
+                <div className="p-3 bg-[#070A12] rounded-lg border border-[#26384D] font-mono text-xs text-[#A7B6C8] break-all space-y-1">
+                  <div className="text-slate-500 font-semibold">SHA-256 Checksum:</div>
+                  <div className="text-amber-400/90 text-[11px]">
+                    32c9e96ee835c86bce234a238d6216ec90b77eab5f60ef112c455e6d1040355c
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-6 space-y-3">
+                <button
+                  type="button"
+                  disabled={downloadProgress.tools !== null && downloadProgress.tools < 100}
+                  onClick={() => handleDownloadZip('tools', 'starfront-r3-ci-tools.zip', '/api/download-r3-package?type=tools')}
+                  className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:bg-amber-600/50 disabled:cursor-not-allowed text-[#070A12] font-semibold text-sm transition-colors shadow-lg shadow-amber-950/50 cursor-pointer"
+                >
+                  {downloadProgress.tools !== null && downloadProgress.tools < 100 ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#070A12]" />
+                      Đang nén & chuẩn bị gói ({downloadProgress.tools}%)...
+                    </>
+                  ) : downloadProgress.tools === 100 ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-950" />
+                      Đã tải xuống hoàn tất (100%)
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Tải Gói Công Cụ CI/CD (ZIP)
+                    </>
+                  )}
+                </button>
+
+                {/* Progress bar shadcn cho Gói Công Cụ */}
+                {downloadProgress.tools !== null && (
+                  <div className="space-y-1.5 animate-in fade-in duration-200">
+                    <div className="flex justify-between items-center text-xs font-mono">
+                      <span className="text-[#A7B6C8]">
+                        {downloadProgress.tools === 100 ? 'Hoàn thành' : 'Tiến trình chuẩn bị công cụ'}
+                      </span>
+                      <span className="text-amber-400 font-bold">{downloadProgress.tools}%</span>
+                    </div>
+                    <Progress
+                      value={downloadProgress.tools}
+                      className="h-2 bg-[#070A12] border-[#26384D]"
+                      indicatorClassName="bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
       )}
     </div>
   )

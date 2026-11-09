@@ -1,9 +1,46 @@
 'use client';
 
-import React from 'react';
-import { Download, FileArchive, CheckCircle2, Terminal, ArrowRight, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, FileArchive, CheckCircle2, Terminal, ArrowRight, ShieldCheck, Check, Loader2 } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 
 export default function DownloadR3Page() {
+  const [downloadProgress, setDownloadProgress] = useState<{
+    data: number | null;
+    tools: number | null;
+  }>({
+    data: null,
+    tools: null,
+  });
+
+  const handleDownload = (type: 'data' | 'tools', filename: string, url: string) => {
+    setDownloadProgress((prev) => ({ ...prev, [type]: 0 }));
+    const duration = 1800;
+    const intervalTime = 60;
+    const steps = duration / intervalTime;
+    let currentStep = 0;
+
+    const timer = setInterval(() => {
+      currentStep++;
+      const currentPercent = Math.min(Math.round((currentStep / steps) * 100), 100);
+      setDownloadProgress((prev) => ({ ...prev, [type]: currentPercent }));
+
+      if (currentStep >= steps) {
+        clearInterval(timer);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setTimeout(() => {
+          setDownloadProgress((prev) => ({ ...prev, [type]: null }));
+        }, 2500);
+      }
+    }, intervalTime);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-6 md:p-12 font-sans">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -27,7 +64,7 @@ export default function DownloadR3Page() {
           </p>
         </div>
 
-        {/* 2 Primary ZIP Download Cards */}
+        {/* 2 Primary ZIP Download Cards with Progress */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Package 1: Asset Data */}
           <div className="p-6 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-500/50 transition-all shadow-xl flex flex-col justify-between">
@@ -58,15 +95,47 @@ export default function DownloadR3Page() {
               </div>
             </div>
 
-            <div className="pt-6">
-              <a
-                href="/api/download-r3-package?type=data"
-                download="starfront-r3-asset-data.zip"
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm transition-colors shadow-lg shadow-cyan-950/50"
+            <div className="pt-6 space-y-3">
+              <button
+                type="button"
+                disabled={downloadProgress.data !== null && downloadProgress.data < 100}
+                onClick={() => handleDownload('data', 'starfront-r3-asset-data.zip', '/api/download-r3-package?type=data')}
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 disabled:bg-cyan-600/50 disabled:cursor-not-allowed text-slate-950 font-semibold text-sm transition-colors shadow-lg shadow-cyan-950/50 cursor-pointer"
               >
-                <Download className="w-4 h-4" />
-                Tải Gói Dữ Liệu R3 (ZIP)
-              </a>
+                {downloadProgress.data !== null && downloadProgress.data < 100 ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    Đang nén & chuẩn bị gói ({downloadProgress.data}%)...
+                  </>
+                ) : downloadProgress.data === 100 ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-950" />
+                    Đã tải xuống hoàn tất (100%)
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Tải Gói Dữ Liệu R3 (ZIP)
+                  </>
+                )}
+              </button>
+
+              {/* Progress Bar Component từ shadcn */}
+              {downloadProgress.data !== null && (
+                <div className="space-y-1.5 animate-in fade-in duration-200">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-slate-400">
+                      {downloadProgress.data === 100 ? 'Hoàn thành' : 'Tiến trình chuẩn bị'}
+                    </span>
+                    <span className="text-cyan-400 font-bold">{downloadProgress.data}%</span>
+                  </div>
+                  <Progress
+                    value={downloadProgress.data}
+                    className="h-2 bg-slate-950 border-cyan-900/50"
+                    indicatorClassName="bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.6)]"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
@@ -97,15 +166,47 @@ export default function DownloadR3Page() {
               </div>
             </div>
 
-            <div className="pt-6">
-              <a
-                href="/api/download-r3-package?type=tools"
-                download="starfront-r3-ci-tools.zip"
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold text-sm transition-colors shadow-lg shadow-amber-950/50"
+            <div className="pt-6 space-y-3">
+              <button
+                type="button"
+                disabled={downloadProgress.tools !== null && downloadProgress.tools < 100}
+                onClick={() => handleDownload('tools', 'starfront-r3-ci-tools.zip', '/api/download-r3-package?type=tools')}
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:bg-amber-600/50 disabled:cursor-not-allowed text-slate-950 font-semibold text-sm transition-colors shadow-lg shadow-amber-950/50 cursor-pointer"
               >
-                <Download className="w-4 h-4" />
-                Tải Gói Công Cụ CI/CD (ZIP)
-              </a>
+                {downloadProgress.tools !== null && downloadProgress.tools < 100 ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    Đang nén & chuẩn bị gói ({downloadProgress.tools}%)...
+                  </>
+                ) : downloadProgress.tools === 100 ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-950" />
+                    Đã tải xuống hoàn tất (100%)
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Tải Gói Công Cụ CI/CD (ZIP)
+                  </>
+                )}
+              </button>
+
+              {/* Progress Bar Component từ shadcn */}
+              {downloadProgress.tools !== null && (
+                <div className="space-y-1.5 animate-in fade-in duration-200">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-slate-400">
+                      {downloadProgress.tools === 100 ? 'Hoàn thành' : 'Tiến trình chuẩn bị'}
+                    </span>
+                    <span className="text-amber-400 font-bold">{downloadProgress.tools}%</span>
+                  </div>
+                  <Progress
+                    value={downloadProgress.tools}
+                    className="h-2 bg-slate-950 border-amber-900/50"
+                    indicatorClassName="bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -15,6 +15,9 @@ export interface V2UIPreferences {
   pilotRosterMode: 'mini' | 'full'
   backgroundMode: 'standard' | 'tactical'
   activePilotTab: string
+  rosterCollapsed: boolean
+  heroBackgroundMode: 'contextual' | 'clean'
+  mobilePreferredMode: 'art' | 'info'
 }
 
 const STORAGE_KEY = 'sf_v2_ui_prefs'
@@ -24,6 +27,9 @@ const DEFAULT_PREFERENCES: V2UIPreferences = {
   pilotRosterMode: 'mini',
   backgroundMode: 'standard',
   activePilotTab: 'overview',
+  rosterCollapsed: false,
+  heroBackgroundMode: 'contextual',
+  mobilePreferredMode: 'art',
 }
 
 export function loadV2UIPreferences(): V2UIPreferences {
@@ -40,6 +46,9 @@ export function loadV2UIPreferences(): V2UIPreferences {
       pilotRosterMode: parsed.pilotRosterMode === 'full' ? 'full' : 'mini',
       backgroundMode: parsed.backgroundMode === 'tactical' ? 'tactical' : 'standard',
       activePilotTab: typeof parsed.activePilotTab === 'string' ? parsed.activePilotTab : 'overview',
+      rosterCollapsed: Boolean(parsed.rosterCollapsed),
+      heroBackgroundMode: parsed.heroBackgroundMode === 'clean' ? 'clean' : 'contextual',
+      mobilePreferredMode: parsed.mobilePreferredMode === 'info' ? 'info' : 'art',
     }
   } catch {
     return DEFAULT_PREFERENCES

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { contentReleaseResolver } from '@/lib/game/v2/content-release-resolver';
 import {
   universalContentResolver,
   getDynamicStoryCdnPointer,
@@ -10,9 +11,9 @@ import { getCharacterContentStore } from '@/lib/game/v2/character-content-store'
 export const dynamic = 'force-dynamic';
 
 /**
- * Public Story Discovery API (CP3-A Universal CDN R3 / Dynamic Pointer)
- * GET /api/runtime/story?pilotId=valentine&cdnVersion=r4
- * Returns published story chapters, summaries, Coming Soon catalog, and active CDN pointer.
+ * Public Story Discovery API (FND-8 Dynamic CDN R4 -> R5+)
+ * GET /api/runtime/story?pilotId=valentine
+ * Returns story chapters and emptyState dynamically resolved from pinned CDN release.
  */
 export async function GET(req: NextRequest) {
   try {
@@ -20,8 +21,8 @@ export async function GET(req: NextRequest) {
     const pilotIdParam = searchParams.get('pilotId')?.toLowerCase().trim();
     const cdnVersionParam = searchParams.get('cdnVersion')?.trim();
     const cdnBaseUrlParam = searchParams.get('cdnBaseUrl')?.trim();
+    const forceRefresh = searchParams.get('refresh') === '1';
 
-    // If ad-hoc version or base URL requested via query params, apply temporary override
     if (cdnBaseUrlParam) {
       setDynamicStoryCdnPointer(cdnBaseUrlParam, cdnVersionParam || 'custom');
     } else if (cdnVersionParam) {
@@ -34,18 +35,51 @@ export async function GET(req: NextRequest) {
     const adminAuth = verifyAdminRequest(req, false);
     const isAdminOrReview = adminAuth.authorized || process.env.STARFRONT_STORY_REVIEW_MODE === 'true';
 
+    // 1. Primary: ContentReleaseResolver (Pinned R4 -> R5+ Release)
+    try {
+      if (pilotIdParam) {
+        const storyCatalog = await contentReleaseResolver.getPilotStoryCatalog(pilotIdParam, {
+          forceRefresh,
+        });
+        return NextResponse.json({
+          success: true,
+          pilotId: pilotIdParam,
+          pilotName: storyCatalog.pilotName,
+          callsign: storyCatalog.callsign,
+          available: storyCatalog.available,
+          status: storyCatalog.status,
+          emptyState: storyCatalog.emptyState,
+          totalChapters: storyCatalog.totalChapters,
+          publishedChaptersCount: storyCatalog.totalChapters,
+          chapters: storyCatalog.chapters,
+          releaseVersion: storyCatalog.releaseVersion,
+          releaseCommitSha: storyCatalog.releaseCommitSha,
+          isReviewMode: true,
+        });
+      } else {
+        const { snapshot } = await contentReleaseResolver.resolveSnapshot({ forceRefresh });
+        return NextResponse.json({
+          success: true,
+          releaseVersion: snapshot.releaseVersion,
+          releaseCommitSha: snapshot.releaseCommitSha,
+          storiesIndex: snapshot.storiesIndex,
+          pilots: snapshot.profilesIndex.entries.map((e) => e.pilotId),
+        });
+      }
+    } catch {
+      // Fallback to R3 resolver if R4 channel is unreachable
+    }
+
     const activePointer = getDynamicStoryCdnPointer();
 
-    // 1. If specific pilot is requested:
     if (pilotIdParam) {
       if (!isCanonicalPilotId(pilotIdParam)) {
         return NextResponse.json(
-          { success: false, error: `Pilot ${pilotIdParam} không thuộc 12 phi công chuẩn FND-8.` },
+          { success: false, error: `Không tìm thấy phi công ${pilotIdParam}.` },
           { status: 400 }
         );
       }
 
-      // Try Universal Content Resolver first (story manifest)
       const storyCatalog = await universalContentResolver.getPilotStoryCatalog(pilotIdParam, isAdminOrReview);
       if (storyCatalog && storyCatalog.chapters.length > 0) {
         return NextResponse.json({
@@ -61,7 +95,6 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      // Fallback: query character content store
       const store = getCharacterContentStore();
       const published = await store.getPublishedChapters(pilotIdParam as CanonicalPilotId);
       return NextResponse.json({
@@ -73,14 +106,13 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // 2. If general story index is requested:
     const rootManifest = await universalContentResolver.getRootManifest();
     return NextResponse.json({
       success: true,
       subsystem: rootManifest?.subsystems?.stories || {
         status: 'active',
         totalPilots: 12,
-        totalPublishedChapters: 1,
+        totalPublishedChapters: 5,
         totalCatalogChapters: 87,
       },
       canonicalPilots: CANONICAL_12_PILOT_IDS,

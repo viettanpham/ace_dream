@@ -1,387 +1,489 @@
-'use client';
+'use client'
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import {
-  V2_ROSTER_CHARACTERS,
   CharacterProfileV2,
   GalleryArtwork,
-} from '@/lib/game/v2/character-profile-data';
-import { DesktopView } from './desktop-view';
-import { MobileArtView } from './mobile-art-view';
-import { MobileInfoView } from './mobile-info-view';
-import { ArtViewer } from '@/components/game/v2/ui';
-import { ImmersiveStoryReader } from '@/components/game/v2/story/immersive-story-reader';
-import { CanonicalPilotId } from '@/lib/game/v2/character-content-types';
+} from '@/lib/game/v2/character-profile-data'
+import { DesktopView, PilotProfileTabId, RoleFilterId } from './desktop-view'
+import { MobileArtView } from './mobile-art-view'
+import { MobileInfoView } from './mobile-info-view'
+import { ArtViewer } from '@/components/game/v2/ui'
+import {
+  loadV2UIPreferences,
+  saveV2UIPreferences,
+} from '@/lib/game/v2/ui-preferences'
+import {
+  Image as ImageIcon,
+  FileText,
+  RefreshCw,
+  CheckCircle2,
+  AlertTriangle,
+  Radio,
+  Loader2,
+} from 'lucide-react'
+
+interface ReleaseStatusInfo {
+  releaseVersion: string
+  releaseCommitSha: string
+  status: string
+  loadedAt: string
+  usingFallbackSnapshot: boolean
+  lastUpdateError: string | null
+  totalPilots: number
+  totalVerifiedArtworks: number
+  totalSourceArtworks: number
+}
 
 export interface PilotProfileV2Props {
-  initialPilotId?: string;
-  onNavigateSection?: (section: string) => void;
+  onNavigateSection?: (section: any, forceMission?: any) => void
+  initialPilotId?: string
 }
 
-/**
- * STARFRONT WORLD V2 — CHARACTER CATEGORY / PILOT PROFILE V2 (FND-8 / 8.2.3.E.0)
- *
- * Final Integrated Delivery:
- * - Desktop: 3-column layout (Roster, Center Showcase with 2 symmetrical background controls, Right 4-tab dossier).
- * - Mobile: Dedicated Paired States (Art View with carousel & Info View with high-contrast UI).
- * - Fullscreen Viewer: Contextual artwork synchronization.
- * - Immersive Story Reader: Seamless transition to 3-column scroll-driven prose viewer with scene anchors.
- * - Dynamic Content Overlay: Runtime merging of newly published artworks and profile lore from AdminCP without rebuilds.
- */
-export function PilotProfileV2({
-  initialPilotId = 'valentine',
-  onNavigateSection,
-}: PilotProfileV2Props) {
-  // Active Pilot State (default to Valentine)
-  const [activePilotId, setActivePilotId] = useState<string>(initialPilotId);
+export function PilotProfileV2(_props?: PilotProfileV2Props) {
+  // Dynamic roster loaded from CDN channel -> pinned release manifest
+  const [rosterCharacters, setRosterCharacters] = useState<CharacterProfileV2[]>([])
+  const [selectedCharacterId, setSelectedCharacterId] = useState<string>('valentine')
+  const [activeTab, setActiveTab] = useState<PilotProfileTabId>('overview')
+  const [searchQuery, setSearchQuery] = useState<string>('')
+  const [roleFilter, setRoleFilter] = useState<RoleFilterId>('all')
+  const [selectedHeroArtwork, setSelectedHeroArtwork] = useState<GalleryArtwork | null>(null)
+  const [viewerArtwork, setViewerArtwork] = useState<GalleryArtwork | null>(null)
 
-  // Background Mode: 'standard' (Elysia Station) vs 'tactical' (Radar HUD)
-  const [backgroundMode, setBackgroundMode] = useState<'standard' | 'tactical'>('standard');
+  const [releaseInfo, setReleaseInfo] = useState<ReleaseStatusInfo | null>(null)
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true)
+  const [isRefreshingChannel, setIsRefreshingChannel] = useState<boolean>(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  // Mobile Paired View State: 'art' (Artwork Full View) vs 'info' (Dossier & Story)
-  const [mobileMode, setMobileMode] = useState<'art' | 'info'>('art');
+  // Persistent UI states
+  const [isRosterCollapsed, setIsRosterCollapsed] = useState<boolean>(false)
+  const [heroBackgroundMode, setHeroBackgroundMode] = useState<'contextual' | 'clean'>('contextual')
+  const [mobileViewMode, setMobileViewMode] = useState<'art' | 'info'>('art')
 
-  // Active Tab across Profile: 'overview' | 'story' | 'gear' | 'gallery'
-  const [activeTab, setActiveTab] = useState<string>('overview');
-
-  // Responsive Viewport Detection
-  const [isDesktop, setIsDesktop] = useState<boolean>(true);
-
-  // Immersive Story Reader State: null = Dossier mode, string = Chapter ID currently open in reader
-  const [activeReaderChapterId, setActiveReaderChapterId] = useState<string | null>(null);
-
-  // Art Viewer Modal State
-  const [viewerArtwork, setViewerArtwork] = useState<GalleryArtwork | null>(null);
-  const [viewerContextList, setViewerContextList] = useState<GalleryArtwork[] | null>(null);
-  const [isViewerOpen, setIsViewerOpen] = useState<boolean>(false);
-
-  // Dynamic Content Overlays
-  // Dedicated state for CDN R2 dynamic gallery (files.json + gallery.json)
-  const [r2GalleryArtworks, setR2GalleryArtworks] = useState<Record<string, GalleryArtwork[]>>({});
-  // Dedicated state for AdminCP manual uploads/edits
-  const [adminCustomArtworks, setAdminCustomArtworks] = useState<Record<string, GalleryArtwork[]>>({});
-  const [dynamicProfileUpdates, setDynamicProfileUpdates] = useState<Record<string, Partial<CharacterProfileV2>>>({});
-
-  // Viewport resize listener
   useEffect(() => {
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 1024);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    const prefs = loadV2UIPreferences()
+    setIsRosterCollapsed(prefs.rosterCollapsed)
+    setHeroBackgroundMode(prefs.heroBackgroundMode)
+    setMobileViewMode(prefs.mobilePreferredMode)
+  }, [])
 
-  // Fetch dynamic content overlay on mount to ensure AdminCP modifications appear live
-  useEffect(() => {
-    let isCancelled = false;
-    fetch('/api/runtime/character-content')
-      .then((res) => res.json())
-      .then((data) => {
-        if (!isCancelled && data.success) {
-          if (data.artworks) {
-            const mappedArts: Record<string, GalleryArtwork[]> = {};
-            for (const [pId, arts] of Object.entries(data.artworks)) {
-              if (Array.isArray(arts)) {
-                mappedArts[pId] = arts.map((a: any) => ({
-                  id: a.artworkId || a.assetId || a.filename,
-                  title: a.label || a.title || 'Tác phẩm',
-                  category: a.category || 'lore',
-                  path: a.localPath || a.sourceUrl || a.path,
-                  isAvailableOnDisk: a.verificationStatus === 'VERIFIED' || a.status === 'published',
-                  status: (a.verificationStatus === 'VERIFIED' || a.status === 'published') ? 'verified_webp' : 'archive_pending',
-                  description: a.description,
-                }));
-              }
-            }
-            setAdminCustomArtworks(mappedArts);
-          }
-
-          if (data.profiles) {
-            const mappedProfiles: Record<string, Partial<CharacterProfileV2>> = {};
-            for (const [pId, rec] of Object.entries(data.profiles)) {
-              const r = rec as any;
-              mappedProfiles[pId] = {
-                storySummary: r.storySummary,
-                characterQuote: r.characterQuote || r.quote,
-                fullLoreName: r.fullLoreName,
-                callsign: r.callsign,
-                classCharacterName: r.classCharacterName,
-                shortDescription: r.shortDescription,
-              };
-            }
-            setDynamicProfileUpdates(mappedProfiles);
-          }
-        }
-      })
-      .catch(() => {
-        // Fallback to static seed data silently if network fails
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, []);
-
-  // Fetch dynamic gallery for active pilot from CDN R2 (files.json & gallery.json)
-  // Single Source of Truth for the entire pilot artwork collection (e.g. Valentine 35, Fortuna 30, Rhea 23, etc.)
-  useEffect(() => {
-    let isCancelled = false;
-    fetch(`/api/runtime/gallery/${activePilotId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!isCancelled && data.success && Array.isArray(data.artworks) && data.artworks.length > 0) {
-          const galleryArts: GalleryArtwork[] = data.artworks.map((a: any) => {
-            const rawTitle = a.title || a.label || a.filename || 'Tác phẩm';
-            let naturalTitle = rawTitle;
-
-            // Chuẩn hóa tên trang phục nếu chưa có tên biên tập riêng
-            const outfitMatch =
-              rawTitle.match(/outfit[-_\s]*(\d+)/i) ||
-              (a.filename || '').match(/outfit[-_\s]*(\d+)/i) ||
-              (a.assetId || '').match(/outfit[-_\s]*(\d+)/i);
-            if (outfitMatch) {
-              naturalTitle = `Trang phục ${outfitMatch[1].padStart(3, '0')}`;
-            }
-
-            const cleanPath = a.path
-              ? (a.path.startsWith('/') ? a.path.slice(1) : a.path)
-              : (a.sourceUrl || `images/pilots/${activePilotId}/${a.filename}`);
-
-            return {
-              id: a.assetId || a.artworkId || a.filename,
-              title: naturalTitle,
-              category: a.category || 'lore',
-              path: cleanPath,
-              isAvailableOnDisk: true,
-              status: 'verified_webp' as const,
-              description:
-                a.curatedDescription ||
-                a.description ||
-                `Định dạng WebP tối ưu (${a.width || 1122}×${a.height || 1402}px)`,
-              dimensions:
-                a.width && a.height ? { width: a.width, height: a.height } : undefined,
-              sha256: a.sha256,
-              byteSize: a.byteSize,
-            };
-          });
-
-          setR2GalleryArtworks((prev) => ({
-            ...prev,
-            [activePilotId]: galleryArts,
-          }));
-        }
-      })
-      .catch(() => {
-        // Silently preserve existing artworks on network interruption
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [activePilotId]);
-
-  // Find active pilot data and merge dynamic overlay
-  // SINGLE SOURCE OF TRUTH: If dynamic artworks are loaded from R2, use them exclusively
-  const activeCharacter: CharacterProfileV2 = useMemo(() => {
-    const base = V2_ROSTER_CHARACTERS.find((c) => c.id === activePilotId) || V2_ROSTER_CHARACTERS[0];
-    const dynUpdates = dynamicProfileUpdates[base.id];
-    const r2Arts = r2GalleryArtworks[base.id];
-    const customArts = adminCustomArtworks[base.id] || [];
-
-    let authoritativeArtworks: GalleryArtwork[] = base.artworks;
-    if (r2Arts && r2Arts.length > 0) {
-      authoritativeArtworks = [...r2Arts];
-      // Append any custom uploaded artwork from AdminCP not in R2
-      for (const custom of customArts) {
-        if (!authoritativeArtworks.some((a) => a.id === custom.id || a.path === custom.path)) {
-          authoritativeArtworks.push(custom);
-        }
-      }
-    } else if (customArts.length > 0) {
-      authoritativeArtworks = [...base.artworks, ...customArts];
+  // Fetch release snapshot from /api/runtime/v2-release
+  const fetchReleaseSnapshot = useCallback(async (forceRefresh = false) => {
+    if (forceRefresh) {
+      setIsRefreshingChannel(true)
     }
+    try {
+      const res = await fetch(
+        `/api/runtime/v2-release${forceRefresh ? '?refresh=1' : ''}`,
+        { cache: 'no-store' }
+      )
+      const data = await res.json()
+      if (!res.ok || !data.success || !Array.isArray(data.characters)) {
+        throw new Error(data.error || `HTTP ${res.status}`)
+      }
 
-    return {
-      ...base,
-      ...dynUpdates,
-      artworks: authoritativeArtworks,
-    };
-  }, [activePilotId, dynamicProfileUpdates, r2GalleryArtworks, adminCustomArtworks]);
+      const chars: CharacterProfileV2[] = data.characters
+      setRosterCharacters(chars)
 
-  // Reset viewer context when pilot changes
+      const totalVerified = chars.reduce(
+        (sum, c) =>
+          sum +
+          (c.verifiedArtworkCount ??
+            c.artworks.filter((a) => a.isAvailableOnDisk && Boolean(a.path)).length),
+        0
+      )
+      const totalSource = chars.reduce(
+        (sum, c) => sum + (c.totalSourceArtworkCount ?? c.artworks.length),
+        0
+      )
+
+      setReleaseInfo({
+        releaseVersion: data.releaseVersion || 'r4',
+        releaseCommitSha: data.releaseCommitSha || '',
+        status: data.status || 'PREVIEW_PARTIAL_ARTWORK_IMPORT',
+        loadedAt: data.loadedAt || new Date().toISOString(),
+        usingFallbackSnapshot: Boolean(data.usingFallbackSnapshot),
+        lastUpdateError: data.lastUpdateError || null,
+        totalPilots: chars.length,
+        totalVerifiedArtworks: totalVerified,
+        totalSourceArtworks: totalSource,
+      })
+      setLoadError(null)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setLoadError(msg)
+    } finally {
+      setIsInitialLoading(false)
+      setIsRefreshingChannel(false)
+    }
+  }, [])
+
+  // Initial load on startup
   useEffect(() => {
-    setViewerContextList(null);
-  }, [activePilotId]);
+    fetchReleaseSnapshot(false)
+  }, [fetchReleaseSnapshot])
 
-  // Pilot Navigation Helpers
-  const handlePrevPilot = () => {
-    const currentIndex = V2_ROSTER_CHARACTERS.findIndex((c) => c.id === activeCharacter.id);
-    const prevIndex = (currentIndex - 1 + V2_ROSTER_CHARACTERS.length) % V2_ROSTER_CHARACTERS.length;
-    setActivePilotId(V2_ROSTER_CHARACTERS[prevIndex].id);
-  };
-
-  const handleNextPilot = () => {
-    const currentIndex = V2_ROSTER_CHARACTERS.findIndex((c) => c.id === activeCharacter.id);
-    const nextIndex = (currentIndex + 1) % V2_ROSTER_CHARACTERS.length;
-    setActivePilotId(V2_ROSTER_CHARACTERS[nextIndex].id);
-  };
-
-  // Open Art Viewer with contextual list (Uses authoritative activeCharacter.artworks)
-  const handleOpenArtViewer = (art?: GalleryArtwork, contextList?: GalleryArtwork[]) => {
-    const targetList: GalleryArtwork[] =
-      contextList && contextList.length >= activeCharacter.artworks.length
-        ? contextList
-        : activeCharacter.artworks;
-
-    setViewerContextList(targetList);
-
-    if (art) {
-      // Find matching item in targetList strictly by exact path or id
-      const matched = targetList.find(
-        (a) => a.path === art.path || a.id === art.id
-      );
-      setViewerArtwork(matched || art);
-    } else {
-      if (targetList.length > 0) {
-        setViewerArtwork(targetList[0]);
-      } else {
-        setViewerArtwork({
-          id: activeCharacter.id + '-fullbody',
-          title: activeCharacter.classCharacterName + ' — Tranh Toàn Thân Chiến Trường',
-          category: 'base',
-          path: activeCharacter.fullbodyAssetPath,
-          isAvailableOnDisk: true,
-          status: 'verified_webp',
-          description: activeCharacter.shortDescription,
-        });
+  // Refresh channel automatically when user returns to tab/window
+  useEffect(() => {
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchReleaseSnapshot(false)
       }
     }
-    setIsViewerOpen(true);
-  };
-
-  const currentViewerArtworks = viewerContextList || activeCharacter.artworks;
-
-  const currentArtworkIndex = currentViewerArtworks.findIndex((a) => {
-    if (!viewerArtwork) return false;
-    return a.path === viewerArtwork.path || a.id === viewerArtwork.id;
-  });
-  const hasPrevArtwork = currentArtworkIndex > 0;
-  const hasNextArtwork =
-    currentArtworkIndex >= 0 && currentArtworkIndex < currentViewerArtworks.length - 1;
-
-  const handlePrevArtwork = () => {
-    if (hasPrevArtwork) {
-      setViewerArtwork(currentViewerArtworks[currentArtworkIndex - 1]);
+    window.addEventListener('focus', handleVisibilityOrFocus)
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus)
+    return () => {
+      window.removeEventListener('focus', handleVisibilityOrFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus)
     }
-  };
+  }, [fetchReleaseSnapshot])
 
-  const handleNextArtwork = () => {
-    if (hasNextArtwork) {
-      setViewerArtwork(currentViewerArtworks[currentArtworkIndex + 1]);
+  const selectedCharacter = useMemo(() => {
+    if (rosterCharacters.length === 0) return null
+    return (
+      rosterCharacters.find((c) => c.id === selectedCharacterId) ||
+      rosterCharacters[0]
+    )
+  }, [rosterCharacters, selectedCharacterId])
+
+  // Keep selectedHeroArtwork synced with current character's verified artworks
+  useEffect(() => {
+    if (!selectedCharacter) return
+    setSelectedHeroArtwork((prev) => {
+      if (prev) {
+        const updatedMatch = selectedCharacter.artworks.find(
+          (a) => a.id === prev.id && a.isAvailableOnDisk && Boolean(a.path)
+        )
+        if (updatedMatch) return updatedMatch
+      }
+      const firstVerified =
+        selectedCharacter.artworks.find(
+          (a) =>
+            a.isAvailableOnDisk &&
+            Boolean(a.path) &&
+            (a.filename || '').toLowerCase().includes('-fullbody')
+        ) ||
+        selectedCharacter.artworks.find(
+          (a) => a.isAvailableOnDisk && Boolean(a.path)
+        ) ||
+        null
+      return firstVerified
+    })
+  }, [selectedCharacter])
+
+  const filteredCharacters = useMemo(() => {
+    return rosterCharacters.filter((char) => {
+      const matchesRole = roleFilter === 'all' || char.roleCategory === roleFilter
+      const q = searchQuery.trim().toLowerCase()
+      const matchesSearch =
+        !q ||
+        char.classCharacterName.toLowerCase().includes(q) ||
+        char.fullLoreName.toLowerCase().includes(q) ||
+        char.callsign.toLowerCase().includes(q) ||
+        char.role.toLowerCase().includes(q) ||
+        char.tags.some((t) => t.toLowerCase().includes(q))
+
+      return matchesRole && matchesSearch
+    })
+  }, [rosterCharacters, roleFilter, searchQuery])
+
+  const handleSelectCharacter = (char: CharacterProfileV2) => {
+    setSelectedCharacterId(char.id)
+    const defaultHero =
+      char.artworks.find(
+        (a) =>
+          a.isAvailableOnDisk &&
+          Boolean(a.path) &&
+          (a.filename || '').toLowerCase().includes('-fullbody')
+      ) ||
+      char.artworks.find((a) => a.isAvailableOnDisk && Boolean(a.path)) ||
+      null
+    setSelectedHeroArtwork(defaultHero)
+  }
+
+  const handleToggleRosterCollapse = useCallback(() => {
+    setIsRosterCollapsed((prev) => {
+      const next = !prev
+      saveV2UIPreferences({ rosterCollapsed: next })
+      return next
+    })
+  }, [])
+
+  const handleChangeHeroBackgroundMode = (mode: 'contextual' | 'clean') => {
+    setHeroBackgroundMode(mode)
+    saveV2UIPreferences({ heroBackgroundMode: mode })
+  }
+
+  const handleChangeMobileViewMode = (mode: 'art' | 'info') => {
+    setMobileViewMode(mode)
+    saveV2UIPreferences({ mobilePreferredMode: mode })
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault()
+        handleToggleRosterCollapse()
+      }
     }
-  };
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleToggleRosterCollapse])
 
-  // Handler to launch Immersive Reader
-  const handleOpenReader = (chapterId: string) => {
-    setActiveReaderChapterId(chapterId);
-  };
+  // Fullscreen viewer navigation strictly over VERIFIED artworks
+  const verifiedArtworks = useMemo(() => {
+    if (!selectedCharacter) return []
+    return selectedCharacter.artworks.filter(
+      (a) => a.isAvailableOnDisk && Boolean(a.path)
+    )
+  }, [selectedCharacter])
+
+  const viewerIndex = viewerArtwork
+    ? verifiedArtworks.findIndex((a) => a.id === viewerArtwork.id)
+    : -1
+
+  const handleViewerPrev = () => {
+    if (verifiedArtworks.length <= 1 || viewerIndex < 0) return
+    const nextIdx = (viewerIndex - 1 + verifiedArtworks.length) % verifiedArtworks.length
+    const nextArt = verifiedArtworks[nextIdx]
+    setViewerArtwork(nextArt)
+    setSelectedHeroArtwork(nextArt)
+  }
+
+  const handleViewerNext = () => {
+    if (verifiedArtworks.length <= 1 || viewerIndex < 0) return
+    const nextIdx = (viewerIndex + 1) % verifiedArtworks.length
+    const nextArt = verifiedArtworks[nextIdx]
+    setViewerArtwork(nextArt)
+    setSelectedHeroArtwork(nextArt)
+  }
+
+  if (isInitialLoading && !selectedCharacter) {
+    return (
+      <div className="flex-1 h-full min-h-[75vh] bg-[#070A12] text-[#F1F5F9] flex flex-col items-center justify-center gap-3 p-6">
+        <Loader2 className="w-8 h-8 text-[#00D4FF] animate-spin" />
+        <div className="text-sm font-mono font-bold text-white uppercase tracking-wider">
+          Đang đồng bộ kênh CDN R4/R5...
+        </div>
+        <p className="text-xs text-[#CBD5E1] font-mono">
+          pilot-v2-preview.json → pinned release manifest
+        </p>
+      </div>
+    )
+  }
+
+  if (!selectedCharacter) {
+    return (
+      <div className="flex-1 h-full min-h-[75vh] bg-[#070A12] text-[#F1F5F9] flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <AlertTriangle className="w-10 h-10 text-amber-400" />
+        <div className="text-base font-bold text-white">
+          Không thể kết nối kênh dữ liệu CDN
+        </div>
+        {loadError && (
+          <p className="text-xs font-mono text-rose-300 max-w-md">{loadError}</p>
+        )}
+        <button
+          type="button"
+          onClick={() => fetchReleaseSnapshot(true)}
+          className="px-4 py-2.5 rounded-xl bg-[#00D4FF] text-[#070A12] font-mono text-xs font-bold cursor-pointer"
+        >
+          Thử Kết Nối Lại Kênh CDN
+        </button>
+      </div>
+    )
+  }
 
   return (
-    <div className="sf-v2-pilot-profile w-full h-full min-h-0 flex-1 flex flex-col bg-[#070A12] text-[#F1F5F9] relative overflow-hidden">
-      {/* IMMERSIVE STORY READER VIEW OVERLAY */}
-      {activeReaderChapterId ? (
-        <ImmersiveStoryReader
-          pilotId={activeCharacter.id as CanonicalPilotId}
-          pilotName={activeCharacter.classCharacterName}
-          chapterId={activeReaderChapterId}
-          onClose={() => setActiveReaderChapterId(null)}
-          onSelectChapter={(newChap) => setActiveReaderChapterId(newChap)}
+    <div className="sf-v2-root flex-1 h-full min-h-0 bg-[#070A12] text-[#F1F5F9] flex flex-col overflow-hidden">
+      {/* =====================================================================
+          THANH TRẠNG THÁI KÊNH CDN & KIỂM TRA CẬP NHẬT RELEASE (R4 -> R5+)
+          ===================================================================== */}
+      <div className="shrink-0 bg-[#090E1A] border-b border-[#1E2D42] px-3 sm:px-5 py-1.5 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/40 font-bold">
+            <Radio className="w-3 h-3 animate-pulse" />
+            <span>
+              CHANNEL: {releaseInfo?.releaseVersion.toUpperCase() || 'R4'} ·{' '}
+              {(releaseInfo?.releaseCommitSha || '').slice(0, 7) || '3a3a4f2'}
+            </span>
+          </span>
+
+          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#34D399]/15 text-[#34D399] border border-[#34D399]/30 font-semibold">
+            <CheckCircle2 className="w-3 h-3" />
+            <span>
+              {releaseInfo?.totalPilots || rosterCharacters.length} Pilots ·{' '}
+              {releaseInfo?.totalVerifiedArtworks ?? 50}/
+              {releaseInfo?.totalSourceArtworks ?? 297} WebP Verified
+            </span>
+          </span>
+
+          {releaseInfo?.usingFallbackSnapshot && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              <AlertTriangle className="w-3 h-3" />
+              <span>Đang giữ bản ổn định gần nhất</span>
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => fetchReleaseSnapshot(true)}
+            disabled={isRefreshingChannel}
+            className="px-2.5 py-1 rounded-lg bg-[#142338] hover:bg-[#1E3452] border border-[#00D4FF]/50 text-[#00D4FF] font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+            title="Kiểm tra kênh pilot-v2-preview.json để nạp release mới (R5+)"
+          >
+            <RefreshCw
+              className={`w-3.5 h-3.5 ${isRefreshingChannel ? 'animate-spin' : ''}`}
+            />
+            <span>{isRefreshingChannel ? 'Đang kiểm tra...' : 'Kiểm tra cập nhật'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =====================================================================
+          MOBILE SUB-HEADER: PAIRED VIEW SWITCHER (ART VIEW | INFO VIEW)
+          ===================================================================== */}
+      <div className="md:hidden shrink-0 bg-[#0B111E] border-b border-[#1E2D42] px-3 py-2 flex items-center justify-between gap-2">
+        <div className="text-xs font-mono font-bold text-[#CBD5E1] truncate">
+          PHI CÔNG:{' '}
+          <span className="text-[#00D4FF]">{selectedCharacter.classCharacterName}</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-[#070A12] border border-[#1E2D42] shrink-0">
+          <button
+            type="button"
+            onClick={() => handleChangeMobileViewMode('art')}
+            className={`px-3 py-1.5 rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-colors cursor-pointer min-h-[36px] ${
+              mobileViewMode === 'art'
+                ? 'bg-[#142338] text-[#00D4FF] border border-[#00D4FF]/50'
+                : 'text-[#CBD5E1]'
+            }`}
+          >
+            <ImageIcon className="w-3.5 h-3.5" />
+            <span>ART</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleChangeMobileViewMode('info')}
+            className={`px-3 py-1.5 rounded-md text-xs font-mono font-bold flex items-center gap-1.5 transition-colors cursor-pointer min-h-[36px] ${
+              mobileViewMode === 'info'
+                ? 'bg-[#142338] text-[#00D4FF] border border-[#00D4FF]/50'
+                : 'text-[#CBD5E1]'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>INFO</span>
+          </button>
+        </div>
+      </div>
+
+      {/* =====================================================================
+          1. DESKTOP VIEW (>= 768px)
+          ===================================================================== */}
+      <DesktopView
+        characters={
+          filteredCharacters.length > 0 ? filteredCharacters : rosterCharacters
+        }
+        selectedCharacter={selectedCharacter}
+        onSelectCharacter={handleSelectCharacter}
+        activeTab={activeTab}
+        onChangeTab={setActiveTab}
+        selectedHeroArtwork={selectedHeroArtwork}
+        onSelectHeroArtwork={setSelectedHeroArtwork}
+        onOpenViewer={(art) => {
+          if (art.isAvailableOnDisk && art.path) {
+            setViewerArtwork(art)
+          }
+        }}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        roleFilter={roleFilter}
+        onRoleFilterChange={setRoleFilter}
+        isRosterCollapsed={isRosterCollapsed}
+        onToggleRosterCollapse={handleToggleRosterCollapse}
+        heroBackgroundMode={heroBackgroundMode}
+        onChangeHeroBackgroundMode={handleChangeHeroBackgroundMode}
+      />
+
+      {/* =====================================================================
+          2. MOBILE PAIRED VIEWS (< 768px)
+          ===================================================================== */}
+      {mobileViewMode === 'art' ? (
+        <MobileArtView
+          characters={rosterCharacters}
+          selectedCharacter={selectedCharacter}
+          onSelectCharacter={handleSelectCharacter}
+          selectedHeroArtwork={selectedHeroArtwork}
+          onOpenViewer={(art) => {
+            if (art.isAvailableOnDisk && art.path) {
+              setViewerArtwork(art)
+            }
+          }}
+          onSwitchToInfoView={() => handleChangeMobileViewMode('info')}
+          heroBackgroundMode={heroBackgroundMode}
+          onChangeHeroBackgroundMode={handleChangeHeroBackgroundMode}
         />
       ) : (
-        /* STANDARD CHARACTER CATEGORY DOSSIER VIEW */
-        <>
-          {isDesktop ? (
-            <DesktopView
-              roster={V2_ROSTER_CHARACTERS}
-              activeCharacter={activeCharacter}
-              onSelectCharacter={(char) => setActivePilotId(char.id)}
-              backgroundMode={backgroundMode}
-              onToggleBackgroundMode={setBackgroundMode}
-              onOpenArtViewer={(art) =>
-                handleOpenArtViewer(art, activeCharacter.artworks)
-              }
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              onOpenReader={handleOpenReader}
-            />
-          ) : mobileMode === 'art' ? (
-            <MobileArtView
-              roster={V2_ROSTER_CHARACTERS}
-              character={activeCharacter}
-              onSelectCharacter={(char) => setActivePilotId(char.id)}
-              backgroundMode={backgroundMode}
-              onToggleBackgroundMode={setBackgroundMode}
-              onSwitchToInfoView={() => setMobileMode('info')}
-              onOpenArtViewer={handleOpenArtViewer}
-              onNavigateToGallery={() => {
-                setMobileMode('info');
-                setActiveTab('gallery');
-              }}
-            />
-          ) : (
-            <MobileInfoView
-              roster={V2_ROSTER_CHARACTERS}
-              activeCharacter={activeCharacter}
-              onSelectCharacter={(char) => setActivePilotId(char.id)}
-              onSwitchToArtView={() => setMobileMode('art')}
-              onOpenArtViewer={handleOpenArtViewer}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              onOpenReader={handleOpenReader}
-            />
-          )}
-
-          {/* SHARED ART VIEWER MODAL WITH FULLSCREEN SHOWCASE */}
-          {viewerArtwork && (
-            <ArtViewer
-              isOpen={isViewerOpen}
-              onClose={() => setIsViewerOpen(false)}
-              imageSrc={viewerArtwork.path}
-              imageAlt={viewerArtwork.title}
-              title={viewerArtwork.title}
-              subtitle={activeCharacter.fullLoreName}
-              category={viewerArtwork.category}
-              description={viewerArtwork.description}
-              tags={[activeCharacter.callsign, activeCharacter.roleCategory, viewerArtwork.category]}
-              isAvailableOnDisk={viewerArtwork.isAvailableOnDisk}
-              hasPrev={hasPrevArtwork}
-              hasNext={hasNextArtwork}
-              onPrev={handlePrevArtwork}
-              onNext={handleNextArtwork}
-              currentIndex={currentArtworkIndex >= 0 ? currentArtworkIndex + 1 : 1}
-              totalCount={currentViewerArtworks.length || 1}
-              artworks={currentViewerArtworks}
-              currentPilotId={activeCharacter.id}
-              currentPilotName={activeCharacter.classCharacterName}
-              currentPilotCallsign={activeCharacter.callsign}
-              allPilots={V2_ROSTER_CHARACTERS.map((c) => ({
-                id: c.id,
-                name: c.classCharacterName,
-                callsign: c.callsign,
-              }))}
-              onSelectArtwork={(art, pilotId) => {
-                setViewerArtwork(art as any);
-                const targetPilotId = pilotId || (art as any)?.pilotId;
-                if (targetPilotId && targetPilotId !== activePilotId) {
-                  setActivePilotId(targetPilotId);
-                }
-              }}
-            />
-          )}
-        </>
+        <MobileInfoView
+          characters={rosterCharacters}
+          selectedCharacter={selectedCharacter}
+          onSelectCharacter={handleSelectCharacter}
+          activeTab={activeTab}
+          onChangeTab={setActiveTab}
+          selectedHeroArtwork={selectedHeroArtwork}
+          onSelectHeroArtwork={setSelectedHeroArtwork}
+          onOpenViewer={(art) => {
+            if (art.isAvailableOnDisk && art.path) {
+              setViewerArtwork(art)
+            }
+          }}
+          onSwitchToArtView={() => handleChangeMobileViewMode('art')}
+        />
       )}
+
+      {/* =====================================================================
+          3. FULLSCREEN ART VIEWER (Strictly verified CDN artworks only)
+          ===================================================================== */}
+      <ArtViewer
+        isOpen={Boolean(viewerArtwork)}
+        onClose={() => setViewerArtwork(null)}
+        imageSrc={viewerArtwork?.path || selectedCharacter.fullbodyAssetPath}
+        imageAlt={viewerArtwork?.title || selectedCharacter.classCharacterName}
+        title={viewerArtwork?.title || selectedCharacter.classCharacterName}
+        subtitle={`${selectedCharacter.fullLoreName} // ${selectedCharacter.role}`}
+        category={viewerArtwork?.category || 'base'}
+        description={viewerArtwork?.description || selectedCharacter.shortDescription}
+        tags={selectedCharacter.tags}
+        isAvailableOnDisk={viewerArtwork?.isAvailableOnDisk ?? true}
+        hasPrev={verifiedArtworks.length > 1}
+        hasNext={verifiedArtworks.length > 1}
+        onPrev={handleViewerPrev}
+        onNext={handleViewerNext}
+        currentIndex={viewerIndex >= 0 ? viewerIndex + 1 : 1}
+        totalCount={verifiedArtworks.length}
+        artworks={verifiedArtworks}
+        currentPilotId={selectedCharacter.id}
+        currentPilotName={selectedCharacter.classCharacterName}
+        currentPilotCallsign={selectedCharacter.callsign}
+        onSelectArtwork={(art, pId) => {
+          if (pId && pId !== selectedCharacter.id) {
+            const targetPilot = rosterCharacters.find((c) => c.id === pId)
+            if (targetPilot) {
+              setSelectedCharacterId(targetPilot.id)
+            }
+          }
+          const matched = verifiedArtworks.find(
+            (a) => a.id === art.assetId || a.path === art.path
+          )
+          if (matched) {
+            setViewerArtwork(matched)
+            setSelectedHeroArtwork(matched)
+          }
+        }}
+      />
     </div>
-  );
+  )
 }
-export default PilotProfileV2;
+
+export default PilotProfileV2

@@ -75,9 +75,6 @@ export async function fetchShowcasePilotGallery(
   abortSignal?: AbortSignal
 ): Promise<ShowcaseArtwork[]> {
   const cleanId = pilotId.toLowerCase().trim() as CanonicalPilotId;
-  if (!CANONICAL_12_PILOT_IDS.includes(cleanId)) {
-    return [];
-  }
 
   // Check cache first
   if (pilotGalleryCache.has(cleanId)) {
@@ -91,12 +88,12 @@ export async function fetchShowcasePilotGallery(
     role: 'Tactical Pilot',
   };
 
-  const portraitPath = `images/pilots/${cleanId}/${cleanId}-portrait.webp`;
+  const portraitPath = '';
 
   try {
     const res = await fetch(`/api/runtime/gallery/${cleanId}`, {
       signal: abortSignal,
-      cache: 'force-cache',
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -105,7 +102,13 @@ export async function fetchShowcasePilotGallery(
     }
 
     const data = await res.json();
-    if (!data.success || !Array.isArray(data.artworks)) {
+    const sourceList = Array.isArray(data.verifiedArtworks)
+      ? data.verifiedArtworks
+      : Array.isArray(data.artworks)
+      ? data.artworks
+      : [];
+
+    if (!data.success || sourceList.length === 0) {
       return [];
     }
 
@@ -114,13 +117,21 @@ export async function fetchShowcasePilotGallery(
 
     const result: ShowcaseArtwork[] = [];
 
-    for (const item of data.artworks) {
+    for (const item of sourceList) {
       if (!item) continue;
+
+      const isVerified =
+        item.isAvailableOnDisk !== false &&
+        item.cdnStatus !== 'PENDING_BINARY_IMPORT' &&
+        Boolean(item.path && String(item.path).trim());
+
+      if (!isVerified) {
+        continue;
+      }
 
       const rawTitle = item.title || item.label || item.filename || 'Tác phẩm';
       let naturalTitle = rawTitle;
 
-      // Normalize outfit labels if unassigned
       const outfitMatch =
         rawTitle.match(/outfit[-_\s]*(\d+)/i) ||
         (item.filename || '').match(/outfit[-_\s]*(\d+)/i) ||
@@ -129,13 +140,10 @@ export async function fetchShowcasePilotGallery(
         naturalTitle = `Trang phục ${outfitMatch[1].padStart(3, '0')}`;
       }
 
-      const cleanPath = item.path
-        ? item.path.startsWith('/')
-          ? item.path.slice(1)
-          : item.path
-        : item.sourceUrl || `images/pilots/${cleanId}/${item.filename}`;
-
+      const cleanPath = String(item.path).trim();
       const resolvedUrl = resolveImageUrl(cleanPath) || '';
+      if (!resolvedUrl) continue;
+
       const assetId = item.assetId || item.filename || item.id || cleanPath.split('/').pop() || 'art';
       const identityKey = buildArtworkIdentityKey(cleanId, assetId, cleanPath);
 
@@ -158,9 +166,9 @@ export async function fetchShowcasePilotGallery(
         width: item.width,
         height: item.height,
         dimensions: item.width && item.height ? { width: item.width, height: item.height } : undefined,
-        sha256: item.sha256,
-        isAvailableOnDisk: item.isAvailableOnDisk !== false,
-        status: item.status || 'verified_webp',
+        sha256: item.sha256 || item.expectedSha256,
+        isAvailableOnDisk: true,
+        status: 'verified_webp',
         pilotId: cleanId,
         pilotName: cleanPilotName,
         pilotCallsign: meta.callsign,

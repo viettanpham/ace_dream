@@ -36,21 +36,50 @@ export interface StoryChapter {
   id: string;
   number: number;
   title: string;
-  status: "APPROVED" | "PROVISIONAL" | "HOLD";
+  status: "APPROVED" | "PROVISIONAL" | "REVIEW" | "HOLD";
+  editorialStatus?: string;
+  revision?: string;
+  sourceIntegrity?: string;
+  sourceNote?: string;
+  wordCount?: number;
+  readingTimeMinutes?: number;
   summary: string;
   content?: string;
   quote?: string;
+  path?: string;
 }
 
 export interface GalleryArtwork {
   id: string;
+  filename?: string;
+  order?: number;
+  batch?: string;
   title: string;
   category: "base" | "costume" | "activity" | "event" | "portrait";
+  rawCategory?: string;
   path: string;
+  cdnPath?: string | null;
+  cdnStatus?: "VERIFIED" | "PENDING_BINARY_IMPORT" | string;
+  sourceApprovalStatus?: string;
+  expectedSha256?: string;
   isAvailableOnDisk: boolean;
   status: "verified_webp" | "archive_pending";
   description?: string;
   dimensions?: { width: number; height: number };
+  sourceMetadata?: {
+    path?: string;
+    libraryPath?: string;
+    repoPath?: string;
+    sourceFilename?: string;
+    resolution?: string;
+    fileSizeBytes?: number;
+    sha256?: string;
+    role?: string;
+    artStyle?: string;
+    outfitCode?: string;
+    notes?: string;
+    tags?: string[];
+  };
 }
 
 export interface CharacterProgressStatus {
@@ -70,25 +99,43 @@ export interface CharacterProgressStatus {
 
 export interface CharacterProfileV2 {
   id: string;
+  personaCode?: string;
   classCharacterName: string;
   fullLoreName: string;
   callsign: string;
   title: string;
-  gender: "Nam" | "Nữ";
+  gender: "Nam" | "Nữ" | string;
   age: number;
   role: string;
   roleCategory: "all" | "attack" | "defense" | "support" | "special";
+  personality?: string;
+  origin?: string;
+  training?: string;
+  biographyText?: string;
+  biographyStatus?: string;
+  contentStatus?: string;
+  proseApproval?: string;
+  safetyNote?: string;
   tags: string[];
   characterQuote: string;
   shortDescription: string;
-  baseAttributes: BaseAttributes;
+  baseAttributes: BaseAttributes | null;
   traits: CharacterTrait[];
+  systemRegistryAvailable?: boolean;
+  systemSource?: string;
   basicInfo: BasicInfoField[];
   fullbodyAssetPath: string;
   portraitAssetPath: string;
+  storyAvailable?: boolean;
+  storyEmptyState?: string;
+  storyManifestPath?: string | null;
   storySummary: string;
   chapters: StoryChapter[];
   artworks: GalleryArtwork[];
+  verifiedArtworkCount?: number;
+  totalSourceArtworkCount?: number;
+  releaseVersion?: string;
+  releaseCommitSha?: string;
   progressStatus: CharacterProgressStatus;
 }
 
@@ -1647,4 +1694,39 @@ export function createCanonicalPilotChapters(
 for (const char of V2_ROSTER_CHARACTERS) {
   char.chapters = createCanonicalPilotChapters(char.id, char.chapters);
 }
+
+export interface SystemPilotRegistryEntry {
+  pilotId: string;
+  baseAttributes: BaseAttributes;
+  traits: CharacterTrait[];
+  roleCategory: "all" | "attack" | "defense" | "support" | "special";
+  callsign: string;
+  title: string;
+  age: number;
+  systemSource: string;
+}
+
+/**
+ * Tra cứu chỉ số SYSTEM FND-1/FND-8 (ATK/DEF/AGI/ENE/SHD/LUK, Traits, RoleCategory)
+ * theo pilotId. TUYỆT ĐỐI KHÔNG suy diễn chỉ số từ văn xuôi biography và không bịa chỉ số
+ * cho phi công mới chưa có trong SYSTEM registry.
+ */
+export function getSystemPilotDefinition(pilotId: string): SystemPilotRegistryEntry | null {
+  const cleanId = pilotId.toLowerCase().trim();
+  const found = V2_ROSTER_CHARACTERS.find((c) => c.id.toLowerCase() === cleanId);
+  if (!found || !found.baseAttributes) {
+    return null;
+  }
+  return {
+    pilotId: cleanId,
+    baseAttributes: { ...found.baseAttributes },
+    traits: found.traits.map((t) => ({ ...t })),
+    roleCategory: found.roleCategory,
+    callsign: found.callsign,
+    title: found.title,
+    age: found.age,
+    systemSource: 'FND-1/FND-8 SYSTEM Registry',
+  };
+}
+
 

@@ -1,1005 +1,474 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import {
   CharacterProfileV2,
   GalleryArtwork,
+  ATTRIBUTE_COLOR_CONFIG,
+  BaseAttributes,
 } from '@/lib/game/v2/character-profile-data'
-import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '@/components/game/v2/ui'
+import { OverviewTab } from './tabs/overview-tab'
 import { StoryTab } from './tabs/story-tab'
 import { GearCompatTab } from './tabs/gear-compat-tab'
 import { GalleryTab } from './tabs/gallery-tab'
 import { PilotAvatar } from './pilot-avatar'
-import { loadV2UIPreferences, saveV2UIPreferences } from '@/lib/game/v2/ui-preferences'
 import {
+  Search,
   Maximize2,
-  Radar,
+  User,
+  BookOpen,
+  Cpu,
+  Image as ImageIcon,
   Sparkles,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  Shield,
-  Heart,
-  Zap,
-  Play,
-  Pause,
-  Crosshair,
-  Award,
-  VideoOff,
-  CheckCircle2,
   PanelLeftClose,
   PanelLeftOpen,
-  Users,
+  Layers,
+  ImageOff,
+  FileArchive,
 } from 'lucide-react'
 
+export type PilotProfileTabId = 'overview' | 'story' | 'gear' | 'gallery'
+export type RoleFilterId = 'all' | 'attack' | 'defense' | 'support' | 'special'
+
 interface DesktopViewProps {
-  roster: CharacterProfileV2[]
-  activeCharacter: CharacterProfileV2
+  characters: CharacterProfileV2[]
+  selectedCharacter: CharacterProfileV2
   onSelectCharacter: (char: CharacterProfileV2) => void
-  backgroundMode: 'standard' | 'tactical'
-  onToggleBackgroundMode: (mode: 'standard' | 'tactical') => void
-  onOpenArtViewer: (artwork?: GalleryArtwork, contextList?: GalleryArtwork[]) => void
-  activeTab: string
-  onTabChange: (tab: string) => void
-  onOpenReader?: (chapterId: string) => void
+  activeTab: PilotProfileTabId
+  onChangeTab: (tab: PilotProfileTabId) => void
+  selectedHeroArtwork: GalleryArtwork | null
+  onSelectHeroArtwork: (artwork: GalleryArtwork) => void
+  onOpenViewer: (artwork: GalleryArtwork) => void
+  searchQuery: string
+  onSearchChange: (q: string) => void
+  roleFilter: RoleFilterId
+  onRoleFilterChange: (role: RoleFilterId) => void
+  isRosterCollapsed: boolean
+  onToggleRosterCollapse: () => void
+  heroBackgroundMode: 'contextual' | 'clean'
+  onChangeHeroBackgroundMode: (mode: 'contextual' | 'clean') => void
 }
 
 export function DesktopView({
-  roster,
-  activeCharacter,
+  characters,
+  selectedCharacter,
   onSelectCharacter,
-  backgroundMode,
-  onToggleBackgroundMode,
-  onOpenArtViewer,
   activeTab,
-  onTabChange,
-  onOpenReader,
+  onChangeTab,
+  selectedHeroArtwork,
+  onSelectHeroArtwork,
+  onOpenViewer,
+  searchQuery,
+  onSearchChange,
+  roleFilter,
+  onRoleFilterChange,
+  isRosterCollapsed,
+  onToggleRosterCollapse,
+  heroBackgroundMode,
+  onChangeHeroBackgroundMode,
 }: DesktopViewProps) {
-  // Pilot Roster Mode: 'mini' (72px) vs 'full' (260px)
-  const [rosterMode, setRosterMode] = useState<'mini' | 'full'>('mini')
-  const [mainImageError, setMainImageError] = useState<boolean>(false)
-  const [carouselIndex, setCarouselIndex] = useState<number>(0)
-  const [selectedArtworkIndex, setSelectedArtworkIndex] = useState<number>(0)
-  const [showTrailerNotice, setShowTrailerNotice] = useState<boolean>(false)
-  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(true)
-  const userPausedRef = useRef<boolean>(false)
-  const isTabHiddenRef = useRef<boolean>(false)
+  const [heroImgError, setHeroImgError] = useState(false)
 
-  // Load saved roster mode from preferences on mount
+  const heroSrc =
+    selectedHeroArtwork?.isAvailableOnDisk && selectedHeroArtwork.path
+      ? selectedHeroArtwork.path
+      : selectedCharacter.fullbodyAssetPath || ''
+
+  const isHeroAvailable = Boolean(heroSrc) && !heroImgError
+
   useEffect(() => {
-    const prefs = loadV2UIPreferences()
-    setRosterMode(prefs.pilotRosterMode || 'mini')
-  }, [])
+    setHeroImgError(false)
+  }, [heroSrc, selectedCharacter.id])
 
-  const toggleRosterMode = () => {
-    const nextMode = rosterMode === 'mini' ? 'full' : 'mini'
-    setRosterMode(nextMode)
-    saveV2UIPreferences({ pilotRosterMode: nextMode })
-  }
+  const attributeKeys: (keyof BaseAttributes)[] = ['atk', 'def', 'agi', 'ene', 'shd', 'luk']
 
-  // Artworks của nhân vật hiện tại cho carousel dưới chân
-  const availableArtworks = activeCharacter.artworks && activeCharacter.artworks.length > 0
-    ? activeCharacter.artworks
-    : [
-        {
-          id: `${activeCharacter.id}-fullbody`,
-          title: `${activeCharacter.classCharacterName} — Tranh Toàn Thân`,
-          category: 'base' as const,
-          path: activeCharacter.fullbodyAssetPath,
-          isAvailableOnDisk: true,
-          status: 'verified_webp' as const,
-          description: activeCharacter.shortDescription,
-        },
-      ]
+  const verifiedCount =
+    selectedCharacter.verifiedArtworkCount ??
+    selectedCharacter.artworks.filter((a) => a.isAvailableOnDisk && Boolean(a.path)).length
+  const totalSourceCount =
+    selectedCharacter.totalSourceArtworkCount ?? selectedCharacter.artworks.length
 
-  // Reset khi đổi phi công (Mặc định Auto Slideshow bật nếu >= 2 ảnh)
-  useEffect(() => {
-    setMainImageError(false)
-    setCarouselIndex(0)
-    setSelectedArtworkIndex(0)
-    setShowTrailerNotice(false)
-    userPausedRef.current = false
+  const tabs: { id: PilotProfileTabId; label: string; icon: React.ReactNode }[] = [
+    { id: 'overview', label: 'OVERVIEW', icon: <User className="w-3.5 h-3.5" /> },
+    {
+      id: 'story',
+      label: selectedCharacter.storyAvailable
+        ? `STORY (${selectedCharacter.chapters.length})`
+        : 'STORY',
+      icon: <BookOpen className="w-3.5 h-3.5" />,
+    },
+    { id: 'gear', label: 'GEAR COMPAT', icon: <Cpu className="w-3.5 h-3.5" /> },
+    {
+      id: 'gallery',
+      label: `GALLERY (${verifiedCount}/${totalSourceCount})`,
+      icon: <ImageIcon className="w-3.5 h-3.5" />,
+    },
+  ]
 
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const roleFilters: { id: RoleFilterId; label: string }[] = [
+    { id: 'all', label: 'Tất Cả' },
+    { id: 'support', label: 'Support' },
+    { id: 'defense', label: 'Defense' },
+    { id: 'attack', label: 'Attack' },
+    { id: 'special', label: 'Special' },
+  ]
 
-    if (prefersReducedMotion || availableArtworks.length <= 1) {
-      setIsSlideshowPlaying(false)
-    } else {
-      setIsSlideshowPlaying(true)
+  const handleOpenHeroInViewer = () => {
+    if (!isHeroAvailable) return
+    if (selectedHeroArtwork && selectedHeroArtwork.isAvailableOnDisk && selectedHeroArtwork.path) {
+      onOpenViewer(selectedHeroArtwork)
+      return
     }
-  }, [activeCharacter.id])
-
-  // Tự động bật khi availableArtworks được nạp đầy đủ (từ fetch R2) nếu chưa bị user pause
-  useEffect(() => {
-    if (availableArtworks.length > 1 && !userPausedRef.current) {
-      const prefersReducedMotion =
-        typeof window !== 'undefined' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (!prefersReducedMotion) {
-        setIsSlideshowPlaying(true)
-      }
-    } else if (availableArtworks.length <= 1) {
-      setIsSlideshowPlaying(false)
-    }
-  }, [availableArtworks.length])
-
-  // Auto Slideshow (chu kỳ 6s, tạm dừng khi tab ẩn, không nhảy dồn ảnh)
-  useEffect(() => {
-    if (!isSlideshowPlaying || availableArtworks.length <= 1) return
-
-    const handleVisibility = () => {
-      isTabHiddenRef.current = document.hidden
-    }
-    document.addEventListener('visibilitychange', handleVisibility)
-
-    const timer = setInterval(() => {
-      if (document.hidden || isTabHiddenRef.current) {
-        return
-      }
-
-      setSelectedArtworkIndex((prevIndex) => {
-        const nextIndex = (prevIndex + 1) % availableArtworks.length
-        return nextIndex
+    const firstVerified = selectedCharacter.artworks.find(
+      (a) => a.isAvailableOnDisk && Boolean(a.path)
+    )
+    if (firstVerified) {
+      onOpenViewer(firstVerified)
+    } else if (heroSrc) {
+      onOpenViewer({
+        id: `${selectedCharacter.id}-hero`,
+        title: `${selectedCharacter.classCharacterName} — Hero Fullbody`,
+        category: 'base',
+        path: heroSrc,
+        isAvailableOnDisk: true,
+        status: 'verified_webp',
+        description: selectedCharacter.shortDescription,
       })
-    }, 6000)
-
-    return () => {
-      clearInterval(timer)
-      document.removeEventListener('visibilitychange', handleVisibility)
-    }
-  }, [isSlideshowPlaying, availableArtworks.length])
-
-  // Carousel thumbnail pagination
-  const visibleThumbnailsCount = 5
-  const maxCarouselPages = Math.max(0, availableArtworks.length - visibleThumbnailsCount)
-  const handlePrevCarousel = () => {
-    setCarouselIndex((prev) => Math.max(0, prev - 1))
-  }
-  const handleNextCarousel = () => {
-    setCarouselIndex((prev) => Math.min(maxCarouselPages, prev + 1))
-  }
-
-  // Tự động cuộn dải thumbnail hiển thị theo ảnh đang chọn
-  useEffect(() => {
-    if (selectedArtworkIndex < carouselIndex) {
-      setCarouselIndex(selectedArtworkIndex)
-    } else if (selectedArtworkIndex >= carouselIndex + visibleThumbnailsCount) {
-      setCarouselIndex(selectedArtworkIndex - visibleThumbnailsCount + 1)
-    }
-
-    const currentArt = availableArtworks[selectedArtworkIndex]
-    if (currentArt) {
-      const el = document.getElementById(`thumb-${currentArt.id}`)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-      }
-    }
-  }, [selectedArtworkIndex, availableArtworks, carouselIndex, visibleThumbnailsCount])
-
-  // Tương tác bấm nút Play/Pause
-  const handleToggleSlideshow = () => {
-    if (availableArtworks.length <= 1) return
-    const nextState = !isSlideshowPlaying
-    setIsSlideshowPlaying(nextState)
-    userPausedRef.current = !nextState
-  }
-
-  // Handle clicking thumbnail: chọn ảnh lớn, tạm dừng slideshow
-  const handleSelectThumbnail = (art: GalleryArtwork, index: number) => {
-    setSelectedArtworkIndex(index)
-    setIsSlideshowPlaying(false)
-    userPausedRef.current = true
-    const el = document.getElementById(`thumb-${art.id}`)
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
     }
   }
-
-  // Display image & artwork hiện tại
-  const currentArtwork = availableArtworks[selectedArtworkIndex] || availableArtworks[0]
-  const currentDisplayImage = currentArtwork?.path || activeCharacter.fullbodyAssetPath
 
   return (
-    <div className="w-full h-full min-h-[640px] flex gap-3 p-3 lg:p-3.5 bg-[#070A12] text-[#F1F5F9] overflow-hidden select-none">
-      {/* =========================================================================
-          CỘT 1 (TRÁI): CHARACTER CLASS ROSTER (12 Pilot Canonical - 2 Mode Độc Lập)
-          ========================================================================= */}
-      <aside
-        className={`flex flex-col h-full rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md transition-all duration-300 ease-in-out ${
-          rosterMode === 'full' ? 'w-[260px]' : 'w-[72px]'
+    <div className="hidden md:flex flex-col flex-1 h-full min-h-0 w-full bg-[#070A12] text-[#F1F5F9] overflow-hidden select-none">
+      {/* MAIN 3-COLUMN WORKSPACE (Fills remaining height completely, eliminating bottom black bar) */}
+      <div
+        className={`flex-1 h-full min-h-0 grid transition-all duration-300 ease-in-out overflow-hidden ${
+          isRosterCollapsed
+            ? 'md:grid-cols-[76px_minmax(280px,1fr)_minmax(420px,1.25fr)] lg:grid-cols-[80px_minmax(380px,1fr)_minmax(500px,1.25fr)]'
+            : 'md:grid-cols-[240px_minmax(260px,1fr)_minmax(380px,1.2fr)] lg:grid-cols-[270px_minmax(340px,1fr)_minmax(460px,1.2fr)] xl:grid-cols-[290px_minmax(400px,1fr)_minmax(520px,1.25fr)]'
         }`}
       >
-        {/* Header Cột: | PHI CÔNG HỆ THỐNG (Full) hoặc Icon + Nút Mở Rộng (Mini) */}
-        <div className="p-2.5 border-b border-[#1E2D42] bg-[#0E1626]/80 flex items-center justify-between min-h-[48px]">
-          {rosterMode === 'full' ? (
-            <>
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-1 h-3.5 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
-                <h2 className="text-xs font-black uppercase tracking-wider text-white font-mono truncate">
-                  PHI CÔNG HỆ THỐNG
-                </h2>
-                <span className="text-[10px] font-mono font-bold text-[#00D4FF] bg-[#00D4FF]/10 px-1.5 py-0.5 rounded border border-[#00D4FF]/30">
-                  {roster.length}
-                </span>
-              </div>
+        {/* =================================================================
+            CỘT TRÁI: PILOT ROSTER SELECTOR (Động từ profiles/index.json)
+            ================================================================= */}
+        <aside className="h-full min-h-0 flex flex-col border-r border-[#1E2D42] bg-[#0B111E]/95 overflow-hidden">
+          <div className="p-3 border-b border-[#1E2D42] space-y-2.5 shrink-0">
+            <div className="flex items-center justify-between gap-1">
+              {!isRosterCollapsed && (
+                <div className="min-w-0">
+                  <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-[#00D4FF] truncate">
+                    DANH SÁCH PHI CÔNG
+                  </h2>
+                  <p className="text-[11px] text-[#94A3B8] truncate">
+                    {characters.length} Pilot trong manifest CDN
+                  </p>
+                </div>
+              )}
+
               <button
                 type="button"
-                onClick={toggleRosterMode}
-                title="Thu gọn danh sách phi công (MINI 72px)"
-                className="p-1 rounded-md border border-[#1E2D42] bg-[#0E1626] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-all cursor-pointer"
-              >
-                <PanelLeftClose className="w-4 h-4 text-[#00D4FF]" />
-              </button>
-            </>
-          ) : (
-            <div className="w-full flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold text-[#00D4FF] bg-[#00D4FF]/10 px-1 py-0.5 rounded border border-[#00D4FF]/30">
-                {roster.length}
-              </span>
-              <button
-                type="button"
-                onClick={toggleRosterMode}
-                title="Mở rộng danh sách phi công (FULL 260px)"
-                className="p-1 rounded-md border border-[#1E2D42] bg-[#0E1626] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-all cursor-pointer"
-              >
-                <PanelLeftOpen className="w-4 h-4 text-[#00D4FF]" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Danh sách 12 Pilot - Dùng PilotAvatar chuẩn, không fallback sai */}
-        <div className="flex-1 overflow-y-auto p-1.5 space-y-1.5 scrollbar-thin scrollbar-thumb-[#1E2D42]">
-          {roster.map((char) => {
-            const isSelected = char.id === activeCharacter.id
-
-            return (
-              <div
-                key={char.id}
-                onClick={() => onSelectCharacter(char)}
-                title={`${char.classCharacterName} — ${char.role}`}
-                className={`group relative rounded-xl border transition-all duration-200 cursor-pointer flex items-center ${
-                  rosterMode === 'full' ? 'p-2 gap-2.5' : 'p-1.5 justify-center'
-                } ${
-                  isSelected
-                    ? 'bg-gradient-to-r from-[#142338] via-[#102035] to-[#0D1828] border-[#00D4FF] shadow-[0_0_15px_rgba(0,212,255,0.25)] ring-1 ring-[#00D4FF]/60'
-                    : 'bg-[#0B111E]/70 border-[#1A2638] hover:border-[#2C415E] hover:bg-[#101A2B]'
+                onClick={onToggleRosterCollapse}
+                aria-label={isRosterCollapsed ? 'Mở rộng danh sách phi công' : 'Thu gọn danh sách phi công'}
+                title={isRosterCollapsed ? 'Mở rộng danh sách (Ctrl+B)' : 'Thu gọn danh sách (Ctrl+B)'}
+                className={`p-2 rounded-lg border border-[#1E2D42] bg-[#070A12] text-[#CBD5E1] hover:text-[#00D4FF] hover:border-[#00D4FF]/60 transition-colors cursor-pointer ${
+                  isRosterCollapsed ? 'mx-auto' : ''
                 }`}
               >
-                {/* Avatar Roster Chuyên Biệt Cho Từng Pilot */}
+                {isRosterCollapsed ? (
+                  <PanelLeftOpen className="w-4 h-4" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+
+            {!isRosterCollapsed && (
+              <>
                 <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-[#94A3B8] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => onSearchChange(e.target.value)}
+                    placeholder="Tìm tên, mã, vai trò..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-[#070A12] border border-[#1E2D42] text-xs text-[#F1F5F9] placeholder-[#64748B] focus:outline-none focus:border-[#00D4FF] transition-colors"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {roleFilters.map((rf) => (
+                    <button
+                      key={rf.id}
+                      type="button"
+                      onClick={() => onRoleFilterChange(rf.id)}
+                      className={`px-2 py-1 rounded text-[10px] font-mono font-semibold uppercase transition-colors cursor-pointer ${
+                        roleFilter === rf.id
+                          ? 'bg-[#00D4FF] text-[#070A12]'
+                          : 'bg-[#070A12] text-[#CBD5E1] border border-[#1E2D42] hover:text-white'
+                      }`}
+                    >
+                      {rf.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Danh sách thẻ phi công */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1.5">
+            {characters.map((char) => {
+              const isSelected = char.id === selectedCharacter.id
+              const charVerifiedCount =
+                char.verifiedArtworkCount ??
+                char.artworks.filter((a) => a.isAvailableOnDisk && Boolean(a.path)).length
+
+              return (
+                <button
+                  key={char.id}
+                  type="button"
+                  onClick={() => onSelectCharacter(char)}
+                  title={`${char.classCharacterName} — ${char.role}`}
+                  className={`w-full text-left rounded-xl border transition-all duration-200 cursor-pointer flex items-center ${
+                    isRosterCollapsed ? 'p-1.5 justify-center' : 'p-2.5 gap-3'
+                  } ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-[#142338] to-[#0E1626] border-[#00D4FF] shadow-[0_0_20px_rgba(0,212,255,0.2)]'
+                      : 'bg-[#070A12]/70 border-[#1E2D42]/80 hover:border-[#26384D] hover:bg-[#0E1626]/70'
+                  }`}
+                >
                   <PilotAvatar
                     character={char}
                     isSelected={isSelected}
-                    className="w-12 h-10 shrink-0"
+                    className={isRosterCollapsed ? 'w-11 h-11' : 'w-12 h-12'}
                   />
-                  {/* Chấm chỉ báo active khi ở mode mini */}
-                  {isSelected && rosterMode === 'mini' && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#00D4FF] shadow-[0_0_6px_#00D4FF] ring-2 ring-[#070A12]" />
-                  )}
-                </div>
 
-                {/* Thông tin: Tên Pilot & Vai Trò (Chỉ hiện khi FULL mode) */}
-                {rosterMode === 'full' && (
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3
-                        className={`text-xs font-bold font-mono tracking-wide truncate ${
-                          isSelected ? 'text-white' : 'text-[#CBD5E1]'
-                        }`}
-                      >
-                        {char.classCharacterName}
-                      </h3>
+                  {!isRosterCollapsed && (
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span
+                          className={`font-mono font-black text-xs tracking-wide truncate ${
+                            isSelected ? 'text-[#00D4FF]' : 'text-white'
+                          }`}
+                        >
+                          {char.classCharacterName}
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#070A12] text-[#34D399] border border-[#1E2D42] shrink-0">
+                          {charVerifiedCount} WebP
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#CBD5E1] truncate mt-0.5">
+                        {char.fullLoreName}
+                      </p>
+                      <div className="flex items-center justify-between gap-1 mt-1">
+                        <span className="text-[10px] font-mono text-[#00D4FF] truncate">
+                          {char.role}
+                        </span>
+                        {char.storyAvailable && (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0">
+                            STORY
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <p
-                      className={`text-[10px] truncate mt-0.5 ${
-                        isSelected ? 'text-[#00D4FF] font-semibold' : 'text-[#7D90A6]'
-                      }`}
-                    >
-                      {char.role}
-                    </p>
-                  </div>
-                )}
-
-                {/* Active Indicator Bar khi FULL mode */}
-                {isSelected && rosterMode === 'full' && (
-                  <div className="w-1 h-5 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF] shrink-0" />
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Cuộn danh sách hint */}
-        <div className="p-1 border-t border-[#1E2D42] bg-[#0A0F1A]/80 flex justify-center text-[#7D90A6]">
-          <ChevronDown className="w-3.5 h-3.5 text-[#00D4FF]/70" />
-        </div>
-      </aside>
-
-      {/* =========================================================================
-          CỘT 2 (GIỮA): CENTER VISUAL STAGE (Visual Hero Hoành Tráng Liền Mạch)
-          ========================================================================= */}
-      <section className="flex-1 min-w-[340px] h-full relative rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl flex flex-col justify-between">
-        {/* Background Visual Layers: Bầu Trời Sao, Trạm Quỹ Đạo & Hành Tinh Xanh */}
-        <div
-          className={`absolute inset-0 transition-opacity duration-700 pointer-events-none ${
-            backgroundMode === 'tactical'
-              ? 'opacity-100 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-950/60 via-[#070A12] to-[#070A12]'
-              : 'opacity-100 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900/40 via-[#090D18] to-[#070A12]'
-          }`}
-        />
-
-        {/* Họa tiết ánh sáng trạm vũ trụ tinh xảo */}
-        <div className="absolute inset-0 pointer-events-none opacity-20 bg-[radial-gradient(#00d4ff15_1px,transparent_1px)] [background-size:20px_20px]" />
-
-        {/* Tactical HUD Overlay khi bật chế độ Radar */}
-        {backgroundMode === 'tactical' && (
-          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_right,#00d4ff0d_1px,transparent_1px),linear-gradient(to_bottom,#00d4ff0d_1px,transparent_1px)] bg-[size:32px_32px] z-10">
-            <div className="absolute top-3 left-4 right-4 flex items-center justify-between text-[11px] font-mono text-[#00D4FF] px-3.5 py-1.5 rounded-lg bg-[#070A12]/90 border border-[#00D4FF]/40 backdrop-blur-md shadow-lg">
-              <span className="flex items-center gap-2">
-                <Radar className="w-3.5 h-3.5 animate-spin text-[#00D4FF]" />
-                <span className="font-bold tracking-wider">TACTICAL HUD // RADAR GRID ONLINE</span>
-              </span>
-              <span className="text-[#A7B6C8]">BIO-STATUS: 100% NOMINAL</span>
-            </div>
+                  )}
+                </button>
+              )
+            })}
           </div>
-        )}
+        </aside>
 
-        {/* 1. KHU VỰC TRUNG TÂM: VISUAL HERO ARTWORK & QUOTE BÊN TRÁI */}
-        <div className="relative flex-1 flex items-center justify-center z-10 overflow-hidden w-full h-full">
-          {/* Quote Chữ Nghiêng Bay Bổng Bên Trái Artwork (Có background tương phản an toàn) */}
-          <div className="absolute left-6 top-1/4 z-20 max-w-[260px] pointer-events-none hidden xl:block">
-            <div className="p-3 rounded-xl bg-black/40 border-l-2 border-[#00D4FF] backdrop-blur-xs">
-              <p className="text-sm lg:text-base italic font-serif text-white/95 leading-relaxed tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-                "{activeCharacter.characterQuote}"
+        {/* =================================================================
+            CỘT GIỮA: CENTRAL HERO ARTWORK STAGE (Sân khấu trung tâm)
+            ================================================================= */}
+        <section className="relative h-full min-h-0 flex flex-col justify-between overflow-hidden border-r border-[#1E2D42] bg-[#060911]">
+          {heroBackgroundMode === 'contextual' ? (
+            <>
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(0,212,255,0.16)_0%,_rgba(14,22,38,0.65)_55%,_rgba(6,9,17,1)_100%)] pointer-events-none" />
+              <div
+                className="absolute inset-0 opacity-20 pointer-events-none"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, #1E2D42 1px, transparent 1px), linear-gradient(to bottom, #1E2D42 1px, transparent 1px)',
+                  backgroundSize: '36px 36px',
+                }}
+              />
+            </>
+          ) : (
+            <div className="absolute inset-0 bg-[#05070E] pointer-events-none" />
+          )}
+
+          {/* Top Floating Overlay */}
+          <div className="relative z-20 p-4 flex items-start justify-between gap-2 pointer-events-none">
+            <div className="pointer-events-auto bg-[#0B111E]/90 backdrop-blur-md border border-[#1E2D42] rounded-xl px-3.5 py-2 shadow-lg">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-[#00D4FF]" />
+                <span className="font-mono font-black text-sm tracking-wider text-white">
+                  {selectedCharacter.classCharacterName}
+                </span>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/30">
+                  {selectedCharacter.personaCode || selectedCharacter.callsign}
+                </span>
+              </div>
+              <p className="text-xs text-[#CBD5E1] mt-0.5">
+                {selectedCharacter.fullLoreName} · {selectedCharacter.role}
               </p>
             </div>
+
+            {isHeroAvailable && (
+              <button
+                type="button"
+                onClick={handleOpenHeroInViewer}
+                aria-label="Phóng to Artwork toàn màn hình"
+                className="pointer-events-auto px-3 py-2 rounded-xl bg-[#0B111E]/90 hover:bg-[#142338] border border-[#1E2D42] hover:border-[#00D4FF] text-xs font-mono font-bold text-[#F1F5F9] hover:text-[#00D4FF] flex items-center gap-1.5 backdrop-blur-md shadow-lg transition-all cursor-pointer active:scale-95"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-[#00D4FF]" />
+                <span className="hidden lg:inline">Full Art</span>
+              </button>
+            )}
           </div>
 
-          {/* Visual Hero Nhân Vật Lớn (Toàn màn hình sân khấu, click để xem toàn màn hình) */}
-          <div className="relative w-full h-full flex items-end justify-center pb-2">
-            {!mainImageError ? (
+          {/* Center Character Portrait / Fullbody Artwork */}
+          <div className="relative z-10 flex-1 w-full min-h-0 flex items-center justify-center p-2 overflow-hidden">
+            {isHeroAvailable ? (
               <div
-                onClick={() => {
-                  setIsSlideshowPlaying(false)
-                  userPausedRef.current = true
-                  onOpenArtViewer(currentArtwork, availableArtworks)
-                }}
-                className="relative w-full h-full flex items-end justify-center cursor-zoom-in group"
-                title="Nhấp để xem toàn màn hình tác phẩm này"
+                onClick={handleOpenHeroInViewer}
+                className="relative w-full h-full flex items-center justify-center cursor-zoom-in group"
               >
                 <Image
-                  key={currentDisplayImage}
-                  src={resolveImageUrl(currentDisplayImage)}
-                  alt={activeCharacter.classCharacterName}
+                  src={heroSrc}
+                  alt={selectedCharacter.classCharacterName}
                   fill
                   priority
                   referrerPolicy="no-referrer"
-                  className="object-contain object-bottom drop-shadow-[0_25px_50px_rgba(0,0,0,0.9)] filter group-hover:brightness-105 transition-opacity duration-300 animate-in fade-in-0 duration-300"
-                  onError={() => setMainImageError(true)}
+                  className="object-contain object-center group-hover:scale-[1.02] transition-transform duration-500 drop-shadow-[0_18px_40px_rgba(0,0,0,0.85)]"
+                  onError={() => setHeroImgError(true)}
                 />
-                {/* Lớp bóng mờ nhẹ nhàng ở chân giúp nhân vật hòa vào sàn trạm không gian */}
-                <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#090D18] via-[#090D18]/70 to-transparent pointer-events-none" />
               </div>
             ) : (
-              <div className="max-w-sm text-center p-8 rounded-2xl bg-[#0B111E]/95 border border-[#1E2D42] shadow-2xl space-y-3 mb-12">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-[#142338] border border-[#1E2D42] flex items-center justify-center text-[#F59E0B]">
-                  <Sparkles className="w-7 h-7" />
+              <div className="max-w-xs text-center p-6 rounded-2xl bg-[#0B111E]/90 border border-[#1E2D42] backdrop-blur-md space-y-2.5">
+                <div className="w-12 h-12 mx-auto rounded-xl bg-[#142338] border border-[#1E2D42] flex items-center justify-center text-[#F59E0B]">
+                  <FileArchive className="w-6 h-6" />
                 </div>
-                <p className="text-xs font-mono text-[#F59E0B] font-bold uppercase tracking-wider">
-                  CONCEPT APPROVED // ART PENDING
-                </p>
-                <h4 className="text-lg font-bold text-white font-mono">{activeCharacter.classCharacterName}</h4>
-                <p className="text-xs text-[#A7B6C8] leading-relaxed">
-                  Artwork toàn thân độ phân giải cao của phi công này đang được số hóa đóng gói cho bản phát hành FND-8.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* HAI ĐIỀU KHIỂN BỐI CẢNH ĐỐI XỨNG HAI BÊN HÔNG NHÂN VẬT */}
-          {/* Nút Trái: Tiêu Chuẩn */}
-          <button
-            type="button"
-            onClick={() => onToggleBackgroundMode('standard')}
-            title="Bối Cảnh Tiêu Chuẩn (Elysia Station)"
-            className={`absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-xl border transition-all duration-200 flex flex-col items-center gap-1.5 shadow-xl cursor-pointer ${
-              backgroundMode === 'standard'
-                ? 'bg-[#00D4FF] text-[#070A12] border-[#00D4FF] shadow-[0_0_12px_rgba(0,212,255,0.4)] font-bold'
-                : 'bg-[#0B111E]/85 text-[#7D90A6] border-[#1E2D42] hover:text-white hover:border-[#2C415E]'
-            }`}
-          >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-[9px] font-mono uppercase [writing-mode:vertical-lr] tracking-widest font-bold">
-              TIÊU CHUẨN
-            </span>
-          </button>
-
-          {/* Nút Phải: Tactical Radar HUD */}
-          <button
-            type="button"
-            onClick={() => onToggleBackgroundMode('tactical')}
-            title="Bối Cảnh Tác Chiến HUD (Radar Tactical Grid)"
-            className={`absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-xl border transition-all duration-200 flex flex-col items-center gap-1.5 shadow-xl cursor-pointer ${
-              backgroundMode === 'tactical'
-                ? 'bg-[#00D4FF] text-[#070A12] border-[#00D4FF] shadow-[0_0_12px_rgba(0,212,255,0.4)] font-bold'
-                : 'bg-[#0B111E]/85 text-[#7D90A6] border-[#1E2D42] hover:text-white hover:border-[#2C415E]'
-            }`}
-          >
-            <Radar className="w-4 h-4" />
-            <span className="text-[9px] font-mono uppercase [writing-mode:vertical-lr] tracking-widest font-bold">
-              RADAR HUD
-            </span>
-          </button>
-        </div>
-
-        {/* 2. DƯỚI CHÂN SÂN KHẤU: TRAILER PREVIEW & CAROUSEL THUMBNAILS NHỎ GỌN */}
-        <div className="relative z-20 px-3.5 py-2.5 border-t border-[#1E2D42] bg-[#0A0F1A]/95 backdrop-blur-md flex items-center justify-between gap-3">
-          {/* Card Bên Trái: CHARACTER TRAILER (Trạng Thái Thật: Sắp Ra Mắt) */}
-          <div className="relative shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowTrailerNotice(!showTrailerNotice)}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-[#101A2B] border border-[#1E2D42] hover:border-[#00D4FF] hover:bg-[#142338] transition-all cursor-pointer group shadow-sm"
-              title="Thông tin Character Trailer"
-            >
-              <div className="relative w-10 h-7 rounded overflow-hidden bg-black/60 border border-[#1E2D42] shrink-0 flex items-center justify-center">
-                <Play className="w-3.5 h-3.5 text-[#00D4FF] fill-[#00D4FF]/40 group-hover:scale-110 transition-transform" />
-              </div>
-              <div className="text-left">
-                <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-white group-hover:text-[#00D4FF] transition-colors flex items-center gap-1">
-                  <span>CHARACTER TRAILER</span>
-                  <span className="text-[9px] text-[#F59E0B] font-mono bg-[#F59E0B]/10 px-1 rounded border border-[#F59E0B]/30">
-                    SẮP CÓ
-                  </span>
+                <div className="text-sm font-mono font-bold text-white">
+                  {selectedCharacter.classCharacterName}
                 </div>
-                <span className="text-[9px] font-mono text-[#7D90A6]">HD MEDIA SPOTLIGHT</span>
-              </div>
-            </button>
-
-            {/* Popover thông báo trailer */}
-            {showTrailerNotice && (
-              <div className="absolute left-0 bottom-12 z-50 w-64 p-3 rounded-xl bg-[#090D18] border border-[#1E2D42] shadow-2xl space-y-1.5 text-xs text-[#CBD5E1]">
-                <div className="flex items-center justify-between text-[#00D4FF] font-mono font-bold text-[11px]">
-                  <span>TRAILER MEDIA</span>
-                  <button onClick={() => setShowTrailerNotice(false)} className="text-[#A7B6C8] hover:text-white">✕</button>
-                </div>
-                <p className="text-[11px] text-[#A7B6C8] leading-relaxed">
-                  Trailer giới thiệu cinematic và lồng tiếng của phi công <strong>{activeCharacter.classCharacterName}</strong> đang trong quá trình hậu kỳ cho phiên bản FND-8.
+                <p className="text-xs text-[#CBD5E1] leading-relaxed">
+                  Đang chờ đồng bộ tệp ảnh WebP VERIFIED trên kênh release CDN.
                 </p>
               </div>
             )}
           </div>
 
-          {/* Dải Điều Khiển & Thumbnail Carousel Đầy Đủ Bên Phải */}
-          <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-            {/* Nút MỞ GALLERY CTA trực tiếp sang Tab Gallery của pilot */}
-            <button
-              type="button"
-              onClick={() => onTabChange('gallery')}
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#00D4FF]/10 hover:bg-[#00D4FF]/20 border border-[#00D4FF]/40 text-[#00D4FF] font-mono text-[11px] font-bold transition-all cursor-pointer shadow-sm shrink-0"
-              title="Mở toàn bộ Thư Viện Ảnh (Gallery)"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>MỞ GALLERY ({availableArtworks.length})</span>
-            </button>
-
-            {/* Nút Auto Slideshow (6s) */}
-            <button
-              type="button"
-              onClick={handleToggleSlideshow}
-              disabled={availableArtworks.length <= 1}
-              className={`p-1.5 rounded-lg border transition-all flex items-center gap-1 font-mono text-[10px] shrink-0 ${
-                availableArtworks.length <= 1
-                  ? 'border-[#1E2D42]/40 text-[#475569] cursor-not-allowed opacity-50'
-                  : isSlideshowPlaying
-                  ? 'border-[#00D4FF] bg-[#00D4FF]/20 text-[#00D4FF] font-bold shadow-[0_0_8px_rgba(0,212,255,0.3)] cursor-pointer'
-                  : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] bg-[#101A2B] cursor-pointer'
-              }`}
-              title={
-                availableArtworks.length <= 1
-                  ? 'Cần từ 2 tác phẩm trở lên để bật Auto Slideshow'
-                  : isSlideshowPlaying
-                  ? 'Tạm dừng trình chiếu tự động (6s)'
-                  : 'Tự động trình chiếu bộ ảnh (6s)'
-              }
-            >
-              {isSlideshowPlaying && availableArtworks.length > 1 ? (
-                <Pause className="w-3.5 h-3.5 text-[#00D4FF]" />
-              ) : (
-                <Play className="w-3.5 h-3.5 text-[#A7B6C8]" />
-              )}
-              <span className="hidden xl:inline">
-                {isSlideshowPlaying && availableArtworks.length > 1 ? 'DỪNG' : 'AUTO'}
-              </span>
-            </button>
-
-            {/* Nút Prev Carousel */}
-            <button
-              type="button"
-              onClick={handlePrevCarousel}
-              disabled={carouselIndex === 0}
-              aria-label="Hình ảnh trước"
-              className={`p-1 rounded-lg border transition-all shrink-0 ${
-                carouselIndex === 0
-                  ? 'border-[#1E2D42]/40 text-[#475569] cursor-not-allowed'
-                  : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] cursor-pointer'
-              }`}
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            {/* Thumbnails strip (Hiển thị đầy đủ bộ ảnh từ R2, scroll ngang) */}
-            <div className="flex items-center gap-1.5 overflow-hidden">
-              {availableArtworks.slice(carouselIndex, carouselIndex + visibleThumbnailsCount).map((art, sliceIdx) => {
-                const actualIndex = carouselIndex + sliceIdx
-                const isArtSelected = selectedArtworkIndex === actualIndex
-
-                return (
-                  <button
-                    key={art.id}
-                    id={`thumb-${art.id}`}
-                    type="button"
-                    onClick={() => handleSelectThumbnail(art, actualIndex)}
-                    className={`relative w-12 h-9 sm:w-14 sm:h-10 lg:w-16 lg:h-11 rounded-lg overflow-hidden border transition-all duration-200 cursor-pointer shrink-0 ${
-                      isArtSelected
-                        ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/60 shadow-[0_0_12px_rgba(0,212,255,0.5)] scale-105 z-10'
-                        : 'border-[#1E2D42] opacity-75 hover:opacity-100 hover:border-[#2C415E]'
-                    }`}
-                    title={`${art.title} (Nhấp để hiển thị trên sân khấu)`}
-                  >
-                    <Image
-                      src={resolveImageUrl(art.path)}
-                      alt={art.title}
-                      fill
-                      referrerPolicy="no-referrer"
-                      className="object-cover"
-                    />
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Nút Next Carousel */}
-            <button
-              type="button"
-              onClick={handleNextCarousel}
-              disabled={carouselIndex >= maxCarouselPages}
-              aria-label="Hình ảnh tiếp theo"
-              className={`p-1 rounded-lg border transition-all shrink-0 ${
-                carouselIndex >= maxCarouselPages
-                  ? 'border-[#1E2D42]/40 text-[#475569] cursor-not-allowed'
-                  : 'border-[#1E2D42] text-[#A7B6C8] hover:text-[#00D4FF] hover:border-[#00D4FF] cursor-pointer'
-              }`}
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-
-            {/* Nút Phóng To Immersive Viewer tại ảnh hiện tại */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsSlideshowPlaying(false)
-                userPausedRef.current = true
-                onOpenArtViewer(currentArtwork, availableArtworks)
-              }}
-              className="p-1.5 rounded-lg border border-[#1E2D42] hover:border-[#00D4FF] text-[#A7B6C8] hover:text-[#00D4FF] bg-[#101A2B] transition-colors ml-1 cursor-pointer shrink-0"
-              title="Xem toàn màn hình tác phẩm này (Immersive Viewer)"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================================
-          CỘT 3 (PHẢI): PROFILE DOSSIER & ATTRIBUTES (Typography Chuẩn Thiết Kế)
-          ========================================================================= */}
-      <section className="w-[390px] lg:w-[410px] xl:w-[430px] h-full flex flex-col rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] overflow-hidden shadow-2xl shrink-0 backdrop-blur-md">
-        {/* Header Profile: Tên 30px+, Title, Vai Trò và Logo UME CORPS */}
-        <div className="p-4 border-b border-[#1E2D42] bg-[#0E1626]/75">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#00D4FF] uppercase tracking-wider">
-                <span>❖ CLASS PILOT</span>
-              </div>
-              <h1 className="text-3xl font-black text-white tracking-tight mt-1 font-mono">
-                {activeCharacter.classCharacterName}
-              </h1>
-              <div className="text-sm font-semibold text-[#CBD5E1] mt-0.5">
-                {activeCharacter.title}
-              </div>
-              <div className="text-xs font-mono font-bold text-[#00D4FF] mt-1">
-                {activeCharacter.role}
+          {/* Bottom Stage Controls: 2 Symmetrical Background Mode Buttons + Quick Stats Strip */}
+          <div className="relative z-20 p-3.5 bg-gradient-to-t from-[#070A12] via-[#070A12]/95 to-transparent space-y-2.5 shrink-0">
+            <div className="flex items-center justify-center">
+              <div className="inline-grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-[#0B111E]/95 border border-[#1E2D42] backdrop-blur-md shadow-lg w-full max-w-[300px]">
+                <button
+                  type="button"
+                  onClick={() => onChangeHeroBackgroundMode('contextual')}
+                  className={`py-1.5 px-2.5 rounded-lg text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    heroBackgroundMode === 'contextual'
+                      ? 'bg-[#142338] text-[#00D4FF] border border-[#00D4FF]/50 shadow-sm'
+                      : 'text-[#CBD5E1] hover:text-white border border-transparent'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Nền Bối Cảnh</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onChangeHeroBackgroundMode('clean')}
+                  className={`py-1.5 px-2.5 rounded-lg text-[11px] font-mono font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    heroBackgroundMode === 'clean'
+                      ? 'bg-[#142338] text-[#00D4FF] border border-[#00D4FF]/50 shadow-sm'
+                      : 'text-[#CBD5E1] hover:text-white border border-transparent'
+                  }`}
+                >
+                  <ImageOff className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">Tách Nền</span>
+                </button>
               </div>
             </div>
 
-            {/* Logo Faction / Corps (Động theo từng Pilot) */}
-            {(() => {
-              const corps =
-                activeCharacter.id === 'valentine'
-                  ? { name: 'UME CORPS', icon: Shield, color: 'text-[#00D4FF]' }
-                  : activeCharacter.roleCategory === 'attack'
-                  ? { name: 'STRIKE WING', icon: Crosshair, color: 'text-[#EF4444]' }
-                  : activeCharacter.roleCategory === 'defense'
-                  ? { name: 'AEGIS SQUAD', icon: Shield, color: 'text-[#3B82F6]' }
-                  : activeCharacter.roleCategory === 'support'
-                  ? { name: 'UME SUPPORT', icon: Heart, color: 'text-[#10B981]' }
-                  : { name: 'RECON CORPS', icon: Sparkles, color: 'text-[#8B5CF6]' };
-              const IconComp = corps.icon;
-              return (
-                <div className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-[#0A0F1A] border border-[#1E2D42] shrink-0">
-                  <div className={`flex items-center justify-center w-8 h-8 rounded-full bg-white/5 ${corps.color}`}>
-                    <IconComp className="w-4 h-4" />
-                  </div>
-                  <span className="text-[9px] font-mono font-black text-[#A7B6C8] uppercase tracking-wider mt-1">
-                    {corps.name}
-                  </span>
-                </div>
-              );
-            })()}
-          </div>
-
-          {/* Hàng Badges Nổi Bật (Lấy động từ activeCharacter.tags) */}
-          <div className="flex flex-wrap items-center gap-2 mt-3">
-            {activeCharacter.tags && activeCharacter.tags.length > 0 ? (
-              activeCharacter.tags.map((tag, idx) => {
-                const t = tag.toLowerCase();
-                let badgeClass = 'bg-[#00D4FF]/15 text-[#00D4FF] border-[#00D4FF]/40';
-                let IconTag = Zap;
-                if (t.includes('medic') || t.includes('rescue')) {
-                  badgeClass = 'bg-[#10B981]/15 text-[#10B981] border-[#10B981]/40';
-                  IconTag = Heart;
-                } else if (t.includes('atk') || t.includes('fighter') || t.includes('assault') || t.includes('sniper')) {
-                  badgeClass = 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/40';
-                  IconTag = Crosshair;
-                } else if (t.includes('shd') || t.includes('shield') || t.includes('def') || t.includes('tank')) {
-                  badgeClass = 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/40';
-                  IconTag = Shield;
-                } else if (t.includes('ene')) {
-                  badgeClass = 'bg-[#F59E0B]/15 text-[#F59E0B] border-[#F59E0B]/40';
-                  IconTag = Zap;
-                } else if (t.includes('agi') || t.includes('agility') || t.includes('speed')) {
-                  badgeClass = 'bg-[#06B6D4]/15 text-[#06B6D4] border-[#06B6D4]/40';
-                  IconTag = Sparkles;
-                }
-
-                return (
-                  <span
-                    key={idx}
-                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold border ${badgeClass}`}
-                  >
-                    <IconTag className="w-3.5 h-3.5" />
-                    <span>{tag}</span>
-                  </span>
-                );
-              })
-            ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/40">
-                <Shield className="w-3.5 h-3.5" />
-                <span>{activeCharacter.roleCategory.toUpperCase()}</span>
-              </span>
-            )}
-          </div>
-
-          {/* Đoạn mô tả ngắn (Short Description: 15-16px, dễ đọc) */}
-          <p className="text-sm sm:text-base text-[#CBD5E1] leading-relaxed mt-3">
-            {activeCharacter.shortDescription}
-          </p>
-        </div>
-
-        {/* Nội Dung Cuộn Tách Bạch: Tabs Chi Tiết Trên Đầu Giải Phóng 100% Diện Tích Cho Story */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-[#1E2D42] min-h-0">
-          <Tabs value={activeTab} onValueChange={onTabChange} variant="segmented" className="w-full flex flex-col">
-            <TabsList className="mb-4 grid grid-cols-4 shrink-0">
-              <TabsTrigger value="overview">THÔNG TIN</TabsTrigger>
-              <TabsTrigger value="story">STORY</TabsTrigger>
-              <TabsTrigger value="gear">GEAR</TabsTrigger>
-              <TabsTrigger value="gallery">GALLERY</TabsTrigger>
-            </TabsList>
-
-            {/* Tab 1: THÔNG TIN CƠ BẢN + ATTRIBUTES + TRAITS */}
-            <TabsContent value="overview" className="space-y-4 mt-0">
-              {/* SECTION: | BASE ATTRIBUTES (6 Thanh Đo Màu Sắc) */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
-                  <h3 className="text-sm font-black uppercase font-mono tracking-wider text-white">
-                    BASE ATTRIBUTES
-                  </h3>
-                </div>
-
-                {/* Grid 2 cột cho 6 chỉ số: ATK, DEF, AGI bên trái; ENE, SHD, LUK bên phải */}
-                <div className="grid grid-cols-2 gap-x-3.5 gap-y-2.5 p-3 rounded-xl bg-[#0B111E]/80 border border-[#1E2D42] font-mono text-xs">
-                  {/* ATK - Đỏ */}
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-[#EF4444] font-bold flex items-center gap-1 text-xs">
-                      <Crosshair className="w-3.5 h-3.5" />
-                      <span>ATK</span>
-                    </span>
-                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                      <div
-                        className="h-full bg-[#EF4444] rounded-full shadow-[0_0_6px_#EF4444]"
-                        style={{ width: `${(activeCharacter.baseAttributes.atk / 10) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.atk}</span>
-                  </div>
-
-                  {/* ENE - Vàng Cam */}
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-[#F59E0B] font-bold flex items-center gap-1 text-xs">
-                      <Zap className="w-3.5 h-3.5" />
-                      <span>ENE</span>
-                    </span>
-                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                      <div
-                        className="h-full bg-[#F59E0B] rounded-full shadow-[0_0_6px_#F59E0B]"
-                        style={{ width: `${(activeCharacter.baseAttributes.ene / 10) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.ene}</span>
-                  </div>
-
-                  {/* DEF - Xanh Dương */}
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-[#3B82F6] font-bold flex items-center gap-1 text-xs">
-                      <Shield className="w-3.5 h-3.5" />
-                      <span>DEF</span>
-                    </span>
-                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                      <div
-                        className="h-full bg-[#3B82F6] rounded-full shadow-[0_0_6px_#3B82F6]"
-                        style={{ width: `${(activeCharacter.baseAttributes.def / 10) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.def}</span>
-                  </div>
-
-                  {/* SHD - Tím */}
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-[#8B5CF6] font-bold flex items-center gap-1 text-xs">
-                      <Shield className="w-3.5 h-3.5" />
-                      <span>SHD</span>
-                    </span>
-                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                      <div
-                        className="h-full bg-[#8B5CF6] rounded-full shadow-[0_0_6px_#8B5CF6]"
-                        style={{ width: `${(activeCharacter.baseAttributes.shd / 10) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.shd}</span>
-                  </div>
-
-                  {/* AGI - Xanh Lục */}
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-[#10B981] font-bold flex items-center gap-1 text-xs">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>AGI</span>
-                    </span>
-                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                      <div
-                        className="h-full bg-[#10B981] rounded-full shadow-[0_0_6px_#10B981]"
-                        style={{ width: `${(activeCharacter.baseAttributes.agi / 10) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.agi}</span>
-                  </div>
-
-                  {/* LUK - Hồng Tím */}
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="text-[#EC4899] font-bold flex items-center gap-1 text-xs">
-                      <Award className="w-3.5 h-3.5" />
-                      <span>LUK</span>
-                    </span>
-                    <div className="flex-1 h-2.5 bg-[#1A2638] rounded-full overflow-hidden mx-1.5">
-                      <div
-                        className="h-full bg-[#EC4899] rounded-full shadow-[0_0_6px_#EC4899]"
-                        style={{ width: `${(activeCharacter.baseAttributes.luk / 10) * 100}%` }}
-                      />
-                    </div>
-                    <span className="text-white font-bold w-4 text-right text-xs">{activeCharacter.baseAttributes.luk}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECTION: | TRAITS (2 Ô Card Song Song - Không Cắt Ellipsis Tên Trait) */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-[#00D4FF] rounded-full shadow-[0_0_8px_#00D4FF]" />
-                  <h3 className="text-sm font-black uppercase font-mono tracking-wider text-white">
-                    TRAITS & THIÊN PHÚ
-                  </h3>
-                </div>
-
-                <div className={`grid ${activeCharacter.traits.length > 1 ? 'grid-cols-2' : 'grid-cols-1'} gap-2.5`}>
-                  {activeCharacter.traits.map((trait, idx) => {
-                    const isMedic = trait.iconType === 'medic';
-                    const isShield = trait.iconType === 'shield';
-                    const isFire = trait.iconType === 'firepower';
-                    const isAgi = trait.iconType === 'agility';
-
-                    const borderClass = isMedic
-                      ? 'border-[#10B981]/40'
-                      : isShield
-                      ? 'border-[#00D4FF]/40'
-                      : isFire
-                      ? 'border-[#EF4444]/40'
-                      : isAgi
-                      ? 'border-[#06B6D4]/40'
-                      : 'border-[#F59E0B]/40';
-
-                    const iconBgClass = isMedic
-                      ? 'bg-[#10B981]/15 text-[#10B981]'
-                      : isShield
-                      ? 'bg-[#00D4FF]/15 text-[#00D4FF]'
-                      : isFire
-                      ? 'bg-[#EF4444]/15 text-[#EF4444]'
-                      : isAgi
-                      ? 'bg-[#06B6D4]/15 text-[#06B6D4]'
-                      : 'bg-[#F59E0B]/15 text-[#F59E0B]';
-
-                    const badgeTextClass = isMedic
-                      ? 'text-[#10B981]'
-                      : isShield
-                      ? 'text-[#00D4FF]'
-                      : isFire
-                      ? 'text-[#EF4444]'
-                      : isAgi
-                      ? 'text-[#06B6D4]'
-                      : 'text-[#F59E0B]';
-
-                    const IconTrait = isMedic
-                      ? Heart
-                      : isShield
-                      ? Shield
-                      : isFire
-                      ? Crosshair
-                      : isAgi
-                      ? Sparkles
-                      : Zap;
-
-                    return (
-                      <div
-                        key={trait.id || idx}
-                        className={`p-3 rounded-xl bg-[#0B111E]/80 border ${borderClass} flex items-start gap-2.5`}
-                      >
-                        <div className={`w-7 h-7 rounded-lg ${iconBgClass} flex items-center justify-center shrink-0 mt-0.5`}>
-                          <IconTrait className="w-4 h-4" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-xs font-bold text-white font-mono break-words leading-tight">
-                              {trait.name}
-                            </span>
-                            <span className={`text-[9px] font-mono uppercase font-bold shrink-0 ${badgeTextClass}`}>
-                              {trait.type}
-                            </span>
-                          </div>
-                          <p className="text-xs text-[#CBD5E1] mt-1 leading-snug">
-                            {trait.description}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Thông tin chi tiết */}
-              <div className="rounded-xl bg-[#0B111E]/85 border border-[#1E2D42] p-3.5 text-sm space-y-2.5">
-                {activeCharacter.basicInfo && activeCharacter.basicInfo.length > 0 ? (
-                  activeCharacter.basicInfo.map((info, idx) => (
+            {/* Quick 6-Stat Mini Strip on Stage Footer */}
+            {selectedCharacter.baseAttributes ? (
+              <div className="grid grid-cols-6 gap-1.5 p-2 rounded-xl bg-[#0B111E]/90 border border-[#1E2D42] backdrop-blur-md">
+                {attributeKeys.map((key) => {
+                  const val = selectedCharacter.baseAttributes![key]
+                  const cfg = ATTRIBUTE_COLOR_CONFIG[key]
+                  return (
                     <div
-                      key={idx}
-                      className={`flex items-center justify-between ${
-                        idx < activeCharacter.basicInfo.length - 1
-                          ? 'border-b border-[#1E2D42]/60 pb-2'
-                          : ''
-                      }`}
+                      key={key}
+                      className="flex flex-col items-center justify-center py-1 rounded-lg bg-[#070A12]/80 border border-[#1E2D42]/60"
                     >
-                      <span className="text-[#7D90A6] font-medium">{info.label}:</span>
-                      <span
-                        className={`font-semibold text-right max-w-[230px] truncate ${
-                          info.label.includes('Điểm yếu')
-                            ? 'text-[#F59E0B]'
-                            : info.label.includes('Ước mơ')
-                            ? 'text-[#00D4FF]'
-                            : 'text-white'
-                        }`}
-                      >
-                        {info.value}
+                      <span className="text-[10px] font-mono text-[#CBD5E1]">{cfg.label}</span>
+                      <span className={`text-xs font-mono font-black ${cfg.textClass}`}>
+                        {val}
                       </span>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-xs text-[#A7B6C8] p-2">Thông tin nhân vật đang được cập nhật.</div>
-                )}
+                  )
+                })}
               </div>
-            </TabsContent>
+            ) : (
+              <div className="p-2 rounded-xl bg-[#0B111E]/90 border border-[#1E2D42] text-center text-[11px] font-mono text-[#CBD5E1]">
+                SYSTEM Stats: Chưa đăng ký trong FND-1 Registry
+              </div>
+            )}
+          </div>
+        </section>
 
-            {/* Tab 2: STORY (10 Chapters) */}
-            <TabsContent value="story" className="mt-0">
-              <StoryTab character={activeCharacter} onOpenReader={onOpenReader} />
-            </TabsContent>
+        {/* =================================================================
+            CỘT PHẢI: DOSSIER TABS (OVERVIEW | STORY | GEAR COMPAT | GALLERY)
+            ================================================================= */}
+        <section className="h-full min-h-0 flex flex-col bg-[#0B111E]/90 overflow-hidden">
+          <div className="p-3 border-b border-[#1E2D42] bg-[#070A12]/90 shrink-0">
+            <div
+              role="tablist"
+              aria-label="Hồ sơ chi tiết phi công"
+              className="grid grid-cols-4 gap-1.5 p-1 rounded-xl bg-[#0B111E] border border-[#1E2D42]"
+            >
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => onChangeTab(tab.id)}
+                    className={`py-2 px-2 rounded-lg font-mono text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-[#142338] text-[#00D4FF] border border-[#00D4FF]/60 shadow-[0_0_12px_rgba(0,212,255,0.2)]'
+                        : 'text-[#CBD5E1] hover:text-white hover:bg-[#142338]/40 border border-transparent'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span className="truncate">{tab.label}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
-            {/* Tab 3: GEAR COMPATIBILITY */}
-            <TabsContent value="gear" className="mt-0">
-              <GearCompatTab character={activeCharacter} />
-            </TabsContent>
-
-            {/* Tab 4: GALLERY */}
-            <TabsContent value="gallery" className="mt-0">
+          {/* Tab Panel Content (Scrollable) */}
+          <div className="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6 select-text">
+            {activeTab === 'overview' && <OverviewTab character={selectedCharacter} />}
+            {activeTab === 'story' && <StoryTab character={selectedCharacter} />}
+            {activeTab === 'gear' && <GearCompatTab character={selectedCharacter} />}
+            {activeTab === 'gallery' && (
               <GalleryTab
-                character={activeCharacter}
-                onSelectArtwork={(art) => onOpenArtViewer(art)}
+                character={selectedCharacter}
+                selectedHeroArtwork={selectedHeroArtwork}
+                onSelectHeroArtwork={onSelectHeroArtwork}
+                onOpenViewer={onOpenViewer}
               />
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* CONTEXTUAL FOOTER THEO TỪNG TAB (Chuẩn Yêu Cầu Của Chủ Dự Án) */}
-        {activeTab === 'gallery' && (
-          <div className="p-3.5 border-t border-[#1E2D42] bg-[#0E1626]/95 shrink-0 flex items-center justify-between gap-3">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-mono font-bold text-[#7D90A6] uppercase tracking-wider">
-                BỘ SƯU TẬP
-              </span>
-              <span className="text-xs font-mono font-bold text-[#00D4FF]">
-                {activeCharacter.artworks.filter((a) => a.isAvailableOnDisk).length} ẢNH KHẢ DỤNG
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                const firstAvailable =
-                  activeCharacter.artworks.find((a) => a.isAvailableOnDisk) ||
-                  activeCharacter.artworks[0]
-                onOpenArtViewer(firstAvailable)
-              }}
-              className="py-2.5 px-4 rounded-xl font-mono font-bold text-xs sm:text-sm tracking-wider uppercase flex items-center justify-center gap-2 bg-gradient-to-r from-[#0088FF] via-[#00B4D8] to-[#00D4FF] text-white hover:brightness-110 active:scale-98 transition-all shadow-[0_0_15px_rgba(0,180,216,0.4)] cursor-pointer"
-            >
-              <Maximize2 className="w-4 h-4 text-white" />
-              <span>XEM TOÀN BỘ {activeCharacter.artworks.filter((a) => a.isAvailableOnDisk).length} ẢNH</span>
-            </button>
+            )}
           </div>
-        )}
-
-        {activeTab === 'overview' && (
-          <div className="p-3 border-t border-[#1E2D42] bg-[#0E1626]/95 shrink-0 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-              <span className="text-xs font-mono text-[#A7B6C8]">
-                TRẠNG THÁI: <span className="text-white font-bold">SẴN SÀNG ĐIỀU ĐỘNG</span>
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSlideshowPlaying(false)
-                userPausedRef.current = true
-                onOpenArtViewer(currentArtwork, availableArtworks)
-              }}
-              className="py-2 px-3.5 rounded-lg border border-[#00D4FF]/40 bg-[#00D4FF]/10 hover:bg-[#00D4FF]/20 text-[#00D4FF] font-mono text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-            >
-              <Maximize2 className="w-3.5 h-3.5" />
-              <span>SOI TRANH HD</span>
-            </button>
-          </div>
-        )}
-
-        {/* Tab 'story' và 'gear' HOÀN TOÀN KHÔNG render footer để nhường 100% diện tích cuộn */}
-      </section>
+        </section>
+      </div>
     </div>
   )
 }
+
 export default DesktopView

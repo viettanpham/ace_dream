@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { contentReleaseResolver } from '@/lib/game/v2/content-release-resolver';
 import { universalContentResolver } from '@/lib/game/v2/universal-content-resolver';
 import { isCanonicalPilotId } from '@/lib/game/v2/universal-content-types';
 import { verifyAdminRequest } from '@/lib/game/auth/admin-auth';
@@ -13,10 +14,9 @@ interface RouteParams {
 }
 
 /**
- * Public/Reader Story Chapter Prose API (CP3-A Universal CDN R3)
+ * Public/Reader Story Chapter Prose API (FND-8 Dynamic CDN R4 -> R5+)
  * GET /api/runtime/story/[pilotId]/[chapterId]
- * Returns chapter metadata, scene anchors, and full prose.
- * Gracefully handles unwritten chapters as isComingSoon without 404.
+ * Returns chapter metadata, blocks[] (heading, paragraph, dialogue, scene with verified/pending CDN status), and full prose.
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
@@ -24,9 +24,72 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     const cleanPilotId = pilotId.toLowerCase().trim();
     const cleanChapterId = chapterId.toLowerCase().trim();
 
+    // 1. Primary: ContentReleaseResolver (Pinned R4 -> R5+ Release)
+    try {
+      const releaseChapterResult = await contentReleaseResolver.getPilotStoryChapter(
+        cleanPilotId,
+        cleanChapterId
+      );
+
+      if (releaseChapterResult) {
+        const { chapter, releaseVersion, releaseCommitSha } = releaseChapterResult;
+
+        // Build sceneAnchors list from scene blocks so any legacy consumer also receives verified status
+        const sceneAnchors = (chapter.blocks || [])
+          .filter((b) => b.type === 'scene')
+          .map((b, idx) => {
+            const firstArt = b.artworks?.[0];
+            return {
+              sceneId: b.sceneId || b.blockId,
+              paragraphIndex: idx + 1,
+              title: b.sceneTitle || firstArt?.caption || 'Minh họa phân cảnh',
+              caption: b.caption || firstArt?.caption || '',
+              artworkAssetId: firstArt?.assetId || '',
+              artworkPath: firstArt?.cdnVerified ? firstArt.resolvedUrl || '' : '',
+              cdnVerified: Boolean(firstArt?.cdnVerified),
+              cdnStatus: firstArt?.cdnStatus || 'PENDING_BINARY_IMPORT',
+              placement: firstArt?.placement || 'inline',
+            };
+          });
+
+        return NextResponse.json({
+          success: true,
+          isComingSoon: false,
+          releaseVersion,
+          releaseCommitSha,
+          meta: {
+            chapterId: chapter.chapterId,
+            pilotId: chapter.pilotId,
+            chapterNumber: chapter.chapterNumber,
+            title: chapter.title,
+            summary:
+              chapter.summary ||
+              `Chương ${String(chapter.chapterNumber).padStart(2, '0')} — ${chapter.title}`,
+            editorialStatus: chapter.editorialStatus,
+            status:
+              chapter.editorialStatus === 'APPROVED'
+                ? 'PUBLISHED'
+                : chapter.editorialStatus,
+            revision: chapter.revision,
+            sourceIntegrity: chapter.sourceIntegrity,
+            sourceNote: chapter.sourceNote,
+            wordCount: chapter.wordCount || 0,
+            readingTimeMinutes: chapter.readingTimeMinutes || 5,
+            sceneAnchors,
+          },
+          content: chapter.content || '',
+          blocks: chapter.blocks || [],
+          sceneAnchors,
+          isReviewMode: true,
+        });
+      }
+    } catch {
+      // Fallback to R3 resolver only if R4 channel is unreachable
+    }
+
     if (!isCanonicalPilotId(cleanPilotId)) {
       return NextResponse.json(
-        { success: false, error: `Pilot ${pilotId} không thuộc 12 phi công chuẩn.` },
+        { success: false, error: `Không tìm thấy phi công ${pilotId}.` },
         { status: 404 }
       );
     }
@@ -50,10 +113,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     const adminAuth = verifyAdminRequest(req, false);
     const isAdminOrReview = adminAuth.authorized || isDevOrPreview;
-
     const activePointer = getDynamicStoryCdnPointer();
 
-    // 1. Fetch from Universal Content Resolver (R3 / Dynamic CDN first)
     const chapterData = await universalContentResolver.getStoryChapterProse(
       cleanPilotId,
       cleanChapterId,
@@ -74,23 +135,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         sceneAnchors: chapterData.sceneAnchors,
         isReviewMode: isAdminOrReview,
         cdnPointer: activePointer,
-      });
-    }
-
-    // 2. Fallback to local character content store
-    const { getCharacterContentStore } = await import('@/lib/game/v2/character-content-store');
-    const store = getCharacterContentStore();
-    const fallbackData = await store.getChapterWithContent(cleanPilotId as any, cleanChapterId);
-
-    if (fallbackData) {
-      return NextResponse.json({
-        success: true,
-        isComingSoon: false,
-        meta: fallbackData.meta,
-        content: fallbackData.content,
-        blocks: [],
-        sceneAnchors: fallbackData.meta.sceneAnchors || [],
-        isReviewMode: isAdminOrReview,
       });
     }
 

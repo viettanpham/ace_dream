@@ -1,293 +1,441 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useMemo } from 'react'
 import Image from 'next/image'
-import { GalleryArtwork, CharacterProfileV2 } from '@/lib/game/v2/character-profile-data'
-import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
+import { CharacterProfileV2, GalleryArtwork } from '@/lib/game/v2/character-profile-data'
 import {
+  Card,
+  CardContent,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/game/v2/ui'
+import {
+  Maximize2,
+  Image as ImageIcon,
   FileArchive,
   CheckCircle2,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  ZoomIn,
   Sparkles,
+  Clock,
   Info,
+  Hash,
   Layers,
-  FileCode,
 } from 'lucide-react'
 
 interface GalleryTabProps {
   character: CharacterProfileV2
-  onSelectArtwork: (art: GalleryArtwork) => void
+  selectedHeroArtwork: GalleryArtwork | null
+  onSelectHeroArtwork: (artwork: GalleryArtwork) => void
+  onOpenViewer: (artwork: GalleryArtwork) => void
 }
 
-export function GalleryTab({ character, onSelectArtwork }: GalleryTabProps) {
-  const [showArchiveSection, setShowArchiveSection] = useState<boolean>(true)
-  const [dynamicArtworks, setDynamicArtworks] = useState<GalleryArtwork[]>([])
-  const [loadingDynamic, setLoadingDynamic] = useState<boolean>(false)
-  const [activeMetaDetail, setActiveMetaDetail] = useState<GalleryArtwork | null>(null)
+type CategoryFilter = 'all' | 'core' | 'outfit'
+type StatusFilter = 'all' | 'verified' | 'pending'
 
-  // Fetch dynamic artworks from CDN R2 via /api/runtime/gallery/[pilotId]
-  useEffect(() => {
-    let isCancelled = false;
-    setLoadingDynamic(true);
+export function GalleryTab({
+  character,
+  selectedHeroArtwork,
+  onSelectHeroArtwork,
+  onOpenViewer,
+}: GalleryTabProps) {
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [inspectedPendingArt, setInspectedPendingArt] = useState<GalleryArtwork | null>(null)
 
-    fetch(`/api/runtime/gallery/${character.id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!isCancelled && data.success && Array.isArray(data.artworks) && data.artworks.length > 0) {
-          const mapped: GalleryArtwork[] = data.artworks.map((item: any) => {
-            const isCore = item.role === 'fullbody' || item.role === 'portrait' || item.role === 'combat' || item.role === 'closeup' || item.role === 'activity';
-            const cat = isCore ? 'base' : (item.role.includes('event') ? 'event' : (item.role.includes('activity') ? 'activity' : 'costume'));
+  const allArtworks = useMemo(() => {
+    return [...(character.artworks || [])].sort(
+      (a, b) => (a.order ?? 999) - (b.order ?? 999)
+    )
+  }, [character.artworks])
 
-            return {
-              id: item.assetId,
-              title: item.title || `${character.classCharacterName} — ${item.role.toUpperCase()}`,
-              category: cat,
-              path: `/${item.path}`,
-              isAvailableOnDisk: true,
-              status: 'verified_webp',
-              description: item.curatedDescription || item.description || `Định dạng WebP tối ưu (${item.width || 1122}×${item.height || 1402}px, ${(Number(item.byteSize || 0) / 1024).toFixed(0)} KB)`,
-              dimensions: item.width && item.height ? { width: item.width, height: item.height } : undefined,
-              sha256: item.sha256,
-              byteSize: item.byteSize,
-            } as GalleryArtwork & { sha256?: string; byteSize?: number };
-          });
-          setDynamicArtworks(mapped);
-        } else {
-          setDynamicArtworks([]);
-        }
-      })
-      .catch(() => {
-        if (!isCancelled) setDynamicArtworks([]);
-      })
-      .finally(() => {
-        if (!isCancelled) setLoadingDynamic(false);
-      });
+  const verifiedCount = useMemo(
+    () => allArtworks.filter((a) => a.isAvailableOnDisk && Boolean(a.path)).length,
+    [allArtworks]
+  )
+  const totalSourceCount = character.totalSourceArtworkCount ?? allArtworks.length
+  const pendingCount = Math.max(0, allArtworks.length - verifiedCount)
 
-    return () => {
-      isCancelled = true;
-    };
-  }, [character.id, character.classCharacterName]);
+  const coreCount = useMemo(
+    () =>
+      allArtworks.filter(
+        (a) =>
+          (a.rawCategory || '').toUpperCase() === 'CORE' ||
+          a.category === 'base' ||
+          a.category === 'portrait'
+      ).length,
+    [allArtworks]
+  )
+  const outfitCount = Math.max(0, allArtworks.length - coreCount)
 
-  // Single Source of Truth: Prioritize parent character.artworks collection (e.g. 35 artworks for Valentine)
-  const verifiedArtworks =
-    character.artworks.length >= dynamicArtworks.length && character.artworks.length > 0
-      ? character.artworks.filter((a) => a.isAvailableOnDisk !== false)
-      : (dynamicArtworks.length > 0 ? dynamicArtworks : character.artworks.filter((a) => a.isAvailableOnDisk !== false));
+  const filteredArtworks = useMemo(() => {
+    return allArtworks.filter((art) => {
+      const isCore =
+        (art.rawCategory || '').toUpperCase() === 'CORE' ||
+        art.category === 'base' ||
+        art.category === 'portrait'
 
-  const archiveArtworks = character.artworks.filter(
-    (a) => a.isAvailableOnDisk === false && !verifiedArtworks.some((v) => v.id === a.id)
-  );
+      if (categoryFilter === 'core' && !isCore) return false
+      if (categoryFilter === 'outfit' && isCore) return false
+
+      const isVerified = art.isAvailableOnDisk && Boolean(art.path)
+      if (statusFilter === 'verified' && !isVerified) return false
+      if (statusFilter === 'pending' && isVerified) return false
+
+      return true
+    })
+  }, [allArtworks, categoryFilter, statusFilter])
+
+  const getCategoryLabel = (art: GalleryArtwork) => {
+    if (art.rawCategory) return art.rawCategory.toUpperCase()
+    switch (art.category) {
+      case 'base':
+        return 'CORE'
+      case 'portrait':
+        return 'PORTRAIT'
+      case 'costume':
+        return 'OUTFIT'
+      case 'activity':
+        return 'ACTIVITY'
+      case 'event':
+        return 'EVENT'
+      default:
+        return 'GALLERY'
+    }
+  }
 
   return (
-    <div className="space-y-6">
-      {/* 1. TÁC PHẨM ĐÃ XÁC MINH WEBP (VERIFIED WEBP ASSETS - KHẢ DỤNG TRÊN CDN) */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between border-b border-[#26384D] pb-2">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-[#34D399]" />
-            <h3 className="text-sm font-bold uppercase tracking-wider text-[#F1F5F9]">
-              Artwork Đã Kiểm Chứng (WebP Verified)
-            </h3>
+    <div className="space-y-5 text-[#F1F5F9]">
+      {/* 1. Thanh Trạng Thái Đồng Bộ Gallery CDN (R4 -> R5+) */}
+      <div className="p-4 rounded-xl bg-[#0F172A]/95 border border-[#26384D] space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <ImageIcon className="w-5 h-5 text-[#00D4FF] shrink-0" />
+            <div>
+              <h3 className="text-sm sm:text-base font-bold text-white">
+                Thư Viện Thị Giác ({character.classCharacterName})
+              </h3>
+              <p className="text-xs text-[#CBD5E1] mt-0.5">
+                Release {character.releaseVersion?.toUpperCase() || 'R4'} · Chỉ tải ảnh có{' '}
+                <code className="text-[#34D399] font-mono">cdnStatus=VERIFIED</code> từ commit{' '}
+                <code className="text-[#00D4FF] font-mono">
+                  {(character.releaseCommitSha || '').slice(0, 7) || 'pinned'}
+                </code>
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {loadingDynamic && (
-              <span className="text-[11px] font-mono text-cyan-400 animate-pulse">
-                Đang đồng bộ CDN...
+
+          <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#34D399]/15 border border-[#34D399]/40 text-[#34D399] font-bold">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>{verifiedCount} VERIFIED WEBP</span>
+            </span>
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-300 font-bold">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{pendingCount} PENDING BINARY IMPORT</span>
               </span>
             )}
-            <span className="text-xs font-mono text-[#34D399] font-bold">
-              {verifiedArtworks.length} Tác Phẩm Khả Dụng
+            <span className="px-2.5 py-1 rounded-lg bg-[#142338] border border-[#26384D] text-white font-bold">
+              TỔNG HỒ SƠ: {totalSourceCount}
             </span>
           </div>
         </div>
 
-        {verifiedArtworks.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {verifiedArtworks.map((art) => (
-              <div
-                key={art.id}
-                className="group relative rounded-2xl bg-[#0F172A] border border-[#26384D] hover:border-[#06B6D4] overflow-hidden transition-all duration-300 shadow-lg hover:shadow-cyan-500/10 flex flex-col justify-between"
+        {/* Bộ lọc động theo Trạng thái CDN và Nhóm */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#1E2D42]">
+          {/* Lọc theo trạng thái VERIFIED / PENDING */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                { id: 'all', label: `Tất Cả (${allArtworks.length})` },
+                { id: 'verified', label: `Đã Có Ảnh CDN (${verifiedCount})` },
+                { id: 'pending', label: `Chờ Nhập Binary (${pendingCount})` },
+              ] as const
+            ).map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => setStatusFilter(st.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer min-h-[36px] ${
+                  statusFilter === st.id
+                    ? 'bg-[#00D4FF] text-[#070A12] shadow-sm shadow-cyan-500/30'
+                    : 'bg-[#070A12] text-[#CBD5E1] border border-[#26384D] hover:border-[#00D4FF]/60 hover:text-white'
+                }`}
               >
-                {/* Image Preview Container */}
-                <div
-                  onClick={() => onSelectArtwork(art)}
-                  className="relative h-64 sm:h-72 w-full bg-[#070A12] overflow-hidden cursor-pointer"
-                >
-                  <Image
-                    src={resolveImageUrl(art.path)}
-                    alt={art.title}
-                    fill
-                    priority
-                    referrerPolicy="no-referrer"
-                    className="object-contain p-2 group-hover:scale-105 transition-transform duration-500"
-                  />
+                {st.label}
+              </button>
+            ))}
+          </div>
 
-                  {/* Hover overlay hint */}
-                  <div className="absolute inset-0 bg-[#070A12]/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white">
-                    <div className="px-3 py-1.5 rounded-lg bg-[#06B6D4] text-[#070A12] font-mono font-bold text-xs flex items-center gap-1.5 shadow-lg">
-                      <ZoomIn className="w-3.5 h-3.5" />
-                      <span>Xem Toàn Màn Hình</span>
-                    </div>
-                  </div>
+          {/* Lọc theo Category động từ manifest */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(
+              [
+                { id: 'all', label: 'Mọi Phân Loại' },
+                { id: 'core', label: `CORE (${coreCount})` },
+                { id: 'outfit', label: `OUTFIT (${outfitCount})` },
+              ] as const
+            ).map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategoryFilter(cat.id)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer min-h-[36px] ${
+                  categoryFilter === cat.id
+                    ? 'bg-[#142338] text-[#00D4FF] border border-[#00D4FF]'
+                    : 'bg-[#070A12]/80 text-[#94A3B8] border border-[#1E2D42] hover:text-white'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
-                  {/* Verified Indicator */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-[#070A12]/80 text-[#34D399] border border-[#34D399]/40 backdrop-blur-md">
-                      WebP HD
-                    </span>
-                  </div>
-                </div>
+      {/* 2. Lưới Artwork (VERIFIED hiển thị ảnh thật; PENDING hiển thị thẻ chờ nhập binary có chủ đích) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {filteredArtworks.map((art) => {
+          const isVerified = art.isAvailableOnDisk && Boolean(art.path)
+          const isSelectedHero = selectedHeroArtwork?.id === art.id
 
-                {/* Title & Metadata (Well-spaced, multi-line wrapping) */}
-                <div className="p-4 border-t border-[#26384D] bg-[#0F172A] flex flex-col justify-between flex-1">
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <h4
-                        onClick={() => onSelectArtwork(art)}
-                        className="text-sm sm:text-base font-bold text-[#F1F5F9] group-hover:text-[#06B6D4] transition-colors leading-snug cursor-pointer break-words"
+          return (
+            <Card
+              key={art.id}
+              variant="panel"
+              className={`overflow-hidden transition-all flex flex-col justify-between ${
+                isSelectedHero
+                  ? 'border-[#00D4FF] bg-[#142338]/90 shadow-lg shadow-cyan-950/50'
+                  : isVerified
+                  ? 'border-[#26384D] bg-[#0F172A]/95 hover:border-[#00D4FF]/60'
+                  : 'border-[#1E2D42] bg-[#0B111E]/90'
+              }`}
+            >
+              <div>
+                {/* Khung hiển thị thị giác */}
+                <div className="relative h-56 w-full bg-[#070A12] border-b border-[#26384D] overflow-hidden flex items-center justify-center group">
+                  {isVerified ? (
+                    <>
+                      <Image
+                        src={art.path}
+                        alt={art.title}
+                        fill
+                        referrerPolicy="no-referrer"
+                        onClick={() => onOpenViewer(art)}
+                        className="object-contain p-2 group-hover:scale-105 transition-transform duration-500 cursor-pointer"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => onOpenViewer(art)}
+                        aria-label={`Phóng to ${art.title}`}
+                        className="absolute bottom-2.5 right-2.5 p-2.5 rounded-lg bg-[#070A12]/90 border border-[#26384D] text-[#F1F5F9] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-colors cursor-pointer min-w-[40px] min-h-[40px] flex items-center justify-center"
+                        title="Phóng to toàn màn hình"
                       >
-                        {art.title}
-                      </h4>
-                      <span className="text-[11px] font-mono text-[#A7B6C8] uppercase shrink-0 px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
-                        {art.category}
-                      </span>
-                    </div>
-                    {art.description && (
-                      <p className="text-xs text-[#A7B6C8] mt-1.5 line-clamp-2 leading-relaxed">
-                        {art.description}
+                        <Maximize2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  ) : (
+                    /* Thẻ chờ nhập binary WebP (Tuyệt đối không gắn <img> để tránh 404 hoặc lấy ảnh V1) */
+                    <div className="flex flex-col items-center justify-center text-center p-5 space-y-2.5 max-w-xs">
+                      <div className="w-11 h-11 rounded-xl bg-[#142338] border border-amber-500/40 flex items-center justify-center text-amber-400">
+                        <FileArchive className="w-5 h-5" />
+                      </div>
+                      <div className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wider">
+                        PENDING BINARY IMPORT
+                      </div>
+                      <p className="text-xs text-[#CBD5E1] leading-relaxed">
+                        Hồ sơ nguồn R3 ({art.filename || art.id}) đã xác thực metadata & SHA256, đang chờ đợt đồng bộ file nhị phân WebP lên release CDN.
                       </p>
+                      {art.sourceMetadata?.resolution && (
+                        <span className="text-[11px] font-mono text-[#94A3B8]">
+                          Chuẩn gốc: {art.sourceMetadata.resolution} · {art.batch || 'R3'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Nhãn phân loại góc trái */}
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-[#070A12]/90 text-[#00D4FF] border border-[#26384D]">
+                      {getCategoryLabel(art)}
+                    </span>
+                    {typeof art.order === 'number' && (
+                      <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#070A12]/90 text-[#CBD5E1] border border-[#1E2D42]">
+                        #{String(art.order).padStart(2, '0')}
+                      </span>
                     )}
                   </div>
 
-                  {/* Card bottom actions */}
-                  <div className="mt-3 pt-2 border-t border-[#1e293b] flex items-center justify-between text-xs font-mono text-slate-400">
-                    <button
-                      type="button"
-                      onClick={() => setActiveMetaDetail(activeMetaDetail?.id === art.id ? null : art)}
-                      className="inline-flex items-center gap-1 hover:text-cyan-400 text-[11px] text-slate-400 transition-colors cursor-pointer"
-                      title="Xem thông tin chi tiết tác phẩm"
-                    >
-                      <Info className="w-3 h-3 text-cyan-400" />
-                      <span>{activeMetaDetail?.id === art.id ? 'Ẩn thông tin' : 'Thông tin ảnh'}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onSelectArtwork(art)}
-                      className="inline-flex items-center gap-1 text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold transition-colors cursor-pointer"
-                    >
-                      <span>Xem ảnh</span>
-                      <ZoomIn className="w-3 h-3" />
-                    </button>
+                  {/* Nhãn trạng thái CDN góc phải */}
+                  <div className="absolute top-2.5 right-2.5">
+                    {isVerified ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#070A12]/90 text-[#34D399] border border-[#34D399]/40">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>VERIFIED</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-[#070A12]/90 text-amber-300 border border-amber-500/40">
+                        <Clock className="w-3 h-3" />
+                        <span>PENDING</span>
+                      </span>
+                    )}
                   </div>
+                </div>
 
-                  {/* Expanded metadata drawer inside card */}
-                  {activeMetaDetail?.id === art.id && (
-                    <div className="mt-2.5 p-2.5 rounded-lg bg-black/60 border border-cyan-950 text-[11px] font-mono text-slate-300 space-y-1">
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">File:</span>
-                        <span className="text-slate-200 truncate ml-2">{art.path.split('/').pop()}</span>
-                      </div>
-                      {art.dimensions && (
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Kích thước:</span>
-                          <span className="text-cyan-400">{art.dimensions.width} × {art.dimensions.height} px</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">MIME:</span>
-                        <span className="text-emerald-400 font-semibold">image/webp</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-500">Trạng thái:</span>
-                        <span className="text-emerald-400 font-semibold">HTTP 200 (Verified)</span>
-                      </div>
+                {/* Thông tin tác phẩm */}
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="text-sm sm:text-base font-bold text-white leading-snug">
+                      {art.title}
+                    </h4>
+                  </div>
+                  {art.filename && (
+                    <div className="text-[11px] font-mono text-[#00D4FF]">
+                      {art.filename}
                     </div>
                   )}
-                </div>
+                  {art.description && (
+                    <p className="text-xs sm:text-sm text-[#CBD5E1] line-clamp-2 leading-relaxed">
+                      {art.description}
+                    </p>
+                  )}
+                </CardContent>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-8 text-center rounded-2xl bg-[#0F172A] border border-[#26384D] space-y-3">
-            <Sparkles className="w-8 h-8 mx-auto text-[#06B6D4]" />
-            <h4 className="text-sm font-bold text-[#F1F5F9]">
-              Chưa Có Tác Phẩm WebP Chính Thức
-            </h4>
-            <p className="text-xs text-[#A7B6C8] max-w-sm mx-auto">
-              Nhân vật {character.classCharacterName} đang trong quá trình dựng mẫu artwork V2. Các ý tưởng thiết kế được lưu trữ ở phần bên dưới.
-            </p>
-          </div>
-        )}
+
+              {/* Thanh hành động đáy thẻ */}
+              <div className="p-4 pt-0 flex items-center gap-2">
+                {isVerified ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => onSelectHeroArtwork(art)}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px] ${
+                        isSelectedHero
+                          ? 'bg-[#00D4FF] text-[#070A12] border-[#00D4FF]'
+                          : 'bg-[#070A12] text-white border-[#26384D] hover:border-[#00D4FF]'
+                      }`}
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>{isSelectedHero ? 'Đang Hiển Thị Trên Sân Khấu' : 'Đặt Làm Ảnh Sân Khấu'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInspectedPendingArt(art)}
+                      title="Xem hồ sơ kỹ thuật R3/R4"
+                      className="p-2 rounded-lg bg-[#070A12] border border-[#26384D] text-[#CBD5E1] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setInspectedPendingArt(art)}
+                    className="w-full py-2 px-3 rounded-lg text-xs font-mono font-semibold bg-[#070A12] border border-[#26384D] text-[#CBD5E1] hover:text-white hover:border-amber-400/60 transition-colors cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px]"
+                  >
+                    <Info className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Xem Hồ Sơ Nguồn R3 (Metadata & SHA256)</span>
+                  </button>
+                )}
+              </div>
+            </Card>
+          )
+        })}
       </div>
 
-      {/* 2. THẺ HỒ SƠ LƯU TRỮ DANH MỤC (ARCHIVE PENDING CARDS - ZERO 404S) */}
-      {archiveArtworks.length > 0 && (
-        <div className="space-y-3 pt-2">
-          <button
-            type="button"
-            onClick={() => setShowArchiveSection(!showArchiveSection)}
-            className="w-full flex items-center justify-between p-3.5 rounded-xl bg-[#0F172A] border border-[#26384D] hover:border-[#3B526D] transition-colors text-left cursor-pointer select-none"
-          >
-            <div className="flex items-center gap-2.5">
-              <FileArchive className="w-4 h-4 text-[#FBBF24]" />
-              <span className="text-sm font-bold uppercase tracking-wider text-[#F1F5F9]">
-                Hồ Sơ Danh Mục Đang Chờ Đóng Gói WebP
-              </span>
-              <span className="text-xs font-mono text-[#FBBF24] font-bold">
-                ({archiveArtworks.length} Mục)
-              </span>
-            </div>
-            {showArchiveSection ? (
-              <ChevronUp className="w-5 h-5 text-[#A7B6C8]" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-[#A7B6C8]" />
-            )}
-          </button>
+      {/* Modal Chi Tiết Hồ Sơ Kỹ Thuật R3/R4 */}
+      {inspectedPendingArt && (
+        <Dialog
+          open={Boolean(inspectedPendingArt)}
+          onOpenChange={() => setInspectedPendingArt(null)}
+        >
+          <DialogContent className="max-w-lg text-white">
+            <DialogHeader>
+              <div className="flex items-center gap-2 text-xs font-mono text-[#00D4FF] uppercase">
+                <Layers className="w-4 h-4" />
+                <span>Hồ Sơ Kỹ Thuật Artwork ({character.releaseVersion?.toUpperCase() || 'R4'})</span>
+              </div>
+              <DialogTitle className="text-lg font-bold text-white mt-1">
+                {inspectedPendingArt.title}
+              </DialogTitle>
+              <DialogDescription className="text-xs font-mono text-[#CBD5E1]">
+                Asset ID: {inspectedPendingArt.id} · Trạng thái CDN:{' '}
+                <strong
+                  className={
+                    inspectedPendingArt.isAvailableOnDisk ? 'text-[#34D399]' : 'text-amber-300'
+                  }
+                >
+                  {inspectedPendingArt.cdnStatus || 'PENDING_BINARY_IMPORT'}
+                </strong>
+              </DialogDescription>
+            </DialogHeader>
 
-          {showArchiveSection && (
-            <div className="p-4 rounded-xl bg-[#070A12]/80 border border-[#26384D] space-y-4">
-              <div className="flex items-start gap-2.5 text-xs text-[#A7B6C8] leading-relaxed">
-                <AlertCircle className="w-4 h-4 text-[#FBBF24] shrink-0 mt-0.5" />
-                <span>
-                  Các tác phẩm dưới đây đã được phê duyệt trong hồ sơ nghệ thuật canonical.
-                  Để đảm bảo trải nghiệm Zero Broken Images, hệ thống trình bày dưới dạng thẻ metadata lưu trữ mà không tải file 404 trên mạng. Bấm vào bất kỳ thẻ nào để xem thông tin chi tiết.
-                </span>
+            <div className="space-y-3 mt-2 text-xs sm:text-sm">
+              <div className="p-3.5 rounded-xl bg-[#070A12] border border-[#26384D] space-y-2">
+                <div className="text-xs font-mono font-bold uppercase text-[#00D4FF]">
+                  Mô Tả Thị Giác
+                </div>
+                <p className="text-[#F1F5F9] leading-relaxed">
+                  {inspectedPendingArt.description}
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {archiveArtworks.map((art) => (
-                  <div
-                    key={art.id}
-                    onClick={() => onSelectArtwork(art)}
-                    className="p-3 rounded-xl bg-[#142338]/40 border border-[#26384D]/70 hover:border-[#FBBF24]/60 hover:bg-[#142338] transition-all cursor-pointer flex flex-col justify-between space-y-2 group"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-mono text-[#FBBF24] font-semibold">
-                          Chờ WebP
-                        </span>
-                        <span className="text-[11px] font-mono text-[#A7B6C8] uppercase">
-                          {art.category}
-                        </span>
-                      </div>
-                      <h5 className="text-xs sm:text-sm font-bold text-[#F1F5F9] group-hover:text-[#FBBF24] transition-colors line-clamp-1">
-                        {art.title}
-                      </h5>
-                      {art.description && (
-                        <p className="text-xs text-[#A7B6C8] line-clamp-2 leading-relaxed">
-                          {art.description}
-                        </p>
-                      )}
-                    </div>
+              <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
+                <div className="p-2.5 rounded-lg bg-[#070A12] border border-[#26384D]">
+                  <span className="text-[#94A3B8] block">Filename</span>
+                  <span className="text-white font-bold break-all">
+                    {inspectedPendingArt.filename || inspectedPendingArt.id}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[#070A12] border border-[#26384D]">
+                  <span className="text-[#94A3B8] block">Độ phân giải gốc</span>
+                  <span className="text-white font-bold">
+                    {inspectedPendingArt.sourceMetadata?.resolution ||
+                      (inspectedPendingArt.dimensions
+                        ? `${inspectedPendingArt.dimensions.width}x${inspectedPendingArt.dimensions.height}`
+                        : '1122x2000')}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[#070A12] border border-[#26384D]">
+                  <span className="text-[#94A3B8] block">Batch / Approval</span>
+                  <span className="text-[#34D399] font-bold">
+                    {inspectedPendingArt.batch || 'R3'} ·{' '}
+                    {inspectedPendingArt.sourceApprovalStatus || 'APPROVED'}
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[#070A12] border border-[#26384D]">
+                  <span className="text-[#94A3B8] block">Dung lượng gốc</span>
+                  <span className="text-white font-bold">
+                    {inspectedPendingArt.sourceMetadata?.fileSizeBytes
+                      ? `${Math.round(inspectedPendingArt.sourceMetadata.fileSizeBytes / 1024)} KB`
+                      : 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              {inspectedPendingArt.expectedSha256 && (
+                <div className="p-3 rounded-xl bg-[#070A12] border border-[#26384D] space-y-1 font-mono text-[11px]">
+                  <div className="flex items-center gap-1.5 text-[#94A3B8]">
+                    <Hash className="w-3.5 h-3.5 text-[#00D4FF]" />
+                    <span>Expected SHA-256 Checksum</span>
                   </div>
-                ))}
-              </div>
+                  <div className="text-[#00D4FF] break-all select-all">
+                    {inspectedPendingArt.expectedSha256}
+                  </div>
+                </div>
+              )}
+
+              {inspectedPendingArt.sourceMetadata?.notes && (
+                <div className="p-3 rounded-xl bg-[#070A12]/80 border border-[#26384D] text-xs text-[#CBD5E1]">
+                  <strong className="text-white">Ghi chú nguồn: </strong>
+                  {inspectedPendingArt.sourceMetadata.notes}
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   )

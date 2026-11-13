@@ -134,6 +134,8 @@ export interface ArtViewerProps {
 
 const DEFAULT_SPEEDS = [4, 6, 10] as const
 type SlideshowSpeed = (typeof DEFAULT_SPEEDS)[number]
+const EMPTY_ARTWORKS: NonNullable<ArtViewerProps['artworks']> = []
+const EMPTY_TAGS: string[] = []
 
 export function ArtViewer({
   isOpen,
@@ -144,7 +146,7 @@ export function ArtViewer({
   subtitle,
   category = 'lore',
   description,
-  tags = [],
+  tags = EMPTY_TAGS,
   onPrev,
   onNext,
   hasPrev = false,
@@ -152,7 +154,7 @@ export function ArtViewer({
   isAvailableOnDisk = true,
   currentIndex,
   totalCount,
-  artworks = [],
+  artworks = EMPTY_ARTWORKS,
   currentPilotId = 'valentine',
   currentPilotName = 'Valentine',
   currentPilotCallsign = 'Mercy Wing',
@@ -210,8 +212,9 @@ export function ArtViewer({
 
   // Initial Artwork Setup
   const initialShowcaseItem = useMemo<ShowcaseArtwork>(() => {
-    const cleanPath = imageSrc.startsWith('/') ? imageSrc.slice(1) : imageSrc
-    const matchedInArtworks = artworks.find((a) => a.path === imageSrc || a.path === cleanPath)
+    const safeImageSrc = typeof imageSrc === 'string' ? imageSrc : ''
+    const cleanPath = safeImageSrc.startsWith('/') ? safeImageSrc.slice(1) : safeImageSrc
+    const matchedInArtworks = artworks.find((a) => a.path === safeImageSrc || a.path === cleanPath)
     const assetId = matchedInArtworks?.id || cleanPath.split('/').pop() || 'art'
 
     // Auto-detect pilotId from canonical path pattern or filename prefix
@@ -305,6 +308,8 @@ export function ArtViewer({
   const [shuffleBag, setShuffleBag] = useState<ShowcaseArtwork[]>([])
   const [shuffleIndex, setShuffleIndex] = useState<number>(0)
 
+  const [imageLoadError, setImageLoadError] = useState<boolean>(false)
+
   // Refs for race conditions and timers
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
   const filmstripRef = useRef<HTMLDivElement>(null)
@@ -312,23 +317,38 @@ export function ArtViewer({
   const transitionTokenRef = useRef<number>(0)
   const wasPlayingBeforeBackgroundRef = useRef<boolean>(false)
   const prevIsOpenRef = useRef<boolean>(false)
+  const prevInitialKeyRef = useRef<string>(initialShowcaseItem.identityKey)
 
-  // Sync initial artwork when modal opens or external prop changes
+  // Sync initial artwork when modal opens or external imageSrc prop changes
   useEffect(() => {
     if (isOpen) {
-      if (!prevIsOpenRef.current) {
+      const justOpened = !prevIsOpenRef.current
+      const externalChanged = initialShowcaseItem.identityKey !== prevInitialKeyRef.current
+      if (justOpened) {
         setCurrentArtwork(initialShowcaseItem)
-      } else if (initialShowcaseItem.identityKey !== currentArtwork.identityKey) {
-        const currentList = pilotsArtworksMap[currentPilotId] || []
-        const oldIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
-        const newIdx = currentList.findIndex((a) => a.identityKey === initialShowcaseItem.identityKey)
-        const dir = newIdx >= oldIdx ? 1 : -1
-        setSlideDirection(dir)
-        setCurrentArtwork(initialShowcaseItem)
+        setNaturalDimensions(null)
+        setImageLoadError(false)
+        setCurrentScale(1)
+        prevInitialKeyRef.current = initialShowcaseItem.identityKey
+        if (!isRandomMode) {
+          setSelectedPilotIds([currentPilotId])
+        }
+      } else if (externalChanged) {
+        prevInitialKeyRef.current = initialShowcaseItem.identityKey
+        if (initialShowcaseItem.identityKey !== currentArtwork.identityKey) {
+          const currentList = pilotsArtworksMap[currentPilotId] || []
+          const oldIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
+          const newIdx = currentList.findIndex((a) => a.identityKey === initialShowcaseItem.identityKey)
+          const dir = newIdx >= oldIdx ? 1 : -1
+          setSlideDirection(dir)
+          setCurrentArtwork(initialShowcaseItem)
+          setNaturalDimensions(null)
+          setImageLoadError(false)
+        }
       }
     }
     prevIsOpenRef.current = isOpen
-  }, [isOpen, initialShowcaseItem, currentArtwork.identityKey, currentPilotId, pilotsArtworksMap])
+  }, [isOpen, initialShowcaseItem, currentArtwork.identityKey, currentPilotId, pilotsArtworksMap, isRandomMode])
 
   // Lock body scroll when open
   useEffect(() => {
@@ -780,6 +800,25 @@ export function ArtViewer({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
+  const currentPilotArtworks = useMemo(() => {
+    return pilotsArtworksMap[currentPilotId] || []
+  }, [pilotsArtworksMap, currentPilotId])
+
+  // Auto-scroll active thumbnail into center of filmstrip when artwork changes
+  useEffect(() => {
+    if (isOpen && showFilmstrip && filmstripRef.current) {
+      const activeEl = filmstripRef.current.querySelector('[data-active="true"]') as HTMLElement
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      }
+    }
+  }, [isOpen, currentArtwork.identityKey, showFilmstrip])
+
+  // Reset image error flag when switching artwork
+  useEffect(() => {
+    setImageLoadError(false)
+  }, [currentArtwork.identityKey])
+
   if (!isOpen) return null
 
   // Speed selection
@@ -839,20 +878,6 @@ export function ArtViewer({
     const actualScale = Math.max(1, Math.min(5, Math.max(scaleX, scaleY)))
     transformRef.current.setTransform(0, 0, actualScale)
   }
-
-  const currentPilotArtworks = useMemo(() => {
-    return pilotsArtworksMap[currentPilotId] || []
-  }, [pilotsArtworksMap, currentPilotId])
-
-  // Auto-scroll active thumbnail into center of filmstrip when artwork changes
-  useEffect(() => {
-    if (showFilmstrip && filmstripRef.current) {
-      const activeEl = filmstripRef.current.querySelector('[data-active="true"]') as HTMLElement
-      if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-      }
-    }
-  }, [currentArtwork.identityKey, showFilmstrip])
 
   const effectiveTotal = isRandomMode
     ? randomPool.length
@@ -1059,20 +1084,43 @@ export function ArtViewer({
                     }}
                     className="flex items-center justify-center select-none will-change-transform"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={currentArtwork.resolvedUrl}
-                      alt={currentArtwork.title}
-                      draggable={false}
-                      className="max-w-[94vw] max-h-[86vh] object-contain select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.95)]"
-                      onLoad={(e) => {
-                        const target = e.currentTarget
-                        setNaturalDimensions({
-                          width: target.naturalWidth,
-                          height: target.naturalHeight,
-                        })
-                      }}
-                    />
+                    {imageLoadError ? (
+                      <div className="z-20 max-w-sm text-center p-6 rounded-2xl bg-[#090D18]/95 border border-rose-500/40 shadow-2xl space-y-3 mx-4">
+                        <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-950/60 border border-rose-500/40 flex items-center justify-center text-rose-400">
+                          <FileArchive className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-sm font-bold text-white font-mono">{currentArtwork.title}</h4>
+                        <p className="text-xs text-rose-300 leading-relaxed">
+                          Không thể tải hình ảnh từ CDN. Vui lòng thử lại hoặc kiểm tra kết nối mạng.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setImageLoadError(false)}
+                          className="px-4 py-2 rounded-lg bg-[#142338] hover:bg-[#1E3553] border border-[#00D4FF]/50 text-xs font-mono font-bold text-[#00D4FF] cursor-pointer"
+                        >
+                          Thử tải lại
+                        </button>
+                      </div>
+                    ) : (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={currentArtwork.resolvedUrl}
+                        alt={currentArtwork.title}
+                        draggable={false}
+                        className="max-w-[94vw] max-h-[86vh] object-contain select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.95)]"
+                        onLoad={(e) => {
+                          setImageLoadError(false)
+                          const target = e.currentTarget
+                          setNaturalDimensions({
+                            width: target.naturalWidth,
+                            height: target.naturalHeight,
+                          })
+                        }}
+                        onError={() => {
+                          setImageLoadError(true)
+                        }}
+                      />
+                    )}
                   </motion.div>
                 </AnimatePresence>
               </TransformComponent>

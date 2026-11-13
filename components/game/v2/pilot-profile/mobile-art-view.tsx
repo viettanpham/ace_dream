@@ -1,12 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import {
   CharacterProfileV2,
   GalleryArtwork,
-  ATTRIBUTE_COLOR_CONFIG,
-  BaseAttributes,
 } from '@/lib/game/v2/character-profile-data'
 import { PilotAvatar } from './pilot-avatar'
 import {
@@ -16,6 +14,8 @@ import {
   FileArchive,
   Layers,
   ImageOff,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 
 interface MobileArtViewProps {
@@ -23,10 +23,12 @@ interface MobileArtViewProps {
   selectedCharacter: CharacterProfileV2
   onSelectCharacter: (char: CharacterProfileV2) => void
   selectedHeroArtwork: GalleryArtwork | null
+  onSelectHeroArtwork?: (artwork: GalleryArtwork) => void
   onOpenViewer: (artwork: GalleryArtwork) => void
   onSwitchToInfoView: () => void
   heroBackgroundMode: 'contextual' | 'clean'
   onChangeHeroBackgroundMode: (mode: 'contextual' | 'clean') => void
+  forceMobileView?: boolean
 }
 
 export function MobileArtView({
@@ -34,17 +36,24 @@ export function MobileArtView({
   selectedCharacter,
   onSelectCharacter,
   selectedHeroArtwork,
+  onSelectHeroArtwork,
   onOpenViewer,
   onSwitchToInfoView,
   heroBackgroundMode,
   onChangeHeroBackgroundMode,
+  forceMobileView = false,
 }: MobileArtViewProps) {
   const [heroImgError, setHeroImgError] = useState(false)
+  const filmstripRef = useRef<HTMLDivElement | null>(null)
+
+  const verifiedArtworks = selectedCharacter.artworks.filter(
+    (a) => a.isAvailableOnDisk && Boolean(a.path)
+  )
 
   const heroSrc =
     selectedHeroArtwork?.isAvailableOnDisk && selectedHeroArtwork.path
       ? selectedHeroArtwork.path
-      : selectedCharacter.fullbodyAssetPath || ''
+      : selectedCharacter.fullbodyAssetPath || verifiedArtworks[0]?.path || ''
 
   const isHeroAvailable = Boolean(heroSrc) && !heroImgError
 
@@ -52,19 +61,14 @@ export function MobileArtView({
     setHeroImgError(false)
   }, [heroSrc, selectedCharacter.id])
 
-  const attributeKeys: (keyof BaseAttributes)[] = ['atk', 'def', 'agi', 'ene', 'shd', 'luk']
-
   const handleOpenHeroInViewer = () => {
     if (!isHeroAvailable) return
     if (selectedHeroArtwork && selectedHeroArtwork.isAvailableOnDisk && selectedHeroArtwork.path) {
       onOpenViewer(selectedHeroArtwork)
       return
     }
-    const firstVerified = selectedCharacter.artworks.find(
-      (a) => a.isAvailableOnDisk && Boolean(a.path)
-    )
-    if (firstVerified) {
-      onOpenViewer(firstVerified)
+    if (verifiedArtworks.length > 0) {
+      onOpenViewer(verifiedArtworks[0])
     } else if (heroSrc) {
       onOpenViewer({
         id: `${selectedCharacter.id}-hero`,
@@ -78,10 +82,22 @@ export function MobileArtView({
     }
   }
 
+  const scrollFilmstrip = (dir: 'left' | 'right') => {
+    if (!filmstripRef.current) return
+    filmstripRef.current.scrollBy({
+      left: dir === 'left' ? -180 : 180,
+      behavior: 'smooth',
+    })
+  }
+
   return (
-    <div className="md:hidden flex flex-col min-h-[calc(100vh-100px)] bg-[#070A12] text-[#F1F5F9] select-none">
-      {/* 1. HORIZONTAL ROSTER CAROUSEL (44px+ tap targets) */}
-      <div className="p-2.5 border-b border-[#1E2D42] bg-[#0B111E]/95">
+    <div
+      className={`${
+        forceMobileView ? 'flex' : 'md:hidden flex'
+      } flex-col min-h-[calc(100vh-100px)] bg-[#070A12] text-[#F1F5F9] select-none`}
+    >
+      {/* 1. HORIZONTAL PORTRAIT ROSTER STRIP (Matches Approved Mobile Concept) */}
+      <div className="px-2.5 py-2 border-b border-[#1E2D42] bg-[#080D18]/95">
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {characters.map((char) => {
             const isSelected = char.id === selectedCharacter.id
@@ -90,18 +106,22 @@ export function MobileArtView({
                 key={char.id}
                 type="button"
                 onClick={() => onSelectCharacter(char)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl border shrink-0 transition-all cursor-pointer min-h-[46px] ${
+                className={`flex flex-col items-center p-1.5 rounded-xl border shrink-0 transition-all cursor-pointer min-w-[66px] ${
                   isSelected
-                    ? 'bg-[#142338] border-[#00D4FF] text-[#00D4FF] shadow-[0_0_12px_rgba(0,212,255,0.25)]'
-                    : 'bg-[#070A12] border-[#1E2D42] text-[#CBD5E1]'
+                    ? 'bg-[#13263E] border-[#00D4FF] shadow-[0_0_12px_rgba(0,212,255,0.3)]'
+                    : 'bg-[#070A12]/80 border-[#1E2D42] opacity-80 hover:opacity-100'
                 }`}
               >
                 <PilotAvatar
                   character={char}
                   isSelected={isSelected}
-                  className="w-8 h-8 rounded-full"
+                  className="w-12 h-12 rounded-lg"
                 />
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                <span
+                  className={`text-[10px] font-mono font-bold truncate max-w-[60px] mt-1 ${
+                    isSelected ? 'text-[#00D4FF]' : 'text-[#E2E8F0]'
+                  }`}
+                >
                   {char.classCharacterName}
                 </span>
               </button>
@@ -110,65 +130,77 @@ export function MobileArtView({
         </div>
       </div>
 
-      {/* 2. MOBILE HERO STAGE */}
-      <div className="relative flex-1 min-h-[380px] flex flex-col justify-between overflow-hidden bg-[#060911]">
+      {/* 2. MOBILE HERO STAGE WITH ARTWORK-DERIVED AMBIENT BACKGROUND */}
+      <div className="relative flex-1 min-h-[420px] flex flex-col justify-between overflow-hidden bg-[#050811]">
         {heroBackgroundMode === 'contextual' ? (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,212,255,0.18)_0%,_rgba(6,9,17,0.95)_75%)] pointer-events-none" />
+          <>
+            {isHeroAvailable && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <Image
+                  src={heroSrc}
+                  alt=""
+                  fill
+                  referrerPolicy="no-referrer"
+                  className="object-cover object-center scale-125 blur-2xl opacity-35 saturate-150"
+                />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,212,255,0.14)_0%,_rgba(5,8,17,0.92)_80%)] pointer-events-none" />
+          </>
         ) : (
-          <div className="absolute inset-0 bg-[#05070E] pointer-events-none" />
+          <div className="absolute inset-0 bg-[#04060C] pointer-events-none" />
         )}
 
-        {/* Top Bar inside Stage */}
-        <div className="relative z-20 p-3 flex items-start justify-between gap-2">
-          <div className="bg-[#0B111E]/95 backdrop-blur-md border border-[#1E2D42] rounded-xl px-3 py-2">
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#00D4FF]" />
-              <span className="font-mono font-black text-sm text-white">
-                {selectedCharacter.classCharacterName}
-              </span>
-            </div>
-            <p className="text-xs text-[#00D4FF] font-mono">
-              {selectedCharacter.role}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1.5">
+        {/* Right Floating Stage Controls (44x44px touch targets) */}
+        <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
+          {isHeroAvailable && (
             <button
               type="button"
-              onClick={() =>
-                onChangeHeroBackgroundMode(
-                  heroBackgroundMode === 'contextual' ? 'clean' : 'contextual'
-                )
-              }
-              aria-label="Chuyển đổi nền sân khấu"
-              className="w-11 h-11 rounded-xl bg-[#0B111E]/95 border border-[#1E2D42] text-[#F1F5F9] flex items-center justify-center backdrop-blur-md cursor-pointer"
+              onClick={handleOpenHeroInViewer}
+              aria-label="Xem ảnh toàn màn hình (Full Screen)"
+              title="Xem ảnh toàn màn hình (Full Screen)"
+              className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-[#00D4FF] hover:bg-[#38BDF8] text-[#070A12] font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-[0_0_18px_rgba(0,212,255,0.45)] cursor-pointer active:scale-95 touch-manipulation"
             >
-              {heroBackgroundMode === 'contextual' ? (
-                <Layers className="w-4 h-4 text-[#00D4FF]" />
-              ) : (
-                <ImageOff className="w-4 h-4 text-[#00D4FF]" />
-              )}
+              <Maximize2 className="w-4 h-4 stroke-[2.5]" />
+              <span>Full Screen</span>
             </button>
+          )}
 
-            {isHeroAvailable && (
-              <button
-                type="button"
-                onClick={handleOpenHeroInViewer}
-                aria-label="Xem ảnh toàn màn hình"
-                className="w-11 h-11 rounded-xl bg-[#0B111E]/95 border border-[#1E2D42] text-[#00D4FF] flex items-center justify-center backdrop-blur-md cursor-pointer"
-              >
-                <Maximize2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => onChangeHeroBackgroundMode('contextual')}
+            aria-label="Bối cảnh trạm"
+            className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 backdrop-blur-md cursor-pointer touch-manipulation ${
+              heroBackgroundMode === 'contextual'
+                ? 'bg-[#142338]/95 border-[#00D4FF] text-[#00D4FF]'
+                : 'bg-[#090F1C]/85 border-[#1E2D42] text-[#CBD5E1]'
+            }`}
+          >
+            <Layers className="w-4 h-4 shrink-0" />
+            <span>Bối cảnh</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onChangeHeroBackgroundMode('clean')}
+            aria-label="Tách nền nhân vật"
+            className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 backdrop-blur-md cursor-pointer touch-manipulation ${
+              heroBackgroundMode === 'clean'
+                ? 'bg-[#142338]/95 border-[#00D4FF] text-[#00D4FF]'
+                : 'bg-[#090F1C]/85 border-[#1E2D42] text-[#CBD5E1]'
+            }`}
+          >
+            <ImageOff className="w-4 h-4 shrink-0" />
+            <span>Tách nền</span>
+          </button>
         </div>
 
         {/* Center Character Portrait / Fullbody */}
-        <div className="relative z-10 flex-1 min-h-[270px] w-full flex items-center justify-center p-2">
+        <div className="relative z-10 flex-1 min-h-[280px] w-full flex items-center justify-center p-2">
           {isHeroAvailable ? (
             <div
               onClick={handleOpenHeroInViewer}
-              className="relative w-full h-[290px] flex items-center justify-center cursor-zoom-in"
+              className="relative w-full h-[300px] flex items-center justify-center cursor-zoom-in"
             >
               <Image
                 src={heroSrc}
@@ -193,42 +225,91 @@ export function MobileArtView({
           )}
         </div>
 
-        {/* Bottom Card Summary + 6 Stats + CTA to Info View */}
-        <div className="relative z-20 p-3.5 bg-gradient-to-t from-[#070A12] via-[#070A12]/98 to-transparent space-y-3">
-          {selectedCharacter.characterQuote && (
-            <p className="text-xs sm:text-sm text-white italic line-clamp-2 text-center px-2">
-              &ldquo;{selectedCharacter.characterQuote}&rdquo;
+        {/* Bottom Identity + Thumbnail Filmstrip + Quote + CTA to Info View */}
+        <div className="relative z-20 p-3.5 bg-gradient-to-t from-[#050811] via-[#070A12]/95 to-transparent space-y-2.5">
+          {/* Identity Overlay */}
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#00D4FF]" />
+              <h2 className="text-xl font-black text-white tracking-wide uppercase">
+                {selectedCharacter.classCharacterName}
+              </h2>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/30">
+                {selectedCharacter.personaCode || selectedCharacter.callsign}
+              </span>
+            </div>
+            <p className="text-xs text-[#00D4FF] font-medium">
+              {selectedCharacter.role} · {selectedCharacter.fullLoreName}
             </p>
+          </div>
+
+          {/* Mobile Thumbnail Filmstrip (< [Thumb 1] [Thumb 2] [Thumb 3] >) */}
+          {verifiedArtworks.length > 0 && (
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <button
+                type="button"
+                onClick={() => scrollFilmstrip('left')}
+                aria-label="Cuộn ảnh sang trái"
+                className="w-8 h-12 rounded-lg bg-[#0B111E] border border-[#1E2D42] text-[#CBD5E1] flex items-center justify-center shrink-0 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div
+                ref={filmstripRef}
+                className="flex-1 flex items-center gap-2 overflow-x-auto py-0.5 scrollbar-none"
+              >
+                {verifiedArtworks.map((art) => {
+                  const isActive =
+                    (selectedHeroArtwork && selectedHeroArtwork.id === art.id) ||
+                    (!selectedHeroArtwork && art.path === heroSrc)
+                  return (
+                    <button
+                      key={art.id}
+                      type="button"
+                      onClick={() => {
+                        if (onSelectHeroArtwork) onSelectHeroArtwork(art)
+                      }}
+                      className={`relative w-12 h-12 rounded-lg overflow-hidden border shrink-0 transition-all cursor-pointer ${
+                        isActive
+                          ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/40'
+                          : 'border-[#1E2D42] opacity-75'
+                      }`}
+                    >
+                      <Image
+                        src={art.path}
+                        alt={art.title}
+                        fill
+                        sizes="48px"
+                        referrerPolicy="no-referrer"
+                        className="object-cover object-top"
+                      />
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => scrollFilmstrip('right')}
+                aria-label="Cuộn ảnh sang phải"
+                className="w-8 h-12 rounded-lg bg-[#0B111E] border border-[#1E2D42] text-[#CBD5E1] flex items-center justify-center shrink-0 cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           )}
 
-          {selectedCharacter.baseAttributes ? (
-            <div className="grid grid-cols-6 gap-1.5 p-2 rounded-xl bg-[#0B111E]/95 border border-[#1E2D42]">
-              {attributeKeys.map((key) => {
-                const val = selectedCharacter.baseAttributes![key]
-                const cfg = ATTRIBUTE_COLOR_CONFIG[key]
-                return (
-                  <div
-                    key={key}
-                    className="flex flex-col items-center justify-center py-1 rounded-lg bg-[#070A12]"
-                  >
-                    <span className="text-[10px] font-mono text-[#CBD5E1]">{cfg.label}</span>
-                    <span className={`text-xs font-mono font-black ${cfg.textClass}`}>
-                      {val}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="p-2 rounded-xl bg-[#0B111E]/95 border border-[#1E2D42] text-center text-xs font-mono text-[#CBD5E1]">
-              SYSTEM Stats: Chưa đăng ký trong FND-1 Registry
-            </div>
+          {selectedCharacter.characterQuote && (
+            <p className="text-xs text-[#E2E8F0] italic line-clamp-2 px-1">
+              &ldquo;{selectedCharacter.characterQuote}&rdquo;
+            </p>
           )}
 
           <button
             type="button"
             onClick={onSwitchToInfoView}
-            className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0284C7] text-[#070A12] font-mono font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,212,255,0.35)] active:scale-[0.99] cursor-pointer min-h-[48px]"
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0284C7] text-[#070A12] font-mono font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,212,255,0.35)] active:scale-[0.99] cursor-pointer min-h-[46px]"
           >
             <FileText className="w-4 h-4" />
             <span>Mở Hồ Sơ Chi Tiết & Cốt Truyện (INFO VIEW)</span>

@@ -19,15 +19,34 @@ export async function GET(req: NextRequest) {
 
     const { snapshot, fromCache, usingFallbackSnapshot, lastUpdateError } = result
 
+    const pilotVerificationSummary = snapshot.characters.map((c) => ({
+      pilotId: c.id,
+      displayName: c.classCharacterName,
+      fullName: c.fullLoreName,
+      verifiedCount:
+        c.verifiedArtworkCount ??
+        c.artworks.filter((a) => a.isAvailableOnDisk && Boolean(a.path)).length,
+      sourceRecordCount: c.totalSourceArtworkCount ?? c.artworks.length,
+      storyChapters: c.chapters.length,
+    }))
+
     return NextResponse.json({
       success: true,
       channel: snapshot.channel,
+      channelName: snapshot.channel.channel,
       releaseId: snapshot.manifest.releaseId,
       releaseVersion: snapshot.releaseVersion,
+      releaseTag: snapshot.releaseTag,
       releaseCommitSha: snapshot.releaseCommitSha,
+      releaseManifestUrl: snapshot.channel.releaseManifestUrl,
       releaseBaseUrl: snapshot.releaseBaseUrl,
       status: snapshot.manifest.status,
+      channelStatus: snapshot.channel.status,
+      updatedAt: snapshot.channel.updatedAt,
+      previewOnly: snapshot.channel.previewOnly ?? true,
+      notes: snapshot.channel.notes || [],
       counts: snapshot.manifest.counts,
+      pilotVerificationSummary,
       loadedAt: snapshot.loadedAt,
       fromCache,
       usingFallbackSnapshot,
@@ -64,15 +83,34 @@ export async function POST(req: NextRequest) {
 
     const { snapshot, fromCache, usingFallbackSnapshot, lastUpdateError } = result
 
+    const pilotVerificationSummary = snapshot.characters.map((c) => ({
+      pilotId: c.id,
+      displayName: c.classCharacterName,
+      fullName: c.fullLoreName,
+      verifiedCount:
+        c.verifiedArtworkCount ??
+        c.artworks.filter((a) => a.isAvailableOnDisk && Boolean(a.path)).length,
+      sourceRecordCount: c.totalSourceArtworkCount ?? c.artworks.length,
+      storyChapters: c.chapters.length,
+    }))
+
     return NextResponse.json({
       success: true,
       channel: snapshot.channel,
+      channelName: snapshot.channel.channel,
       releaseId: snapshot.manifest.releaseId,
       releaseVersion: snapshot.releaseVersion,
+      releaseTag: snapshot.releaseTag,
       releaseCommitSha: snapshot.releaseCommitSha,
+      releaseManifestUrl: snapshot.channel.releaseManifestUrl,
       releaseBaseUrl: snapshot.releaseBaseUrl,
       status: snapshot.manifest.status,
+      channelStatus: snapshot.channel.status,
+      updatedAt: snapshot.channel.updatedAt,
+      previewOnly: snapshot.channel.previewOnly ?? true,
+      notes: snapshot.channel.notes || [],
       counts: snapshot.manifest.counts,
+      pilotVerificationSummary,
       loadedAt: snapshot.loadedAt,
       fromCache,
       usingFallbackSnapshot,

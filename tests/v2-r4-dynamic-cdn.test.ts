@@ -1,10 +1,11 @@
 /**
- * STARFRONT WORLD V2 — FND-8 DYNAMIC CDN R4 -> R5+ INTEGRATION TEST SUITE
+ * STARFRONT WORLD V2 — FND-8 DYNAMIC CDN R4 CUTOVER (v4.0-assets-r4) -> R5+ INTEGRATION TEST SUITE
  *
  * Kiểm thử toàn diện:
- * 1. Dữ liệu thật R4 Preview từ jsDelivr CDN (12 Profiles, 50/297 Verified WebP, 5 chương Valentine, 11 Story Empty State).
- * 2. Giả lập nâng cấp R5 (Valentine 8 chương, thêm ảnh VERIFIED mới, thêm Pilot thứ 2 có Story, thêm Pilot thứ 13).
- * 3. Bảo mật đường dẫn & Chống lỗi (Path traversal `../`, untrusted origin, commit mismatch, channel 404, atomic rollback về R4 khi R6 lỗi).
+ * 1. Dữ liệu thật R4 Cutover từ jsDelivr CDN (tag: v4.0-assets-r4, commit: 816585651f1f06f1cafeefc6a4809ab1f52f3484,
+ *    12 Profiles, 297/297 Verified WebP, Valentine 42/42, 5 chương Valentine, 11 Story Empty State).
+ * 2. Giả lập nâng cấp R5 (Valentine 8 chương, thêm Pilot thứ 2 có Story, thêm Pilot thứ 13).
+ * 3. Bảo mật đường dẫn & Chống lỗi (Path traversal `../`, untrusted origin, commit mismatch, channel 404, atomic rollback).
  */
 
 import assert from 'node:assert/strict'
@@ -16,29 +17,53 @@ import {
 } from '../lib/game/v2/content-release-resolver'
 import { contentConfig } from '../lib/game/v2/content-config'
 
-const R4_COMMIT_SHA = '3a3a4f267ebb7beb357d3cff39cd33382612f1d0'
+const R4_COMMIT_SHA = '816585651f1f06f1cafeefc6a4809ab1f52f3484'
+const R4_RELEASE_TAG = 'v4.0-assets-r4'
 const R5_COMMIT_SHA = 'b5b5b5b57ebb7beb357d3cff39cd33382612f1d0'
+
+const EXPECTED_PILOT_VERIFIED_COUNTS: Record<string, number> = {
+  valentine: 42,
+  kaelen: 30,
+  alviss: 10,
+  lyra: 30,
+  selena: 30,
+  fortuna: 30,
+  eric: 15,
+  marcus: 10,
+  aria: 30,
+  rhea: 30,
+  nova: 30,
+  victor: 10,
+}
 
 async function runTests() {
   console.log('=================================================================')
-  console.log('STARFRONT V2 — KIỂM THỬ TÍCH HỢP DYNAMIC CDN R4 -> R5+')
+  console.log('STARFRONT V2 — KIỂM THỬ TÍCH HỢP DYNAMIC CDN R4 (v4.0-assets-r4) -> R5+')
   console.log('=================================================================\n')
 
   // ==========================================================================
-  // TEST 1: DỮ LIỆU THẬT R4 PREVIEW TRÊN JSDELIVR CDN
+  // TEST 1: DỮ LIỆU THẬT R4 CUTOVER TRÊN JSDELIVR CDN (297/297 VERIFIED)
   // ==========================================================================
-  console.log('▶ [TEST 1] Kiểm tra kết nối và phân giải dữ liệu thật R4 Preview trên CDN...')
+  console.log('▶ [TEST 1] Kiểm tra kết nối và phân giải dữ liệu thật R4 Cutover trên CDN...')
   const liveResolver = new ContentReleaseResolver()
-  const r4Result = await liveResolver.resolveSnapshot()
+  const r4Result = await liveResolver.resolveSnapshot({ forceRefresh: true })
   const r4 = r4Result.snapshot
 
   assert.equal(r4.releaseVersion, 'r4', 'Phiên bản kênh hiện tại phải là r4')
+  assert.equal(r4.releaseTag, R4_RELEASE_TAG, 'releaseTag phải là v4.0-assets-r4')
   assert.equal(
     r4.releaseCommitSha,
     R4_COMMIT_SHA,
-    'releaseCommitSha phải khớp với commit R4 đã pin'
+    'releaseCommitSha phải khớp với commit R4 đã pin (816585651f1f06f1cafeefc6a4809ab1f52f3484)'
   )
   assert.equal(r4.characters.length, 12, 'R4 phải nạp động đúng 12 Pilot từ profiles/index.json')
+
+  // Kiểm tra Valentine: 42/42 VERIFIED WebP
+  const valentine = r4.characters.find((c) => c.id === 'valentine')
+  assert.ok(valentine, 'Phải tìm thấy hồ sơ Valentine trong R4')
+  assert.equal(valentine.artworks.length, 42, 'Valentine phải có đúng 42 bản ghi Gallery')
+  const valentineVerified = valentine.artworks.filter((a) => a.isAvailableOnDisk && Boolean(a.path))
+  assert.equal(valentineVerified.length, 42, 'Valentine Gallery phải đạt 42/42 ảnh VERIFIED trên R4 CDN')
 
   // Kiểm tra Kaelen: 30/30 VERIFIED WebP
   const kaelen = r4.characters.find((c) => c.id === 'kaelen')
@@ -46,21 +71,24 @@ async function runTests() {
   assert.equal(kaelen.artworks.length, 30, 'Kaelen phải có 30 bản ghi Gallery')
   const kaelenVerified = kaelen.artworks.filter((a) => a.isAvailableOnDisk && Boolean(a.path))
   assert.equal(kaelenVerified.length, 30, 'Kaelen phải có 30/30 ảnh VERIFIED trên R4 CDN')
-  for (const art of kaelenVerified) {
-    assert.ok(
-      art.path.includes(R4_COMMIT_SHA),
-      `URL ảnh Kaelen phải được pin chặt với commit SHA R4: ${art.path}`
-    )
-    assert.ok(
-      !art.path.startsWith('/images/'),
-      `Tuyệt đối không dùng đường dẫn V1 /images/: ${art.path}`
-    )
-  }
 
-  // Kiểm tra tổng số ảnh VERIFIED và PENDING trên toàn bộ 12 Pilot trong R4
+  // Kiểm tra tổng số ảnh VERIFIED trên toàn bộ 12 Pilot trong R4 (297/297)
   let totalVerifiedR4 = 0
   let totalPendingR4 = 0
   for (const char of r4.characters) {
+    const expectedCount = EXPECTED_PILOT_VERIFIED_COUNTS[char.id]
+    assert.ok(expectedCount !== undefined, `Pilot ${char.id} phải nằm trong danh mục 12 Pilot chuẩn`)
+    assert.equal(
+      char.verifiedArtworkCount,
+      expectedCount,
+      `${char.id} phải có đúng ${expectedCount}/${expectedCount} ảnh VERIFIED theo manifest R4`
+    )
+    assert.equal(
+      char.totalSourceArtworkCount,
+      expectedCount,
+      `${char.id} phải có tổng số bản ghi nguồn = ${expectedCount}`
+    )
+
     assert.ok(char.characterQuote.length > 0, `${char.id} phải có characterQuote riêng`)
     assert.ok(char.shortDescription.length > 0, `${char.id} phải có shortDescription riêng`)
     assert.notEqual(
@@ -82,24 +110,20 @@ async function runTests() {
           ),
           `Ảnh VERIFIED của ${char.id} phải trỏ đúng tới releaseBaseUrl R4: ${art.path}`
         )
+        assert.ok(
+          !art.path.startsWith('/images/'),
+          `Tuyệt đối không dùng đường dẫn V1 /images/: ${art.path}`
+        )
       } else {
         totalPendingR4++
-        assert.equal(art.cdnStatus, 'PENDING_BINARY_IMPORT')
-        assert.equal(
-          art.path,
-          '',
-          `Bản ghi PENDING của ${char.id} (${art.id}) không được phép tạo URL trình duyệt`
-        )
       }
     }
   }
 
-  assert.equal(totalVerifiedR4, 50, 'Tổng số ảnh VERIFIED trên R4 phải đúng 50 WebP')
-  assert.equal(totalPendingR4, 247, 'Tổng số bản ghi PENDING trên R4 phải đúng 247')
+  assert.equal(totalVerifiedR4, 297, 'Tổng số ảnh VERIFIED trên R4 phải đạt đủ 297/297 WebP')
+  assert.equal(totalPendingR4, 0, 'Tổng số bản ghi PENDING trên R4 phải bằng 0')
 
   // Kiểm tra Story của Valentine (5 chương) và 11 Pilot còn lại (Empty State)
-  const valentine = r4.characters.find((c) => c.id === 'valentine')
-  assert.ok(valentine, 'Phải có hồ sơ Valentine')
   assert.equal(valentine.storyAvailable, true, 'Valentine phải có Story trong R4')
   assert.equal(valentine.chapters.length, 5, 'Valentine phải có đúng 5 chương trong R4')
 
@@ -118,8 +142,7 @@ async function runTests() {
   assert.equal(chap05.revision, '02', 'Chương 05 phải là revision 02')
 
   // Kiểm tra scene artwork trong CH01 của Valentine:
-  // valentine-portrait đã VERIFIED trong R4 -> cdnVerified: true
-  // valentine-story-001.webp đang PENDING trong R4 -> cdnVerified: false (không tạo URL lỗi)
+  // Trong R4 Cutover (297/297), cả valentine-portrait và valentine-story-001.webp đều đã VERIFIED!
   const ch01Bundle = await liveResolver.getPilotStoryChapter('valentine', 'chap-01')
   assert.ok(ch01Bundle, 'Phải đọc được toàn văn Chương 01 của Valentine')
   const sceneBlocks = ch01Bundle.chapter.blocks.filter((b) => b.type === 'scene')
@@ -127,7 +150,7 @@ async function runTests() {
   const portraitScene = sceneBlocks.find((b) =>
     b.artworks?.some((a) => a.assetId === 'valentine-portrait')
   )
-  const unverifiedStoryScene = sceneBlocks.find((b) =>
+  const unverifiedWorldScene = sceneBlocks.find((b) =>
     b.artworks?.some(
       (a) => a.assetId === 'world-elysia-asteroid-belt-establishing-01'
     )
@@ -138,9 +161,9 @@ async function runTests() {
     'Scene dùng valentine-portrait (đã VERIFIED hash trong R4) phải được bật cdnVerified=true'
   )
   assert.equal(
-    unverifiedStoryScene?.cdnVerified,
+    unverifiedWorldScene?.cdnVerified,
     false,
-    'Scene dùng world-elysia-asteroid-belt-establishing-01 (artworkUrl=null, chưa nhập binary trong R4) phải giữ cdnVerified=false để không gây 404'
+    'Scene dùng world-elysia-asteroid-belt-establishing-01 (artworkUrl=null) phải giữ cdnVerified=false để không gây 404'
   )
 
   // Kiểm tra 11 Pilot còn lại đều hiển thị Story Empty State
@@ -151,7 +174,7 @@ async function runTests() {
     assert.equal(p.chapters.length, 0, `${p.id} không được phép có chương giả trong R4`)
     assert.ok(p.storyEmptyState && p.storyEmptyState.length > 0, `${p.id} phải có storyEmptyState`)
   }
-  console.log('  ✓ PASS: R4 Preview (12 Pilots, 50 Verified / 247 Pending WebP, 5 Valentine Chapters, 11 Empty States).\n')
+  console.log('  ✓ PASS: R4 Cutover (12 Pilots, 297/297 Verified WebP, Valentine 42/42, 5 Valentine Chapters, 11 Empty States).\n')
 
   // ==========================================================================
   // TEST 2: GIẢ LẬP NÂNG CẤP SANG R5 (8 CHƯƠNG VALENTINE, PILOT THỨ 13, STORY MỚI)
@@ -162,7 +185,7 @@ async function runTests() {
   const r5BaseUrl = `https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@${R5_COMMIT_SHA}/starfront-world-assets/releases/r5/`
 
   const mockFetch = async (url: string, init?: RequestInit): Promise<Response> => {
-    // 1. Channel entrypoint
+    // 1. Channel entrypoint (both jsDelivr and GitHub raw)
     if (url.endsWith('/channels/pilot-v2-preview.json')) {
       if (activeMockChannelVersion === 'r4') {
         return fetch(url, init)
@@ -176,6 +199,7 @@ async function runTests() {
           schemaVersion: 'starfront-content-channel-v1',
           channel: 'pilot-v2-preview',
           releaseVersion: 'r5',
+          releaseTag: 'v4.0-assets-r5',
           releaseCommitSha: R5_COMMIT_SHA,
           releaseManifestUrl: `${r5BaseUrl}manifest.json`,
           releaseBaseUrl: r5BaseUrl,
@@ -196,6 +220,7 @@ async function runTests() {
           JSON.stringify({
             schemaVersion: 'starfront-content-release-v1',
             releaseId: 'r5',
+            releaseTag: 'v4.0-assets-r5',
             status: 'RELEASE_CANDIDATE',
             entries: {
               profiles: 'profiles/index.json',
@@ -207,8 +232,8 @@ async function runTests() {
               profileFiles: 13,
               storyPilotCount: 2,
               storyChapters: 9,
-              sourceGalleryArtworkRecords: 300,
-              physicallyVerifiedGalleryArtwork: 55,
+              sourceGalleryArtworkRecords: 298,
+              physicallyVerifiedGalleryArtwork: 298,
             },
           }),
           { status: 200 }
@@ -329,18 +354,6 @@ async function runTests() {
           }),
           { status: 200 }
         )
-      }
-
-      if (subPath === 'galleries/valentine.json') {
-        // Trong R5, valentine-story-001 được chuyển sang VERIFIED!
-        const valGal = JSON.parse(JSON.stringify(r4.pilotGalleriesMap['valentine']))
-        for (const img of valGal.images) {
-          if (img.assetId === 'valentine-story-001' || img.filename === 'valentine-story-001.webp') {
-            img.cdnStatus = 'VERIFIED'
-            img.cdnPath = 'assets/pilots/valentine/valentine-story-001.webp'
-          }
-        }
-        return new Response(JSON.stringify(valGal), { status: 200 })
       }
 
       if (subPath.startsWith('galleries/')) {
@@ -617,7 +630,7 @@ async function runTests() {
 
   console.log('  ✓ PASS: Bảo mật đường dẫn & Atomic Rollback hoạt động chính xác.\n')
   console.log('=================================================================')
-  console.log('TẤT CẢ KIỂM THỬ R4 -> R5+ ĐỀU PASS 100%!')
+  console.log('TẤT CẢ KIỂM THỬ R4 (v4.0-assets-r4) -> R5+ ĐỀU PASS 100%!')
   console.log('=================================================================')
 }
 

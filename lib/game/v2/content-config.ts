@@ -25,6 +25,9 @@ export interface StarfrontContentConfig {
 export const DEFAULT_PILOT_V2_CHANNEL_URL =
   'https://cdn.jsdelivr.net/gh/viettanpham/starfront-assets@main/starfront-world-assets/channels/pilot-v2-preview.json'
 
+export const GITHUB_RAW_PILOT_V2_CHANNEL_URL =
+  'https://raw.githubusercontent.com/viettanpham/starfront-assets/main/starfront-world-assets/channels/pilot-v2-preview.json'
+
 export function getContentConfig(
   overrides?: Partial<StarfrontContentConfig>
 ): StarfrontContentConfig {

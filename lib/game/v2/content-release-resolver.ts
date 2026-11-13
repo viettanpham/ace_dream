@@ -19,6 +19,8 @@
 import {
   contentConfig,
   getContentConfig,
+  DEFAULT_PILOT_V2_CHANNEL_URL,
+  GITHUB_RAW_PILOT_V2_CHANNEL_URL,
   type StarfrontContentConfig,
 } from './content-config'
 import {
@@ -38,6 +40,7 @@ export interface StarfrontChannelManifest {
   schemaVersion: string
   channel: string
   releaseVersion: string
+  releaseTag: string
   releaseCommitSha: string
   releaseManifestUrl: string
   releaseBaseUrl: string
@@ -290,6 +293,7 @@ export interface ReleaseSnapshot {
   channel: StarfrontChannelManifest
   manifest: StarfrontReleaseManifest
   releaseVersion: string
+  releaseTag: string
   releaseCommitSha: string
   releaseBaseUrl: string
   profilesIndex: R4ProfilesIndex
@@ -539,23 +543,45 @@ export function validateChannelManifest(
   }
 
   const commitSha = obj.releaseCommitSha.trim()
+  const releaseVersion = obj.releaseVersion.trim()
   const manifestUrl = validateTrustedUrl(obj.releaseManifestUrl, config, commitSha)
   const baseUrlRaw = obj.releaseBaseUrl.trim().endsWith('/')
     ? obj.releaseBaseUrl.trim()
     : `${obj.releaseBaseUrl.trim()}/`
   const baseUrl = validateTrustedUrl(baseUrlRaw, config, commitSha)
 
+  const notesArr = Array.isArray(obj.notes) ? obj.notes.map(String) : undefined
+  let releaseTag =
+    typeof obj.releaseTag === 'string' && obj.releaseTag.trim()
+      ? obj.releaseTag.trim()
+      : ''
+
+  if (!releaseTag && notesArr) {
+    for (const note of notesArr) {
+      const match = note.match(/\b(v\d+\.\d+-assets-r\d+[a-z0-9.-]*)\b/i)
+      if (match) {
+        releaseTag = match[1]
+        break
+      }
+    }
+  }
+  if (!releaseTag) {
+    const verClean = releaseVersion.toLowerCase().replace(/^r/, '')
+    releaseTag = `v${verClean}.0-assets-${releaseVersion.toLowerCase()}`
+  }
+
   return {
     schemaVersion: obj.schemaVersion,
     channel: typeof obj.channel === 'string' ? obj.channel : 'pilot-v2-preview',
-    releaseVersion: obj.releaseVersion.trim(),
+    releaseVersion,
+    releaseTag,
     releaseCommitSha: commitSha,
     releaseManifestUrl: manifestUrl,
     releaseBaseUrl: baseUrl,
     status: obj.status.trim(),
     updatedAt: typeof obj.updatedAt === 'string' ? obj.updatedAt : undefined,
     previewOnly: Boolean(obj.previewOnly),
-    notes: Array.isArray(obj.notes) ? obj.notes.map(String) : undefined,
+    notes: notesArr,
   }
 }
 
@@ -606,15 +632,33 @@ function formatArtworkTitle(
   displayName: string,
   rec: R4GalleryImageRecord
 ): string {
-  const fn = rec.filename.toLowerCase()
-  if (fn.includes('-fullbody')) return `${displayName} — Fullbody Canonical`
-  if (fn.includes('-portrait')) return `${displayName} — Portrait Canonical`
-  if (fn.includes('-combat')) return `${displayName} — Combat Stance`
-  if (fn.includes('-closeup')) return `${displayName} — Closeup Portrait`
-  if (fn.includes('-activity')) return `${displayName} — Daily Activity`
-  const outfitMatch = fn.match(/outfit-(\d+)/i)
+  const fn = (rec.filename || rec.assetId || '').toLowerCase()
+  if (fn.includes('-fullbody')) return `${displayName} — Toàn Thân Chuẩn (Fullbody)`
+  if (fn.includes('-portrait-command')) return `${displayName} — Chân Dung Chỉ Huy`
+  if (fn.includes('-portrait')) return `${displayName} — Chân Dung Chuẩn (Portrait)`
+  if (fn.includes('-combat')) return `${displayName} — Tư Thế Tác Chiến (Combat)`
+  if (fn.includes('-closeup')) return `${displayName} — Cận Cảnh (Close-up)`
+  if (fn.includes('-casual')) return `${displayName} — Trang Phục Thường Ngày`
+  const actMatch = fn.match(/activity[-_]*(\d+)/i)
+  if (actMatch) {
+    return `${displayName} — Hoạt Động Thường Nhật #${actMatch[1]}`
+  }
+  if (fn.includes('-activity')) return `${displayName} — Hoạt Động Thường Nhật`
+  const evtMatch = fn.match(/event[-_]*(\d+)/i)
+  if (evtMatch) {
+    return `${displayName} — Sự Kiện Đặc Biệt #${evtMatch[1]}`
+  }
+  const uniMatch = fn.match(/uniform[-_]*(\d+)/i)
+  if (uniMatch) {
+    return `${displayName} — Quân Phục Chuẩn #${uniMatch[1]}`
+  }
+  const storyMatch = fn.match(/story[-_]*(\d+)/i)
+  if (storyMatch) {
+    return `${displayName} — Minh Họa Cốt Truyện #${storyMatch[1]}`
+  }
+  const outfitMatch = fn.match(/outfit[-_]*(\d+)/i)
   if (outfitMatch) {
-    return `${displayName} — Outfit #${outfitMatch[1]}`
+    return `${displayName} — Trang Phục #${outfitMatch[1]}`
   }
   return `${displayName} — ${rec.assetId}`
 }
@@ -1392,6 +1436,7 @@ export class ContentReleaseResolver {
       channel,
       manifest,
       releaseVersion: channel.releaseVersion,
+      releaseTag: channel.releaseTag,
       releaseCommitSha: commitSha,
       releaseBaseUrl: baseUrl,
       profilesIndex,
@@ -1403,6 +1448,41 @@ export class ContentReleaseResolver {
       characters,
       loadedAt: new Date().toISOString(),
     }
+  }
+
+  /**
+   * Tải Channel Manifest với cơ chế chống stale cache `@main` của jsDelivr:
+   * Khi URL kênh là `DEFAULT_PILOT_V2_CHANNEL_URL` (`@main` trên jsDelivr),
+   * đối chiếu thêm với `GITHUB_RAW_PILOT_V2_CHANNEL_URL` để luôn nhận ngay commit mới nhất
+   * ngay cả khi CDN edge node chưa hết TTL cache của nhánh `@main`.
+   */
+  private async fetchFreshChannelManifest(
+    forceRefresh: boolean
+  ): Promise<StarfrontChannelManifest> {
+    const primaryRaw = await this.fetchJson<unknown>(this.config.channelUrl, {
+      bypassCache: forceRefresh,
+    })
+    const primaryChannel = validateChannelManifest(primaryRaw, this.config)
+
+    if (this.config.channelUrl === DEFAULT_PILOT_V2_CHANNEL_URL) {
+      try {
+        const githubRaw = await this.fetchJson<unknown>(GITHUB_RAW_PILOT_V2_CHANNEL_URL, {
+          bypassCache: true,
+        })
+        const githubChannel = validateChannelManifest(githubRaw, this.config)
+        if (githubChannel.releaseCommitSha !== primaryChannel.releaseCommitSha) {
+          const ghDate = githubChannel.updatedAt || ''
+          const cdnDate = primaryChannel.updatedAt || ''
+          if (ghDate >= cdnDate) {
+            return githubChannel
+          }
+        }
+      } catch {
+        // Nếu GitHub raw bị giới hạn hoặc mockFetch trong test không định nghĩa, dùng kết quả primaryChannel
+      }
+    }
+
+    return primaryChannel
   }
 
   /**
@@ -1438,15 +1518,12 @@ export class ContentReleaseResolver {
 
     this.inFlightPromise = (async (): Promise<ResolveSnapshotResult> => {
       try {
-        const rawChannel = await this.fetchJson<unknown>(this.config.channelUrl, {
-          bypassCache: forceRefresh,
-        })
-        const channel = validateChannelManifest(rawChannel, this.config)
+        const channel = await this.fetchFreshChannelManifest(forceRefresh)
         this.lastChannelCheckAt = Date.now()
 
         // Kiểm tra xem commit SHA này đã được nạp hoàn chỉnh trong bộ nhớ chưa
         const cachedForCommit = this.snapshotsByCommit.get(channel.releaseCommitSha)
-        if (cachedForCommit) {
+        if (cachedForCommit && !forceRefresh) {
           this.activeSnapshot = cachedForCommit
           this.lastUpdateError = null
           return {

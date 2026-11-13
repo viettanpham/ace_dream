@@ -140,6 +140,27 @@ export function GalleryTab({
             <span className="px-2.5 py-1 rounded-lg bg-[#142338] border border-[#26384D] text-white font-bold">
               TỔNG HỒ SƠ: {totalSourceCount}
             </span>
+
+            {verifiedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const firstVerified =
+                    (selectedHeroArtwork?.isAvailableOnDisk && selectedHeroArtwork.path
+                      ? selectedHeroArtwork
+                      : null) ||
+                    allArtworks.find((a) => a.isAvailableOnDisk && Boolean(a.path))
+                  if (firstVerified) {
+                    onOpenViewer(firstVerified)
+                  }
+                }}
+                className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0284C7] hover:from-[#38BDF8] hover:to-[#00D4FF] text-[#070A12] font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,212,255,0.4)] cursor-pointer active:scale-95 transition-all touch-manipulation"
+                title="Mở chế độ xem ảnh toàn màn hình (Full Screen Gallery)"
+              >
+                <Maximize2 className="w-4 h-4 stroke-[2.5]" />
+                <span>Xem Full Screen ({verifiedCount} Ảnh)</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -228,12 +249,16 @@ export function GalleryTab({
                       />
                       <button
                         type="button"
-                        onClick={() => onOpenViewer(art)}
-                        aria-label={`Phóng to ${art.title}`}
-                        className="absolute bottom-2.5 right-2.5 p-2.5 rounded-lg bg-[#070A12]/90 border border-[#26384D] text-[#F1F5F9] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-colors cursor-pointer min-w-[40px] min-h-[40px] flex items-center justify-center"
-                        title="Phóng to toàn màn hình"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onOpenViewer(art)
+                        }}
+                        aria-label={`Xem toàn màn hình ${art.title}`}
+                        className="absolute bottom-2.5 right-2.5 z-10 px-3 py-2 rounded-xl bg-[#090D18]/95 hover:bg-[#00D4FF] border-2 border-[#00D4FF] text-[#00D4FF] hover:text-[#070A12] font-mono text-xs font-black uppercase tracking-wider transition-all cursor-pointer min-w-[44px] min-h-[44px] flex items-center justify-center gap-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.9)] active:scale-95 touch-manipulation"
+                        title="Phóng to toàn màn hình (Full Screen)"
                       >
-                        <Maximize2 className="w-4 h-4" />
+                        <Maximize2 className="w-4 h-4 stroke-[2.5]" />
+                        <span>Full Screen</span>
                       </button>
                     </>
                   ) : (
@@ -305,26 +330,37 @@ export function GalleryTab({
               </div>
 
               {/* Thanh hành động đáy thẻ */}
-              <div className="p-4 pt-0 flex items-center gap-2">
+              <div className="p-4 pt-0 flex flex-wrap items-center gap-2">
                 {isVerified ? (
                   <>
                     <button
                       type="button"
+                      onClick={() => onOpenViewer(art)}
+                      className="flex-1 min-w-[140px] py-2.5 px-3 rounded-lg text-xs font-mono font-black uppercase tracking-wider bg-[#00D4FF] hover:bg-[#38BDF8] text-[#070A12] border border-[#00D4FF] transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[44px] shadow-[0_0_15px_rgba(0,212,255,0.25)] active:scale-95 touch-manipulation"
+                      title="Xem ảnh toàn màn hình (Full Screen)"
+                    >
+                      <Maximize2 className="w-4 h-4 stroke-[2.5]" />
+                      <span>Xem Full Screen</span>
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => onSelectHeroArtwork(art)}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px] ${
+                      className={`py-2.5 px-3 rounded-lg text-xs font-mono font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 min-h-[44px] touch-manipulation ${
                         isSelectedHero
-                          ? 'bg-[#00D4FF] text-[#070A12] border-[#00D4FF]'
+                          ? 'bg-[#142338] text-[#00D4FF] border-[#00D4FF]'
                           : 'bg-[#070A12] text-white border-[#26384D] hover:border-[#00D4FF]'
                       }`}
+                      title="Đặt làm ảnh hiển thị trên sân khấu nhân vật"
                     >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>{isSelectedHero ? 'Đang Hiển Thị Trên Sân Khấu' : 'Đặt Làm Ảnh Sân Khấu'}</span>
+                      <Sparkles className="w-3.5 h-3.5 text-[#00D4FF]" />
+                      <span>{isSelectedHero ? 'Đang Ở Sân Khấu' : 'Đặt Sân Khấu'}</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setInspectedPendingArt(art)}
                       title="Xem hồ sơ kỹ thuật R3/R4"
-                      className="p-2 rounded-lg bg-[#070A12] border border-[#26384D] text-[#CBD5E1] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-colors cursor-pointer min-h-[40px] min-w-[40px] flex items-center justify-center"
+                      aria-label="Xem hồ sơ kỹ thuật R3/R4"
+                      className="p-2.5 rounded-lg bg-[#070A12] border border-[#26384D] text-[#CBD5E1] hover:text-[#00D4FF] hover:border-[#00D4FF] transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation"
                     >
                       <Info className="w-4 h-4" />
                     </button>
@@ -333,9 +369,9 @@ export function GalleryTab({
                   <button
                     type="button"
                     onClick={() => setInspectedPendingArt(art)}
-                    className="w-full py-2 px-3 rounded-lg text-xs font-mono font-semibold bg-[#070A12] border border-[#26384D] text-[#CBD5E1] hover:text-white hover:border-amber-400/60 transition-colors cursor-pointer flex items-center justify-center gap-1.5 min-h-[40px]"
+                    className="w-full py-2.5 px-3 rounded-lg text-xs font-mono font-semibold bg-[#070A12] border border-[#26384D] text-[#CBD5E1] hover:text-white hover:border-amber-400/60 transition-colors cursor-pointer flex items-center justify-center gap-1.5 min-h-[44px] touch-manipulation"
                   >
-                    <Info className="w-3.5 h-3.5 text-amber-400" />
+                    <Info className="w-4 h-4 text-amber-400" />
                     <span>Xem Hồ Sơ Nguồn R3 (Metadata & SHA256)</span>
                   </button>
                 )}

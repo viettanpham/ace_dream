@@ -58,6 +58,13 @@ const pilotGalleryCache = new Map<string, ShowcaseArtwork[]>();
 const preloadedUrlCache = new Set<string>();
 
 /**
+ * Clears in-memory showcase gallery cache when CDN channel/release is refreshed
+ */
+export function clearShowcaseGalleryCache(): void {
+  pilotGalleryCache.clear();
+}
+
+/**
  * Creates unique global identity key for an artwork
  */
 export function buildArtworkIdentityKey(pilotId: string, assetIdOrFilename: string, path: string): string {
@@ -88,8 +95,6 @@ export async function fetchShowcasePilotGallery(
     role: 'Tactical Pilot',
   };
 
-  const portraitPath = '';
-
   try {
     const res = await fetch(`/api/runtime/gallery/${cleanId}`, {
       signal: abortSignal,
@@ -115,6 +120,18 @@ export async function fetchShowcasePilotGallery(
     const rawPilotName = data.pilotName || meta.name || cleanId;
     const cleanPilotName = rawPilotName.replace(/^[a-z0-9-_]+\s*-\s*/i, '').trim();
 
+    // Determine verified R4 portrait URL from the pilot's own verified artworks
+    const portraitItem =
+      sourceList.find(
+        (it: any) =>
+          it &&
+          it.isAvailableOnDisk !== false &&
+          it.path &&
+          String(it.filename || it.id || '').toLowerCase().includes('-portrait')
+      ) ||
+      sourceList.find((it: any) => it && it.isAvailableOnDisk !== false && it.path);
+    const portraitPath = portraitItem?.path ? String(portraitItem.path).trim() : '';
+
     const result: ShowcaseArtwork[] = [];
 
     for (const item of sourceList) {
@@ -136,8 +153,8 @@ export async function fetchShowcasePilotGallery(
         rawTitle.match(/outfit[-_\s]*(\d+)/i) ||
         (item.filename || '').match(/outfit[-_\s]*(\d+)/i) ||
         (item.assetId || '').match(/outfit[-_\s]*(\d+)/i);
-      if (outfitMatch) {
-        naturalTitle = `Trang phục ${outfitMatch[1].padStart(3, '0')}`;
+      if (outfitMatch && !rawTitle.includes('—')) {
+        naturalTitle = `${cleanPilotName} — Trang phục #${outfitMatch[1].padStart(3, '0')}`;
       }
 
       const cleanPath = String(item.path).trim();
@@ -160,12 +177,14 @@ export async function fetchShowcasePilotGallery(
         resolvedUrl,
         title: naturalTitle,
         description,
-        curatedDescription: item.curatedDescription,
-        category: item.category || item.roleCategory || 'lore',
+        curatedDescription: item.curatedDescription || item.description,
+        category: item.rawCategory || item.category || item.roleCategory || 'CORE',
         role: item.role,
-        width: item.width,
-        height: item.height,
-        dimensions: item.width && item.height ? { width: item.width, height: item.height } : undefined,
+        width: item.width || item.dimensions?.width,
+        height: item.height || item.dimensions?.height,
+        dimensions:
+          item.dimensions ||
+          (item.width && item.height ? { width: item.width, height: item.height } : undefined),
         sha256: item.sha256 || item.expectedSha256,
         isAvailableOnDisk: true,
         status: 'verified_webp',

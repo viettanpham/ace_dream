@@ -122,25 +122,25 @@ export function FullscreenArtworkViewer({
       role="dialog"
       aria-modal="true"
       aria-label="Fullscreen Artwork Inspector"
-      className="fixed inset-0 z-50 flex flex-col bg-slate-950/95 backdrop-blur-md select-none"
+      className="fixed inset-0 z-[9999] flex flex-col bg-slate-950/95 backdrop-blur-md select-none"
     >
       {/* Top HUD Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-500/30 bg-slate-900/80">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-400 font-mono text-xs">
+      <div className="flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-cyan-500/30 bg-slate-900/90">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/40 text-cyan-400 font-mono text-xs shrink-0">
             <span className="font-bold">{currentIndex + 1}</span>
             <span className="text-cyan-600">/</span>
             <span>{items.length}</span>
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-100 font-mono truncate">
+              <h2 className="text-xs sm:text-sm font-semibold text-slate-100 font-mono truncate">
                 {currentItem.fileName}
               </h2>
               {currentItem.diffStatus && (
                 <span
-                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold uppercase tracking-wider ${
+                  className={`text-[10px] font-mono px-1.5 py-0.2 rounded font-bold uppercase tracking-wider shrink-0 ${
                     currentItem.diffStatus === 'ADDED'
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                       : currentItem.diffStatus === 'CHANGED'
@@ -154,7 +154,7 @@ export function FullscreenArtworkViewer({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
+            <div className="flex items-center gap-2 text-xs text-slate-400 truncate">
               <span className="text-cyan-400 font-medium">{currentItem.pilotName}</span>
               <span>·</span>
               <span className="capitalize">{currentItem.category}</span>
@@ -204,11 +204,13 @@ export function FullscreenArtworkViewer({
 
           {/* Close button */}
           <button
+            type="button"
             onClick={onClose}
             aria-label="Đóng viewer"
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 hover:text-rose-400 hover:border-rose-500/50 text-slate-400 border border-slate-700 transition"
+            className="h-10 min-w-[44px] px-3 rounded-lg bg-rose-950/95 hover:bg-rose-600 text-white border-2 border-rose-500/90 font-mono text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0 shadow-lg"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 stroke-[2.5]" />
+            <span>Đóng</span>
           </button>
         </div>
       </div>

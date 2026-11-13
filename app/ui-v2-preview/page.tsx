@@ -281,7 +281,7 @@ export default function UIV2PreviewPage() {
 
       {previewSection === 'profile' ? (
         <div className={viewportContainerStyles}>
-          <PilotProfileV2 />
+          <PilotProfileV2 forceMobileView={isSimulatedMobile} />
         </div>
       ) : previewSection === 'primitives' ? (
         <main className={`py-6 sm:py-8 space-y-10 ${viewportContainerStyles}`}>

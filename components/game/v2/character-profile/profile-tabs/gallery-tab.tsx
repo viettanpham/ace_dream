@@ -72,20 +72,19 @@ export function GalleryTab({ character, onInspectArtwork }: GalleryTabProps) {
                   <span>WebP Verified</span>
                 </span>
 
-                {/* Nút phóng to / soi tranh (Touch target >= 44px) */}
+                {/* Nút phóng to / soi tranh (Touch target >= 44px, luôn hiện nút góc dưới trên mobile) */}
                 <button
+                  type="button"
                   onClick={() => onInspectArtwork(art)}
-                  className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer min-h-[44px]"
-                  title="Mở trình soi tranh chi tiết"
+                  className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 rounded-xl bg-cyan-500 px-3.5 py-2 text-xs font-mono font-black uppercase text-black shadow-xl hover:bg-cyan-400 transition-all cursor-pointer min-h-[44px] min-w-[44px]"
+                  title="Xem ảnh toàn màn hình (Full Screen)"
                 >
-                  <div className="flex items-center gap-2 rounded-full bg-cyan-500 px-4 py-2.5 text-sm font-black text-black shadow-xl hover:bg-cyan-400 transition-colors">
-                    <ZoomIn className="size-4" />
-                    <span>Soi Tranh Chi Tiết</span>
-                  </div>
+                  <ZoomIn className="size-4" />
+                  <span>Full Screen</span>
                 </button>
               </div>
 
-              <div className="p-4 space-y-1.5 border-t border-slate-800/80 bg-slate-900/80">
+              <div className="p-4 space-y-2 border-t border-slate-800/80 bg-slate-900/80">
                 <div className="flex items-center justify-between">
                   <h5 className="font-bold text-base text-slate-100 group-hover:text-cyan-300 transition-colors">
                     {art.title}
@@ -101,6 +100,14 @@ export function GalleryTab({ character, onInspectArtwork }: GalleryTabProps) {
                   <span>Mã: {art.id}</span>
                   <span className="text-emerald-400 font-semibold">{art.path}</span>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => onInspectArtwork(art)}
+                  className="w-full mt-2 py-2.5 px-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-mono text-xs font-black uppercase flex items-center justify-center gap-1.5 min-h-[44px] cursor-pointer"
+                >
+                  <ZoomIn className="size-4" />
+                  <span>Xem Full Screen</span>
+                </button>
               </div>
             </div>
           ))}

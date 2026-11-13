@@ -181,17 +181,17 @@ export function ImmersiveStoryReader({
   const isReview = effectiveEditorial === 'REVIEW' || isReconstructed
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#060911]/98 backdrop-blur-xl text-[#F1F5F9] overflow-hidden animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[9980] flex flex-col bg-[#060911]/98 backdrop-blur-xl text-[#F1F5F9] overflow-hidden animate-in fade-in duration-200">
       {/* Top Reader Navigation Bar */}
-      <header className="h-14 shrink-0 border-b border-[#1E2D42] bg-[#090E1A]/95 px-4 sm:px-6 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
+      <header className="h-14 shrink-0 border-b border-[#1E2D42] bg-[#090E1A]/95 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
           <div className="w-8 h-8 rounded-lg bg-[#00D4FF]/15 border border-[#00D4FF]/40 flex items-center justify-center text-[#00D4FF] shrink-0">
             <BookOpen className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#00D4FF]">
-                {pilotName} // STORY CHRONICLE
+              <span className="text-[11px] sm:text-xs font-mono font-bold uppercase tracking-wider text-[#00D4FF] truncate">
+                {pilotName} // STORY
               </span>
               <span className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#142338] text-[#CBD5E1] border border-[#26384D]">
                 {pilotCallsign}
@@ -203,7 +203,7 @@ export function ImmersiveStoryReader({
                 </span>
               )}
             </div>
-            <h2 className="text-sm font-bold text-white truncate">
+            <h2 className="text-xs sm:text-sm font-bold text-white truncate">
               {chapterMeta
                 ? `Chương ${String(chapterMeta.chapterNumber).padStart(2, '0')}: ${chapterMeta.title}`
                 : 'Đang tải chương...'}
@@ -212,12 +212,12 @@ export function ImmersiveStoryReader({
         </div>
 
         {/* Chapter Selector Dropdown & Close */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <select
             aria-label="Chọn chương truyện"
             value={activeChapterId}
             onChange={(e) => setActiveChapterId(e.target.value)}
-            className="px-3 py-1.5 rounded-lg bg-[#0E1626] border border-[#26384D] text-xs font-mono text-white focus:outline-none focus:border-[#00D4FF] min-h-[38px]"
+            className="max-w-[130px] sm:max-w-[260px] truncate px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#0E1626] border border-[#26384D] text-xs font-mono text-white focus:outline-none focus:border-[#00D4FF] min-h-[40px]"
           >
             {chapters.map((c) => {
               const ed = (c.editorialStatus || c.status || '').toUpperCase()
@@ -239,10 +239,11 @@ export function ImmersiveStoryReader({
             type="button"
             onClick={onClose}
             aria-label="Đóng trình đọc truyện"
-            className="w-10 h-10 rounded-lg bg-[#0E1626] border border-[#263842] hover:border-rose-500/60 text-[#CBD5E1] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="h-10 min-w-[40px] px-2.5 rounded-lg bg-rose-950/90 hover:bg-rose-600 border border-rose-500/80 text-white flex items-center justify-center gap-1 transition-colors cursor-pointer shrink-0"
             title="Đóng trình đọc truyện (ESC)"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 stroke-[2.5]" />
+            <span className="text-xs font-mono font-bold hidden sm:inline">Đóng</span>
           </button>
         </div>
       </header>
@@ -551,25 +552,63 @@ export function ImmersiveStoryReader({
       {/* Lightbox Modal for Verified Story Artwork */}
       {lightboxArt && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightboxArt.title}
           onClick={() => setLightboxArt(null)}
-          className="fixed inset-0 z-50 bg-black/95 flex flex-col items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-between p-3 sm:p-6 select-none animate-in fade-in duration-200"
         >
-          <div className="max-w-4xl w-full flex flex-col items-center gap-4">
+          {/* Top Bar with Title & Prominent Close (X) Button */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-4xl flex items-center justify-between gap-3 px-3 py-2 rounded-full bg-[#090D18]/95 border border-[#1E2D42] shadow-2xl"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1 pl-1">
+              <ImageIcon className="w-4 h-4 text-[#00D4FF] shrink-0" />
+              <span className="text-xs font-mono font-bold text-white truncate">
+                {lightboxArt.title}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLightboxArt(null)}
+              aria-label="Đóng ảnh toàn màn hình"
+              className="h-10 min-w-[44px] px-3.5 rounded-full bg-rose-950/95 hover:bg-rose-600 border-2 border-rose-500/90 text-white font-mono text-xs font-black uppercase flex items-center justify-center gap-1.5 shadow-xl cursor-pointer shrink-0 active:scale-95"
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+              <span>Đóng</span>
+            </button>
+          </div>
+
+          {/* Center Image */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="max-w-4xl w-full flex-1 min-h-0 flex flex-col items-center justify-center gap-3 my-2"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={lightboxArt.url}
               alt={lightboxArt.title}
-              className="max-h-[80vh] max-w-full object-contain rounded-lg border border-[#26384D]"
+              className="max-h-[72vh] max-w-full object-contain rounded-lg border border-[#26384D] shadow-2xl"
             />
-            <div className="text-center max-w-2xl">
-              <h4 className="text-sm font-mono font-bold text-[#00D4FF] uppercase">
-                {lightboxArt.title}
-              </h4>
-              <p className="text-xs sm:text-sm text-[#F1F5F9] mt-1 italic">
-                {lightboxArt.caption}
-              </p>
-            </div>
+            {lightboxArt.caption && (
+              <div className="text-center max-w-2xl px-2">
+                <p className="text-xs sm:text-sm text-[#F1F5F9] italic">
+                  &ldquo;{lightboxArt.caption}&rdquo;
+                </p>
+              </div>
+            )}
           </div>
+
+          {/* Bottom Quick Exit Pill for One-Handed Phone Mode */}
+          <button
+            type="button"
+            onClick={() => setLightboxArt(null)}
+            className="px-5 py-2.5 rounded-full bg-[#090D18]/95 hover:bg-rose-950 border border-rose-500/70 text-rose-200 font-mono text-xs font-bold flex items-center gap-2 shadow-2xl cursor-pointer min-h-[44px]"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+            <span>Thoát chế độ toàn màn hình</span>
+          </button>
         </div>
       )}
     </div>

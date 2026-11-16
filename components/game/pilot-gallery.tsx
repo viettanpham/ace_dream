@@ -1351,16 +1351,16 @@ export function PilotGallery({
       {/* 6. LIGHTBOX / HIGH-RES MODAL PREVIEW WITH MOBILE PAN & PINCH ZOOM */}
       {lightboxArtwork && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-2 sm:p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-2 sm:p-4 backdrop-blur-md"
           onClick={closeLightbox}
         >
           <div
-            className="relative flex flex-col h-[94vh] max-h-[95vh] w-full max-w-5xl overflow-hidden rounded-sm border border-cyan-500/60 bg-panel shadow-2xl"
+            className="relative flex flex-col h-[92vh] max-h-[95vh] w-full max-w-5xl overflow-hidden rounded-sm border border-cyan-500/60 bg-panel shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex flex-wrap items-center justify-between border-b border-border/60 bg-black/90 px-3 py-2.5 sm:px-4 sm:py-3 gap-2">
-              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="flex items-center justify-between border-b border-border/60 bg-black/95 px-3 py-2.5 sm:px-4 sm:py-3 gap-2">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                 <div className="font-display text-xs sm:text-sm font-bold text-white uppercase tracking-wider truncate">
                   {lightboxArtwork.title}
                 </div>
@@ -1369,7 +1369,7 @@ export function PilotGallery({
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                 {/* Zoom out button */}
                 <button
                   onClick={handleZoomOut}
@@ -1411,7 +1411,7 @@ export function PilotGallery({
                   href={lightboxArtwork.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white transition-colors"
+                  className="hidden sm:inline-flex rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white transition-colors"
                   title="Mở ảnh gốc trong tab mới"
                 >
                   <ExternalLink className="size-3.5" />
@@ -1420,18 +1420,21 @@ export function PilotGallery({
                 <a
                   href={lightboxArtwork.url}
                   download
-                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white transition-colors"
+                  className="hidden sm:inline-flex rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white transition-colors"
                   title="Tải ảnh gốc về máy"
                 >
                   <Download className="size-3.5" />
                 </a>
 
                 <button
+                  type="button"
                   onClick={closeLightbox}
-                  className="rounded border border-border/60 bg-black/60 p-1.5 text-slate-300 hover:text-white hover:border-red-400 cursor-pointer transition-colors"
+                  aria-label="Đóng (ESC)"
+                  className="rounded-md border-2 border-rose-500/90 bg-rose-950/95 hover:bg-rose-600 px-2.5 py-1.5 min-h-[38px] min-w-[44px] text-white font-mono text-xs font-bold flex items-center justify-center gap-1 cursor-pointer transition-colors shrink-0 shadow-lg"
                   title="Đóng (ESC)"
                 >
-                  <X className="size-4" />
+                  <X className="size-4 stroke-[2.5]" />
+                  <span>Đóng</span>
                 </button>
               </div>
             </div>

@@ -2,238 +2,124 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
-import { CharacterProfileV2, GalleryArtwork } from '@/lib/game/v2/character-profile-data'
-import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
+import {
+  CharacterProfileV2,
+  GalleryArtwork,
+} from '@/lib/game/v2/character-profile-data'
 import { PilotAvatar } from './pilot-avatar'
 import {
   Maximize2,
-  Radar,
+  FileText,
   Sparkles,
+  FileArchive,
+  Layers,
+  ImageOff,
   ChevronLeft,
   ChevronRight,
-  Shield,
-  Heart,
-  FileText,
-  Image as ImageIcon,
-  ZoomIn,
-  Grid,
-  Play,
-  Pause,
 } from 'lucide-react'
 
 interface MobileArtViewProps {
-  roster: CharacterProfileV2[]
-  character: CharacterProfileV2
+  characters: CharacterProfileV2[]
+  selectedCharacter: CharacterProfileV2
   onSelectCharacter: (char: CharacterProfileV2) => void
-  backgroundMode: 'standard' | 'tactical'
-  onToggleBackgroundMode: (mode: 'standard' | 'tactical') => void
+  selectedHeroArtwork: GalleryArtwork | null
+  onSelectHeroArtwork?: (artwork: GalleryArtwork) => void
+  onOpenViewer: (artwork: GalleryArtwork) => void
   onSwitchToInfoView: () => void
-  onOpenArtViewer: (art?: GalleryArtwork, contextList?: GalleryArtwork[]) => void
-  onNavigateToGallery?: () => void
+  heroBackgroundMode: 'contextual' | 'clean'
+  onChangeHeroBackgroundMode: (mode: 'contextual' | 'clean') => void
+  forceMobileView?: boolean
 }
 
-/**
- * STARFRONT WORLD V2 — MOBILE ART VIEW (FND-8.2.3.E.0 HOTFIX)
- * 
- * Khắc phục hoàn toàn lỗi Carousel không đồng bộ:
- * - Single Source of Truth: `selectedArtworkIndex` điều khiển đồng bộ Hero Image, Active Thumbnail, Thumbnail Scroll, Title, Category, Description và Viewer Index.
- * - Nút Prev/Next trực tiếp trên tranh chuyển đổi mượt mà giữa các tác phẩm của phi công.
- * - Thumbnail carousel hỗ trợ hiển thị toàn bộ tác phẩm khả dụng, tự động cuộn vào vùng nhìn thấy.
- * - Bổ sung nút bấm [XEM GALLERY — N ẢNH] rõ ràng và đẹp mắt.
- * - Mở Fullscreen Viewer chính xác ngay tác phẩm đang chọn.
- */
 export function MobileArtView({
-  roster,
-  character,
+  characters,
+  selectedCharacter,
   onSelectCharacter,
-  backgroundMode,
-  onToggleBackgroundMode,
+  selectedHeroArtwork,
+  onSelectHeroArtwork,
+  onOpenViewer,
   onSwitchToInfoView,
-  onOpenArtViewer,
-  onNavigateToGallery,
+  heroBackgroundMode,
+  onChangeHeroBackgroundMode,
+  forceMobileView = false,
 }: MobileArtViewProps) {
-  const [imageError, setImageError] = useState<boolean>(false)
-  const [selectedArtworkIndex, setSelectedArtworkIndex] = useState<number>(0)
-  const [isSlideshowPlaying, setIsSlideshowPlaying] = useState<boolean>(true)
-  const userPausedRef = useRef<boolean>(false)
-  const isTabHiddenRef = useRef<boolean>(false)
-  const [touchStartX, setTouchStartX] = useState<number | null>(null)
-  const [touchEndX, setTouchEndX] = useState<number | null>(null)
-  const thumbnailRowRef = useRef<HTMLDivElement>(null)
+  const [heroImgError, setHeroImgError] = useState(false)
+  const filmstripRef = useRef<HTMLDivElement | null>(null)
 
-  // Lọc danh sách tác phẩm hợp lệ
-  const verifiedArtworks: GalleryArtwork[] = character.artworks && character.artworks.length > 0
-    ? character.artworks.filter((a) => a.isAvailableOnDisk)
-    : [
-        {
-          id: `${character.id}-fullbody`,
-          title: `${character.classCharacterName} — Tranh Toàn Thân`,
-          category: 'base',
-          path: character.fullbodyAssetPath,
-          isAvailableOnDisk: true,
-          status: 'verified_webp',
-          description: character.shortDescription,
-        },
-      ]
+  const verifiedArtworks = selectedCharacter.artworks.filter(
+    (a) => a.isAvailableOnDisk && Boolean(a.path)
+  )
 
-  // Fallback nếu không có ảnh verified
-  const displayArtworks = verifiedArtworks.length > 0
-    ? verifiedArtworks
-    : [
-        {
-          id: `${character.id}-fullbody`,
-          title: `${character.classCharacterName} — Tranh Toàn Thân`,
-          category: 'base' as const,
-          path: character.fullbodyAssetPath,
-          isAvailableOnDisk: false,
-          status: 'archive_pending' as const,
-          description: character.shortDescription,
-        },
-      ]
+  const heroSrc =
+    selectedHeroArtwork?.isAvailableOnDisk && selectedHeroArtwork.path
+      ? selectedHeroArtwork.path
+      : selectedCharacter.fullbodyAssetPath || verifiedArtworks[0]?.path || ''
 
-  // Reset index khi đổi phi công (Mặc định bật slideshow nếu >= 2 ảnh)
+  const isHeroAvailable = Boolean(heroSrc) && !heroImgError
+
   useEffect(() => {
-    setImageError(false)
-    setSelectedArtworkIndex(0)
-    userPausedRef.current = false
+    setHeroImgError(false)
+  }, [heroSrc, selectedCharacter.id])
 
-    const prefersReducedMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-    if (prefersReducedMotion || displayArtworks.length <= 1) {
-      setIsSlideshowPlaying(false)
-    } else {
-      setIsSlideshowPlaying(true)
+  const handleOpenHeroInViewer = () => {
+    if (!isHeroAvailable) return
+    if (selectedHeroArtwork && selectedHeroArtwork.isAvailableOnDisk && selectedHeroArtwork.path) {
+      onOpenViewer(selectedHeroArtwork)
+      return
     }
-  }, [character.id])
-
-  // Tự động bật khi danh sách artwork cập nhật nếu chưa bị user pause
-  useEffect(() => {
-    if (displayArtworks.length > 1 && !userPausedRef.current) {
-      const prefersReducedMotion =
-        typeof window !== 'undefined' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
-      if (!prefersReducedMotion) {
-        setIsSlideshowPlaying(true)
-      }
-    } else if (displayArtworks.length <= 1) {
-      setIsSlideshowPlaying(false)
+    if (verifiedArtworks.length > 0) {
+      onOpenViewer(verifiedArtworks[0])
+    } else if (heroSrc) {
+      onOpenViewer({
+        id: `${selectedCharacter.id}-hero`,
+        title: `${selectedCharacter.classCharacterName} — Hero Fullbody`,
+        category: 'base',
+        path: heroSrc,
+        isAvailableOnDisk: true,
+        status: 'verified_webp',
+        description: selectedCharacter.shortDescription,
+      })
     }
-  }, [displayArtworks.length])
-
-  // Auto Slideshow (chu kỳ 6s trên mobile, không nhảy dồn khi ẩn tab)
-  useEffect(() => {
-    if (!isSlideshowPlaying || displayArtworks.length <= 1) return
-
-    const handleVisibility = () => {
-      isTabHiddenRef.current = document.hidden
-    }
-    document.addEventListener('visibilitychange', handleVisibility)
-
-    const timer = setInterval(() => {
-      if (document.hidden || isTabHiddenRef.current) return
-
-      setSelectedArtworkIndex((prev) => (prev + 1) % displayArtworks.length)
-    }, 6000)
-
-    return () => {
-      clearInterval(timer)
-      document.removeEventListener('visibilitychange', handleVisibility)
-    }
-  }, [isSlideshowPlaying, displayArtworks.length])
-
-  // Lấy tác phẩm hiện tại
-  const currentArtwork: GalleryArtwork = displayArtworks[selectedArtworkIndex] || displayArtworks[0]
-
-  // Tự động cuộn thumbnail đang chọn vào màn hình
-  useEffect(() => {
-    if (thumbnailRowRef.current) {
-      const activeEl = thumbnailRowRef.current.children[selectedArtworkIndex] as HTMLElement
-      if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-      }
-    }
-  }, [selectedArtworkIndex])
-
-  // Chuyển tranh tiếp theo / trước đó (Tạm dừng slideshow khi người dùng chủ động chuyển)
-  const handlePrevArtwork = () => {
-    setIsSlideshowPlaying(false)
-    userPausedRef.current = true
-    setSelectedArtworkIndex((prev) => (prev > 0 ? prev - 1 : displayArtworks.length - 1))
   }
 
-  const handleNextArtwork = () => {
-    setIsSlideshowPlaying(false)
-    userPausedRef.current = true
-    setSelectedArtworkIndex((prev) => (prev < displayArtworks.length - 1 ? prev + 1 : 0))
-  }
-
-  // Bật/tắt Auto Slideshow thủ công
-  const handleToggleSlideshow = () => {
-    if (displayArtworks.length <= 1) return
-    const nextState = !isSlideshowPlaying
-    setIsSlideshowPlaying(nextState)
-    userPausedRef.current = !nextState
-  }
-
-  // Mở viewer với đúng tranh đang chọn (Tạm dừng slideshow)
-  const handleOpenCurrentInViewer = () => {
-    setIsSlideshowPlaying(false)
-    userPausedRef.current = true
-    onOpenArtViewer(currentArtwork, displayArtworks)
+  const scrollFilmstrip = (dir: 'left' | 'right') => {
+    if (!filmstripRef.current) return
+    filmstripRef.current.scrollBy({
+      left: dir === 'left' ? -180 : 180,
+      behavior: 'smooth',
+    })
   }
 
   return (
-    <div className="relative w-full min-h-[100dvh] bg-[#070A12] text-[#F1F5F9] flex flex-col justify-between overflow-x-hidden select-none pb-24">
-      {/* Ambient Blurred Pilot Background Layer */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <Image
-          src={resolveImageUrl(currentArtwork.path || character.fullbodyAssetPath)}
-          alt={character.classCharacterName}
-          fill
-          priority
-          referrerPolicy="no-referrer"
-          className="object-cover object-top opacity-20 filter blur-3xl scale-125 transition-all duration-500"
-        />
-        <div className="absolute inset-0 bg-[#070A12]/80" />
-      </div>
-
-      {/* Background Graphic Grid */}
-      <div
-        className={`absolute inset-0 transition-opacity duration-700 pointer-events-none z-0 ${
-          backgroundMode === 'tactical'
-            ? 'opacity-100 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-cyan-950/60 via-[#070A12]/70 to-[#070A12]'
-            : 'opacity-100 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-blue-950/50 via-[#070A12]/70 to-[#070A12]'
-        }`}
-      />
-
-      {/* 1. DẢI AVATAR ROSTER NGANG PHÍA TRÊN (Đổi Phi Công) */}
-      <div className="relative z-20 px-3 py-2 bg-[#090D18]/90 border-b border-[#1E2D42] overflow-x-auto scrollbar-none shadow-md">
-        <div className="flex gap-2 min-w-max">
-          {roster.map((char) => {
-            const isSelected = char.id === character.id
-
+    <div
+      className={`${
+        forceMobileView ? 'flex' : 'md:hidden flex'
+      } flex-col min-h-[calc(100vh-100px)] bg-[#070A12] text-[#F1F5F9] select-none`}
+    >
+      {/* 1. HORIZONTAL PORTRAIT ROSTER STRIP (Matches Approved Mobile Concept) */}
+      <div className="px-2.5 py-2 border-b border-[#1E2D42] bg-[#080D18]/95">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {characters.map((char) => {
+            const isSelected = char.id === selectedCharacter.id
             return (
               <button
                 key={char.id}
                 type="button"
                 onClick={() => onSelectCharacter(char)}
-                className={`min-w-[64px] p-1.5 rounded-xl border flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                className={`flex flex-col items-center p-1.5 rounded-xl border shrink-0 transition-all cursor-pointer min-w-[66px] ${
                   isSelected
-                    ? 'bg-[#142338] border-[#00D4FF] shadow-[0_0_10px_rgba(0,212,255,0.4)] ring-1 ring-[#00D4FF]'
-                    : 'bg-[#0B111E]/80 border-[#1E2D42] hover:border-[#2C415E]'
+                    ? 'bg-[#13263E] border-[#00D4FF] shadow-[0_0_12px_rgba(0,212,255,0.3)]'
+                    : 'bg-[#070A12]/80 border-[#1E2D42] opacity-80 hover:opacity-100'
                 }`}
               >
                 <PilotAvatar
                   character={char}
                   isSelected={isSelected}
-                  className="w-10 h-10"
+                  className="w-12 h-12 rounded-lg"
                 />
                 <span
-                  className={`text-[10px] font-bold font-mono truncate max-w-[60px] ${
-                    isSelected ? 'text-[#00D4FF]' : 'text-[#A7B6C8]'
+                  className={`text-[10px] font-mono font-bold truncate max-w-[60px] mt-1 ${
+                    isSelected ? 'text-[#00D4FF]' : 'text-[#E2E8F0]'
                   }`}
                 >
                   {char.classCharacterName}
@@ -244,268 +130,194 @@ export function MobileArtView({
         </div>
       </div>
 
-      {/* 2. THANH ĐIỀU HƯỚNG NHỎ: [Xem Thông Tin] | [Xem Tranh Nhân Vật (Active)] + Nút Gallery */}
-      <div className="relative z-20 px-3.5 pt-2 flex items-center justify-between gap-2">
-        <div className="inline-flex rounded-xl bg-[#090D18] border border-[#1E2D42] p-1 shadow-lg">
+      {/* 2. MOBILE HERO STAGE WITH ARTWORK-DERIVED AMBIENT BACKGROUND */}
+      <div className="relative flex-1 min-h-[420px] flex flex-col justify-between overflow-hidden bg-[#050811]">
+        {heroBackgroundMode === 'contextual' ? (
+          <>
+            {isHeroAvailable && (
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <Image
+                  src={heroSrc}
+                  alt=""
+                  fill
+                  referrerPolicy="no-referrer"
+                  className="object-cover object-center scale-125 blur-2xl opacity-35 saturate-150"
+                />
+              </div>
+            )}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(0,212,255,0.14)_0%,_rgba(5,8,17,0.92)_80%)] pointer-events-none" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-[#04060C] pointer-events-none" />
+        )}
+
+        {/* Right Floating Stage Controls (44x44px touch targets) */}
+        <div className="absolute top-3 right-3 z-20 flex flex-col items-end gap-2">
+          {isHeroAvailable && (
+            <button
+              type="button"
+              onClick={handleOpenHeroInViewer}
+              aria-label="Xem ảnh toàn màn hình (Full Screen)"
+              title="Xem ảnh toàn màn hình (Full Screen)"
+              className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-[#00D4FF] hover:bg-[#38BDF8] text-[#070A12] font-mono text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-[0_0_18px_rgba(0,212,255,0.45)] cursor-pointer active:scale-95 touch-manipulation"
+            >
+              <Maximize2 className="w-4 h-4 stroke-[2.5]" />
+              <span>Full Screen</span>
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={onSwitchToInfoView}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-[#A7B6C8] hover:text-white transition-all cursor-pointer"
+            onClick={() => onChangeHeroBackgroundMode('contextual')}
+            aria-label="Bối cảnh trạm"
+            className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 backdrop-blur-md cursor-pointer touch-manipulation ${
+              heroBackgroundMode === 'contextual'
+                ? 'bg-[#142338]/95 border-[#00D4FF] text-[#00D4FF]'
+                : 'bg-[#090F1C]/85 border-[#1E2D42] text-[#CBD5E1]'
+            }`}
           >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Thông Tin</span>
+            <Layers className="w-4 h-4 shrink-0" />
+            <span>Bối cảnh</span>
           </button>
+
           <button
             type="button"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#00D4FF] text-[#070A12] shadow-sm shadow-cyan-500/30 cursor-default"
+            onClick={() => onChangeHeroBackgroundMode('clean')}
+            aria-label="Tách nền nhân vật"
+            className={`min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border text-xs font-mono font-bold flex items-center gap-1.5 backdrop-blur-md cursor-pointer touch-manipulation ${
+              heroBackgroundMode === 'clean'
+                ? 'bg-[#142338]/95 border-[#00D4FF] text-[#00D4FF]'
+                : 'bg-[#090F1C]/85 border-[#1E2D42] text-[#CBD5E1]'
+            }`}
           >
-            <ImageIcon className="w-3.5 h-3.5" />
-            <span>Tranh HD</span>
+            <ImageOff className="w-4 h-4 shrink-0" />
+            <span>Tách nền</span>
           </button>
         </div>
 
-        {/* Nút Nhảy Trực Tiếp Vào Gallery */}
-        <button
-          type="button"
-          onClick={() => {
-            if (onNavigateToGallery) {
-              onNavigateToGallery()
-            } else {
-              onSwitchToInfoView()
-            }
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0E1B2E] border border-[#00D4FF]/40 text-[#00D4FF] text-xs font-mono font-bold shadow-sm hover:bg-[#142640] transition-all cursor-pointer active:scale-95"
-          title="Xem toàn bộ bộ sưu tập"
-        >
-          <Grid className="w-3.5 h-3.5" />
-          <span>GALLERY ({displayArtworks.length})</span>
-        </button>
-      </div>
-
-      {/* 3. KHU VỰC SÂN KHẤU TRANH HERO Ở TRUNG TÂM (Hỗ trợ lướt vuốt Swipe Left/Right) */}
-      <div
-        className="relative flex-1 flex items-center justify-center p-2 z-10 overflow-hidden min-h-[380px]"
-        onTouchStart={(e) => setTouchStartX(e.targetTouches[0].clientX)}
-        onTouchMove={(e) => setTouchEndX(e.targetTouches[0].clientX)}
-        onTouchEnd={() => {
-          if (touchStartX !== null && touchEndX !== null) {
-            const distance = touchStartX - touchEndX
-            if (distance > 50) {
-              handleNextArtwork()
-            } else if (distance < -50) {
-              handlePrevArtwork()
-            }
-          }
-          setTouchStartX(null)
-          setTouchEndX(null)
-        }}
-      >
-        {/* Nút Prev Artwork bên trái */}
-        <button
-          type="button"
-          onClick={handlePrevArtwork}
-          aria-label="Tác phẩm trước"
-          className="absolute left-2 z-20 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-[#090D18]/90 border border-[#1E2D42] text-white flex items-center justify-center active:scale-95 shadow-2xl cursor-pointer hover:border-[#00D4FF] hover:text-[#00D4FF]"
-          title="Tác phẩm trước"
-        >
-          <ChevronLeft className="w-6 h-6 text-[#00D4FF]" />
-        </button>
-
-        {/* Nút Next Artwork bên phải */}
-        <button
-          type="button"
-          onClick={handleNextArtwork}
-          aria-label="Tác phẩm tiếp theo"
-          className="absolute right-2 z-20 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-[#090D18]/90 border border-[#1E2D42] text-white flex items-center justify-center active:scale-95 shadow-2xl cursor-pointer hover:border-[#00D4FF] hover:text-[#00D4FF]"
-          title="Tác phẩm tiếp theo"
-        >
-          <ChevronRight className="w-6 h-6 text-[#00D4FF]" />
-        </button>
-
-        {/* Tranh Hero lớn ở giữa */}
-        <div
-          onClick={handleOpenCurrentInViewer}
-          className="relative w-full h-[52vh] max-h-[480px] flex items-center justify-center cursor-pointer group"
-        >
-          {!imageError ? (
-            <Image
-              src={resolveImageUrl(currentArtwork.path)}
-              alt={currentArtwork.title}
-              fill
-              priority
-              referrerPolicy="no-referrer"
-              className="object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.95)] transition-all duration-300 group-hover:scale-102"
-              onError={() => setImageError(true)}
-            />
+        {/* Center Character Portrait / Fullbody */}
+        <div className="relative z-10 flex-1 min-h-[280px] w-full flex items-center justify-center p-2">
+          {isHeroAvailable ? (
+            <div
+              onClick={handleOpenHeroInViewer}
+              className="relative w-full h-[300px] flex items-center justify-center cursor-zoom-in"
+            >
+              <Image
+                src={heroSrc}
+                alt={selectedCharacter.classCharacterName}
+                fill
+                priority
+                referrerPolicy="no-referrer"
+                className="object-contain object-center drop-shadow-[0_14px_30px_rgba(0,0,0,0.85)]"
+                onError={() => setHeroImgError(true)}
+              />
+            </div>
           ) : (
-            <div className="text-center p-6 rounded-2xl bg-[#090D18]/95 border border-[#1E2D42] space-y-2 max-w-xs shadow-2xl">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#F59E0B]/20 text-[#F59E0B] font-bold uppercase">
-                CHỜ ĐỒNG BỘ WEBP
+            <div className="max-w-xs text-center p-5 rounded-2xl bg-[#0B111E]/95 border border-[#1E2D42] space-y-2 mx-4">
+              <FileArchive className="w-7 h-7 text-[#F59E0B] mx-auto" />
+              <div className="text-xs font-mono font-bold text-white">
+                {selectedCharacter.classCharacterName}
+              </div>
+              <p className="text-xs text-[#CBD5E1]">
+                Đang chờ nhập tệp ảnh WebP VERIFIED trên kênh CDN.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Identity + Thumbnail Filmstrip + Quote + CTA to Info View */}
+        <div className="relative z-20 p-3.5 bg-gradient-to-t from-[#050811] via-[#070A12]/95 to-transparent space-y-2.5">
+          {/* Identity Overlay */}
+          <div>
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#00D4FF]" />
+              <h2 className="text-xl font-black text-white tracking-wide uppercase">
+                {selectedCharacter.classCharacterName}
+              </h2>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#00D4FF]/15 text-[#00D4FF] border border-[#00D4FF]/30">
+                {selectedCharacter.personaCode || selectedCharacter.callsign}
               </span>
-              <h4 className="text-sm font-bold text-white">{currentArtwork.title}</h4>
-              <p className="text-xs text-[#A7B6C8]">Tác phẩm đang ở chế độ xem trước.</p>
+            </div>
+            <p className="text-xs text-[#00D4FF] font-medium">
+              {selectedCharacter.role} · {selectedCharacter.fullLoreName}
+            </p>
+          </div>
+
+          {/* Mobile Thumbnail Filmstrip (< [Thumb 1] [Thumb 2] [Thumb 3] >) */}
+          {verifiedArtworks.length > 0 && (
+            <div className="flex items-center gap-1.5 pt-0.5">
+              <button
+                type="button"
+                onClick={() => scrollFilmstrip('left')}
+                aria-label="Cuộn ảnh sang trái"
+                className="w-8 h-12 rounded-lg bg-[#0B111E] border border-[#1E2D42] text-[#CBD5E1] flex items-center justify-center shrink-0 cursor-pointer"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div
+                ref={filmstripRef}
+                className="flex-1 flex items-center gap-2 overflow-x-auto py-0.5 scrollbar-none"
+              >
+                {verifiedArtworks.map((art) => {
+                  const isActive =
+                    (selectedHeroArtwork && selectedHeroArtwork.id === art.id) ||
+                    (!selectedHeroArtwork && art.path === heroSrc)
+                  return (
+                    <button
+                      key={art.id}
+                      type="button"
+                      onClick={() => {
+                        if (onSelectHeroArtwork) onSelectHeroArtwork(art)
+                      }}
+                      className={`relative w-12 h-12 rounded-lg overflow-hidden border shrink-0 transition-all cursor-pointer ${
+                        isActive
+                          ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/40'
+                          : 'border-[#1E2D42] opacity-75'
+                      }`}
+                    >
+                      <Image
+                        src={art.path}
+                        alt={art.title}
+                        fill
+                        sizes="48px"
+                        referrerPolicy="no-referrer"
+                        className="object-cover object-top"
+                      />
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => scrollFilmstrip('right')}
+                aria-label="Cuộn ảnh sang phải"
+                className="w-8 h-12 rounded-lg bg-[#0B111E] border border-[#1E2D42] text-[#CBD5E1] flex items-center justify-center shrink-0 cursor-pointer"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           )}
 
-          {/* Huy hiệu số thứ tự tác phẩm trên sân khấu & Nút Auto Slideshow */}
-          <div className="absolute top-2 left-4 z-20 flex items-center gap-1.5">
-            <span className="px-2.5 py-1 rounded-full bg-[#090D18]/90 border border-[#00D4FF]/40 text-xs font-mono font-bold text-[#00D4FF] backdrop-blur-md shadow-lg">
-              {selectedArtworkIndex + 1} / {displayArtworks.length}
-            </span>
-
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleToggleSlideshow();
-              }}
-              disabled={displayArtworks.length <= 1}
-              className={`px-2 py-1 rounded-full border text-[11px] font-mono font-bold flex items-center gap-1 backdrop-blur-md shadow-lg transition-all ${
-                displayArtworks.length <= 1
-                  ? 'bg-[#090D18]/90 border-[#1E2D42]/40 text-[#475569] cursor-not-allowed opacity-50'
-                  : isSlideshowPlaying
-                  ? 'bg-[#00D4FF]/20 border-[#00D4FF] text-[#00D4FF] cursor-pointer'
-                  : 'bg-[#090D18]/90 border-[#1E2D42] text-[#A7B6C8] cursor-pointer'
-              }`}
-              title={
-                displayArtworks.length <= 1
-                  ? 'Cần từ 2 tác phẩm trở lên để bật Auto Slideshow'
-                  : isSlideshowPlaying
-                  ? 'Tạm dừng Auto Slideshow (6s)'
-                  : 'Bật Auto Slideshow (6s)'
-              }
-            >
-              {isSlideshowPlaying && displayArtworks.length > 1 ? (
-                <>
-                  <Pause className="w-3 h-3 text-[#00D4FF]" />
-                  <span>DỪNG</span>
-                </>
-              ) : (
-                <>
-                  <Play className="w-3 h-3 text-[#A7B6C8]" />
-                  <span>AUTO</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Floating Side Tools trên cạnh phải (2D HUD, Zoom, Fullscreen) >= 44px */}
-        <div className="absolute right-3 top-3 z-20 flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={() => onToggleBackgroundMode(backgroundMode === 'standard' ? 'tactical' : 'standard')}
-            className={`w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl border flex items-center justify-center text-xs font-mono font-bold shadow-lg transition-all ${
-              backgroundMode === 'tactical'
-                ? 'bg-[#00D4FF] text-[#070A12] border-[#00D4FF]'
-                : 'bg-[#090D18]/90 border-[#1E2D42] text-[#00D4FF]'
-            }`}
-            title="Chế độ Radar HUD"
-          >
-            {backgroundMode === 'tactical' ? <Radar className="w-5 h-5 animate-spin" /> : '2D'}
-          </button>
+          {selectedCharacter.characterQuote && (
+            <p className="text-xs text-[#E2E8F0] italic line-clamp-2 px-1">
+              &ldquo;{selectedCharacter.characterQuote}&rdquo;
+            </p>
+          )}
 
           <button
             type="button"
-            onClick={handleOpenCurrentInViewer}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-[#090D18]/90 border border-[#1E2D42] text-[#00D4FF] hover:border-[#00D4FF] flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
-            title="Kính lúp zoom chi tiết"
+            onClick={onSwitchToInfoView}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#00D4FF] to-[#0284C7] text-[#070A12] font-mono font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(0,212,255,0.35)] active:scale-[0.99] cursor-pointer min-h-[46px]"
           >
-            <ZoomIn className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOpenCurrentInViewer}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl bg-[#090D18]/90 border border-[#1E2D42] text-[#00D4FF] hover:border-[#00D4FF] flex items-center justify-center shadow-lg active:scale-95 cursor-pointer"
-            title="Toàn màn hình"
-          >
-            <Maximize2 className="w-5 h-5" />
+            <FileText className="w-4 h-4" />
+            <span>Mở Hồ Sơ Chi Tiết & Cốt Truyện (INFO VIEW)</span>
           </button>
         </div>
       </div>
-
-      {/* 4. FOOTER: METADATA CỦA BỨC TRANH ĐANG CHỌN & THUMBNAIL CAROUSEL ĐỒNG BỘ */}
-      <footer className="relative z-30 px-3.5 pt-2 pb-3 bg-gradient-to-t from-[#070A12] via-[#070A12]/95 to-transparent space-y-2">
-        {/* Hàng 1: Tiêu đề và Thể loại của ARTWORK (Đồng bộ theo tranh) */}
-        <div className="p-2.5 rounded-xl bg-[#0D1526]/90 border border-[#1E2D42] flex items-center justify-between gap-2 shadow-lg">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-[#00D4FF]/10 text-[#00D4FF] border border-[#00D4FF]/30 shrink-0">
-                {currentArtwork.category.toUpperCase()}
-              </span>
-              <h3 className="text-sm font-bold font-mono text-white truncate">
-                {currentArtwork.title}
-              </h3>
-            </div>
-            {currentArtwork.description && (
-              <p className="text-[11px] text-[#CBD5E1] truncate mt-0.5 font-sans">
-                {currentArtwork.description}
-              </p>
-            )}
-          </div>
-
-          <div className="text-right shrink-0">
-            <span className="text-xs font-mono font-bold text-[#34D399] flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-[#34D399]" />
-              <span>WebP HD</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Hàng 2: Thumbnail Carousel Cuộn Ngang (Toàn bộ tranh, thumbnail đang chọn sáng viền) */}
-        <div className="relative">
-          <div
-            ref={thumbnailRowRef}
-            className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none scroll-smooth px-1"
-          >
-            {displayArtworks.map((art, idx) => {
-              const isSelected = selectedArtworkIndex === idx
-
-              return (
-                <button
-                  key={art.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedArtworkIndex(idx);
-                    setIsSlideshowPlaying(false);
-                    userPausedRef.current = true;
-                  }}
-                  className={`relative w-16 h-14 rounded-xl overflow-hidden border shrink-0 transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-[#00D4FF] ring-2 ring-[#00D4FF]/60 shadow-[0_0_12px_rgba(0,212,255,0.6)] scale-105 z-10'
-                      : 'border-[#1E2D42] opacity-70 hover:opacity-100'
-                  }`}
-                  title={art.title}
-                >
-                  <Image
-                    src={resolveImageUrl(art.path)}
-                    alt={art.title}
-                    fill
-                    referrerPolicy="no-referrer"
-                    className="object-cover"
-                  />
-                  <div className="absolute top-0.5 right-0.5 px-1 rounded bg-black/70 text-[9px] font-mono text-white font-bold">
-                    {idx + 1}
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Hàng 3: Character Identity nhỏ gọn (Không nhầm lẫn với artwork metadata) */}
-        <div className="flex items-center justify-between text-[11px] font-mono text-[#94A3B8] px-1">
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-            <span className="font-bold text-white">{character.classCharacterName}</span>
-            <span>·</span>
-            <span className="text-[#00D4FF]">{character.callsign}</span>
-          </div>
-          <span className="italic truncate max-w-[160px]">"{character.characterQuote}"</span>
-        </div>
-      </footer>
     </div>
   )
 }
+
 export default MobileArtView

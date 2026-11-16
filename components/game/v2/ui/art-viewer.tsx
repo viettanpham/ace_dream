@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import {
   TransformWrapper,
   TransformComponent,
@@ -29,7 +30,38 @@ import {
   Users,
   Clock,
   Compass,
+  LayoutGrid,
 } from 'lucide-react'
+import { motion, AnimatePresence, type Variants } from 'motion/react'
+
+// Smooth sci-fi slide transition variants
+const slideVariants: Variants = {
+  enter: (direction: number) => ({
+    x: direction > 0 ? 120 : -120,
+    opacity: 0,
+    scale: 0.96,
+  }),
+  center: {
+    x: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      x: { type: 'spring' as const, stiffness: 320, damping: 30, mass: 0.8 },
+      opacity: { duration: 0.25, ease: 'easeOut' },
+      scale: { duration: 0.25, ease: 'easeOut' },
+    },
+  },
+  exit: (direction: number) => ({
+    x: direction > 0 ? -120 : 120,
+    opacity: 0,
+    scale: 0.96,
+    transition: {
+      x: { type: 'spring' as const, stiffness: 320, damping: 30, mass: 0.8 },
+      opacity: { duration: 0.18, ease: 'easeIn' },
+      scale: { duration: 0.18, ease: 'easeIn' },
+    },
+  }),
+}
 import { resolveImageUrl } from '@/lib/game/assets/image-resolver'
 import {
   CANONICAL_12_PILOT_IDS,
@@ -79,12 +111,31 @@ export interface ArtViewerProps {
   currentPilotId?: string
   currentPilotName?: string
   currentPilotCallsign?: string
-  allPilots?: Array<{ id: string; name: string; callsign: string }>
+  allPilots?: Array<{
+    id: string
+    name: string
+    fullName?: string
+    callsign: string
+    gender?: 'Male' | 'Female'
+    portraitPath?: string
+    artworks?: Array<{
+      id: string
+      title: string
+      path: string
+      category?: string
+      description?: string
+      isAvailableOnDisk?: boolean
+      status?: string
+      dimensions?: { width: number; height: number }
+    }>
+  }>
   onSelectArtwork?: (artwork: any, pilotId?: string) => void
 }
 
 const DEFAULT_SPEEDS = [4, 6, 10] as const
 type SlideshowSpeed = (typeof DEFAULT_SPEEDS)[number]
+const EMPTY_ARTWORKS: NonNullable<ArtViewerProps['artworks']> = []
+const EMPTY_TAGS: string[] = []
 
 export function ArtViewer({
   isOpen,
@@ -95,7 +146,7 @@ export function ArtViewer({
   subtitle,
   category = 'lore',
   description,
-  tags = [],
+  tags = EMPTY_TAGS,
   onPrev,
   onNext,
   hasPrev = false,
@@ -103,15 +154,30 @@ export function ArtViewer({
   isAvailableOnDisk = true,
   currentIndex,
   totalCount,
-  artworks = [],
+  artworks = EMPTY_ARTWORKS,
   currentPilotId = 'valentine',
   currentPilotName = 'Valentine',
   currentPilotCallsign = 'Mercy Wing',
   allPilots,
   onSelectArtwork,
 }: ArtViewerProps) {
-  // Pilot Canonical Info Map
+  // Pilot Canonical Info Map (prefers dynamic R4/R5 allPilots when provided)
   const canonicalPilots = useMemo(() => {
+    if (Array.isArray(allPilots) && allPilots.length > 0) {
+      return allPilots.map((p) => {
+        const meta = CANONICAL_PILOT_METADATA[p.id as CanonicalPilotId]
+        return {
+          id: p.id.toLowerCase().trim(),
+          name: p.name || (meta?.name ? meta.name.split(' ')[0] : p.id),
+          fullName: p.fullName || meta?.name || p.name || p.id,
+          callsign: p.callsign || meta?.callsign || '',
+          gender: p.gender || meta?.gender || 'Female',
+          portraitPath: p.portraitPath || '',
+          artworks: p.artworks,
+        }
+      })
+    }
+
     return CANONICAL_12_PILOT_IDS.map((pId) => {
       const meta = CANONICAL_PILOT_METADATA[pId]
       return {
@@ -121,58 +187,88 @@ export function ArtViewer({
         callsign: meta?.callsign || '',
         gender: meta?.gender || 'Female',
         portraitPath: `images/pilots/${pId}/${pId}-portrait.webp`,
+        artworks: undefined,
       }
     })
-  }, [])
+  }, [allPilots])
 
-  // Robust pilot detection from path or fallback
-  const detectPilotFromPath = useCallback((cleanPath: string, fallbackPilotId: string): string => {
-    // 1. Direct path matching images/pilots/<pilotId>/...
-    const dirMatch = cleanPath.match(/^images\/pilots\/([a-z0-9-_]+)\//i)
-    if (dirMatch && CANONICAL_12_PILOT_IDS.includes(dirMatch[1].toLowerCase() as any)) {
-      return dirMatch[1].toLowerCase()
-    }
-    // 2. Filename prefix matching <pilotId>-... (e.g. /images/fortuna-outfit-017.webp)
-    const filename = cleanPath.split('/').pop() || ''
-    for (const pId of CANONICAL_12_PILOT_IDS) {
-      if (filename.toLowerCase().startsWith(`${pId}-`)) {
-        return pId
+  // Robust pilot detection from R4/R5 path (assets/pilots/<pilotId>/...) or fallback
+  const detectPilotFromPath = useCallback(
+    (cleanPath: string, fallbackPilotId: string): string => {
+      const r4Match = cleanPath.match(/(?:assets|images)\/pilots\/([a-z0-9-_]+)\//i)
+      if (r4Match) {
+        return r4Match[1].toLowerCase()
       }
-    }
-    return fallbackPilotId.toLowerCase()
-  }, [])
+      const filename = cleanPath.split('/').pop() || ''
+      for (const p of canonicalPilots) {
+        if (filename.toLowerCase().startsWith(`${p.id}-`)) {
+          return p.id
+        }
+      }
+      return fallbackPilotId.toLowerCase()
+    },
+    [canonicalPilots]
+  )
 
   // Initial Artwork Setup
   const initialShowcaseItem = useMemo<ShowcaseArtwork>(() => {
-    const cleanPath = imageSrc.startsWith('/') ? imageSrc.slice(1) : imageSrc
-    const assetId = cleanPath.split('/').pop() || 'art'
-    
+    const safeImageSrc = typeof imageSrc === 'string' ? imageSrc : ''
+    const cleanPath = safeImageSrc.startsWith('/') ? safeImageSrc.slice(1) : safeImageSrc
+    const matchedInArtworks = artworks.find((a) => a.path === safeImageSrc || a.path === cleanPath)
+    const assetId = matchedInArtworks?.id || cleanPath.split('/').pop() || 'art'
+
     // Auto-detect pilotId from canonical path pattern or filename prefix
     const effectivePilotId = detectPilotFromPath(cleanPath, currentPilotId)
     const identityKey = buildArtworkIdentityKey(effectivePilotId, assetId, cleanPath)
+    const pilotInfo = canonicalPilots.find((p) => p.id === effectivePilotId)
     const meta = CANONICAL_PILOT_METADATA[effectivePilotId as CanonicalPilotId]
-    const effectivePilotName = meta?.name ? meta.name.split(' ')[0] : (effectivePilotId === currentPilotId ? currentPilotName : effectivePilotId.toUpperCase())
-    const effectiveCallsign = meta?.callsign || (effectivePilotId === currentPilotId ? currentPilotCallsign : '')
+    const effectivePilotName =
+      pilotInfo?.name ||
+      (meta?.name
+        ? meta.name.split(' ')[0]
+        : effectivePilotId === currentPilotId
+        ? currentPilotName
+        : effectivePilotId.toUpperCase())
+    const effectiveCallsign =
+      pilotInfo?.callsign ||
+      meta?.callsign ||
+      (effectivePilotId === currentPilotId ? currentPilotCallsign : '')
 
     return {
       identityKey,
       assetId,
-      filename: assetId,
+      filename: cleanPath.split('/').pop() || assetId,
       path: cleanPath,
       resolvedUrl: resolveImageUrl(cleanPath) || '',
-      title: title || 'Artwork Inspector',
-      description: description || `Tác phẩm chuẩn hóa của phi công ${effectivePilotName}.`,
-      curatedDescription: description,
-      category: category || 'lore',
+      title: matchedInArtworks?.title || title || 'Artwork Inspector',
+      description:
+        matchedInArtworks?.description ||
+        description ||
+        `Tác phẩm chuẩn hóa của phi công ${effectivePilotName}.`,
+      curatedDescription: matchedInArtworks?.description || description,
+      category: matchedInArtworks?.category || category || 'CORE',
+      dimensions: matchedInArtworks?.dimensions,
       isAvailableOnDisk: isAvailableOnDisk !== false,
       status: 'verified_webp',
       pilotId: effectivePilotId,
       pilotName: effectivePilotName,
       pilotCallsign: effectiveCallsign,
-      pilotGender: meta?.gender || 'Female',
-      pilotPortraitPath: `images/pilots/${effectivePilotId}/${effectivePilotId}-portrait.webp`,
+      pilotGender: pilotInfo?.gender || meta?.gender || 'Female',
+      pilotPortraitPath: pilotInfo?.portraitPath || cleanPath,
     }
-  }, [imageSrc, title, description, category, isAvailableOnDisk, currentPilotId, currentPilotName, currentPilotCallsign, detectPilotFromPath])
+  }, [
+    imageSrc,
+    artworks,
+    title,
+    description,
+    category,
+    isAvailableOnDisk,
+    currentPilotId,
+    currentPilotName,
+    currentPilotCallsign,
+    detectPilotFromPath,
+    canonicalPilots,
+  ])
 
   // =========================================================================
   // AUTHORITATIVE SINGLE SOURCE OF TRUTH: currentArtwork
@@ -181,10 +277,12 @@ export function ArtViewer({
   const [isTransitioning, setIsTransitioning] = useState<boolean>(false)
   const [naturalDimensions, setNaturalDimensions] = useState<{ width: number; height: number } | null>(null)
   const [currentScale, setCurrentScale] = useState<number>(1)
+  const [slideDirection, setSlideDirection] = useState<number>(1) // 1: Next (right to left), -1: Prev (left to right)
 
   // HUD & Drawers
   const [showInfoDrawer, setShowInfoDrawer] = useState<boolean>(false)
   const [showPilotDrawer, setShowPilotDrawer] = useState<boolean>(false)
+  const [showFilmstrip, setShowFilmstrip] = useState<boolean>(false)
   const [isCleanView, setIsCleanView] = useState<boolean>(false)
 
   // Slideshow State
@@ -210,20 +308,47 @@ export function ArtViewer({
   const [shuffleBag, setShuffleBag] = useState<ShowcaseArtwork[]>([])
   const [shuffleIndex, setShuffleIndex] = useState<number>(0)
 
+  const [imageLoadError, setImageLoadError] = useState<boolean>(false)
+
   // Refs for race conditions and timers
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
+  const filmstripRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const transitionTokenRef = useRef<number>(0)
   const wasPlayingBeforeBackgroundRef = useRef<boolean>(false)
   const prevIsOpenRef = useRef<boolean>(false)
+  const prevInitialKeyRef = useRef<string>(initialShowcaseItem.identityKey)
 
-  // Sync initial artwork ONLY when modal opens (from closed state), never clobber during active transitions or random slideshow
+  // Sync initial artwork when modal opens or external imageSrc prop changes
   useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      setCurrentArtwork(initialShowcaseItem)
+    if (isOpen) {
+      const justOpened = !prevIsOpenRef.current
+      const externalChanged = initialShowcaseItem.identityKey !== prevInitialKeyRef.current
+      if (justOpened) {
+        setCurrentArtwork(initialShowcaseItem)
+        setNaturalDimensions(null)
+        setImageLoadError(false)
+        setCurrentScale(1)
+        prevInitialKeyRef.current = initialShowcaseItem.identityKey
+        if (!isRandomMode) {
+          setSelectedPilotIds([currentPilotId])
+        }
+      } else if (externalChanged) {
+        prevInitialKeyRef.current = initialShowcaseItem.identityKey
+        if (initialShowcaseItem.identityKey !== currentArtwork.identityKey) {
+          const currentList = pilotsArtworksMap[currentPilotId] || []
+          const oldIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
+          const newIdx = currentList.findIndex((a) => a.identityKey === initialShowcaseItem.identityKey)
+          const dir = newIdx >= oldIdx ? 1 : -1
+          setSlideDirection(dir)
+          setCurrentArtwork(initialShowcaseItem)
+          setNaturalDimensions(null)
+          setImageLoadError(false)
+        }
+      }
     }
     prevIsOpenRef.current = isOpen
-  }, [isOpen, initialShowcaseItem])
+  }, [isOpen, initialShowcaseItem, currentArtwork.identityKey, currentPilotId, pilotsArtworksMap, isRandomMode])
 
   // Lock body scroll when open
   useEffect(() => {
@@ -246,19 +371,70 @@ export function ArtViewer({
     }
   }, [isPlaying])
 
-  // Pre-populate current pilot's artworks from props
+  // Pre-populate current pilot's artworks and allPilots' R4 artworks from props
   useEffect(() => {
+    const nextMap: Record<string, ShowcaseArtwork[]> = {}
+
+    if (Array.isArray(allPilots)) {
+      for (const p of allPilots) {
+        if (!Array.isArray(p.artworks) || p.artworks.length === 0) continue
+        const pId = p.id.toLowerCase().trim()
+        const meta = CANONICAL_PILOT_METADATA[pId as CanonicalPilotId]
+        const pName = p.name || (meta?.name ? meta.name.split(' ')[0] : pId.toUpperCase())
+        const pCallsign = p.callsign || meta?.callsign || ''
+        const pGender = p.gender || meta?.gender || 'Female'
+        const pPortrait = p.portraitPath || p.artworks[0]?.path || ''
+
+        nextMap[pId] = p.artworks
+          .filter((a) => a.isAvailableOnDisk !== false && Boolean(a.path))
+          .map((a) => {
+            const cleanPath = a.path.startsWith('/') ? a.path.slice(1) : a.path
+            const assetId = a.id || cleanPath.split('/').pop() || 'art'
+            return {
+              identityKey: buildArtworkIdentityKey(pId, assetId, cleanPath),
+              assetId,
+              filename: cleanPath.split('/').pop() || 'art.webp',
+              path: cleanPath,
+              resolvedUrl: resolveImageUrl(cleanPath) || '',
+              title: a.title,
+              description: a.description || `Tác phẩm của ${pName}.`,
+              curatedDescription: a.description,
+              category: a.category || 'CORE',
+              dimensions: a.dimensions,
+              isAvailableOnDisk: true,
+              status: a.status || 'verified_webp',
+              pilotId: pId,
+              pilotName: pName,
+              pilotCallsign: pCallsign,
+              pilotGender: pGender,
+              pilotPortraitPath: pPortrait,
+            }
+          })
+      }
+    }
+
     if (currentPilotId && artworks.length > 0) {
+      const pInfo = canonicalPilots.find((p) => p.id === currentPilotId.toLowerCase().trim())
       const converted: ShowcaseArtwork[] = artworks.map((a) => {
         const cleanPath = a.path.startsWith('/') ? a.path.slice(1) : a.path
         const assetId = a.id || cleanPath.split('/').pop() || 'art'
-        
-        // Auto-detect pilotId from artwork object or path
-        const pathMatch = cleanPath.match(/^images\/pilots\/([a-z0-9-_]+)\//i)
-        const itemPilotId = (a.pilotId || (pathMatch ? pathMatch[1] : currentPilotId)).toLowerCase().trim()
+
+        const pathMatch = cleanPath.match(/(?:assets|images)\/pilots\/([a-z0-9-_]+)\//i)
+        const itemPilotId = (
+          a.pilotId || (pathMatch ? pathMatch[1] : currentPilotId)
+        )
+          .toLowerCase()
+          .trim()
         const meta = CANONICAL_PILOT_METADATA[itemPilotId as CanonicalPilotId]
-        const cleanPilotName = a.pilotName || (meta?.name ? meta.name.split(' ')[0] : (itemPilotId === currentPilotId ? currentPilotName : itemPilotId.toUpperCase()))
-        const cleanPilotCallsign = a.pilotCallsign || meta?.callsign || ''
+        const cleanPilotName =
+          a.pilotName ||
+          pInfo?.name ||
+          (meta?.name
+            ? meta.name.split(' ')[0]
+            : itemPilotId === currentPilotId
+            ? currentPilotName
+            : itemPilotId.toUpperCase())
+        const cleanPilotCallsign = a.pilotCallsign || pInfo?.callsign || meta?.callsign || ''
 
         return {
           identityKey: buildArtworkIdentityKey(itemPilotId, assetId, cleanPath),
@@ -269,24 +445,27 @@ export function ArtViewer({
           title: a.title,
           description: a.description || `Tác phẩm của ${cleanPilotName}.`,
           curatedDescription: a.description,
-          category: a.category || 'lore',
+          category: a.category || 'CORE',
           dimensions: a.dimensions,
           isAvailableOnDisk: a.isAvailableOnDisk !== false,
           status: a.status || 'verified_webp',
           pilotId: itemPilotId,
           pilotName: cleanPilotName,
           pilotCallsign: cleanPilotCallsign,
-          pilotGender: meta?.gender || 'Female',
-          pilotPortraitPath: `images/pilots/${itemPilotId}/${itemPilotId}-portrait.webp`,
+          pilotGender: pInfo?.gender || meta?.gender || 'Female',
+          pilotPortraitPath: pInfo?.portraitPath || cleanPath,
         }
       })
+      nextMap[currentPilotId] = converted
+    }
 
+    if (Object.keys(nextMap).length > 0) {
       setPilotsArtworksMap((prev) => ({
         ...prev,
-        [currentPilotId]: converted,
+        ...nextMap,
       }))
     }
-  }, [currentPilotId, currentPilotName, currentPilotCallsign, artworks])
+  }, [currentPilotId, currentPilotName, currentPilotCallsign, artworks, allPilots, canonicalPilots])
 
   // Load a pilot's artworks into memory cache
   const loadPilotArtworks = useCallback(async (pilotId: string) => {
@@ -350,13 +529,21 @@ export function ArtViewer({
   }, [isRandomMode, randomPool.length])
 
   // =========================================================================
-  // ATOMIC TRANSITION ENGINE
+  // ATOMIC TRANSITION ENGINE (With Smooth Slide Direction)
   // Never show new metadata with old image. Never show black screen.
   // =========================================================================
   const transitionToArtwork = useCallback(
-    async (targetArtwork: ShowcaseArtwork) => {
+    async (targetArtwork: ShowcaseArtwork, direction: number = 1) => {
       if (!targetArtwork || targetArtwork.identityKey === currentArtwork.identityKey) {
         return
+      }
+
+      setSlideDirection(direction)
+
+      // Reset zoom if zoomed in so slide is centered
+      if (transformRef.current && currentScale !== 1) {
+        transformRef.current.resetTransform()
+        setCurrentScale(1)
       }
 
       // Generate a new sequence token to cancel previous in-flight transitions
@@ -391,14 +578,14 @@ export function ArtViewer({
           // Skip broken image and try next in shuffle bag
           const nextIdx = (shuffleIndex + 1) % shuffleBag.length
           setShuffleIndex(nextIdx)
-          transitionToArtwork(shuffleBag[nextIdx])
+          transitionToArtwork(shuffleBag[nextIdx], 1)
         }
       }
     },
-    [currentArtwork.identityKey, isRandomMode, shuffleBag, shuffleIndex, onSelectArtwork]
+    [currentArtwork.identityKey, currentScale, isRandomMode, shuffleBag, shuffleIndex, onSelectArtwork]
   )
 
-  // Advance Next (Sequential or Random)
+  // Advance Next (Sequential or Random) with slideDirection = 1
   const handleAdvanceNext = useCallback(() => {
     if (isRandomMode && shuffleBag.length > 0) {
       let nextIdx = shuffleIndex + 1
@@ -414,42 +601,57 @@ export function ArtViewer({
       setShuffleIndex(nextIdx)
       const nextTarget = currentBag[nextIdx]
       if (nextTarget) {
-        transitionToArtwork(nextTarget)
+        transitionToArtwork(nextTarget, 1)
       }
     } else {
-      // Sequential Mode
+      // Sequential Mode for same pilot
       const currentList = pilotsArtworksMap[currentPilotId] || []
       if (currentList.length > 0) {
         const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
         const nextIdx = (curIdx + 1) % currentList.length
-        transitionToArtwork(currentList[nextIdx])
+        transitionToArtwork(currentList[nextIdx], 1)
       } else if (hasNext && onNext) {
+        setSlideDirection(1)
         onNext()
       }
     }
   }, [isRandomMode, shuffleBag, shuffleIndex, randomPool, pilotsArtworksMap, currentPilotId, currentArtwork.identityKey, hasNext, onNext, transitionToArtwork])
 
-  // Advance Prev (Sequential or Random)
+  // Advance Prev (Sequential or Random) with slideDirection = -1
   const handleAdvancePrev = useCallback(() => {
     if (isRandomMode && shuffleBag.length > 0) {
       const prevIdx = (shuffleIndex - 1 + shuffleBag.length) % shuffleBag.length
       setShuffleIndex(prevIdx)
       const prevTarget = shuffleBag[prevIdx]
       if (prevTarget) {
-        transitionToArtwork(prevTarget)
+        transitionToArtwork(prevTarget, -1)
       }
     } else {
-      // Sequential Mode
+      // Sequential Mode for same pilot
       const currentList = pilotsArtworksMap[currentPilotId] || []
       if (currentList.length > 0) {
         const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
         const prevIdx = (curIdx - 1 + currentList.length) % currentList.length
-        transitionToArtwork(currentList[prevIdx])
+        transitionToArtwork(currentList[prevIdx], -1)
       } else if (hasPrev && onPrev) {
+        setSlideDirection(-1)
         onPrev()
       }
     }
   }, [isRandomMode, shuffleBag, shuffleIndex, pilotsArtworksMap, currentPilotId, currentArtwork.identityKey, hasPrev, onPrev, transitionToArtwork])
+
+  // Select a specific artwork of the current pilot with auto-calculated slide direction
+  const handleSelectPilotArtwork = useCallback(
+    (targetArtwork: ShowcaseArtwork) => {
+      pauseSlideshow()
+      const currentList = pilotsArtworksMap[currentPilotId] || []
+      const curIdx = currentList.findIndex((a) => a.identityKey === currentArtwork.identityKey)
+      const targetIdx = currentList.findIndex((a) => a.identityKey === targetArtwork.identityKey)
+      const dir = targetIdx >= curIdx ? 1 : -1
+      transitionToArtwork(targetArtwork, dir)
+    },
+    [currentArtwork.identityKey, currentPilotId, pauseSlideshow, pilotsArtworksMap, transitionToArtwork]
+  )
 
   // Preload Queue (Preload 2-3 upcoming images ahead of time)
   useEffect(() => {
@@ -553,6 +755,8 @@ export function ArtViewer({
           setShowInfoDrawer(false)
         } else if (showPilotDrawer) {
           setShowPilotDrawer(false)
+        } else if (showFilmstrip) {
+          setShowFilmstrip(false)
         } else if (isCleanView) {
           setIsCleanView(false)
         } else {
@@ -573,6 +777,9 @@ export function ArtViewer({
         e.preventDefault()
         pauseSlideshow()
         setShowInfoDrawer((prev) => !prev)
+      } else if (e.key === 't' || e.key === 'T') {
+        e.preventDefault()
+        setShowFilmstrip((prev) => !prev)
       } else if (e.key === 'h' || e.key === 'H') {
         e.preventDefault()
         setIsCleanView((prev) => !prev)
@@ -585,13 +792,32 @@ export function ArtViewer({
         setCurrentScale(1)
       }
     },
-    [isOpen, showInfoDrawer, showPilotDrawer, isCleanView, pauseSlideshow, handleAdvancePrev, handleAdvanceNext, onClose]
+    [isOpen, showInfoDrawer, showPilotDrawer, showFilmstrip, isCleanView, pauseSlideshow, handleAdvancePrev, handleAdvanceNext, onClose]
   )
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
+
+  const currentPilotArtworks = useMemo(() => {
+    return pilotsArtworksMap[currentPilotId] || []
+  }, [pilotsArtworksMap, currentPilotId])
+
+  // Auto-scroll active thumbnail into center of filmstrip when artwork changes
+  useEffect(() => {
+    if (isOpen && showFilmstrip && filmstripRef.current) {
+      const activeEl = filmstripRef.current.querySelector('[data-active="true"]') as HTMLElement
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+      }
+    }
+  }, [isOpen, currentArtwork.identityKey, showFilmstrip])
+
+  // Reset image error flag when switching artwork
+  useEffect(() => {
+    setImageLoadError(false)
+  }, [currentArtwork.identityKey])
 
   if (!isOpen) return null
 
@@ -663,36 +889,36 @@ export function ArtViewer({
     ? (pilotsArtworksMap[currentPilotId].findIndex((a) => a.identityKey === currentArtwork.identityKey) + 1)
     : (currentIndex || 1)
 
-  return (
+  const viewerContent = (
     <div
       role="dialog"
       aria-modal="true"
       aria-label={currentArtwork.title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-xl select-none animate-in fade-in duration-200"
+      className="art-viewer-overlay fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-xl select-none animate-in fade-in duration-200"
     >
       {/* =================================================================== */}
-      {/* 1. TOP HEADER HUD (Clean, Authoritative Metadata)                   */}
+      {/* 1. TOP HEADER HUD (Left Metadata Pill + Independent Top-Right X)    */}
       {/* =================================================================== */}
-      {!isCleanView && (
-        <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-4 z-40 flex items-center justify-between gap-2 pointer-events-none transition-all duration-300">
-          {/* Metadata Pill */}
-          <div className="flex items-center gap-2 pointer-events-auto bg-[#090D18]/92 border border-[#1E2D42] backdrop-blur-md px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-xs font-mono text-[#F1F5F9] shadow-2xl max-w-[calc(100vw-76px)] sm:max-w-2xl">
+      <div className="absolute top-3 left-3 right-28 sm:top-4 sm:left-4 sm:right-36 z-[70] flex items-center pointer-events-none transition-all duration-300 pt-[env(safe-area-inset-top,0px)]">
+        {!isCleanView ? (
+          /* Metadata Pill - strictly bounded on the left so it never overlaps the top-right Close button */
+          <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto bg-[#090D18]/95 border border-[#1E2D42] backdrop-blur-md pl-3 pr-1.5 py-1 sm:pl-3.5 sm:pr-2 rounded-full text-xs font-mono text-[#F1F5F9] shadow-2xl min-w-0 max-w-full sm:max-w-xl overflow-hidden min-h-[44px]">
             {isRandomMode ? (
               <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-500/50 shrink-0">
                 <Shuffle className="w-3 h-3 text-amber-400 animate-pulse" />
-                <span>RANDOM</span>
+                <span className="hidden xs:inline">RANDOM</span>
               </span>
             ) : (
               <Sparkles className="w-3.5 h-3.5 text-[#00D4FF] shrink-0" />
             )}
 
             {/* Counter */}
-            <span className="whitespace-nowrap text-[11px] font-mono font-black text-[#00D4FF] bg-[#00D4FF]/15 px-2.5 py-0.5 rounded-full border border-[#00D4FF]/40 tracking-wider shrink-0">
-              ẢNH {String(effectiveIndex).padStart(2, '0')} / {String(effectiveTotal).padStart(2, '0')}
+            <span className="whitespace-nowrap text-[10px] sm:text-[11px] font-mono font-black text-[#00D4FF] bg-[#00D4FF]/15 px-2 py-0.5 rounded-full border border-[#00D4FF]/40 tracking-wider shrink-0">
+              {String(effectiveIndex).padStart(2, '0')}/{String(effectiveTotal).padStart(2, '0')}
             </span>
 
             {/* Authoritative Pilot Badge */}
-            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-mono font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/60 shrink-0 uppercase">
+            <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-mono font-bold text-cyan-300 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/60 shrink-0 uppercase">
               <span>{currentArtwork.pilotName}</span>
               {currentArtwork.pilotCallsign && (
                 <span className="text-slate-400">· {currentArtwork.pilotCallsign}</span>
@@ -700,14 +926,14 @@ export function ArtViewer({
             </span>
 
             {/* Artwork Title */}
-            <span className="font-bold truncate text-white min-w-0">{currentArtwork.title}</span>
+            <span className="font-bold truncate text-white min-w-0 flex-1">{currentArtwork.title}</span>
 
             {/* In-Flight Transition Indicator */}
             {isTransitioning && (
               <Loader2 className="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0 ml-1" />
             )}
 
-            {/* Info Drawer Button */}
+            {/* Info Drawer Button with 44px touch target */}
             <button
               type="button"
               onClick={() => {
@@ -715,68 +941,80 @@ export function ArtViewer({
                 setShowInfoDrawer((prev) => !prev)
               }}
               title="Xem thông tin chi tiết tác phẩm (I)"
-              className="p-1 rounded-full text-[#00D4FF] hover:bg-[#142338] transition-colors shrink-0 ml-1 cursor-pointer"
+              aria-label="Xem thông tin chi tiết tác phẩm"
+              className="min-w-[44px] min-h-[44px] p-2.5 rounded-full text-[#00D4FF] hover:bg-[#142338] flex items-center justify-center transition-colors shrink-0 cursor-pointer touch-manipulation"
             >
-              <Info className="w-3.5 h-3.5" />
+              <Info className="w-4 h-4" />
             </button>
           </div>
-
-          {/* Close Button */}
+        ) : (
+          /* Clean View Restore Button on Left */
           <button
             type="button"
-            onClick={onClose}
-            aria-label="Đóng viewer (Esc)"
-            className="pointer-events-auto w-11 h-11 rounded-full bg-[#090D18]/92 border border-[#1E2D42] hover:border-[#EF4444] text-[#CBD5E1] hover:text-[#EF4444] hover:bg-rose-950/40 flex items-center justify-center transition-all shadow-2xl cursor-pointer active:scale-95 shrink-0"
-            title="Đóng viewer (Esc)"
+            onClick={() => setIsCleanView(false)}
+            className="pointer-events-auto px-4 py-2.5 rounded-full bg-[#090D18]/90 hover:bg-black border border-[#1E2D42] text-xs font-mono text-cyan-300 flex items-center gap-1.5 backdrop-blur-md shadow-2xl cursor-pointer transition-all animate-in fade-in min-h-[44px] min-w-[44px] touch-manipulation"
+            title="Bật lại thanh điều khiển (H)"
           >
-            <X className="w-5 h-5" />
+            <Eye className="w-4 h-4 text-cyan-400" />
+            <span>Hiện HUD</span>
           </button>
-        </div>
-      )}
-
-      {/* Clean View Exit Pill */}
-      {isCleanView && (
-        <button
-          type="button"
-          onClick={() => setIsCleanView(false)}
-          className="absolute top-4 right-4 z-40 px-3.5 py-1.5 rounded-full bg-black/80 hover:bg-black border border-[#1E2D42] text-xs font-mono text-cyan-300 flex items-center gap-1.5 backdrop-blur-md shadow-2xl cursor-pointer transition-all animate-in fade-in"
-          title="Bật lại thanh điều khiển (H)"
-        >
-          <Eye className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Hiện Controls (H)</span>
-        </button>
-      )}
+        )}
+      </div>
 
       {/* =================================================================== */}
-      {/* 2. PREVIOUS / NEXT SIDE ARROWS                                      */}
+      {/* 1.5. PROMINENT HIGH-CONTRAST TOP-RIGHT CLOSE ('X') BUTTON           */}
+      {/* Touch-area wrapper + >= 48px button pinned over image at top-right  */}
+      {/* =================================================================== */}
+      <div className="fixed top-2 right-2 sm:top-3 sm:right-3 z-[10010] p-1 pointer-events-auto pt-[env(safe-area-inset-top,0px)]">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation()
+            onClose()
+          }}
+          aria-label="Đóng chế độ xem ảnh toàn màn hình (Esc)"
+          title="Đóng chế độ xem ảnh toàn màn hình (Esc)"
+          className="touch-manipulation min-w-[48px] min-h-[48px] h-12 px-3.5 sm:px-4 rounded-full bg-rose-600 hover:bg-rose-500 active:bg-rose-700 border-2 border-white/90 text-white flex items-center justify-center gap-1.5 transition-all shadow-[0_4px_28px_rgba(0,0,0,0.95),0_0_16px_rgba(225,29,72,0.65)] cursor-pointer active:scale-95"
+        >
+          <X className="w-6 h-6 stroke-[2.75] shrink-0" />
+          <span className="text-xs font-mono font-black uppercase tracking-wider">Đóng</span>
+        </button>
+      </div>
+
+      {/* =================================================================== */}
+      {/* 2. PREVIOUS / NEXT SIDE ARROWS (With >= 44px Touch Wrapper)         */}
       {/* =================================================================== */}
       {!isCleanView && (
         <>
-          <button
-            type="button"
-            onClick={() => {
-              pauseSlideshow()
-              handleAdvancePrev()
-            }}
-            aria-label="Tác phẩm trước (Arrow Left)"
-            className="absolute left-3 sm:left-4 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#090D18]/85 border border-[#1E2D42] hover:border-[#00D4FF] text-[#CBD5E1] hover:text-[#00D4FF] hover:bg-[#142338] flex items-center justify-center transition-all backdrop-blur-md shadow-2xl active:scale-95 cursor-pointer"
-            title="Tác phẩm trước (←)"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </button>
+          <div className="absolute left-1.5 sm:left-3 z-30 p-1.5 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => {
+                pauseSlideshow()
+                handleAdvancePrev()
+              }}
+              aria-label="Tác phẩm trước (Arrow Left)"
+              className="touch-manipulation min-w-[48px] min-h-[48px] w-12 h-12 rounded-full bg-[#090D18]/90 border border-[#1E2D42] hover:border-[#00D4FF] text-[#CBD5E1] hover:text-[#00D4FF] hover:bg-[#142338] flex items-center justify-center transition-all backdrop-blur-md shadow-2xl active:scale-95 cursor-pointer"
+              title="Tác phẩm trước (←)"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              pauseSlideshow()
-              handleAdvanceNext()
-            }}
-            aria-label="Tác phẩm tiếp theo (Arrow Right)"
-            className="absolute right-3 sm:right-4 z-30 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-[#090D18]/85 border border-[#1E2D42] hover:border-[#00D4FF] text-[#CBD5E1] hover:text-[#00D4FF] hover:bg-[#142338] flex items-center justify-center transition-all backdrop-blur-md shadow-2xl active:scale-95 cursor-pointer"
-            title="Tác phẩm tiếp theo (→)"
-          >
-            <ChevronRight className="w-6 h-6" />
-          </button>
+          <div className="absolute right-1.5 sm:right-3 z-30 p-1.5 pointer-events-auto">
+            <button
+              type="button"
+              onClick={() => {
+                pauseSlideshow()
+                handleAdvanceNext()
+              }}
+              aria-label="Tác phẩm tiếp theo (Arrow Right)"
+              className="touch-manipulation min-w-[48px] min-h-[48px] w-12 h-12 rounded-full bg-[#090D18]/90 border border-[#1E2D42] hover:border-[#00D4FF] text-[#CBD5E1] hover:text-[#00D4FF] hover:bg-[#142338] flex items-center justify-center transition-all backdrop-blur-md shadow-2xl active:scale-95 cursor-pointer"
+              title="Tác phẩm tiếp theo (→)"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
         </>
       )}
 
@@ -821,21 +1059,70 @@ export function ArtViewer({
                 wrapperClass="!w-full !h-full flex items-center justify-center cursor-grab active:cursor-grabbing"
                 contentClass="flex items-center justify-center min-w-full min-h-full"
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  key={currentArtwork.identityKey}
-                  src={currentArtwork.resolvedUrl}
-                  alt={currentArtwork.title}
-                  draggable={false}
-                  className="max-w-[94vw] max-h-[86vh] object-contain select-none transition-opacity duration-200 drop-shadow-[0_25px_50px_rgba(0,0,0,0.95)]"
-                  onLoad={(e) => {
-                    const target = e.currentTarget
-                    setNaturalDimensions({
-                      width: target.naturalWidth,
-                      height: target.naturalHeight,
-                    })
-                  }}
-                />
+                <AnimatePresence custom={slideDirection} mode="wait" initial={false}>
+                  <motion.div
+                    key={currentArtwork.identityKey}
+                    custom={slideDirection}
+                    variants={slideVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    drag={currentScale === 1 ? 'x' : false}
+                    dragConstraints={{ left: 0, right: 0 }}
+                    dragElastic={0.2}
+                    onDragEnd={(_, info) => {
+                      if (currentScale !== 1) return
+                      const swipeThreshold = 50
+                      const swipeVelocity = 350
+                      if (info.offset.x < -swipeThreshold || info.velocity.x < -swipeVelocity) {
+                        pauseSlideshow()
+                        handleAdvanceNext()
+                      } else if (info.offset.x > swipeThreshold || info.velocity.x > swipeVelocity) {
+                        pauseSlideshow()
+                        handleAdvancePrev()
+                      }
+                    }}
+                    className="flex items-center justify-center select-none will-change-transform"
+                  >
+                    {imageLoadError ? (
+                      <div className="z-20 max-w-sm text-center p-6 rounded-2xl bg-[#090D18]/95 border border-rose-500/40 shadow-2xl space-y-3 mx-4">
+                        <div className="w-12 h-12 mx-auto rounded-2xl bg-rose-950/60 border border-rose-500/40 flex items-center justify-center text-rose-400">
+                          <FileArchive className="w-6 h-6" />
+                        </div>
+                        <h4 className="text-sm font-bold text-white font-mono">{currentArtwork.title}</h4>
+                        <p className="text-xs text-rose-300 leading-relaxed">
+                          Không thể tải hình ảnh từ CDN. Vui lòng thử lại hoặc kiểm tra kết nối mạng.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setImageLoadError(false)}
+                          className="px-4 py-2 rounded-lg bg-[#142338] hover:bg-[#1E3553] border border-[#00D4FF]/50 text-xs font-mono font-bold text-[#00D4FF] cursor-pointer"
+                        >
+                          Thử tải lại
+                        </button>
+                      </div>
+                    ) : (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={currentArtwork.resolvedUrl}
+                        alt={currentArtwork.title}
+                        draggable={false}
+                        className="max-w-[94vw] max-h-[86vh] object-contain select-none drop-shadow-[0_25px_50px_rgba(0,0,0,0.95)]"
+                        onLoad={(e) => {
+                          setImageLoadError(false)
+                          const target = e.currentTarget
+                          setNaturalDimensions({
+                            width: target.naturalWidth,
+                            height: target.naturalHeight,
+                          })
+                        }}
+                        onError={() => {
+                          setImageLoadError(true)
+                        }}
+                      />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
               </TransformComponent>
             )}
           </TransformWrapper>
@@ -843,17 +1130,17 @@ export function ArtViewer({
       </div>
 
       {/* =================================================================== */}
-      {/* 4. BOTTOM FLOATING CONTROL DOCK (Safe Area, Responsive)             */}
+      {/* 4. BOTTOM FLOATING CONTROL DOCK (Safe Area, >= 44px Touch Targets)  */}
       {/* =================================================================== */}
       {!isCleanView && (
-        <div className="absolute bottom-4 sm:bottom-6 z-40 flex items-center gap-1 sm:gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-[#090D18]/92 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl text-[#CBD5E1] max-w-[96vw] overflow-x-auto scrollbar-none pb-[env(safe-area-inset-bottom,0px)]">
+        <div className="absolute bottom-3 sm:bottom-5 z-40 flex items-center gap-1 sm:gap-1.5 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-[#090D18]/95 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl text-[#CBD5E1] max-w-[96vw] overflow-x-auto scrollbar-none pb-[env(safe-area-inset-bottom,0px)]">
           {/* PLAY / PAUSE */}
           <button
             type="button"
             onClick={() => setIsPlaying((prev) => !prev)}
             title={isPlaying ? 'Tạm dừng slideshow (Space)' : 'Bật tự động trình chiếu (Space)'}
             aria-label="Play or Pause Slideshow"
-            className={`p-2 rounded-full font-bold transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+            className={`min-w-[44px] min-h-[44px] p-2.5 rounded-full font-bold transition-all cursor-pointer flex items-center justify-center shrink-0 touch-manipulation ${
               isPlaying
                 ? 'bg-cyan-500 text-slate-950 shadow-[0_0_12px_rgba(0,212,255,0.6)]'
                 : 'hover:bg-[#142338] hover:text-[#00D4FF]'
@@ -868,34 +1155,34 @@ export function ArtViewer({
               type="button"
               onClick={() => setShowSpeedSelector((prev) => !prev)}
               title="Chọn tốc độ chuyển ảnh"
-              className="px-2 py-1 text-[11px] font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer flex items-center gap-1"
+              className="min-w-[44px] min-h-[44px] px-2.5 py-2 text-[11px] font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer flex items-center justify-center gap-1 touch-manipulation"
             >
-              <Clock className="w-3 h-3 text-cyan-400" />
+              <Clock className="w-3.5 h-3.5 text-cyan-400" />
               <span>{speedSeconds}s</span>
             </button>
 
             {showSpeedSelector && (
-              <div className="absolute bottom-full mb-2 left-0 z-50 rounded-xl bg-[#0B111E] border border-cyan-800/80 p-1.5 shadow-2xl flex flex-col gap-1 min-w-[70px]">
+              <div className="absolute bottom-full mb-2 left-0 z-50 rounded-xl bg-[#0B111E] border border-cyan-800/80 p-1.5 shadow-2xl flex flex-col gap-1 min-w-[80px]">
                 {DEFAULT_SPEEDS.map((spd) => (
                   <button
                     key={spd}
                     type="button"
                     onClick={() => handleSelectSpeed(spd)}
-                    className={`px-2 py-1 text-[11px] font-mono font-bold rounded text-left transition-colors cursor-pointer flex items-center justify-between ${
+                    className={`min-h-[44px] px-3 py-2 text-xs font-mono font-bold rounded text-left transition-colors cursor-pointer flex items-center justify-between touch-manipulation ${
                       speedSeconds === spd
                         ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/50'
                         : 'text-slate-300 hover:bg-slate-800'
                     }`}
                   >
                     <span>{spd}s</span>
-                    {speedSeconds === spd && <Check className="w-3 h-3 text-cyan-400" />}
+                    {speedSeconds === spd && <Check className="w-3.5 h-3.5 text-cyan-400" />}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          <div className="h-4 w-px bg-[#1E2D42] mx-0.5 shrink-0" />
+          <div className="h-5 w-px bg-[#1E2D42] mx-0.5 shrink-0" />
 
           {/* RANDOM SHOWCASE BUTTON */}
           <button
@@ -906,13 +1193,13 @@ export function ArtViewer({
             }}
             title={isRandomMode ? 'Tắt Random (R)' : 'Bật Random Showcase 12 Pilot (R)'}
             aria-label="Toggle Random Showcase"
-            className={`px-2.5 py-1 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+            className={`min-w-[44px] min-h-[44px] px-3 py-2 text-xs font-mono font-bold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-1.5 shrink-0 touch-manipulation ${
               isRandomMode
                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-[0_0_10px_rgba(245,158,11,0.3)]'
                 : 'hover:bg-[#142338] hover:text-[#00D4FF]'
             }`}
           >
-            <Shuffle className={`w-3.5 h-3.5 ${isRandomMode ? 'text-amber-400' : 'text-slate-400'}`} />
+            <Shuffle className={`w-4 h-4 ${isRandomMode ? 'text-amber-400' : 'text-slate-400'}`} />
             <span className="hidden sm:inline">Random</span>
           </button>
 
@@ -925,17 +1212,17 @@ export function ArtViewer({
             }}
             title="Chọn danh sách phi công trình chiếu"
             aria-label="Chọn phi công trình chiếu"
-            className={`p-1.5 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer flex items-center gap-1 shrink-0 ${
+            className={`min-w-[44px] min-h-[44px] px-2.5 py-2 rounded-lg text-xs font-mono font-bold transition-colors cursor-pointer flex items-center justify-center gap-1 shrink-0 touch-manipulation ${
               showPilotDrawer
                 ? 'bg-cyan-950 border border-cyan-500 text-cyan-300'
                 : 'hover:bg-[#142338] hover:text-[#00D4FF]'
             }`}
           >
-            <Users className="w-3.5 h-3.5 text-cyan-400" />
+            <Users className="w-4 h-4 text-cyan-400" />
             <span className="text-[11px] hidden sm:inline">Pilots ({selectedPilotIds.length})</span>
           </button>
 
-          <div className="h-4 w-px bg-[#1E2D42] mx-0.5 shrink-0" />
+          <div className="h-5 w-px bg-[#1E2D42] mx-0.5 shrink-0" />
 
           {/* ZOOM OUT */}
           <button
@@ -946,7 +1233,7 @@ export function ArtViewer({
             }}
             title="Thu nhỏ"
             aria-label="Thu nhỏ"
-            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer flex items-center justify-center shrink-0 touch-manipulation"
           >
             <ZoomOut className="w-4 h-4" />
           </button>
@@ -960,7 +1247,7 @@ export function ArtViewer({
             }}
             title="Phóng to"
             aria-label="Phóng to"
-            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer flex items-center justify-center shrink-0 touch-manipulation"
           >
             <ZoomIn className="w-4 h-4" />
           </button>
@@ -975,7 +1262,7 @@ export function ArtViewer({
             }}
             title="Vừa khung hình (Fit)"
             aria-label="Vừa khung hình"
-            className="px-2 py-1 text-xs font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
+            className="min-w-[44px] min-h-[44px] px-2.5 py-2 text-xs font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer flex items-center justify-center shrink-0 touch-manipulation"
           >
             Fit
           </button>
@@ -986,7 +1273,7 @@ export function ArtViewer({
             onClick={handleSetActualSize}
             title="Kích thước thực 100%"
             aria-label="Kích thước thực"
-            className="px-2 py-1 text-xs font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer hidden sm:block shrink-0"
+            className="min-w-[44px] min-h-[44px] px-2.5 py-2 text-xs font-mono font-bold rounded-lg hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer hidden sm:flex items-center justify-center shrink-0 touch-manipulation"
           >
             100%
           </button>
@@ -1006,12 +1293,12 @@ export function ArtViewer({
             }}
             title="Đặt lại góc nhìn (0)"
             aria-label="Đặt lại góc nhìn"
-            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer flex items-center justify-center shrink-0 touch-manipulation"
           >
-            <RotateCcw className="w-3.5 h-3.5" />
+            <RotateCcw className="w-4 h-4" />
           </button>
 
-          <div className="h-4 w-px bg-[#1E2D42] mx-0.5 shrink-0" />
+          <div className="h-5 w-px bg-[#1E2D42] mx-0.5 shrink-0" />
 
           {/* CLEAN VIEW / HIDE HUD */}
           <button
@@ -1019,9 +1306,27 @@ export function ArtViewer({
             onClick={() => setIsCleanView(true)}
             title="Ẩn toàn bộ controls (H)"
             aria-label="Ẩn toàn bộ controls"
-            className="p-1.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer shrink-0"
+            className="min-w-[44px] min-h-[44px] p-2.5 rounded-full hover:bg-[#142338] hover:text-[#00D4FF] transition-colors cursor-pointer flex items-center justify-center shrink-0 touch-manipulation"
           >
             <EyeOff className="w-4 h-4" />
+          </button>
+
+          {/* FILMSTRIP TOGGLE (SAME PILOT ARTWORKS) */}
+          <button
+            type="button"
+            onClick={() => {
+              pauseSlideshow()
+              setShowFilmstrip((prev) => !prev)
+            }}
+            title={showFilmstrip ? 'Ẩn danh mục ảnh phi công (T)' : 'Xem danh mục ảnh cùng phi công (T)'}
+            aria-label="Xem danh mục ảnh cùng phi công"
+            className={`min-w-[44px] min-h-[44px] p-2.5 rounded-full transition-colors cursor-pointer flex items-center justify-center shrink-0 touch-manipulation ${
+              showFilmstrip
+                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_10px_rgba(0,212,255,0.6)] font-bold'
+                : 'hover:bg-[#142338] hover:text-[#00D4FF]'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
           </button>
 
           {/* INFO DRAWER TOGGLE */}
@@ -1033,14 +1338,91 @@ export function ArtViewer({
             }}
             title={showInfoDrawer ? 'Ẩn thông tin (I)' : 'Xem thông tin tác phẩm (I)'}
             aria-label="Bật tắt thông tin chi tiết tác phẩm"
-            className={`p-1.5 rounded-full transition-colors cursor-pointer shrink-0 ${
+            className={`min-w-[44px] min-h-[44px] p-2.5 rounded-full transition-colors cursor-pointer flex items-center justify-center shrink-0 touch-manipulation ${
               showInfoDrawer ? 'bg-[#00D4FF] text-[#070A12]' : 'hover:bg-[#142338] hover:text-[#00D4FF]'
             }`}
           >
             <Info className="w-4 h-4" />
           </button>
+
+          <div className="h-5 w-px bg-[#1E2D42] mx-0.5 shrink-0" />
+
+          {/* BOTTOM DOCK CLOSE (X) BUTTON FOR EASY ONE-HANDED PHONE EXIT */}
+          <button
+            type="button"
+            onClick={onClose}
+            title="Đóng toàn màn hình (Esc)"
+            aria-label="Đóng toàn màn hình"
+            className="min-w-[44px] min-h-[44px] px-3.5 py-2 rounded-full bg-rose-950/90 hover:bg-rose-600 border border-rose-500/80 text-rose-200 hover:text-white font-mono text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1 shrink-0 touch-manipulation"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+            <span className="text-[11px]">Thoát</span>
+          </button>
         </div>
       )}
+
+      {/* =================================================================== */}
+      {/* 4.5. THUMBNAIL FILMSTRIP DRAWER (Same Pilot Artwork Fast Switcher)  */}
+      {/* =================================================================== */}
+      <AnimatePresence>
+        {showFilmstrip && currentPilotArtworks.length > 0 && !isCleanView && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.98 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute bottom-20 sm:bottom-24 z-40 max-w-[95vw] sm:max-w-2xl px-3 py-2.5 rounded-2xl bg-[#090D18]/96 border border-[#1E2D42] backdrop-blur-2xl shadow-2xl flex flex-col gap-1.5"
+          >
+            <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 px-1">
+              <span className="font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5" />
+                <span>BỘ SƯU TẬP {currentArtwork.pilotName.toUpperCase()} ({currentPilotArtworks.length})</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowFilmstrip(false)}
+                aria-label="Đóng thanh chọn nhanh ảnh"
+                className="min-w-[44px] min-h-[44px] p-2 hover:text-white cursor-pointer text-slate-400 flex items-center justify-center rounded-lg hover:bg-slate-800/60 touch-manipulation"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div
+              ref={filmstripRef}
+              className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-thin scroll-smooth max-h-24"
+            >
+              {currentPilotArtworks.map((art, idx) => {
+                const isActive = art.identityKey === currentArtwork.identityKey
+                return (
+                  <button
+                    key={art.identityKey}
+                    type="button"
+                    data-active={isActive ? 'true' : 'false'}
+                    onClick={() => handleSelectPilotArtwork(art)}
+                    title={`Chuyển tới ảnh ${idx + 1}: ${art.title}`}
+                    className={`relative shrink-0 w-12 h-14 sm:w-14 sm:h-16 rounded-lg overflow-hidden border transition-all cursor-pointer ${
+                      isActive
+                        ? 'border-cyan-400 ring-2 ring-cyan-500/60 scale-105 shadow-md shadow-cyan-950 z-10'
+                        : 'border-slate-800 opacity-60 hover:opacity-100 hover:border-slate-600'
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={art.resolvedUrl}
+                      alt={art.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute bottom-0 inset-x-0 bg-black/85 text-[9px] font-mono font-bold text-center text-cyan-300 py-0.5">
+                      {String(idx + 1).padStart(2, '0')}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* =================================================================== */}
       {/* 5. VISUAL PILOT SELECTOR DRAWER (With Portrait & Gender Icons)     */}
@@ -1069,9 +1451,10 @@ export function ArtViewer({
                 <button
                   type="button"
                   onClick={() => setShowPilotDrawer(false)}
-                  className="text-slate-400 hover:text-white p-1 rounded-lg cursor-pointer"
+                  aria-label="Đóng danh sách phi công"
+                  className="min-w-[44px] min-h-[44px] text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800/60 flex items-center justify-center cursor-pointer touch-manipulation"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -1218,7 +1601,7 @@ export function ArtViewer({
                   type="button"
                   onClick={() => setShowInfoDrawer(false)}
                   aria-label="Đóng panel thông tin"
-                  className="text-[#A7B6C8] hover:text-white p-1 rounded-lg hover:bg-[#142338] transition-colors cursor-pointer"
+                  className="min-w-[44px] min-h-[44px] text-[#A7B6C8] hover:text-white p-2 rounded-lg hover:bg-[#142338] flex items-center justify-center transition-colors cursor-pointer touch-manipulation"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1346,6 +1729,12 @@ export function ArtViewer({
       )}
     </div>
   )
+
+  if (typeof document !== 'undefined') {
+    return createPortal(viewerContent, document.body)
+  }
+
+  return viewerContent
 }
 
 export default ArtViewer

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { loadV2UIPreferences, saveV2UIPreferences } from '@/lib/game/v2/ui-preferences'
 import { CharacterContentManager } from '@/components/game/v2/admin/character-content-manager'
+import { SettingsV2Modal } from '@/components/game/v2/settings/settings-v2-modal'
 
 export interface V2ShellProps {
   children: React.ReactNode
@@ -99,12 +100,6 @@ const GLOBAL_NAV_ITEMS: NavItem[] = [
 
 /**
  * STARFRONT WORLD V2 — OFFICIAL APP SHELL
- * 
- * Strict architectural structure:
- * - GLOBAL TOP MENU V2: Single-tier, brand identity, stardate, system status, breadcrumbs, return to V1, mobile hamburger.
- * - GLOBAL LEFT MENU V2: Two independent modes (MINI 64px default, FULL 240px), independent toggle, state persistence.
- * - MAIN CONTENT VIEWPORT: Flex-1, automatically adapts to Left Menu width without page refresh.
- * - MOBILE EXPERIENCE: Responsive drawer sliding from left edge with backdrop blur & accessible dismiss.
  */
 export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) {
   // Global Left Menu mode: 'mini' (64px) vs 'full' (240px)
@@ -113,6 +108,8 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState<boolean>(false)
   // AdminCP Character Content Manager modal state
   const [isAdminCpOpen, setIsAdminCpOpen] = useState<boolean>(false)
+  // Settings V2 (CDN / Content Release) modal state
+  const [isSettingsV2Open, setIsSettingsV2Open] = useState<boolean>(false)
   // Hydration state
   const [isMounted, setIsMounted] = useState<boolean>(false)
 
@@ -197,18 +194,18 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
           </span>
         </div>
 
-        {/* Right: Chỉ số Vũ Trụ Thật (Stardate, Status, Credits) */}
-        <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
+        {/* Right: Chỉ số Vũ Trụ Thật + Settings V2 (CDN Release) */}
+        <div className="flex items-center gap-2 sm:gap-2.5 text-xs font-mono">
           {/* Stardate Indicator */}
           <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-[#0E1626] border border-[#1E2D42] text-[#A7B6C8]">
-            <Radio className="w-3.5 h-3.5 text-[#00D4FF] animate-pulse" />
-            <span className="text-[11px] font-bold text-white">SD 2026.10</span>
+            <Radio className="w-3.5 h-3.5 text-[#00D4FF]" />
+            <span className="text-[11px] font-bold text-white">SD 2026.11</span>
           </div>
 
           {/* Credits Display */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0E1626] border border-[#1E2D42] text-[#F59E0B]">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0E1626] border border-[#1E2D42] text-[#F59E0B]">
             <Coins className="w-3.5 h-3.5 text-[#F59E0B]" />
-            <span className="font-bold text-white tracking-wide">45,820</span>
+            <span className="font-bold text-white tracking-wide tabular-nums">45,820</span>
             <span className="text-[10px] text-[#F59E0B]">₢</span>
           </div>
 
@@ -216,18 +213,24 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
           <button
             type="button"
             onClick={() => setIsAdminCpOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#0E1626] border border-[#1E2D42] hover:border-cyan-500 text-slate-300 hover:text-cyan-400 text-xs font-mono font-bold transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0E1626] border border-[#1E2D42] hover:border-cyan-500 text-slate-300 hover:text-cyan-400 text-xs font-mono font-bold transition-all cursor-pointer min-h-[36px]"
             title="Mở Quản trị viên Nội dung Nhân vật & Biên niên ký"
           >
             <Shield className="w-3.5 h-3.5 text-cyan-400" />
             <span className="hidden sm:inline">ADMINCP</span>
           </button>
 
-          {/* Core System Status */}
-          <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded bg-[#10B981]/10 border border-[#10B981]/30 text-[#10B981]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-            <span className="text-[10px] font-bold uppercase tracking-wider">ONLINE</span>
-          </div>
+          {/* Settings V2 (CDN / Content Release) Trigger — Matches Approved Concept Top-Right Gear Button */}
+          <button
+            type="button"
+            onClick={() => setIsSettingsV2Open(true)}
+            aria-label="Mở Settings V2 — CDN / Content Release"
+            title="Settings V2 → CDN / Content Release (R4 v4.0-assets-r4)"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#142338] border border-[#00D4FF]/60 hover:border-[#00D4FF] text-[#00D4FF] hover:text-white text-xs font-mono font-bold transition-all cursor-pointer shadow-[0_0_12px_rgba(0,212,255,0.2)] min-h-[36px]"
+          >
+            <Settings className="w-4 h-4 text-[#00D4FF]" />
+            <span className="hidden md:inline">SETTINGS V2</span>
+          </button>
         </div>
       </header>
 
@@ -285,9 +288,6 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
                           : 'text-[#7D90A6] group-hover:text-[#00D4FF]'
                       }`}
                     />
-                    {isActive && (
-                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#00D4FF] animate-pulse" />
-                    )}
                   </div>
 
                   {menuMode === 'full' && (
@@ -317,7 +317,7 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
             })}
           </nav>
 
-          {/* Menu Footer: Nút Chuyển Đổi MINI / FULL Độc Lập — Luôn hiển thị nổi bật, không phụ thuộc hover */}
+          {/* Menu Footer: Nút Chuyển Đổi MINI / FULL Độc Lập */}
           <div className="p-2 border-t border-[#1E2D42] bg-[#0A0F1A] flex items-center shrink-0">
             <button
               type="button"
@@ -409,7 +409,18 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
               </div>
 
               {/* Drawer Footer */}
-              <div className="pt-3 border-t border-[#1E2D42]">
+              <div className="pt-3 border-t border-[#1E2D42] space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMobileDrawerOpen(false)
+                    setIsSettingsV2Open(true)
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#142338] border border-[#00D4FF]/60 text-[#00D4FF] text-xs font-mono font-bold cursor-pointer"
+                >
+                  <Settings className="w-4 h-4 text-[#00D4FF]" />
+                  <span>SETTINGS V2 (CDN RELEASE)</span>
+                </button>
                 <Link
                   href="/v1"
                   onClick={() => setIsMobileDrawerOpen(false)}
@@ -438,6 +449,12 @@ export function V2Shell({ children, activeSectionId = 'pilots' }: V2ShellProps) 
           onClose={() => setIsAdminCpOpen(false)}
         />
       )}
+
+      {/* Settings V2 (CDN / Content Release) Modal */}
+      <SettingsV2Modal
+        isOpen={isSettingsV2Open}
+        onClose={() => setIsSettingsV2Open(false)}
+      />
     </div>
   )
 }

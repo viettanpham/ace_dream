@@ -1,0 +1,329 @@
+{
+  "configFileId": "system_pilot_class",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "metadata": {
+    "domain": "pilot",
+    "catalog": "class",
+    "foundation": "FND-1 / FND-8.2.3",
+    "status": "BOOTSTRAP_PROPOSED_UNLOCKED",
+    "notes": "12 Pilot Class Definitions (C01-C12). Proposed 20-point allocations remain PROPOSED_UNLOCKED and MUST NOT be consumed as Canonical Combat attributes. Lore fields fullName/age/callsign/origin/training/biography are intentionally omitted pending Pilot Canon lock."
+  },
+  "items": [
+    {
+      "id": "PILOT_CLASS_C01",
+      "characterClassId": "PILOT_CLASS_C01",
+      "personaCode": "C01",
+      "pilotId": "alviss",
+      "classCharacterName": "Alviss",
+      "gender": "MALE",
+      "roleCategory": "attack",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 6,
+        "def": 2,
+        "agi": 6,
+        "ene": 2,
+        "shd": 2,
+        "luk": 2
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_aerial_precision",
+        "pilot_trait_evasive_entry"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C02",
+      "characterClassId": "PILOT_CLASS_C02",
+      "personaCode": "C02",
+      "pilotId": "eric",
+      "classCharacterName": "Eric",
+      "gender": "MALE",
+      "roleCategory": "attack",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 7,
+        "def": 3,
+        "agi": 3,
+        "ene": 3,
+        "shd": 2,
+        "luk": 2
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_siege_pressure",
+        "pilot_trait_armor_piercer"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C03",
+      "characterClassId": "PILOT_CLASS_C03",
+      "personaCode": "C03",
+      "pilotId": "marcus",
+      "classCharacterName": "Marcus",
+      "gender": "MALE",
+      "roleCategory": "all",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 6,
+        "def": 6,
+        "agi": 2,
+        "ene": 2,
+        "shd": 2,
+        "luk": 2
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_fire_discipline",
+        "pilot_trait_defensive_read",
+        "pilot_trait_command_focus"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C04",
+      "characterClassId": "PILOT_CLASS_C04",
+      "personaCode": "C04",
+      "pilotId": "victor",
+      "classCharacterName": "Victor",
+      "gender": "MALE",
+      "roleCategory": "defense",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 2,
+        "def": 6,
+        "agi": 2,
+        "ene": 2,
+        "shd": 6,
+        "luk": 2
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_shield_anchor",
+        "pilot_trait_armor_resilience"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C05",
+      "characterClassId": "PILOT_CLASS_C05",
+      "personaCode": "C05",
+      "pilotId": "kaelen",
+      "classCharacterName": "Kaelen",
+      "gender": "FEMALE",
+      "roleCategory": "special",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 2,
+        "def": 2,
+        "agi": 6,
+        "ene": 3,
+        "shd": 2,
+        "luk": 5
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_shadow_approach",
+        "pilot_trait_intelligence_edge",
+        "pilot_trait_operational_instinct"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C06",
+      "characterClassId": "PILOT_CLASS_C06",
+      "personaCode": "C06",
+      "pilotId": "lyra",
+      "classCharacterName": "Lyra",
+      "gender": "FEMALE",
+      "roleCategory": "special",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 3,
+        "def": 2,
+        "agi": 7,
+        "ene": 3,
+        "shd": 2,
+        "luk": 3
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_freeflight",
+        "pilot_trait_recovery_maneuver"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C07",
+      "characterClassId": "PILOT_CLASS_C07",
+      "personaCode": "C07",
+      "pilotId": "selena",
+      "classCharacterName": "Selena",
+      "gender": "FEMALE",
+      "roleCategory": "attack",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 6,
+        "def": 2,
+        "agi": 2,
+        "ene": 6,
+        "shd": 2,
+        "luk": 2
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_energy_focus",
+        "pilot_trait_resonant_cast"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C08",
+      "characterClassId": "PILOT_CLASS_C08",
+      "personaCode": "C08",
+      "pilotId": "valentine",
+      "classCharacterName": "Valentine",
+      "gender": "FEMALE",
+      "roleCategory": "support",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 2,
+        "def": 2,
+        "agi": 2,
+        "ene": 6,
+        "shd": 6,
+        "luk": 2
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_field_medic",
+        "pilot_trait_safeguard"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C09",
+      "characterClassId": "PILOT_CLASS_C09",
+      "personaCode": "C09",
+      "pilotId": "fortuna",
+      "classCharacterName": "Fortuna",
+      "gender": "FEMALE",
+      "roleCategory": "special",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 3,
+        "def": 2,
+        "agi": 4,
+        "ene": 3,
+        "shd": 2,
+        "luk": 6
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_calculated_chance",
+        "pilot_trait_fortunate_timing"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C10",
+      "characterClassId": "PILOT_CLASS_C10",
+      "personaCode": "C10",
+      "pilotId": "aria",
+      "classCharacterName": "Aria",
+      "gender": "FEMALE",
+      "roleCategory": "support",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 2,
+        "def": 2,
+        "agi": 5,
+        "ene": 6,
+        "shd": 3,
+        "luk": 2
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_power_economy",
+        "pilot_trait_tactical_recovery"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C11",
+      "characterClassId": "PILOT_CLASS_C11",
+      "personaCode": "C11",
+      "pilotId": "rhea",
+      "classCharacterName": "Rhea",
+      "gender": "FEMALE",
+      "roleCategory": "defense",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 2,
+        "def": 6,
+        "agi": 5,
+        "ene": 2,
+        "shd": 3,
+        "luk": 2
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_escort_guard",
+        "pilot_trait_reactive_dodge"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    },
+    {
+      "id": "PILOT_CLASS_C12",
+      "characterClassId": "PILOT_CLASS_C12",
+      "personaCode": "C12",
+      "pilotId": "nova",
+      "classCharacterName": "Nova",
+      "gender": "FEMALE",
+      "roleCategory": "attack",
+      "baseAttributes": null,
+      "proposedBaseAttributes": {
+        "atk": 6,
+        "def": 2,
+        "agi": 3,
+        "ene": 2,
+        "shd": 2,
+        "luk": 5
+      },
+      "baseAttributesApproval": "PROPOSED_UNLOCKED",
+      "traitDefinitionIds": [
+        "pilot_trait_testflight_strike",
+        "pilot_trait_highrisk_instinct"
+      ],
+      "gearCompatibilityRef": null,
+      "sourceDocRef": "docs/foundations/FND8/8.2.3.E0/FND8_8_2_3_TRAIT_CATALOG_V2_PROPOSAL.md",
+      "lifecycle": "ACTIVE"
+    }
+  ]
+}

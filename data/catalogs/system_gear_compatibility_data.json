@@ -1,0 +1,14 @@
+{
+  "configFileId": "system_gear_compatibility",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "metadata": {
+    "domain": "gear",
+    "catalog": "compatibility",
+    "foundation": "FND-1 / FND-8.6",
+    "status": "PENDING_FND8_6_GEAR_CATALOG",
+    "description": "Empty FND-1 placeholder catalog awaiting FND8.6 GEAR Catalog. No V1 GEAR definitions, compatibility ranks, ratings, or V1 artwork imported."
+  },
+  "items": []
+}

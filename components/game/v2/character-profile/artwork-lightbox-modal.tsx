@@ -88,20 +88,20 @@ export function ArtworkLightboxModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-black/95 backdrop-blur-md text-white select-none animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-between bg-black/95 backdrop-blur-md text-white select-none animate-in fade-in duration-200"
       onMouseUp={handleMouseUp}
     >
       {/* Top Control Bar */}
-      <div className="w-full flex items-center justify-between px-4 py-3 bg-slate-950/80 border-b border-slate-800 z-10">
-        <div className="flex items-center gap-2">
-          <span className="rounded bg-cyan-500/20 px-2 py-0.5 text-xs font-mono font-bold text-cyan-300 border border-cyan-500/40">
+      <div className="w-full flex items-center justify-between gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-950/90 border-b border-slate-800 z-20">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="rounded bg-cyan-500/20 px-2 py-0.5 text-[11px] font-mono font-bold text-cyan-300 border border-cyan-500/40 shrink-0 hidden xs:inline-block">
             Art Inspector
           </span>
-          <h3 className="text-sm font-bold truncate max-w-xs sm:max-w-md">{artwork.title}</h3>
+          <h3 className="text-xs sm:text-sm font-bold truncate min-w-0 flex-1">{artwork.title}</h3>
         </div>
 
         {/* Nút công cụ zoom & đóng */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <div className="flex items-center bg-slate-900 rounded border border-slate-800 p-0.5">
             <button
               onClick={handleZoomIn}
@@ -111,7 +111,7 @@ export function ArtworkLightboxModal({
             >
               <ZoomIn className="size-4" />
             </button>
-            <span className="px-2 text-xs font-mono text-cyan-400">{Math.round(scale * 100)}%</span>
+            <span className="px-1.5 sm:px-2 text-xs font-mono text-cyan-400">{Math.round(scale * 100)}%</span>
             <button
               onClick={handleZoomOut}
               disabled={scale <= 1}
@@ -130,11 +130,14 @@ export function ArtworkLightboxModal({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
-            className="flex items-center justify-center size-9 rounded-md bg-slate-800 hover:bg-red-600 transition-colors text-white cursor-pointer"
+            aria-label="Đóng chế độ toàn màn hình (Esc)"
+            className="flex items-center justify-center gap-1 h-10 min-w-[44px] px-3 rounded-lg bg-rose-950/95 hover:bg-rose-600 border-2 border-rose-500/90 transition-colors text-white font-mono text-xs font-bold cursor-pointer shrink-0 shadow-lg"
             title="Đóng (Esc)"
           >
-            <X className="size-5" />
+            <X className="size-5 stroke-[2.5]" />
+            <span>Đóng</span>
           </button>
         </div>
       </div>

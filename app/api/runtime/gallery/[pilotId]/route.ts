@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { contentReleaseResolver } from '@/lib/game/v2/content-release-resolver';
 import { universalContentResolver } from '@/lib/game/v2/universal-content-resolver';
 import { fetchPilotManifest } from '@/lib/game/assets/hierarchical-manifest';
 import { assetConfigStore } from '@/lib/game/assets/runtime-asset-config';
@@ -10,16 +11,40 @@ interface RouteParams {
 }
 
 /**
- * Dynamic Gallery API per Pilot (CP3-A Universal CDN R3)
+ * Dynamic Gallery API per Pilot (FND-8 CDN R4 -> R5+)
  * GET /api/runtime/gallery/[pilotId]
- * Fetches dynamic artwork list from R3 gallery.json + files.json
+ * Fetches dynamic artwork list from pinned release manifest (only VERIFIED items get browser URLs).
  */
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     const { pilotId } = await params;
     const cleanPilotId = pilotId.toLowerCase().trim();
 
-    // 1. Try Universal Content Resolver (R3 first, deduplicated with curated descriptions)
+    // 1. Primary: ContentReleaseResolver (Pinned R4 -> R5+ Release)
+    try {
+      const releaseGallery = await contentReleaseResolver.getPilotGallery(cleanPilotId);
+      if (releaseGallery) {
+        return NextResponse.json({
+          success: true,
+          pilotId: cleanPilotId,
+          pilotName: releaseGallery.pilotName,
+          releaseVersion: releaseGallery.releaseVersion,
+          releaseCommitSha: releaseGallery.releaseCommitSha,
+          status: releaseGallery.status,
+          totalAssets: releaseGallery.sourceRecordCount,
+          approvedAssetsCount: releaseGallery.verifiedImageCount,
+          sourceRecordCount: releaseGallery.sourceRecordCount,
+          verifiedImageCount: releaseGallery.verifiedImageCount,
+          artworks: releaseGallery.artworks,
+          verifiedArtworks: releaseGallery.verifiedArtworks,
+          pendingArtworks: releaseGallery.pendingArtworks,
+        });
+      }
+    } catch {
+      // Fallback to R3 resolver only if R4 channel is unreachable
+    }
+
+    // 2. Fallback: Universal Content Resolver (R3)
     const galleryR3 = await universalContentResolver.getPilotGallery(cleanPilotId);
     if (galleryR3 && galleryR3.artworks.length > 0) {
       return NextResponse.json({
@@ -33,7 +58,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       });
     }
 
-    // 2. Fallback to hierarchical manifest engine
+    // 3. Fallback to hierarchical manifest engine
     const config = assetConfigStore.getConfigSync();
     const pilotManifest = await fetchPilotManifest(config.cdnBaseUrl, config.activeVersion, cleanPilotId);
     if (!pilotManifest) {
@@ -60,3 +85,4 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     );
   }
 }
+

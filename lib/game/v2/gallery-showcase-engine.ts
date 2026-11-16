@@ -58,6 +58,13 @@ const pilotGalleryCache = new Map<string, ShowcaseArtwork[]>();
 const preloadedUrlCache = new Set<string>();
 
 /**
+ * Clears in-memory showcase gallery cache when CDN channel/release is refreshed
+ */
+export function clearShowcaseGalleryCache(): void {
+  pilotGalleryCache.clear();
+}
+
+/**
  * Creates unique global identity key for an artwork
  */
 export function buildArtworkIdentityKey(pilotId: string, assetIdOrFilename: string, path: string): string {
@@ -75,9 +82,6 @@ export async function fetchShowcasePilotGallery(
   abortSignal?: AbortSignal
 ): Promise<ShowcaseArtwork[]> {
   const cleanId = pilotId.toLowerCase().trim() as CanonicalPilotId;
-  if (!CANONICAL_12_PILOT_IDS.includes(cleanId)) {
-    return [];
-  }
 
   // Check cache first
   if (pilotGalleryCache.has(cleanId)) {
@@ -91,12 +95,10 @@ export async function fetchShowcasePilotGallery(
     role: 'Tactical Pilot',
   };
 
-  const portraitPath = `images/pilots/${cleanId}/${cleanId}-portrait.webp`;
-
   try {
     const res = await fetch(`/api/runtime/gallery/${cleanId}`, {
       signal: abortSignal,
-      cache: 'force-cache',
+      cache: 'no-store',
     });
 
     if (!res.ok) {
@@ -105,37 +107,60 @@ export async function fetchShowcasePilotGallery(
     }
 
     const data = await res.json();
-    if (!data.success || !Array.isArray(data.artworks)) {
+    const sourceList = Array.isArray(data.verifiedArtworks)
+      ? data.verifiedArtworks
+      : Array.isArray(data.artworks)
+      ? data.artworks
+      : [];
+
+    if (!data.success || sourceList.length === 0) {
       return [];
     }
 
     const rawPilotName = data.pilotName || meta.name || cleanId;
     const cleanPilotName = rawPilotName.replace(/^[a-z0-9-_]+\s*-\s*/i, '').trim();
 
+    // Determine verified R4 portrait URL from the pilot's own verified artworks
+    const portraitItem =
+      sourceList.find(
+        (it: any) =>
+          it &&
+          it.isAvailableOnDisk !== false &&
+          it.path &&
+          String(it.filename || it.id || '').toLowerCase().includes('-portrait')
+      ) ||
+      sourceList.find((it: any) => it && it.isAvailableOnDisk !== false && it.path);
+    const portraitPath = portraitItem?.path ? String(portraitItem.path).trim() : '';
+
     const result: ShowcaseArtwork[] = [];
 
-    for (const item of data.artworks) {
+    for (const item of sourceList) {
       if (!item) continue;
+
+      const isVerified =
+        item.isAvailableOnDisk !== false &&
+        item.cdnStatus !== 'PENDING_BINARY_IMPORT' &&
+        Boolean(item.path && String(item.path).trim());
+
+      if (!isVerified) {
+        continue;
+      }
 
       const rawTitle = item.title || item.label || item.filename || 'Tác phẩm';
       let naturalTitle = rawTitle;
 
-      // Normalize outfit labels if unassigned
       const outfitMatch =
         rawTitle.match(/outfit[-_\s]*(\d+)/i) ||
         (item.filename || '').match(/outfit[-_\s]*(\d+)/i) ||
         (item.assetId || '').match(/outfit[-_\s]*(\d+)/i);
-      if (outfitMatch) {
-        naturalTitle = `Trang phục ${outfitMatch[1].padStart(3, '0')}`;
+      if (outfitMatch && !rawTitle.includes('—')) {
+        naturalTitle = `${cleanPilotName} — Trang phục #${outfitMatch[1].padStart(3, '0')}`;
       }
 
-      const cleanPath = item.path
-        ? item.path.startsWith('/')
-          ? item.path.slice(1)
-          : item.path
-        : item.sourceUrl || `images/pilots/${cleanId}/${item.filename}`;
-
+      const cleanPath = String(item.path).trim();
       const resolvedUrl = resolveImageUrl(cleanPath) || '';
+      if (!resolvedUrl) continue;
+
       const assetId = item.assetId || item.filename || item.id || cleanPath.split('/').pop() || 'art';
       const identityKey = buildArtworkIdentityKey(cleanId, assetId, cleanPath);
 
@@ -152,15 +177,17 @@ export async function fetchShowcasePilotGallery(
         resolvedUrl,
         title: naturalTitle,
         description,
-        curatedDescription: item.curatedDescription,
-        category: item.category || item.roleCategory || 'lore',
+        curatedDescription: item.curatedDescription || item.description,
+        category: item.rawCategory || item.category || item.roleCategory || 'CORE',
         role: item.role,
-        width: item.width,
-        height: item.height,
-        dimensions: item.width && item.height ? { width: item.width, height: item.height } : undefined,
-        sha256: item.sha256,
-        isAvailableOnDisk: item.isAvailableOnDisk !== false,
-        status: item.status || 'verified_webp',
+        width: item.width || item.dimensions?.width,
+        height: item.height || item.dimensions?.height,
+        dimensions:
+          item.dimensions ||
+          (item.width && item.height ? { width: item.width, height: item.height } : undefined),
+        sha256: item.sha256 || item.expectedSha256,
+        isAvailableOnDisk: true,
+        status: 'verified_webp',
         pilotId: cleanId,
         pilotName: cleanPilotName,
         pilotCallsign: meta.callsign,

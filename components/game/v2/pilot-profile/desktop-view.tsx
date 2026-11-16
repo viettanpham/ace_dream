@@ -49,6 +49,10 @@ interface DesktopViewProps {
   onToggleRosterCollapse: () => void
   heroBackgroundMode: 'contextual' | 'clean'
   onChangeHeroBackgroundMode: (mode: 'contextual' | 'clean') => void
+  activeStoryChapterId?: string | null
+  onSelectStoryChapterId?: (chapterId: string | null) => void
+  isStoryReaderOpen?: boolean
+  onSetStoryReaderOpen?: (open: boolean) => void
 }
 
 export function DesktopView({
@@ -68,6 +72,10 @@ export function DesktopView({
   onToggleRosterCollapse,
   heroBackgroundMode,
   onChangeHeroBackgroundMode,
+  activeStoryChapterId,
+  onSelectStoryChapterId,
+  isStoryReaderOpen,
+  onSetStoryReaderOpen,
 }: DesktopViewProps) {
   const [heroImgError, setHeroImgError] = useState(false)
   const filmstripRef = useRef<HTMLDivElement | null>(null)
@@ -573,7 +581,15 @@ export function DesktopView({
                 onSwitchToGalleryTab={() => onChangeTab('gallery')}
               />
             )}
-            {activeTab === 'story' && <StoryTab character={selectedCharacter} />}
+            {activeTab === 'story' && (
+              <StoryTab
+                character={selectedCharacter}
+                activeStoryChapterId={activeStoryChapterId}
+                onSelectStoryChapterId={onSelectStoryChapterId}
+                isReaderOpen={isStoryReaderOpen}
+                onSetReaderOpen={onSetStoryReaderOpen}
+              />
+            )}
             {activeTab === 'gear' && <GearCompatTab character={selectedCharacter} />}
             {activeTab === 'gallery' && (
               <GalleryTab

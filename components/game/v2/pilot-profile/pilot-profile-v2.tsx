@@ -55,10 +55,12 @@ export interface PilotProfileV2Props {
   onNavigateSection?: (section: any, forceMission?: any) => void
   initialPilotId?: string
   forceMobileView?: boolean
+  stickyTabTopClass?: string
 }
 
 export function PilotProfileV2(props?: PilotProfileV2Props) {
   const forceMobileView = Boolean(props?.forceMobileView)
+  const stickyTabTopClass = props?.stickyTabTopClass || 'top-14'
   // Dynamic roster loaded from CDN channel -> pinned release manifest
   const [rosterCharacters, setRosterCharacters] = useState<CharacterProfileV2[]>([])
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>(
@@ -80,6 +82,8 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
   const [isRosterCollapsed, setIsRosterCollapsed] = useState<boolean>(false)
   const [heroBackgroundMode, setHeroBackgroundMode] = useState<'contextual' | 'clean'>('contextual')
   const [mobileViewMode, setMobileViewMode] = useState<'art' | 'info'>('art')
+  const [storyChapterByPilot, setStoryChapterByPilot] = useState<Record<string, string | null>>({})
+  const [isStoryReaderOpen, setIsStoryReaderOpen] = useState<boolean>(false)
 
   useEffect(() => {
     const prefs = loadV2UIPreferences()
@@ -236,6 +240,7 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
 
   const handleSelectCharacter = (char: CharacterProfileV2) => {
     setSelectedCharacterId(char.id)
+    setIsStoryReaderOpen(false)
     const defaultHero =
       char.artworks.find(
         (a) =>
@@ -365,7 +370,13 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
   }
 
   return (
-    <div className="sf-v2-root flex-1 h-full min-h-0 bg-[#070A12] text-[#F1F5F9] flex flex-col overflow-hidden">
+    <div
+      className={`sf-v2-root flex-1 min-h-0 bg-[#070A12] text-[#F1F5F9] flex flex-col ${
+        forceMobileView
+          ? 'overflow-y-auto'
+          : 'overflow-y-auto md:h-full md:overflow-hidden'
+      }`}
+    >
       {/* =====================================================================
           THANH TRẠNG THÁI KÊNH CDN & SETTINGS V2 / KIỂM TRA CẬP NHẬT (R4 -> R5+)
           ===================================================================== */}
@@ -496,6 +507,15 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
           onToggleRosterCollapse={handleToggleRosterCollapse}
           heroBackgroundMode={heroBackgroundMode}
           onChangeHeroBackgroundMode={handleChangeHeroBackgroundMode}
+          activeStoryChapterId={storyChapterByPilot[selectedCharacter.id] ?? null}
+          onSelectStoryChapterId={(chapId) =>
+            setStoryChapterByPilot((prev) => ({
+              ...prev,
+              [selectedCharacter.id]: chapId,
+            }))
+          }
+          isStoryReaderOpen={isStoryReaderOpen}
+          onSetStoryReaderOpen={setIsStoryReaderOpen}
         />
       )}
 
@@ -535,6 +555,16 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
           }}
           onSwitchToArtView={() => handleChangeMobileViewMode('art')}
           forceMobileView={forceMobileView}
+          stickyTabTopClass={stickyTabTopClass}
+          activeStoryChapterId={storyChapterByPilot[selectedCharacter.id] ?? null}
+          onSelectStoryChapterId={(chapId) =>
+            setStoryChapterByPilot((prev) => ({
+              ...prev,
+              [selectedCharacter.id]: chapId,
+            }))
+          }
+          isStoryReaderOpen={isStoryReaderOpen}
+          onSetStoryReaderOpen={setIsStoryReaderOpen}
         />
       )}
 

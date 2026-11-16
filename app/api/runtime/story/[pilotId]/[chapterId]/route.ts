@@ -52,6 +52,28 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             };
           });
 
+        const sceneCount = sceneAnchors.length;
+        const verifiedSceneCount = sceneAnchors.filter((s) => s.cdnVerified).length;
+        const hasFullProse = Boolean(
+          (chapter.content && chapter.content.trim().length > 0) ||
+            (chapter.blocks || []).some(
+              (b) => b.type === 'paragraph' || b.type === 'dialogue'
+            )
+        );
+        const contentType =
+          chapter.contentType || (hasFullProse ? 'FULL_PROSE' : 'SUMMARY_ONLY');
+        const rawEd = (chapter.editorialStatus || 'PROVISIONAL').toUpperCase();
+        const publicationStatus =
+          chapter.publicationStatus ||
+          (rawEd === 'APPROVED' || rawEd === 'PUBLISHED'
+            ? 'PUBLISHED'
+            : rawEd === 'HOLD'
+            ? 'HOLD'
+            : rawEd === 'REVIEW'
+            ? 'REVIEW_PREVIEW'
+            : 'PROVISIONAL_PREVIEW');
+        const isAvailable = hasFullProse && rawEd !== 'HOLD';
+
         return NextResponse.json({
           success: true,
           isComingSoon: false,
@@ -66,6 +88,8 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
               chapter.summary ||
               `Chương ${String(chapter.chapterNumber).padStart(2, '0')} — ${chapter.title}`,
             editorialStatus: chapter.editorialStatus,
+            publicationStatus,
+            contentType,
             status:
               chapter.editorialStatus === 'APPROVED'
                 ? 'PUBLISHED'
@@ -75,6 +99,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             sourceNote: chapter.sourceNote,
             wordCount: chapter.wordCount || 0,
             readingTimeMinutes: chapter.readingTimeMinutes || 5,
+            sceneCount,
+            verifiedSceneCount,
+            isAvailable,
             sceneAnchors,
           },
           content: chapter.content || '',

@@ -270,6 +270,7 @@ export interface R4StoryChapterDocument {
   readingTimeMinutes?: number
   wordCount?: number
   contentType?: string
+  publicationStatus?: string
   editorialStatus: string
   revision?: string
   sourceNote?: string
@@ -990,21 +991,64 @@ export function buildCharacterProfileFromRelease(params: {
             ? 'HOLD'
             : 'PROVISIONAL'
 
+        const sceneBlocks = (ch.blocks || []).filter((b) => b.type === 'scene')
+        const sceneCount = sceneBlocks.length
+        const verifiedSceneCount = sceneBlocks.filter(
+          (b) =>
+            Boolean(b.cdnVerified && b.resolvedArtworkUrl) ||
+            (Array.isArray(b.artworks) &&
+              b.artworks.some((a) => Boolean(a.cdnVerified && a.resolvedUrl)))
+        ).length
+
+        const hasFullProse = Boolean(
+          (ch.content && ch.content.trim().length > 0) ||
+            (ch.blocks || []).some(
+              (b) => b.type === 'paragraph' || b.type === 'dialogue'
+            )
+        )
+
+        const contentType =
+          ch.contentType || (hasFullProse ? 'FULL_PROSE' : 'SUMMARY_ONLY')
+
+        const publicationStatus =
+          ch.publicationStatus ||
+          (normalizedStatus === 'APPROVED'
+            ? 'PUBLISHED'
+            : normalizedStatus === 'HOLD'
+            ? 'HOLD'
+            : normalizedStatus === 'REVIEW'
+            ? 'REVIEW_PREVIEW'
+            : 'PROVISIONAL_PREVIEW')
+
+        const isAvailable = hasFullProse && normalizedStatus !== 'HOLD'
+
+        const manifestItem = storyBundle.manifest.chapters.find(
+          (item) =>
+            item.chapterId.toLowerCase() === ch.chapterId.toLowerCase() ||
+            item.chapterNumber === ch.chapterNumber
+        )
+
         return {
           id: ch.chapterId,
           number: ch.chapterNumber,
           title: ch.title,
           status: normalizedStatus,
           editorialStatus: ch.editorialStatus,
+          publicationStatus,
+          contentType,
           revision: ch.revision,
           sourceIntegrity: ch.sourceIntegrity,
           sourceNote: ch.sourceNote,
           wordCount: ch.wordCount,
           readingTimeMinutes: ch.readingTimeMinutes,
+          sceneCount,
+          verifiedSceneCount,
+          isAvailable,
           summary:
             ch.summary ||
             `Chương ${String(ch.chapterNumber).padStart(2, '0')} — ${ch.title}`,
           content: ch.content,
+          path: manifestItem?.path,
         }
       })
     : []

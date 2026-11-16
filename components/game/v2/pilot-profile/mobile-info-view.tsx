@@ -28,6 +28,11 @@ interface MobileInfoViewProps {
   onOpenViewer: (artwork: GalleryArtwork) => void
   onSwitchToArtView: () => void
   forceMobileView?: boolean
+  stickyTabTopClass?: string
+  activeStoryChapterId?: string | null
+  onSelectStoryChapterId?: (chapterId: string | null) => void
+  isStoryReaderOpen?: boolean
+  onSetStoryReaderOpen?: (open: boolean) => void
 }
 
 export function MobileInfoView({
@@ -41,6 +46,11 @@ export function MobileInfoView({
   onOpenViewer,
   onSwitchToArtView,
   forceMobileView = false,
+  stickyTabTopClass = 'top-14',
+  activeStoryChapterId,
+  onSelectStoryChapterId,
+  isStoryReaderOpen,
+  onSetStoryReaderOpen,
 }: MobileInfoViewProps) {
   const verifiedCount =
     selectedCharacter.verifiedArtworkCount ??
@@ -132,7 +142,7 @@ export function MobileInfoView({
       </div>
 
       {/* 2. 4 CANONICAL TABS (Sticky, 44px+ height) */}
-      <div className="sticky top-14 z-30 p-2 bg-[#070A12]/95 backdrop-blur-md border-b border-[#1E2D42]">
+      <div className={`sticky ${stickyTabTopClass} z-30 p-2 bg-[#070A12]/95 backdrop-blur-md border-b border-[#1E2D42]`}>
         <div
           role="tablist"
           aria-label="Hồ sơ phi công trên di động"
@@ -171,7 +181,15 @@ export function MobileInfoView({
             onSwitchToGalleryTab={() => onChangeTab('gallery')}
           />
         )}
-        {activeTab === 'story' && <StoryTab character={selectedCharacter} />}
+        {activeTab === 'story' && (
+          <StoryTab
+            character={selectedCharacter}
+            activeStoryChapterId={activeStoryChapterId}
+            onSelectStoryChapterId={onSelectStoryChapterId}
+            isReaderOpen={isStoryReaderOpen}
+            onSetReaderOpen={onSetStoryReaderOpen}
+          />
+        )}
         {activeTab === 'gear' && <GearCompatTab character={selectedCharacter} />}
         {activeTab === 'gallery' && (
           <GalleryTab

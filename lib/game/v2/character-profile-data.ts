@@ -38,11 +38,16 @@ export interface StoryChapter {
   title: string;
   status: "APPROVED" | "PROVISIONAL" | "REVIEW" | "HOLD";
   editorialStatus?: string;
+  publicationStatus?: string;
+  contentType?: "FULL_PROSE" | "SUMMARY_ONLY" | "COMING_SOON" | string;
   revision?: string;
   sourceIntegrity?: string;
   sourceNote?: string;
   wordCount?: number;
   readingTimeMinutes?: number;
+  sceneCount?: number;
+  verifiedSceneCount?: number;
+  isAvailable?: boolean;
   summary: string;
   content?: string;
   quote?: string;

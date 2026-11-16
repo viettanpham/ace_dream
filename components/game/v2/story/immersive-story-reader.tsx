@@ -27,6 +27,10 @@ import {
   getEffectiveChapterProgress,
   type PilotStoryProgressState,
 } from '@/lib/game/v2/story-progress'
+import {
+  isAbortError,
+  validateStoryChapterPayload,
+} from '@/lib/game/v2/story-reader-helpers'
 
 export interface SceneAnchor {
   sceneId: string
@@ -140,43 +144,54 @@ export function ImmersiveStoryReader({
 
   const scrollContainerRef = useRef<HTMLDivElement | null>(null)
   const lastSavedPercentRef = useRef<number>(-1)
+  const chaptersRef = useRef<StoryChapterMeta[]>(chapters)
+  const onChapterChangeRef = useRef(onChapterChange)
+  const onProgressChangeRef = useRef(onProgressChange)
+  const onCloseRef = useRef(onClose)
+
+  chaptersRef.current = chapters
+  onChapterChangeRef.current = onChapterChange
+  onProgressChangeRef.current = onProgressChange
+  onCloseRef.current = onClose
 
   const refreshLocalProgress = useCallback(() => {
     setProgressState(loadPilotStoryProgress(pilotId))
   }, [pilotId])
 
   useEffect(() => {
-    refreshLocalProgress()
+    if (isOpen) {
+      refreshLocalProgress()
+    }
   }, [refreshLocalProgress, isOpen])
 
   useEffect(() => {
+    const availableChapters = chaptersRef.current
     if (initialChapterId) {
-      setActiveChapterId(initialChapterId)
-    } else if (chapters.length > 0) {
+      setActiveChapterId((prev) => (prev === initialChapterId ? prev : initialChapterId))
+    } else if (availableChapters.length > 0) {
       setActiveChapterId((prev) =>
-        chapters.some((c) => c.chapterId === prev) ? prev : chapters[0].chapterId
+        availableChapters.some((c) => c.chapterId === prev)
+          ? prev
+          : availableChapters[0].chapterId
       )
     }
-  }, [initialChapterId, pilotId, chapters])
+  }, [initialChapterId, pilotId])
 
-  const selectChapter = useCallback(
-    (nextChapterId: string) => {
-      setActiveChapterId(nextChapterId)
-      setIsDrawerOpen(false)
-      setReadingPercent(0)
-      lastSavedPercentRef.current = -1
-      if (scrollContainerRef.current) {
-        scrollContainerRef.current.scrollTop = 0
-      }
-      onChapterChange?.(nextChapterId)
-    },
-    [onChapterChange]
-  )
+  const selectChapter = useCallback((nextChapterId: string) => {
+    setActiveChapterId((prev) => (prev === nextChapterId ? prev : nextChapterId))
+    setIsDrawerOpen(false)
+    setReadingPercent(0)
+    lastSavedPercentRef.current = -1
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0
+    }
+    onChapterChangeRef.current?.(nextChapterId)
+  }, [])
 
   useEffect(() => {
     if (!isOpen || !activeChapterId) return
 
-    let isMounted = true
+    const controller = new AbortController()
     setReadingPercent(0)
     lastSavedPercentRef.current = -1
     if (scrollContainerRef.current) {
@@ -187,23 +202,38 @@ export function ImmersiveStoryReader({
       setLoading(true)
       setFetchError(null)
       try {
-        const res = await fetch(`/api/runtime/story/${pilotId}/${activeChapterId}`)
-        const data = await res.json().catch(() => ({}))
-        if (!isMounted) return
+        const res = await fetch(`/api/runtime/story/${pilotId}/${activeChapterId}`, {
+          signal: controller.signal,
+        })
+        const rawText = await res.text()
+        if (controller.signal.aborted) return
 
-        if (!res.ok || !data?.success) {
-          throw new Error(
-            data?.error || `Không thể tải dữ liệu chương (HTTP ${res.status})`
-          )
+        let parsedJson: unknown = null
+        if (rawText) {
+          try {
+            parsedJson = JSON.parse(rawText)
+          } catch {
+            if (!res.ok) {
+              throw new Error(`Không thể tải dữ liệu chương (HTTP ${res.status})`)
+            }
+            throw new Error('Phản hồi dữ liệu chương từ máy chủ không phải JSON hợp lệ.')
+          }
         }
 
-        const loadedMeta: StoryChapterMeta | null = data.meta || null
-        setChapterContent(data.content || '')
-        setChapterBlocks(Array.isArray(data.blocks) ? data.blocks : [])
+        const validated = validateStoryChapterPayload<StoryChapterMeta, StoryBlockItem>(
+          res.ok,
+          res.status,
+          parsedJson
+        )
+        if (controller.signal.aborted) return
+
+        const loadedMeta: StoryChapterMeta = validated.meta
+        setChapterContent(validated.content)
+        setChapterBlocks(validated.blocks)
         setChapterMeta(loadedMeta)
         setReleaseInfo({
-          releaseVersion: data.releaseVersion,
-          releaseCommitSha: data.releaseCommitSha,
+          releaseVersion: validated.releaseVersion,
+          releaseCommitSha: validated.releaseCommitSha,
         })
 
         // Reset scroll container to top cleanly once content mounts
@@ -213,17 +243,21 @@ export function ImmersiveStoryReader({
           }
         })
 
-        const fallbackMeta = chapters.find((c) => c.chapterId === activeChapterId)
+        const fallbackMeta = chaptersRef.current.find(
+          (c) => c.chapterId === activeChapterId
+        )
         const revision = loadedMeta?.revision ?? fallbackMeta?.revision ?? null
         const updatedProgress = markChapterInProgress(pilotId, activeChapterId, {
           scrollPercent: 0,
           revision,
         })
         setProgressState(updatedProgress)
-        onProgressChange?.()
+        onProgressChangeRef.current?.()
       } catch (err) {
-        if (!isMounted) return
-        const fallback = chapters.find((c) => c.chapterId === activeChapterId)
+        if (controller.signal.aborted || isAbortError(err)) return
+        const fallback = chaptersRef.current.find(
+          (c) => c.chapterId === activeChapterId
+        )
         setChapterMeta(fallback || null)
         setChapterContent('')
         setChapterBlocks([])
@@ -233,15 +267,17 @@ export function ImmersiveStoryReader({
             : 'Lỗi kết nối máy chủ khi tải nội dung chương.'
         )
       } finally {
-        if (isMounted) setLoading(false)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+        }
       }
     }
 
     fetchChapter()
     return () => {
-      isMounted = false
+      controller.abort()
     }
-  }, [isOpen, pilotId, activeChapterId, reloadToken, chapters, onProgressChange])
+  }, [isOpen, pilotId, activeChapterId, reloadToken])
 
   const currentIdx = chapters.findIndex((c) => c.chapterId === activeChapterId)
   const prevChapter = currentIdx > 0 ? chapters[currentIdx - 1] : null
@@ -263,7 +299,7 @@ export function ImmersiveStoryReader({
           setIsDrawerOpen(false)
           return
         }
-        onClose()
+        onCloseRef.current()
         return
       }
 
@@ -293,7 +329,7 @@ export function ImmersiveStoryReader({
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, lightboxArt, isDrawerOpen, prevChapter, nextChapter, selectChapter, onClose])
+  }, [isOpen, lightboxArt, isDrawerOpen, prevChapter, nextChapter, selectChapter])
 
   const handleBodyScroll = useCallback(() => {
     const el = scrollContainerRef.current
@@ -315,28 +351,24 @@ export function ImmersiveStoryReader({
     const steppedEnough = Math.abs(pct - lastSavedPercentRef.current) >= 10
     if (crossedComplete || steppedEnough) {
       lastSavedPercentRef.current = pct
-      const fallbackMeta = chapters.find((c) => c.chapterId === activeChapterId)
+      const fallbackMeta = chaptersRef.current.find(
+        (c) => c.chapterId === activeChapterId
+      )
       const revision = chapterMeta?.revision ?? fallbackMeta?.revision ?? null
       const updated = markChapterInProgress(pilotId, activeChapterId, {
         scrollPercent: pct,
         revision,
       })
       setProgressState(updated)
-      onProgressChange?.()
+      onProgressChangeRef.current?.()
     }
-  }, [
-    loading,
-    fetchError,
-    activeChapterId,
-    chapters,
-    chapterMeta?.revision,
-    pilotId,
-    onProgressChange,
-  ])
+  }, [loading, fetchError, activeChapterId, chapterMeta?.revision, pilotId])
 
   const handleMarkCompleted = useCallback(() => {
     if (!activeChapterId) return
-    const fallbackMeta = chapters.find((c) => c.chapterId === activeChapterId)
+    const fallbackMeta = chaptersRef.current.find(
+      (c) => c.chapterId === activeChapterId
+    )
     const revision = chapterMeta?.revision ?? fallbackMeta?.revision ?? null
     const updated = markChapterCompleted(pilotId, activeChapterId, {
       scrollPercent: 100,
@@ -345,8 +377,8 @@ export function ImmersiveStoryReader({
     setReadingPercent(100)
     lastSavedPercentRef.current = 100
     setProgressState(updated)
-    onProgressChange?.()
-  }, [activeChapterId, chapters, chapterMeta?.revision, pilotId, onProgressChange])
+    onProgressChangeRef.current?.()
+  }, [activeChapterId, chapterMeta?.revision, pilotId])
 
   if (!isOpen) return null
 

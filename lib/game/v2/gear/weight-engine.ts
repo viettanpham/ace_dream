@@ -667,7 +667,7 @@ function toIssue(err: unknown): GearV2WeightIssue {
 /**
  * Draft Loadout weight validator:
  * - Validates structural & numeric invariants
- * - Permits overcapacity (> 100% / EXCESS_LOAD) without auto-unequipping
+ * - Permits missing slots and overcapacity (> 100% / EXCESS_LOAD) without auto-unequipping
  */
 export function validateDraftLoadoutWeight(
   input: GearV2WeightCalculationInput,
@@ -683,7 +683,8 @@ export function validateDraftLoadoutWeight(
       mode: "DRAFT",
       valid: true,
       confirmReadyWithMandatorySlots: false,
-      od07MandatorySlotStatus: "UNRESOLVED",
+      od07MandatorySlotStatus: "RESOLVED",
+      compatibilityStatus: "NOT_CHECKED_IN_P1",
       calculation,
       errors: [],
       warnings,
@@ -693,7 +694,8 @@ export function validateDraftLoadoutWeight(
       mode: "DRAFT",
       valid: false,
       confirmReadyWithMandatorySlots: false,
-      od07MandatorySlotStatus: "UNRESOLVED",
+      od07MandatorySlotStatus: "RESOLVED",
+      compatibilityStatus: "NOT_CHECKED_IN_P1",
       calculation: null,
       errors: [toIssue(err)],
       warnings: [],
@@ -702,9 +704,10 @@ export function validateDraftLoadoutWeight(
 }
 
 /**
- * Confirm Loadout weight validator:
+ * Confirm/Save Loadout weight validator (OD-07 finalized):
+ * - Missing slots are permitted in CONFIRM/SAVE mode
  * - Rejects totalWeightGrams > maxLoadGrams (EXCESS_LOAD); never auto-unequips
- * - Keeps OD-07 mandatory-slot rule explicitly UNRESOLVED unless injected by caller
+ * - Accepts optional caller-supplied compatibility results; otherwise marks NOT_CHECKED_IN_P1
  */
 export function validateConfirmLoadoutWeight(
   input: GearV2WeightCalculationInput,
@@ -715,7 +718,11 @@ export function validateConfirmLoadoutWeight(
     options !== undefined && Array.isArray(options.mandatorySlotIds)
   const od07Status = hasInjectedMandatoryPolicy
     ? "CHECKED_FROM_INJECTED_POLICY"
-    : "UNRESOLVED"
+    : "RESOLVED"
+  const hasCompatibilityCheck = Boolean(options?.compatibility?.checked)
+  const compatibilityStatus = hasCompatibilityCheck
+    ? "CHECKED_FROM_CALLER"
+    : "NOT_CHECKED_IN_P1"
 
   try {
     const calculation = calculateLoadoutWeight(input, config)
@@ -728,6 +735,45 @@ export function validateConfirmLoadoutWeight(
         message: `Loadout weight (${calculation.totalWeightGrams}g) exceeds capacity (${calculation.maxLoadGrams}g) by ${calculation.excessWeightGrams}g.`,
         field: "totalWeightGrams",
       })
+    }
+
+    if (hasCompatibilityCheck && options?.compatibility) {
+      const compat = options.compatibility
+      if (compat.issues) {
+        for (const issue of compat.issues) {
+          errors.push({
+            code: "EXTERNAL_COMPATIBILITY_FAILED",
+            message: issue.message,
+            slotId: issue.slotId,
+            equipmentId: issue.equipmentId,
+          })
+        }
+      }
+      if (compat.invalidSlotIds) {
+        for (const badSlot of compat.invalidSlotIds) {
+          if (calculation.perSlotWeightGrams[badSlot] !== undefined) {
+            const alreadyReported = errors.some(
+              (e) => e.code === "EXTERNAL_COMPATIBILITY_FAILED" && e.slotId === badSlot
+            )
+            if (!alreadyReported) {
+              errors.push({
+                code: "EXTERNAL_COMPATIBILITY_FAILED",
+                message: `Equipped item in slot '${badSlot}' failed external compatibility validation.`,
+                slotId: badSlot,
+              })
+            }
+          }
+        }
+      }
+      if (
+        compat.valid === false &&
+        !errors.some((e) => e.code === "EXTERNAL_COMPATIBILITY_FAILED")
+      ) {
+        errors.push({
+          code: "EXTERNAL_COMPATIBILITY_FAILED",
+          message: "External equipment compatibility check failed.",
+        })
+      }
     }
 
     if (hasInjectedMandatoryPolicy) {
@@ -748,16 +794,15 @@ export function validateConfirmLoadoutWeight(
           })
         }
       }
-    } else {
-      warnings.push("OD07_MANDATORY_SLOT_RULE_UNRESOLVED")
     }
 
     const valid = errors.length === 0
     return {
       mode: "CONFIRM",
       valid,
-      confirmReadyWithMandatorySlots: valid && hasInjectedMandatoryPolicy,
+      confirmReadyWithMandatorySlots: valid,
       od07MandatorySlotStatus: od07Status,
+      compatibilityStatus,
       calculation,
       errors,
       warnings,
@@ -768,11 +813,10 @@ export function validateConfirmLoadoutWeight(
       valid: false,
       confirmReadyWithMandatorySlots: false,
       od07MandatorySlotStatus: od07Status,
+      compatibilityStatus,
       calculation: null,
       errors: [toIssue(err)],
-      warnings: hasInjectedMandatoryPolicy
-        ? []
-        : ["OD07_MANDATORY_SLOT_RULE_UNRESOLVED"],
+      warnings: [],
     }
   }
 }

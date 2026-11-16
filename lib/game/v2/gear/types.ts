@@ -138,6 +138,9 @@ export type GearV2WeightErrorCode =
   | "AUXILIARY_LIMIT_EXCEEDED"
   | "EXCESS_LOAD_FORBIDDEN_ON_CONFIRM"
   | "MANDATORY_SLOT_UNFILLED"
+  | "MANDATORY_WEAPON_UNFILLED"
+  | "INVALID_VALIDATION_MODE"
+  | "EXTERNAL_COMPATIBILITY_FAILED"
   | "CONFLICTING_LOADOUT_INPUT"
 
 export interface GearV2WeightIssue {
@@ -146,24 +149,93 @@ export interface GearV2WeightIssue {
   field?: string
   slotId?: string
   equipmentId?: string
+  priority?: number
 }
 
-export type GearV2Od07MandatorySlotStatus = "UNRESOLVED" | "CHECKED_FROM_INJECTED_POLICY"
+export type GearV2Od07MandatorySlotStatus = "RESOLVED" | "CHECKED_FROM_INJECTED_POLICY"
+
+export type GearV2ValidationMode =
+  | "DRAFT"
+  | "CONFIRM"
+  | "SAVE"
+  | "SAFE_FLIGHT"
+  | "TRAINING"
+  | "TRANSPORT"
+  | "COMBAT"
+  | "UNSAFE_ZONE"
+
+export type GearV2MandatoryPriorityKey =
+  | "ARMOR"
+  | "ENGINE"
+  | "RADAR_SENSOR"
+  | "WEAPON"
+
+export interface GearV2ExternalCompatibilityIssue {
+  code: string
+  message: string
+  slotId?: GearV2PhysicalSlotId | string
+  equipmentId?: string
+}
+
+export interface GearV2ExternalCompatibilityInput {
+  checked: boolean
+  valid?: boolean
+  invalidSlotIds?: readonly GearV2PhysicalSlotId[]
+  issues?: readonly GearV2ExternalCompatibilityIssue[]
+}
+
+export type GearV2CompatibilityStatus =
+  | "NOT_CHECKED_IN_P1"
+  | "CHECKED_FROM_CALLER"
 
 export interface GearV2WeightValidationOptions {
   /**
    * Optional injected mandatory slot list.
-   * P1 does NOT invent OD-07 mandatory slots; defaults to UNRESOLVED.
+   * When omitted on CONFIRM/SAVE, OD-07 permits missing slots and validates weight/structure.
    */
   mandatorySlotIds?: readonly GearV2PhysicalSlotId[]
+  /**
+   * Optional compatibility result supplied by P2/P3 caller.
+   * P1 never pretends compatibility checking exists if omitted.
+   */
+  compatibility?: GearV2ExternalCompatibilityInput
 }
 
 export interface GearV2WeightValidationResult {
   mode: "DRAFT" | "CONFIRM"
   valid: boolean
-  /** True only when weight checks pass AND an authoritative OD-07 policy was injected & passed */
   confirmReadyWithMandatorySlots: boolean
   od07MandatorySlotStatus: GearV2Od07MandatorySlotStatus
+  compatibilityStatus: GearV2CompatibilityStatus
+  calculation: GearV2LoadoutWeightResult | null
+  errors: GearV2WeightIssue[]
+  warnings: string[]
+}
+
+export interface GearV2MissionReadinessPolicy {
+  mode: GearV2ValidationMode
+  allowMissingSlots: boolean
+  allowOverCapacity: boolean
+  requireCoreSlots: boolean
+  requireAtLeastOneWeapon: boolean
+  requiredCoreSlotIds: readonly GearV2PhysicalSlotId[]
+  weaponAlternativeSlotIds: readonly GearV2PhysicalSlotId[]
+  priorityOrder: readonly GearV2MandatoryPriorityKey[]
+}
+
+export interface GearV2MissionReadinessOptions {
+  compatibility?: GearV2ExternalCompatibilityInput
+}
+
+export interface GearV2MissionReadinessResult {
+  mode: GearV2ValidationMode | string
+  valid: boolean
+  weightValid: boolean
+  mandatorySlotsSatisfied: boolean
+  compatibilityStatus: GearV2CompatibilityStatus
+  policy: GearV2MissionReadinessPolicy | null
+  missingMandatorySlots: GearV2PhysicalSlotId[]
+  missingPriorityOrder: GearV2MandatoryPriorityKey[]
   calculation: GearV2LoadoutWeightResult | null
   errors: GearV2WeightIssue[]
   warnings: string[]

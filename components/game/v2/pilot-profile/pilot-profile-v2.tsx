@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useMemo, useEffect, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import {
   CharacterProfileV2,
   GalleryArtwork,
@@ -84,6 +84,7 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
   const [mobileViewMode, setMobileViewMode] = useState<'art' | 'info'>('art')
   const [storyChapterByPilot, setStoryChapterByPilot] = useState<Record<string, string | null>>({})
   const [isStoryReaderOpen, setIsStoryReaderOpen] = useState<boolean>(false)
+  const lastSnapshotSignatureRef = useRef<string | null>(null)
 
   useEffect(() => {
     const prefs = loadV2UIPreferences()
@@ -109,6 +110,12 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
       }
 
       const chars: CharacterProfileV2[] = data.characters
+      const snapshotSig = `${data.releaseCommitSha || ''}|${data.loadedAt || ''}|${chars.length}`
+      if (!forceRefresh && lastSnapshotSignatureRef.current === snapshotSig) {
+        setLoadError(null)
+        return
+      }
+      lastSnapshotSignatureRef.current = snapshotSig
       setRosterCharacters(chars)
 
       const totalVerified = chars.reduce(
@@ -196,6 +203,21 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
       rosterCharacters[0]
     )
   }, [rosterCharacters, selectedCharacterId])
+
+  const activePilotId = selectedCharacter?.id ?? selectedCharacterId
+  const handleSelectStoryChapterId = useCallback(
+    (chapId: string | null) => {
+      setStoryChapterByPilot((prev) =>
+        prev[activePilotId] === chapId
+          ? prev
+          : {
+              ...prev,
+              [activePilotId]: chapId,
+            }
+      )
+    },
+    [activePilotId]
+  )
 
   // Keep selectedHeroArtwork synced with current character's verified artworks
   useEffect(() => {
@@ -508,12 +530,7 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
           heroBackgroundMode={heroBackgroundMode}
           onChangeHeroBackgroundMode={handleChangeHeroBackgroundMode}
           activeStoryChapterId={storyChapterByPilot[selectedCharacter.id] ?? null}
-          onSelectStoryChapterId={(chapId) =>
-            setStoryChapterByPilot((prev) => ({
-              ...prev,
-              [selectedCharacter.id]: chapId,
-            }))
-          }
+          onSelectStoryChapterId={handleSelectStoryChapterId}
           isStoryReaderOpen={isStoryReaderOpen}
           onSetStoryReaderOpen={setIsStoryReaderOpen}
         />
@@ -557,12 +574,7 @@ export function PilotProfileV2(props?: PilotProfileV2Props) {
           forceMobileView={forceMobileView}
           stickyTabTopClass={stickyTabTopClass}
           activeStoryChapterId={storyChapterByPilot[selectedCharacter.id] ?? null}
-          onSelectStoryChapterId={(chapId) =>
-            setStoryChapterByPilot((prev) => ({
-              ...prev,
-              [selectedCharacter.id]: chapId,
-            }))
-          }
+          onSelectStoryChapterId={handleSelectStoryChapterId}
           isStoryReaderOpen={isStoryReaderOpen}
           onSetStoryReaderOpen={setIsStoryReaderOpen}
         />

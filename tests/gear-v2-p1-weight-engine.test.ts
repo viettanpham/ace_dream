@@ -6,6 +6,7 @@ import {
   GEAR_V2_ENGINE_VARIANTS,
   GEAR_V2_MAX_AUXILIARY_SLOTS,
   GEAR_V2_MAX_PHYSICAL_SLOTS,
+  GEAR_V2_OD07_MANDATORY_PRIORITY,
   GEAR_V2_PHYSICAL_SLOT_DEFINITIONS,
   GEAR_V2_SLOT_GROUP_DEFINITIONS,
   GearV2WeightError,
@@ -14,8 +15,10 @@ import {
   calculateLoadoutWeight,
   calculateMaxLoadCapacityGrams,
   classifyLoadStatus,
+  getMissionReadinessPolicy,
   validateConfirmLoadoutWeight,
   validateDraftLoadoutWeight,
+  validateLoadoutReadiness,
   type GearV2ClassId,
   type GearV2EngineVariant,
   type GearV2LoadoutSlotsMap,
@@ -310,18 +313,19 @@ describe("GEAR V2 P1 — Weight Engine (Pure TypeScript)", () => {
       assert.ok(draft.warnings.includes("OVER_CAPACITY_DRAFT_ALLOWED"))
     })
 
-    it("Confirm rejects overcapacity (>100%) without auto-unequipping and reports OD-07 UNRESOLVED when no policy injected", () => {
+    it("Confirm rejects overcapacity (>100%) without auto-unequipping and reports OD-07 RESOLVED", () => {
       const confirmOver = validateConfirmLoadoutWeight(overCapacityInput)
       assert.equal(confirmOver.valid, false)
-      assert.equal(confirmOver.od07MandatorySlotStatus, "UNRESOLVED")
+      assert.equal(confirmOver.od07MandatorySlotStatus, "RESOLVED")
       assert.equal(confirmOver.confirmReadyWithMandatorySlots, false)
+      assert.equal(confirmOver.compatibilityStatus, "NOT_CHECKED_IN_P1")
       assert.ok(
         confirmOver.errors.some((e) => e.code === "EXCESS_LOAD_FORBIDDEN_ON_CONFIRM")
       )
       // Loadout items must not be auto-unequipped
       assert.equal(confirmOver.calculation?.occupiedSlotCount, 2)
 
-      // Within capacity Confirm still marks OD-07 UNRESOLVED (does not invent mandatory-slot rules)
+      // Within capacity Confirm permits missing slots per OD-07 CONFIRM/SAVE rule
       const confirmWithinCap = validateConfirmLoadoutWeight({
         gearClass: "I-GEAR",
         engineVariant: "JET",
@@ -330,9 +334,10 @@ describe("GEAR V2 P1 — Weight Engine (Pure TypeScript)", () => {
         },
       })
       assert.equal(confirmWithinCap.valid, true)
-      assert.equal(confirmWithinCap.od07MandatorySlotStatus, "UNRESOLVED")
-      assert.equal(confirmWithinCap.confirmReadyWithMandatorySlots, false)
-      assert.ok(confirmWithinCap.warnings.includes("OD07_MANDATORY_SLOT_RULE_UNRESOLVED"))
+      assert.equal(confirmWithinCap.od07MandatorySlotStatus, "RESOLVED")
+      assert.equal(confirmWithinCap.confirmReadyWithMandatorySlots, true)
+      assert.equal(confirmWithinCap.compatibilityStatus, "NOT_CHECKED_IN_P1")
+      assert.equal(confirmWithinCap.warnings.length, 0)
     })
 
     it("Supports injected mandatorySlotIds policy if provided later without hardcoding OD-07", () => {
@@ -480,6 +485,239 @@ describe("GEAR V2 P1 — Weight Engine (Pure TypeScript)", () => {
       )
       assert.ok(v1Stats.total.hp > 0)
       assert.ok(v1Stats.total.attack > 0)
+    })
+  })
+
+  describe("13. OD-07 Mission-Readiness Policy & Validation Modes", () => {
+    const coreSlots: GearV2LoadoutSlotsMap = {
+      armor: { equipmentId: "arm_core", weightGrams: 600_000 },
+      engine: { equipmentId: "eng_core", weightGrams: 500_000 },
+      radar_sensor: { equipmentId: "rad_core", weightGrams: 150_000 },
+    }
+
+    it("Exposes OD-07 priority 1..4 without enforcing equip-operation sequence", () => {
+      assert.deepEqual(
+        GEAR_V2_OD07_MANDATORY_PRIORITY.map((p) => [p.priority, p.key]),
+        [
+          [1, "ARMOR"],
+          [2, "ENGINE"],
+          [3, "RADAR_SENSOR"],
+          [4, "WEAPON"],
+        ]
+      )
+
+      // Equipping radar_sensor & advanced_weapon without armor/engine is valid in DRAFT/CONFIRM
+      // and diagnostics in COMBAT report missing slots in strict priority 1 -> 2 order
+      const outOfOrderInput = {
+        gearClass: "A-GEAR",
+        engineVariant: "BASE",
+        slots: {
+          radar_sensor: { equipmentId: "rad_1", weightGrams: 100_000 },
+          advanced_weapon: { equipmentId: "adv_1", weightGrams: 300_000 },
+        },
+      }
+      assert.equal(validateLoadoutReadiness(outOfOrderInput, "DRAFT").valid, true)
+      assert.equal(validateLoadoutReadiness(outOfOrderInput, "CONFIRM").valid, true)
+
+      const combatMissing = validateLoadoutReadiness(outOfOrderInput, "COMBAT")
+      assert.equal(combatMissing.valid, false)
+      assert.deepEqual(combatMissing.missingPriorityOrder, ["ARMOR", "ENGINE"])
+      assert.deepEqual(combatMissing.missingMandatorySlots, ["armor", "engine"])
+      assert.deepEqual(
+        combatMissing.errors.map((e) => e.priority),
+        [1, 2]
+      )
+    })
+
+    it("Permits empty & partial loadouts in DRAFT, CONFIRM, and SAVE while blocking them in flight/combat modes", () => {
+      const emptyInput = { gearClass: "I-GEAR", engineVariant: "BASE", slots: {} }
+
+      for (const mode of ["DRAFT", "CONFIRM", "SAVE"] as const) {
+        const res = validateLoadoutReadiness(emptyInput, mode)
+        assert.equal(res.valid, true, `Expected empty loadout to pass ${mode}`)
+        assert.equal(res.mandatorySlotsSatisfied, true)
+        assert.equal(res.compatibilityStatus, "NOT_CHECKED_IN_P1")
+      }
+
+      for (const mode of ["SAFE_FLIGHT", "TRAINING", "TRANSPORT"] as const) {
+        const res = validateLoadoutReadiness(emptyInput, mode)
+        assert.equal(res.valid, false)
+        assert.deepEqual(res.missingPriorityOrder, ["ARMOR", "ENGINE", "RADAR_SENSOR"])
+        assert.deepEqual(res.missingMandatorySlots, ["armor", "engine", "radar_sensor"])
+        assert.deepEqual(
+          res.errors.map((e) => e.priority),
+          [1, 2, 3]
+        )
+      }
+
+      for (const mode of ["COMBAT", "UNSAFE_ZONE"] as const) {
+        const res = validateLoadoutReadiness(emptyInput, mode)
+        assert.equal(res.valid, false)
+        assert.deepEqual(res.missingPriorityOrder, [
+          "ARMOR",
+          "ENGINE",
+          "RADAR_SENSOR",
+          "WEAPON",
+        ])
+        assert.deepEqual(
+          res.errors.map((e) => e.priority),
+          [1, 2, 3, 4]
+        )
+      }
+    })
+
+    it("Allows all three core slots (without weapon) in SAFE_FLIGHT / TRAINING / TRANSPORT, and rejects no-weapon in COMBAT / UNSAFE_ZONE", () => {
+      for (const mode of ["SAFE_FLIGHT", "TRAINING", "TRANSPORT"] as const) {
+        const policy = getMissionReadinessPolicy(mode)
+        assert.equal(policy.requireAtLeastOneWeapon, false)
+
+        const res = validateLoadoutReadiness(
+          { gearClass: "M-GEAR", engineVariant: "SILENT", slots: coreSlots },
+          mode
+        )
+        assert.equal(res.valid, true, `Expected peaceful mode ${mode} to pass without weapon`)
+        assert.equal(res.mandatorySlotsSatisfied, true)
+      }
+
+      for (const mode of ["COMBAT", "UNSAFE_ZONE"] as const) {
+        const res = validateLoadoutReadiness(
+          { gearClass: "M-GEAR", engineVariant: "SILENT", slots: coreSlots },
+          mode
+        )
+        assert.equal(res.valid, false)
+        assert.deepEqual(res.missingPriorityOrder, ["WEAPON"])
+        assert.ok(res.errors.some((e) => e.code === "MANDATORY_WEAPON_UNFILLED" && e.priority === 4))
+      }
+    })
+
+    it("Passes COMBAT and UNSAFE_ZONE with standard_weapon only, advanced_weapon only, or both weapons", () => {
+      const withStandardOnly = {
+        gearClass: "A-GEAR",
+        engineVariant: "BASE",
+        slots: {
+          ...coreSlots,
+          standard_weapon: { equipmentId: "wpn_std", weightGrams: 400_000 },
+        },
+      }
+      const withAdvancedOnly = {
+        gearClass: "A-GEAR",
+        engineVariant: "BASE",
+        slots: {
+          ...coreSlots,
+          advanced_weapon: { equipmentId: "wpn_adv", weightGrams: 550_000 },
+        },
+      }
+      const withBoth = {
+        gearClass: "A-GEAR",
+        engineVariant: "BASE",
+        slots: {
+          ...coreSlots,
+          standard_weapon: { equipmentId: "wpn_std", weightGrams: 400_000 },
+          advanced_weapon: { equipmentId: "wpn_adv", weightGrams: 550_000 },
+        },
+      }
+
+      for (const loadout of [withStandardOnly, withAdvancedOnly, withBoth]) {
+        for (const mode of ["COMBAT", "UNSAFE_ZONE"] as const) {
+          const res = validateLoadoutReadiness(loadout, mode)
+          assert.equal(res.valid, true)
+          assert.equal(res.mandatorySlotsSatisfied, true)
+          assert.equal(res.weightValid, true)
+        }
+      }
+    })
+
+    it("Rejects overweight in CONFIRM/SAVE/SAFE_FLIGHT/TRAINING/TRANSPORT/COMBAT/UNSAFE_ZONE while permitting DRAFT without auto-unequip", () => {
+      const overweightFull = {
+        gearClass: "I-GEAR",
+        engineVariant: "JET", // capacity = 3_700_000g
+        slots: {
+          armor: { equipmentId: "arm_heavy", weightGrams: 1_500_000 },
+          engine: { equipmentId: "eng_heavy", weightGrams: 1_000_000 },
+          radar_sensor: { equipmentId: "rad_heavy", weightGrams: 500_000 },
+          standard_weapon: { equipmentId: "wpn_heavy", weightGrams: 700_001 }, // total 3_700_001g
+        },
+      }
+
+      const draft = validateLoadoutReadiness(overweightFull, "DRAFT")
+      assert.equal(draft.valid, true)
+      assert.equal(draft.weightValid, true)
+      assert.equal(draft.calculation?.isOverCapacity, true)
+      assert.equal(draft.calculation?.occupiedSlotCount, 4)
+
+      for (const mode of [
+        "CONFIRM",
+        "SAVE",
+        "SAFE_FLIGHT",
+        "TRAINING",
+        "TRANSPORT",
+        "COMBAT",
+        "UNSAFE_ZONE",
+      ] as const) {
+        const res = validateLoadoutReadiness(overweightFull, mode)
+        assert.equal(res.valid, false, `Expected overweight rejection in ${mode}`)
+        assert.equal(res.weightValid, false)
+        assert.equal(res.mandatorySlotsSatisfied, true)
+        assert.ok(res.errors.some((e) => e.code === "EXCESS_LOAD_FORBIDDEN_ON_CONFIRM"))
+        // Never auto-unequips
+        assert.equal(res.calculation?.occupiedSlotCount, 4)
+      }
+    })
+
+    it("Honors caller-supplied compatibility results honestly and invalidates an incompatible weapon for COMBAT", () => {
+      const input = {
+        gearClass: "B-GEAR",
+        engineVariant: "BASE",
+        slots: {
+          ...coreSlots,
+          standard_weapon: { equipmentId: "wpn_incompatible", weightGrams: 300_000 },
+        },
+      }
+
+      const withoutCompat = validateLoadoutReadiness(input, "COMBAT")
+      assert.equal(withoutCompat.compatibilityStatus, "NOT_CHECKED_IN_P1")
+      assert.equal(withoutCompat.valid, true)
+
+      const withInvalidWeapon = validateLoadoutReadiness(
+        input,
+        "COMBAT",
+        DEFAULT_GEAR_V2_WEIGHT_CONFIG,
+        {
+          compatibility: {
+            checked: true,
+            valid: false,
+            invalidSlotIds: ["standard_weapon"],
+            issues: [
+              {
+                code: "INCOMPATIBLE_SLOT",
+                message: "Weapon not compatible with B-GEAR.",
+                slotId: "standard_weapon",
+                equipmentId: "wpn_incompatible",
+              },
+            ],
+          },
+        }
+      )
+
+      assert.equal(withInvalidWeapon.valid, false)
+      assert.equal(withInvalidWeapon.compatibilityStatus, "CHECKED_FROM_CALLER")
+      assert.equal(withInvalidWeapon.mandatorySlotsSatisfied, false)
+      assert.deepEqual(withInvalidWeapon.missingPriorityOrder, ["WEAPON"])
+      assert.ok(
+        withInvalidWeapon.errors.some((e) => e.code === "EXTERNAL_COMPATIBILITY_FAILED")
+      )
+      assert.ok(
+        withInvalidWeapon.errors.some((e) => e.code === "MANDATORY_WEAPON_UNFILLED")
+      )
+    })
+
+    it("Rejects unknown validation modes cleanly", () => {
+      const badMode = validateLoadoutReadiness(
+        { gearClass: "A-GEAR", engineVariant: "BASE", slots: {} },
+        "ORBITAL_DROP"
+      )
+      assert.equal(badMode.valid, false)
+      assert.ok(badMode.errors.some((e) => e.code === "INVALID_VALIDATION_MODE"))
     })
   })
 })

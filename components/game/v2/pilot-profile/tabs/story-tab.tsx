@@ -1,9 +1,12 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { CharacterProfileV2, StoryChapter } from '@/lib/game/v2/character-profile-data'
 import { Card } from '@/components/game/v2/ui'
-import { ImmersiveStoryReader } from '@/components/game/v2/story/immersive-story-reader'
+import {
+  ImmersiveStoryReader,
+  type StoryChapterMeta,
+} from '@/components/game/v2/story/immersive-story-reader'
 import {
   loadPilotStoryProgress,
   getEffectiveChapterProgress,
@@ -51,17 +54,18 @@ export function StoryTab({
     setProgressState(loadPilotStoryProgress(character.id))
   }, [character.id])
 
+  const hasControlledReaderOpenRef = useRef(Boolean(onSetReaderOpen))
+  hasControlledReaderOpenRef.current = Boolean(onSetReaderOpen)
+
   // Isolate progress & selected chapter strictly per pilotId
   useEffect(() => {
     const fresh = loadPilotStoryProgress(character.id)
     setProgressState(fresh)
-    if (onSetReaderOpen) {
-      // Controlled mode: PilotProfileV2 handles per-pilot state cleanly
-    } else {
+    if (!hasControlledReaderOpenRef.current) {
       setLocalReaderOpen(false)
       setLocalSelectedChapterId(fresh.lastActiveChapterId)
     }
-  }, [character.id, onSetReaderOpen])
+  }, [character.id])
 
   const effectiveReaderOpen =
     typeof isReaderOpen === 'boolean' ? isReaderOpen : localReaderOpen
@@ -94,6 +98,40 @@ export function StoryTab({
     }
     refreshProgress()
   }, [onSetReaderOpen, refreshProgress])
+
+  const readerChapters = useMemo<StoryChapterMeta[]>(
+    () =>
+      chapters.map((c) => ({
+        chapterId: c.id,
+        chapterNumber: c.number,
+        title: c.title,
+        summary: c.summary,
+        status: c.status === 'APPROVED' ? 'PUBLISHED' : c.status,
+        editorialStatus: c.editorialStatus || c.status,
+        publicationStatus: c.publicationStatus,
+        contentType: c.contentType,
+        revision: c.revision,
+        sourceIntegrity: c.sourceIntegrity,
+        sourceNote: c.sourceNote,
+        wordCount: c.wordCount,
+        readingTimeMinutes: c.readingTimeMinutes,
+        sceneCount: c.sceneCount,
+        verifiedSceneCount: c.verifiedSceneCount,
+        isAvailable: c.isAvailable,
+      })),
+    [chapters]
+  )
+
+  const handleReaderChapterChange = useCallback(
+    (chapId: string) => {
+      if (onSelectStoryChapterId) {
+        onSelectStoryChapterId(chapId)
+      } else {
+        setLocalSelectedChapterId(chapId)
+      }
+    },
+    [onSelectStoryChapterId]
+  )
 
   const completedCount = useMemo(() => {
     if (!hasPublishedStory) return 0
@@ -422,33 +460,10 @@ export function StoryTab({
           pilotName={character.classCharacterName}
           pilotCallsign={character.callsign}
           initialChapterId={effectiveChapterId || chapters[0]?.id}
-          chapters={chapters.map((c) => ({
-            chapterId: c.id,
-            chapterNumber: c.number,
-            title: c.title,
-            summary: c.summary,
-            status: c.status === 'APPROVED' ? 'PUBLISHED' : c.status,
-            editorialStatus: c.editorialStatus || c.status,
-            publicationStatus: c.publicationStatus,
-            contentType: c.contentType,
-            revision: c.revision,
-            sourceIntegrity: c.sourceIntegrity,
-            sourceNote: c.sourceNote,
-            wordCount: c.wordCount,
-            readingTimeMinutes: c.readingTimeMinutes,
-            sceneCount: c.sceneCount,
-            verifiedSceneCount: c.verifiedSceneCount,
-            isAvailable: c.isAvailable,
-          }))}
+          chapters={readerChapters}
           isOpen={effectiveReaderOpen}
           onClose={closeReader}
-          onChapterChange={(chapId) => {
-            if (onSelectStoryChapterId) {
-              onSelectStoryChapterId(chapId)
-            } else {
-              setLocalSelectedChapterId(chapId)
-            }
-          }}
+          onChapterChange={handleReaderChapterChange}
           onProgressChange={refreshProgress}
         />
       )}

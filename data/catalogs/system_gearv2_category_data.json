@@ -1,0 +1,110 @@
+{
+  "configFileId": "system_gearv2_category",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "metadata": {
+    "domain": "gearv2",
+    "catalog": "category",
+    "foundation": "GEAR V2 P2 / FND-1",
+    "approvalGate": "REVIEW_UNPUBLISHED",
+    "slotSource": "lib/game/v2/gear/slots.ts",
+    "notes": "7 canonical slot-group categories aligned with P1 slots. Only ARMOR and ENGINE carry P2 seeded equipment; remaining 5 groups are structural definitions with 0 seeded items."
+  },
+  "items": [
+    {
+      "id": "gearv2.cat.armor",
+      "slotGroupId": "ARMOR",
+      "displayName": "Armor",
+      "allowedSlotIds": [
+        "armor"
+      ],
+      "maxSlots": 1,
+      "p2Seeded": true,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "lib/game/v2/gear/slots.ts"
+    },
+    {
+      "id": "gearv2.cat.engine",
+      "slotGroupId": "ENGINE",
+      "displayName": "Engine",
+      "allowedSlotIds": [
+        "engine"
+      ],
+      "maxSlots": 1,
+      "p2Seeded": true,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "lib/game/v2/gear/slots.ts"
+    },
+    {
+      "id": "gearv2.cat.cpu",
+      "slotGroupId": "CPU",
+      "displayName": "CPU",
+      "allowedSlotIds": [
+        "cpu"
+      ],
+      "maxSlots": 1,
+      "p2Seeded": false,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "lib/game/v2/gear/slots.ts"
+    },
+    {
+      "id": "gearv2.cat.radar_sensor",
+      "slotGroupId": "RADAR_SENSOR",
+      "displayName": "Radar / Sensor",
+      "allowedSlotIds": [
+        "radar_sensor"
+      ],
+      "maxSlots": 1,
+      "p2Seeded": false,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "lib/game/v2/gear/slots.ts"
+    },
+    {
+      "id": "gearv2.cat.standard_weapon",
+      "slotGroupId": "STANDARD_WEAPON",
+      "displayName": "Standard Weapon",
+      "allowedSlotIds": [
+        "standard_weapon"
+      ],
+      "maxSlots": 1,
+      "p2Seeded": false,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "lib/game/v2/gear/slots.ts"
+    },
+    {
+      "id": "gearv2.cat.advanced_weapon",
+      "slotGroupId": "ADVANCED_WEAPON",
+      "displayName": "Advanced Weapon",
+      "allowedSlotIds": [
+        "advanced_weapon"
+      ],
+      "maxSlots": 1,
+      "p2Seeded": false,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "lib/game/v2/gear/slots.ts"
+    },
+    {
+      "id": "gearv2.cat.auxiliary",
+      "slotGroupId": "AUXILIARY",
+      "displayName": "Auxiliary",
+      "allowedSlotIds": [
+        "auxiliary_1",
+        "auxiliary_2",
+        "auxiliary_3",
+        "auxiliary_4"
+      ],
+      "maxSlots": 4,
+      "p2Seeded": false,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "lib/game/v2/gear/slots.ts"
+    }
+  ]
+}

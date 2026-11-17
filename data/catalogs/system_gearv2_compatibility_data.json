@@ -1,0 +1,378 @@
+{
+  "configFileId": "system_gearv2_compatibility",
+  "schemaVersion": 1,
+  "dataVersion": 1,
+  "mode": "INLINE",
+  "metadata": {
+    "domain": "gearv2",
+    "catalog": "compatibility",
+    "foundation": "GEAR V2 P2 / FND-1",
+    "defaultPolicy": "DENY",
+    "approvalGate": "REVIEW_UNPUBLISHED",
+    "isolatedFromV1AndFnd86": true,
+    "sourceSeed": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json",
+    "notes": "36 explicit ALLOW tuples (equipmentId x gearClassId x slotId). Default-deny applies to any absent tuple. Completely isolated from system_gear_compatibility_data.json."
+  },
+  "items": [
+    {
+      "id": "gearv2.allow.armor.a.base-heavy-balanced",
+      "equipmentId": "gearv2.eq.armor.a.base-heavy-balanced",
+      "gearClassId": "A-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.a.fortress",
+      "equipmentId": "gearv2.eq.armor.a.fortress",
+      "gearClassId": "A-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.a.assault",
+      "equipmentId": "gearv2.eq.armor.a.assault",
+      "gearClassId": "A-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.a.silent",
+      "equipmentId": "gearv2.eq.engine.a.silent",
+      "gearClassId": "A-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.a.base",
+      "equipmentId": "gearv2.eq.engine.a.base",
+      "gearClassId": "A-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.a.jet",
+      "equipmentId": "gearv2.eq.engine.a.jet",
+      "gearClassId": "A-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.b.base-bomber",
+      "equipmentId": "gearv2.eq.armor.b.base-bomber",
+      "gearClassId": "B-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.b.bombardier-attack",
+      "equipmentId": "gearv2.eq.armor.b.bombardier-attack",
+      "gearClassId": "B-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.b.fortress-survival",
+      "equipmentId": "gearv2.eq.armor.b.fortress-survival",
+      "gearClassId": "B-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.b.silent",
+      "equipmentId": "gearv2.eq.engine.b.silent",
+      "gearClassId": "B-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.b.base",
+      "equipmentId": "gearv2.eq.engine.b.base",
+      "gearClassId": "B-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.b.jet",
+      "equipmentId": "gearv2.eq.engine.b.jet",
+      "gearClassId": "B-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.i.base-interceptor",
+      "equipmentId": "gearv2.eq.armor.i.base-interceptor",
+      "gearClassId": "I-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.i.evasive-maneuver",
+      "equipmentId": "gearv2.eq.armor.i.evasive-maneuver",
+      "gearClassId": "I-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.i.pursuit-assault",
+      "equipmentId": "gearv2.eq.armor.i.pursuit-assault",
+      "gearClassId": "I-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.i.silent",
+      "equipmentId": "gearv2.eq.engine.i.silent",
+      "gearClassId": "I-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.i.base",
+      "equipmentId": "gearv2.eq.engine.i.base",
+      "gearClassId": "I-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.i.jet",
+      "equipmentId": "gearv2.eq.engine.i.jet",
+      "gearClassId": "I-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.m.base-support",
+      "equipmentId": "gearv2.eq.armor.m.base-support",
+      "gearClassId": "M-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.m.field-medic-recovery",
+      "equipmentId": "gearv2.eq.armor.m.field-medic-recovery",
+      "gearClassId": "M-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.m.energy-conduit-relay",
+      "equipmentId": "gearv2.eq.armor.m.energy-conduit-relay",
+      "gearClassId": "M-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.m.silent",
+      "equipmentId": "gearv2.eq.engine.m.silent",
+      "gearClassId": "M-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.m.base",
+      "equipmentId": "gearv2.eq.engine.m.base",
+      "gearClassId": "M-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.m.jet",
+      "equipmentId": "gearv2.eq.engine.m.jet",
+      "gearClassId": "M-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.r.base-recon",
+      "equipmentId": "gearv2.eq.armor.r.base-recon",
+      "gearClassId": "R-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.r.pathfinder-scout",
+      "equipmentId": "gearv2.eq.armor.r.pathfinder-scout",
+      "gearClassId": "R-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.r.signal-analyst-intelligence",
+      "equipmentId": "gearv2.eq.armor.r.signal-analyst-intelligence",
+      "gearClassId": "R-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.r.silent",
+      "equipmentId": "gearv2.eq.engine.r.silent",
+      "gearClassId": "R-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.r.base",
+      "equipmentId": "gearv2.eq.engine.r.base",
+      "gearClassId": "R-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.r.jet",
+      "equipmentId": "gearv2.eq.engine.r.jet",
+      "gearClassId": "R-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.g.base-guardian",
+      "equipmentId": "gearv2.eq.armor.g.base-guardian",
+      "gearClassId": "G-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.g.bulwark-defense",
+      "equipmentId": "gearv2.eq.armor.g.bulwark-defense",
+      "gearClassId": "G-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.armor.g.interceptor-protection",
+      "equipmentId": "gearv2.eq.armor.g.interceptor-protection",
+      "gearClassId": "G-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.g.silent",
+      "equipmentId": "gearv2.eq.engine.g.silent",
+      "gearClassId": "G-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.g.base",
+      "equipmentId": "gearv2.eq.engine.g.base",
+      "gearClassId": "G-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    },
+    {
+      "id": "gearv2.allow.engine.g.jet",
+      "equipmentId": "gearv2.eq.engine.g.jet",
+      "gearClassId": "G-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_P2_SEED_WITH_ARMOR_WEIGHTS_2026-11-16_0acd4f9d.json"
+    }
+  ]
+}

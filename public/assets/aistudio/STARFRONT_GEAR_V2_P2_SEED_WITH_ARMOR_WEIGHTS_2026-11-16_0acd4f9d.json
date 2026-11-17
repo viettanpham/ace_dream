@@ -1,0 +1,1191 @@
+{
+  "status": "REVIEW P2 SEED WITH APPROVED ARMOR WEIGHT DESIGN — NOT FND-1 PRODUCTION JSON",
+  "schemaNote": "36 equipment rows, 18 engine profiles and 36 explicit ALLOW compatibility tuples. All 18 Armor physical weights locked by user authorization 2026-11-16; engine weights unchanged. Storage scale remains subject to real FND-1 code validation. No CPU/Radar/Weapon data invented; unimplemented and not published.",
+  "equipment": [
+    {
+      "id": "gearv2.eq.armor.a.base-heavy-balanced",
+      "gearClassId": "A-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Base — Heavy Balanced",
+      "armorVariantId": "base-heavy-balanced",
+      "primaryBonuses": {
+        "HP": 3,
+        "ARM": 3
+      },
+      "secondaryBonuses": {
+        "SHD": 2,
+        "ACC": 1,
+        "ENG": 1
+      },
+      "weightGrams": 620000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.a",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.a.fortress",
+      "gearClassId": "A-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Fortress",
+      "armorVariantId": "fortress",
+      "primaryBonuses": {
+        "HP": 4,
+        "ARM": 4
+      },
+      "secondaryBonuses": {
+        "SHD": 1,
+        "ENG": 1
+      },
+      "weightGrams": 850000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.a",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.a.assault",
+      "gearClassId": "A-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Assault",
+      "armorVariantId": "assault",
+      "primaryBonuses": {
+        "ATK": 3,
+        "ACC": 3
+      },
+      "secondaryBonuses": {
+        "HP": 1,
+        "ARM": 1,
+        "ENG": 2
+      },
+      "weightGrams": 530000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.a",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.a.silent",
+      "gearClassId": "A-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "A-GEAR SILENT Engine",
+      "engineVariantId": "SILENT",
+      "engineProfileId": "gearv2.engine.a.silent",
+      "weightGrams": 150000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.a",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.a.base",
+      "gearClassId": "A-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "A-GEAR BASE Engine",
+      "engineVariantId": "BASE",
+      "engineProfileId": "gearv2.engine.a.base",
+      "weightGrams": 125000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.a",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.a.jet",
+      "gearClassId": "A-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "A-GEAR JET Engine",
+      "engineVariantId": "JET",
+      "engineProfileId": "gearv2.engine.a.jet",
+      "weightGrams": 170000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.a",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.b.base-bomber",
+      "gearClassId": "B-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Base — Bomber",
+      "armorVariantId": "base-bomber",
+      "primaryBonuses": {
+        "ENG": 3,
+        "ATK": 3
+      },
+      "secondaryBonuses": {
+        "HP": 2,
+        "ARM": 1,
+        "ACC": 1
+      },
+      "weightGrams": 550000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.b",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.b.bombardier-attack",
+      "gearClassId": "B-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Bombardier (Attack)",
+      "armorVariantId": "bombardier-attack",
+      "primaryBonuses": {
+        "ATK": 3,
+        "HP": 3
+      },
+      "secondaryBonuses": {
+        "ENG": 2,
+        "ACC": 2
+      },
+      "weightGrams": 680000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.b",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.b.fortress-survival",
+      "gearClassId": "B-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Fortress (Survival)",
+      "armorVariantId": "fortress-survival",
+      "primaryBonuses": {
+        "ARM": 3,
+        "SHD": 3
+      },
+      "secondaryBonuses": {
+        "HP": 2,
+        "ENG": 1,
+        "ACC": 1
+      },
+      "weightGrams": 800000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.b",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.b.silent",
+      "gearClassId": "B-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "B-GEAR SILENT Engine",
+      "engineVariantId": "SILENT",
+      "engineProfileId": "gearv2.engine.b.silent",
+      "weightGrams": 100000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.b",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.b.base",
+      "gearClassId": "B-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "B-GEAR BASE Engine",
+      "engineVariantId": "BASE",
+      "engineProfileId": "gearv2.engine.b.base",
+      "weightGrams": 85000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.b",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.b.jet",
+      "gearClassId": "B-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "B-GEAR JET Engine",
+      "engineVariantId": "JET",
+      "engineProfileId": "gearv2.engine.b.jet",
+      "weightGrams": 110000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.b",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.i.base-interceptor",
+      "gearClassId": "I-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Base — Interceptor",
+      "armorVariantId": "base-interceptor",
+      "primaryBonuses": {
+        "MOB": 3,
+        "ACC": 2
+      },
+      "secondaryBonuses": {
+        "ATK": 2,
+        "ENG": 2,
+        "SEN": 1
+      },
+      "weightGrams": 240000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.i",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.i.evasive-maneuver",
+      "gearClassId": "I-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Evasive (Maneuver)",
+      "armorVariantId": "evasive-maneuver",
+      "primaryBonuses": {
+        "MOB": 4,
+        "SEN": 2
+      },
+      "secondaryBonuses": {
+        "ACC": 2,
+        "ENG": 1,
+        "HP": 1
+      },
+      "weightGrams": 190000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.i",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.i.pursuit-assault",
+      "gearClassId": "I-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Pursuit (Assault)",
+      "armorVariantId": "pursuit-assault",
+      "primaryBonuses": {
+        "ATK": 3,
+        "ACC": 3
+      },
+      "secondaryBonuses": {
+        "MOB": 2,
+        "ENG": 1,
+        "SEN": 1
+      },
+      "weightGrams": 280000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.i",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.i.silent",
+      "gearClassId": "I-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "I-GEAR SILENT Engine",
+      "engineVariantId": "SILENT",
+      "engineProfileId": "gearv2.engine.i.silent",
+      "weightGrams": 120000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.i",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.i.base",
+      "gearClassId": "I-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "I-GEAR BASE Engine",
+      "engineVariantId": "BASE",
+      "engineProfileId": "gearv2.engine.i.base",
+      "weightGrams": 75000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.i",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.i.jet",
+      "gearClassId": "I-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "I-GEAR JET Engine",
+      "engineVariantId": "JET",
+      "engineProfileId": "gearv2.engine.i.jet",
+      "weightGrams": 110000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.i",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.m.base-support",
+      "gearClassId": "M-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Base — Support",
+      "armorVariantId": "base-support",
+      "primaryBonuses": {
+        "SUP": 3,
+        "ENG": 3
+      },
+      "secondaryBonuses": {
+        "HP": 2,
+        "SHD": 1,
+        "SEN": 1
+      },
+      "weightGrams": 420000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.m",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.m.field-medic-recovery",
+      "gearClassId": "M-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Field Medic (Recovery)",
+      "armorVariantId": "field-medic-recovery",
+      "primaryBonuses": {
+        "SUP": 4,
+        "HP": 3
+      },
+      "secondaryBonuses": {
+        "ENG": 2,
+        "SEN": 1
+      },
+      "weightGrams": 470000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.m",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.m.energy-conduit-relay",
+      "gearClassId": "M-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Energy Conduit (Relay)",
+      "armorVariantId": "energy-conduit-relay",
+      "primaryBonuses": {
+        "ENG": 4,
+        "SUP": 3
+      },
+      "secondaryBonuses": {
+        "SHD": 2,
+        "SEN": 1
+      },
+      "weightGrams": 390000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.m",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.m.silent",
+      "gearClassId": "M-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "M-GEAR SILENT Engine",
+      "engineVariantId": "SILENT",
+      "engineProfileId": "gearv2.engine.m.silent",
+      "weightGrams": 120000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.m",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.m.base",
+      "gearClassId": "M-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "M-GEAR BASE Engine",
+      "engineVariantId": "BASE",
+      "engineProfileId": "gearv2.engine.m.base",
+      "weightGrams": 100000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.m",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.m.jet",
+      "gearClassId": "M-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "M-GEAR JET Engine",
+      "engineVariantId": "JET",
+      "engineProfileId": "gearv2.engine.m.jet",
+      "weightGrams": 140000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.m",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.r.base-recon",
+      "gearClassId": "R-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Base — Recon",
+      "armorVariantId": "base-recon",
+      "primaryBonuses": {
+        "SEN": 3,
+        "MOB": 2
+      },
+      "secondaryBonuses": {
+        "ACC": 2,
+        "ENG": 2,
+        "SUP": 1
+      },
+      "weightGrams": 300000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.r",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.r.pathfinder-scout",
+      "gearClassId": "R-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Pathfinder (Scout)",
+      "armorVariantId": "pathfinder-scout",
+      "primaryBonuses": {
+        "MOB": 4,
+        "SEN": 3
+      },
+      "secondaryBonuses": {
+        "ACC": 2,
+        "ENG": 1
+      },
+      "weightGrams": 240000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.r",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.r.signal-analyst-intelligence",
+      "gearClassId": "R-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Signal Analyst (Intelligence)",
+      "armorVariantId": "signal-analyst-intelligence",
+      "primaryBonuses": {
+        "SEN": 4,
+        "ENG": 3
+      },
+      "secondaryBonuses": {
+        "SUP": 2,
+        "ACC": 1
+      },
+      "weightGrams": 360000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.r",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.r.silent",
+      "gearClassId": "R-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "R-GEAR SILENT Engine",
+      "engineVariantId": "SILENT",
+      "engineProfileId": "gearv2.engine.r.silent",
+      "weightGrams": 90000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.r",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.r.base",
+      "gearClassId": "R-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "R-GEAR BASE Engine",
+      "engineVariantId": "BASE",
+      "engineProfileId": "gearv2.engine.r.base",
+      "weightGrams": 80000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.r",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.r.jet",
+      "gearClassId": "R-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "R-GEAR JET Engine",
+      "engineVariantId": "JET",
+      "engineProfileId": "gearv2.engine.r.jet",
+      "weightGrams": 105000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.r",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.g.base-guardian",
+      "gearClassId": "G-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Base — Guardian",
+      "armorVariantId": "base-guardian",
+      "primaryBonuses": {
+        "SHD": 4,
+        "ARM": 2
+      },
+      "secondaryBonuses": {
+        "HP": 2,
+        "ENG": 1,
+        "ACC": 1
+      },
+      "weightGrams": 760000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.g",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.g.bulwark-defense",
+      "gearClassId": "G-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Bulwark (Defense)",
+      "armorVariantId": "bulwark-defense",
+      "primaryBonuses": {
+        "ARM": 4,
+        "HP": 3
+      },
+      "secondaryBonuses": {
+        "SHD": 2,
+        "ENG": 1
+      },
+      "weightGrams": 1000000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.g",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.armor.g.interceptor-protection",
+      "gearClassId": "G-GEAR",
+      "categoryId": "gearv2.cat.armor",
+      "displayName": "Variant — Interceptor (Protection)",
+      "armorVariantId": "interceptor-protection",
+      "primaryBonuses": {
+        "SHD": 3,
+        "MOB": 2
+      },
+      "secondaryBonuses": {
+        "HP": 2,
+        "ACC": 2,
+        "ENG": 1
+      },
+      "weightGrams": 650000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.armor.g",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ARMOR_WEIGHT_LOCK_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.g.silent",
+      "gearClassId": "G-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "G-GEAR SILENT Engine",
+      "engineVariantId": "SILENT",
+      "engineProfileId": "gearv2.engine.g.silent",
+      "weightGrams": 180000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.g",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.g.base",
+      "gearClassId": "G-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "G-GEAR BASE Engine",
+      "engineVariantId": "BASE",
+      "engineProfileId": "gearv2.engine.g.base",
+      "weightGrams": 160000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.g",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.eq.engine.g.jet",
+      "gearClassId": "G-GEAR",
+      "categoryId": "gearv2.cat.engine",
+      "displayName": "G-GEAR JET Engine",
+      "engineVariantId": "JET",
+      "engineProfileId": "gearv2.engine.g.jet",
+      "weightGrams": 210000,
+      "maxPerLoadout": 1,
+      "uniquenessGroupId": "gearv2.engine.g",
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    }
+  ],
+  "engineProfiles": [
+    {
+      "id": "gearv2.engine.a.silent",
+      "gearClassId": "A-GEAR",
+      "variantId": "SILENT",
+      "minSpeedMps": 65,
+      "maxSpeedMps": 130,
+      "boostSpeedMps": 180,
+      "boostTimeCentiseconds": 2200,
+      "boostRecoveryCentiseconds": 1300,
+      "normalTurnDegPerSec": 98,
+      "boostTurnDegPerSec": 78,
+      "turnResponseCentiseconds": 105,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.a.base",
+      "gearClassId": "A-GEAR",
+      "variantId": "BASE",
+      "minSpeedMps": 75,
+      "maxSpeedMps": 140,
+      "boostSpeedMps": 205,
+      "boostTimeCentiseconds": 1900,
+      "boostRecoveryCentiseconds": 1500,
+      "normalTurnDegPerSec": 92,
+      "boostTurnDegPerSec": 75,
+      "turnResponseCentiseconds": 120,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.a.jet",
+      "gearClassId": "A-GEAR",
+      "variantId": "JET",
+      "minSpeedMps": 85,
+      "maxSpeedMps": 145,
+      "boostSpeedMps": 260,
+      "boostTimeCentiseconds": 1400,
+      "boostRecoveryCentiseconds": 1800,
+      "normalTurnDegPerSec": 84,
+      "boostTurnDegPerSec": 69,
+      "turnResponseCentiseconds": 140,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.b.silent",
+      "gearClassId": "B-GEAR",
+      "variantId": "SILENT",
+      "minSpeedMps": 90,
+      "maxSpeedMps": 150,
+      "boostSpeedMps": 205,
+      "boostTimeCentiseconds": 2400,
+      "boostRecoveryCentiseconds": 1000,
+      "normalTurnDegPerSec": 116,
+      "boostTurnDegPerSec": 80,
+      "turnResponseCentiseconds": 90,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.b.base",
+      "gearClassId": "B-GEAR",
+      "variantId": "BASE",
+      "minSpeedMps": 105,
+      "maxSpeedMps": 175,
+      "boostSpeedMps": 240,
+      "boostTimeCentiseconds": 2000,
+      "boostRecoveryCentiseconds": 1200,
+      "normalTurnDegPerSec": 108,
+      "boostTurnDegPerSec": 86,
+      "turnResponseCentiseconds": 100,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.b.jet",
+      "gearClassId": "B-GEAR",
+      "variantId": "JET",
+      "minSpeedMps": 120,
+      "maxSpeedMps": 205,
+      "boostSpeedMps": 350,
+      "boostTimeCentiseconds": 1200,
+      "boostRecoveryCentiseconds": 1500,
+      "normalTurnDegPerSec": 100,
+      "boostTurnDegPerSec": 92,
+      "turnResponseCentiseconds": 115,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.i.silent",
+      "gearClassId": "I-GEAR",
+      "variantId": "SILENT",
+      "minSpeedMps": 80,
+      "maxSpeedMps": 160,
+      "boostSpeedMps": 220,
+      "boostTimeCentiseconds": 2300,
+      "boostRecoveryCentiseconds": 800,
+      "normalTurnDegPerSec": 120,
+      "boostTurnDegPerSec": 90,
+      "turnResponseCentiseconds": 55,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.i.base",
+      "gearClassId": "I-GEAR",
+      "variantId": "BASE",
+      "minSpeedMps": 95,
+      "maxSpeedMps": 190,
+      "boostSpeedMps": 260,
+      "boostTimeCentiseconds": 2000,
+      "boostRecoveryCentiseconds": 1000,
+      "normalTurnDegPerSec": 116,
+      "boostTurnDegPerSec": 92,
+      "turnResponseCentiseconds": 80,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.i.jet",
+      "gearClassId": "I-GEAR",
+      "variantId": "JET",
+      "minSpeedMps": 110,
+      "maxSpeedMps": 220,
+      "boostSpeedMps": 390,
+      "boostTimeCentiseconds": 1600,
+      "boostRecoveryCentiseconds": 1200,
+      "normalTurnDegPerSec": 112,
+      "boostTurnDegPerSec": 81,
+      "turnResponseCentiseconds": 100,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.m.silent",
+      "gearClassId": "M-GEAR",
+      "variantId": "SILENT",
+      "minSpeedMps": 50,
+      "maxSpeedMps": 120,
+      "boostSpeedMps": 165,
+      "boostTimeCentiseconds": 2600,
+      "boostRecoveryCentiseconds": 1200,
+      "normalTurnDegPerSec": 106,
+      "boostTurnDegPerSec": 87,
+      "turnResponseCentiseconds": 90,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.m.base",
+      "gearClassId": "M-GEAR",
+      "variantId": "BASE",
+      "minSpeedMps": 65,
+      "maxSpeedMps": 130,
+      "boostSpeedMps": 190,
+      "boostTimeCentiseconds": 2300,
+      "boostRecoveryCentiseconds": 1500,
+      "normalTurnDegPerSec": 100,
+      "boostTurnDegPerSec": 82,
+      "turnResponseCentiseconds": 105,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.m.jet",
+      "gearClassId": "M-GEAR",
+      "variantId": "JET",
+      "minSpeedMps": 75,
+      "maxSpeedMps": 135,
+      "boostSpeedMps": 240,
+      "boostTimeCentiseconds": 1800,
+      "boostRecoveryCentiseconds": 1800,
+      "normalTurnDegPerSec": 93,
+      "boostTurnDegPerSec": 75,
+      "turnResponseCentiseconds": 125,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.r.silent",
+      "gearClassId": "R-GEAR",
+      "variantId": "SILENT",
+      "minSpeedMps": 65,
+      "maxSpeedMps": 140,
+      "boostSpeedMps": 190,
+      "boostTimeCentiseconds": 2500,
+      "boostRecoveryCentiseconds": 1100,
+      "normalTurnDegPerSec": 124,
+      "boostTurnDegPerSec": 100,
+      "turnResponseCentiseconds": 75,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.r.base",
+      "gearClassId": "R-GEAR",
+      "variantId": "BASE",
+      "minSpeedMps": 80,
+      "maxSpeedMps": 150,
+      "boostSpeedMps": 220,
+      "boostTimeCentiseconds": 2200,
+      "boostRecoveryCentiseconds": 1200,
+      "normalTurnDegPerSec": 120,
+      "boostTurnDegPerSec": 95,
+      "turnResponseCentiseconds": 90,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.r.jet",
+      "gearClassId": "R-GEAR",
+      "variantId": "JET",
+      "minSpeedMps": 95,
+      "maxSpeedMps": 155,
+      "boostSpeedMps": 280,
+      "boostTimeCentiseconds": 1600,
+      "boostRecoveryCentiseconds": 1500,
+      "normalTurnDegPerSec": 112,
+      "boostTurnDegPerSec": 86,
+      "turnResponseCentiseconds": 110,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.g.silent",
+      "gearClassId": "G-GEAR",
+      "variantId": "SILENT",
+      "minSpeedMps": 45,
+      "maxSpeedMps": 105,
+      "boostSpeedMps": 150,
+      "boostTimeCentiseconds": 2400,
+      "boostRecoveryCentiseconds": 1400,
+      "normalTurnDegPerSec": 86,
+      "boostTurnDegPerSec": 70,
+      "turnResponseCentiseconds": 120,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.g.base",
+      "gearClassId": "G-GEAR",
+      "variantId": "BASE",
+      "minSpeedMps": 55,
+      "maxSpeedMps": 115,
+      "boostSpeedMps": 170,
+      "boostTimeCentiseconds": 2100,
+      "boostRecoveryCentiseconds": 1700,
+      "normalTurnDegPerSec": 80,
+      "boostTurnDegPerSec": 65,
+      "turnResponseCentiseconds": 135,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    },
+    {
+      "id": "gearv2.engine.g.jet",
+      "gearClassId": "G-GEAR",
+      "variantId": "JET",
+      "minSpeedMps": 65,
+      "maxSpeedMps": 125,
+      "boostSpeedMps": 220,
+      "boostTimeCentiseconds": 1600,
+      "boostRecoveryCentiseconds": 2000,
+      "normalTurnDegPerSec": 74,
+      "boostTurnDegPerSec": 59,
+      "turnResponseCentiseconds": 155,
+      "lifecycle": "ACTIVE",
+      "approvalStatus": "REVIEW",
+      "sourceDocRef": "STARFRONT_GEAR_V2_ENGINE_BALANCE_APPROVED_2026-11-16.md"
+    }
+  ],
+  "explicitAllowCompatibility": [
+    {
+      "id": "gearv2.allow.armor.a.base-heavy-balanced",
+      "equipmentId": "gearv2.eq.armor.a.base-heavy-balanced",
+      "gearClassId": "A-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.a.fortress",
+      "equipmentId": "gearv2.eq.armor.a.fortress",
+      "gearClassId": "A-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.a.assault",
+      "equipmentId": "gearv2.eq.armor.a.assault",
+      "gearClassId": "A-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.a.silent",
+      "equipmentId": "gearv2.eq.engine.a.silent",
+      "gearClassId": "A-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.a.base",
+      "equipmentId": "gearv2.eq.engine.a.base",
+      "gearClassId": "A-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.a.jet",
+      "equipmentId": "gearv2.eq.engine.a.jet",
+      "gearClassId": "A-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.b.base-bomber",
+      "equipmentId": "gearv2.eq.armor.b.base-bomber",
+      "gearClassId": "B-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.b.bombardier-attack",
+      "equipmentId": "gearv2.eq.armor.b.bombardier-attack",
+      "gearClassId": "B-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.b.fortress-survival",
+      "equipmentId": "gearv2.eq.armor.b.fortress-survival",
+      "gearClassId": "B-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.b.silent",
+      "equipmentId": "gearv2.eq.engine.b.silent",
+      "gearClassId": "B-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.b.base",
+      "equipmentId": "gearv2.eq.engine.b.base",
+      "gearClassId": "B-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.b.jet",
+      "equipmentId": "gearv2.eq.engine.b.jet",
+      "gearClassId": "B-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.i.base-interceptor",
+      "equipmentId": "gearv2.eq.armor.i.base-interceptor",
+      "gearClassId": "I-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.i.evasive-maneuver",
+      "equipmentId": "gearv2.eq.armor.i.evasive-maneuver",
+      "gearClassId": "I-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.i.pursuit-assault",
+      "equipmentId": "gearv2.eq.armor.i.pursuit-assault",
+      "gearClassId": "I-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.i.silent",
+      "equipmentId": "gearv2.eq.engine.i.silent",
+      "gearClassId": "I-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.i.base",
+      "equipmentId": "gearv2.eq.engine.i.base",
+      "gearClassId": "I-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.i.jet",
+      "equipmentId": "gearv2.eq.engine.i.jet",
+      "gearClassId": "I-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.m.base-support",
+      "equipmentId": "gearv2.eq.armor.m.base-support",
+      "gearClassId": "M-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.m.field-medic-recovery",
+      "equipmentId": "gearv2.eq.armor.m.field-medic-recovery",
+      "gearClassId": "M-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.m.energy-conduit-relay",
+      "equipmentId": "gearv2.eq.armor.m.energy-conduit-relay",
+      "gearClassId": "M-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.m.silent",
+      "equipmentId": "gearv2.eq.engine.m.silent",
+      "gearClassId": "M-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.m.base",
+      "equipmentId": "gearv2.eq.engine.m.base",
+      "gearClassId": "M-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.m.jet",
+      "equipmentId": "gearv2.eq.engine.m.jet",
+      "gearClassId": "M-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.r.base-recon",
+      "equipmentId": "gearv2.eq.armor.r.base-recon",
+      "gearClassId": "R-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.r.pathfinder-scout",
+      "equipmentId": "gearv2.eq.armor.r.pathfinder-scout",
+      "gearClassId": "R-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.r.signal-analyst-intelligence",
+      "equipmentId": "gearv2.eq.armor.r.signal-analyst-intelligence",
+      "gearClassId": "R-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.r.silent",
+      "equipmentId": "gearv2.eq.engine.r.silent",
+      "gearClassId": "R-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.r.base",
+      "equipmentId": "gearv2.eq.engine.r.base",
+      "gearClassId": "R-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.r.jet",
+      "equipmentId": "gearv2.eq.engine.r.jet",
+      "gearClassId": "R-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.g.base-guardian",
+      "equipmentId": "gearv2.eq.armor.g.base-guardian",
+      "gearClassId": "G-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.g.bulwark-defense",
+      "equipmentId": "gearv2.eq.armor.g.bulwark-defense",
+      "gearClassId": "G-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.armor.g.interceptor-protection",
+      "equipmentId": "gearv2.eq.armor.g.interceptor-protection",
+      "gearClassId": "G-GEAR",
+      "slotId": "armor",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.g.silent",
+      "equipmentId": "gearv2.eq.engine.g.silent",
+      "gearClassId": "G-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.g.base",
+      "equipmentId": "gearv2.eq.engine.g.base",
+      "gearClassId": "G-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    },
+    {
+      "id": "gearv2.allow.engine.g.jet",
+      "equipmentId": "gearv2.eq.engine.g.jet",
+      "gearClassId": "G-GEAR",
+      "slotId": "engine",
+      "decision": "ALLOW"
+    }
+  ]
+}
